@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Alert, Spin } from "antd";
+import { Alert, Button, Spin } from "antd";
 import { observer } from "mobx-react-lite";
 import * as React from "react";
 
@@ -61,6 +61,58 @@ const NewFlashDatabaseChecklistActiveComponent = (): JSX.Element => {
       <Alert
         message={`Found an unexpected hydrationState: ${flashStore.hydrationState} `}
       />
+    );
+  }
+
+  if (
+    flashStore.rawDataImportDagEnabled.primary !==
+    flashStore.rawDataImportDagEnabled.secondary
+  ) {
+    // the only real thing we can do if primary and secondary disagree is cancel reimport
+    if (
+      flashStore.activeChecklist === NewFlashingChecklistType.CANCEL_REIMPORT
+    ) {
+      return <NewStateCancelReimportChecklist />;
+    }
+
+    return (
+      <div>
+        <Alert
+          message="Cannot proceed with flash as PRIMARY and SECONDARY instances are not gated to both use the same raw data import infrastructure."
+          description={
+            <ul>
+              <li>
+                PRIMARY:{" "}
+                {flashStore.rawDataImportDagEnabled.primary
+                  ? "NEW (airflow) enabled"
+                  : "LEGACY enabled"}
+              </li>
+              <li>
+                SECONDARY:{" "}
+                {flashStore.rawDataImportDagEnabled.secondary
+                  ? "NEW (airflow) enabled"
+                  : "LEGACY enabled"}
+              </li>
+            </ul>
+          }
+        />
+        <br />
+        To proceed with flashing, please ensure both raw data instances are
+        using the same infrastructure. If you want to cancel a reimport {"   "}
+        <Button
+          type="primary"
+          onClick={async () => {
+            flashStore.setActiveChecklist(
+              NewFlashingChecklistType.CANCEL_REIMPORT
+            );
+            await flashStore.moveToNextChecklistSection(
+              NewCancelReimportChecklistStepSection.ACQUIRE_RESOURCE_LOCKS
+            );
+          }}
+        >
+          CLEAN UP SECONDARY + CANCEL RAW DATA REIMPORT
+        </Button>
+      </div>
     );
   }
 
