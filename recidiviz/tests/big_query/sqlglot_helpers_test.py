@@ -16,9 +16,13 @@
 # =============================================================================
 """Tests our sqlglot_helpers utility functions."""
 import unittest
+from unittest.mock import MagicMock, patch
 
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.tests.big_query.sqlglot_helpers import (
     check_query_is_not_ordered_outside_of_windows,
+    check_query_selects_output_columns,
+    check_view_has_no_state_specific_logic,
     get_undocumented_ctes,
 )
 
@@ -151,3 +155,165 @@ class TestSqlglotHelpers(unittest.TestCase):
             SELECT * FROM cte_1 JOIN cte_2 USING(a, b, c)
         """
         self.assertEqual({"cte_2"}, get_undocumented_ctes(query))
+
+    def test_check_query_selects_output_columns(self) -> None:
+        valid_query_simple = "SELECT a, b FROM table_a"
+        check_query_selects_output_columns(valid_query_simple, {"a", "b"})
+
+        valid_query_reverse_order = "SELECT b, a FROM table_a"
+        check_query_selects_output_columns(valid_query_reverse_order, {"a", "b"})
+
+        valid_query_with_alias = "SELECT x AS b, a FROM table_a"
+        check_query_selects_output_columns(valid_query_with_alias, {"a", "b"})
+
+        valid_query_with_cte = """
+        WITH cte AS (SELECT * FROM table_a) SELECT a, b FROM cte
+        """
+        check_query_selects_output_columns(valid_query_with_cte, {"a", "b"})
+
+        valid_query_with_cte_2 = """
+        WITH cte AS (SELECT a, b, c FROM table_a) SELECT a, b FROM cte
+        """
+        check_query_selects_output_columns(valid_query_with_cte_2, {"a", "b"})
+
+        invalid_query_select_star = "SELECT * FROM table_a"
+        with self.assertRaisesRegex(
+            ValueError, r"May not use a wildcard \(\*\) in the query SELECT statement."
+        ):
+            check_query_selects_output_columns(invalid_query_select_star, {"a", "b"})
+
+        invalid_query_select_star_except = "SELECT * EXCEPT(a, b) FROM table_a"
+        with self.assertRaisesRegex(
+            ValueError, r"May not use a wildcard \(\*\) in the query SELECT statement."
+        ):
+            check_query_selects_output_columns(
+                invalid_query_select_star_except, {"a", "b"}
+            )
+
+        invalid_query_select_star_except_2 = "SELECT a, b, * EXCEPT(a, b) FROM table_a"
+        with self.assertRaisesRegex(
+            ValueError, r"May not use a wildcard \(\*\) in the query SELECT statement."
+        ):
+            check_query_selects_output_columns(
+                invalid_query_select_star_except_2, {"a", "b"}
+            )
+
+        invalid_query_select_star_and_cols = "SELECT a, b, * FROM table_a"
+        with self.assertRaisesRegex(
+            ValueError, r"May not use a wildcard \(\*\) in the query SELECT statement."
+        ):
+            check_query_selects_output_columns(
+                invalid_query_select_star_and_cols, {"a", "b"}
+            )
+
+        invalid_query_missing_col = "SELECT a, b FROM table_a"
+        with self.assertRaisesRegex(
+            ValueError, r"Missing expected top-level selected columns: \['c'\]"
+        ):
+            check_query_selects_output_columns(
+                invalid_query_missing_col, {"a", "b", "c"}
+            )
+
+        invalid_query_extra_cols = "SELECT a, b, c, d FROM table_a"
+        with self.assertRaisesRegex(
+            ValueError, r"Found unexpected top-level selected columns: \['c', 'd'\]"
+        ):
+            check_query_selects_output_columns(invalid_query_extra_cols, {"a", "b"})
+
+    def _builder_for_query_template(
+        self, query_template: str
+    ) -> SimpleBigQueryViewBuilder:
+        return SimpleBigQueryViewBuilder(
+            dataset_id="my_dataset",
+            view_id="my_view",
+            description="Description for my_view",
+            view_query_template=query_template,
+        )
+
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+    )
+    def test_check_view_has_no_state_specific_logic(self) -> None:
+        valid_view_no_state_logic = self._builder_for_query_template(
+            "SELECT a, b FROM `{project_id}.dataset.table`"
+        )
+        check_view_has_no_state_specific_logic(valid_view_no_state_logic)
+
+        invalid_view_state_specific_table = self._builder_for_query_template(
+            "SELECT a, b FROM `{project_id}.us_xx_dataset.table`"
+        )
+        with self.assertRaisesRegex(
+            ValueError, r"Cannot query from state-specific tables in this view."
+        ):
+            check_view_has_no_state_specific_logic(invalid_view_state_specific_table)
+
+        invalid_view_state_specific_table_2 = self._builder_for_query_template(
+            "SELECT a, b FROM `{project_id}.dataset.us_xx_table`"
+        )
+        with self.assertRaisesRegex(
+            ValueError, r"Cannot query from state-specific tables in this view."
+        ):
+            check_view_has_no_state_specific_logic(invalid_view_state_specific_table_2)
+
+        invalid_view_invalid_table_in_cte = self._builder_for_query_template(
+            "WITH cte AS (SELECT * FROM `{project_id}.dataset.us_xx_table`) "
+            "SELECT a, b FROM cte"
+        )
+        with self.assertRaisesRegex(
+            ValueError, r"Cannot query from state-specific tables in this view."
+        ):
+            check_view_has_no_state_specific_logic(invalid_view_invalid_table_in_cte)
+
+        invalid_view_invalid_table_in_subquery = self._builder_for_query_template(
+            "SELECT a, b FROM (SELECT * FROM `{project_id}.dataset.us_xx_table`) a"
+        )
+        with self.assertRaisesRegex(
+            ValueError, r"Cannot query from state-specific tables in this view."
+        ):
+            check_view_has_no_state_specific_logic(
+                invalid_view_invalid_table_in_subquery
+            )
+
+        invalid_view_filters_by_state_code = self._builder_for_query_template(
+            "SELECT a, b FROM `{project_id}.dataset.table` WHERE state = 'US_XX'"
+        )
+        with self.assertRaisesRegex(
+            ValueError, r"Cannot include state-specific logic this view."
+        ):
+            check_view_has_no_state_specific_logic(invalid_view_filters_by_state_code)
+
+        invalid_view_filters_by_state_code_2 = self._builder_for_query_template(
+            "SELECT a, b FROM `{project_id}.dataset.table` "
+            "WHERE state IN ('US_XX', 'US_YY')"
+        )
+        with self.assertRaisesRegex(
+            ValueError, r"Cannot include state-specific logic this view."
+        ):
+            check_view_has_no_state_specific_logic(invalid_view_filters_by_state_code_2)
+
+        invalid_view_state_code_in_column = self._builder_for_query_template(
+            "SELECT 'US_XX' AS a, b FROM `{project_id}.dataset.table`"
+        )
+        with self.assertRaisesRegex(
+            ValueError, r"Cannot include state-specific logic this view."
+        ):
+            check_view_has_no_state_specific_logic(invalid_view_state_code_in_column)
+
+        invalid_view_state_code_case = self._builder_for_query_template(
+            "SELECT CASE WHEN state = 'US_XX' THEN x END AS a, b "
+            "FROM `{project_id}.dataset.table`"
+        )
+        with self.assertRaisesRegex(
+            ValueError, r"Cannot include state-specific logic this view."
+        ):
+            check_view_has_no_state_specific_logic(invalid_view_state_code_case)
+
+        invalid_view_state_code_cte = self._builder_for_query_template(
+            "WITH cte AS ("
+            "  SELECT * FROM `{project_id}.dataset.table` WHERE state = 'US_XX'"
+            ") SELECT a, b FROM cte"
+        )
+        with self.assertRaisesRegex(
+            ValueError, r"Cannot include state-specific logic this view."
+        ):
+            check_view_has_no_state_specific_logic(invalid_view_state_code_cte)

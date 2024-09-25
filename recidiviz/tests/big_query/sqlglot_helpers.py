@@ -18,10 +18,13 @@
 Utility functions that use the sqlglot library to do advanced checks
 of SQL queries using their ASTs.
 """
+import re
 from typing import Set
 
 import sqlglot
 import sqlglot.expressions as expr
+
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 
 ORDER_BY_ALLOWED_IN = (expr.Window, expr.GroupConcat, expr.ArrayAgg)
 
@@ -92,3 +95,86 @@ def get_undocumented_ctes(query: str) -> Set[str]:
         # TODO(#29272) Update DirectIngestViewQueryBuilder to self document generated views
         if "generated_view" not in cte.alias and not cte.args["alias"].comments
     }
+
+
+def check_query_selects_output_columns(
+    query: str, expected_output_columns: set[str]
+) -> None:
+    """Raises a value error if the top-level SELECT statement in the provided query does
+    not explicitly select the provided expected_output_columns and only those columns.
+
+    For example, this would be a valid query for expected columns {a, b}:
+    WITH cte AS (SELECT * FROM table)
+    SELECT a, b
+    FROM cte
+
+    This would also be a valid query:
+    SELECT x AS a, b
+    FROM table
+
+    However, any query with a top-level SELECT * statement will fail.
+    """
+
+    if not expected_output_columns:
+        raise ValueError("Expected non-empty expected_output_columns")
+
+    tree = sqlglot.parse_one(query, dialect="bigquery")
+    if not isinstance(tree, expr.Select):
+        raise ValueError("Query does not have a valid top-level SELECT statement")
+    if tree.is_star:
+        raise ValueError(
+            f"May not use a wildcard (*) in the query SELECT statement. You should "
+            f"explicitly list the expected columns: {expected_output_columns}"
+        )
+
+    found_output_columns = set()
+    for expression in tree.expressions:
+        if isinstance(expression, expr.Column):
+            found_output_columns.add(expression.name)
+        elif isinstance(expression, expr.Alias):
+            found_output_columns.add(expression.alias)
+        else:
+            raise ValueError(f"Unexpected column expression type [{type(expression)}].")
+
+    if missing := expected_output_columns - found_output_columns:
+        raise ValueError(
+            f"Missing expected top-level selected columns: {sorted(missing)}"
+        )
+    if extra := found_output_columns - expected_output_columns:
+        raise ValueError(
+            f"Found unexpected top-level selected columns: {sorted(extra)}"
+        )
+
+
+def check_view_has_no_state_specific_logic(view_builder: BigQueryViewBuilder) -> None:
+    """Raises a value error if the view associated with the provided builder encodes
+    state-specific logic. State-specific logic is categorized in two ways:
+        1) Querying from state-specific tables
+        2) Explicitly referencing a state code (e.g. "US_XX") in the query
+    """
+    view = view_builder.build(sandbox_context=None)
+
+    state_specific_addresses = [
+        a.to_str() for a in view.parent_tables if a.is_state_specific_address()
+    ]
+
+    if state_specific_addresses:
+        raise ValueError(
+            f"Cannot query from state-specific tables in this view. Found view "
+            f"[{view_builder.address.to_str()}] with state-specific parent tables: "
+            f"{state_specific_addresses}"
+        )
+
+    view_query = view_builder.build(sandbox_context=None).view_query
+    tree = sqlglot.parse_one(view_query, dialect="bigquery")
+
+    for literal in tree.find_all(expr.Literal):
+        if not literal.is_string:
+            continue
+        str_literal_value = literal.this
+
+        if re.match(r"^US_[A-Z]{2}$", str_literal_value):
+            raise ValueError(
+                f"Cannot include state-specific logic this view. Found reference "
+                f"to state_code [{str_literal_value}]."
+            )
