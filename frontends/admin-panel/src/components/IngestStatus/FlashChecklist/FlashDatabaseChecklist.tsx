@@ -80,7 +80,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   }, [getRawDataEnabled]);
 
   let activeComponent;
-  if (!stateInfo) {
+  if (stateInfo === undefined) {
     activeComponent = (
       <Alert
         message="Select a state"
@@ -94,34 +94,11 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     // there will be a moment after we have defined our state code (or are switching)
     // but before rawDataImportDagEnabled is properly set that we want to spin instead
     // of rendering the flashing checklist
-    (stateInfo !== undefined && rawDataImportDagEnabled === undefined)
+    rawDataImportDagEnabled === undefined
   ) {
     activeComponent = <Spin />;
-  } else if (
-    rawDataImportDagEnabled !== undefined &&
-    rawDataImportDagEnabled.primary &&
-    rawDataImportDagEnabled.secondary
-  ) {
+  } else if (rawDataImportDagEnabled.secondary) {
     activeComponent = <NewFlashDatabaseChecklistActiveComponent />;
-  } else if (
-    rawDataImportDagEnabled &&
-    rawDataImportDagEnabled.primary !== rawDataImportDagEnabled.secondary
-  ) {
-    activeComponent = (
-      <div>
-        <Alert
-          message="Cannot proceed with flash, as we cannot convert between new raw data metadata and legacy tables"
-          description={`PRIMARY: ${
-            rawDataImportDagEnabled.primary ? "enabled" : "not enabled"
-          } // SECONDARY: ${
-            rawDataImportDagEnabled.secondary ? "enabled" : "not enabled"
-          }`}
-        />
-        <br />
-        To proceed, please ensure both raw data instances are using the same
-        infrastructure
-      </div>
-    );
   } else {
     activeComponent = <LegacyFlashDatabaseChecklistActiveComponent />;
   }
