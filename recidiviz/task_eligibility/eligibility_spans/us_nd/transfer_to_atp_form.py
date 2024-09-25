@@ -32,6 +32,7 @@ from recidiviz.task_eligibility.criteria.general import (
     not_in_work_release,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
+    has_facility_restrictions,
     incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release,
     no_detainers_or_warrants,
     no_recent_referrals_to_minimum_housing,
@@ -75,6 +76,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_recent_referrals_to_minimum_housing.VIEW_BUILDER,
         no_escape_in_current_incarceration.VIEW_BUILDER,
         not_enrolled_in_relevant_program.VIEW_BUILDER,
+        has_facility_restrictions.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(

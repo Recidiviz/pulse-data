@@ -17,6 +17,7 @@
 """Queries information needed to fill out a MINIMUM facility referral form in ND
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
@@ -137,6 +138,29 @@ case_notes_cte AS (
         AND CURRENT_DATE BETWEEN start_date AND IFNULL(end_date, '9999-12-31')
         AND peid.id_type = 'US_ND_ELITE'
         AND sp.gender = 'MALE'
+
+    UNION ALL
+
+    -- STATIC scores for folks who require committee requirements
+    SELECT 
+        peid2.external_id,
+        'Relevant Risk Score' AS criteria,
+        'STATIC' AS note_title,
+        REGEXP_EXTRACT(CATEGORY_TEXT, r'.*STATIC.*') AS note_body,
+        SAFE_CAST(LEFT(CREATE_DATETIME, 10) AS DATE) AS event_date,
+    FROM `{{project_id}}.{{task_eligibility_criteria_dataset}}.requires_committee_approval_for_work_release_materialized` ca
+    -- We need two IDS: US_ND_ELITE_BOOKING to pull STATIC scores, and US_ND_ELITE to display in the front end
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+        USING(state_code, person_id)
+    INNER JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_report_texts_latest` eor
+        ON peid.external_id = eor.OFFENDER_BOOK_ID
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid2
+        USING(state_code, person_id)
+    WHERE CURRENT_DATE('US/EASTERN') BETWEEN ca.start_date AND {nonnull_end_date_clause('ca.end_date')}
+        AND peid.id_type = 'US_ND_ELITE_BOOKING'
+        AND eor.CATEGORY_TYPE = 'LSI-R'
+        AND REGEXP_CONTAINS(eor.CATEGORY_TEXT, r'STATIC')
+        AND peid2.id_type = 'US_ND_ELITE'
 ), 
 
 array_case_notes_cte AS (
