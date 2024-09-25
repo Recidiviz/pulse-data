@@ -20,7 +20,7 @@ specialized_purpose_for_incarceration value, which should never happen.
 Existence of any rows indicates a bug in IP normalization logic.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
@@ -48,7 +48,7 @@ INVALID_NULL_SPFI_NORMALIZED_IPS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         validation_description=INVALID_NULL_SPFI_NORMALIZED_IPS_DESCRIPTION,
     ),
     description=INVALID_NULL_SPFI_NORMALIZED_IPS_DESCRIPTION,
-    normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

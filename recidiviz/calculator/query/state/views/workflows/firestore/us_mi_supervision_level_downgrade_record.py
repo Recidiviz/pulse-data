@@ -21,10 +21,10 @@ from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_claus
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )

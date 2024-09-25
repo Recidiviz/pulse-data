@@ -14,6 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Dataset configuration for ingest documentation"""
+"""Dataset configuration for ingest documentation and unified referencing."""
 
 VIEWS_DATASET: str = "ingest_metadata"
+
+# Views that are the union of the output from the us_xx_state datasets in each state's
+# Dataflow ingest pipeline.
+STATE_BASE_VIEWS_DATASET: str = "state_views"
+
+# The tables for the state schema, including output from each state's PRIMARY Dataflow
+# ingest pipeline.
+STATE_BASE_DATASET: str = "state"
+
+# Views that are the union of the output from the us_xx_normalized_state datasets in
+# each state's Dataflow ingest pipeline.
+NORMALIZED_STATE_VIEWS_DATASET: str = "normalized_state_views"
+
+# Where the normalized state tables live, with data from all states. For each entity
+# that is not normalized, these are a copy of the corresponding table in the `state`
+# dataset. For each entity that is normalized, the entity table contains the normalized
+# output for that entity in each state.
+NORMALIZED_STATE_DATASET: str = "normalized_state"

@@ -15,9 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A view revealing when state supervision periods have termination reasons but no date."""
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -43,7 +42,7 @@ SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_NAME,
     view_query_template=SUPERVISION_TERMINATION_REASON_NO_DATE_QUERY_TEMPLATE,
     description=SUPERVISION_TERMINATION_REASON_NO_DATE_DESCRIPTION,
-    state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

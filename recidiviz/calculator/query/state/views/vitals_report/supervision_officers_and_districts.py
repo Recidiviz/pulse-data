@@ -21,6 +21,7 @@ from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -100,7 +101,7 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_OFFICERS_AND_DISTRICTS_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     vitals_state_specific_district_id=state_specific_query_strings.vitals_state_specific_district_id(
         "sup_pop"
     ),

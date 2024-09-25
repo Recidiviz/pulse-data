@@ -17,10 +17,9 @@
 """A view that can be used to validate existence of active contribution to the incarceration or supervision
 populations after a person has a period ending in death.
 """
-
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -79,7 +78,7 @@ ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_NAME,
     view_query_template=ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_QUERY_TEMPLATE,
     description=ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_DESCRIPTION,
-    state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    state_dataset=NORMALIZED_STATE_DATASET,
     dataflow_metrics_materialized_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     should_materialize=True,
 )

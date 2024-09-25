@@ -23,6 +23,7 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_view_helpers import (
     state_specific_entity_filter,
 )
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -156,7 +157,7 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_POPULATION_BY_PO_BY_DAY_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     should_materialize=True,
 )

@@ -18,14 +18,13 @@
 specialized_purpose_for_incarceration.
 Existence of any rows indicates a bug in IP normalization logic.
 """
-
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
@@ -78,7 +77,7 @@ INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         validation_description=INVALID_ADMISSION_REASON_AND_PFI_DESCRIPTION,
     ),
     description=INVALID_ADMISSION_REASON_AND_PFI_DESCRIPTION,
-    normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

@@ -22,6 +22,7 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -221,7 +222,7 @@ VIOLATION_RESPONSES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=VIOLATION_RESPONSES_VIEW_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     dataflow_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(

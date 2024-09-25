@@ -33,11 +33,7 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
-from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
-    NORMALIZED_STATE_VIEWS_DATASET,
-    STATE_BASE_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.analyst_data.all_task_eligibility_spans import (
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
 )
@@ -56,6 +52,10 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
 )
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewBuilder,
+)
+from recidiviz.ingest.views.dataset_config import (
+    NORMALIZED_STATE_VIEWS_DATASET,
+    STATE_BASE_DATASET,
 )
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.source_tables.collect_all_source_table_configs import (

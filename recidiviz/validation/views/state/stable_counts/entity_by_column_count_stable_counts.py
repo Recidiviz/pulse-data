@@ -20,8 +20,8 @@ from datetime import date
 from typing import Dict, List, Tuple
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
@@ -129,7 +129,7 @@ def view_builder_for_entity_and_date_col(
             entity_name=entity,
             exemptions=date_col.exemptions,
         ),
-        normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         should_materialize=True,
     )
 

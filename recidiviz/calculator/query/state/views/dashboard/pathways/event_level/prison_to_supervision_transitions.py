@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #   =============================================================================
 """People who have transitioned from prison to supervision"""
-
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
@@ -37,6 +36,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
 )
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -136,7 +136,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBu
         age_group=add_age_groups("sessions.age_end"),
         enabled_states=str(tuple(get_pathways_enabled_states_for_bigquery())),
         facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
-        normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         formatted_name=get_person_full_name("person.full_name"),
         state_id_type=state_specific_query_strings.state_specific_external_id_type(
             "sessions_data"

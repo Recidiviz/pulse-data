@@ -16,9 +16,8 @@
 # =============================================================================
 
 """A view revealing when state incarceration periods have nonnull release reasons but no release date."""
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -50,7 +49,7 @@ INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER = SimpleBigQueryViewBu
     view_id=INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_NAME,
     view_query_template=INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_QUERY_TEMPLATE,
     description=INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_DESCRIPTION,
-    normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

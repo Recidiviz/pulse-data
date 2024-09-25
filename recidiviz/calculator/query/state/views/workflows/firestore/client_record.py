@@ -37,6 +37,7 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
@@ -136,7 +137,7 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=CLIENT_RECORD_VIEW_NAME,
     view_query_template=CLIENT_RECORD_QUERY_TEMPLATE,
     description=CLIENT_RECORD_DESCRIPTION,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,

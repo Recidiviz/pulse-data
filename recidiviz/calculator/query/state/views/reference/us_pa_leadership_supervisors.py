@@ -17,6 +17,7 @@
 """BQ View containing a roster of leadership folks in US_PA who also act as supervisors"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -56,7 +57,7 @@ US_PA_LEADERSHIP_SUPERVISORS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_PA_LEADERSHIP_SUPERVISORS_NAME,
     view_query_template=US_PA_LEADERSHIP_SUPERVISORS_QUERY_TEMPLATE,
     description=US_PA_LEADERSHIP_SUPERVISORS_DESCRIPTION,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

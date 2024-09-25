@@ -21,13 +21,13 @@ for individuals that are currently eligible
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    NORMALIZED_STATE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.criteria.state_specific.us_nd.implied_valid_early_termination_supervision_level import (
     _CRITERIA_NAME as supervision_level_criteria,
 )
