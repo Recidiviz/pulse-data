@@ -52,7 +52,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             session.refresh(agency)
 
             # Write the metric setting to the database.
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=funding_metric,
@@ -79,7 +79,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             session.refresh(agency)
 
             # Write the metric setting to the database, with a Fiscal Annual frequency.
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=MetricInterface(
@@ -92,7 +92,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             session.commit()
 
             # Modify the metric setting to have a Monthly frequency.
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=MetricInterface(
@@ -120,7 +120,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             session.refresh(agency)
 
             # Write the initial metric setting to the database.
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=MetricInterface(
@@ -138,7 +138,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
 
             # Write the updated metric setting to the database. In this case, we are
             # disabling the metric.
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=MetricInterface(
@@ -179,7 +179,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
                 "SUPERVISION", "PROBATION"
             )
 
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=MetricInterface(
@@ -188,7 +188,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
                     is_metric_enabled=True,
                 ),
             )
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=MetricInterface(
@@ -196,7 +196,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
                     is_metric_enabled=False,
                 ),
             )
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=MetricInterface(
@@ -208,7 +208,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
 
             # Send a Metric Interface update which sets disaggregated_by_supervision_subsystems
             # to True.
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=MetricInterface(
@@ -278,7 +278,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
                 "SUPERVISION", "PROBATION"
             )
 
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=MetricInterface(
@@ -287,7 +287,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
                     is_metric_enabled=False,
                 ),
             )
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=MetricInterface(
@@ -295,7 +295,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
                     is_metric_enabled=True,
                 ),
             )
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=MetricInterface(
@@ -307,7 +307,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
 
             # Send a Metric Interface update which sets disaggregated_by_supervision_subsystems
             # to False.
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=agency,
                 agency_metric_updates=MetricInterface(
@@ -384,7 +384,7 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
 
             # Write a metric setting to the database that makes the supervision funding
             # metric be disaggregated by subsystem.
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=session,
                 agency=supervision_agency,
                 agency_metric_updates=MetricInterface(
