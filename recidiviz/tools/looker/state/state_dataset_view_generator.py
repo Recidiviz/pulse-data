@@ -28,7 +28,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import (
     bq_schema_column_type_for_sqlalchemy_column,
 )
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
+from recidiviz.ingest.views.dataset_config import STATE_BASE_DATASET
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
     DimensionGroupLookMLViewField,

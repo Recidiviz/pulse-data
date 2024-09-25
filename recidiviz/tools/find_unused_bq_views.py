@@ -39,10 +39,8 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     IMPACT_REPORTS_DATASET_ID,
-    NORMALIZED_STATE_VIEWS_DATASET,
     POPULATION_PROJECTION_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
-    STATE_BASE_VIEWS_DATASET,
 )
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports_per_officer import (
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,
@@ -152,6 +150,10 @@ from recidiviz.calculator.query.state.views.workflows.workflows_usage import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.views.dataset_config import (
+    NORMALIZED_STATE_VIEWS_DATASET,
+    STATE_BASE_VIEWS_DATASET,
+)
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,

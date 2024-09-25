@@ -22,7 +22,6 @@ from operator import itemgetter
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    NORMALIZED_STATE_DATASET,
     SENDGRID_EMAIL_DATA_DATASET,
     SESSIONS_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
@@ -33,6 +32,7 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

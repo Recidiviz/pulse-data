@@ -16,9 +16,8 @@
 # =============================================================================
 
 """A view revealing when incarceration periods have null admission dates."""
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -42,7 +41,7 @@ INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=INCARCERATION_ADMISSION_NULLS_VIEW_NAME,
     view_query_template=INCARCERATION_ADMISSION_NULLS_QUERY_TEMPLATE,
     description=INCARCERATION_ADMISSION_NULLS_DESCRIPTION,
-    state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

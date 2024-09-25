@@ -31,10 +31,10 @@ from typing import List
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.export.state.state_bq_table_export_utils import (
     state_table_export_query_str,
 )
+from recidiviz.ingest.views.dataset_config import STATE_BASE_DATASET
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 

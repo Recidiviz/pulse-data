@@ -19,11 +19,9 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    NORMALIZED_STATE_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.metrics.supervision.pipeline import SupervisionMetricsPipeline
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (

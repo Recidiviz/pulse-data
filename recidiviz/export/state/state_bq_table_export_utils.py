@@ -21,7 +21,7 @@ from typing import List, Optional
 
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.state.dataset_config import (
+from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
 )

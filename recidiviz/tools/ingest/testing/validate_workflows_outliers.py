@@ -47,10 +47,7 @@ from recidiviz.big_query.big_query_address import (
     ProjectSpecificBigQueryAddress,
 )
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.calculator.query.state.dataset_config import (
-    STATE_BASE_DATASET,
-    WORKFLOWS_VIEWS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import WORKFLOWS_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
 )
@@ -67,6 +64,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views 
     FIRESTORE_VIEW_BUILDERS,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.views.dataset_config import STATE_BASE_DATASET
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
     SingleTaskEligibilityBigQueryViewCollector,
 )

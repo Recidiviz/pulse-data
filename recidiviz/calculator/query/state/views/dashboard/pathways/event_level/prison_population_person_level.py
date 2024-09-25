@@ -33,6 +33,7 @@ from recidiviz.calculator.query.state import (
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
 )
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -110,7 +111,7 @@ PRISON_POPULATION_PERSON_LEVEL_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuild
         ),
         dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
         materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-        normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=dataset_config.SESSIONS_DATASET,
         add_age_groups=add_age_groups(),
         filter_to_enabled_states=filter_to_pathways_states(

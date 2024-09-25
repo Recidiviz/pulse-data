@@ -40,8 +40,6 @@ from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    NORMALIZED_STATE_DATASET,
-    NORMALIZED_STATE_VIEWS_DATASET,
 )
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     generate_metric_view_names,
@@ -58,6 +56,10 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.views.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    NORMALIZED_STATE_VIEWS_DATASET,
+)
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,

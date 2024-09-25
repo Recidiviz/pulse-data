@@ -20,13 +20,12 @@ for admissions with an admission_reason of TEMPORARY_CUSTODY.
 
 Existence of any rows indicates a bug in IP normalization logic.
 """
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
@@ -67,7 +66,7 @@ INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBu
         validation_description=INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_DESCRIPTION,
     ),
     description=INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_DESCRIPTION,
-    normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

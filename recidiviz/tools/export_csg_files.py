@@ -34,12 +34,12 @@ from google.cloud.bigquery.enums import DestinationFormat
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
-from recidiviz.calculator.query.state.dataset_config import (
+from recidiviz.common.date import is_date_str
+from recidiviz.export.state import state_bq_table_export_to_csv
+from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
 )
-from recidiviz.common.date import is_date_str
-from recidiviz.export.state import state_bq_table_export_to_csv
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool

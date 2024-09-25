@@ -22,13 +22,13 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    NORMALIZED_STATE_VIEWS_DATASET,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
+)
+from recidiviz.ingest.views.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    NORMALIZED_STATE_VIEWS_DATASET,
 )
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,

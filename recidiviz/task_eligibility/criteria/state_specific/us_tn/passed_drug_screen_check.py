@@ -20,8 +20,8 @@ from google.cloud import bigquery
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.criteria.general.at_least_6_months_since_most_recent_positive_drug_test import (
     VIEW_BUILDER as at_least_6_months_since_most_recent_positive_drug_test_builder,
 )

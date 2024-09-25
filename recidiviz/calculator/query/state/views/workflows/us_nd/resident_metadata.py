@@ -21,7 +21,6 @@ from recidiviz.calculator.query.bq_utils import (
     today_between_start_date_and_nullable_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
@@ -31,6 +30,7 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     parole_review_dates_query,
 )

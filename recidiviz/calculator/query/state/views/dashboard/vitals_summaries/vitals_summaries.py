@@ -28,6 +28,7 @@ from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_vi
     ENABLED_VITALS,
     make_enabled_states_filter_for_vital,
 )
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -270,7 +271,7 @@ VITALS_SUMMARIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
     description=VITALS_SUMMARIES_DESCRIPTION,
     vitals_report_dataset=dataset_config.VITALS_REPORT_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

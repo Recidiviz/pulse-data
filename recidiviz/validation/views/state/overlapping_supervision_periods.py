@@ -23,9 +23,8 @@ to the `exclusions` section of that state's validation config.
 To build, run:
     python -m recidiviz.validation.views.state.overlapping_supervision_periods
 """
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -49,7 +48,7 @@ OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=OVERLAPPING_SUPERVISION_PERIODS_VIEW_NAME,
     view_query_template=OVERLAPPING_SUPERVISION_PERIODS_QUERY_TEMPLATE,
     description=OVERLAPPING_SUPERVISION_PERIODS_DESCRIPTION,
-    state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

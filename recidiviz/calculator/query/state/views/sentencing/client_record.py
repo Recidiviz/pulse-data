@@ -26,6 +26,7 @@ from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_client_t
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -67,7 +68,7 @@ SENTENCING_CLIENT_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.SENTENCING_OUTPUT_DATASET,
     view_query_template=SENTENCING_CLIENT_RECORD_QUERY_TEMPLATE,
     description=SENTENCING_CLIENT_RECORD_DESCRIPTION,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
     ),

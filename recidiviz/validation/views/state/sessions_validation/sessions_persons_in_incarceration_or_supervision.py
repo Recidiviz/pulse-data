@@ -17,10 +17,9 @@
 
 """A view which identifies person_ids in compartment_sessions that do not exist in the
 state tables."""
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -61,7 +60,7 @@ SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     view_query_template=SESSIONS_IN_INCARCERATION_OR_SUPERVISION_QUERY_TEMPLATE,
     description=SESSIONS_IN_INCARCERATION_OR_SUPERVISION_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
-    normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

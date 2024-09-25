@@ -23,12 +23,12 @@ Existence of any rows indicates a bug in IP normalization logic.
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
     release_reason_overrides_released_from_temporary_custody,
 )
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
@@ -83,7 +83,7 @@ INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER = SimpleBigQueryViewB
         validation_description=INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_DESCRIPTION,
     ),
     description=INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_DESCRIPTION,
-    normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 
