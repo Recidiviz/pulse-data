@@ -3467,6 +3467,115 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(child_agency_1_id, response_json["id"])
         self.assertEqual("Agency Incredible", child_agency_1.custom_child_agency_name)
 
+    def test_get_agency_with_superagency(self) -> None:
+        user = self.test_schema_objects.test_user_A
+        super_agency = self.test_schema_objects.test_prison_super_agency
+        child_agency = self.test_schema_objects.test_prison_child_agency_A
+
+        self.session.add_all(
+            [
+                user,
+                super_agency,
+                child_agency,
+                schema.AgencyUserAccountAssociation(
+                    user_account=user, agency=super_agency
+                ),
+                schema.AgencyUserAccountAssociation(
+                    user_account=user, agency=child_agency
+                ),
+            ]
+        )
+        self.session.commit()
+
+        # Set the child agency's super_agency_id to link it to the superagency
+        self.session.refresh(super_agency)
+        child_agency.super_agency_id = super_agency.id
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
+            response = self.client.get(f"/api/agency/{child_agency.id}")
+
+            self.assertEqual(response.status_code, 200)
+            response_json = assert_type(response.json, dict)
+
+            # Ensure both the child agency and the superagency are returned
+            self.assertEqual(len(response_json["agencies"]), 2)
+            agency_ids = {agency["id"] for agency in response_json["agencies"]}
+            self.assertIn(child_agency.id, agency_ids)
+            self.assertIn(super_agency.id, agency_ids)
+
+            # Ensure the user ID is correctly returned
+            self.assertEqual(response_json["id"], user.id)
+
+    def test_get_agency_user_cannot_access_superagency(self) -> None:
+        """We should NOT return the child agency's superagency if the user does not have
+        permission to access the superagency."""
+        user = self.test_schema_objects.test_user_A
+        super_agency = self.test_schema_objects.test_prison_super_agency
+        child_agency = self.test_schema_objects.test_prison_child_agency_A
+
+        self.session.add_all(
+            [
+                user,
+                super_agency,
+                child_agency,
+                schema.AgencyUserAccountAssociation(
+                    user_account=user, agency=child_agency
+                ),
+            ]
+        )
+        self.session.commit()
+
+        # Set the child agency's super_agency_id to link it to the superagency
+        self.session.refresh(super_agency)
+        child_agency.super_agency_id = super_agency.id
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
+            response = self.client.get(f"/api/agency/{child_agency.id}")
+
+            self.assertEqual(response.status_code, 200)
+            response_json = assert_type(response.json, dict)
+
+            # Only the child agency should be returned.
+            self.assertEqual(len(response_json["agencies"]), 1)
+            agency_ids = {agency["id"] for agency in response_json["agencies"]}
+            self.assertIn(child_agency.id, agency_ids)
+            self.assertNotIn(super_agency.id, agency_ids)
+
+            # Ensure the user ID is correctly returned
+            self.assertEqual(response_json["id"], user.id)
+
+    def test_get_agency_without_superagency(self) -> None:
+        # Like the previous tests, but this time the agency is not a child agency.
+        user = self.test_schema_objects.test_user_A
+        agency = self.test_schema_objects.test_agency_A
+
+        self.session.add_all(
+            [
+                user,
+                agency,
+                schema.AgencyUserAccountAssociation(user_account=user, agency=agency),
+            ]
+        )
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
+            response = self.client.get(f"/api/agency/{agency.id}")
+
+            self.assertEqual(response.status_code, 200)
+            response_json = assert_type(response.json, dict)
+
+            # Ensure only the agency is returned (no superagency)
+            self.assertEqual(len(response_json["agencies"]), 1)
+            self.assertEqual(response_json["agencies"][0]["id"], agency.id)
+
+            # Ensure the user ID is correctly returned
+            self.assertEqual(response_json["id"], user.id)
+
 
 def test_frozen_now_is_not_global_now() -> None:
     """Tests that the use of @freeze_time(NOW_TIME) is local to the wrapped tests."""
