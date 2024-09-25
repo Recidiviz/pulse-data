@@ -588,7 +588,7 @@ class JusticeCountsSchemaTestObjects:
         return metric_json
 
     @staticmethod
-    def get_agency_datapoints_request(
+    def get_metric_settings_request(
         agency_id: int, reset_to_default: Optional[bool] = False
     ) -> Dict[str, Any]:
         return {

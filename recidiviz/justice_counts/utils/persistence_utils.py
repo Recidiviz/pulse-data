@@ -16,8 +16,7 @@
 # =============================================================================
 """Contains utilities for writing JusticeCountsDatabaseEntitites to the DB."""
 
-from datetime import datetime
-from typing import Optional, Tuple, Type
+from typing import Optional, Type
 
 from sqlalchemy import cast
 from sqlalchemy.dialects.postgresql import JSONB
@@ -55,51 +54,6 @@ def get_existing_entity(
             query = query.filter(column == value)
     table_entity: Optional[JusticeCountsBase] = query.first()
     return table_entity
-
-
-def update_existing_or_create(
-    ingested_entity: schema.JusticeCountsDatabaseEntity,
-    session: Session,
-    current_time: datetime,
-) -> Tuple[schema.JusticeCountsDatabaseEntity, Optional[JusticeCountsBase]]:
-    """
-    Given a new database entity (for example, a new datapoint object), either add the object to the
-    database using session.add(), or update the existing database row using session.merge().
-    Returns a tuple of the updated and the existing (previous) datapoints.
-    """
-    # Note: Using on_conflict_do_update to resolve whether there is an existing entity could be more efficient as it
-    # wouldn't incur multiple roundtrips. However for some entities we need to know whether there is an existing entity
-    # (e.g. table instance) so we can clear child entities, so we probably wouldn't win much if anything.
-    expunge_existing(session=session, ingested_entity=ingested_entity)
-    table_entity = get_existing_entity(ingested_entity, session)
-    if table_entity is not None:
-        # TODO(#4477): Instead of assuming the primary key field is named `id`, use an Entity method.
-        ingested_entity.id = table_entity.id
-
-        table_entity_keys = table_entity.keys()
-        if "enabled" in table_entity_keys and "value" in table_entity_keys:
-            # This will be true for Datapoints
-            if (
-                table_entity.enabled != ingested_entity.enabled
-                or table_entity.value != ingested_entity.value
-            ):
-                # The datapoint is being overwritten/updated if enabled or value has changed
-                ingested_entity.last_updated = current_time
-            else:
-                ingested_entity.last_updated = table_entity.last_updated
-
-        # TODO(#4477): Merging here doesn't seem perfect, although it should work so long as the given entity always has
-        # all the properties set explicitly. To avoid the merge, the method could instead take in the entity class as
-        # one parameter and the parameters to construct it separately and then query based on those parameters. However
-        # this would likely make mypy less useful.
-        merged_entity = session.merge(ingested_entity)
-        return merged_entity, table_entity
-    # we'll get here if we are creating a new object
-    # add on the created_at property
-    ingested_entity.created_at = current_time
-    ingested_entity.last_updated = current_time
-    session.add(ingested_entity)
-    return ingested_entity, None
 
 
 def delete_existing(

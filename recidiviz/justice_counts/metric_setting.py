@@ -17,13 +17,11 @@
 """Interface for working with the MetricSetting model."""
 
 import datetime
-import logging
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set
 
 from sqlalchemy.orm import Session
 
-from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.metrics.metric_interface import (
     MetricDefinition,
     MetricInterface,
@@ -155,10 +153,8 @@ class MetricSettingInterface:
         )
         session.commit()
 
-    # TODO(#28469): Remove "new" from this method once we deprecate the existing
-    # add_or_update_agency_metric_setting method.
     @staticmethod
-    def new_add_or_update_agency_metric_setting(
+    def add_or_update_agency_metric_setting(
         session: Session,
         agency: schema.Agency,
         agency_metric_updates: MetricInterface,
@@ -216,54 +212,6 @@ class MetricSettingInterface:
             agency_metric_updates=agency_metric_updates,
             user_account=user_account,
         )
-
-    @staticmethod
-    def add_or_update_agency_metric_setting(
-        session: Session,
-        agency: schema.Agency,
-        agency_metric_updates: MetricInterface,
-        user_account: Optional[schema.UserAccount] = None,
-    ) -> None:
-        """Add the agency metric interface to the MetricSetting table as a lightweight
-        json representation with report datapoints removed.
-        Note: Until we start the migration process, this method will continue to write
-        agency metrics to the Datapoint table. The `new_add_or_update_agency_metric_setting`
-        method (which writes to the MetricSetting table instead of writing agency
-        datapoints) will be used instead of this method after the migration.
-        """
-        DatapointInterface.add_or_update_agency_datapoints(
-            session=session,
-            agency=agency,
-            agency_metric=agency_metric_updates,
-            user_account=user_account,
-        )
-        # TODO(#28469): Remove this try-except block once we deprecate the above method.
-        # When agency metric interfaces are written as agency datapoints to the
-        # Datapoint table, we will also write the same metric interfaces to the
-        # MetricSetting table. We will regularly test for parity between agency metric
-        # interfaces stored in the Datapoint table and the MetricSetting table to
-        # confirm that the MetricSetting is a correct representation of agency metric
-        # settings.
-        # Once we can confidently say that the MetricSetting table read/write logic
-        # works correctly, we will 1) start reading metric interfaces from the
-        # MetricSetting table and then 2) stop writing agency datapoints to the
-        # Datapoint table.
-        try:
-            MetricSettingInterface.new_add_or_update_agency_metric_setting(
-                session=session,
-                agency=agency,
-                agency_metric_updates=agency_metric_updates,
-                user_account=user_account,
-            )
-        except Exception as e:
-            # Logging an error here should show up in Sentry, but will not cause issues
-            # for our users in production.
-            logging.error(
-                "[MetricSetting Migration] The new_add_or_update_agency_metric_setting method failed for agency %s and metric key %s. Error: %s",
-                agency.name,
-                agency_metric_updates.key,
-                e,
-            )
 
     @staticmethod
     def get_agency_metric_interfaces(
