@@ -47,9 +47,9 @@ WITH registration_requirements AS (
     SELECT 
     peid.state_code,
     peid.person_id,
-    SAFE_CAST(PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', ot.OFFENSEDATE) AS DATE) AS start_date,
-    SAFE_CAST(PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', ot.INACTIVEDATE) AS DATE) AS end_date,
-    SAFE_CAST(PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', ot.OFFENSEDATE) AS DATE) AS registration_start_date,
+    SAFE_CAST(LEFT(ot.OFFENSEDATE, 10) AS DATE) AS start_date,
+    SAFE_CAST(LEFT(ot.INACTIVEDATE, 10) AS DATE) AS end_date,
+    SAFE_CAST(LEFT(ot.OFFENSEDATE, 10) AS DATE) AS registration_start_date,
     'Offense requiring registration' AS registration_type,
     FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.docstars_offensestable_latest` ot
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
