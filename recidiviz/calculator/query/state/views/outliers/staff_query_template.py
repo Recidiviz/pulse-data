@@ -73,7 +73,7 @@ def staff_query_template(role: str) -> str:
         attrs.supervisor_staff_external_id_array[SAFE_OFFSET(0)] AS supervisor_external_id,
         attrs.specialized_caseload_type_primary AS specialized_caseload_type,
         attrs.supervisor_staff_external_id_array AS supervisor_external_ids,
-        attrs.supervision_unit_name AS supervision_unit,
+        IF(attrs.state_code = 'US_CA', attrs.supervision_office_name, attrs.supervision_unit_name) AS supervision_unit,
         assignment.earliest_person_assignment_date
     FROM ({source_tbl}) supervision_staff
     INNER JOIN attrs
