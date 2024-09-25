@@ -45,7 +45,10 @@ from recidiviz.justice_counts.metrics.metric_registry import (
     get_supervision_subsystem_metric_definition,
 )
 from recidiviz.justice_counts.types import DatapointJson
-from recidiviz.justice_counts.utils.constants import DatapointGetRequestEntryPoint
+from recidiviz.justice_counts.utils.constants import (
+    METRIC_KEY_TO_V2_DASHBOARD_METRIC_KEY,
+    DatapointGetRequestEntryPoint,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
@@ -381,8 +384,14 @@ class MetricInterface:
             .replace("And", "and"),
         }
 
+        key = (
+            METRIC_KEY_TO_V2_DASHBOARD_METRIC_KEY.get(self.key, self.key)
+            if is_v2 is True
+            else self.key
+        )
+
         response: Dict[str, Any] = {
-            "key": self.key,
+            "key": key,
             "display_name": self.metric_definition.display_name,
             "description": self.metric_definition.description,
             "includes_excludes": includes_excludes_json_lst,
