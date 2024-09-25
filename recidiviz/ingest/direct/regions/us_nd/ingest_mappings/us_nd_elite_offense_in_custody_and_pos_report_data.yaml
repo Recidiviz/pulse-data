@@ -8,6 +8,7 @@ input_columns:
   - ROOT_OFFENDER_ID
   - OIC_SANCTION_CODE
   - OIC_SANCTION_DESC
+  - RESULT_OIC_OFFENCE_CATEGORY
   - EFFECTIVE_DATE
   - OIC_INCIDENT_ID
   - AGENCY_INCIDENT_ID
@@ -197,3 +198,22 @@ output:
                                   StateIncarcerationIncidentOutcomeType.WARNING:
                                     - WAR
                                     - NS
+          incident_severity:
+            $enum_mapping:
+              $raw_text: RESULT_OIC_OFFENCE_CATEGORY
+              $mappings:
+                StateIncarcerationIncidentSeverity.HIGHEST:
+                  - MAJ
+                  - LVL3
+                  - LVL2E
+                StateIncarcerationIncidentSeverity.SECOND_HIGHEST:
+                  - LVL3R
+                  - LVL1E
+                  - LVL2
+                StateIncarcerationIncidentSeverity.THIRD_HIGHEST:
+                  - LVL1
+                  - LVL2R
+                  - MIN
+                StateIncarcerationIncidentSeverity.INTERNAL_UNKNOWN:
+                  - DELETE
+                  - PBR
