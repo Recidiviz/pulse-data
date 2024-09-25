@@ -25,10 +25,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_reco
     opportunity_query_final_select_with_case_notes,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import (
-    raw_latest_views_dataset_for_region,
-    raw_tables_dataset_for_region,
-)
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
@@ -116,18 +113,20 @@ case_notes_cte AS (
     SELECT 
         peid.external_id,
         'Active Alerts' AS criteria,
-        rrac.Description AS note_title,
+        CONCAT(rrat.Description, ' - ', rrac.Description) AS note_title,
         eoa.COMMENT_TEXT AS note_body,
         SAFE_CAST(LEFT(eoa.ALERT_DATE, 10) AS DATE) AS event_date,
     FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_offender_alerts_latest` eoa
-    INNER JOIN `{{project_id}}.{{raw_data_views_dataset}}.RECIDIVIZ_REFERENCE_alert_codes` rrac
+    INNER JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_alert_codes_latest` rrac
         ON eoa.ALERT_CODE = rrac.Code
+    INNER JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_alert_types_latest` rrat
+        ON rrat.type = eoa.ALERT_TYPE
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
         ON peid.external_id = {reformat_ids('eoa.OFFENDER_BOOK_ID')}
             AND peid.state_code = 'US_ND'
             AND peid.id_type = 'US_ND_ELITE_BOOKING'
     WHERE ALERT_STATUS = 'ACTIVE'
-    AND ALERT_CODE IN ('SEXOF', 'SEX', 'VICTIM', 'VIC', 'CHILD', 'VIOLENT','NOCONT', 'OAC')
+    AND ALERT_CODE IN ('SEXOF', 'SEX', 'VICTIM', 'VIC', 'CHILD', 'VIOLENT','NOCONT', 'OAC', 'MEDI')
 
     UNION ALL
 
@@ -203,9 +202,6 @@ US_ND_TRANSFER_TO_ATP_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         StateCode.US_ND
     ),
     raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
-    ),
-    raw_data_views_dataset=raw_tables_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     sessions_dataset=SESSIONS_DATASET,
