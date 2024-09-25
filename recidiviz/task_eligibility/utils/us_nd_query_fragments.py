@@ -336,7 +336,7 @@ def get_infractions_query(additional_columns: str = "") -> str:
     """
     Returns a SQL query that retrieves infractions for North Dakota.
     """
-    # TODO(#31968): ingest infractions to incidents
+    # TODO(#33675): Update to use ingested data
 
     return f"""
     SELECT 
