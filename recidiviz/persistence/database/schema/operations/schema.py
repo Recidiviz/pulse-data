@@ -332,6 +332,7 @@ class DirectIngestRawDataResourceLock(OperationsBase):
     # the resource that this lock is "locking"
     lock_resource = Column(direct_ingest_lock_resource, nullable=False, index=True)
 
+    # The upper case region code associated with the raw data import
     region_code = Column(String(255), nullable=False)
 
     raw_data_source_instance = Column(direct_ingest_instance, nullable=False)
@@ -382,6 +383,7 @@ class DirectIngestRawBigQueryFileMetadata(OperationsBase):
     # but all of those entries will have the same file_id.
     file_id = Column(Integer, primary_key=True)
 
+    # The upper case region code associated with the raw data import
     region_code = Column(String(255), nullable=False, index=True)
 
     # The instance that this raw data was/will be imported to.
@@ -445,6 +447,7 @@ class DirectIngestRawGCSFileMetadata(OperationsBase):
         "DirectIngestRawBigQueryFileMetadata", back_populates="gcs_files"
     )
 
+    # The upper case region code associated with the raw data import
     region_code = Column(String(255), nullable=False, index=True)
 
     # The instance of the bucket that this raw data file was discovered in.
@@ -487,7 +490,7 @@ class DirectIngestRawFileImportRun(OperationsBase):
     # Time when the import run ended
     import_run_end = Column(DateTime(timezone=True))
 
-    # The region code associated with the raw data import run
+    # The upper case region code associated with the raw data import run
     region_code = Column(String(255), nullable=False, index=True)
 
     # The raw data instance associated with the raw data import run
@@ -551,7 +554,7 @@ class DirectIngestRawFileImport(OperationsBase):
     # Status of the raw file import
     import_status = Column(direct_ingest_file_import_status, nullable=False)
 
-    # The region code associated with the raw data import
+    # The upper case region code associated with the raw data import
     region_code = Column(String(255), nullable=False, index=True)
 
     # The raw data instance associated with the raw data import
@@ -588,6 +591,7 @@ class DirectIngestRawDataFlashStatus(OperationsBase):
 
     __tablename__ = "direct_ingest_raw_data_flash_status"
 
+    # The upper case region code associated with the raw data import
     region_code = Column(String(255), nullable=False, index=True)
 
     # The timestamp of when this status row was created

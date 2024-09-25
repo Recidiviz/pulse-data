@@ -23,6 +23,7 @@ from google.cloud.bigquery import SchemaField
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.local_file_paths import filepath_relative_to_caller
 from recidiviz.ingest.direct.raw_data.validations.stable_historical_raw_data_counts_table_validation import (
     RAW_ROWS_MEDIAN_KEY,
@@ -53,7 +54,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
 
         self.file_tag = "test_file_tag"
         self.temp_table = "test_table"
-        self.region_code = "us_xx"
+        self.state_code = StateCode.US_XX
         self.ingest_instance = DirectIngestInstance.PRIMARY
         self.temp_table_address = BigQueryAddress(
             dataset_id="test_dataset", table_id=self.temp_table
@@ -71,7 +72,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             file_tag=self.file_tag,
             project_id=self.project_id,
             temp_table_address=self.temp_table_address,
-            region_code=self.region_code,
+            state_code=self.state_code,
             raw_data_instance=self.ingest_instance,
             validation_config=self.validation_config,
         )
@@ -93,7 +94,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             },
             {
@@ -101,7 +102,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             },
             {
@@ -109,7 +110,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             },
         ]
@@ -210,7 +211,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             }
         ]
@@ -234,7 +235,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": "test_file_tag_other",
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             }
         ]
@@ -258,7 +259,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": self.file_tag,
                 "is_invalidated": True,
                 "update_datetime": self.update_datetime,
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             }
         ]
@@ -282,7 +283,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": "us_yy",
+                "region_code": "US_YY",
                 "raw_data_instance": self.ingest_instance.value,
             }
         ]
@@ -306,7 +307,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": "SECONDARY",
             }
         ]
@@ -329,7 +330,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": self.file_tag,
                 "is_invalidated": False,
                 "update_datetime": "2001-01-01T00:00:00Z",
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             }
         ]
@@ -409,7 +410,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             },
             {
@@ -417,7 +418,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             },
             {
@@ -425,7 +426,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             },
         ]
@@ -438,7 +439,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             file_tag=file_tag,
             project_id=self.project_id,
             temp_table_address=self.temp_table_address,
-            region_code=self.region_code,
+            state_code=self.state_code,
             raw_data_instance=self.ingest_instance,
             validation_config=self.validation_config,
         )
@@ -457,7 +458,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             },
             {
@@ -465,7 +466,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "file_tag": file_tag,
                 "is_invalidated": False,
                 "update_datetime": self.update_datetime,
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             },
             {
@@ -476,7 +477,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 "update_datetime": datetime.datetime.fromisoformat(
                     "2024-08-07T00:00:00Z"
                 ),
-                "region_code": self.region_code,
+                "region_code": "US_XX",
                 "raw_data_instance": self.ingest_instance.value,
             },
         ]
@@ -488,7 +489,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             file_tag=file_tag,
             project_id=self.project_id,
             temp_table_address=self.temp_table_address,
-            region_code=self.region_code,
+            state_code=self.state_code,
             raw_data_instance=self.ingest_instance,
             validation_config=self.validation_config,
         )

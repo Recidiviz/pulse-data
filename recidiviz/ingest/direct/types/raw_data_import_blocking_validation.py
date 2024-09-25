@@ -21,6 +21,7 @@ from typing import Any, Dict, List
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
@@ -109,7 +110,7 @@ class RawDataColumnImportBlockingValidation(RawDataImportBlockingValidation):
 class RawDataTableImportBlockingValidation(RawDataImportBlockingValidation):
     """Interface for a validation to be run on a per-table basis."""
 
-    region_code: str
+    state_code: StateCode
     raw_data_instance: DirectIngestInstance
 
     @classmethod
@@ -118,7 +119,7 @@ class RawDataTableImportBlockingValidation(RawDataImportBlockingValidation):
         file_tag: str,
         project_id: str,
         temp_table_address: BigQueryAddress,
-        region_code: str,
+        state_code: StateCode,
         raw_data_instance: DirectIngestInstance,
     ) -> "RawDataTableImportBlockingValidation":
         """Factory method to create a table validation."""
@@ -126,7 +127,7 @@ class RawDataTableImportBlockingValidation(RawDataImportBlockingValidation):
             project_id=project_id,
             temp_table_address=temp_table_address,
             file_tag=file_tag,
-            region_code=region_code,
+            state_code=state_code,
             raw_data_instance=raw_data_instance,
         )
 

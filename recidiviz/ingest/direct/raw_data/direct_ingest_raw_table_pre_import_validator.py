@@ -24,6 +24,7 @@ from google.api_core import retry
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_utils import bq_query_job_result_to_list_of_row_dicts
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.retry_predicate import ssl_error_retry_predicate
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -92,17 +93,18 @@ class DirectIngestRawTablePreImportValidator:
         all_validations: List[RawDataImportBlockingValidation] = []
         raw_file_config = self.region_raw_file_config.raw_file_configs[file_tag]
 
+        state_code = StateCode(self.region_code.upper())
         if not raw_file_config.file_is_exempt_from_validation(
             StableHistoricalRawDataCountsTableValidation.validation_type()
         ) and StableHistoricalRawDataCountsTableValidation.should_run_validation(
-            raw_file_config, self.region_code, file_tag, file_update_datetime
+            raw_file_config, state_code, file_tag, file_update_datetime
         ):
             all_validations.append(
                 StableHistoricalRawDataCountsTableValidation.create_table_validation(
                     file_tag,
                     self.project_id,
                     temp_table_address,
-                    self.region_code,
+                    state_code,
                     self.raw_data_instance,
                 )
             )

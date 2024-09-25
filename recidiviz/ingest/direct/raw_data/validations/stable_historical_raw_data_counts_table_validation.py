@@ -92,11 +92,11 @@ class StableHistoricalRawDataCountsTableValidation(
     def __attrs_post_init__(self) -> None:
         self.row_count_percent_change_tolerance = (
             self.validation_config.get_custom_percent_change_tolerance(
-                StateCode(self.region_code.upper()), self.file_tag
+                self.state_code, self.file_tag
             )
         )
         self.date_range_exclusions = self.validation_config.get_date_range_exclusions(
-            StateCode(self.region_code.upper()), self.file_tag
+            self.state_code, self.file_tag
         )
         self.time_window_lookback_days = (
             self.validation_config.get_time_window_lookback_days()
@@ -116,7 +116,7 @@ class StableHistoricalRawDataCountsTableValidation(
     @staticmethod
     def should_run_validation(
         file_config: DirectIngestRawFileConfig,
-        region_code: str,
+        state_code: StateCode,
         file_tag: str,
         file_update_datetime: datetime.datetime,
     ) -> bool:
@@ -128,7 +128,7 @@ class StableHistoricalRawDataCountsTableValidation(
         return StableHistoricalRawDataCountsTableValidation.validation_applies_to_table(
             file_config
         ) and not StableHistoricalRawDataCountsTableValidationConfig().datetime_is_excluded(
-            StateCode(region_code.upper()),
+            state_code,
             file_tag,
             datetime_to_check=file_update_datetime,
         )
@@ -162,7 +162,7 @@ class StableHistoricalRawDataCountsTableValidation(
             file_tag=self.file_tag,
             dataset_id=self.temp_table_address.dataset_id,
             table_id=self.temp_table_address.table_id,
-            region_code=self.region_code,
+            region_code=self.state_code.value,
             raw_data_instance=self.raw_data_instance.value,
             RAW_ROWS_MEDIAN_KEY=RAW_ROWS_MEDIAN_KEY,
             TEMP_TABLE_ROW_COUNT_KEY=TEMP_TABLE_ROW_COUNT_KEY,
