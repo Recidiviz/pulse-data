@@ -49,6 +49,7 @@ AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION = [
                 span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
                 span_conditions_dict={
                     "marked_ineligible": ["true"],
+                    "is_eligible": ["true"],
                     "task_type": [b.task_type_name],
                 },
             )
@@ -68,6 +69,7 @@ AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION = [
                 span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
                 span_conditions_dict={
                     "marked_ineligible": ["true"],
+                    "is_eligible": ["true"],
                     "task_type": [b.task_type_name],
                 },
             )
