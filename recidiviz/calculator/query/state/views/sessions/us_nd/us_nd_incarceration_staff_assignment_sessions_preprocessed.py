@@ -52,10 +52,7 @@ officer_assignments AS (
   SELECT
       REPLACE(REPLACE(OFFENDER_BOOK_ID, '.00',''), ',', '') AS external_id,
       SAFE_CAST(LEFT(OFFENDER_START_DATE, 10) AS DATE) AS start_date,
-      IFNULL(
-        SAFE_CAST(LEFT(OFFENDER_END_DATE, 10) AS DATE),
-        DATE(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', OFFENDER_END_DATE)) 
-      ) AS end_date,
+      SAFE_CAST(LEFT(OFFENDER_END_DATE, 10) AS DATE) AS end_date,
       SPLIT(ca.DESCRIPTION, ', ')[ORDINAL(2)] AS given_names,
       SPLIT(ca.DESCRIPTION, ', ')[ORDINAL(1)] AS surname,
   FROM

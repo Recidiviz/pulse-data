@@ -37,7 +37,7 @@ US_ND_RAW_LSIR_ASSESSMENTS_QUERY_TEMPLATE = """
     SELECT 
         p.state_code, 
         p.person_id, 
-        SAFE.PARSE_DATE('%F', SPLIT(AssessmentDate, ' ')[OFFSET(0)]) assessment_date,
+        SAFE_CAST(LEFT(AssessmentDate, 10) AS DATE) AS assessment_date,
         -- Populate numeric scale responses from raw data, and input NULL for other questions.
         {lsir_question_columns},
         -- Total scores for each needs component in the LSI-R
