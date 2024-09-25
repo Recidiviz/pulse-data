@@ -30,3 +30,15 @@ columns:
   - name: Agency_of_Employment
     description: |-
       Officer's agency of employment.
+  - name: Termination_Date
+    description: |-
+      Termination date of data record.
+    field_type: datetime
+  - name: Creation_Date
+    description: |-
+      Creation date of data record.
+    field_type: datetime
+  - name: Last_Modified_Date
+    description: |-
+      Last modified date of data record.
+    field_type: datetime
