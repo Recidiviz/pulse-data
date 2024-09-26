@@ -133,7 +133,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
     BigQuery.
     """
     with TaskGroup(
-        get_raw_data_import_branch_key(state_code.value, raw_data_instance.value)
+        get_raw_data_import_branch_key(state_code, raw_data_instance)
     ) as raw_data_branch:
 
         # --- step 1: resource lock & file discovery -----------------------------------
