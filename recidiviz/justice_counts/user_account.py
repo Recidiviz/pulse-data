@@ -215,6 +215,27 @@ class UserAccountInterface:
         return session.query(UserAccount).order_by(UserAccount.id).all()
 
     @staticmethod
+    def get_users_overview(session: Session) -> List[dict]:
+        """Return the user fields necessary to render the User Provisioning Overview as a list of dicts."""
+        db_users = session.query(
+            UserAccount.id,
+            UserAccount.auth0_user_id,
+            UserAccount.name,
+            UserAccount.email,
+        ).all()
+
+        user_list = [
+            {
+                "id": user.id,
+                "auth0_user_id": user.auth0_user_id,
+                "name": user.name,
+                "email": user.email,
+            }
+            for user in db_users
+        ]
+        return user_list
+
+    @staticmethod
     def get_user_by_auth0_user_id(session: Session, auth0_user_id: str) -> UserAccount:
         return (
             session.query(UserAccount)

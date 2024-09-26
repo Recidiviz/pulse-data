@@ -98,6 +98,22 @@ def get_admin_blueprint(
             user_json.append(user.to_json(agencies=user_agencies))
         return jsonify({"users": user_json})
 
+    # UserAccount
+    @admin_blueprint.route("/user/overview", methods=["GET"])
+    @auth_decorator
+    def fetch_users_overview() -> Response:
+        """
+        Return the user fields necessary to render the admin panel's User Provisioning
+        Table Overview.
+
+        Do not return user-agency associations for all agencies since this is very slow.
+        User-agency associations will be fetched on-demand when a User Panel is opened.
+        """
+        users_overview_json = UserAccountInterface.get_users_overview(
+            session=current_session
+        )
+        return jsonify({"users": users_overview_json})
+
     @admin_blueprint.route("/user/<user_id>", methods=["GET"])
     @auth_decorator
     def get_user(user_id: int) -> Response:
@@ -107,6 +123,18 @@ def get_admin_blueprint(
         )
         agencies = [assoc.agency for assoc in user.agency_assocs]
         return jsonify(user.to_json(agencies=agencies))
+
+    @admin_blueprint.route("/user/<user_id>/agencies", methods=["GET"])
+    @auth_decorator
+    def get_user_agencies(user_id: int) -> Response:
+        """Returns the agencies that a user has access to. This will be called every
+        time a User Panel is opened."""
+        user = UserAccountInterface.get_user_by_id(
+            session=current_session, user_account_id=user_id
+        )
+        agencies = [assoc.agency for assoc in user.agency_assocs]
+        user_json = user.to_json(agencies=agencies)
+        return jsonify({"agencies": user_json["agencies"]})
 
     @admin_blueprint.route("/user/<user_id>", methods=["DELETE"])
     @auth_decorator
@@ -274,6 +302,62 @@ def get_admin_blueprint(
                 # also send list of possible systems to use in the dropdown
                 # when users can assign a system role to an agency.
                 "systems": [enum.value for enum in VALID_SYSTEMS],
+            }
+        )
+
+    # Agency
+    @admin_blueprint.route("/agency/overview", methods=["GET"])
+    @auth_decorator
+    def fetch_agencies_overview() -> Response:
+        """
+        Return the agency fields necessary to render the admin panel's Agency
+        Provisioning Table Overview.
+
+        Do not return user-agency associations for all agencies since this is very slow.
+        Instead, associations will be fetched on-demand when an Agency Panel is opened.
+        """
+        agencies = AgencyInterface.get_agencies(
+            session=current_session, with_users=False, with_settings=False
+        )
+        super_agency_id_to_child_agency_ids = defaultdict(list)
+        for agency in agencies:
+            if agency.super_agency_id is not None:
+                super_agency_id_to_child_agency_ids[agency.super_agency_id].append(
+                    agency.id
+                )
+
+        agency_jsons: List[Dict[str, Any]] = []
+        for agency in agencies:
+            agency_json = agency.to_json(with_team=False, with_settings=False)
+            agency_json["child_agency_ids"] = super_agency_id_to_child_agency_ids.get(
+                agency.id, []
+            )
+            agency_jsons.append(agency_json)
+
+        return jsonify(
+            {
+                "agencies": agency_jsons,
+                # also send list of possible systems to use in the dropdown
+                # when users can assign a system role to an agency.
+                "systems": [enum.value for enum in VALID_SYSTEMS],
+            }
+        )
+
+    @admin_blueprint.route("/agency/<agency_id>/team", methods=["GET"])
+    @auth_decorator
+    def get_agency_team(agency_id: int) -> Response:
+        """Returns just team data for an individual agency. This will be called whenever
+        an Agency Panel is opened."""
+        agency = AgencyInterface.get_agency_by_id(
+            session=current_session,
+            agency_id=agency_id,
+            with_users=True,
+            with_settings=False,
+        )
+        agency_json = agency.to_json(with_team=True, with_settings=False)
+        return jsonify(
+            {
+                "team": agency_json["team"],
             }
         )
 
