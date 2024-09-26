@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: tagColumnRenamed
+file_description: |-
+  tag testing column renaming
+data_classification: source
+primary_key_cols:
+  - COL1
+columns:
+  - name: COL1
+    description: |-
+      column 1 description
+    update_history:
+      - update_type: RENAME
+        update_datetime: 2022-01-01T16:35:33.617135
+        previous_value: OLD_COL1
+  - name: COL2
+    description: |-
+      column 2 description

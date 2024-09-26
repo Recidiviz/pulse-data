@@ -93,6 +93,17 @@ class RawDataConfigWriter:
                 column_string += (
                     f"\n        exemption_reason: {exemption.exemption_reason}"
                 )
+        if column.update_history:
+            column_string += "\n    update_history:"
+            for update in column.update_history:
+                column_string += f"\n      - update_type: {update.update_type.value}"
+                column_string += (
+                    f"\n        update_datetime: {update.update_datetime.isoformat()}"
+                )
+                if update.previous_value:
+                    column_string += (
+                        f"\n        previous_value: {update.previous_value}"
+                    )
         return column_string
 
     def _generate_columns_string(self, columns: List[RawTableColumnInfo]) -> str:
