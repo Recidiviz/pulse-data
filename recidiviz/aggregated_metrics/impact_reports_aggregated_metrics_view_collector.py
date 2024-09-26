@@ -18,6 +18,7 @@
 
 import datetime
 from typing import List
+from dateutil.relativedelta import relativedelta
 
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
@@ -124,7 +125,7 @@ METRICS_BY_UNIT_OF_ANALYSIS_TYPE: dict[
     ],
 }
 
-MIN_DATE = datetime.datetime(2023, 1, 1)
+MIN_DATE = datetime.datetime.today() - relativedelta(months=2)
 MAX_DATE = datetime.datetime.today()
 
 
@@ -168,7 +169,7 @@ def get_impact_reports_aggregated_metrics_view_builders() -> List[
                 # first of the month. This allows us to generate reports for periods that don't fall
                 # neatly along month boundaries.
                 rolling_period_unit=MetricTimePeriod.DAY,
-                rolling_period_length=1,
+                rolling_period_length=7,
             )
 
             view_id = f"{MetricPopulationType.JUSTICE_INVOLVED.population_name_short}_{unit_of_analysis_type.short_name}_{time_period.value.lower()}_aggregated_metrics"
