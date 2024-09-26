@@ -221,6 +221,7 @@ def main() -> int:
             valid_prefixes = valid_prefixes.union(
                 {
                     "recidiviz.calculator.query.state.dataset_config",
+                    "recidiviz.ingest.views.dataset_config",
                 }
             )
         if "metrics" in pipeline.__name__:

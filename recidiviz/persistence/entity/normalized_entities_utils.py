@@ -23,9 +23,11 @@ from typing import Any, Dict, List, Sequence, Type, TypeVar
 
 from more_itertools import one
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import MAX_BQ_INT
 from recidiviz.common.attr_mixins import BuildableAttrFieldType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 
 # All entity classes that have Normalized versions
 from recidiviz.persistence.entity.base_entity import CoreEntity, Entity, EntityT
@@ -45,6 +47,7 @@ from recidiviz.persistence.entity.state.state_entity_mixins import (
     SequencedEntityMixin,
     SequencedEntityMixinT,
 )
+from recidiviz.utils.types import assert_subclass
 
 NormalizedStateEntityT = TypeVar("NormalizedStateEntityT", bound=NormalizedStateEntity)
 AdditionalAttributesMap = Dict[
@@ -57,6 +60,16 @@ AdditionalAttributesMap = Dict[
         ],
     ],
 ]
+
+
+def queryable_address_for_normalized_entity(
+    normalized_entity_cls: Type[NormalizedStateEntity],
+) -> BigQueryAddress:
+    """Returns the BigQueryAddress for the state agnostic table containing all entities of this type"""
+    return BigQueryAddress(
+        dataset_id=NORMALIZED_STATE_DATASET,
+        table_id=assert_subclass(normalized_entity_cls, Entity).get_table_id(),
+    )
 
 
 def normalized_entity_class_with_base_class_name(
