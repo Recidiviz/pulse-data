@@ -875,11 +875,6 @@ class NormalizedStateSentenceInferredGroup(NormalizedStateEntity, HasExternalIdE
     person: Optional["NormalizedStatePerson"] = attr.ib(
         default=None, validator=IsNormalizedPersonBackedgeValidator()
     )
-    # TODO(#32945): Inferred Group Length Entities
-    # sentence_group_lengths: list["NormalizedStateSentenceGroupLength"] = attr.ib(
-    #     factory=list,
-    #     validator=attr_validators.is_list_of(NormalizedStateSentenceGroupLength),
-    # )
 
     @property
     def sentence_external_ids(self) -> list[str]:
