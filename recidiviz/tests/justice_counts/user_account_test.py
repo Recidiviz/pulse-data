@@ -69,7 +69,7 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 name="User",
                 auth0_user_id="id0",
-                email="test@email.com",
+                email="test-email",
                 auth0_client=self.test_auth0_client,
             )
 
@@ -80,7 +80,7 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 auth0_user_id="auth0|user2",
                 name="Test User 2",
-                email="test@email.com",
+                email="test-email",
                 auth0_client=self.test_auth0_client,
             )
             agency = AgencyInterface.get_agency_by_name_state_and_systems(
@@ -122,7 +122,7 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 session=session, auth0_user_id="id0"
             )
             self.assertEqual(user.name, "User")
-            self.assertEqual(user.email, "test@email.com")
+            self.assertEqual(user.email, "test-email")
             self.assertEqual(
                 {assoc.agency.name for assoc in user.agency_assocs},
                 {"Agency Alpha", "Agency Beta"},
@@ -133,3 +133,60 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 UserAccountInterface.get_user_by_auth0_user_id(
                     session=session, auth0_user_id="blah"
                 )
+
+    def test_get_users_overview(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            UserAccountInterface.create_or_update_user(
+                session=session,
+                auth0_user_id="auth0|user1",
+                name="Test User 1",
+                email="user1-email",
+                auth0_client=self.test_auth0_client,
+            )
+            UserAccountInterface.create_or_update_user(
+                session=session,
+                auth0_user_id="auth0|user2",
+                name="Test User 2",
+                email="user2-email",
+                auth0_client=self.test_auth0_client,
+            )
+
+            users_overview = UserAccountInterface.get_users_overview(session=session)
+
+            # Dropping the user id since it is an unstable value.
+            expected_overview = [
+                {
+                    "auth0_user_id": "auth0|1234User",
+                    "name": "User",
+                    "email": "test-email",
+                },
+                {
+                    "auth0_user_id": "auth0|1234Test User 1",
+                    "name": "Test User 1",
+                    "email": "user1-email",
+                },
+                {
+                    "auth0_user_id": "auth0|1234Test User 2",
+                    "name": "Test User 2",
+                    "email": "user2-email",
+                },
+            ]
+
+            # Sort both lists for order-agnostic comparison
+            sorted_users_overview = sorted(
+                [
+                    {
+                        "auth0_user_id": user["auth0_user_id"],
+                        "name": user["name"],
+                        "email": user["email"],
+                    }
+                    for user in users_overview
+                ],
+                key=lambda user: user["auth0_user_id"],
+            )
+
+            sorted_expected_overview = sorted(
+                expected_overview, key=lambda user: user["auth0_user_id"]
+            )
+
+            self.assertEqual(sorted_users_overview, sorted_expected_overview)

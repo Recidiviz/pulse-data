@@ -950,3 +950,107 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             copied_funding_metrics.metric_interface["is_metric_enabled"],
             False,
         )
+
+    def test_fetch_users_overview(self) -> None:
+        self.load_users_and_agencies()
+
+        response = self.client.get("/admin/user/overview")
+        self.assertEqual(response.status_code, 200)
+
+        response_json = assert_type(response.json, dict)
+        users_data = response_json["users"]
+
+        self.assertEqual(len(users_data), 3)
+
+        expected_users = [
+            {"auth0_user_id": "auth0_id_A", "email": None, "name": "Jane Doe"},
+            {"auth0_user_id": "auth0_id_B", "email": None, "name": "John Doe"},
+            {
+                "auth0_user_id": "auth0_id_C",
+                "email": None,
+                "name": "John Smith",
+            },
+        ]
+
+        # Remove 'id' field from the actual response before comparison
+        cleaned_users_data = [
+            {key: user[key] for key in user if key != "id"} for user in users_data
+        ]
+
+        # Sort both lists for order-agnostic comparison, safely handling None values
+        sorted_users_data = sorted(
+            cleaned_users_data, key=lambda user: user["auth0_user_id"] or ""
+        )
+        sorted_expected_users = sorted(
+            expected_users, key=lambda user: user["auth0_user_id"] or ""
+        )
+
+        self.assertEqual(sorted_users_data, sorted_expected_users)
+
+    def test_get_user_agencies(self) -> None:
+        """Test that the get_user_agencies endpoint returns the correct agencies for a user."""
+        self.load_users_and_agencies()
+        user_A = self.test_schema_objects.test_user_A
+
+        response = self.client.get(f"/admin/user/{user_A.id}/agencies")
+        self.assertEqual(response.status_code, 200)
+
+        response_json = assert_type(response.json, dict)
+        agencies_data = response_json["agencies"]
+
+        self.assertEqual(len(agencies_data), 1)
+
+        # User A has access to Agency A.
+        agency_A = self.test_schema_objects.test_agency_A
+        self.assertEqual(agencies_data[0]["id"], agency_A.id)
+        self.assertEqual(agencies_data[0]["name"], agency_A.name)
+
+    def test_fetch_agencies_overview(self) -> None:
+        """Test that the fetch_agencies_overview endpoint returns the correct data,
+        including superagency and child agencies."""
+        super_agency = self.test_schema_objects.test_prison_super_agency
+        # Commit and refresh so we can access the super agency's ID which is auto-incremented.
+        self.session.add(super_agency)
+        self.session.commit()
+        self.session.refresh(super_agency)
+
+        child_agency_A = self.test_schema_objects.test_prison_child_agency_A
+        child_agency_B = self.test_schema_objects.test_prison_child_agency_B
+        child_agency_A.super_agency_id = super_agency.id
+        child_agency_B.super_agency_id = super_agency.id
+        self.session.add_all([child_agency_A, child_agency_B])
+        self.session.commit()
+
+        response = self.client.get("/admin/agency/overview")
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        agencies_data = response_json["agencies"]
+        systems_data = response_json["systems"]
+
+        self.assertEqual(len(agencies_data), 3)  # super agency + 2 child agencies
+
+        super_agency_data = next(
+            agency for agency in agencies_data if agency["id"] == super_agency.id
+        )
+        self.assertEqual(super_agency_data["id"], super_agency.id)
+        self.assertEqual(super_agency_data["name"], super_agency.name)
+        self.assertEqual(
+            super_agency_data["child_agency_ids"],
+            [child_agency_A.id, child_agency_B.id],
+        )
+
+        child_agency_A_data = next(
+            agency for agency in agencies_data if agency["id"] == child_agency_A.id
+        )
+        self.assertEqual(child_agency_A_data["id"], child_agency_A.id)
+        self.assertEqual(child_agency_A_data["name"], child_agency_A.name)
+        self.assertEqual(child_agency_A_data["child_agency_ids"], [])
+
+        child_agency_B_data = next(
+            agency for agency in agencies_data if agency["id"] == child_agency_B.id
+        )
+        self.assertEqual(child_agency_B_data["id"], child_agency_B.id)
+        self.assertEqual(child_agency_B_data["name"], child_agency_B.name)
+        self.assertEqual(child_agency_B_data["child_agency_ids"], [])
+
+        self.assertEqual(systems_data, [system.value for system in VALID_SYSTEMS])
