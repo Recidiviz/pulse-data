@@ -309,6 +309,7 @@ class DirectIngestRawDataTableLatestViewCollectorTest(unittest.TestCase):
                 "tagMoreBasicData_latest",
                 "tagNormalizationConflict_latest",
                 "tagPipeSeparatedNonUTF8_latest",
+                "tagColumnRenamed_latest",
             ],
             [b.view_id for b in builders],
         )

@@ -18,6 +18,7 @@
 import os
 import re
 from collections import defaultdict
+from datetime import datetime
 from enum import Enum
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -148,6 +149,43 @@ class ImportBlockingValidationExemption:
         )
 
 
+class ColumnUpdateOperation(Enum):
+    """Enum for column update operations"""
+
+    ADDITION = "ADDITION"
+    DELETION = "DELETION"
+    RENAME = "RENAME"
+
+
+@attr.define
+class ColumnUpdateInfo:
+    """
+    Stores information about an update made to a column
+
+    Attributes:
+        update_type: The type of update made to the column
+        previous_value: The previous name of the column if the update_type is RENAME
+        update_datetime: The ISO formatted datetime the update was made
+    """
+
+    update_type: ColumnUpdateOperation = attr.ib(
+        validator=attr.validators.instance_of(ColumnUpdateOperation)
+    )
+    update_datetime: datetime = attr.ib(validator=attr.validators.instance_of(datetime))
+    previous_value: Optional[str] = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)),
+    )
+
+    def __attrs_post_init__(self) -> None:
+        if (self.update_type == ColumnUpdateOperation.RENAME) != bool(
+            self.previous_value
+        ):
+            raise ValueError(
+                f"ColumnUpdateInfo previous_value must be set if and only if update_type is {ColumnUpdateOperation.RENAME.value}"
+            )
+
+
 @attr.s
 class RawTableColumnInfo:
     """Stores information about a single raw data table column."""
@@ -185,11 +223,14 @@ class RawTableColumnInfo:
     # mean the table is the is_primary_person_table for the region, since there may be
     # multiple tables that are ID type roots for the region.)
     is_primary_for_external_id_type: bool = attr.ib(default=False)
-
     # Column-level import-blocking validation exemptions
     import_blocking_column_validation_exemptions: Optional[
         List[ImportBlockingValidationExemption]
     ] = attr.ib(default=None, validator=attr_validators.is_opt_list)
+    # Stores a list of updates made to the column, sorted by datetime
+    update_history: Optional[List[ColumnUpdateInfo]] = attr.ib(
+        default=None, validator=attr_validators.is_opt_list
+    )
 
     def __attrs_post_init__(self) -> None:
         # Known values should not be present unless this is a string field
@@ -226,6 +267,69 @@ class RawTableColumnInfo:
                 f"Found field {self.name} with external id type "
                 f"{self.field_type.value} which is not labeled `is_pii: True`."
             )
+
+        self._validate_update_history()
+
+    def _validate_update_history(self) -> None:
+        """Raises a ValueError if update_history is not sorted by update_datetime or if update_history contains invalid transitions
+        Invalid transitions:
+        - DELETION -> ADDITION|RENAME|DELETION
+        - ADDITION|RENAME -> ADDITION
+        - RENAME -> RENAME with the same previous_value
+        - Any two updates with the same update_datetime
+        Valid transitions:
+        - ADDITION|RENAME -> RENAME|DELETION
+        """
+        if self.update_history is None:
+            return
+
+        if self.update_history != sorted(
+            self.update_history, key=lambda x: x.update_datetime
+        ):
+            raise ValueError(
+                f"Expected update_history to be sorted by update_datetime for column [{self.name}]."
+            )
+
+        for i in range(1, len(self.update_history)):
+            previous_update = self.update_history[i - 1]
+            current_update = self.update_history[i]
+
+            if previous_update.update_datetime == current_update.update_datetime:
+                raise ValueError(
+                    f"Invalid update_history sequence for column [{self.name}]. Found two updates with the same update_datetime [{current_update.update_datetime.isoformat()}]"
+                )
+
+            deletion_update_followed_by_anything_else = (
+                previous_update.update_type == ColumnUpdateOperation.DELETION
+            )
+            addition_or_rename_followed_by_addition = (
+                previous_update.update_type
+                in {
+                    ColumnUpdateOperation.ADDITION,
+                    ColumnUpdateOperation.RENAME,
+                }
+                and current_update.update_type == ColumnUpdateOperation.ADDITION
+            )
+
+            if (
+                deletion_update_followed_by_anything_else
+                or addition_or_rename_followed_by_addition
+            ):
+                raise ValueError(
+                    f"Invalid update_history sequence for column [{self.name}]. Found invalid transition from {previous_update.update_type.value} -> {current_update.update_type.value}"
+                )
+
+            consecutive_renames = (
+                previous_update.update_type == ColumnUpdateOperation.RENAME
+                and current_update.update_type == ColumnUpdateOperation.RENAME
+            )
+            same_previous_value = (
+                previous_update.previous_value == current_update.previous_value
+            )
+            if consecutive_renames and same_previous_value:
+                raise ValueError(
+                    f"Invalid update_history sequence for column [{self.name}]. Found two consecutive RENAME updates with the same previous_value [{current_update.previous_value}]"
+                )
 
     def _validate_datetime_sql_parsers(self) -> None:
         """Validates the datetime_sql field by ensuring that is_datetime is set to True
@@ -275,6 +379,42 @@ class RawTableColumnInfo:
         Returns true if this column is a date/time
         """
         return self.field_type == RawTableColumnFieldType.DATETIME
+
+    def _existed_at_datetime(self, dt: datetime) -> bool:
+        if self.update_history is None:
+            return True
+
+        return all(
+            (
+                change.update_type != ColumnUpdateOperation.ADDITION
+                or change.update_datetime <= dt
+            )
+            and (
+                change.update_type != ColumnUpdateOperation.DELETION
+                or change.update_datetime > dt
+            )
+            for change in self.update_history
+        )
+
+    def name_at_datetime(self, dt: datetime) -> Optional[str]:
+        """
+        Based on the update_history for a column,
+        returns the name of the column as it appeared at the given datetime
+        or None if the column did not exist at that datetime.
+        """
+        if not self._existed_at_datetime(dt):
+            return None
+
+        if self.update_history is None:
+            return self.name
+
+        for change in self.update_history:
+            if (
+                change.update_datetime > dt
+                and change.update_type == ColumnUpdateOperation.RENAME
+            ):
+                return change.previous_value
+        return self.name
 
 
 @attr.s
@@ -342,6 +482,8 @@ class DirectIngestRawFileConfig:
     primary_key_cols: List[str] = attr.ib(validator=attr.validators.instance_of(list))
 
     # A list of names and descriptions for each column in a file
+    # TODO(#33695) make private and enforce all access through a current_columns property
+    # or columns_at_datetime method
     columns: List[RawTableColumnInfo] = attr.ib()
 
     # An additional string clause that will be added to the ORDER BY list that determines which is the most up-to-date
@@ -707,6 +849,16 @@ class DirectIngestRawFileConfig:
             "inferColumns": self.infer_columns_from_config,
         }
 
+    def column_names_at_datetime(self, dt: datetime) -> List[str]:
+        """
+        Returns a list of column names as they appeared in the config at the given datetime.
+        """
+        return [
+            col_name
+            for column in self.columns
+            if (col_name := column.name_at_datetime(dt)) is not None
+        ]
+
     @classmethod
     def from_yaml_dict(
         cls,
@@ -792,6 +944,20 @@ class DirectIngestRawFileConfig:
                     )
                     for exemption in import_blocking_column_validation_exemptions_yaml
                 ]
+            update_history = None
+            if (
+                update_history_yaml := column.pop_dicts_optional("update_history")
+            ) is not None:
+                update_history = [
+                    ColumnUpdateInfo(
+                        update_datetime=change.pop("update_datetime", datetime),
+                        update_type=ColumnUpdateOperation(
+                            change.pop("update_type", str)
+                        ),
+                        previous_value=change.pop("previous_value", str),
+                    )
+                    for change in update_history_yaml
+                ]
             column_infos.append(
                 RawTableColumnInfo(
                     name=column_name,
@@ -812,6 +978,7 @@ class DirectIngestRawFileConfig:
                     )
                     or False,
                     import_blocking_column_validation_exemptions=import_blocking_column_validation_exemptions,
+                    update_history=update_history,
                 )
             )
             if len(column) > 0:

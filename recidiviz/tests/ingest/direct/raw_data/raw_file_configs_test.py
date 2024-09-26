@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for classes in raw_file_configs.py."""
 import unittest
+from datetime import datetime
 from typing import Dict
 
 import attr
@@ -24,6 +25,8 @@ from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
+    ColumnUpdateInfo,
+    ColumnUpdateOperation,
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     ImportBlockingValidationExemption,
@@ -42,6 +45,47 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidationType,
 )
 from recidiviz.tests.ingest.direct import fake_regions
+
+
+class TestColumnChangeInfo(unittest.TestCase):
+    """Tests for ColumnChangeInfo"""
+
+    def test_column_update_previous_value(self) -> None:
+        # Should not raise any exceptions
+        for update_type in [
+            ColumnUpdateOperation.ADDITION,
+            ColumnUpdateOperation.DELETION,
+        ]:
+            ColumnUpdateInfo(update_type=update_type, update_datetime=datetime.now())
+
+        ColumnUpdateInfo(
+            update_type=ColumnUpdateOperation.RENAME,
+            update_datetime=datetime.now(),
+            previous_value="old_name",
+        )
+
+    def test_column_update_previous_value_error(self) -> None:
+        for update_type in [
+            ColumnUpdateOperation.ADDITION,
+            ColumnUpdateOperation.DELETION,
+        ]:
+            with self.assertRaisesRegex(
+                ValueError,
+                r"previous_value must be set if and only if update_type is RENAME",
+            ):
+                ColumnUpdateInfo(
+                    update_type=update_type,
+                    update_datetime=datetime.now(),
+                    previous_value="old_name",
+                )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"previous_value must be set if and only if update_type is RENAME",
+        ):
+            ColumnUpdateInfo(
+                update_type=ColumnUpdateOperation.RENAME,
+                update_datetime=datetime.now(),
+            )
 
 
 class TestRawTableColumnInfo(unittest.TestCase):
@@ -274,6 +318,223 @@ class TestRawTableColumnInfo(unittest.TestCase):
                 non_exempt_column.import_blocking_column_validation_exemptions,
                 RawDataImportBlockingValidationType.NONNULL_VALUES,
             )
+        )
+
+    def test_column_multiple_renames(self) -> None:
+        column_info = RawTableColumnInfo(
+            name="COL1",
+            field_type=RawTableColumnFieldType.STRING,
+            is_pii=False,
+            description=None,
+            known_values=None,
+            update_history=[
+                ColumnUpdateInfo(
+                    ColumnUpdateOperation.RENAME,
+                    update_datetime=datetime(2022, 1, 15),
+                    previous_value="OLD_OLD_COL1",
+                ),
+                ColumnUpdateInfo(
+                    update_type=ColumnUpdateOperation.RENAME,
+                    update_datetime=datetime(2022, 2, 1),
+                    previous_value="OLD_COL1",
+                ),
+            ],
+        )
+        self.assertEqual(
+            column_info.name_at_datetime(datetime(2022, 1, 1)), "OLD_OLD_COL1"
+        )
+        self.assertEqual(
+            column_info.name_at_datetime(datetime(2022, 1, 15)), "OLD_COL1"
+        )
+        self.assertEqual(
+            column_info.name_at_datetime(datetime(2022, 1, 31)), "OLD_COL1"
+        )
+        self.assertEqual(column_info.name_at_datetime(datetime(2022, 2, 1)), "COL1")
+        self.assertEqual(column_info.name_at_datetime(datetime(2022, 3, 1)), "COL1")
+
+    def test_column_exists_at_datetime(self) -> None:
+        column_info = RawTableColumnInfo(
+            name="COL1",
+            field_type=RawTableColumnFieldType.STRING,
+            is_pii=False,
+            description=None,
+            known_values=None,
+            update_history=[
+                ColumnUpdateInfo(
+                    ColumnUpdateOperation.ADDITION,
+                    update_datetime=datetime(2022, 1, 15),
+                ),
+                ColumnUpdateInfo(
+                    ColumnUpdateOperation.DELETION,
+                    update_datetime=datetime(2022, 2, 1),
+                ),
+            ],
+        )
+        self.assertIsNone(column_info.name_at_datetime(datetime(2022, 1, 1)))
+
+        self.assertEqual(column_info.name_at_datetime(datetime(2022, 1, 15)), "COL1")
+        self.assertEqual(column_info.name_at_datetime(datetime(2022, 1, 31)), "COL1")
+
+        self.assertIsNone(column_info.name_at_datetime(datetime(2022, 2, 1)))
+        self.assertIsNone(column_info.name_at_datetime(datetime(2022, 3, 1)))
+
+    def test_valid_update_history(self) -> None:
+        # Should not raise an error
+        _column_info = RawTableColumnInfo(
+            name="COL1",
+            field_type=RawTableColumnFieldType.STRING,
+            is_pii=False,
+            description=None,
+            known_values=None,
+            update_history=[
+                ColumnUpdateInfo(
+                    update_type=ColumnUpdateOperation.ADDITION,
+                    update_datetime=datetime(2022, 1, 15),
+                ),
+                ColumnUpdateInfo(
+                    update_type=ColumnUpdateOperation.RENAME,
+                    previous_value="old_name",
+                    update_datetime=datetime(2022, 2, 1),
+                ),
+            ],
+        )
+        _column_info = RawTableColumnInfo(
+            name="COL1",
+            field_type=RawTableColumnFieldType.STRING,
+            is_pii=False,
+            description=None,
+            known_values=None,
+            update_history=[
+                ColumnUpdateInfo(
+                    update_type=ColumnUpdateOperation.RENAME,
+                    previous_value="old_name",
+                    update_datetime=datetime(2022, 1, 15),
+                ),
+                ColumnUpdateInfo(
+                    update_type=ColumnUpdateOperation.DELETION,
+                    update_datetime=datetime(2022, 2, 1),
+                ),
+            ],
+        )
+
+    def test_invalid_sequence_update_history(self) -> None:
+        with self.assertRaises(ValueError) as context:
+            _column_info = RawTableColumnInfo(
+                name="COL1",
+                field_type=RawTableColumnFieldType.STRING,
+                is_pii=False,
+                description=None,
+                known_values=None,
+                update_history=[
+                    ColumnUpdateInfo(
+                        update_type=ColumnUpdateOperation.ADDITION,
+                        update_datetime=datetime(2022, 1, 15),
+                    ),
+                    ColumnUpdateInfo(
+                        update_type=ColumnUpdateOperation.ADDITION,
+                        update_datetime=datetime(2022, 2, 1),
+                    ),
+                ],
+            )
+        self.assertEqual(
+            "Invalid update_history sequence for column [COL1]. Found invalid transition from ADDITION -> ADDITION",
+            str(context.exception),
+        )
+
+        with self.assertRaises(ValueError) as context:
+            _column_info = RawTableColumnInfo(
+                name="COL1",
+                field_type=RawTableColumnFieldType.STRING,
+                is_pii=False,
+                description=None,
+                known_values=None,
+                update_history=[
+                    ColumnUpdateInfo(
+                        update_type=ColumnUpdateOperation.DELETION,
+                        update_datetime=datetime(2022, 1, 15),
+                    ),
+                    ColumnUpdateInfo(
+                        update_type=ColumnUpdateOperation.ADDITION,
+                        update_datetime=datetime(2022, 2, 1),
+                    ),
+                ],
+            )
+        self.assertEqual(
+            "Invalid update_history sequence for column [COL1]. Found invalid transition from DELETION -> ADDITION",
+            str(context.exception),
+        )
+
+        with self.assertRaises(ValueError) as context:
+            _column_info = RawTableColumnInfo(
+                name="COL1",
+                field_type=RawTableColumnFieldType.STRING,
+                is_pii=False,
+                description=None,
+                known_values=None,
+                update_history=[
+                    ColumnUpdateInfo(
+                        update_type=ColumnUpdateOperation.RENAME,
+                        previous_value="old_name",
+                        update_datetime=datetime(2022, 1, 15),
+                    ),
+                    ColumnUpdateInfo(
+                        update_type=ColumnUpdateOperation.RENAME,
+                        previous_value="old_name",
+                        update_datetime=datetime(2022, 2, 1),
+                    ),
+                ],
+            )
+        self.assertEqual(
+            "Invalid update_history sequence for column [COL1]. Found two consecutive RENAME updates with the same previous_value [old_name]",
+            str(context.exception),
+        )
+
+        with self.assertRaises(ValueError) as context:
+            _column_info = RawTableColumnInfo(
+                name="COL1",
+                field_type=RawTableColumnFieldType.STRING,
+                is_pii=False,
+                description=None,
+                known_values=None,
+                update_history=[
+                    ColumnUpdateInfo(
+                        update_type=ColumnUpdateOperation.RENAME,
+                        previous_value="old_name",
+                        update_datetime=datetime(2022, 1, 15),
+                    ),
+                    ColumnUpdateInfo(
+                        update_type=ColumnUpdateOperation.DELETION,
+                        update_datetime=datetime(2022, 1, 15),
+                    ),
+                ],
+            )
+        self.assertEqual(
+            "Invalid update_history sequence for column [COL1]. Found two updates with the same update_datetime [2022-01-15T00:00:00]",
+            str(context.exception),
+        )
+
+    def test_unsorted_update_history(self) -> None:
+        with self.assertRaises(ValueError) as context:
+            _column_info = RawTableColumnInfo(
+                name="COL1",
+                field_type=RawTableColumnFieldType.STRING,
+                is_pii=False,
+                description=None,
+                known_values=None,
+                update_history=[
+                    ColumnUpdateInfo(
+                        update_type=ColumnUpdateOperation.ADDITION,
+                        update_datetime=datetime(2022, 2, 1),
+                    ),
+                    ColumnUpdateInfo(
+                        update_type=ColumnUpdateOperation.DELETION,
+                        update_datetime=datetime(2022, 1, 15),
+                    ),
+                ],
+            )
+        self.assertEqual(
+            "Expected update_history to be sorted by update_datetime for column [COL1].",
+            str(context.exception),
         )
 
 
@@ -735,6 +996,64 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 is_primary_person_table=True,
             )
 
+    def test_columns_at_datetime(self) -> None:
+        config = attr.evolve(
+            self.sparse_config,
+            columns=[
+                RawTableColumnInfo(
+                    name="Col1",
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.STRING,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.RENAME,
+                            update_datetime=datetime(2022, 1, 15),
+                            previous_value="OldCol1",
+                        ),
+                    ],
+                ),
+                RawTableColumnInfo(
+                    name="Col2",
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.STRING,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.ADDITION,
+                            update_datetime=datetime(2022, 2, 15),
+                        ),
+                    ],
+                ),
+                RawTableColumnInfo(
+                    name="Col3",
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.STRING,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.DELETION,
+                            update_datetime=datetime(2022, 3, 15),
+                        ),
+                    ],
+                ),
+            ],
+        )
+
+        self.assertEqual(
+            ["OldCol1", "Col3"], config.column_names_at_datetime(datetime(2022, 1, 1))
+        )
+        self.assertEqual(
+            ["Col1", "Col3"], config.column_names_at_datetime(datetime(2022, 2, 1))
+        )
+        self.assertEqual(
+            ["Col1", "Col2", "Col3"],
+            config.column_names_at_datetime(datetime(2022, 3, 1)),
+        )
+        self.assertEqual(
+            ["Col1", "Col2"], config.column_names_at_datetime(datetime(2022, 4, 1))
+        )
+
 
 class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
     """Tests for DirectIngestRegionRawFileConfig"""
@@ -925,7 +1244,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
 
     def test_parse_yaml(self) -> None:
         region_config = self.us_xx_region_config
-        self.assertEqual(25, len(region_config.raw_file_configs))
+        self.assertEqual(26, len(region_config.raw_file_configs))
         self.assertEqual(
             {
                 "file_tag_first",
@@ -953,6 +1272,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 "tagOneAllNullRowTwoGoodRows",
                 "singlePrimaryKey",
                 "multipleColPrimaryKeyHistorical",
+                "tagColumnRenamed",
             },
             set(region_config.raw_file_configs.keys()),
         )
@@ -1130,6 +1450,16 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertEqual(["PRIMARY_COL1"], config_4.primary_key_cols)
         self.assertEqual("ISO-8859-1", config_4.encoding)
         self.assertEqual("|", config_4.separator)
+
+        config_5 = region_config.raw_file_configs["tagColumnRenamed"]
+        self.assertEqual("tagColumnRenamed", config_5.file_tag)
+        self.assertEqual(
+            config_5.column_names_at_datetime(datetime(2021, 1, 1)),
+            ["OLD_COL1", "COL2"],
+        )
+        self.assertEqual(
+            config_5.column_names_at_datetime(datetime(2023, 1, 1)), ["COL1", "COL2"]
+        )
 
     def test_default_config_parsing(self) -> None:
         """Makes sure we parse us_xx_default.yaml properly."""
