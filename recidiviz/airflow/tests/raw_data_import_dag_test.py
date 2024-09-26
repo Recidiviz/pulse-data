@@ -162,13 +162,12 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
 
         dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
         branch_end_and_one_before = dag.partial_subset(
-            task_ids_or_regex=r"branch_end",
+            task_ids_or_regex=r"us_[a-z][a-z]_(?:primary|secondary)_import_branch\.",
             include_upstream=False,
-            include_direct_upstream=True,
         )
 
-        for root_task in branch_end_and_one_before.roots:
-            assert "release_raw_data_resource_locks" in root_task.task_id
+        for leaf in branch_end_and_one_before.leaves:
+            assert "release_raw_data_resource_locks" in leaf.task_id
 
     def test_step_2_sequencing(self) -> None:
         dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
@@ -299,6 +298,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         ordered_step_5_task_ids_paths = [
             [
                 [
+                    "branch_end",
                     "move_successfully_imported_paths_to_storage",
                     "clean_up_temporary_files",
                     "clean_up_temporary_tables",
@@ -306,27 +306,29 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 ],
                 ["write_file_processed_time"],
                 ["ensure_release_resource_locks_release_if_acquired"],
-                ["release_raw_data_resource_locks"],
+                ["release_raw_data_resource_locks", "branch_end"],
             ],
             [
                 [
+                    "branch_end",
                     "move_successfully_imported_paths_to_storage",
                     "write_import_completions",
                     "clean_up_temporary_tables",
                     "clean_up_temporary_files",
                 ],
                 ["ensure_release_resource_locks_release_if_acquired"],
-                ["release_raw_data_resource_locks"],
+                ["release_raw_data_resource_locks", "branch_end"],
             ],
             [
                 [
+                    "branch_end",
                     "move_successfully_imported_paths_to_storage",
                     "write_import_completions",
                     "clean_up_temporary_files",
                     "clean_up_temporary_tables",
                 ],
                 ["ensure_release_resource_locks_release_if_acquired"],
-                ["release_raw_data_resource_locks"],
+                ["release_raw_data_resource_locks", "branch_end"],
             ],
         ]
 
@@ -336,7 +338,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 curr_task = root
                 for step_5_task_ids in step_5_path:
                     next_task = None
-                    assert len(curr_task.downstream_list) == len(step_5_task_ids)
+                    assert len(curr_task.downstream_task_ids) == len(step_5_task_ids)
                     for downstream_task in curr_task.downstream_list:
                         assert any(
                             task_id in downstream_task.task_id
@@ -2636,8 +2638,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.big_query_load\..*",
                     r".*_primary_import_branch\.cleanup_and_storage\..*",
                     # non-primary branches
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
                 ],
             )
             # failed state will only happen when resource releasing failed
@@ -2680,8 +2681,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.coalesce_import_ready_files",
                     r".*_primary_import_branch\.big_query_load\..*",
                     r".*_primary_import_branch\.cleanup_and_storage.*",
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
                 ],
             )
             # failed state will only happen when resource releasing failed
@@ -2713,10 +2713,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -2806,10 +2804,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                     # skipped bc no pre import norm!
                     r"raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.(?!generate_file_chunking_pod_arguments)",
                 ],
@@ -2900,10 +2896,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -3013,10 +3007,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -3130,8 +3122,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
                     # us_ll primary had no files
                     r"raw_data_branching\.us_ll_primary_import_branch\.pre_import_normalization\.(?!generate_file_chunking_pod_arguments)",
                     r"raw_data_branching\.us_ll_primary_import_branch\.big_query_load\..*",
@@ -3233,8 +3224,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY"},
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
                     # us_ll primary had no pre-import norm
                     r"raw_data_branching.us_ll_primary_import_branch.pre_import_normalization.(?!generate_file_chunking_pod_arguments)",
                 ],
@@ -3365,10 +3355,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ],
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -3464,10 +3452,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ],
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                     # skipped since no files to import after failed chunking step!
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.regroup_and_verify_file_chunks",
@@ -3568,10 +3554,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[],  # noooooone!
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result_three.dag_run_state)
@@ -3701,10 +3685,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ],
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -3800,10 +3782,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ],
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                     # skipped since no files to import after failed chunking step!
                     r"raw_data_branching\.us_xx_primary_import_branch.big_query_load\..*",
                 ],
@@ -3901,10 +3881,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[],  # noooooone!
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result_three.dag_run_state)
@@ -4033,10 +4011,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ],
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -4132,10 +4108,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ],
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                     # skipped since no files to import after no load prep!
                     "raw_data_branching.us_xx_primary_import_branch.big_query_load.raise_append_errors",
                     "raw_data_branching.us_xx_primary_import_branch.big_query_load.append_to_raw_data_table_for_batch",
@@ -4234,10 +4208,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[],  # noooooone!
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result_three.dag_run_state)
@@ -4371,10 +4343,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ],
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -4471,10 +4441,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ],
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result_two.dag_run_state)
@@ -4574,10 +4542,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[],  # noooooone!
                 expected_skipped_task_id_regexes=[
                     # branches that did not run
-                    "_secondary_import_branch_start",
-                    r".*_secondary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
-                    "us_ll_primary_import_branch_start",
-                    r".us_ll_primary_import_branch\.(?!ensure_release_resource_locks_release_if_acquired)",
+                    r".*_secondary_import_branch\..*",
+                    r".us_ll_primary_import_branch\..*",
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result_three.dag_run_state)

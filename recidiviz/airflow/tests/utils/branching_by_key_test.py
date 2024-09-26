@@ -18,17 +18,19 @@
 Unit test to test the branching_by_key.py helper functions.
 """
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from airflow.decorators import dag, task_group
 from airflow.exceptions import AirflowFailException
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
+from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.utils.branching_by_key import (
     BRANCH_END_TASK_NAME,
+    TaskGroupOrOperator,
     create_branching_by_key,
     select_state_code_parameter_branch,
 )
@@ -70,11 +72,11 @@ class TestBranchingByKey(AirflowIntegrationTest):
         branching_start = test_dag.get_task("branch_start")
         branching_end = test_dag.get_task("branch_end")
 
-        self.assertEqual(len(test_dag.tasks), 9)
+        self.assertEqual(len(test_dag.tasks), 6)
         self.assertEqual(branching_end.trigger_rule, TriggerRule.ALL_DONE)
         self.assertEqual(
             branching_start.downstream_task_ids,
-            {"US_XX_start", "US_YY_start", "US_ZZ_start"},
+            {"US_XX", "US_YY", "US_ZZ_group.US_ZZ_1"},
         )
         self.assertEqual(
             branching_end.upstream_task_ids, {"US_XX", "US_YY", "US_ZZ_group.US_ZZ_2"}
@@ -209,4 +211,52 @@ class TestBranchingByKey(AirflowIntegrationTest):
                 run_conf={STATE_CODE_FILTER: "US_ZZ"},
                 expected_skipped_task_id_regexes=["US_XX"],
                 expected_failure_task_id_regexes=["US_ZZ$", BRANCH_END_TASK_NAME],
+            )
+
+    def test_selected_state_trigger_rules_skipped_if_downstream(self) -> None:
+        @task_group(group_id="US_ZZ_group")
+        def us_zz_task_group() -> None:
+            operator1 = EmptyOperator(
+                task_id="US_ZZ_1", trigger_rule=TriggerRule.ALL_DONE
+            )  # since this is the root of the task group, should get skipped if branch
+            operator2 = EmptyOperator(task_id="US_ZZ_2")
+            operator1 >> operator2
+
+        def build_branch(code: str) -> List[TaskGroupOrOperator]:
+            with TaskGroup(f"{code}_group") as group:
+                operator1 = PythonOperator(
+                    task_id=f"{code}_1", python_callable=raise_task_failure
+                )
+                # since this task is downstream of branch, should be skipped if branch
+                # is skipped, but should run even if the upstream (code_1) fails
+                operator2 = EmptyOperator(
+                    task_id=f"{code}_2", trigger_rule=TriggerRule.ALL_DONE
+                )
+                operator1 >> operator2
+
+            return [operator2, group]
+
+        @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
+        def create_test_dag() -> None:
+            state_codes = {
+                "US_WW": build_branch("US_WW"),
+                "US_XX": build_branch("US_XX"),
+                "US_YY": EmptyOperator(task_id="US_YY"),
+                "US_ZZ": us_zz_task_group(),
+            }
+            create_branching_by_key(state_codes, lambda _: ["US_YY", "US_WW"])
+
+        test_dag = create_test_dag()
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                test_dag,
+                session=session,
+                expected_failure_task_id_regexes=["US_WW_group.US_WW_1"],
+                expected_skipped_task_id_regexes=["US_ZZ", "US_XX"],
+                expected_success_task_id_regexes=[
+                    "branch_start",
+                    "branch_end",
+                    "US_YY",
+                    "US_WW_group.US_WW_2",
+                ],
             )

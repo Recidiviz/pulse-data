@@ -22,7 +22,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from airflow.decorators import task
 from airflow.exceptions import AirflowFailException
 from airflow.models import BaseOperator, DagRun
-from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import BranchPythonOperator, PythonOperator
 from airflow.utils.state import TaskInstanceState
 from airflow.utils.task_group import TaskGroup
@@ -34,19 +33,54 @@ from recidiviz.airflow.dags.utils.config_utils import get_state_code_filter
 # pylint: disable=W0104 pointless-statement
 
 
+TaskGroupOrOperator = Union[BaseOperator, TaskGroup]
+
+
 def select_state_code_parameter_branch(dag_run: DagRun) -> Optional[List[str]]:
     state_code_filter = get_state_code_filter(dag_run)
     return [state_code_filter] if state_code_filter else None
 
 
-def _get_id_for_operator_or_group(
-    operator_or_group: Union[BaseOperator, TaskGroup]
-) -> str:
-    return (
-        operator_or_group.task_id
-        if isinstance(operator_or_group, BaseOperator)
-        else operator_or_group.group_id
+def get_branch_root_tasks(
+    branch_root_nodes: Union[TaskGroupOrOperator, List[TaskGroupOrOperator]]
+) -> List[BaseOperator]:
+    """Builds a list of branch root tasks by expanding any TaskGroups in |branch_root_nodes|
+    into a list of their root tasks (or tasks that are defined as not having any
+    upstream dependencies within the the TaskGroup).
+    """
+    branch_root_tasks: List[BaseOperator] = []
+    branch_root_nodes = (
+        [branch_root_nodes]
+        if not isinstance(branch_root_nodes, list)
+        else branch_root_nodes
     )
+    for branch_root_node in branch_root_nodes:
+        if isinstance(branch_root_node, BaseOperator):
+            branch_root_tasks.append(branch_root_node)
+        else:
+            branch_root_tasks.extend(branch_root_node.roots)
+    return branch_root_tasks
+
+
+def get_branch_leaf_tasks(
+    branch_leaf_nodes: Union[TaskGroupOrOperator, List[TaskGroupOrOperator]]
+) -> List[BaseOperator]:
+    """Builds a list of branch leaf tasks by expanding any TaskGroups in |branch_leaf_nodes|
+    into a list of their leaf tasks (or tasks that are defined as not having any
+    downstream dependencies within the the TaskGroup).
+    """
+    branch_leaf_tasks: List[BaseOperator] = []
+    branch_leaf_nodes = (
+        [branch_leaf_nodes]
+        if not isinstance(branch_leaf_nodes, list)
+        else branch_leaf_nodes
+    )
+    for branch_leaf_node in branch_leaf_nodes:
+        if isinstance(branch_leaf_node, BaseOperator):
+            branch_leaf_tasks.append(branch_leaf_node)
+        else:
+            branch_leaf_tasks.extend(branch_leaf_node.leaves)
+    return branch_leaf_tasks
 
 
 BRANCH_START_TASK_NAME = "branch_start"
@@ -54,7 +88,7 @@ BRANCH_END_TASK_NAME = "branch_end"
 
 
 def create_branching_by_key(
-    branch_by_key: Dict[str, Union[BaseOperator, TaskGroup]],
+    branch_by_key: Dict[str, Union[TaskGroupOrOperator, List[TaskGroupOrOperator]]],
     select_branches_fn: Callable[[DagRun], Optional[List[str]]],
 ) -> Tuple[BaseOperator, BaseOperator]:
     r"""Given a map of all possible branches and a branch filter function, creates a
@@ -72,15 +106,16 @@ def create_branching_by_key(
 
     If no branches are selected, the end node will fail.
     """
-    branch_ids_by_key: Dict[str, str] = {}
-    start_branch_by_key: Dict[str, EmptyOperator] = {}
+    branch_roots_by_key: Dict[str, List[BaseOperator]] = {}
+    branch_leaves_by_key: Dict[str, List[BaseOperator]] = {}
 
     for key, branch in branch_by_key.items():
-        branch_ids_by_key[key] = _get_id_for_operator_or_group(branch)
-        # Airflow does not allow branch operators to branch to TaskGroups, only Tasks,
-        # so we insert an empty task before a TaskGroup if it is the branch result
-        # to ensure we're able to go forward.
-        start_branch_by_key[key] = EmptyOperator(task_id=f"{key}_start")
+        # TODO(#33716) Airflow does not allow branch operators to branch to TaskGroups,
+        # only Tasks in Airflow versions pre-2.10.
+        # so for now, instead of branching to the TaskGroup, we can branch to the roots
+        # of the task group and then from the leaves to branch_end
+        branch_roots_by_key[key] = get_branch_root_tasks(branch)
+        branch_leaves_by_key[key] = get_branch_leaf_tasks(branch)
 
     @task.branch(task_id=BRANCH_START_TASK_NAME)
     def get_selected_branch_ids(dag_run: Optional[DagRun] = None) -> Any:
@@ -96,11 +131,12 @@ def create_branching_by_key(
             else branch_by_key.keys()
         )
         return [
-            start_branch_by_key[selected_key].task_id
+            branch_root.task_id
             for selected_key in selected_branch_keys
             # If the selected state does not have a branch in this branching,
             # we just skip it and select no branches for that state.
-            if selected_key in branch_ids_by_key
+            if selected_key in branch_by_key
+            for branch_root in branch_roots_by_key[selected_key]
         ]
 
     branch_start: BranchPythonOperator = get_selected_branch_ids()
@@ -127,6 +163,9 @@ def create_branching_by_key(
             )
 
     branch_end: PythonOperator = create_branch_end()
-    for key, branch in branch_by_key.items():
-        branch_start >> start_branch_by_key[key] >> branch >> branch_end
+    for key in branch_by_key:
+        for branch_root in branch_roots_by_key[key]:
+            branch_start >> branch_root
+        for branch_leaf in branch_leaves_by_key[key]:
+            branch_leaf >> branch_end
     return branch_start, branch_end

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """DAG configuration to run raw data imports"""
-
+from typing import List
 
 from airflow.decorators import dag
 from airflow.operators.empty import EmptyOperator
@@ -104,7 +104,10 @@ from recidiviz.airflow.dags.raw_data.write_file_processed_time_to_bq_file_metada
 from recidiviz.airflow.dags.raw_data.write_import_completions_query_generator import (
     WriteImportCompletionsSqlQueryGenerator,
 )
-from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
+from recidiviz.airflow.dags.utils.branching_by_key import (
+    TaskGroupOrOperator,
+    create_branching_by_key,
+)
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
@@ -127,7 +130,7 @@ NUM_BATCHES = 5  # TODO(#29946) determine reasonable default
 def create_single_state_code_ingest_instance_raw_data_import_branch(
     state_code: StateCode,
     raw_data_instance: DirectIngestInstance,
-) -> TaskGroup:
+) -> List[TaskGroupOrOperator]:
     """Given a |state_code| and |raw_data_instance|, creates a task group that
     executes the necessary steps to import all relevant files in the ingest bucket into
     BigQuery.
@@ -391,7 +394,6 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             trigger_rule=TriggerRule.ALL_DONE,
         )
 
-        # TODO(#30169) ensure locks release no matter what
         release_locks = CloudSqlQueryOperator(
             task_id="release_raw_data_resource_locks",
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
@@ -412,7 +414,11 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         # ------------------------------------------------------------------------------
 
-    return raw_data_branch
+    return [
+        raw_data_branch,
+        ensure_release_resource_locks_release_if_acquired,
+        clean_and_storage_jobs,
+    ]
 
 
 @dag(
