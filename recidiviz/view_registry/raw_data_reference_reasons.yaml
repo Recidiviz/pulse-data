@@ -93,6 +93,10 @@ US_AZ:
   AZ_DOC_TRANSITION_PRG_EVAL:
     task_eligibility_criteria_us_az.meets_functional_literacy: |-
       Needed information on when residents meet literacy requirements, this information is not ingested.
+  DEMOGRAPHICS:
+    task_eligibility_criteria_us_az.is_us_citizen_or_legal_permanent_resident:
+      |-
+      Needed a way to map the different citizen status ids in AZ to one another.
   DOC_EPISODE:
     task_eligibility_criteria_us_az.meets_functional_literacy: |-
       Needed a way to map the different ids in AZ to one another.
@@ -112,6 +116,9 @@ US_AZ:
       and this info is relevant to a reentry analysis in AZ.
     reference_views.us_az_location_metadata: |-
       We decode location names in the location metadata view.
+    task_eligibility_criteria_us_az.is_us_citizen_or_legal_permanent_resident:
+      |-
+      Needed a way to map the different citizen status ids in AZ to one another.
     task_eligibility_criteria_us_az.no_active_felony_detainers: |-
       Needed information on when detainers are placed on residents, this information is not ingested.
   MEA_PROFILES:
