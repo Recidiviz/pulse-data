@@ -441,6 +441,11 @@ class MetricInterface:
 
         if is_v2 is True:
             response["sector"] = system_value
+            response["is_self_reported"] = None
+            response["reporting_agency_id"] = None
+            response["reporting_agency_name"] = None
+            response["reporting_agency_url"] = None
+            response["reporting_agency_category"] = None
             return response
 
         response["system"] = system_value

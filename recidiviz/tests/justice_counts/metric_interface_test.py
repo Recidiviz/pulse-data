@@ -4362,6 +4362,11 @@ class TestMetricInterface(TestCase):
                 ],
                 "is_includes_excludes_configured": None,
                 "key": "LAW_ENFORCEMENT_ARRESTS",
+                "reporting_agency_id": None,
+                "reporting_agency_name": None,
+                "reporting_agency_url": None,
+                "reporting_agency_category": None,
+                "is_self_reported": None,
                 "sector": {
                     "display_name": "Law Enforcement",
                     "key": "LAW_ENFORCEMENT",
