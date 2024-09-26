@@ -20,7 +20,6 @@ from unittest.mock import patch
 
 from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
     get_raw_data_dag_enabled_state_and_instance_pairs,
-    get_raw_data_dag_enabled_states,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -44,11 +43,17 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
             },
         )
         self.get_existing_states_patcher.start()
+        self.raw_data_dag_enabled_patcher = patch(
+            "recidiviz.airflow.dags.utils.dag_orchestration_utils.is_raw_data_import_dag_enabled",
+        )
+        self.raw_data_dag_enabled_mock = self.raw_data_dag_enabled_patcher.start()
 
     def tearDown(self) -> None:
         self.get_existing_states_patcher.stop()
+        self.raw_data_dag_enabled_patcher.stop()
 
     def test_get_raw_data_dag_enabled_state_and_instance_pairs(self) -> None:
+        self.raw_data_dag_enabled_mock.return_value = True
         result = get_raw_data_dag_enabled_state_and_instance_pairs()
 
         self.assertSetEqual(
@@ -64,16 +69,14 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
                 (StateCode.US_WW, DirectIngestInstance.SECONDARY),
             },
         )
-
-    def test_get_raw_data_dag_enabled_states(self) -> None:
-        result = get_raw_data_dag_enabled_states()
-
-        self.assertSetEqual(
-            set(result),
-            {
-                StateCode.US_DD,
-                StateCode.US_XX,
-                StateCode.US_YY,
-                StateCode.US_WW,
-            },
+        enabled_states = {
+            (StateCode.US_DD, DirectIngestInstance.PRIMARY),
+            (StateCode.US_DD, DirectIngestInstance.SECONDARY),
+            (StateCode.US_XX, DirectIngestInstance.SECONDARY),
+        }
+        self.raw_data_dag_enabled_mock.side_effect = (
+            lambda state, instance: (state, instance) in enabled_states
         )
+        result = get_raw_data_dag_enabled_state_and_instance_pairs()
+
+        self.assertSetEqual(set(result), enabled_states)

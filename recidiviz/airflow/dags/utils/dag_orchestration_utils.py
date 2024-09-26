@@ -17,18 +17,14 @@
 """
 Helper functions for orchestrating the Ingest Airflow Dag.
 """
-from typing import List, Set, Tuple
+from typing import Set, Tuple
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-
-
-def get_raw_data_dag_enabled_states() -> List[StateCode]:
-    """Returns a List of all state codes enabled for the raw data dag"""
-    return get_direct_ingest_states_existing_in_env()
 
 
 def get_raw_data_dag_enabled_state_and_instance_pairs() -> (
@@ -39,6 +35,7 @@ def get_raw_data_dag_enabled_state_and_instance_pairs() -> (
     """
     return {
         (state, instance)
-        for state in get_raw_data_dag_enabled_states()
+        for state in get_direct_ingest_states_existing_in_env()
         for instance in DirectIngestInstance
+        if is_raw_data_import_dag_enabled(state, instance)
     }

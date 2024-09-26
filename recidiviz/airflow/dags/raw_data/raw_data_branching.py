@@ -26,34 +26,66 @@ from recidiviz.airflow.dags.utils.config_utils import (
 )
 from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
     get_raw_data_dag_enabled_state_and_instance_pairs,
-    get_raw_data_dag_enabled_states,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
-def get_raw_data_import_branch_key(state_code: str, ingest_instance: str) -> str:
+def get_raw_data_import_branch_key(
+    state_code: StateCode, ingest_instance: DirectIngestInstance
+) -> str:
     """Given a |state_code| and |ingest_instance|, returns the name of the branch that
     will execute the raw data import.
     """
-    return f"{state_code.lower()}_{ingest_instance.lower()}_import_branch"
+    return f"{state_code.value.lower()}_{ingest_instance.value.lower()}_import_branch"
 
 
 def get_raw_data_branch_filter(dag_run: DagRun) -> Optional[List[str]]:
     """Returns the branch key associated with the parameters passed to |dag_run|;
     otherwise, returns None if no parameters are provided.
     """
-    state_code = get_state_code_filter(dag_run)
-    raw_data_instance = get_ingest_instance(dag_run)
+    selected_state_code_str = get_state_code_filter(dag_run)
+    selected_state_code = (
+        StateCode(selected_state_code_str.upper()) if selected_state_code_str else None
+    )
+    selected_raw_data_instance_str = get_ingest_instance(dag_run)
+    selected_raw_data_instance = (
+        DirectIngestInstance(selected_raw_data_instance_str.upper())
+        if selected_raw_data_instance_str
+        else None
+    )
 
-    if state_code and raw_data_instance:
-        return [get_raw_data_import_branch_key(state_code, raw_data_instance)]
-    if raw_data_instance:
+    if selected_state_code and selected_raw_data_instance:
+
+        if not is_raw_data_import_dag_enabled(
+            selected_state_code, selected_raw_data_instance
+        ):
+            raise ValueError(
+                f"Cannot run raw data import for {selected_state_code.value} and "
+                f"{selected_raw_data_instance.value} as it is not enabled for the raw "
+                f"data import dag yet"
+            )
+
         return [
-            get_raw_data_import_branch_key(state_code.value, raw_data_instance)
-            for state_code in get_raw_data_dag_enabled_states()
+            get_raw_data_import_branch_key(
+                selected_state_code, selected_raw_data_instance
+            )
         ]
-    if state_code:
+    if selected_raw_data_instance:
+        selected_branches = [
+            get_raw_data_import_branch_key(state_code, raw_data_instance)
+            for state_code, raw_data_instance in get_raw_data_dag_enabled_state_and_instance_pairs()
+            if raw_data_instance == selected_raw_data_instance
+        ]
+        if not selected_branches:
+            raise ValueError(
+                f"Cannot run raw data import for {selected_raw_data_instance.value} as "
+                f"there are not states that have this instance enabled"
+            )
+
+        return selected_branches
+    if selected_state_code:
         raise ValueError("Cannot build branch filter with only a state code")
 
     return None
@@ -75,7 +107,7 @@ def create_raw_data_branch_map(
         ingest_instance,
     ) in get_raw_data_dag_enabled_state_and_instance_pairs():
         task_group_by_task_id[
-            get_raw_data_import_branch_key(state_code.value, ingest_instance.value)
+            get_raw_data_import_branch_key(state_code, ingest_instance)
         ] = branched_task_function(state_code, ingest_instance)
 
     return task_group_by_task_id

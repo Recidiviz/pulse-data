@@ -116,9 +116,21 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             },
         )
         self.environment_patcher.start()
+        self.raw_data_dag_enabled_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.raw_data_branching.is_raw_data_import_dag_enabled",
+            return_value=True,
+        )
+        self.raw_data_dag_enabled_patcher.start()
+        self.raw_data_dag_enabled_patcher2 = patch(
+            "recidiviz.airflow.dags.utils.dag_orchestration_utils.is_raw_data_import_dag_enabled",
+            return_value=True,
+        )
+        self.raw_data_dag_enabled_patcher2.start()
 
     def tearDown(self) -> None:
         self.environment_patcher.stop()
+        self.raw_data_dag_enabled_patcher.stop()
+        self.raw_data_dag_enabled_patcher2.stop()
 
     def test_import(self) -> None:
         """Just tests that raw data import dag file can be imported; needs to be done
@@ -344,7 +356,6 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
     def setUp(self) -> None:
         super().setUp()
         self.dag_id = get_raw_data_import_dag_id(_PROJECT_ID)
-        test_state_codes = [StateCode.US_XX, StateCode.US_YY]
         test_state_code_and_instance_pairs = [
             (StateCode.US_XX, DirectIngestInstance.PRIMARY),
             (StateCode.US_XX, DirectIngestInstance.SECONDARY),
@@ -361,11 +372,11 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
             return_value=test_state_code_and_instance_pairs,
         )
         self.raw_data_enabled_pairs_two.start()
-        self.raw_data_enabled_states = patch(
-            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_states",
-            return_value=test_state_codes,
+        self.raw_data_dag_enabled_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.raw_data_branching.is_raw_data_import_dag_enabled",
+            return_value=True,
         )
-        self.raw_data_enabled_states.start()
+        self.raw_data_dag_enabled_patcher.start()
         self.region_module_patch = patch(
             "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
             fake_regions,
@@ -405,7 +416,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
     def tearDown(self) -> None:
         self.raw_data_enabled_pairs.stop()
         self.raw_data_enabled_pairs_two.stop()
-        self.raw_data_enabled_states.stop()
+        self.raw_data_dag_enabled_patcher.stop()
         self.cloud_sql_db_hook_patcher.stop()
         self.gcs_operator_patcher.stop()
         self.region_module_patch.stop()
@@ -827,7 +838,6 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         )
         self.environment_patcher.start()
 
-        test_state_codes = [StateCode.US_XX, StateCode.US_YY]
         test_state_code_and_instance_pairs = [
             (StateCode.US_XX, DirectIngestInstance.PRIMARY),
             (StateCode.US_XX, DirectIngestInstance.SECONDARY),
@@ -844,10 +854,11 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
             return_value=test_state_code_and_instance_pairs,
         )
         self.raw_data_enabled_pairs_two.start()
-        self.raw_data_enabled_states = patch(
-            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_states",
-            return_value=test_state_codes,
+        self.raw_data_dag_enabled_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.raw_data_branching.is_raw_data_import_dag_enabled",
+            return_value=True,
         )
+        self.raw_data_dag_enabled_patcher.start()
 
         # operator mocks ---
 
@@ -892,7 +903,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         self.environment_patcher.stop()
         self.raw_data_enabled_pairs.stop()
         self.raw_data_enabled_pairs_two.stop()
-        self.raw_data_enabled_states.stop()
+        self.raw_data_dag_enabled_patcher.stop()
         self.kpo_operator_patcher.stop()
         self.file_chunking_args_patcher.stop()
         self.verify_file_chunks_patcher.stop()
@@ -2163,7 +2174,6 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
         # env mocks ---
 
         self.dag_id = get_raw_data_import_dag_id(_PROJECT_ID)
-        test_state_codes = [StateCode.US_XX, StateCode.US_YY]
         test_state_code_and_instance_pairs = [
             (StateCode.US_XX, DirectIngestInstance.PRIMARY),
             (StateCode.US_XX, DirectIngestInstance.SECONDARY),
@@ -2179,11 +2189,12 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
             "recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group.get_raw_data_dag_enabled_state_and_instance_pairs",
             return_value=test_state_code_and_instance_pairs,
         )
-        self.raw_data_enabled_pairs_two.start()
-        self.raw_data_enabled_states = patch(
-            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_states",
-            return_value=test_state_codes,
+        self.raw_data_dag_enabled_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.raw_data_branching.is_raw_data_import_dag_enabled",
+            return_value=True,
         )
+        self.raw_data_dag_enabled_patcher.start()
+        self.raw_data_enabled_pairs_two.start()
         self.region_module_patch = patch(
             "recidiviz.airflow.dags.raw_data.utils.direct_ingest_regions_module",
             fake_regions,
@@ -2234,7 +2245,7 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
     def tearDown(self) -> None:
         self.raw_data_enabled_pairs.stop()
         self.raw_data_enabled_pairs_two.stop()
-        self.raw_data_enabled_states.stop()
+        self.raw_data_dag_enabled_patcher.stop()
         self.metadata_patcher.stop()
         self.region_module_patch.stop()
         self.coalesce_patcher.stop()
@@ -2434,7 +2445,6 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "recidiviz.utils.metadata.project_id", return_value=_PROJECT_ID
         )
         self.project_patcher.start()
-        test_state_codes = [StateCode.US_XX, StateCode.US_LL]
         test_state_code_and_instance_pairs = [
             (StateCode.US_XX, DirectIngestInstance.PRIMARY),
             (StateCode.US_XX, DirectIngestInstance.SECONDARY),
@@ -2451,11 +2461,11 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             return_value=test_state_code_and_instance_pairs,
         )
         self.raw_data_enabled_pairs_two.start()
-        self.raw_data_enabled_states = patch(
-            "recidiviz.airflow.dags.raw_data.raw_data_branching.get_raw_data_dag_enabled_states",
-            return_value=test_state_codes,
+        self.raw_data_dag_enabled_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.raw_data_branching.is_raw_data_import_dag_enabled",
+            return_value=True,
         )
-        self.raw_data_enabled_states.start()
+        self.raw_data_dag_enabled_patcher.start()
         self.region_module_patch = [
             patch(target, fake_regions)
             for target in [
@@ -2539,7 +2549,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         self.project_patcher.stop()
         self.raw_data_enabled_pairs.stop()
         self.raw_data_enabled_pairs_two.stop()
-        self.raw_data_enabled_states.stop()
+        self.raw_data_dag_enabled_patcher.stop()
         for patcher in self.region_module_patch:
             patcher.start()
         # operators ---
