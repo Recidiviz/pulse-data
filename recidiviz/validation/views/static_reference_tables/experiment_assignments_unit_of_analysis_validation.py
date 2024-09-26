@@ -39,7 +39,7 @@ _QUERY_TEMPLATE = f"""
 SELECT 
     *, state_code as region_code
 FROM
-    `{{project_id}}.static_reference_tables.experiment_assignments_materialized`
+    `{{project_id}}.experiments_metadata.experiment_assignments_materialized`
 WHERE
     unit_type NOT IN ({list_to_query_string([e.value for e in MetricUnitOfAnalysisType], quoted=True)})
 """

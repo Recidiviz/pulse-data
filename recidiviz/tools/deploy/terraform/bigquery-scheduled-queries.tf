@@ -69,6 +69,7 @@ module "manually_updated_source_tables" {
   description = "This dataset includes source tables that are updated manually at some cadence, e.g. via a script or a manual BQ query in the UI to insert rows. Descriptions for tables added to this dataset should include information about how/when the table is updated."
 }
 
+#TODO(#33694) - Remove this module once the new experiments_metadata dataset is fully operational
 # `experiment_assignments` is a log of which units are assigned to which experiments.
 # The source data is located in a Google Sheet.
 resource "google_bigquery_data_transfer_config" "experiment_assignments" {

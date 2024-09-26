@@ -16,7 +16,9 @@
 # =============================================================================
 """Creates the view builder and view for person/client experiment assignments."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DATASET
+from recidiviz.calculator.query.experiments_metadata.dataset_config import (
+    EXPERIMENTS_METADATA_DATASET,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
@@ -156,7 +158,7 @@ INNER JOIN last_day_of_data USING(state_code)
 """
 
 PERSON_ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=EXPERIMENTS_DATASET,
+    dataset_id=EXPERIMENTS_METADATA_DATASET,
     view_id=PERSON_ASSIGNMENTS_VIEW_NAME,
     view_query_template=PERSON_ASSIGNMENTS_QUERY_TEMPLATE,
     description=PERSON_ASSIGNMENTS_VIEW_DESCRIPTION,

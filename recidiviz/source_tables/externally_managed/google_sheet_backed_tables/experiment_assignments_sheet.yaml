@@ -1,0 +1,35 @@
+address:
+  dataset_id: google_sheet_backed_tables
+  table_id: experiment_assignments_sheet
+description: "Experiment assignments being pulled from a Google Sheets. For more
+  information about how to update this table, see
+  https://go/experiment-assignments."
+schema:
+  - name: experiment_id
+    type: STRING
+    mode: NULLABLE
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: unit_id
+    type: STRING
+    mode: NULLABLE
+  - name: unit_type
+    type: STRING
+    mode: NULLABLE
+  - name: variant_id
+    type: STRING
+    mode: NULLABLE
+  - name: variant_date
+    type: DATE
+    mode: NULLABLE
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - https://docs.google.com/spreadsheets/d/1eDvMcwW7hI7AXUZQvIHvJodajeKKPKftvMgNx_FrLBk/edit?gid=0#gid=0
+  sourceFormat: GOOGLE_SHEETS
+  autodetect: false
+  ignoreUnknownValues: false
+  googleSheetsOptions:
+    skipLeadingRows: "1"
+    range: Assignments

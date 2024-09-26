@@ -1083,7 +1083,7 @@ FROM
         description="Assignment to a tracked experiment, with one variant assignment per person-day-experiment-variant",
         sql_source="""SELECT *
 FROM
-    `{project_id}.experiments.person_assignments_materialized`
+    `{project_id}.experiments_metadata.person_assignments_materialized`
 """,
         attribute_cols=["experiment_id", "variant_id"],
         event_date_col="variant_date",

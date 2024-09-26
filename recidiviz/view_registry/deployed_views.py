@@ -27,7 +27,7 @@ from recidiviz.aggregated_metrics.view_config import (
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.build_views_to_update import build_views_to_update
-from recidiviz.calculator.query.experiments.view_config import (
+from recidiviz.calculator.query.experiments_metadata.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXPERIMENTS_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.externally_shared_views.view_config import (
@@ -124,6 +124,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "dashboard_views",
     "dataflow_metrics_materialized",
     "experiments",
+    "experiments_metadata",
     "external_reference_views",
     "externally_shared_views",
     "impact_dashboard",

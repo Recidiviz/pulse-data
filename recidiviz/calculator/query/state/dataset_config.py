@@ -101,3 +101,9 @@ AUTH0_EVENTS: str = "auth0_events"
 
 # Views that contain aggregated metrics related to impact reports
 IMPACT_REPORTS_DATASET_ID = "impact_reports"
+
+# Views backed by Google Sheets
+GOOGLE_SHEET_BACKED_TABLES_DATASET: str = "google_sheet_backed_tables"
+
+# Views that are updated manually
+MANUALLY_UPDATED_SOURCE_TABLES_DATASET: str = "manually_updated_source_tables"

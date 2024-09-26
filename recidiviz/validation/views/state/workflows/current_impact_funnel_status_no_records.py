@@ -18,7 +18,7 @@
 """A view revealing opportunity types with no rows in the `current_impact_funnel_status` view."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.experiments import (
+from recidiviz.calculator.query.experiments_metadata import (
     dataset_config as experiments_dataset_config,
 )
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
@@ -51,7 +51,7 @@ CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_VIEW_BUILDER = SimpleBigQuer
     description=CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_DESCRIPTION,
     reference_views_dataset=state_dataset_config.REFERENCE_VIEWS_DATASET,
     workflows_dataset=state_dataset_config.WORKFLOWS_VIEWS_DATASET,
-    experiments_dataset=experiments_dataset_config.EXPERIMENTS_DATASET,
+    experiments_dataset=experiments_dataset_config.EXPERIMENTS_METADATA_DATASET,
     should_materialize=True,
 )
 

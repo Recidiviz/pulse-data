@@ -942,13 +942,13 @@ def generate_person_assignments_with_attributes_view(
         SELECT
             *, officer_external_id AS officer_id,
         FROM
-            `experiments.officer_assignments_materialized`
+            `experiments_metadata.officer_assignments_materialized`
     ) 
     USING
         (state_code, officer_id)
     {{% else %}}
     INNER JOIN
-        `experiments.state_assignments_materialized`
+        `experiments_metadata.state_assignments_materialized`
     USING
         (state_code)
     {{% endif %}}

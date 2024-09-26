@@ -44,6 +44,9 @@ from recidiviz.validation.validation_models import (
     ValidationCheckType,
 )
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
+from recidiviz.validation.views.state.prod_staging_comparison.experiments_assigments_large_prod_staging_comparison import (
+    EXPERIMENT_ASSIGNMENTS_LARGE_PROD_STAGING_COMPARISON_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.prod_staging_comparison.incarceration_admission_external_prod_staging_comparison import (
     INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
@@ -136,6 +139,7 @@ class TestConfiguredValidations(unittest.TestCase):
             and builder
             not in [
                 # External validation data
+                EXPERIMENT_ASSIGNMENTS_LARGE_PROD_STAGING_COMPARISON_VIEW_BUILDER,
                 INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
                 INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
                 INCARCERATION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
