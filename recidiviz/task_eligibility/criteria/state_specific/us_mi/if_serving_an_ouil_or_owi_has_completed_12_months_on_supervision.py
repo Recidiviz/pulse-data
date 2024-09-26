@@ -112,7 +112,7 @@ once an active supervision sub session resumes. */
       (SELECT
           *,
           -- Here is where we define which sessions within a supervision super session should stop the clock
-          IF(compartment_level_2 IN ('BENCH_WARRANT') OR 
+          IF(compartment_level_2 IN ('BENCH_WARRANT', 'TEMPORARY_CUSTODY') OR 
              correctional_level IN ('ABSCONSION', 'IN_CUSTODY'), session_length_days, 0) AS inactive_session_days,
       FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` 
       ) sub
