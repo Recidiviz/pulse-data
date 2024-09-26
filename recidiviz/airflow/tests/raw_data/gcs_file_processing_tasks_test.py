@@ -27,6 +27,7 @@ from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
     build_import_ready_files,
     create_chunk_batches,
     create_file_batches,
+    filter_normalization_results_based_on_errors,
     read_and_verify_column_headers_concurrently,
     regroup_normalized_file_chunks,
     verify_file_checksums,
@@ -678,6 +679,137 @@ class TestRegroupAndVerifyFileChunks(unittest.TestCase):
             GcsfsFilePath.from_absolute_path("outpath/a1.csv"),
             GcsfsFilePath.from_absolute_path("outpath/a2.csv"),
         ]
+
+    def test_filter_normalization_results_based_on_errors_empty(self) -> None:
+        assert filter_normalization_results_based_on_errors([], []) == ([], [])
+
+    def test_filter_normalization_results_based_on_errors_no_blocking(self) -> None:
+        files = [
+            ImportReadyFile(
+                file_id=1,
+                file_tag="tag_a",
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+                original_file_paths=[GcsfsFilePath.from_absolute_path("path/a.csv")],
+                pre_import_normalized_file_paths=None,
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=0
+                ),
+            ),
+            ImportReadyFile(
+                file_id=2,
+                file_tag="tag_b",
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+                original_file_paths=[GcsfsFilePath.from_absolute_path("path/b.csv")],
+                pre_import_normalized_file_paths=None,
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=0
+                ),
+            ),
+        ]
+
+        failures = [
+            # tag b failure is newer than successful tag b
+            RawFileProcessingError(
+                error_msg="test error",
+                original_file_path=GcsfsFilePath.from_absolute_path(
+                    "test_bucket/unprocessed_2024-01-02T00:00:00:000000_raw_tag_b.csv"
+                ),
+                temporary_file_paths=None,
+            ),
+            # no successful tag c
+            RawFileProcessingError(
+                error_msg="test error",
+                original_file_path=GcsfsFilePath.from_absolute_path(
+                    "test_bucket/unprocessed_2024-01-02T00:00:00:000000_raw_tag_c.csv"
+                ),
+                temporary_file_paths=None,
+            ),
+        ]
+
+        assert filter_normalization_results_based_on_errors(files, failures) == (
+            files,
+            [],
+        )
+
+    def test_filter_normalization_results_based_on_errors_blocking(self) -> None:
+        files = [
+            ImportReadyFile(
+                file_id=1,
+                file_tag="tag_a",
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+                original_file_paths=[GcsfsFilePath.from_absolute_path("path/a.csv")],
+                pre_import_normalized_file_paths=None,
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=0
+                ),
+            ),
+            ImportReadyFile(
+                file_id=2,
+                file_tag="tag_b",
+                update_datetime=datetime.datetime(
+                    2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+                original_file_paths=[GcsfsFilePath.from_absolute_path("path/b.csv")],
+                pre_import_normalized_file_paths=None,
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=0
+                ),
+            ),
+            ImportReadyFile(
+                file_id=3,
+                file_tag="tag_b",
+                update_datetime=datetime.datetime(
+                    2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC
+                ),
+                original_file_paths=[GcsfsFilePath.from_absolute_path("path/b.csv")],
+                pre_import_normalized_file_paths=None,
+                bq_load_config=RawFileBigQueryLoadConfig(
+                    schema_fields=[], skip_leading_rows=0
+                ),
+            ),
+        ]
+
+        failures = [
+            # tag b failure is newer than one successful tag b but older than another,
+            # so it should block import
+            RawFileProcessingError(
+                error_msg="test error",
+                original_file_path=GcsfsFilePath.from_absolute_path(
+                    "test_bucket/unprocessed_2024-01-02T00:00:00:000000_raw_tag_b.csv"
+                ),
+                temporary_file_paths=None,
+            ),
+            RawFileProcessingError(
+                error_msg="test error",
+                original_file_path=GcsfsFilePath.from_absolute_path(
+                    "test_bucket/unprocessed_2024-01-04T00:00:00:000000_raw_tag_b.csv"
+                ),
+                temporary_file_paths=None,
+            ),
+            # no successful tag c
+            RawFileProcessingError(
+                error_msg="test error",
+                original_file_path=GcsfsFilePath.from_absolute_path(
+                    "test_bucket/unprocessed_2024-01-02T00:00:00:000000_raw_tag_c.csv"
+                ),
+                temporary_file_paths=None,
+            ),
+        ]
+
+        (
+            non_blocked_files,
+            skipped_errors,
+        ) = filter_normalization_results_based_on_errors(files, failures)
+
+        assert non_blocked_files == files[:2]
+        assert len(skipped_errors) == 1
+        assert skipped_errors[0].original_file_path == files[2].original_file_paths[0]
 
 
 class TestReadAndVerifyColumnHeaders(unittest.TestCase):

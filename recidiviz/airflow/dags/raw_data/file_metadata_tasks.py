@@ -399,7 +399,7 @@ def _build_file_imports_for_errors(
             historical_diffs_active=_historical_diffs_active_for_tag(
                 raw_region_config,
                 raw_data_instance,
-                processing_error.file_tag,
+                processing_error.parts.file_tag,
             ),
         )
         if processing_error.temporary_file_paths:

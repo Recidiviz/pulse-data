@@ -20,6 +20,7 @@ import concurrent.futures
 import logging
 import traceback
 from collections import defaultdict
+from itertools import groupby
 from typing import Any, Dict, List, Tuple
 
 from airflow.decorators import task
@@ -252,15 +253,65 @@ def regroup_and_verify_file_chunks(
         requires_pre_import_normalization_files_bq_schema,
     )
 
+    all_errors = [
+        *upstream_errors,
+        *checksum_errors,
+        *input_path_incomplete_errors,
+        *conceptual_file_incomplete_errors,
+    ]
+
+    (
+        non_blocked_import_ready_files,
+        skipped_errors,
+    ) = filter_normalization_results_based_on_errors(import_ready_files, all_errors)
+
     return BatchedTaskInstanceOutput[ImportReadyFile, RawFileProcessingError](
-        errors=[
-            *upstream_errors,
-            *checksum_errors,
-            *input_path_incomplete_errors,
-            *conceptual_file_incomplete_errors,
-        ],
-        results=import_ready_files,
+        errors=[*all_errors, *skipped_errors],
+        results=non_blocked_import_ready_files,
     ).serialize()
+
+
+def filter_normalization_results_based_on_errors(
+    import_ready_files: List[ImportReadyFile],
+    all_processing_errors: List[RawFileProcessingError],
+) -> Tuple[List[ImportReadyFile], List[RawFileProcessingError]]:
+    """Filters |import_ready_files| by removing all elements wholes file_tag has an
+    error in |all_processing_errors| with an older update_datetime.
+    """
+    non_blocked_import_ready_files: List[ImportReadyFile] = []
+    skipped_files: List[RawFileProcessingError] = []
+
+    blocking_failed_files_by_file_tag: Dict[str, RawFileProcessingError] = {
+        file_tag: min(group, key=lambda x: x.parts.utc_upload_datetime)
+        for file_tag, group in groupby(
+            sorted(all_processing_errors, key=lambda x: x.parts.file_tag),
+            lambda x: x.parts.file_tag,
+        )
+    }
+
+    for import_ready_file in import_ready_files:
+        if (
+            import_ready_file.file_tag in blocking_failed_files_by_file_tag
+            and blocking_failed_files_by_file_tag[
+                import_ready_file.file_tag
+            ].parts.utc_upload_datetime
+            < import_ready_file.update_datetime
+        ):
+            blocking_error = blocking_failed_files_by_file_tag[
+                import_ready_file.file_tag
+            ]
+            skipped_files.append(
+                RawFileProcessingError(
+                    # TODO(#33551) create a skipped file error that encapsulates multiple original file paths
+                    original_file_path=import_ready_file.original_file_paths[0],
+                    temporary_file_paths=import_ready_file.pre_import_normalized_file_paths,
+                    error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_path} \n\n: {blocking_error.error_msg}",
+                )
+            )
+            continue
+        non_blocked_import_ready_files.append(import_ready_file)
+
+    return non_blocked_import_ready_files, skipped_files
 
 
 def verify_file_checksums(
