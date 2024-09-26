@@ -17,6 +17,7 @@
 
 import { Button, Checkbox, Form, Input, Select } from "antd";
 import { observer } from "mobx-react-lite";
+import { useState } from "react";
 import { useHistory } from "react-router-dom";
 import { z } from "zod";
 
@@ -50,6 +51,8 @@ const OpportunityConfigurationForm = ({
   const template = presenter?.selectedOpportunityConfiguration;
   const history = useHistory();
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const initial = {
     ...template,
     denialReasons: template && Object.entries(template.denialReasons),
@@ -80,6 +83,7 @@ const OpportunityConfigurationForm = ({
   return (
     <Form
       onFinish={async (values) => {
+        setIsSubmitting(true);
         const config = babyOpportunityConfigurationSchema.parse({
           ...values,
           ...Object.fromEntries(
@@ -99,6 +103,7 @@ const OpportunityConfigurationForm = ({
           notifications: addNotificationIds(values.notifications) ?? [],
         });
         const success = await presenter.createOpportunityConfiguration(config);
+        setIsSubmitting(false);
         if (success) history.push("..");
       }}
       autoComplete="off"
@@ -246,8 +251,8 @@ const OpportunityConfigurationForm = ({
           );
         }}
       </MultiEntry>
-      <Button type="primary" htmlType="submit">
-        Submit
+      <Button type="primary" htmlType="submit" disabled={isSubmitting}>
+        Save And Apply Configuration
       </Button>
     </Form>
   );
