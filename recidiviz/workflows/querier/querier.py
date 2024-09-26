@@ -302,6 +302,11 @@ class WorkflowsQuerier:
         deactivating any existing configs with the same gating for the given opportunity.
         """
         with self.database_session() as session:
+            # This level of transaction isolation is required to ensure that another
+            # configuration isn't created during our transaction and therefore missed
+            # by our update statement.
+            # There is no retry logic, so a serialization failure will cause the whole request to fail
+            session.connection(execution_options={"isolation_level": "SERIALIZABLE"})
 
             insert_statement = (
                 insert(OpportunityConfiguration)
