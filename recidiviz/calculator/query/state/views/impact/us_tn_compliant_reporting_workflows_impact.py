@@ -40,7 +40,7 @@ WITH variant_assignments AS (
         variant_id,
         variant_date,
     FROM
-        `{project_id}.static_reference_tables.experiment_assignments_materialized`
+        `{project_id}.experiments_metadata.experiment_assignments_materialized`
     WHERE
         experiment_id = "US_TN_COMPLIANT_REPORTING_WORKFLOWS"
         AND variant_id IN ("WORKFLOWS_LAUNCH")

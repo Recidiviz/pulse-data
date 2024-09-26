@@ -49,7 +49,7 @@ from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 def update_source_file_yaml(table_address: BigQueryAddress) -> None:
     dataset_path = os.path.join(
         os.path.abspath(os.path.dirname(recidiviz.__file__)),
-        "source_tables/schema",
+        "source_tables/externally_managed",
         table_address.dataset_id,
     )
 

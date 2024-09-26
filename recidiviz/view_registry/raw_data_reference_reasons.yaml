@@ -1266,10 +1266,10 @@ US_PA:
     analyst_data.projected_discharges: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   dbo_vwCCISAllMvmt:
-    experiments.person_assignments: |-
+    experiments_metadata.person_assignments: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   dbo_vwCCISAllProgDtls:
-    experiments.person_assignments: |-
+    experiments_metadata.person_assignments: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
 US_TN:
   AssignedStaff:

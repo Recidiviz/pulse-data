@@ -14,22 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Experiments view configuration."""
-from typing import Sequence
+"""Dataset configuration for our experiments metadata"""
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.experiments.views.officer_assignments import (
-    OFFICER_ASSIGNMENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.experiments.views.person_assignments import (
-    PERSON_ASSIGNMENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.experiments.views.state_assignments import (
-    STATE_ASSIGNMENTS_VIEW_BUILDER,
-)
-
-VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
-    OFFICER_ASSIGNMENTS_VIEW_BUILDER,
-    PERSON_ASSIGNMENTS_VIEW_BUILDER,
-    STATE_ASSIGNMENTS_VIEW_BUILDER,
-]
+EXPERIMENTS_METADATA_DATASET: str = "experiments_metadata"
+CASE_TRIAGE_SEGMENT_DATASET: str = "case_triage_segment_metrics"

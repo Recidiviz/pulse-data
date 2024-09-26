@@ -27,10 +27,10 @@ from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATAS
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.calculator.query.experiments.views.officer_assignments import (
+from recidiviz.calculator.query.experiments_metadata.views.officer_assignments import (
     OFFICER_ASSIGNMENTS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.experiments.views.state_assignments import (
+from recidiviz.calculator.query.experiments_metadata.views.state_assignments import (
     STATE_ASSIGNMENTS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.externally_shared_views.dataset_config import (

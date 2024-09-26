@@ -19,6 +19,8 @@ from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_EVENTS,
     AUTH0_PROD_ACTION_LOGS,
     EXPORT_ARCHIVES_DATASET,
+    GOOGLE_SHEET_BACKED_TABLES_DATASET,
+    MANUALLY_UPDATED_SOURCE_TABLES_DATASET,
     POPULATION_PROJECTION_OUTPUT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
     SENDGRID_EMAIL_DATA_DATASET,
@@ -72,6 +74,12 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
         "Stores data gathered from external sources. CSV versions of tables are "
         "committed to our codebase, and updates to tables are fully managed by "
         "Terraform."
+    ),
+    GOOGLE_SHEET_BACKED_TABLES_DATASET: (
+        "Stores views that are backed by Google Sheets."
+    ),
+    MANUALLY_UPDATED_SOURCE_TABLES_DATASET: (
+        "Stores source tables that are updated manually."
     ),
     POPULATION_PROJECTION_OUTPUT_DATASET: (
         "Stores output of the population projection simulations."

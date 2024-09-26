@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,9 @@
 # =============================================================================
 """Creates the view builder and view for officer experiment assignments."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DATASET
+from recidiviz.calculator.query.experiments_metadata.dataset_config import (
+    EXPERIMENTS_METADATA_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -47,7 +49,7 @@ WITH last_day_of_data AS (
         variant_id,
         variant_date,
     FROM
-        `{project_id}.static_reference_tables.experiment_assignments_materialized`
+        `{project_id}.experiments_metadata.experiment_assignments_materialized`
     WHERE
         unit_type = "OFFICER"
 )
@@ -61,7 +63,7 @@ WITH last_day_of_data AS (
       variant_id,
       variant_date,
     FROM
-      `{project_id}.experiments.state_assignments_materialized` a
+      `{project_id}.experiments_metadata.state_assignments_materialized` a
     INNER JOIN
       `{project_id}.sessions.supervision_officer_sessions_materialized` b
     ON
@@ -121,7 +123,7 @@ INNER JOIN last_day_of_data USING(state_code)
 """
 
 OFFICER_ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=EXPERIMENTS_DATASET,
+    dataset_id=EXPERIMENTS_METADATA_DATASET,
     view_id=OFFICER_ASSIGNMENTS_VIEW_NAME,
     view_query_template=OFFICER_ASSIGNMENTS_QUERY_TEMPLATE,
     description=OFFICER_ASSIGNMENTS_VIEW_DESCRIPTION,
