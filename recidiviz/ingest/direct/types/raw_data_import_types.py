@@ -110,9 +110,9 @@ class RawFileProcessingError(RawDataImportError):
     def __str__(self) -> str:
         return f"{self.error_type.value} with {self.original_file_path.abs_path()} failed with:\n\n{self.error_msg}"
 
-    @property
-    def file_tag(self) -> str:
-        return filename_parts_from_path(self.original_file_path).file_tag
+    @cached_property
+    def parts(self) -> DirectIngestRawFilenameParts:
+        return filename_parts_from_path(self.original_file_path)
 
     def serialize(self) -> str:
         result_dict = {

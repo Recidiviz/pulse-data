@@ -1396,7 +1396,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         self.input_requires_normalization = [
             "testing/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv",
             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
-            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
+            "testing/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey.csv",
         ]
 
         # chunking returns fine
@@ -1441,7 +1441,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                 ),
                 RequiresPreImportNormalizationFile(
                     path=GcsfsFilePath.from_absolute_path(
-                        "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
+                        "testing/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey.csv",
                     ),
                     pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
                     chunk_boundaries=[
@@ -1544,10 +1544,10 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                         ),
                         PreImportNormalizedCsvChunkResult(
                             input_file_path=GcsfsFilePath.from_absolute_path(
-                                "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
+                                "testing/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey.csv",
                             ),
                             output_file_path=GcsfsFilePath.from_absolute_path(
-                                "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-0.csv",
+                                "temp/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey-0.csv",
                             ),
                             chunk_boundary=CsvChunkBoundary(
                                 chunk_num=0, start_inclusive=0, end_exclusive=2
@@ -1556,10 +1556,10 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                         ),
                         PreImportNormalizedCsvChunkResult(
                             input_file_path=GcsfsFilePath.from_absolute_path(
-                                "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
+                                "testing/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey.csv",
                             ),
                             output_file_path=GcsfsFilePath.from_absolute_path(
-                                "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-1.csv",
+                                "temp/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey-1.csv",
                             ),
                             chunk_boundary=CsvChunkBoundary(
                                 chunk_num=1, start_inclusive=4, end_exclusive=6
@@ -1568,10 +1568,10 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                         ),
                         PreImportNormalizedCsvChunkResult(
                             input_file_path=GcsfsFilePath.from_absolute_path(
-                                "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
+                                "testing/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey.csv",
                             ),
                             output_file_path=GcsfsFilePath.from_absolute_path(
-                                "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-2.csv",
+                                "temp/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey-2.csv",
                             ),
                             chunk_boundary=CsvChunkBoundary(
                                 chunk_num=2, start_inclusive=2, end_exclusive=4
@@ -1645,13 +1645,13 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                         gcs_file_id=1,
                         file_id=1,
                         path=GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
+                            "testing/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey.csv",
                         ),
                     )
                 ],
                 file_tag="singlePrimaryKey",
                 update_datetime=datetime.datetime.fromisoformat(
-                    "2024-01-27T16:35:33:617135Z"
+                    "2024-01-24T16:35:33:617135Z"
                 ),
                 file_id=3,
             ).serialize(),
@@ -1744,55 +1744,50 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                         )
                     ],
                 ),
+                RawFileProcessingError(
+                    error_msg="Blocked Import: failed due to import-blocking failure from GcsfsFilePath(bucket_name='testing', blob_name='unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv') \n\n: Oops!",
+                    original_file_path=GcsfsFilePath(
+                        bucket_name="testing",
+                        blob_name="unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
+                    ),
+                    temporary_file_paths=[
+                        GcsfsFilePath(
+                            bucket_name="temp",
+                            blob_name="unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-0.csv",
+                        ),
+                        GcsfsFilePath(
+                            bucket_name="temp",
+                            blob_name="unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-1.csv",
+                        ),
+                        GcsfsFilePath(
+                            bucket_name="temp",
+                            blob_name="unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-2.csv",
+                        ),
+                    ],
+                ),
             ]
 
             expected_results = [
                 ImportReadyFile(
-                    file_id=2,
-                    file_tag="singlePrimaryKey",
-                    update_datetime=datetime.datetime.fromisoformat(
-                        "2024-01-26T16:35:33:617135Z"
-                    ),
-                    pre_import_normalized_file_paths=[
-                        GcsfsFilePath.from_absolute_path(
-                            "temp/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-0.csv",
-                        ),
-                        GcsfsFilePath.from_absolute_path(
-                            "temp/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-1.csv",
-                        ),
-                        GcsfsFilePath.from_absolute_path(
-                            "temp/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-2.csv",
-                        ),
-                    ],
-                    original_file_paths=[
-                        GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
-                        )
-                    ],
-                    bq_load_config=RawFileBigQueryLoadConfig(
-                        schema_fields=[], skip_leading_rows=0
-                    ),
-                ),
-                ImportReadyFile(
                     file_id=3,
                     file_tag="singlePrimaryKey",
                     update_datetime=datetime.datetime.fromisoformat(
-                        "2024-01-27T16:35:33:617135Z"
+                        "2024-01-24T16:35:33:617135Z"
                     ),
                     pre_import_normalized_file_paths=[
                         GcsfsFilePath.from_absolute_path(
-                            "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-0.csv",
+                            "temp/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey-0.csv",
                         ),
                         GcsfsFilePath.from_absolute_path(
-                            "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-1.csv",
+                            "temp/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey-1.csv",
                         ),
                         GcsfsFilePath.from_absolute_path(
-                            "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-2.csv",
+                            "temp/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey-2.csv",
                         ),
                     ],
                     original_file_paths=[
                         GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
+                            "testing/unprocessed_2024-01-24T16:35:33:617135_raw_singlePrimaryKey.csv",
                         )
                     ],
                     bq_load_config=RawFileBigQueryLoadConfig(
