@@ -17,9 +17,9 @@
 """Logic for raw-data-import-specfic branching"""
 from typing import Callable, Dict, List, Optional, Union
 
-from airflow.models import BaseOperator, DagRun
-from airflow.utils.task_group import TaskGroup
+from airflow.models import DagRun
 
+from recidiviz.airflow.dags.utils.branching_by_key import TaskGroupOrOperator
 from recidiviz.airflow.dags.utils.config_utils import (
     get_ingest_instance,
     get_state_code_filter,
@@ -93,14 +93,17 @@ def get_raw_data_branch_filter(dag_run: DagRun) -> Optional[List[str]]:
 
 def create_raw_data_branch_map(
     branched_task_function: Callable[
-        [StateCode, DirectIngestInstance], Union[BaseOperator, TaskGroup]
+        [StateCode, DirectIngestInstance],
+        Union[TaskGroupOrOperator, List[TaskGroupOrOperator]],
     ],
-) -> Dict[str, Union[BaseOperator, TaskGroup]]:
+) -> Dict[str, Union[List[TaskGroupOrOperator], TaskGroupOrOperator]]:
     """Creates a branching operator for each state_code and raw_data_instance enabled
     in the current environment
     """
 
-    task_group_by_task_id: Dict[str, Union[BaseOperator, TaskGroup]] = {}
+    task_group_by_task_id: Dict[
+        str, Union[TaskGroupOrOperator, List[TaskGroupOrOperator]]
+    ] = {}
 
     for (
         state_code,
