@@ -153,7 +153,7 @@ VIOLATION_RESPONSES_QUERY_TEMPLATE = """
         SELECT DISTINCT
             person_id,
             'US_ND' AS state_code,
-            EXTRACT(date FROM PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p',CONTACT_DATE) ) AS response_date_ND
+            SAFE_CAST(LEFT(CONTACT_DATE, 10) AS DATE) AS response_date_ND
         FROM
             `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_contacts_latest`
         LEFT JOIN
