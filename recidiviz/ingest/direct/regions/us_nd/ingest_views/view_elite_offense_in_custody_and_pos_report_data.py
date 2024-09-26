@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing offense in custody and POS report information."""
+"""Query containing offense in custody and positive report information.
+
+Incident severity is assigned at the sanction level in ND rather than the incident level,
+so this view associates the most high-level sanction given as a result of an incident
+with the incident itself."""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -23,6 +27,9 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH 
+-- Collect all information available in raw data about each offense and sanction.
+base AS (
 SELECT 
     ROOT_OFFENDER_ID,
     AGY_LOC_ID,
@@ -43,6 +50,23 @@ SELECT
 FROM {elite_offense_in_custody_and_pos_report_data}
 -- Exclude entries with malformed dates that make them appear to have occurred before 1900.
 WHERE CAST(INCIDENT_DATE AS DATETIME) > CAST('1900-01-01' AS DATETIME)
+)
+
+SELECT DISTINCT 
+    * EXCEPT(RESULT_OIC_OFFENCE_CATEGORY), 
+    -- Some offenses have multiple sanction severities listed. Associate the offense
+    -- with the highest severity sanction received as a result.
+    FIRST_VALUE(RESULT_OIC_OFFENCE_CATEGORY) OVER (
+        PARTITION BY AGENCY_INCIDENT_ID, OIC_INCIDENT_ID 
+        ORDER BY CASE 
+            WHEN RESULT_OIC_OFFENCE_CATEGORY IN ('MAJ','LVL3','LVL2E') THEN 1
+            WHEN RESULT_OIC_OFFENCE_CATEGORY IN ('LVL3R','LVL1E','LVL2') THEN 3
+            WHEN RESULT_OIC_OFFENCE_CATEGORY IN ('LVL1','LVL2R','MIN') THEN 4
+            ELSE 5
+        END,
+        -- Choose the level with the highest numerical value within each group
+        RESULT_OIC_OFFENCE_CATEGORY DESC) AS RESULT_OIC_OFFENCE_CATEGORY
+FROM base
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
