@@ -34,6 +34,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     no_recent_referrals_to_minimum_housing,
+    not_enrolled_in_relevant_program,
     not_in_an_orientation_unit,
     not_in_minimum_security_facility,
     not_in_wtru_btc,
@@ -69,6 +70,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         incarceration_within_42_months_of_full_term_completion_date.VIEW_BUILDER,
         INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD,
         no_recent_referrals_to_minimum_housing.VIEW_BUILDER,
+        not_enrolled_in_relevant_program.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_reentry_center.VIEW_BUILDER,
 )
