@@ -14,13 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the aggregated_sentence_projected_dates view in sentence_sessions."""
+"""Tests the inferred_group_aggregated_sentence_projected_dates view in sentence_sessions."""
 import datetime
-from unittest.mock import patch
 
-import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pipeline_test import TestPipeline
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -38,7 +34,6 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entity_table,
 )
-from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.normalized_entities_utils import (
     queryable_address_for_normalized_entity,
 )
@@ -51,16 +46,14 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSentenceLength,
     NormalizedStateSentenceStatusSnapshot,
 )
-from recidiviz.pipelines.ingest.state import write_root_entities_to_bq
-from recidiviz.pipelines.ingest.state.write_root_entities_to_bq import (
-    WriteRootEntitiesToBQ,
+from recidiviz.tests.big_query.load_entities_to_emulator_via_pipeline import (
+    write_root_entities_to_emulator,
 )
 from recidiviz.tests.big_query.simple_big_query_view_builder_test_case import (
     SimpleBigQueryViewBuilderTestCase,
     TableRow,
 )
-from recidiviz.tests.pipelines.fake_bigquery import FakeWriteToBigQueryEmulator
-from recidiviz.utils.types import assert_subclass, assert_type
+from recidiviz.utils.types import assert_subclass
 
 
 class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
@@ -126,60 +119,6 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             ]
         }
 
-    # TODO(#27990) Decide on NormalizedStateEntity fixture handling for tests.
-    # ------------------------------------------------------------------------
-    # Thought about a couple different things here, I'm leaning towards option 2?
-    #
-    # Option 1: Replace this with a function using
-    # from recidiviz.persistence.entity.serialization import (serialize_entity_into_json)
-    # Roses: much less overhead and no beam dependency, likely faster
-    # Thorn: Less closely resembles production (although this function is called in prod)
-    #
-    # Option 2: Keep this with a todo to generalize and put it somewhere other tests can use
-    # Roses: More closely resembles production
-    # Thorn: More overhead
-    #
-    # Option 3: Generalize this and move it to SimpleBigQueryViewBuilderTestCase
-    # and have a run_test_from_normalized_entities method
-    # Roses: Makes downstream tests simple
-    # Thorn: Adds a bit of complexity to SimpleBigQueryViewBuilderTestCase and
-    #        is only useful for tests that only query from normalized_state.
-    #
-    # Option 4: Create a new test case specifically for running SimpleBigQueryViewBuilder
-    # queries from normalized_state
-    # Roses: Useful and specific
-    # Thorn: Another test case to keep track of
-    def _write_people_to_bq(self, people: list[NormalizedStatePerson]) -> None:
-        for address, schema in self.parent_schemas.items():
-            self.create_mock_table(address, schema)
-        with patch(
-            f"{write_root_entities_to_bq.__name__}.WriteToBigQuery",
-            FakeWriteToBigQueryEmulator.get_mock_write_to_big_query_constructor(self),
-        ):
-            apache_beam_pipeline_options = PipelineOptions()
-            apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
-            pipeline = TestPipeline(options=apache_beam_pipeline_options)
-            _ = (
-                pipeline
-                | beam.Create(
-                    [
-                        assert_type(set_backedges(person), NormalizedStatePerson)
-                        for person in people
-                    ]
-                )
-                | WriteRootEntitiesToBQ(
-                    state_code=self.state_code,
-                    output_dataset="normalized_state",
-                    output_table_ids=[
-                        addr.table_id
-                        for addr in self.parent_schemas
-                        if addr.dataset_id == "normalized_state"
-                    ],
-                    entities_module=normalized_state_module,
-                )
-            )
-            pipeline.run()
-
     def _make_sentence(self, id_: int) -> NormalizedStateSentence:
         return NormalizedStateSentence(
             state_code=self.state_code.value,
@@ -200,7 +139,9 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
     def run_test(
         self, people: list[NormalizedStatePerson], expected_result: list[TableRow]
     ) -> None:
-        self._write_people_to_bq(people)
+        write_root_entities_to_emulator(
+            emulator_tc=self, schema_mapping=self.parent_schemas, people=people
+        )
         view = self.view_builder.build()
         self.run_query_test(view.view_query, expected_result)
 
