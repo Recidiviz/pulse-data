@@ -109,6 +109,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_INCARCERATION = [
                 span_conditions_dict={
                     "is_eligible": ["true"],
                     "viewed": ["true"],
+                    "marked_ineligible": ["false"],
                     "task_type": [b.task_type_name],
                 },
             ),
@@ -129,6 +130,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION = [
                 span_conditions_dict={
                     "is_eligible": ["true"],
                     "viewed": ["true"],
+                    "marked_ineligible": ["false"],
                     "task_type": [b.task_type_name],
                 },
             ),
@@ -149,6 +151,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION = [
                 span_conditions_dict={
                     "is_eligible": ["true"],
                     "viewed": ["false"],
+                    "marked_ineligible": ["false"],
                     "task_type": [b.task_type_name],
                 },
             ),
@@ -169,6 +172,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION = [
                 span_conditions_dict={
                     "is_eligible": ["true"],
                     "viewed": ["false"],
+                    "marked_ineligible": ["false"],
                     "task_type": [b.task_type_name],
                 },
             ),
