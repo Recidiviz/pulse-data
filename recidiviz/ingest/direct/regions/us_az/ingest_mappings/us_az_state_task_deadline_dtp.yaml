@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - drug_transition_release_eligibility_date
+  - actual_or_expected_release_date
+  - update_datetime_external
+  - PERSON_ID
+  - DOC_ID
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    task_deadlines:
+      - StateTaskDeadline:
+          eligible_date: drug_transition_release_eligibility_date
+          due_date: actual_or_expected_release_date
+          update_datetime: update_datetime_external
+          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
+          task_subtype: $literal("Drug Transition Release")
+          task_metadata:
+            $json_dict:
+              external_id: DOC_ID
