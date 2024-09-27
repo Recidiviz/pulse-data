@@ -49,6 +49,7 @@ function main(e) {
   const workflowToMaxOpportunityGrantedLocation = {};
   const workflowToSystem = {};
   const workflowToUsageAndImpactText = {};
+  const workflowToUsageAndImpactChart = {};
 
   const stateCodeToRows = getSheetValues();
   const stateRows = stateCodeToRows[stateCode];
@@ -78,6 +79,22 @@ function main(e) {
       endDateString,
       completionEventType
     );
+
+    const { usageAndImpactDistrictData, usageAndImpactXAxisColumn, eligibleAndViewedColumn, markedIneligibleColumn, eligibleAndNotViewedColumn } =
+      getUsageAndImpactDistrictData(
+        stateCode,
+        endDateString,
+        completionEventType,
+        system
+      );
+
+    const usageAndImpactColumnChart = constructUsageAndImpactDistrictColumnChart(
+        usageAndImpactXAxisColumn,
+        eligibleAndViewedColumn,
+        markedIneligibleColumn,
+        eligibleAndNotViewedColumn,
+        usageAndImpactDistrictData
+      );
 
     var opportunityGranted = constructOpportunitiesGrantedText(
       stateCode,
@@ -111,7 +128,7 @@ function main(e) {
       distinctMonthlyRegisteredUsers,
       distinctWeeklyActiveUsers,
       distinctWeeklyRegisteredUsers,
-    } = constructMauAndWauText(stateCode, endDateString, completionEventType);
+    } = constructMauAndWauText(stateCode, endDateString, completionEventType, system);
 
     workflowToDistrictOrFacilitiesColumnChart[workflow] =
       districtOrFacilitiesColumnChart;
@@ -130,6 +147,7 @@ function main(e) {
       eligibleAndViewed,
       eligibleAndNotViewed,
     };
+    workflowToUsageAndImpactChart[workflow] = usageAndImpactColumnChart;
   });
 
   copyAndPopulateTemplateDoc(
@@ -142,7 +160,8 @@ function main(e) {
     startDate,
     workflowToMaxOpportunityGrantedLocation,
     workflowToSystem,
-    workflowToUsageAndImpactText
+    workflowToUsageAndImpactText,
+    workflowToUsageAndImpactChart,
   );
 }
 
@@ -161,6 +180,7 @@ function main(e) {
  * @param {map} workflowToMaxOpportunityGrantedLocation An object that maps the workflow name to the district or facility with the most number of opportunities granted
  * @param {map} workflowToSystem An object that maps the workflow name to it's system ('SUPERVISION' or 'INCARCERATION')
  * @param {map} workflowToUsageAndImpactText An object that maps the workflow name to its number of people almost eligible, eligible, marked ineligible, eligible and viewed, and eligible and not viewed
+  * @param {map} workflowToUsageAndImpactChart An object that maps the workflow name to its usageAndImpactColumnChart
  */
 function copyAndPopulateTemplateDoc(
   workflowToDistrictOrFacilitiesColumnChart,
@@ -172,7 +192,8 @@ function copyAndPopulateTemplateDoc(
   startDate,
   workflowToMaxOpportunityGrantedLocation,
   workflowToSystem,
-  workflowToUsageAndImpactText
+  workflowToUsageAndImpactText,
+  workflowToUsageAndImpactChart
 ) {
   const template = DriveApp.getFileById(
     "1nsc_o2fTlldTQavxJveucWgDKkic_clKZjn0GuyF2N8"
@@ -217,7 +238,8 @@ function copyAndPopulateTemplateDoc(
     startDate,
     workflowToMaxOpportunityGrantedLocation,
     workflowToUsageAndImpactText,
-    endDateClean
+    endDateClean,
+    workflowToUsageAndImpactChart
   );
 }
 
@@ -427,6 +449,7 @@ function copyAndPopulateOpportunityGrants(
  * @param {map} workflowToMaxOpportunityGrantedLocation An object that maps the workflow name to the district or facility with the most number of opportunities granted
  * @param {map} workflowToUsageAndImpactText An object that maps the workflow name to it's number of people almost eligible, eligible, marked ineligible, eligible and viewed, and eligible and not viewed
  * @param {string} endDateClean The end date (provided by the user via Google Form) (ex: '2023-03-01')
+ * @param {map} workflowToUsageAndImpactChart An object that maps the workflow name to its usageAndImpactColumnChart
  */
 function copyAndPopulateWorkflowSection(
   body,
@@ -436,7 +459,8 @@ function copyAndPopulateWorkflowSection(
   startDate,
   workflowToMaxOpportunityGrantedLocation,
   workflowToUsageAndImpactText,
-  endDateClean
+  endDateClean,
+  workflowToUsageAndImpactChart
 ) {
   const childIdx = getIndexOfElementToReplace(
     body,
@@ -473,6 +497,13 @@ function copyAndPopulateWorkflowSection(
           if (workflowToDistrictOrFacilitiesColumnChart[workflow]) {
             body.appendImage(
               workflowToDistrictOrFacilitiesColumnChart[workflow]
+            );
+          }
+        } else if (altTitle === "Impact Column Chart by District or Region") {
+          // Replace with generated chart
+          if (workflowToUsageAndImpactChart[workflow]) {
+            body.appendImage(
+              workflowToUsageAndImpactChart[workflow]
             );
           }
         } else {

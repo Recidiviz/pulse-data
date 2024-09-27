@@ -84,7 +84,7 @@ function runQuery(queryString) {
  * @param {string} yAxis The y-axis lable of the chart
  * @returns {Chart} The built/populated column chart or null if there is no data to display (all 0 values)
  */
-function createColumnChart(data, chartData, title, xAxis, yAxis) {
+function createColumnChart(data, chartData, title, xAxis, yAxis, setColors = false, stacked = false) {
   const enCollator = new Intl.Collator('en', {"numeric": true});
   let buildChart = false;
   data.sort(enCollator.compare).forEach((newRow) => {
@@ -104,17 +104,31 @@ function createColumnChart(data, chartData, title, xAxis, yAxis) {
 
   chartData.build();
 
-  const chart = Charts.newColumnChart()
+  let chart = Charts.newColumnChart()
     .setDataTable(chartData)
-    .setTitle(title)
     .setXAxisTitle(xAxis)
-    .setYAxisTitle(yAxis)
     .setLegendPosition(Charts.Position.NONE)
     .setDimensions(639, 455)
     .setXAxisTextStyle(Charts.newTextStyle().setFontSize(10))
     .setOption("chartArea.top", 50)
     .setOption("chartArea.width", "80%")
-    .build();
+
+  if (title) {
+    chart = chart.setTitle(title);
+  }
+  if (yAxis) {
+    chart = chart.setYAxisTitle(yAxis);
+  }
+
+  if (setColors) {
+    chart = chart.setColors(["#3697FA", "#BABABA", "#CA2E17"]);
+  }
+
+  if (stacked) {
+    chart = chart.setStacked();
+  }
+
+  chart = chart.build();
 
   return chart;
 }
@@ -192,5 +206,8 @@ function getIndexOfElementToReplace(body, elementType, textToMatch) {
  * @returns {string} The percent of active users rounded to two decimal places
  */
 function calculateActiveUsersPercent(activeUsers, registeredUsers) {
+  if (registeredUsers === 0) {
+    return 0;
+  }
   return ((activeUsers / registeredUsers) * 100).toFixed(2);
 }
