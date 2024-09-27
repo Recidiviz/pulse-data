@@ -22,7 +22,7 @@ Note that this is an aggregation of NormalizedStateSentenceLength values
 and does not include any NormalizedStateSentenceGroupLength data.
 
 Related views are:
-- TODO(#33497) Create aggregated_sentence_group_projected_dates
+- inferred_group_aggregated_sentence_group_projected_dates
 - TODO(#33498) Create validation for aggregated_sentence_projected_dates 
                and aggregated_sentence_group_projected_dates
 - TODO(#33499) Create sentence_inferred_group_projected_dates
