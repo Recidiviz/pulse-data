@@ -112,7 +112,41 @@ class BigQueryAddressOverrides:
         """
         return self._full_dataset_overrides.get(dataset, dataset)
 
-    def to_builder(self, sandbox_prefix: str) -> "BigQueryAddressOverrides.Builder":
+    def get_full_dataset_overrides_dict(self) -> dict[str, str]:
+        return self._full_dataset_overrides
+
+    def get_address_overrides_dict(self) -> dict[BigQueryAddress, BigQueryAddress]:
+        return self._address_overrides
+
+    @classmethod
+    def merge(
+        cls,
+        overrides_1: "BigQueryAddressOverrides",
+        overrides_2: "BigQueryAddressOverrides",
+    ) -> "BigQueryAddressOverrides":
+        """Merges two sets of overrides into a single object, throwing if either provide
+        conflicting overrides.
+        """
+        builder = overrides_1.to_builder(sandbox_prefix=None)
+        for (
+            dataset,
+            override_dataset,
+        ) in overrides_2.get_full_dataset_overrides_dict().items():
+            builder.register_custom_dataset_override(dataset, override_dataset)
+
+        for (
+            address,
+            override_address,
+        ) in overrides_2.get_address_overrides_dict().items():
+            builder.register_custom_sandbox_override_for_address(
+                address, override_address
+            )
+
+        return builder.build()
+
+    def to_builder(
+        self, sandbox_prefix: str | None
+    ) -> "BigQueryAddressOverrides.Builder":
         return self.Builder(
             sandbox_prefix=sandbox_prefix,
             full_dataset_overrides=self._full_dataset_overrides,
@@ -183,23 +217,47 @@ class BigQueryAddressOverrides:
             views being deployed, the sandbox address will be referenced instead of the
             original address.
             """
-            if address in self._address_overrides:
-                raise ValueError(
-                    f"Address [{address}] already has override set: "
-                    f"[{self._address_overrides[address]}]"
-                )
-            if address.dataset_id in self._full_dataset_overrides:
-                raise ValueError(
-                    f"Dataset [{address.dataset_id}] for address [{address}] already has "
-                    f"full dataset override set: "
-                    f"[{self._full_dataset_overrides[address.dataset_id]}]"
-                )
-            self._address_overrides[address] = BigQueryAddress(
+            sandbox_address = BigQueryAddress(
                 dataset_id=BigQueryAddressOverrides.format_sandbox_dataset(
                     self._sandbox_prefix, address.dataset_id
                 ),
                 table_id=address.table_id,
             )
+            self.register_custom_sandbox_override_for_address(address, sandbox_address)
+            return self
+
+        def register_custom_sandbox_override_for_address(
+            self, address: BigQueryAddress, sandbox_address: BigQueryAddress
+        ) -> "BigQueryAddressOverrides.Builder":
+            """Registers an address override for the view/table at the provided
+            |address|. If this view / table is referenced by any
+            views being deployed, the |sandbox_address| will be referenced instead of
+            the original address.
+            """
+            if (
+                address in self._address_overrides
+                and self._address_overrides[address] != sandbox_address
+            ):
+                raise ValueError(
+                    f"Address [{address.to_str()}] already has conflicting override "
+                    f"set: [{self._address_overrides[address].to_str()}]"
+                )
+            if address.dataset_id in self._full_dataset_overrides:
+                existing_sandbox_address = BigQueryAddress(
+                    dataset_id=self._full_dataset_overrides[address.dataset_id],
+                    table_id=address.table_id,
+                )
+                if sandbox_address == existing_sandbox_address:
+                    # This override is already set at the dataset level, do not
+                    # explicitly set an override.
+                    return self
+
+                raise ValueError(
+                    f"Dataset [{address.dataset_id}] for address [{address.to_str()}] "
+                    f"already has conflicting full dataset override set: "
+                    f"[{self._full_dataset_overrides[address.dataset_id]}]"
+                )
+            self._address_overrides[address] = sandbox_address
             return self
 
         def register_sandbox_override_for_entire_dataset(
@@ -211,16 +269,12 @@ class BigQueryAddressOverrides:
             address. The format of the sandbox address dataset is
             '<sandbox_prefix>_<dataset_id>'.
             """
-            if dataset_id in self._full_dataset_overrides:
-                raise ValueError(
-                    f"Dataset [{dataset_id}] already has override set: "
-                    f"[{self._full_dataset_overrides[dataset_id]}]"
-                )
-            self._verify_no_conflicting_address_overrides(dataset_id)
-            self._full_dataset_overrides[
-                dataset_id
-            ] = BigQueryAddressOverrides.format_sandbox_dataset(
+
+            sandbox_dataset_id = BigQueryAddressOverrides.format_sandbox_dataset(
                 self._sandbox_prefix, dataset_id
+            )
+            self.register_custom_dataset_override(
+                dataset_id, sandbox_dataset_id, force_allow_custom=True
             )
             return self
 
@@ -241,12 +295,15 @@ class BigQueryAddressOverrides:
             Otherwise, if |new_dataset_id| is the same as the standard override, this
             function throws.
             """
-            if original_dataset_id in self._full_dataset_overrides:
+            if (
+                original_dataset_id in self._full_dataset_overrides
+                and self._full_dataset_overrides[original_dataset_id] != new_dataset_id
+            ):
                 raise ValueError(
                     f"Dataset [{original_dataset_id}] already has override set: "
                     f"[{self._full_dataset_overrides[original_dataset_id]}]"
                 )
-            self._verify_no_conflicting_address_overrides(original_dataset_id)
+
             if (
                 self._sandbox_prefix_opt
                 and not force_allow_custom
@@ -261,22 +318,45 @@ class BigQueryAddressOverrides:
                     f"use register_sandbox_override_for_entire_dataset to set a "
                     f"standard sandbox override for a dataset."
                 )
-            self._full_dataset_overrides[original_dataset_id] = new_dataset_id
-            return self
 
-        def _verify_no_conflicting_address_overrides(
-            self, dataset_to_override: str
-        ) -> None:
+            overlapping_address_overrides = self._get_overlapping_address_overrides(
+                original_dataset_id
+            )
+
+            # If any of the overlapping address-level overrides have a sandbox address
+            # that matches the address that would be derived from this dataset-level
+            # override it's ok. However, if the sandbox address is different we have
+            # found a conflict and need to throw.
             conflicting_overrides = {
-                a
-                for a in self._address_overrides.keys()
-                if a.dataset_id == dataset_to_override
+                a: self._address_overrides[a]
+                for a in overlapping_address_overrides
+                if self._address_overrides[a].dataset_id != new_dataset_id
             }
             if conflicting_overrides:
                 raise ValueError(
                     f"Found conflicting address overrides already set for addresses in "
-                    f"[{dataset_to_override}]: {conflicting_overrides}."
+                    f"[{original_dataset_id}]: {conflicting_overrides}."
                 )
+
+            # If the overlapping address-level overrides are non-conflicting, we can
+            # just remove them in favor of the new dataset-level override.
+            for a in overlapping_address_overrides:
+                self._address_overrides.pop(a)
+
+            self._full_dataset_overrides[original_dataset_id] = new_dataset_id
+            return self
+
+        def _get_overlapping_address_overrides(
+            self, dataset_to_override: str
+        ) -> set[BigQueryAddress]:
+            """Returns any already-registered address-level overrides that share an
+            original dataset with the provided dataset that we want to override.
+            """
+            return {
+                a
+                for a in self._address_overrides.keys()
+                if a.dataset_id == dataset_to_override
+            }
 
     @classmethod
     def empty(cls) -> "BigQueryAddressOverrides":
