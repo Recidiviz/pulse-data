@@ -33,6 +33,7 @@ from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.monitoring.dag_registry import get_raw_data_import_dag_id
 from recidiviz.airflow.dags.raw_data.metadata import (
+    CHUNKING_ERRORS,
     IMPORT_READY_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
@@ -215,9 +216,10 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 "generate_file_chunking_pod_arguments",
             ],
             "raw_data_file_chunking",
+            "filter_chunking_results_by_errors",
             [
-                "coalesce_results_and_errors",
                 "raise_file_chunking_errors",
+                "coalesce_results_and_errors",
                 "generate_chunk_processing_pod_arguments",
             ],
             "raw_data_chunk_normalization",
@@ -826,6 +828,17 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
 class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTest):
     """integration tests for step 3: pre-import normalization"""
 
+    step_3_tasks: List[str] = [
+        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_file_chunking_pod_arguments",
+        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking",
+        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.filter_chunking_results_by_errors",
+        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors",
+        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_chunk_processing_pod_arguments",
+        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization",
+        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.regroup_and_verify_file_chunks",
+        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors",
+    ]
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -980,15 +993,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         self.input_bq_metadata = []
 
         step_3_only_dag = self._create_dag().partial_subset(
-            task_ids_or_regex=[
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_file_chunking_pod_arguments",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_chunk_processing_pod_arguments",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.regroup_and_verify_file_chunks",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors",
-            ],
+            task_ids_or_regex=self.step_3_tasks,
             include_upstream=False,
             include_downstream=False,
         )
@@ -1002,6 +1007,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                     # we expect this since airflow will skipped mapped tasks w/ an empty input
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking",
                     # these all have ALL_SUCCESS so ^^ being skipped will cause these to be skipped
+                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.filter_chunking_results_by_errors",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_chunk_processing_pod_arguments",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization",
@@ -1273,15 +1279,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         }
 
         step_3_only_dag = self._create_dag().partial_subset(
-            task_ids_or_regex=[
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_file_chunking_pod_arguments",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_chunk_processing_pod_arguments",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.regroup_and_verify_file_chunks",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors",
-            ],
+            task_ids_or_regex=self.step_3_tasks,
             include_upstream=False,
             include_downstream=False,
         )
@@ -1671,15 +1669,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         }
 
         step_3_only_dag = self._create_dag().partial_subset(
-            task_ids_or_regex=[
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_file_chunking_pod_arguments",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_chunk_processing_pod_arguments",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.regroup_and_verify_file_chunks",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors",
-            ],
+            task_ids_or_regex=self.step_3_tasks,
             include_upstream=False,
             include_downstream=False,
         )
@@ -1817,7 +1807,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                     [
                         RequiresPreImportNormalizationFile(
                             path=GcsfsFilePath.from_absolute_path(
-                                "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
+                                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv",
                             ),
                             pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
                             chunk_boundaries=[
@@ -1862,7 +1852,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                     [
                         RawFileProcessingError(
                             original_file_path=GcsfsFilePath.from_absolute_path(
-                                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv",
+                                "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
                             ),
                             temporary_file_paths=None,
                             error_msg="Ooops!",
@@ -1881,10 +1871,10 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                     [
                         PreImportNormalizedCsvChunkResult(
                             input_file_path=GcsfsFilePath.from_absolute_path(
-                                "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
+                                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv",
                             ),
                             output_file_path=GcsfsFilePath.from_absolute_path(
-                                "temp/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-0.csv",
+                                "temp/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey-0.csv",
                             ),
                             chunk_boundary=CsvChunkBoundary(
                                 chunk_num=0, start_inclusive=0, end_exclusive=2
@@ -1893,10 +1883,10 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                         ),
                         PreImportNormalizedCsvChunkResult(
                             input_file_path=GcsfsFilePath.from_absolute_path(
-                                "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
+                                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv",
                             ),
                             output_file_path=GcsfsFilePath.from_absolute_path(
-                                "temp/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-1.csv",
+                                "temp/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey-1.csv",
                             ),
                             chunk_boundary=CsvChunkBoundary(
                                 chunk_num=1, start_inclusive=4, end_exclusive=6
@@ -1907,46 +1897,10 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                     [
                         PreImportNormalizedCsvChunkResult(
                             input_file_path=GcsfsFilePath.from_absolute_path(
-                                "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
+                                "testing/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv",
                             ),
                             output_file_path=GcsfsFilePath.from_absolute_path(
-                                "temp/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-2.csv",
-                            ),
-                            chunk_boundary=CsvChunkBoundary(
-                                chunk_num=2, start_inclusive=2, end_exclusive=4
-                            ),
-                            crc32c=2,
-                        ),
-                        PreImportNormalizedCsvChunkResult(
-                            input_file_path=GcsfsFilePath.from_absolute_path(
-                                "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
-                            ),
-                            output_file_path=GcsfsFilePath.from_absolute_path(
-                                "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-0.csv",
-                            ),
-                            chunk_boundary=CsvChunkBoundary(
-                                chunk_num=0, start_inclusive=0, end_exclusive=2
-                            ),
-                            crc32c=0,
-                        ),
-                        PreImportNormalizedCsvChunkResult(
-                            input_file_path=GcsfsFilePath.from_absolute_path(
-                                "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
-                            ),
-                            output_file_path=GcsfsFilePath.from_absolute_path(
-                                "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-1.csv",
-                            ),
-                            chunk_boundary=CsvChunkBoundary(
-                                chunk_num=1, start_inclusive=4, end_exclusive=6
-                            ),
-                            crc32c=1,
-                        ),
-                        PreImportNormalizedCsvChunkResult(
-                            input_file_path=GcsfsFilePath.from_absolute_path(
-                                "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
-                            ),
-                            output_file_path=GcsfsFilePath.from_absolute_path(
-                                "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-2.csv",
+                                "temp/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey-2.csv",
                             ),
                             chunk_boundary=CsvChunkBoundary(
                                 chunk_num=2, start_inclusive=2, end_exclusive=4
@@ -2032,15 +1986,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         }
 
         step_3_only_dag = self._create_dag().partial_subset(
-            task_ids_or_regex=[
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_file_chunking_pod_arguments",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_chunk_processing_pod_arguments",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.regroup_and_verify_file_chunks",
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors",
-            ],
+            task_ids_or_regex=self.step_3_tasks,
             include_upstream=False,
             include_downstream=False,
         )
@@ -2069,6 +2015,12 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                 is_mapped=True,
             )
 
+            chunking_errors_jsonb = self.get_xcom_for_task_id(
+                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.filter_chunking_results_by_errors",
+                session=session,
+                key=CHUNKING_ERRORS,
+            )
+
             assert isinstance(raw_data_file_chunking_jsonb, list)
 
             chunking_output = MappedBatchedTaskOutput.deserialize(
@@ -2083,12 +2035,38 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
             assert chunking_output.flatten_errors() == [
                 RawFileProcessingError(
                     original_file_path=GcsfsFilePath.from_absolute_path(
-                        "testing/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv",
+                        "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
                     ),
                     temporary_file_paths=None,
                     error_msg="Ooops!",
                 )
             ]
+
+            assert isinstance(chunking_errors_jsonb, bytes)
+
+            chunking_errors = list(
+                sorted(
+                    [
+                        RawFileProcessingError.deserialize(error)
+                        for error in json.loads(chunking_errors_jsonb)
+                    ],
+                    key=lambda x: x.parts.utc_upload_datetime,
+                )
+            )
+
+            assert len(chunking_errors) == 2
+            assert chunking_errors[0] == RawFileProcessingError(
+                original_file_path=GcsfsFilePath.from_absolute_path(
+                    "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
+                ),
+                temporary_file_paths=None,
+                error_msg="Ooops!",
+            )
+            assert chunking_errors[
+                1
+            ].original_file_path == GcsfsFilePath.from_absolute_path(
+                "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
+            )
 
             assert isinstance(regrouped_and_verified_jsonb, bytes)
 
@@ -2103,51 +2081,25 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
 
             expected_results = [
                 ImportReadyFile(
-                    file_id=2,
+                    file_id=1,
                     file_tag="singlePrimaryKey",
                     update_datetime=datetime.datetime.fromisoformat(
-                        "2024-01-26T16:35:33:617135Z"
+                        "2024-01-25T16:35:33:617135Z"
                     ),
                     pre_import_normalized_file_paths=[
                         GcsfsFilePath.from_absolute_path(
-                            "temp/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-0.csv",
+                            "temp/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey-0.csv",
                         ),
                         GcsfsFilePath.from_absolute_path(
-                            "temp/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-1.csv",
+                            "temp/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey-1.csv",
                         ),
                         GcsfsFilePath.from_absolute_path(
-                            "temp/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-2.csv",
+                            "temp/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey-2.csv",
                         ),
                     ],
                     original_file_paths=[
                         GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",
-                        )
-                    ],
-                    bq_load_config=RawFileBigQueryLoadConfig(
-                        schema_fields=[], skip_leading_rows=0
-                    ),
-                ),
-                ImportReadyFile(
-                    file_id=3,
-                    file_tag="singlePrimaryKey",
-                    update_datetime=datetime.datetime.fromisoformat(
-                        "2024-01-27T16:35:33:617135Z"
-                    ),
-                    pre_import_normalized_file_paths=[
-                        GcsfsFilePath.from_absolute_path(
-                            "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-0.csv",
-                        ),
-                        GcsfsFilePath.from_absolute_path(
-                            "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-1.csv",
-                        ),
-                        GcsfsFilePath.from_absolute_path(
-                            "temp/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey-2.csv",
-                        ),
-                    ],
-                    original_file_paths=[
-                        GcsfsFilePath.from_absolute_path(
-                            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_singlePrimaryKey.csv",
+                            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv",
                         )
                     ],
                     bq_load_config=RawFileBigQueryLoadConfig(

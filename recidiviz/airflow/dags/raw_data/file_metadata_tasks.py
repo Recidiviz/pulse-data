@@ -61,7 +61,6 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawFileImport,
     RawFileLoadAndPrepError,
     RawFileProcessingError,
-    RequiresPreImportNormalizationFile,
 )
 from recidiviz.utils.airflow_types import (
     BatchedTaskInstanceOutput,
@@ -199,11 +198,12 @@ def coalesce_import_ready_files(
 
 @task(trigger_rule=TriggerRule.ALL_DONE)
 def coalesce_results_and_errors(
+    *,
     region_code: str,
     raw_data_instance: DirectIngestInstance,
     serialized_bq_metadata: List[str],
     serialized_header_verification_errors: List[str],
-    serialized_divide_files_into_chunks: List[str],
+    serialized_chunking_errors: List[str],
     serialized_pre_import_normalization_result: str,
     serialized_load_prep_results: List[str],
     serialized_append_batches: Dict[str, List[str]],
@@ -230,7 +230,7 @@ def coalesce_results_and_errors(
     ) = _deserialize_coalesce_results_and_errors_inputs(
         serialized_bq_metadata,
         serialized_header_verification_errors,
-        serialized_divide_files_into_chunks,
+        serialized_chunking_errors,
         serialized_pre_import_normalization_result,
         serialized_load_prep_results,
         serialized_append_batches,
@@ -451,7 +451,7 @@ def _build_file_imports_for_results(
 def _deserialize_coalesce_results_and_errors_inputs(
     serialized_bq_metadata: Optional[List[str]],
     serialized_header_verification_errors: Optional[List[str]],
-    serialized_divide_files_into_chunks: Optional[List[str]],
+    serialized_chunking_errors: List[str],
     serialized_pre_import_normalization_result: Optional[str],
     serialized_load_prep_results: Optional[List[str]],
     serialized_append_batches: Optional[Dict[str, List[str]]],
@@ -489,10 +489,13 @@ def _deserialize_coalesce_results_and_errors_inputs(
         else []
     )
 
-    divide_files_step_output = MappedBatchedTaskOutput.deserialize(
-        serialized_divide_files_into_chunks or [],
-        result_cls=RequiresPreImportNormalizationFile,
-        error_cls=RawFileProcessingError,
+    chunking_errors = (
+        [
+            RawFileProcessingError.deserialize(file)
+            for file in serialized_chunking_errors
+        ]
+        if serialized_chunking_errors
+        else []
     )
 
     pre_import_normalization_step_errors = (
@@ -547,7 +550,7 @@ def _deserialize_coalesce_results_and_errors_inputs(
         (
             [
                 *header_verification_errors,
-                *divide_files_step_output.flatten_errors(),
+                *chunking_errors,
                 *pre_import_normalization_step_errors,
             ],
             [

@@ -164,16 +164,10 @@ def generate_chunk_processing_pod_arguments(
 def _divide_file_chunks_into_batches(
     file_chunking_result: List[str], num_batches: int
 ) -> List[List[str]]:
-    # Each file chunking task returns a list of serialized file chunks
-    # So we need to flatten the result list and deserialize each chunk
-    all_results: List[
-        RequiresPreImportNormalizationFile
-    ] = MappedBatchedTaskOutput.deserialize(
-        file_chunking_result,
-        result_cls=RequiresPreImportNormalizationFile,
-        error_cls=RawFileProcessingError,
-    ).flatten_results()
-
+    all_results = [
+        RequiresPreImportNormalizationFile.deserialize(result)
+        for result in file_chunking_result
+    ]
     batches = create_chunk_batches(all_results, num_batches)
     serialized_batches = [[chunk.serialize() for chunk in batch] for batch in batches]
 
@@ -590,6 +584,8 @@ def read_and_verify_column_headers(
         fs, region_raw_file_config, bq_metadata
     )
 
+    # TODO(#33551) add filters for header errors here
+
     return {
         FILE_IDS_TO_HEADERS: results,
         HEADER_VERIFICATION_ERRORS: [error.serialize() for error in errors],
@@ -607,13 +603,12 @@ def raise_header_verification_errors(header_verification_errors: List[str]) -> N
 
 
 @task
-def raise_file_chunking_errors(file_chunking_output: List[str]) -> None:
-    errors = MappedBatchedTaskOutput.deserialize(
-        file_chunking_output,
-        result_cls=RequiresPreImportNormalizationFile,
-        error_cls=RawFileProcessingError,
-    ).flatten_errors()
-    _raise_task_errors(errors)
+def raise_file_chunking_errors(serialized_chunking_errors: List[str]) -> None:
+    chunking_errors = [
+        RawFileProcessingError.deserialize(error)
+        for error in serialized_chunking_errors
+    ]
+    _raise_task_errors(chunking_errors)
 
 
 @task

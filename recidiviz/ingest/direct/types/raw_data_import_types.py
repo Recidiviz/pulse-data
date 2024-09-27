@@ -570,6 +570,10 @@ class RequiresPreImportNormalizationFile(BaseResult):
     )
     headers: List[str] = attr.ib(validator=attr_validators.is_list_of(str))
 
+    @cached_property
+    def parts(self) -> DirectIngestRawFilenameParts:
+        return filename_parts_from_path(self.path)
+
     def serialize(self) -> str:
         return json.dumps(
             {

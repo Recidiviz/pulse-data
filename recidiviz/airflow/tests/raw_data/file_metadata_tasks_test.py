@@ -385,15 +385,18 @@ class CoalesceResultsAndErrorsTest(TestCase):
         ).serialize()
 
         assert coalesce_results_and_errors.function(
-            "US_XX",
-            DirectIngestInstance.PRIMARY,
-            [],
-            [],
-            [],
-            serialized_empty_batched_task_instance,
-            [],
-            {SKIPPED_FILE_ERRORS: [], APPEND_READY_FILE_BATCHES: []},
-            [],
+            region_code="US_XX",
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+            serialized_bq_metadata=[],
+            serialized_header_verification_errors=[],
+            serialized_chunking_errors=[],
+            serialized_pre_import_normalization_result=serialized_empty_batched_task_instance,
+            serialized_load_prep_results=[],
+            serialized_append_batches={
+                SKIPPED_FILE_ERRORS: [],
+                APPEND_READY_FILE_BATCHES: [],
+            },
+            serialized_append_result=[],
         ) == {
             FILE_IMPORTS: [],
             PROCESSED_PATHS_TO_RENAME: [],
@@ -407,15 +410,15 @@ class CoalesceResultsAndErrorsTest(TestCase):
             re.escape("Found no bq metadata, so assuming that this is an empty branch"),
         ):
             coalesce_results_and_errors.function(
-                "US_XX",
-                DirectIngestInstance.PRIMARY,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
+                region_code="US_XX",
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+                serialized_bq_metadata=None,
+                serialized_header_verification_errors=None,
+                serialized_chunking_errors=None,
+                serialized_pre_import_normalization_result=None,
+                serialized_load_prep_results=None,
+                serialized_append_batches=None,
+                serialized_append_result=None,
             )
 
     def test_build_file_imports_for_results_all_matching(self) -> None:
@@ -1011,18 +1014,20 @@ class CoalesceResultsAndErrorsTest(TestCase):
         ]
 
         result = coalesce_results_and_errors.function(
-            "US_XX",
-            DirectIngestInstance.PRIMARY,
-            [m.serialize() for m in bq_metadata],
-            [],
-            [],
-            BatchedTaskInstanceOutput(results=[], errors=processing_errors).serialize(),
-            [],
-            {
+            region_code="US_XX",
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+            serialized_bq_metadata=[m.serialize() for m in bq_metadata],
+            serialized_header_verification_errors=[],
+            serialized_chunking_errors=[],
+            serialized_pre_import_normalization_result=BatchedTaskInstanceOutput(
+                results=[], errors=processing_errors
+            ).serialize(),
+            serialized_load_prep_results=[],
+            serialized_append_batches={
                 APPEND_READY_FILE_BATCHES: [],
                 SKIPPED_FILE_ERRORS: [e.serialize() for e in load_errors],
             },
-            [
+            serialized_append_result=[
                 BatchedTaskInstanceOutput(results=[], errors=append_errors).serialize(),
             ],
         )
