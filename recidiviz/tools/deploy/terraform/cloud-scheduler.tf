@@ -55,8 +55,6 @@ resource "google_cloud_scheduler_job" "schedule_sftp_dag_run_topic" {
 # TODO(#29135): consider moving this later in the evening based on approx expected runtime so it runs
 #  right before the calculation DAG.
 resource "google_cloud_scheduler_job" "schedule_raw_data_import_dag_run_topic" {
-  # TODO(#29135) enable this cloud scheduler job during launch phase!
-  paused      = true
   name        = "schedule_raw_data_import_dag_run_cloud_function"
   schedule    = "0 0 * * *" # Every day at 12 am Pacific
   description = "Triggers the raw data import DAG via pubsub"
