@@ -20,6 +20,7 @@ import inspect
 import os
 import re
 import unittest
+import unittest.mock
 from collections import defaultdict
 from datetime import datetime
 from types import ModuleType
@@ -500,7 +501,19 @@ class DirectIngestRegionDirStructure(
             )
             self.assertTrue(region.playground)
 
-    def test_playground_regions_do_not_run_in_production(self) -> None:
+    @patch(
+        "recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller_factory.is_raw_data_import_dag_enabled",
+        return_value=False,
+    )
+    @patch(
+        "recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller.is_raw_data_import_dag_enabled",
+        return_value=False,
+    )
+    def test_playground_regions_do_not_run_in_production_for_legacy_raw_data_import(
+        self,
+        _raw_data_enabled_mock: unittest.mock.MagicMock,
+        _raw_data_enabled_mock2: unittest.mock.MagicMock,
+    ) -> None:
         # The playground regions should be supported in staging
         with patch(
             "recidiviz.utils.environment.get_gcp_environment",
