@@ -16,11 +16,17 @@
 # =============================================================================
 """Constants related to a MetricUnitOfAnalysisType."""
 from enum import Enum
-from typing import Dict, FrozenSet, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import attr
 
+from recidiviz.observations.metric_unit_of_observation_type import (
+    MetricUnitOfObservationType,
+)
 
+
+# TODO(#32921): Unit of analysis types / constants to the recidiviz.aggregated_metrics
+#  package
 class MetricUnitOfAnalysisType(Enum):
     """A unit of analysis is the entity that you wish to say something about at the end
     of your study.
@@ -51,45 +57,6 @@ class MetricUnitOfAnalysisType(Enum):
     def pretty_name(self) -> str:
         """Returns enum name in title case"""
         return self.short_name.replace("_", " ").title()
-
-
-class MetricUnitOfObservationType(Enum):
-    """A unit of observation is the item (or items) that you observe, measure, or
-    collect while trying to learn something about your unit of analysis.
-
-    The MetricUnitOfObservationType is a type that tells us what each input event / span
-    to a metric is about. For example, compartment_sessions rows are each about a single
-    person, so the MetricUnitOfObservationType is PERSON.
-    """
-
-    SUPERVISION_OFFICER = "OFFICER"
-    PERSON_ID = "PERSON"
-    WORKFLOWS_USER = "WORKFLOWS_USER"
-
-    @property
-    def short_name(self) -> str:
-        """Returns lowercase enum name"""
-        return self.value.lower()
-
-
-@attr.define(frozen=True, kw_only=True)
-class MetricUnitOfObservation:
-    """Class that stores information about a unit of observation, along with functions
-    to help generate SQL fragments.
-    """
-
-    # The enum for the type of unit of observation
-    type: MetricUnitOfObservationType
-
-    # List of columns that serve as the primary keys of a table containing information about the unit
-    primary_key_columns: FrozenSet[str]
-
-    def get_primary_key_columns_query_string(self, prefix: Optional[str] = None) -> str:
-        """Returns string containing comma separated primary key column names with optional prefix"""
-        prefix_str = f"{prefix}." if prefix else ""
-        return ", ".join(
-            f"{prefix_str}{column}" for column in sorted(self.primary_key_columns)
-        )
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -132,24 +99,6 @@ class MetricUnitOfAnalysis:
         """Returns string containing comma separated index column names with optional prefix"""
         prefix_str = f"{prefix}." if prefix else ""
         return ", ".join(f"{prefix_str}{column}" for column in self.index_columns)
-
-
-METRIC_UNITS_OF_OBSERVATION = [
-    MetricUnitOfObservation(
-        type=MetricUnitOfObservationType.SUPERVISION_OFFICER,
-        primary_key_columns=frozenset(["state_code", "officer_id"]),
-    ),
-    MetricUnitOfObservation(
-        type=MetricUnitOfObservationType.PERSON_ID,
-        primary_key_columns=frozenset(["state_code", "person_id"]),
-    ),
-    MetricUnitOfObservation(
-        type=MetricUnitOfObservationType.WORKFLOWS_USER,
-        primary_key_columns=frozenset(["state_code", "email_address"]),
-    ),
-]
-
-METRIC_UNITS_OF_OBSERVATION_BY_TYPE = {u.type: u for u in METRIC_UNITS_OF_OBSERVATION}
 
 
 METRIC_UNITS_OF_ANALYSIS = [

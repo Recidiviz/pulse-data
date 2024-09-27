@@ -158,6 +158,9 @@ from recidiviz.ingest.views.dataset_config import (
     STATE_BASE_VIEWS_DATASET,
 )
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
+from recidiviz.observations.view_config import (
+    get_view_builders_for_views_to_update as get_observations_view_builders,
+)
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
@@ -203,6 +206,15 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
             "referenced by any downstream view (Anna Geiduschek, 2024-09-18)"
         )
         for table_id in get_bq_schema_for_entities_module(state_entities)
+    },
+    # TODO(#32921): Actually use these views downstream in place of the legacy
+    #  person_events, etc views
+    **{
+        vb.address: (
+            "These views are in active development and currently unused (Anna "
+            "Geiduschek, 2024-09-23)"
+        )
+        for vb in get_observations_view_builders()
     },
     BigQueryAddress(
         dataset_id=NORMALIZED_STATE_VIEWS_DATASET,

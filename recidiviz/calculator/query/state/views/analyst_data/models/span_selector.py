@@ -25,14 +25,11 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
     list_to_query_string,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
-    MetricUnitOfObservation,
+from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
+from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
-    SpanType,
-)
+from recidiviz.observations.span_type import SpanType
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -56,10 +53,12 @@ class SpanSelector:
     @property
     def unit_of_observation(self) -> MetricUnitOfObservation:
         """Returns the MetricUnitOfObservation object associated with the inputted type"""
-        return METRIC_UNITS_OF_OBSERVATION_BY_TYPE[self.unit_of_observation_type]
+        return MetricUnitOfObservation(type=self.unit_of_observation_type)
 
     def generate_span_conditions_query_fragment(self) -> str:
         """Returns a query fragment that filters a query based on configured span conditions"""
+        # TODO(#32921): Shouldn't need to filter by span_type once we're querying from
+        #  the type-specific view.
         condition_strings = [f'span = "{self.span_type.value}"']
         for attribute, conditions in self.span_conditions_dict.items():
             if isinstance(conditions, str):
@@ -80,7 +79,11 @@ class SpanSelector:
         return condition_strings_query_fragment
 
     def generate_span_selector_query(self) -> str:
-        """Returns a standalone query that filters the appropriate spans table based on configured span conditions"""
+        """Returns a standalone query that filters the appropriate spans table based on
+        configured span conditions
+        """
+        # TODO(#32921): Query from SpanObservationBigQueryViewBuilder.materialized_view_address_for_span(self.span_type)
+        #  once all span-specific views have been hydrated.
         return f"""
 WITH filtered_spans AS (
     SELECT *, end_date AS end_date_exclusive

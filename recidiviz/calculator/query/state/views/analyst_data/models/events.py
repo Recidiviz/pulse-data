@@ -25,12 +25,10 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 from recidiviz.calculator.query.state.views.analyst_data.models.event_query_builder import (
     EventQueryBuilder,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
-    EventType,
-)
 from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
     ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.observations.event_type import EventType
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
     num_events_within_time_interval_spans,
 )

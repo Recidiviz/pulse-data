@@ -39,8 +39,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
+from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
+from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
@@ -97,9 +97,7 @@ def main(output_directory: str, view_name: str) -> None:
                 metric, (EventMetricConditionsMixin, SpanMetricConditionsMixin)
             )
         ):
-            unit_of_observation = METRIC_UNITS_OF_OBSERVATION_BY_TYPE[
-                unit_of_observation_type
-            ]
+            unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
             generate_assignments_view(
                 view_name,
                 ASSIGNMENT_NAME_TO_TYPES,

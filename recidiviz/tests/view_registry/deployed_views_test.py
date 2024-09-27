@@ -327,7 +327,11 @@ class ViewDagInvariantTests(unittest.TestCase):
             if isinstance(vb, UnionAllBigQueryViewBuilder)
         }
 
+        # TODO(#32921): Update these exemptions to explicitly list which parent UNION
+        #  ALL view is allowed.
         allowed_union_all_view_children = {
+            # TODO(#32921): Delete person_events and person_spans from this list when we
+            #  delete those views.
             # These views produce generic analysis based on all TES spans.
             BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_events"),
             BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_spans"),

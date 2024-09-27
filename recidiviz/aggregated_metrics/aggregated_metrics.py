@@ -37,9 +37,11 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
-    MetricUnitOfObservationType,
     get_assignment_query_for_unit_of_analysis,
     get_static_attributes_query_for_unit_of_analysis,
+)
+from recidiviz.observations.metric_unit_of_observation_type import (
+    MetricUnitOfObservationType,
 )
 
 

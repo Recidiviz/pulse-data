@@ -20,9 +20,7 @@ import unittest
 from recidiviz.calculator.query.state.views.analyst_data.models.event_query_builder import (
     EventQueryBuilder,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
-    EventType,
-)
+from recidiviz.observations.event_type import EventType
 
 
 class EventQueryBuilderTest(unittest.TestCase):
@@ -41,7 +39,7 @@ WHERE compartment_level_1 = "LIBERTY" """,
         expected_subquery = """
 /* This is a description of a dummy liberty starts metric */
 SELECT DISTINCT
-    person_id, state_code,
+    state_code, person_id,
     "LIBERTY_START" AS event,
     start_date AS event_date,
     TO_JSON_STRING(STRUCT(

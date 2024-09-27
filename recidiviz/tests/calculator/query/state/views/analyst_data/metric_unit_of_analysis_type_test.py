@@ -21,11 +21,8 @@ import unittest
 
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
-    METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
     MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
-    MetricUnitOfObservation,
-    MetricUnitOfObservationType,
 )
 
 
@@ -59,27 +56,4 @@ class MetricUnitOfAnalysisTest(unittest.TestCase):
             prefix="my_prefix"
         )
         expected_query_string = "my_prefix.region_code, my_prefix.my_officer_id, my_prefix.my_officer_attribute"
-        self.assertEqual(query_string, expected_query_string)
-
-
-class MetricUnitOfObservationByTypeTest(unittest.TestCase):
-    # check that short_name only has valid character types
-    def test_short_name_char_types(self) -> None:
-        for unit_of_observation_type, _ in METRIC_UNITS_OF_OBSERVATION_BY_TYPE.items():
-            if not re.match(r"^\w+$", unit_of_observation_type.short_name):
-                raise ValueError(
-                    "All characters in MetricUnitOfObservationType value must be alphanumeric or underscores."
-                )
-
-
-class MetricUnitOfObservationTest(unittest.TestCase):
-    def test_get_index_columns_query_string(self) -> None:
-        my_metric_observation_level = MetricUnitOfObservation(
-            type=MetricUnitOfObservationType.SUPERVISION_OFFICER,
-            primary_key_columns=frozenset(["region_code", "my_officer_id"]),
-        )
-        query_string = my_metric_observation_level.get_primary_key_columns_query_string(
-            prefix="my_prefix"
-        )
-        expected_query_string = "my_prefix.my_officer_id, my_prefix.region_code"
         self.assertEqual(query_string, expected_query_string)

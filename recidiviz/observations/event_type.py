@@ -17,7 +17,7 @@
 """Defines EventType enum."""
 from enum import Enum
 
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
 
@@ -78,11 +78,15 @@ class EventType(Enum):
     US_AR_OVG_TRANCHE_CHANGES = "US_AR_OVG_TRANCHE_CHANGES"
     US_AR_INCENTIVES = "US_AR_INCENTIVES"
 
+    @classmethod
+    def observation_type_category(cls) -> str:
+        return "event"
+
     @property
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:
         """Returns the unit of observation type associated with the event type"""
         if self in [
-            EventType.ABSCONSION_BENCH_WARRANT.ABSCONSION_BENCH_WARRANT,
+            EventType.ABSCONSION_BENCH_WARRANT,
             EventType.COMPARTMENT_LEVEL_2_START,
             EventType.CUSTODY_LEVEL_CHANGE,
             EventType.DRUG_SCREEN,

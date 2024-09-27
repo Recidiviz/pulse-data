@@ -39,8 +39,8 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
-    MetricUnitOfObservation,
 )
+from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 
 
 def get_period_span_time_specific_cte(

@@ -20,12 +20,10 @@ import unittest
 from recidiviz.calculator.query.state.views.analyst_data.models.span_query_builder import (
     SpanQueryBuilder,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
-    SpanType,
-)
 from recidiviz.calculator.query.state.views.sessions.compartment_level_0_super_sessions import (
     COMPARTMENT_LEVEL_0_SUPER_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.observations.span_type import SpanType
 
 
 class SpanQueryBuilderTest(unittest.TestCase):
@@ -43,7 +41,7 @@ class SpanQueryBuilderTest(unittest.TestCase):
         expected_subquery = """
 /* This is a description of a dummy session span metric */
 SELECT DISTINCT
-    person_id, state_code,
+    state_code, person_id,
     "COMPARTMENT_SESSION" AS span,
     my_start AS start_date,
     my_end AS end_date,

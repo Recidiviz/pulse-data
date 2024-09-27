@@ -37,11 +37,11 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     DEDUPED_TASK_COMPLETION_EVENT_VB,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
+from recidiviz.common.str_field_utils import snake_to_title
+from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
+from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
-from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
     ASSIGNMENT_NAME_TO_TYPES,
     generate_assignment_event_metric_view,
@@ -126,9 +126,7 @@ def main(
                 metric, (EventMetricConditionsMixin, SpanMetricConditionsMixin)
             )
         ):
-            unit_of_observation = METRIC_UNITS_OF_OBSERVATION_BY_TYPE[
-                unit_of_observation_type
-            ]
+            unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
             generate_assignments_view(
                 view_name,
                 ASSIGNMENT_NAME_TO_TYPES,

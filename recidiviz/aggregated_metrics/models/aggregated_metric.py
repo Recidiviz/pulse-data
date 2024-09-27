@@ -26,24 +26,22 @@ from recidiviz.calculator.query.bq_utils import nonnull_current_date_exclusive_c
 from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
     EventSelector,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
-    EventType,
-)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulationType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
-    MetricUnitOfObservation,
-    MetricUnitOfObservationType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
     SpanSelector,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
-    SpanType,
-)
 from recidiviz.common import attr_validators
+from recidiviz.observations.event_type import EventType
+from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
+from recidiviz.observations.metric_unit_of_observation_type import (
+    MetricUnitOfObservationType,
+)
+from recidiviz.observations.span_type import SpanType
 
 
 @attr.define(frozen=True, kw_only=True)

@@ -26,12 +26,10 @@ from recidiviz.calculator.query.state.dataset_config import (
     PULSE_DASHBOARD_SEGMENT_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
-    EventType,
-)
 from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
     WORKFLOWS_OPPORTUNITY_CONFIGS,
 )
+from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
