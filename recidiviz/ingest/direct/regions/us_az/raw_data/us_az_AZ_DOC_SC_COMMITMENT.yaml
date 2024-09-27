@@ -7,7 +7,8 @@ primary_key_cols:
   - COMMITMENT_ID
 columns:
   - name: COMMITMENT_ID
-    description: system generated primary key
+    description: System generated primary key. A single commitment can only belong to a single person.
+    is_pii: True
   - name: SC_EPISODE_ID
     description: Foreign key to az_doc_sc_episode
     is_pii: True
@@ -81,3 +82,7 @@ columns:
     is_pii: True
   - name: AGENCY_ID
     description: Agency ID
+table_relationships:
+  - foreign_table: AZ_DOC_SC_EPISODE
+    join_logic:
+      - AZ_DOC_SC_COMMITMENT.SC_EPISODE_ID = AZ_DOC_SC_EPISODE.SC_EPISODE_ID

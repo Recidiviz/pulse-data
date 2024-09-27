@@ -19,8 +19,9 @@ columns:
     external_id_type: US_AZ_PERSON_ID
   - name: DOC_NUMBER
     description: |-
-      Control number (previous DOC#)
-    is_pii: True
+      Generated sequence number of this period for this person. The first row in this
+      file for a person will have 001 (or 1), the second will have 002, and so on.
+    is_pii: False
   - name: BOOKING_NUMBER
     description: |-
       Arrest booking number
