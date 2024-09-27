@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query containing release dates for people who are incarcerated and have been approved
-or tentatively approved for the Transition Release Program, or people who have been 
-released on the Transition Release Program in the past.
+or tentatively approved for the Drug Transition Release Program, or people who have been 
+released on the Drug Transition Release Program in the past.
 
-The eligible date field contains the date on which they became eligible for transition
+The eligible date field contains the date on which they became eligible for drug transition
 release. The due date field contains the date they were actually released, if they 
-have been released, or the date they are eligible for transition release if they are
+have been released, or the date they are eligible for drug transition release if they are
 currently incarcerated.
 """
 
@@ -33,15 +33,18 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 WITH 
 -- Return one row per person, per incarceration stint, when the person has been approved
--- or tentatively approved for transition release for that stint. Each row will contain
--- the date the person is planned to be released on TPR, if one exists, as well as the date
+-- or tentatively approved for drug transition release for that stint. Each row will contain
+-- the date the person is planned to be released on DTP, if one exists, as well as the date
 -- on which that release date was last updated in ACIS. 
-eligibility_dates AS (
+eligibility_dates AS ( -- 153676 rows with non-null drug_transition_release_eligibility_date
 SELECT DISTINCT 
   CAST(COALESCE(
-    NULLIF(TRANSITION_PROGRAM_RLS_DTM_ML, 'NULL'),
-    NULLIF(TRANSITION_PROGRAM_RLS_DTM_ARD, 'NULL'), 
-    NULLIF(TRANSITION_PROGRAM_RLS_DTM, 'NULL')) AS DATETIME) AS transition_release_eligibility_date,
+    NULLIF(DRUG_TRANSITION_PGM_RLS_DTM_ML, 'NULL'),
+    NULLIF(DPR_DRUG_TRANSITION_PGM_RLS_DTM_ML, 'NULL'),
+    NULLIF(DRUG_TRANSITION_PGM_RLS_DTM_ARD, 'NULL'), 
+    NULLIF(DPR_DRUG_TRANSITION_PGM_RLS_DTM_ARD, 'NULL'),
+    NULLIF(DRUG_TRANSITION_PGM_RLS_DTM, 'NULL'),
+    NULLIF(DPR_DRUG_TRANSITION_PGM_RLS_DTM, 'NULL')) AS DATETIME) AS drug_transition_release_eligibility_date,
   CAST(COALESCE(
     NULLIF(off.UPDT_DTM_ML, 'NULL'), 
     NULLIF(off.UPDT_DTM_ARD, 'NULL'), 
@@ -55,7 +58,7 @@ LEFT JOIN {AZ_DOC_SC_EPISODE} sc
 USING(SC_EPISODE_ID)
 LEFT JOIN {DOC_EPISODE} ep
 USING(DOC_ID)
-WHERE TRANSITION_PROGRAM_STATUS_ID IN (
+WHERE DRUG_TRANSITION_PROGRAM_STATUS_ID IN (
   '10650', -- Approved
   '10652' -- Tentative
 )
@@ -64,17 +67,19 @@ AND sc.FINAL_OFFENSE_ID = off.OFFENSE_ID
 AND PERSON_ID IS NOT NULL
 ),
 -- Return one row per person, per incarceration stint, where a person has already been
--- released on a standard transition release. Each row will contain the date on which 
+-- released on a drug transition release. Each row will contain the date on which 
 -- the person was released, and the best approximation of the date the movement data was
 -- last updated.
-release_dates AS (
+release_dates AS ( -- 2789 releases
 SELECT DISTINCT
-  EXTRACT(DATE FROM CAST(NULLIF(MOVEMENT_DATE, 'NULL') AS DATETIME)) AS transition_release_movement_date, 
+  EXTRACT(DATE FROM CAST(NULLIF(MOVEMENT_DATE, 'NULL') AS DATETIME)) AS drug_transition_release_movement_date, 
   -- There was a system migration on 2019-11-30, so all rows with movements before that date have that date as their UPDT_DTM.
-  LEAST(CAST(NULLIF(UPDT_DTM, 'NULL') AS DATETIME), CAST(NULLIF(MOVEMENT_DATE,'NULL') AS DATETIME)) AS update_datetime_release, 
+  LEAST(
+    COALESCE(CAST(NULLIF(UPDT_DTM, 'NULL') AS DATETIME),DATE('9999-12-31')), 
+    COALESCE(CAST(NULLIF(MOVEMENT_DATE,'NULL') AS DATETIME),DATE('9999-12-31'))) AS update_datetime_release, 
   DOC_ID
 FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY}
-WHERE MOVEMENT_CODE_ID = '71' -- Standard Transition Release
+WHERE MOVEMENT_CODE_ID = '79' -- Drug Transition Release
 AND MOVEMENT_DATE IS NOT NULL
 ), 
 -- Return one row per person, incarceration stint, and combination of planned release date 
@@ -82,16 +87,16 @@ AND MOVEMENT_DATE IS NOT NULL
 -- updated.
 elig_and_due_dates AS (
 SELECT DISTINCT
-  FIRST_VALUE(transition_release_eligibility_date) OVER (
+  FIRST_VALUE(drug_transition_release_eligibility_date) OVER (
       PARTITION BY PERSON_ID, DOC_ID, update_datetime_elig
       ORDER BY update_datetime_elig,
       -- very rarely, there are two dates entered with the same update_datetime_elig. sort them deterministically
-      transition_release_eligibility_date)
-  AS transition_release_eligibility_date,
-  MIN(transition_release_movement_date) OVER (PARTITION BY PERSON_ID, DOC_ID, update_datetime_release
+      drug_transition_release_eligibility_date)
+  AS drug_transition_release_eligibility_date,
+  MIN(drug_transition_release_movement_date) OVER (PARTITION BY PERSON_ID, DOC_ID, update_datetime_release
       ORDER BY update_datetime_release, 
       -- very rarely, there are two dates entered with the same update_datetime_external. sort them deterministically
-      transition_release_movement_date) AS actual_release_date,
+      drug_transition_release_movement_date) AS actual_release_date,
   update_datetime_elig,
   update_datetime_release,
   PERSON_ID,
@@ -108,7 +113,7 @@ USING(DOC_ID)
 filter_to_changed_dates AS (
 SELECT DISTINCT 
   *,
-  LAG(transition_release_eligibility_date) OVER (
+  LAG(drug_transition_release_eligibility_date) OVER (
     PARTITION BY PERSON_ID, DOC_ID 
     ORDER BY update_datetime_elig, update_datetime_release) AS prev_elig_date,
   LAG(actual_or_expected_release_date) OVER (
@@ -118,13 +123,13 @@ FROM (
 SELECT DISTINCT
   -- it is useful for analysis to know that the eligibility date was later, but ingest 
   -- does not allow that reverse-ordering.
-  IF(transition_release_eligibility_date > actual_release_date, 
-    CAST('1000-01-01' AS DATE), transition_release_eligibility_date)
-  AS transition_release_eligibility_date, 
+  IF(drug_transition_release_eligibility_date > actual_release_date, 
+    CAST('1000-01-01' AS DATE), drug_transition_release_eligibility_date)
+  AS drug_transition_release_eligibility_date, 
   -- if no release date already passed, use eligibility date,
   -- since it is the earliest date the person can be released on TPR.
   IF (actual_release_date IS NULL, 
-    transition_release_eligibility_date, actual_release_date) 
+    drug_transition_release_eligibility_date, actual_release_date) 
   AS actual_or_expected_release_date, 
   update_datetime_elig,
   update_datetime_release, 
@@ -142,24 +147,24 @@ SELECT DISTINCT
 -- in the singular case where one person has two rows with the same update_datetime_external, 
 -- deterministically choose one to keep
 ROW_NUMBER() OVER (PARTITION BY PERSON_ID, update_datetime_external 
-  ORDER BY transition_release_eligibility_date, actual_or_expected_release_date) AS rn
+  ORDER BY drug_transition_release_eligibility_date, actual_or_expected_release_date) AS rn
 FROM (
     SELECT DISTINCT
-    transition_release_eligibility_date,
+    drug_transition_release_eligibility_date,
     actual_or_expected_release_date,
     CASE WHEN
     -- if eligibility date AND due date changed, track the earliest update_datetime
-        (transition_release_eligibility_date != prev_elig_date
-        OR (transition_release_eligibility_date IS NULL and prev_elig_date IS NOT NULL)
-        OR (transition_release_eligibility_date IS NOT NULL and prev_elig_date IS NULL))
+        (drug_transition_release_eligibility_date != prev_elig_date
+        OR (drug_transition_release_eligibility_date IS NULL and prev_elig_date IS NOT NULL)
+        OR (drug_transition_release_eligibility_date IS NOT NULL and prev_elig_date IS NULL))
         AND (actual_or_expected_release_date != prev_due_date
         OR (actual_or_expected_release_date IS NULL and prev_due_date IS NOT NULL)
         OR (actual_or_expected_release_date IS NOT NULL and prev_due_date IS NULL))
-        THEN LEAST(update_datetime_elig,update_datetime_release)
+        THEN LEAST(COALESCE(update_datetime_elig,'9999-12-31'), COALESCE(update_datetime_release,'9999-12-31'))
     -- if eligibility date changed, track that update_datetime
-        WHEN (transition_release_eligibility_date != prev_elig_date
-        OR (transition_release_eligibility_date IS NULL and prev_elig_date IS NOT NULL)
-        OR (transition_release_eligibility_date IS NOT NULL and prev_elig_date IS NULL))
+        WHEN (drug_transition_release_eligibility_date != prev_elig_date
+        OR (drug_transition_release_eligibility_date IS NULL and prev_elig_date IS NOT NULL)
+        OR (drug_transition_release_eligibility_date IS NOT NULL and prev_elig_date IS NULL))
         THEN update_datetime_elig
     -- actual or planned release date changed, track that update_datetime
         WHEN  (actual_or_expected_release_date != prev_due_date
@@ -171,9 +176,9 @@ FROM (
     DOC_ID,
     FROM filter_to_changed_dates
     -- filter to only include rows where some date changed
-    WHERE (transition_release_eligibility_date != prev_elig_date
-    OR (transition_release_eligibility_date IS NULL and prev_elig_date IS NOT NULL)
-    OR (transition_release_eligibility_date IS NOT NULL and prev_elig_date IS NULL))
+    WHERE (drug_transition_release_eligibility_date != prev_elig_date
+    OR (drug_transition_release_eligibility_date IS NULL and prev_elig_date IS NOT NULL)
+    OR (drug_transition_release_eligibility_date IS NOT NULL and prev_elig_date IS NULL))
     OR (actual_or_expected_release_date != prev_due_date
     OR (actual_or_expected_release_date IS NULL and prev_due_date IS NOT NULL)
     OR (actual_or_expected_release_date IS NOT NULL and prev_due_date IS NULL)))
@@ -187,7 +192,7 @@ WHERE rn = 1
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_az",
-    ingest_view_name="state_task_deadline",
+    ingest_view_name="state_task_deadline_dtp",
     view_query_template=VIEW_QUERY_TEMPLATE,
 )
 
