@@ -156,7 +156,7 @@ case_notes_cte AS (
         ON peid.external_id = eor.OFFENDER_BOOK_ID
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid2
         USING(state_code, person_id)
-    WHERE CURRENT_DATE('US/EASTERN') BETWEEN ca.start_date AND {nonnull_end_date_clause('ca.end_date')}
+    WHERE CURRENT_DATE('US/Eastern') BETWEEN ca.start_date AND {nonnull_end_date_clause('ca.end_date')}
         AND peid.id_type = 'US_ND_ELITE_BOOKING'
         AND eor.CATEGORY_TYPE = 'LSI-R'
         AND REGEXP_CONTAINS(eor.CATEGORY_TEXT, r'STATIC')
