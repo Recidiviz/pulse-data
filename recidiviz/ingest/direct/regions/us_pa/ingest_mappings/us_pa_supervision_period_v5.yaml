@@ -1,11 +1,7 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# This file associates the columns outputted from the query in `view_supervision_period_v4` to
+# This file associates the columns outputted from the query in `view_supervision_period_v5` to
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
-launch_env:
-  $or:
-    - $env: is_staging
-    - $env: is_local
 input_columns:
   - ParoleNumber
   - start_date

@@ -15,25 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_PA implementation of the supervision normalization delegate"""
-from datetime import date
-from typing import List, Optional
+from typing import List
 
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodTerminationReason,
-)
-from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    update_normalized_entity_with_globally_unique_id,
-)
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionPeriod,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
-from recidiviz.utils import environment
 
 
 class UsPaSupervisionNormalizationDelegate(
@@ -43,95 +30,3 @@ class UsPaSupervisionNormalizationDelegate(
 
     def __init__(self, incarceration_periods: List[StateIncarcerationPeriod]) -> None:
         self._incarceration_periods = incarceration_periods
-
-    def infer_additional_periods(
-        self,
-        person_id: int,
-        supervision_periods: List[StateSupervisionPeriod],
-    ) -> List[StateSupervisionPeriod]:
-        """In US_PA, we need to infer additional periods that represent periods of
-        active absconsions. This assumes that the supervision periods are already sorted
-        and have missing dates inferred.
-
-        If a supervision period ending in absconsion has a subsequent incarceration period,
-        this new inferred period will have a start date of when the supervision period
-        ended and a termination date of when the incarceration period began. Otherwise,
-        if there is no incarceration period afterwards, then the termination date is not
-        supplied and this new supervision period is implied to be an open period, indicating
-        active absconsion.
-        """
-        # TODO(#32672): No longer needed in staging because the revised supervision periods view (supervision_periods_v5) gated
-        # to staging now ingests absconsion periods. Remove this entirely when supervision_periods_v5 gets ungated to prod
-        if not environment.in_gcp_production():
-            return supervision_periods
-
-        admission_dates = sorted(
-            [
-                ip.admission_date
-                for ip in self._incarceration_periods
-                if ip.admission_date
-            ]
-        )
-
-        new_supervision_periods: List[StateSupervisionPeriod] = []
-        for index, supervision_period in enumerate(supervision_periods):
-            new_supervision_periods.append(supervision_period)
-            if (
-                supervision_period.termination_reason
-                == StateSupervisionPeriodTerminationReason.ABSCONSION
-            ):
-                if supervision_period.termination_date is None:
-                    raise ValueError(
-                        "Unexpected null termination date for supervision period with "
-                        f"termination reason: {supervision_period.supervision_period_id}"
-                    )
-                next_incarceration_admission_date = next(
-                    (
-                        admission_date
-                        for admission_date in admission_dates
-                        if admission_date > supervision_period.termination_date
-                    ),
-                    None,
-                )
-                next_supervision_start_date = (
-                    supervision_periods[index + 1].start_date
-                    if index < len(supervision_periods) - 1
-                    else None
-                )
-                termination_date: Optional[date]
-                if next_supervision_start_date and next_incarceration_admission_date:
-                    termination_date = min(
-                        next_supervision_start_date,
-                        next_incarceration_admission_date,
-                    )
-                elif next_supervision_start_date:
-                    termination_date = next_supervision_start_date
-                else:
-                    termination_date = next_incarceration_admission_date
-                if (
-                    termination_date
-                    and termination_date < supervision_period.termination_date
-                ):
-                    continue
-                new_supervision_period = StateSupervisionPeriod(
-                    state_code=StateCode.US_PA.value,
-                    external_id=f"{supervision_period.external_id}-2-INFERRED",
-                    start_date=supervision_period.termination_date,
-                    termination_date=termination_date,
-                    supervision_type=supervision_period.supervision_type,
-                    admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
-                    termination_reason=StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION
-                    if termination_date
-                    else None,
-                    supervision_site=None,
-                    supervision_level=supervision_period.supervision_level,
-                    supervision_level_raw_text=supervision_period.supervision_level_raw_text,
-                )
-                # Add a unique id to the new SP
-                update_normalized_entity_with_globally_unique_id(
-                    person_id=person_id,
-                    entity=new_supervision_period,
-                    state_code=StateCode.US_PA,
-                )
-                new_supervision_periods.append(new_supervision_period)
-        return new_supervision_periods
