@@ -21,12 +21,9 @@ from typing import Dict, List, Sequence, Union
 import attr
 
 from recidiviz.calculator.query.sessions_query_fragments import list_to_query_string
-from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
-    EventType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
-    MetricUnitOfObservation,
+from recidiviz.observations.event_type import EventType
+from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
+from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
 
@@ -52,11 +49,13 @@ class EventSelector:
     @property
     def unit_of_observation(self) -> MetricUnitOfObservation:
         """Returns the MetricUnitOfObservation object associated with the event type"""
-        return METRIC_UNITS_OF_OBSERVATION_BY_TYPE[self.unit_of_observation_type]
+        return MetricUnitOfObservation(type=self.unit_of_observation_type)
 
     def generate_event_conditions_query_fragment(self) -> str:
         """Returns a query fragment that filters a query based on configured event conditions"""
 
+        # TODO(#32921): Shouldn't need to filter by span_type once we're querying from
+        #  the type-specific view.
         condition_strings = [f'event = "{self.event_type.value}"']
         for attribute, conditions in self.event_conditions_dict.items():
             if isinstance(conditions, str):
@@ -78,6 +77,8 @@ class EventSelector:
 
     def generate_event_selector_query(self) -> str:
         """Returns a standalone query that filters the appropriate events table based on configured event conditions"""
+        # TODO(#32921): Query from EventObservationBigQueryViewBuilder.materialized_view_address_for_span(self.span_type)
+        #  once all span-specific views have been hydrated.
         return f"""
 SELECT *, end_date AS end_date_exclusive
 FROM `{{project_id}}.analyst_data.{self.unit_of_observation_type.short_name}_events_materialized`

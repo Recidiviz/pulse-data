@@ -28,9 +28,6 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_supervision_of
 from recidiviz.calculator.query.state.views.analyst_data.models.span_query_builder import (
     SpanQueryBuilder,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
-    SpanType,
-)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events import (
     USAGE_EVENTS_DICT,
 )
@@ -55,6 +52,7 @@ from recidiviz.calculator.query.state.views.sessions.person_demographics import 
 from recidiviz.calculator.query.state.views.sessions.supervision_officer_sessions import (
     SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.observations.span_type import SpanType
 
 DEDUPED_TASK_COMPLETION_EVENT_VB_QUERY_FRAGMENT = list_to_query_string(
     sorted([event.task_type_name for event in DEDUPED_TASK_COMPLETION_EVENT_VB]),

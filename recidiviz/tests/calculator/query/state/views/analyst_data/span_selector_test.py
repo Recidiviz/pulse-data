@@ -25,9 +25,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
     SpanSelector,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
-    SpanType,
-)
+from recidiviz.observations.span_type import SpanType
 
 
 class SpanSelectorTest(unittest.TestCase):
@@ -59,7 +57,7 @@ WITH filtered_spans AS (
 ,
 sub_sessions_dedup AS (
     SELECT DISTINCT
-        person_id, state_code,
+        state_code, person_id,
         start_date,
         end_date_exclusive,
     FROM
@@ -83,7 +81,6 @@ sub_sessions_dedup AS (
             },
         )
         query_string = my_spans.generate_span_selector_query()
-        print(query_string)
         expected_query_string = f"""
 WITH filtered_spans AS (
     SELECT *, end_date AS end_date_exclusive
@@ -96,7 +93,7 @@ WITH filtered_spans AS (
 ,
 sub_sessions_dedup AS (
     SELECT DISTINCT
-        officer_id, state_code,
+        state_code, officer_id,
         start_date,
         end_date_exclusive,
     FROM
@@ -133,7 +130,7 @@ WITH filtered_spans AS (
 ,
 sub_sessions_dedup AS (
     SELECT DISTINCT
-        person_id, state_code,
+        state_code, person_id,
         start_date,
         end_date_exclusive,
     FROM
@@ -166,7 +163,7 @@ WITH filtered_spans AS (
 ,
 sub_sessions_dedup AS (
     SELECT DISTINCT
-        person_id, state_code,
+        state_code, person_id,
         start_date,
         end_date_exclusive,
     FROM

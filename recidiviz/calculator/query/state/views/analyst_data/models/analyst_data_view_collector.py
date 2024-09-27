@@ -25,13 +25,13 @@ from recidiviz.calculator.query.state.views.analyst_data.models.event_query_buil
     EventQueryBuilder,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.events import EVENTS
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfObservationType,
-)
 from recidiviz.calculator.query.state.views.analyst_data.models.span_query_builder import (
     SpanQueryBuilder,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.spans import SPANS
+from recidiviz.observations.metric_unit_of_observation_type import (
+    MetricUnitOfObservationType,
+)
 
 
 def _get_query_builder_properties_markdown_table(
@@ -50,6 +50,8 @@ def _get_query_builder_properties_markdown_table(
     return writer.dumps()
 
 
+# TODO(#32921): Delete this once we have migrated to use the new all_*_spans and
+#  all_*_events views or their observation-specific parents.
 def generate_unioned_view_builder(
     unit_of_observation_type: MetricUnitOfObservationType,
     query_builders: Union[List[EventQueryBuilder], List[SpanQueryBuilder]],
@@ -105,6 +107,8 @@ in `{unit_of_observation_type_label}_{query_builder_type_label}s.py`.
     )
 
 
+# TODO(#32921): Delete this once we have migrated to use the new all_*_spans and
+#  all_*_events views or their observation-specific parents.
 def get_spans_and_events_view_builders() -> List[SimpleBigQueryViewBuilder]:
     """Returns all view builders for configured spans and events"""
     view_builders: List[SimpleBigQueryViewBuilder] = []

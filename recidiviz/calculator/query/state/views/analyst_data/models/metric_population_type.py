@@ -21,15 +21,13 @@ from typing import Dict, List
 from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
     SpanSelector,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
-    SpanType,
-)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.observations.span_type import SpanType
 
 
 class MetricPopulationType(Enum):

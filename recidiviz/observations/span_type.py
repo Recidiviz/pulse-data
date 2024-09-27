@@ -18,7 +18,7 @@
 
 from enum import Enum
 
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
 
@@ -61,6 +61,10 @@ class SpanType(Enum):
     )
     WORKFLOWS_USER_CASELOAD_ACCESS_SESSION = "WORKFLOWS_USER_CASELOAD_ACCESS_SESSION"
     WORKFLOWS_USER_REGISTRATION_SESSION = "WORKFLOWS_USER_REGISTRATION_SESSION"
+
+    @classmethod
+    def observation_type_category(cls) -> str:
+        return "span"
 
     @property
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:

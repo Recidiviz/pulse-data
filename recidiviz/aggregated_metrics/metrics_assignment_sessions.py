@@ -32,10 +32,12 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
-    METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
     MetricUnitOfAnalysisType,
-    MetricUnitOfObservationType,
     get_assignment_query_for_unit_of_analysis,
+)
+from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
+from recidiviz.observations.metric_unit_of_observation_type import (
+    MetricUnitOfObservationType,
 )
 
 
@@ -51,7 +53,7 @@ def generate_metric_assignment_sessions_view_builder(
     a unit of observation is associated with the specified aggregation level indicated by the unit of analysis.
     """
     unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
-    unit_of_observation = METRIC_UNITS_OF_OBSERVATION_BY_TYPE[unit_of_observation_type]
+    unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
 
     unit_of_analysis_name = unit_of_analysis_type.short_name
     unit_of_observation_name = unit_of_observation_type.short_name

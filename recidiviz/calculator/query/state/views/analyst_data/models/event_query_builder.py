@@ -24,17 +24,18 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.sessions_query_fragments import (
     convert_cols_to_json_string,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
-    EventType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
-    MetricUnitOfObservationType,
-)
 from recidiviz.common import attr_validators
 from recidiviz.common.str_field_utils import snake_to_title
+from recidiviz.observations.event_type import EventType
+from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
+from recidiviz.observations.metric_unit_of_observation_type import (
+    MetricUnitOfObservationType,
+)
 
 
+# TODO(#32921): Delete this class once we've migrated all SpanQueryBuilder objects to
+#  the new view structure and have migrated all downstream references of *_spans views
+#  to the new all_*_spans views (or specific parent views).
 @attr.define(frozen=True, kw_only=True)
 class EventQueryBuilder:
     """
@@ -82,9 +83,9 @@ class EventQueryBuilder:
 )"""
 
     def generate_subquery(self) -> str:
-        unit_of_observation = METRIC_UNITS_OF_OBSERVATION_BY_TYPE[
-            self.unit_of_observation_type
-        ]
+        unit_of_observation = MetricUnitOfObservation(
+            type=self.unit_of_observation_type
+        )
         return f"""
 /* {self.description} */
 SELECT DISTINCT

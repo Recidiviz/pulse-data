@@ -46,11 +46,8 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
-    METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
     UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT,
     MetricUnitOfAnalysisType,
-    MetricUnitOfObservation,
-    MetricUnitOfObservationType,
     get_static_attributes_query_for_unit_of_analysis,
 )
 from recidiviz.common.constants.state.state_person import StateGender, StateRace
@@ -70,6 +67,10 @@ from recidiviz.looker.lookml_view_field_parameter import (
     LookMLSqlReferenceType,
 )
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
+from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
+from recidiviz.observations.metric_unit_of_observation_type import (
+    MetricUnitOfObservationType,
+)
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils import (
     get_metric_explore_parameter,
     get_metric_value_measure,
@@ -1605,9 +1606,7 @@ def generate_custom_metrics_view(
         derived_table_subqueries = derived_table_subqueries + [
             custom_metrics_view_query_template(
                 view_name=view_name,
-                unit_of_observation=METRIC_UNITS_OF_OBSERVATION_BY_TYPE[
-                    unit_of_observation
-                ],
+                unit_of_observation=MetricUnitOfObservation(type=unit_of_observation),
                 json_field_filters=list(json_field_filters_with_suggestions),
                 # Only include full index column mappings for the first unit of observation cte
                 # to avoid having duplicate index columns in the final query

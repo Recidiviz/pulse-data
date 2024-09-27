@@ -23,10 +23,8 @@ from recidiviz.calculator.query.state.views.analyst_data.models.analyst_data_vie
 from recidiviz.calculator.query.state.views.analyst_data.models.event_query_builder import (
     EventQueryBuilder,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
-    EventType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.observations.event_type import EventType
+from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
 
@@ -58,7 +56,7 @@ FROM `{project_id}.normalized_state.state_supervision_contact` """,
         expected_query_template = """
 /* This is a description of a dummy liberty starts metric */
 SELECT DISTINCT
-    person_id, state_code,
+    state_code, person_id,
     "LIBERTY_START" AS event,
     start_date AS event_date,
     TO_JSON_STRING(STRUCT(
@@ -75,7 +73,7 @@ UNION ALL
 
 /* This is a description of a dummy contacts metric */
 SELECT DISTINCT
-    person_id, state_code,
+    state_code, person_id,
     "SUPERVISION_CONTACT" AS event,
     start_date AS event_date,
     TO_JSON_STRING(STRUCT(

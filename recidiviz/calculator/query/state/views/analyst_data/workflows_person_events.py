@@ -22,9 +22,7 @@ from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASE
 from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
     EventSelector,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
-    EventType,
-)
+from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
