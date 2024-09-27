@@ -54,6 +54,9 @@ from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
     coalesce_results_and_errors,
     split_by_pre_import_normalization_type,
 )
+from recidiviz.airflow.dags.raw_data.filtering_tasks import (
+    filter_chunking_results_by_errors,
+)
 from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
     generate_chunk_processing_pod_arguments,
     generate_file_chunking_pod_arguments,
@@ -73,6 +76,8 @@ from recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group import (
     initialize_raw_data_dag_group,
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
+    CHUNKING_ERRORS,
+    CHUNKING_RESULTS,
     FILE_IDS_TO_HEADERS,
     HEADER_VERIFICATION_ERRORS,
     IMPORT_READY_FILES,
@@ -257,9 +262,12 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                     num_batches=NUM_BATCHES,
                 )
             )
-            raise_file_chunking_errors(
-                divide_files_into_chunks.output,
+
+            filtered_chunks = filter_chunking_results_by_errors(
+                divide_files_into_chunks.output
             )
+
+            raise_file_chunking_errors(filtered_chunks[CHUNKING_ERRORS])
 
             normalized_chunks = RecidivizKubernetesPodOperator.partial(
                 **get_kubernetes_pod_kwargs(
@@ -269,7 +277,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ).expand(
                 arguments=generate_chunk_processing_pod_arguments(
                     state_code.value,
-                    file_chunks=divide_files_into_chunks.output,
+                    file_chunks=filtered_chunks[CHUNKING_RESULTS],
                     num_batches=NUM_BATCHES,
                 )
             )
@@ -333,15 +341,17 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
             # trigger rule is ALL_DONE
             clean_and_storage_jobs = coalesce_results_and_errors(
-                state_code.value,
-                raw_data_instance,
-                get_all_unprocessed_bq_file_metadata.output,
-                file_headers[HEADER_VERIFICATION_ERRORS],
-                divide_files_into_chunks.output,
-                pre_import_normalization_result,
-                load_and_prep_results,
-                append_batches_output,
-                append_results,
+                region_code=state_code.value,
+                raw_data_instance=raw_data_instance,
+                serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
+                serialized_header_verification_errors=file_headers[
+                    HEADER_VERIFICATION_ERRORS
+                ],
+                serialized_chunking_errors=filtered_chunks[CHUNKING_ERRORS],
+                serialized_pre_import_normalization_result=pre_import_normalization_result,
+                serialized_load_prep_results=load_and_prep_results,
+                serialized_append_batches=append_batches_output,
+                serialized_append_result=append_results,
             )
 
             write_import_completions = CloudSqlQueryOperator(
