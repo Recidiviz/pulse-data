@@ -8,7 +8,9 @@ primary_key_cols:
 columns:
   - name: SC_EPISODE_ID
     description: |-
-      system generated primary key
+      System generated primary key for episodes (sentence groups). 
+      A single episode can only belong to a single person.
+    is_pii: True
   - name: DOC_ID
     description: |-
       fk to DOC_EPISODE

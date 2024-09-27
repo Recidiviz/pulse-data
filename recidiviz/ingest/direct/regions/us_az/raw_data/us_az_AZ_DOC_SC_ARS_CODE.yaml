@@ -1,7 +1,11 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: AZ_DOC_SC_ARS_CODE
 file_description: |-
-  TODO(#25890): FILL IN
+  The Arizona Criminal Justice Commission (ACJC) along with the 
+  Department of Public Safety (DPS) & Administrative Office of 
+  the Court (AOC) work together to maintain and deliver the 
+  Arizona Revised Statutes (ARS) Citable Criminal Codes.
+  This file contains that data, as well as a link to NCIC codes.
 data_classification: source
 primary_key_cols:
   - ARS_ID
@@ -9,6 +13,7 @@ columns:
   - name: ARS_ID
     description: |-
       system generated primary key
+    is_pii: False
   - name: ARS_CODE
     description: |-
       Code identifying the crime
