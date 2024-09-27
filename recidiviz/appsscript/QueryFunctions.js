@@ -17,23 +17,78 @@
 /* File containing functions that construct SQL Queries used in CreateReport.gs. */
 
 /**
+ * Get usage and impact district data
+ * Given parameters provided by the user, constructs a query string and calls runQuery
+ * to query the BiqQuery database.
+ * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
+ * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
+ * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
+ * @param {string} system The system of the workflow (ex: 'SUPERVISION' or 'INCARCERATION')
+ * @returns {object} usageAndImpactDistrictData An array or arrays containing data for each district/facility. Also returns the usageAndImpactXAxisColumn, eligibleAndViewedColumn, markedIneligibleColumn, and eligibleAndNotViewedColumn
+ */
+function getUsageAndImpactDistrictData(stateCode, endDateString, completionEventType, system) {
+  let usageAndImpactXAxisColumn = "";
+  let tableName = "";
+
+  if (system === "SUPERVISION") {
+    usageAndImpactXAxisColumn = "district_name";
+    tableName = "justice_involved_district_day_aggregated_metrics_materialized";
+  } else if (system === "INCARCERATION") {
+    usageAndImpactXAxisColumn = "facility_name";
+    tableName = "justice_involved_facility_day_aggregated_metrics_materialized";
+  } else {
+    throw new Error(
+      "Invalid system provided. Please check all Google Form Inputs."
+    );
+  }
+  
+  const eligibleAndViewedColumn = `avg_daily_population_task_eligible_and_viewed_${completionEventType.toLowerCase()}`;
+  const markedIneligibleColumn = `avg_daily_population_task_marked_ineligible_${completionEventType.toLowerCase()}`;
+  const eligibleAndNotViewedColumn = `avg_daily_population_task_eligible_and_not_viewed_${completionEventType.toLowerCase()}`;
+
+  const queryString = `
+    SELECT
+      ${usageAndImpactXAxisColumn},
+      ${eligibleAndViewedColumn},
+      ${markedIneligibleColumn},
+      ${eligibleAndNotViewedColumn}
+    FROM
+    \`impact_reports.${tableName}\`
+    WHERE state_code = '${stateCode}'
+    AND end_date = '${endDateString}';
+  `;
+
+  const usageAndImpactDistrictData = runQuery(queryString);
+
+  return {
+    usageAndImpactDistrictData,
+    usageAndImpactXAxisColumn,
+    eligibleAndViewedColumn,
+    markedIneligibleColumn,
+    eligibleAndNotViewedColumn,
+  };
+}
+
+/**
  * Construct MAU and WAU Text
  * Given parameters provided by the user, constructs a query string and call RunQuery
  * to query the BiqQuery database. Fetches and returns the total number of distinct monthly active users, distinct monthly registered users, distinct weekly active users, and distinct weekly registered users for the given workflow
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
  * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
+ * @param {string} system The system of the workflow (ex: 'SUPERVISION' or 'INCARCERATION')
  * @returns {map} an object that contains the number of distinctMonthlyActiveUsers, distinctMonthlyRegisteredUsers, distinctWeeklyActiveUsers, and distinctWeeklyRegisteredUsers
  **/
-function constructMauAndWauText(stateCode, endDateString, completionEventType) {
+function constructMauAndWauText(stateCode, endDateString, completionEventType, system) {
   const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
+  const distinct_registered_users = `distinct_registered_users_${system.toLowerCase()}`;
   const mauTable = `justice_involved_state_month_aggregated_metrics_materialized`;
   const wauTable = `justice_involved_state_week_aggregated_metrics_materialized`;
 
   const queryStringMonthly = `
     SELECT
       ${distinctActiveUsers},
-      distinct_registered_users
+      ${distinct_registered_users}
     FROM \`impact_reports.${mauTable}\`
     WHERE state_code = '${stateCode}'
     AND end_date = '${endDateString}'`;
@@ -49,7 +104,7 @@ function constructMauAndWauText(stateCode, endDateString, completionEventType) {
   const queryStringWeekly = `
     SELECT
       ${distinctActiveUsers},
-      distinct_registered_users
+      ${distinct_registered_users}
     FROM \`impact_reports.${wauTable}\`
     WHERE state_code = '${stateCode}'
     AND end_date = '${endDateString}'`;
@@ -329,3 +384,50 @@ function constructSupervisionDistrictColumnChart(
 
   return supervisionColumnChart;
 }
+
+
+/**
+ * Construct usage and impact district column chart
+ * Populates a new supervision column chart.
+ * @param {string} xAxisColumn The name of the x-axis
+ * @param {string} eligibleAndViewedColumn The name of the eligibleAndViewedColumn
+ * @param {string} markedIneligibleColumn The name of the markedIneligibleColumn
+ * @param {string} eligibleAndNotViewedColumn The name of the eligibleAndNotViewedColumn
+ * @param {array} usageAndImpactDistrictData An array of arrays containing data for each district/facility
+ * @returns {Chart} The built/populated column chart
+ */
+function constructUsageAndImpactDistrictColumnChart(
+  xAxisColumn,
+  eligibleAndViewedColumn,
+  markedIneligibleColumn,
+  eligibleAndNotViewedColumn,
+  usageAndImpactDistrictData
+) {
+  const xAxisClean = cleanString(xAxisColumn);
+  const eligibleAndViewedAxisClean = cleanString(eligibleAndViewedColumn);
+  const markedIneligibleAxisClean = cleanString(markedIneligibleColumn);
+  const eligibleAndNotViewedAxisClean = cleanString(eligibleAndNotViewedColumn);
+
+  const chartData = Charts.newDataTable()
+    .addColumn(Charts.ColumnType.STRING, xAxisColumn)
+    .addColumn(Charts.ColumnType.NUMBER, eligibleAndViewedAxisClean)
+    .addColumn(Charts.ColumnType.NUMBER, markedIneligibleAxisClean)
+    .addColumn(Charts.ColumnType.NUMBER, eligibleAndNotViewedAxisClean);
+
+
+  // Since this chart does not have a title or a y-axis label, we pass those arguments in as null
+  // We pass setColors in as true since this chart has some custom colors
+  // We pass stacked in as true since this chart is a stacked column chart
+  usageAndImpactDistrictColumnChart = createColumnChart(
+    usageAndImpactDistrictData,
+    chartData,
+    null, // title
+    xAxisClean,
+    null, // y-axis
+    true, // setColors
+    true // stacked
+  );
+
+  return usageAndImpactDistrictColumnChart;
+}
+
