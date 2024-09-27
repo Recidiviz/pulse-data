@@ -23,12 +23,11 @@ from typing import List, Optional
 import pytz
 from sqlalchemy import Table
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_view_sandbox_context import (
-    BigQueryViewSandboxContext,
-)
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.view_update_manager import (
+    BigQueryViewUpdateSandboxContext,
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import (
@@ -44,9 +43,6 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_que
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
-)
-from recidiviz.view_registry.address_overrides_factory import (
-    address_overrides_for_view_builders,
 )
 from recidiviz.view_registry.deployed_views import (
     CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA,
@@ -133,20 +129,17 @@ def _federated_bq_regional_dataset_refresh(
         ]
     )
 
-    sandbox_context = None
+    view_update_sandbox_context = None
     if dataset_override_prefix:
-        sandbox_context = BigQueryViewSandboxContext(
-            parent_address_overrides=address_overrides_for_view_builders(
-                view_dataset_override_prefix=dataset_override_prefix,
-                view_builders=view_builders,
-            ),
+        view_update_sandbox_context = BigQueryViewUpdateSandboxContext(
             output_sandbox_dataset_prefix=dataset_override_prefix,
+            input_source_table_overrides=BigQueryAddressOverrides.empty(),
         )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=set(),
         view_builders_to_update=view_builders,
-        sandbox_context=sandbox_context,
+        view_update_sandbox_context=view_update_sandbox_context,
         bq_region_override=bq_region_override,
         force_materialize=True,
         historically_managed_datasets_to_clean=historically_managed_datasets_for_schema,

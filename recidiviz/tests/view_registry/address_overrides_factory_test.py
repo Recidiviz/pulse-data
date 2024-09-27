@@ -27,6 +27,7 @@ from recidiviz.big_query.big_query_view import (
 )
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.view_registry.address_overrides_factory import (
+    address_overrides_for_input_source_tables,
     address_overrides_for_view_builders,
 )
 
@@ -79,56 +80,6 @@ class TestAddressOverrides(unittest.TestCase):
             )
         )
 
-    def test_address_overrides_for_view_builders_with_dataflow_override(self) -> None:
-        view_builders = [
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_1",
-                view_id="my_fake_view",
-                description="my_fake_view description",
-                view_query_template="SELECT NULL LIMIT 0",
-                should_materialize=True,
-            ),
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_2",
-                view_id="my_fake_view_2",
-                description="my_fake_view_2 description",
-                view_query_template="SELECT NULL LIMIT 0",
-                should_materialize=True,
-                materialized_address_override=BigQueryAddress(
-                    dataset_id="materialized_dataset", table_id="table_materialized"
-                ),
-            ),
-        ]
-
-        prefix = "my_prefix"
-        dataflow_dataset_override = "test_dataflow_metrics"
-        overrides = address_overrides_for_view_builders(
-            prefix, view_builders, dataflow_dataset_override=dataflow_dataset_override
-        )
-
-        self.assert_has_overrides_for_all_builders(
-            overrides, view_builders, prefix, expected_skipped_datasets=set()
-        )
-        # Test that this address does not have an override
-        self.assertIsNone(
-            overrides.get_sandbox_address(
-                BigQueryAddress(
-                    dataset_id=view_builders[0].dataset_id, table_id="some_random_table"
-                )
-            ),
-        )
-
-        self.assertEqual(
-            overrides.get_sandbox_address(
-                BigQueryAddress(
-                    dataset_id=DATAFLOW_METRICS_DATASET, table_id="some_random_table"
-                )
-            ),
-            BigQueryAddress(
-                dataset_id=dataflow_dataset_override, table_id="some_random_table"
-            ),
-        )
-
     def assert_has_overrides_for_all_builders(
         self,
         overrides: BigQueryAddressOverrides,
@@ -159,3 +110,65 @@ class TestAddressOverrides(unittest.TestCase):
                 self.assertTrue(
                     sandbox_materialized_address.dataset_id.startswith(expected_prefix)
                 )
+
+    def test_address_overrides_for_input_source_tables_empty(self) -> None:
+        overrides = address_overrides_for_input_source_tables({})
+
+        self.assertEqual(
+            None,
+            overrides.get_sandbox_address(BigQueryAddress.from_str("random.table")),
+        )
+
+    def test_address_overrides_for_input_source_tables(self) -> None:
+        overrides = address_overrides_for_input_source_tables(
+            {
+                "us_ca_state": "some_prefix_us_ca_state",
+                "us_ca_normalized_state": "another_prefix_us_ca_normalized_state",
+            }
+        )
+
+        self.assertEqual(
+            None,
+            overrides.get_sandbox_address(BigQueryAddress.from_str("random.table")),
+        )
+
+        self.assertEqual(
+            BigQueryAddress.from_str("some_prefix_us_ca_state.state_staff"),
+            overrides.get_sandbox_address(
+                BigQueryAddress.from_str("us_ca_state.state_staff"),
+            ),
+        )
+
+        self.assertEqual(
+            BigQueryAddress.from_str(
+                "another_prefix_us_ca_normalized_state.state_person"
+            ),
+            overrides.get_sandbox_address(
+                BigQueryAddress.from_str("us_ca_normalized_state.state_person"),
+            ),
+        )
+
+    def test_address_overrides_for_input_source_tables_invalid_table(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Dataset \[state\] is not a valid source table dataset - cannot override.",
+        ):
+            _ = address_overrides_for_input_source_tables(
+                {
+                    "state": "some_prefix_us_ca_state",
+                }
+            )
+
+    def test_address_overrides_for_input_source_tables_sandbox_matches_dataset(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Input dataset override for \[us_ca_state\] must be different than the "
+            r"original dataset.",
+        ):
+            _ = address_overrides_for_input_source_tables(
+                {
+                    "us_ca_state": "us_ca_state",
+                }
+            )

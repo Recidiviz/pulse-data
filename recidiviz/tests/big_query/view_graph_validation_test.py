@@ -211,7 +211,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
         create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=get_all_source_table_datasets(),
             view_builders_to_update=view_builders_to_update,
-            sandbox_context=None,
+            view_update_sandbox_context=None,
             # This script does not do any clean up of previously managed views
             historically_managed_datasets_to_clean=None,
             default_table_expiration_for_new_datasets=DEFAULT_TEMPORARY_TABLE_EXPIRATION,
