@@ -91,14 +91,12 @@ from typing import Dict, Iterable, List, Optional, Set
 
 from google.api_core import exceptions
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.big_query.big_query_view_sandbox_context import (
-    BigQueryViewSandboxContext,
-)
 from recidiviz.big_query.big_query_view_sub_dag_collector import (
     BigQueryViewSubDagCollector,
 )
@@ -107,6 +105,7 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
 from recidiviz.big_query.view_update_manager import (
+    BigQueryViewUpdateSandboxContext,
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.calculator.query.state.dataset_config import (
@@ -125,7 +124,7 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 from recidiviz.utils.metadata import local_project_id_override, project_id
 from recidiviz.utils.params import str_to_bool, str_to_list
 from recidiviz.view_registry.address_overrides_factory import (
-    address_overrides_for_view_builders,
+    address_overrides_for_input_source_tables,
 )
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
@@ -525,6 +524,10 @@ def _load_views_changed_on_branch_to_sandbox(
         changed_datasets_to_include=changed_datasets_to_include,
     )
 
+    # TODO(#33733): Change logic here to expand the set of views to load when source
+    #  table overrides are defined (all parents of the source tables should be loaded by
+    #  default).
+
     if not changed_views_to_load:
         logging.warning(
             "Did not find any changed views to load to the sandbox. Exiting."
@@ -607,19 +610,25 @@ def _load_collected_views_to_sandbox(
 
     logging.info("Updating %s views...", len(collected_builders))
 
-    sandbox_context = BigQueryViewSandboxContext(
-        parent_address_overrides=address_overrides_for_view_builders(
-            view_dataset_override_prefix=sandbox_dataset_prefix,
-            view_builders=collected_builders,
-            dataflow_dataset_override=dataflow_dataset_override,
-        ),
-        output_sandbox_dataset_prefix=sandbox_dataset_prefix,
-    )
+    view_update_sandbox_context = None
+    if sandbox_dataset_prefix:
+        input_source_table_overrides = BigQueryAddressOverrides.empty()
+        # TODO(#33733): Generalize this script to allow for an arbitrary set of source
+        #  table overrides.
+        if dataflow_dataset_override:
+            input_source_table_overrides = address_overrides_for_input_source_tables(
+                {DATAFLOW_METRICS_MATERIALIZED_DATASET: dataflow_dataset_override}
+            )
+
+        view_update_sandbox_context = BigQueryViewUpdateSandboxContext(
+            output_sandbox_dataset_prefix=sandbox_dataset_prefix,
+            input_source_table_overrides=input_source_table_overrides,
+        )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=get_all_source_table_datasets(),
         view_builders_to_update=collected_builders,
-        sandbox_context=sandbox_context,
+        view_update_sandbox_context=view_update_sandbox_context,
         # Don't clean up datasets when running a sandbox script
         historically_managed_datasets_to_clean=None,
         allow_slow_views=allow_slow_views,

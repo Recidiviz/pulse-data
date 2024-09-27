@@ -22,6 +22,7 @@ from concurrent.futures import Future
 from enum import Enum
 from typing import Dict, Iterable, List, Optional, Sequence, Set
 
+import attr
 from google.cloud import exceptions
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -46,6 +47,7 @@ from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
 )
+from recidiviz.common import attr_validators
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import CounterInstrumentKey
 from recidiviz.source_tables.collect_all_source_table_configs import (
@@ -72,6 +74,24 @@ MAX_WORKERS = 10
 NUM_SLOW_VIEWS_TO_LOG = 25
 
 
+@attr.define
+class BigQueryViewUpdateSandboxContext:
+    """Object that provides a set of address overrides for a collection of views that
+    will be loaded into a sandbox.
+    """
+
+    # Address overrides for any parent source tables views in this view update may
+    # query. May be empty (BigQueryAddressOverrides.empty()) if the update should read
+    # from only deployed source tables.
+    input_source_table_overrides: BigQueryAddressOverrides = attr.ib(
+        validator=attr.validators.instance_of(BigQueryAddressOverrides)
+    )
+
+    # The prefix to append to the output dataset for any views loaded by this view
+    # update.
+    output_sandbox_dataset_prefix: str = attr.ib(validator=attr_validators.is_str)
+
+
 @gcp_only
 def execute_update_all_managed_views(sandbox_prefix: Optional[str]) -> None:
     """
@@ -81,20 +101,18 @@ def execute_update_all_managed_views(sandbox_prefix: Optional[str]) -> None:
     start = datetime.datetime.now()
     view_builders = deployed_view_builders()
 
-    sandbox_context = None
+    view_update_sandbox_context = None
     if sandbox_prefix:
-        sandbox_context = BigQueryViewSandboxContext(
-            parent_address_overrides=address_overrides_for_view_builders(
-                view_dataset_override_prefix=sandbox_prefix, view_builders=view_builders
-            ),
+        view_update_sandbox_context = BigQueryViewUpdateSandboxContext(
             output_sandbox_dataset_prefix=sandbox_prefix,
+            input_source_table_overrides=BigQueryAddressOverrides.empty(),
         )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=get_all_source_table_datasets(),
         view_builders_to_update=view_builders,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-        sandbox_context=sandbox_context,
+        view_update_sandbox_context=view_update_sandbox_context,
         force_materialize=True,
         allow_slow_views=False,
     )
@@ -115,7 +133,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     view_source_table_datasets: Set[str],
     view_builders_to_update: Sequence[BigQueryViewBuilder],
     historically_managed_datasets_to_clean: Optional[Set[str]],
-    sandbox_context: BigQueryViewSandboxContext | None = None,
+    view_update_sandbox_context: BigQueryViewUpdateSandboxContext | None = None,
     bq_region_override: Optional[str] = None,
     force_materialize: bool = False,
     default_table_expiration_for_new_datasets: Optional[int] = None,
@@ -136,7 +154,10 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     Should only be called if we expect the views to have changed (either the view query
     or schema from querying underlying tables), e.g. at deploy time.
     """
-    if default_table_expiration_for_new_datasets is None and sandbox_context:
+    if (
+        default_table_expiration_for_new_datasets is None
+        and view_update_sandbox_context
+    ):
         default_table_expiration_for_new_datasets = (
             TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
         )
@@ -144,6 +165,24 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             "Setting default table expiration for sandbox view load. New datasets "
             "created in this process will have a default table expiration of 24 hours."
         )
+
+    sandbox_context = None
+    if view_update_sandbox_context:
+        view_address_overrides = address_overrides_for_view_builders(
+            view_dataset_override_prefix=view_update_sandbox_context.output_sandbox_dataset_prefix,
+            view_builders=view_builders_to_update,
+        )
+
+        merged_overrides = BigQueryAddressOverrides.merge(
+            view_update_sandbox_context.input_source_table_overrides,
+            view_address_overrides,
+        )
+
+        sandbox_context = BigQueryViewSandboxContext(
+            output_sandbox_dataset_prefix=view_update_sandbox_context.output_sandbox_dataset_prefix,
+            parent_address_overrides=merged_overrides,
+        )
+
     try:
         views_to_update = build_views_to_update(
             view_source_table_datasets=view_source_table_datasets,

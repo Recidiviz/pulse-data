@@ -17,12 +17,10 @@
 """Utils for deriving a mapping of BigQueryAddress to to the sandbox BigQueryAddress
 they should be replaced with.
 """
-import logging
-from typing import Optional, Sequence
+from typing import Sequence
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_all_source_table_datasets,
 )
@@ -31,30 +29,13 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 def address_overrides_for_view_builders(
     view_dataset_override_prefix: str,
     view_builders: Sequence[BigQueryViewBuilder],
-    override_source_datasets: bool = False,
-    dataflow_dataset_override: Optional[str] = None,
 ) -> BigQueryAddressOverrides:
-    """Returns a class that provides a mapping of table/view addresses to the address
-    they should be replaced with for all views that are regularly deployed by our
-    standard deploy process. The mapping contains mappings for the view datasets and
-    also the datasets of their corresponding materialized locations (if different).
-
-    Overridden datasets all take the form of "<override prefix>_<original dataset_id>".
-
-    If |override_source_datasets| is set, overrides of the same form will be added for
-    all source datasets (e.g. `state`, `us_xx_raw_data`).
-
-    If a |dataflow_dataset_override| is provided, will also override the address of all
-    views in the DATAFLOW_METRICS_DATASET with that dataset value. If this is provided
-    with |override_source_datasets|, the function will crash.
     """
-
-    if override_source_datasets and dataflow_dataset_override:
-        raise ValueError(
-            "Cannot set both |override_source_datasets| and |dataflow_dataset_override|"
-            " - creates conflicting information."
-        )
-
+    Returns a class that specifies that, for each view in |view_builders|, when that
+    view's address OR materialized_address is encountered (e.g. as a parent view in a
+    query), the address should be replaced with a sandbox address that uses the given
+    view_dataset_override_prefix.
+    """
     address_overrides_builder = BigQueryAddressOverrides.Builder(
         sandbox_prefix=view_dataset_override_prefix
     )
@@ -67,30 +48,37 @@ def address_overrides_for_view_builders(
                 builder.materialized_address
             )
 
-    if override_source_datasets:
-        for dataset in get_all_source_table_datasets():
-            address_overrides_builder.register_sandbox_override_for_entire_dataset(
-                dataset
-            )
-
-    if dataflow_dataset_override:
-        logging.info(
-            "Overriding [%s] dataset with [%s].",
-            DATAFLOW_METRICS_DATASET,
-            dataflow_dataset_override,
-        )
-
-        if (
-            BigQueryAddressOverrides.format_sandbox_dataset(
-                view_dataset_override_prefix, DATAFLOW_METRICS_DATASET
-            )
-            == dataflow_dataset_override
-        ):
-            address_overrides_builder.register_sandbox_override_for_entire_dataset(
-                DATAFLOW_METRICS_DATASET
-            )
-        else:
-            address_overrides_builder.register_custom_dataset_override(
-                DATAFLOW_METRICS_DATASET, dataflow_dataset_override
-            )
     return address_overrides_builder.build()
+
+
+def address_overrides_for_input_source_tables(
+    input_source_table_dataset_overrides: dict[str, str]
+) -> "BigQueryAddressOverrides":
+    """
+    Given a mapping of dataset_id -> override dataset_id for a set of source tables,
+    returns a BigQueryAddressOverrides object that encodes those overrides.
+
+    Throws if the source table datasets to override are not valid source table datasets.
+    """
+
+    valid_source_table_datasets = get_all_source_table_datasets()
+    builder = BigQueryAddressOverrides.Builder(sandbox_prefix=None)
+    for (
+        original_dataset,
+        override_dataset,
+    ) in input_source_table_dataset_overrides.items():
+        if original_dataset not in valid_source_table_datasets:
+            raise ValueError(
+                f"Dataset [{original_dataset}] is not a valid source table dataset - "
+                f"cannot override."
+            )
+
+        if original_dataset == override_dataset:
+            raise ValueError(
+                f"Input dataset override for [{original_dataset}] must be "
+                f"different than the original dataset."
+            )
+        builder.register_custom_dataset_override(
+            original_dataset, override_dataset, force_allow_custom=True
+        )
+    return builder.build()
