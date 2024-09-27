@@ -5,6 +5,8 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - Staff_ID_Number
+  - Staff_Email
+  - Full_Name
 columns:
   - name: Staff_ID_Number
     is_pii: True
@@ -42,3 +44,6 @@ columns:
     description: |-
       Last modified date of data record.
     field_type: datetime
+  - name: Deleted_Flag
+    description: |-
+      Deleted flag for record.

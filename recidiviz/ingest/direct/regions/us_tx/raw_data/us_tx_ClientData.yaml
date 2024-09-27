@@ -35,3 +35,6 @@ columns:
     is_pii: True
     description: |-
       Client's phone number.
+  - name: Deleted_Flag
+    description: |-
+      Deleted flag for record.
