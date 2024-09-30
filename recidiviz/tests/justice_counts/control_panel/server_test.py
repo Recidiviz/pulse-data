@@ -1206,54 +1206,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
         self.assertEqual(response.status_code, 500)
 
-    def test_create_user_if_necessary(self) -> None:
-        name = self.test_schema_objects.test_user_A.name
-        email = "test@email.com"
-        auth0_user_id = self.test_schema_objects.test_user_A.auth0_user_id
-        agency = self.test_schema_objects.test_agency_A
-        self.session.add_all(
-            [
-                self.test_schema_objects.test_user_A,
-                agency,
-                schema.AgencyUserAccountAssociation(
-                    user_account=self.test_schema_objects.test_user_A,
-                    agency=self.test_schema_objects.test_agency_A,
-                ),
-            ]
-        )
-        self.session.commit()
-
-        with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=auth0_user_id,
-            )
-            user_response = self.client.put(
-                "/api/users",
-                json={
-                    "name": name,
-                    "email": email,
-                },
-            )
-
-        self.assertEqual(user_response.status_code, 200)
-        response_json = assert_type(user_response.json, dict)
-        user_A = UserAccountInterface.get_user_by_auth0_user_id(
-            session=self.session, auth0_user_id=auth0_user_id
-        )
-        self.assertEqual(
-            response_json["agencies"][0]["team"],
-            [
-                {
-                    "name": name,
-                    "email": "test@email.com",  # email set
-                    "auth0_user_id": auth0_user_id,
-                    "invitation_status": None,
-                    "role": None,
-                    "user_account_id": user_A.id,
-                }
-            ],
-        )
-
     def test_get_user_dropdown(self) -> None:
         name = self.test_schema_objects.test_user_A.name
         email = "newuser@fake.com"
@@ -1529,7 +1481,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
             response = self.client.put(
-                "/api/users",
+                "/api/user_dropdown",
                 json={
                     "email_verified": True,
                     "agency_id": agency_A.id,
