@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for classes in raw_file_configs.py."""
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict
 
 import attr
@@ -1008,7 +1008,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     update_history=[
                         ColumnUpdateInfo(
                             update_type=ColumnUpdateOperation.RENAME,
-                            update_datetime=datetime(2022, 1, 15),
+                            update_datetime=datetime(2022, 1, 15, tzinfo=timezone.utc),
                             previous_value="OldCol1",
                         ),
                     ],
@@ -1021,7 +1021,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     update_history=[
                         ColumnUpdateInfo(
                             update_type=ColumnUpdateOperation.ADDITION,
-                            update_datetime=datetime(2022, 2, 15),
+                            update_datetime=datetime(2022, 2, 15, tzinfo=timezone.utc),
                         ),
                     ],
                 ),
@@ -1033,7 +1033,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     update_history=[
                         ColumnUpdateInfo(
                             update_type=ColumnUpdateOperation.DELETION,
-                            update_datetime=datetime(2022, 3, 15),
+                            update_datetime=datetime(2022, 3, 15, tzinfo=timezone.utc),
                         ),
                     ],
                 ),
@@ -1041,17 +1041,95 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         )
 
         self.assertEqual(
-            ["OldCol1", "Col3"], config.column_names_at_datetime(datetime(2022, 1, 1))
+            ["OldCol1", "Col3"],
+            config.column_names_at_datetime(datetime(2022, 1, 1, tzinfo=timezone.utc)),
         )
         self.assertEqual(
-            ["Col1", "Col3"], config.column_names_at_datetime(datetime(2022, 2, 1))
+            ["Col1", "Col3"],
+            config.column_names_at_datetime(datetime(2022, 2, 1, tzinfo=timezone.utc)),
         )
         self.assertEqual(
             ["Col1", "Col2", "Col3"],
-            config.column_names_at_datetime(datetime(2022, 3, 1)),
+            config.column_names_at_datetime(datetime(2022, 3, 1, tzinfo=timezone.utc)),
         )
         self.assertEqual(
-            ["Col1", "Col2"], config.column_names_at_datetime(datetime(2022, 4, 1))
+            ["Col1", "Col2"],
+            config.column_names_at_datetime(datetime(2022, 4, 1, tzinfo=timezone.utc)),
+        )
+
+    def test_column_mappings_from_datetime_to_current(self) -> None:
+        file_upload_datetime = datetime(2021, 1, 11, tzinfo=timezone.utc)
+        config = attr.evolve(
+            self.sparse_config,
+            columns=[
+                # Should include column renamed after file_upload_datetime
+                RawTableColumnInfo(
+                    name="Col1",
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.STRING,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.RENAME,
+                            update_datetime=datetime(2022, 1, 15, tzinfo=timezone.utc),
+                            previous_value="OldCol1",
+                        ),
+                    ],
+                ),
+                # Should include columns with no update history
+                RawTableColumnInfo(
+                    name="Col2",
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.STRING,
+                ),
+                # Should ignore added columns
+                RawTableColumnInfo(
+                    name="Col3",
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.STRING,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.ADDITION,
+                            update_datetime=datetime(2022, 3, 15, tzinfo=timezone.utc),
+                        ),
+                    ],
+                ),
+                # Should ignore deleted columns
+                RawTableColumnInfo(
+                    name="Col4",
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.STRING,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.DELETION,
+                            update_datetime=datetime(2022, 4, 15, tzinfo=timezone.utc),
+                        ),
+                    ],
+                ),
+                # Should ignore column rename before file_upload_datetime
+                RawTableColumnInfo(
+                    name="Col5",
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.STRING,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.RENAME,
+                            update_datetime=datetime(2020, 5, 15, tzinfo=timezone.utc),
+                            previous_value="OldCol5",
+                        ),
+                    ],
+                ),
+            ],
+        )
+
+        mappings = config.column_mapping_from_datetime_to_current(file_upload_datetime)
+        self.assertEqual(
+            mappings,
+            {"OldCol1": "Col1", "Col2": "Col2", "Col5": "Col5"},
         )
 
 
@@ -1454,11 +1532,16 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         config_5 = region_config.raw_file_configs["tagColumnRenamed"]
         self.assertEqual("tagColumnRenamed", config_5.file_tag)
         self.assertEqual(
-            config_5.column_names_at_datetime(datetime(2021, 1, 1)),
+            config_5.column_names_at_datetime(
+                datetime(2021, 1, 1, tzinfo=timezone.utc)
+            ),
             ["OLD_COL1", "COL2"],
         )
         self.assertEqual(
-            config_5.column_names_at_datetime(datetime(2023, 1, 1)), ["COL1", "COL2"]
+            config_5.column_names_at_datetime(
+                datetime(2023, 1, 1, tzinfo=timezone.utc)
+            ),
+            ["COL1", "COL2"],
         )
 
     def test_default_config_parsing(self) -> None:

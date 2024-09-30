@@ -11,7 +11,7 @@ columns:
       column 1 description
     update_history:
       - update_type: RENAME
-        update_datetime: 2022-01-01T16:35:33.617135
+        update_datetime: 2022-01-01T16:35:33.617135+00:00
         previous_value: OLD_COL1
   - name: COL2
     description: |-

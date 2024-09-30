@@ -18,7 +18,7 @@
 import os
 import re
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -859,6 +859,20 @@ class DirectIngestRawFileConfig:
             if (col_name := column.name_at_datetime(dt)) is not None
         ]
 
+    def column_mapping_from_datetime_to_current(self, dt: datetime) -> Dict[str, str]:
+        """
+        Returns a dictionary mapping with the key being the column name at the given datetime
+        and the value being the column name now. Ignores columns that have been added or deleted
+        between the provided datetime and now.
+        """
+        now = datetime.now(tz=timezone.utc)
+        return {
+            col_name_at_dt: current_col_name
+            for column in self.columns
+            if (col_name_at_dt := column.name_at_datetime(dt)) is not None
+            and (current_col_name := column.name_at_datetime(now)) is not None
+        }
+
     @classmethod
     def from_yaml_dict(
         cls,
@@ -954,7 +968,7 @@ class DirectIngestRawFileConfig:
                         update_type=ColumnUpdateOperation(
                             change.pop("update_type", str)
                         ),
-                        previous_value=change.pop("previous_value", str),
+                        previous_value=change.pop_optional("previous_value", str),
                     )
                     for change in update_history_yaml
                 ]
