@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Generates view builder calculating assignment-span metrics"""
+from collections import defaultdict
 from typing import Dict, List
 
 from recidiviz.aggregated_metrics.aggregated_metrics_utils import (
@@ -39,6 +40,9 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
     MetricUnitOfAnalysis,
 )
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
+from recidiviz.observations.metric_unit_of_observation_type import (
+    MetricUnitOfObservationType,
+)
 
 
 def get_assignment_span_time_specific_cte(
@@ -50,18 +54,21 @@ def get_assignment_span_time_specific_cte(
     """Returns query template for calculating assignment span metrics for a single metric time period,
     unioning together across metrics from each unit of observation"""
     metric_subqueries_by_unit_of_observation: List[str] = []
-    metrics_by_unit_of_observation: Dict[
-        MetricUnitOfObservation, List[AssignmentSpanAggregatedMetric]
-    ] = {
-        unit_of_observation: [
-            m for m in metrics if m.unit_of_observation == unit_of_observation
+    metrics_by_unit_of_observation_type: Dict[
+        MetricUnitOfObservationType, List[AssignmentSpanAggregatedMetric]
+    ] = defaultdict(list)
+    for metric in metrics:
+        metrics_by_unit_of_observation_type[metric.unit_of_observation_type].append(
+            metric
+        )
+
+    for unit_of_observation_type in sorted(
+        metrics_by_unit_of_observation_type.keys(), key=lambda t: t.value
+    ):
+        metrics_for_unit_of_observation = metrics_by_unit_of_observation_type[
+            unit_of_observation_type
         ]
-        for unit_of_observation in set(m.unit_of_observation for m in metrics)
-    }
-    for (
-        unit_of_observation,
-        metrics_for_unit_of_observation,
-    ) in metrics_by_unit_of_observation.items():
+        unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
         # Get the set of unique columns across the unit of analysis and the unit of observation, accounting for
         # overlaps between these two sets of columns.
         shared_columns_string = list_to_query_string(

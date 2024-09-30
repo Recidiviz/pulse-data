@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Creates view builders that generate SQL views calculating period-span metrics"""
+from collections import defaultdict
 from typing import Dict, List
 
 from recidiviz.aggregated_metrics.aggregated_metrics_utils import (
@@ -41,6 +42,9 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
     MetricUnitOfAnalysis,
 )
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
+from recidiviz.observations.metric_unit_of_observation_type import (
+    MetricUnitOfObservationType,
+)
 
 
 def get_period_span_time_specific_cte(
@@ -53,18 +57,21 @@ def get_period_span_time_specific_cte(
     unioning together across metrics from each unit of observation"""
 
     metric_subqueries_by_unit_of_observation: List[str] = []
-    metrics_by_unit_of_observation: Dict[
-        MetricUnitOfObservation, List[PeriodSpanAggregatedMetric]
-    ] = {
-        unit_of_observation: [
-            m for m in metrics if m.unit_of_observation == unit_of_observation
+    metrics_by_unit_of_observation_type: Dict[
+        MetricUnitOfObservationType, List[PeriodSpanAggregatedMetric]
+    ] = defaultdict(list)
+    for metric in metrics:
+        metrics_by_unit_of_observation_type[metric.unit_of_observation_type].append(
+            metric
+        )
+
+    for unit_of_observation_type in sorted(
+        metrics_by_unit_of_observation_type.keys(), key=lambda t: t.value
+    ):
+        metrics_for_unit_of_observation = metrics_by_unit_of_observation_type[
+            unit_of_observation_type
         ]
-        for unit_of_observation in set(m.unit_of_observation for m in metrics)
-    }
-    for (
-        unit_of_observation,
-        metrics_for_unit_of_observation,
-    ) in metrics_by_unit_of_observation.items():
+        unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
 
         shared_columns_string = list_to_query_string(
             sorted(
