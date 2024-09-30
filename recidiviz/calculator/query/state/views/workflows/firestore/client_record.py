@@ -81,7 +81,7 @@ WORKFLOWS_CONFIGS_WITH_CLIENTS = [
     if config.person_record_type == PersonRecordType.CLIENT
 ]
 
-WORKFLOWS_SUPERVISION_STATES = list(
+WORKFLOWS_SUPERVISION_STATES = sorted(
     {config.state_code.value for config in WORKFLOWS_CONFIGS_WITH_CLIENTS}
 )
 

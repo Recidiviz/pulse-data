@@ -555,7 +555,9 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                 "-- Include all criteria that are part of an almost eligible criteria condition\n"
                 + ",\n".join(
                     indent(f'"{criteria_name}"', " " * 24)
-                    for criteria_name in supported_almost_eligible_criteria_names
+                    for criteria_name in sorted(
+                        supported_almost_eligible_criteria_names
+                    )
                 )
             )
 
@@ -776,7 +778,7 @@ WINDOW w AS (PARTITION BY state_code, person_id ORDER BY start_date ASC)
         """Return a query fragment that splits the criteria spans across any overlapping a critical dates"""
         critical_date_extract_fragment = (
             "\n"
-            + indent(",\n".join(set(critical_date_extract_strings)), " " * 12)
+            + indent(",\n".join(sorted(set(critical_date_extract_strings))), " " * 12)
             + "\n"
         )
         return f"""
