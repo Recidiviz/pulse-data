@@ -22,7 +22,7 @@
     "react-modal": "^3.14.4",
     "react-router-dom": "^6.26.2",
     "styled-components": "^6.1.13",
-    "styled-reset": "^4.3.4"
+    "styled-reset": "^4.5.2"
   },
   "devDependencies": {
     "@recidiviz/eslint-config": "^3.0.0",
