@@ -239,6 +239,19 @@ Denominator is the average daily caseload for the officer over the given time pe
     --TODO(#25695): Revisit this after excluding admin supervision levels    
     AND avg_daily_population BETWEEN 10 AND 175
     AND prop_period_with_critical_caseload >= 0.75""",
+        primary_category_type=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
+        available_specialized_caseload_categories={
+            InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY: [
+                CaseloadCategory(
+                    id=StateStaffCaseloadType.SEX_OFFENSE.name,
+                    display_name="Sex Offense Caseload",
+                ),
+                CaseloadCategory(
+                    id=f"NOT_{StateStaffCaseloadType.SEX_OFFENSE.name}",
+                    display_name="General + Other Caseloads",
+                ),
+            ]
+        },
     ),
     StateCode.US_CA: OutliersBackendConfig(
         metrics=[
