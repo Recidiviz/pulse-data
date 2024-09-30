@@ -980,6 +980,9 @@ class WorkbookStandardizer:
                 A tuple where the first element is a boolean indicating whether any errors were found
                 (True if no errors, False otherwise), and the second element is the standardized DataFrame.
         """
+        # Convert all column names to strings
+        sheet_df.columns = sheet_df.columns.astype(str)
+
         # Remove unnamed columns
         sheet_df = sheet_df.loc[:, ~sheet_df.columns.str.contains("^Unnamed")]
 
