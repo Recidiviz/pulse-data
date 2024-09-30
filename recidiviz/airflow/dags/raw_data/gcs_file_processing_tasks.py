@@ -30,6 +30,9 @@ from more_itertools import distribute
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     ENTRYPOINT_ARGUMENTS,
 )
+from recidiviz.airflow.dags.raw_data.filtering_tasks import (
+    filter_header_results_by_processing_errors,
+)
 from recidiviz.airflow.dags.raw_data.metadata import (
     FILE_IDS_TO_HEADERS,
     HEADER_VERIFICATION_ERRORS,
@@ -584,11 +587,15 @@ def read_and_verify_column_headers(
         fs, region_raw_file_config, bq_metadata
     )
 
-    # TODO(#33551) add filters for header errors here
+    filtered_file_ids, skipped_files = filter_header_results_by_processing_errors(
+        bq_metadata, results, errors
+    )
 
     return {
-        FILE_IDS_TO_HEADERS: results,
-        HEADER_VERIFICATION_ERRORS: [error.serialize() for error in errors],
+        FILE_IDS_TO_HEADERS: filtered_file_ids,
+        HEADER_VERIFICATION_ERRORS: [
+            error.serialize() for error in [*errors, *skipped_files]
+        ],
     }
 
 

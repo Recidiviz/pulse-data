@@ -16,18 +16,22 @@
 # =============================================================================
 """Tests for filtering_tasks"""
 
+import datetime
 from typing import List
 from unittest import TestCase
 
 from recidiviz.airflow.dags.raw_data.filtering_tasks import (
     filter_chunking_results_by_errors,
+    filter_header_results_by_processing_errors,
 )
 from recidiviz.airflow.dags.raw_data.metadata import CHUNKING_ERRORS, CHUNKING_RESULTS
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
+    RawBigQueryFileMetadata,
     RawFileProcessingError,
+    RawGCSFileMetadata,
     RequiresPreImportNormalizationFile,
 )
 from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
@@ -119,3 +123,86 @@ class FilterChunkingResultsTest(TestCase):
         )
         assert chunking_error[0] == errors[0]
         assert chunking_error[1].original_file_path == blocked_chunk.path
+
+
+class FilterHeaderResultsTest(TestCase):
+    """Tests for filter_chunking_results_by_errors"""
+
+    file_paths = [
+        GcsfsFilePath.from_absolute_path(
+            "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagBasicData.csv"
+        ),
+        GcsfsFilePath.from_absolute_path(
+            "test_bucket/unprocessed_2021-01-03T00:00:00:000000_raw_tagBasicData.csv"
+        ),
+        GcsfsFilePath.from_absolute_path(
+            "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagBasicerData.csv"
+        ),
+    ]
+    file_ids_to_headers = {
+        1: ["ID", "Name", "Age"],
+        2: ["ID", "Name", "Age"],
+        3: ["ID", "Name", "Age"],
+    }
+    bq_metadata = [
+        RawBigQueryFileMetadata(
+            file_id=1,
+            file_tag="tagBasicData",
+            gcs_files=[
+                RawGCSFileMetadata(gcs_file_id=1, file_id=1, path=file_paths[0])
+            ],
+            update_datetime=datetime.datetime(2021, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+        ),
+        RawBigQueryFileMetadata(
+            file_id=2,
+            file_tag="tagBasicData",
+            gcs_files=[
+                RawGCSFileMetadata(gcs_file_id=2, file_id=2, path=file_paths[1])
+            ],
+            update_datetime=datetime.datetime(2021, 1, 3, 1, 1, 1, tzinfo=datetime.UTC),
+        ),
+        RawBigQueryFileMetadata(
+            file_id=3,
+            file_tag="tagBasicerData",
+            gcs_files=[
+                RawGCSFileMetadata(gcs_file_id=3, file_id=3, path=file_paths[2])
+            ],
+            update_datetime=datetime.datetime(2021, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+        ),
+    ]
+
+    def test_empty(self) -> None:
+        assert filter_header_results_by_processing_errors([], {}, []) == (
+            {},
+            [],
+        )
+
+    def test_non_blocking(self) -> None:
+        assert filter_header_results_by_processing_errors(
+            self.bq_metadata, self.file_ids_to_headers, []
+        ) == (self.file_ids_to_headers, [])
+
+    def test_blocking(self) -> None:
+        blocking_errors = [
+            RawFileProcessingError(
+                original_file_path=GcsfsFilePath.from_absolute_path(
+                    "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagBasicData.csv"
+                ),
+                temporary_file_paths=None,
+                error_msg="Oops!",
+            )
+        ]
+
+        results, errors = filter_header_results_by_processing_errors(
+            self.bq_metadata, self.file_ids_to_headers, blocking_errors
+        )
+
+        assert results == {
+            1: ["ID", "Name", "Age"],
+            3: ["ID", "Name", "Age"],
+        }
+
+        assert len(errors) == 1
+        assert errors[0].original_file_path == GcsfsFilePath.from_absolute_path(
+            "test_bucket/unprocessed_2021-01-03T00:00:00:000000_raw_tagBasicData.csv"
+        )
