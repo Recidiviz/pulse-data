@@ -71,34 +71,6 @@ def get_admin_blueprint(
     admin_blueprint = Blueprint("admin", __name__)
 
     # UserAccount
-    @admin_blueprint.route("/user", methods=["GET"])
-    @auth_decorator
-    def fetch_all_users() -> Response:
-        """
-        Fetches all users and their metadata to display the User Provisioning Table
-        """
-        db_users = UserAccountInterface.get_users(session=current_session)
-        # AgencyUserAccountAssocs are loaded automatically when we
-        # query for a user in the UserAccount table.
-
-        agencies = AgencyInterface.get_agencies(session=current_session)
-        agencies_by_id = {agency.id: agency for agency in agencies}
-
-        user_json = []
-        for user in db_users:
-            user_agencies = list(
-                filter(
-                    None,
-                    [
-                        agencies_by_id.get(assoc.agency_id)
-                        for assoc in user.agency_assocs
-                    ],
-                )
-            )
-            user_json.append(user.to_json(agencies=user_agencies))
-        return jsonify({"users": user_json})
-
-    # UserAccount
     @admin_blueprint.route("/user/overview", methods=["GET"])
     @auth_decorator
     def fetch_users_overview() -> Response:
@@ -266,42 +238,6 @@ def get_admin_blueprint(
         return jsonify(
             {
                 "users": user_jsons,
-            }
-        )
-
-    # Agency
-    @admin_blueprint.route("/agency", methods=["GET"])
-    @auth_decorator
-    def fetch_all_agencies() -> Response:
-        """
-        Fetches all agencies and their metadata to display the Agency Provisioning Table
-        """
-        agencies = AgencyInterface.get_agencies(
-            session=current_session, with_users=True, with_settings=False
-        )
-
-        agency_jsons: List[Dict[str, Any]] = []
-
-        super_agency_id_to_child_agency_ids = defaultdict(list)
-        for agency in agencies:
-            if agency.super_agency_id is not None:
-                super_agency_id_to_child_agency_ids[agency.super_agency_id].append(
-                    agency.id
-                )
-
-        for agency in agencies:
-            agency_json = agency.to_json(with_team=True, with_settings=False)
-            agency_json["child_agency_ids"] = super_agency_id_to_child_agency_ids.get(
-                agency.id, []
-            )
-            agency_jsons.append(agency_json)
-
-        return jsonify(
-            {
-                "agencies": agency_jsons,
-                # also send list of possible systems to use in the dropdown
-                # when users can assign a system role to an agency.
-                "systems": [enum.value for enum in VALID_SYSTEMS],
             }
         )
 

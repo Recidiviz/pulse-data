@@ -42,7 +42,6 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     DatapointHistory,
     MetricSetting,
     Report,
-    Source,
     Spreadsheet,
     SpreadsheetStatus,
     System,
@@ -157,25 +156,6 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.user_B_id = user_B.id
 
     # UserAccount
-
-    def test_get_all_users(self) -> None:
-        self.load_users_and_agencies()
-        response = self.client.get("/admin/user")
-        self.assertEqual(response.status_code, 200)
-        response_json = assert_type(response.json, dict)
-        user_json_list = response_json["users"]
-        self.assertEqual(len(user_json_list), 3)
-        users = self.session.query(UserAccount).all()
-        user_id_to_user = {user.id: user for user in users}
-
-        for user_json in user_json_list:
-            db_user = user_id_to_user[(user_json["id"])]
-            agency = db_user.agency_assocs[0].agency
-            self.assertEqual(user_json["auth0_user_id"], db_user.auth0_user_id)
-            self.assertEqual(user_json["name"], db_user.name)
-            self.assertEqual(len(user_json["agencies"]), 1)
-            self.assertEqual(user_json["agencies"][0]["id"], agency.id)
-            self.assertEqual(user_json["agencies"][0]["name"], agency.name)
 
     def test_get_user(self) -> None:
         self.load_users_and_agencies()
@@ -621,27 +601,6 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         )
 
     # Agency
-    def test_get_all_agencies(self) -> None:
-        self.load_users_and_agencies()
-        response = self.client.get("/admin/agency")
-        self.assertEqual(response.status_code, 200)
-        response_json = assert_type(response.json, dict)
-        self.assertEqual(
-            response_json["systems"], [enum.value for enum in VALID_SYSTEMS]
-        )
-        agency_json_list = response_json["agencies"]
-        self.assertEqual(len(agency_json_list), 3)
-        agencies = self.session.query(Source).all()
-        agency_id_to_agency = {a.id: a for a in agencies}
-
-        for agency_json in agency_json_list:
-            db_agency = agency_id_to_agency[(agency_json["id"])]
-            user = db_agency.user_account_assocs[0].user_account
-            self.assertEqual(agency_json["name"], db_agency.name)
-            self.assertEqual(agency_json["child_agency_ids"], [])
-            self.assertEqual(len(agency_json["team"]), 1)
-            self.assertEqual(agency_json["team"][0]["name"], user.name)
-
     def test_get_agency(self) -> None:
         self.load_users_and_agencies()
         agency = self.session.query(Agency).filter(Agency.name == "Agency Alpha").one()
