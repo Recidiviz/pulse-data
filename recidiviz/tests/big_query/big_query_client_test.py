@@ -677,6 +677,99 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
 
     @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
+    def test_insert_into_table_from_table_async_source_column_mapping(
+        self, mock_job_config: mock.MagicMock
+    ) -> None:
+        """Tests that the insert_into_table_from_table_async function runs a query
+        correctly mapping source columns to destination columns."""
+        src_mapping = {"fake_column": "new_fake_column"}
+        mock_table_source = create_autospec(bigquery.Table)
+        mock_table_source.schema = [
+            # Should include column src and dst have in common according to mapping
+            bigquery.SchemaField(
+                mode="NULLABLE", field_type="STRING", name="fake_column"
+            ),
+            # Should include column src and dst have in common
+            bigquery.SchemaField(
+                mode="NULLABLE", field_type="STRING", name="fake_column_A"
+            ),
+            # Should ignore column src and dst don't have in common and is not in mapping
+            bigquery.SchemaField(
+                mode="NULLABLE", field_type="STRING", name="fake_column_B"
+            ),
+        ]
+        mock_table_dest = create_autospec(bigquery.Table)
+        mock_table_dest.schema = [
+            bigquery.SchemaField(
+                mode="NULLABLE", field_type="STRING", name="fake_column_A"
+            ),
+            bigquery.SchemaField(
+                mode="NULLABLE", field_type="STRING", name="new_fake_column"
+            ),
+            # Should ignore column src and dst don't have in common and is not in mapping
+            bigquery.SchemaField(
+                mode="NULLABLE", field_type="STRING", name="fake_column_C"
+            ),
+        ]
+
+        def _get_table(_table_ref: bigquery.TableReference) -> bigquery.Table:
+            if _table_ref.table_id == "fake_table_temp":
+                return mock_table_dest
+            if _table_ref.table_id == self.mock_table_id:
+                return mock_table_source
+            raise ValueError("Unrecognized table!")
+
+        self.mock_client.get_table.side_effect = _get_table
+
+        self.bq_client.insert_into_table_from_table_async(
+            source_address=self.mock_table_address,
+            destination_address=BigQueryAddress(
+                dataset_id=self.mock_dataset_id,
+                table_id="fake_table_temp",
+            ),
+            use_query_cache=False,
+            source_to_destination_column_mapping=src_mapping,
+        )
+        expected_query = f"INSERT INTO `fake-recidiviz-project.{self.mock_dataset_id}.fake_table_temp` (fake_column_A, new_fake_column) \nSELECT fake_column_A, fake_column \nFROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
+        self.mock_client.get_table.assert_called()
+        self.mock_client.query.assert_called_with(
+            query=expected_query,
+            location=BigQueryClient.DEFAULT_REGION,
+            job_config=mock_job_config(),
+        )
+
+    @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
+    def test_insert_into_table_from_table_async_invalid_source_column_mapping(
+        self, mock_job_config: mock.MagicMock
+    ) -> None:
+        """Tests that the insert_into_table_from_table_async throws a ValueError when
+        trying to provide a mapping for a column that does not exist."""
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.schema = self.mock_schema
+        self.mock_client.get_table.return_value = mock_table
+
+        with self.assertRaises(ValueError) as context:
+            self.bq_client.insert_into_table_from_table_async(
+                source_address=self.mock_table_address,
+                destination_address=BigQueryAddress(
+                    dataset_id=self.mock_dataset_id,
+                    table_id="fake_table_temp",
+                ),
+                use_query_cache=False,
+                source_to_destination_column_mapping={
+                    "doesnt_exist_column": "new_fake_column"
+                },
+            )
+        self.assertEqual(
+            "Mapping in source_to_destination_column_mapping contains invalid columns:\n"
+            "Source columns missing from source table: [doesnt_exist_column]\n"
+            "Source columns: [fake_column]\n"
+            "Destination columns missing from destination table: [new_fake_column]\n"
+            "Destination columns: [fake_column]\n",
+            str(context.exception),
+        )
+
+    @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
     def test_insert_into_table_from_table_async_source_has_too_many_cols(
         self, mock_job_config: mock.MagicMock
     ) -> None:

@@ -548,6 +548,7 @@ class BigQueryClient:
         destination_address: BigQueryAddress,
         use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
+        source_to_destination_column_mapping: Optional[Dict[str, str]] = None,
     ) -> bigquery.QueryJob:
         """Appends data from a source table into a destination table using an INSERT
         INTO statement for columns that exist in both tables, with an optional
@@ -1563,12 +1564,15 @@ class BigQueryClientImpl(BigQueryClient):
         destination_address: BigQueryAddress,
         use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
+        source_to_destination_column_mapping: Optional[Dict[str, str]] = None,
     ) -> bigquery.QueryJob:
         """Appends data from a source table into a destination table using an INSERT INTO
         statement for columns that exist in both tables, with an optional
         source_data_filter_clause applied. Columns missing from the source table will
         be hydrated with the destination table's default value if set, otherwise with
-        NULL.
+        NULL. If a source_to_destination_column_mapping is provided, the query will additionally
+        use the provided mapping to match columns from the source table to the destination
+        table.
 
         Note: Types for shared columns of the two tables must match. If a REQUIRED field
         in the destination table is missing from the source table, the query will likely
@@ -1593,16 +1597,41 @@ class BigQueryClientImpl(BigQueryClient):
         source_table = self.get_table(source_address)
         destination_table = self.get_table(destination_address)
 
-        # we draw select columns from intersection of the two table columns
-        shared_columns = {field.name for field in destination_table.schema} & {
-            field.name for field in source_table.schema
-        }
-        shared_columns_str = ", ".join(shared_columns)
+        all_dst_columns = {field.name for field in destination_table.schema}
+        all_src_columns = {field.name for field in source_table.schema}
+
+        src_columns_to_select, dst_columns_to_select = [], []
+        for col in all_dst_columns & all_src_columns:
+            # In case column mapping contains columns mapped to the same name
+            # as the source and destination column, we don't want to add them twice
+            if col not in (source_to_destination_column_mapping or {}):
+                src_columns_to_select.append(col)
+                dst_columns_to_select.append(col)
+
+        cols_missing_in_src, cols_missing_in_dst = [], []
+        for src_col, dst_col in (source_to_destination_column_mapping or {}).items():
+            if src_col in all_src_columns and dst_col in all_dst_columns:
+                src_columns_to_select.append(src_col)
+                dst_columns_to_select.append(dst_col)
+            if src_col not in all_src_columns:
+                cols_missing_in_src.append(src_col)
+            if dst_col not in all_dst_columns:
+                cols_missing_in_dst.append(dst_col)
+
+        if cols_missing_in_src or cols_missing_in_dst:
+            error_msg = "Mapping in source_to_destination_column_mapping contains invalid columns:\n"
+            if cols_missing_in_src:
+                error_msg += f"Source columns missing from source table: [{', '.join(cols_missing_in_src)}]\n"
+                error_msg += f"Source columns: [{', '.join(all_src_columns)}]\n"
+            if cols_missing_in_dst:
+                error_msg += f"Destination columns missing from destination table: [{', '.join(cols_missing_in_dst)}]\n"
+                error_msg += f"Destination columns: [{', '.join(all_dst_columns)}]\n"
+            raise ValueError(error_msg)
 
         query = (
             f"INSERT INTO {project_specific_destination_address.format_address_for_query()} "
-            f"({shared_columns_str}) \n"
-            f"SELECT {shared_columns_str} \n"
+            f"({', '.join(dst_columns_to_select)}) \n"
+            f"SELECT {', '.join(src_columns_to_select)} \n"
             f"FROM {project_specific_source_address.format_address_for_query()}"
         )
 
@@ -1692,12 +1721,14 @@ class BigQueryClientImpl(BigQueryClient):
         destination_address: BigQueryAddress,
         use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
+        source_to_destination_column_mapping: Optional[Dict[str, str]] = None,
     ) -> bigquery.QueryJob:
         return self._insert_into_table_from_table_async(
             source_address=source_address,
             destination_address=destination_address,
             source_data_filter_clause=source_data_filter_clause,
             use_query_cache=use_query_cache,
+            source_to_destination_column_mapping=source_to_destination_column_mapping,
         )
 
     def stream_into_table(self, address: BigQueryAddress, rows: Sequence[Dict]) -> None:
