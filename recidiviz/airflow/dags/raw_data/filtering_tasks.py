@@ -22,10 +22,12 @@ from airflow.decorators import task
 
 from recidiviz.airflow.dags.raw_data.metadata import CHUNKING_ERRORS, CHUNKING_RESULTS
 from recidiviz.ingest.direct.types.raw_data_import_types import (
+    RawBigQueryFileMetadata,
     RawFileProcessingError,
     RequiresPreImportNormalizationFile,
 )
 from recidiviz.utils.airflow_types import MappedBatchedTaskOutput
+from recidiviz.utils.types import assert_type
 
 
 @task
@@ -96,3 +98,45 @@ def filter_chunking_results_by_processing_errors(
         filtered_results.append(result)
 
     return filtered_results, skipped_errors
+
+
+def filter_header_results_by_processing_errors(
+    bq_metadata: List[RawBigQueryFileMetadata],
+    file_ids_to_headers: Dict[int, List[str]],
+    errors: List[RawFileProcessingError],
+) -> Tuple[Dict[int, List[str]], List[RawFileProcessingError]]:
+    """Filters out successful results from the header validation step who have an error
+    from the header validation step with the same file_tag an update_datetime before it.
+    """
+
+    filtered_file_ids_to_headers: Dict[int, List[str]] = {}
+    skipped_errors: List[RawFileProcessingError] = []
+
+    blocking_errors_by_file_tag = {
+        file_tag: min(group, key=lambda x: x.parts.utc_upload_datetime)
+        for file_tag, group in groupby(
+            sorted(errors, key=lambda x: x.parts.file_tag),
+            lambda x: x.parts.file_tag,
+        )
+    }
+
+    for metadata in bq_metadata:
+        if (
+            metadata.file_tag in blocking_errors_by_file_tag
+            and blocking_errors_by_file_tag[metadata.file_tag].parts.utc_upload_datetime
+            < metadata.update_datetime
+        ):
+            blocking_error = blocking_errors_by_file_tag[metadata.file_tag]
+            for gcs_file in metadata.gcs_files:
+                skipped_errors.append(
+                    RawFileProcessingError(
+                        original_file_path=gcs_file.path,
+                        temporary_file_paths=None,
+                        error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_path} \n\n: {blocking_error.error_msg}",
+                    )
+                )
+            continue
+        file_id: int = assert_type(metadata.file_id, int)
+        filtered_file_ids_to_headers[file_id] = file_ids_to_headers[file_id]
+
+    return filtered_file_ids_to_headers, skipped_errors
