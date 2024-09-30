@@ -241,7 +241,7 @@ NEW_SENTENCE_QUERY_TEMPLATE = """
             sent.SentenceOrderCategoryId,
             sent.SentenceOrderEventTypeId,
             sent.OffenseSentenceTypeName,
-            sent.TermId AS SentenceGroupId,
+            sent.TermId,
             inState
         FROM SentenceBase sent
         LEFT JOIN RelatedSentence rel ON sent.offense_SentenceId = rel.SentenceId

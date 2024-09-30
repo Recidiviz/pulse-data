@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - TermId
+  - update_datetime
+  - FtrdApprovedDate
+  - TentativeParoleDate
+  - OffenderId
+  - rn
+  - InitialParoleHearingDate
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    sentence_groups:
+      - StateSentenceGroup:
+          external_id: TermId
+          sentence_group_lengths:
+            - StateSentenceGroupLength:
+                group_update_datetime: update_datetime
+                parole_eligibility_date_external: InitialParoleHearingDate
+                projected_full_term_release_date_max_external: FtrdApprovedDate
+                projected_parole_release_date_external: TentativeParoleDate
+                sequence_num: rn

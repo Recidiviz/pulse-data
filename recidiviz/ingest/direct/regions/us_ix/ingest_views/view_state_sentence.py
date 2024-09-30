@@ -37,7 +37,7 @@ VIEW_QUERY_TEMPLATE = f"""
             CorrectionsCompactEndDate,
             CorrectionsCompactStartDate,
             relationships,
-            SentenceGroupId,
+            TermId,
             OffenseSentenceTypeName,
             SentenceOrderCategoryId,
             inState
