@@ -35,6 +35,14 @@ variables:
       $equal:
         - SUPVTYPE
         - $literal("PROBATION")
+  - offense_type_str:
+      $custom:
+        $function: us_ar_custom_parsers.parse_offense_types
+        $args:
+          statute1: STATUTE1
+          statute2: STATUTE2
+          statute3: STATUTE3
+          statute4: STATUTE4
 output:
   StatePerson:
     external_ids:
@@ -185,3 +193,9 @@ output:
                       - SERIOUSNESSLEVEL
                     $include_nulls: False
                 counts: NUMBERCOUNTS
+                offense_type: $variable(offense_type_str)
+                attempted:
+                  $custom:
+                    $function: us_ar_custom_parsers.is_attempted
+                    $args:
+                      offense_types: $variable(offense_type_str)

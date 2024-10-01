@@ -29,6 +29,68 @@ from typing import Optional
 
 from recidiviz.common.date import calendar_unit_date_diff
 from recidiviz.common.str_field_utils import safe_parse_days_from_duration_pieces
+from recidiviz.ingest.direct.regions.custom_enum_parser_utils import (
+    invert_str_to_str_mappings,
+)
+
+DESCRIPTION_TO_STATUTE_DICT = {
+    # TODO(#33691): Update this dictionary to include a "SEX_OFFENSE" category when we
+    # receive the necessary information.
+    "CAPITAL_OFFENSE": ["0510101", "0551201"],  # Capital Murder  # Treason
+    "MURDER_1": [
+        "0510102",
+    ],
+    "RAPE": ["0514103"],
+    "KIDNAPPING": ["0511102"],
+    "AGG_ROBBERY": ["0512103"],
+    "ESCAPE": [
+        "0554110",  # Escape-1st Degree
+        "0554111",  # Escape-2nd Degree
+        "0554112",  # Escape-3rd Degree
+    ],
+    "ATTEMPT_FLAG": ["410701", "0503201"],
+    "SOLICITATION_FLAG": ["410705", "0503301"],
+    "CONSPIRACY_FLAG": ["410707", "0503401"],
+}
+STATUTE_TO_DESCRIPTION_DICT = invert_str_to_str_mappings(DESCRIPTION_TO_STATUTE_DICT)
+
+
+def is_attempted(offense_types: str) -> Optional[bool]:
+    if offense_types is not None:
+        return "ATTEMPT_FLAG" in offense_types
+    return None
+
+
+def parse_offense_types(
+    statute1: str,
+    statute2: str,
+    statute3: str,
+    statute4: str,
+) -> Optional[str]:
+    """Uses the statutes associated with a charge to produce a string containing each
+    of the known offense types, separated by '@@'. As we start accounting for more offense
+    types, they will be added along with their corresponding statute codes to DESCRIPTION_TO_STATUTE_DICT.
+
+    Due to the way AR uses that STATUTE columns, there are 3 flags can show up in the offense
+    type string that do NOT constitute an actual offense, but rather add information about
+    the other offenses given by the statute columns. These are ATTEMPT_FLAG, SOLICITATION_FLAG,
+    and CONSPIRACY_FLAG. Therefore, an offense type string output by this function may look
+    like 'ESCAPE@@ATTEMPT_FLAG', indicating an attempted escape. If any of these 3 flags
+    are present in an offense type string, the charge should be treated as an inchoate offense.
+    """
+    # TODO(#33239): The statute-to-description mappings have been pulled from the code
+    # value reference sheet. Once this sheet has been uploaded as a reference table, we can
+    # join against it in the ingest view itself, allowing us to add offense type columns
+    # with data for every statute, rather than just the ones that have been hardcoded. For
+    # now, it makes the most sense to manually identify the relevant offense types.
+    statutes = [
+        STATUTE_TO_DESCRIPTION_DICT[statute_code]
+        for statute_code in [statute1, statute2, statute3, statute4]
+        if statute_code is not None and statute_code in set(STATUTE_TO_DESCRIPTION_DICT)
+    ]
+    if len(statutes) == 0:
+        return None
+    return "@@".join(statutes)
 
 
 def parse_program_type(

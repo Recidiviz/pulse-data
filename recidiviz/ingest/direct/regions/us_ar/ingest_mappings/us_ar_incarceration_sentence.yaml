@@ -58,6 +58,14 @@ variables:
         $value: PAROLEREVOKEDFLAG
         $options:
           - $literal("Y")
+  - offense_type_str:
+      $custom:
+        $function: us_ar_custom_parsers.parse_offense_types
+        $args:
+          statute1: STATUTE1
+          statute2: STATUTE2
+          statute3: STATUTE3
+          statute4: STATUTE4
 output:
   StatePerson:
     external_ids:
@@ -229,3 +237,9 @@ output:
                     - $else: $literal_bool(False)
                 judge_external_id: JUDGEPARTYID
                 judicial_district_code: COURTID
+                offense_type: $variable(offense_type_str)
+                attempted:
+                  $custom:
+                    $function: us_ar_custom_parsers.is_attempted
+                    $args:
+                      offense_types: $variable(offense_type_str)
