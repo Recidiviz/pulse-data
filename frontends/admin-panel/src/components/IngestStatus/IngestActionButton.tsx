@@ -21,7 +21,10 @@ import {
   triggerTaskScheduler,
   updateIngestQueuesState,
 } from "../../AdminPanelAPI";
-import { startRawDataReimport } from "../../AdminPanelAPI/IngestOperations";
+import {
+  startRawDataReimport,
+  triggerStateSpecificRawDataImportDAG,
+} from "../../AdminPanelAPI/IngestOperations";
 import ActionRegionConfirmationForm, {
   RegionAction,
   RegionActionContext,
@@ -76,6 +79,12 @@ const IngestActionButton: React.FC<IngestActionButtonProps> = ({
       case RegionAction.TriggerTaskScheduler:
         if (instance) {
           await triggerTaskScheduler(stateCode, instance);
+          setActionConfirmed();
+        }
+        break;
+      case RegionAction.TriggerStateSpecificRawDataDAG:
+        if (instance) {
+          await triggerStateSpecificRawDataImportDAG(stateCode, instance);
           setActionConfirmed();
         }
         break;

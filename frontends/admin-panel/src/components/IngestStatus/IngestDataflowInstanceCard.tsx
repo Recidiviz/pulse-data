@@ -31,7 +31,6 @@ import {
   getLatestRawDataTagsNotMeetingWatermark,
   getLatestRunIngestViewResults,
   getLatestRunStateDatasetRowCounts,
-  isRawDataImportDagEnabled,
 } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
 import { GCP_STORAGE_BASE_URL } from "../general/constants";
@@ -77,6 +76,7 @@ interface IngestDataflowInstanceCardProps {
   instance: DirectIngestInstance;
   env: string;
   stateCode: string;
+  rawDataImportDagEnabled: boolean;
 }
 
 function displayJobState(status: string): DataflowJobState {
@@ -131,6 +131,7 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   instance,
   env,
   stateCode,
+  rawDataImportDagEnabled,
 }) => {
   // Enable scrolling to various sections based on the URL
   const { hash } = useLocation();
@@ -548,8 +549,6 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   ] = useState<boolean>(true);
   const [ingestRawFileProcessingStatus, setIngestRawFileProcessingStatus] =
     useState<IngestRawFileProcessingStatus[]>([]);
-  const [rawDataImportDagEnabled, setRawDataImportDagEnabled] =
-    useState<boolean>(false);
 
   const getRawFileProcessingStatusData = useCallback(async () => {
     setIngestRawFileProcessingStatusLoading(true);
@@ -572,14 +571,6 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
         throw err;
       }
     }
-
-    // TODO(#28239) remove once raw data import dag is rolled out
-    const isEnabledResponse = await isRawDataImportDagEnabled(
-      stateCode,
-      instance
-    );
-    const isEnabledResult = await isEnabledResponse.json();
-    setRawDataImportDagEnabled(isEnabledResult);
 
     setIngestRawFileProcessingStatusLoading(false);
   }, [instance, stateCode]);
