@@ -365,6 +365,20 @@ export const rawDataImportDagEnabledForAllStates =
     );
   };
 
+// Trigger raw data import dag
+export const triggerStateSpecificRawDataImportDAG = async (
+  stateCode: string,
+  rawDataInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/trigger_raw_data_import_dag",
+    {
+      stateCode,
+      rawDataInstance,
+    }
+  );
+};
+
 // Get all latest ingest raw data import run info
 export const getAllLatestRawDataImportRunInfo = async (): Promise<Response> => {
   return getResource(

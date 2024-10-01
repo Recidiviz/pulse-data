@@ -25,6 +25,7 @@ import { fetchCurrentIngestInstanceStatus } from "./IngestInstanceUtilities";
 
 export enum RegionAction {
   TriggerTaskScheduler = "trigger_task_scheduler",
+  TriggerStateSpecificRawDataDAG = "trigger_state_specific_raw_data_dag",
   PauseIngestQueues = "pause",
   ResumeIngestQueues = "resume",
 
@@ -38,6 +39,8 @@ export const regionActionNames = {
   [RegionAction.TriggerTaskScheduler]: "Trigger Raw Data Import Scheduler",
   [RegionAction.PauseIngestQueues]: "Pause Queues",
   [RegionAction.ResumeIngestQueues]: "Resume Queues",
+  [RegionAction.TriggerStateSpecificRawDataDAG]:
+    "Trigger State-Specific Raw Data Import DAG",
 
   [RegionAction.GenerateEmails]: "Generate Emails",
   [RegionAction.SendEmails]: "Send Emails",

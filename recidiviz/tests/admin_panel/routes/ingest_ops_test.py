@@ -19,11 +19,12 @@
 
 from datetime import datetime
 from unittest import TestCase, mock
+from unittest.mock import call
 
 import pytz
 from flask import Blueprint, Flask
 from freezegun import freeze_time
-from mock import Mock, call, patch
+from mock import Mock, patch
 
 from recidiviz.admin_panel.ingest_dataflow_operations import (
     DataflowPipelineMetadataResponse,
@@ -738,3 +739,39 @@ class IngestOpsEndpointTests(TestCase):
         self.assertEqual(response.json, None)
         file_manager_mock().transfer_metadata_to_new_instance.assert_called_once()
         import_manager_mock().transfer_metadata_to_new_instance.assert_called_once()
+
+    @patch("recidiviz.admin_panel.routes.ingest_ops.trigger_raw_data_import_dag_pubsub")
+    def test_trigger_raw_data_dag(
+        self,
+        pubsub_mock: mock.MagicMock,
+    ) -> None:
+        # Arrange
+        response = self.client.post(
+            "/api/ingest_operations/trigger_raw_data_import_dag",
+            json={
+                "stateCode": "US_XX",
+                "rawDataInstance": "SECONDARY",
+            },
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, None)
+        pubsub_mock.assert_has_calls(
+            [
+                call(
+                    raw_data_instance=DirectIngestInstance.SECONDARY,
+                    state_code_filter=StateCode.US_XX,
+                )
+            ]
+        )
+
+        with self.assertRaisesRegex(KeyError, "'stateCode'"):
+            self.client.post(
+                "/api/ingest_operations/flash_primary_db/transfer_raw_data_v2_metadata_to_new_instance",
+                json={
+                    "rawDataInstance": "SECONDARY",
+                },
+                headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            )

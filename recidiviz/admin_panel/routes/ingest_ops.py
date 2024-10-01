@@ -83,7 +83,10 @@ from recidiviz.pipelines.ingest.dataset_config import (
     ingest_view_materialization_results_dataset,
     state_dataset_for_state_code,
 )
-from recidiviz.utils.trigger_dag_helpers import trigger_calculation_dag_pubsub
+from recidiviz.utils.trigger_dag_helpers import (
+    trigger_calculation_dag_pubsub,
+    trigger_raw_data_import_dag_pubsub,
+)
 from recidiviz.utils.types import assert_type
 
 GCS_IMPORT_EXPORT_TIMEOUT_SEC = 60 * 30  # 30 min
@@ -841,6 +844,33 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             jsonify(raw_config.for_admin_panel_api() if raw_config else None),
             HTTPStatus.OK,
         )
+
+    @bp.route(
+        "/api/ingest_operations/trigger_raw_data_import_dag",
+        methods=["POST"],
+    )
+    def _trigger_raw_data_import_dag() -> Tuple[Union[str, Response], HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"].upper())
+            raw_data_instance = DirectIngestInstance(
+                request_json["rawDataInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            trigger_raw_data_import_dag_pubsub(
+                raw_data_instance=raw_data_instance, state_code_filter=state_code
+            )
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
 
     @bp.route("/api/ingest_operations/is_flashing_in_progress/<state_code_str>")
     def _get_flash_status(

@@ -20,7 +20,7 @@ Run:
     python -m recidiviz.tools.airflow.trigger_state_specific_raw_data_import_dag \
        --project-id [project_id] \
        --state-code [state_code] \
-       --ingest-instance [ingest_instance]
+       --raw-data-instance [raw_data_instance]
 """
 import argparse
 import logging
@@ -53,11 +53,11 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--ingest-instance",
+        "--raw-data-instance",
         required=True,
         type=DirectIngestInstance,
         choices=list(DirectIngestInstance),
-        help="The ingest instance to run the raw data import DAG with.",
+        help="The raw data instance to run the raw data import DAG with.",
     )
 
     return parser
@@ -65,9 +65,11 @@ def create_parser() -> argparse.ArgumentParser:
 
 def trigger_state_specific_raw_data_import_dag(
     state_code_filter: StateCode,
-    ingest_instance: DirectIngestInstance,
+    raw_data_instance: DirectIngestInstance,
 ) -> None:
-    trigger_raw_data_import_dag_pubsub(ingest_instance, state_code_filter)
+    trigger_raw_data_import_dag_pubsub(
+        raw_data_instance=raw_data_instance, state_code_filter=state_code_filter
+    )
 
 
 if __name__ == "__main__":
@@ -76,5 +78,5 @@ if __name__ == "__main__":
     args = create_parser().parse_args()
     with local_project_id_override(args.project_id):
         trigger_state_specific_raw_data_import_dag(
-            args.state_code_filter, args.ingest_instance
+            args.state_code_filter, args.raw_data_instance
         )
