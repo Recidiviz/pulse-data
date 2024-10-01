@@ -102,6 +102,17 @@ export type RawDataDagEnabled = {
   secondary: boolean | undefined;
 };
 
+// i KNOW this is gross to have, but the hydration paradigm is different between this
+// and the above so typing as just boolean was easier
+export type RawDataDagEnabledType = {
+  primary: boolean;
+  secondary: boolean;
+};
+
+export type RawDataDagEnabledAllResponse = {
+  [stateCode: string]: RawDataDagEnabledType;
+};
+
 // --- raw data import dag summary related constants -----------------------------------
 
 export enum RawDataImportRunState {

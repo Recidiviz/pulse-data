@@ -27,6 +27,7 @@ import {
   getAllLatestRawDataImportRunInfo,
   getAllLatestRawDataResourceLockInfo,
   getIngestQueuesState,
+  rawDataImportDagEnabledForAllStates,
 } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
 import {
@@ -42,6 +43,8 @@ import {
   IngestInstanceStatusResponse,
   QueueMetadata,
   QueueState,
+  RawDataDagEnabledAllResponse,
+  RawDataDagEnabledType,
   RawDataImportRunStatusInfo,
   RawDataImportRunStatusResponse,
   RawDataResourceLockStatuses,
@@ -72,6 +75,7 @@ export type IngestInstanceDataflowStatusTableInfo = {
   queueInfo?: string;
   rawDataImportRunStatus?: RawDataImportRunStatusInfo;
   rawDataResourceLockStatus?: RawDataResourceLockStatuses;
+  rawDataEnabled?: RawDataDagEnabledType;
 };
 
 const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
@@ -96,6 +100,11 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
   } = useFetchedDataJSON<RawDataImportRunStatusResponse>(
     getAllLatestRawDataImportRunInfo
   );
+
+  const { loading: loadingRawDataDagEnabled, data: rawDataDagEnabledStatus } =
+    useFetchedDataJSON<RawDataDagEnabledAllResponse>(
+      rawDataImportDagEnabledForAllStates
+    );
 
   const {
     loading: loadingRawDataResourceLockStatuses,
@@ -167,6 +176,15 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     return <Alert message="Failed to load raw data statuses." type="error" />;
   }
 
+  if (!loadingRawDataDagEnabled && rawDataDagEnabledStatus === undefined) {
+    return (
+      <Alert
+        message="Failed to load raw data import dag gating info"
+        type="error"
+      />
+    );
+  }
+
   if (
     !loadingRawDataImportRunStatuses &&
     rawDataImportRunStatuses === undefined
@@ -213,8 +231,13 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       const rawDataImportRunStatus = rawDataImportRunStatuses
         ? rawDataImportRunStatuses[key]
         : undefined;
+
       const rawDataResourceLockStatus = rawDataResourceLockStatuses
         ? rawDataResourceLockStatuses[key]
+        : undefined;
+
+      const rawDataEnabled = rawDataDagEnabledStatus
+        ? rawDataDagEnabledStatus[key]
         : undefined;
 
       return {
@@ -227,6 +250,7 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
         queueInfo,
         rawDataImportRunStatus,
         rawDataResourceLockStatus,
+        rawDataEnabled,
       };
     });
 
@@ -261,7 +285,8 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
         <span>
           {renderLegacyIngestStatusCell(
             record.primaryRawDataStatus,
-            record.primaryRawDataTimestamp
+            record.primaryRawDataTimestamp,
+            record.rawDataEnabled?.primary
           )}
         </span>
       ),
@@ -286,7 +311,8 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
         <span>
           {renderLegacyIngestStatusCell(
             record.secondaryRawDataStatus,
-            record.secondaryRawDataTimestamp
+            record.secondaryRawDataTimestamp,
+            record.rawDataEnabled?.secondary
           )}
         </span>
       ),

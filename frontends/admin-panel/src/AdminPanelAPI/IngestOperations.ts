@@ -358,6 +358,13 @@ export const isRawDataImportDagEnabled = async (
   );
 };
 
+export const rawDataImportDagEnabledForAllStates =
+  async (): Promise<Response> => {
+    return getResource(
+      `/api/ingest_operations/is_raw_data_import_dag_enabled_all`
+    );
+  };
+
 // Get all latest ingest raw data import run info
 export const getAllLatestRawDataImportRunInfo = async (): Promise<Response> => {
   return getResource(
