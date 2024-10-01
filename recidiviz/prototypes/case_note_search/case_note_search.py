@@ -304,7 +304,7 @@ async def case_note_search(
         # For now, we ONLY support exact match supplementation for engines with data in
         # BigQuery.
         if engine_id in EXACT_MATCH_SUPPORTED:
-            exact_match_json_data: Dict[str, Any] = exact_match_search(
+            exact_match_json_data: Dict[str, Any] = await exact_match_search(
                 query_term=query,
                 include_filter_conditions=filter_conditions,
                 exclude_filter_conditions=set_hardcoded_excludes(),

@@ -27,14 +27,14 @@ class TestExactMatchSearchQuery(unittest.TestCase):
     """This class implements tests for the exact match search module."""
 
     @patch("recidiviz.prototypes.case_note_search.exact_match.bigquery.Client")
-    def test_exact_match_search_basic_query(self, mock_bq_client: Any) -> None:
+    async def test_exact_match_search_basic_query(self, mock_bq_client: Any) -> None:
         # Mock BigQuery client and query method
         mock_client_instance = MagicMock()
         mock_bq_client.return_value = mock_client_instance
 
         # Call the function
         query_term = "query_term"
-        exact_match_search(query_term=query_term)
+        await exact_match_search(query_term=query_term)
 
         # Check if the query string is as expected
         expected_query = """
@@ -70,14 +70,14 @@ class TestExactMatchSearchQuery(unittest.TestCase):
             self.assertEqual(query_term_param.value, "query_term")
 
     @patch("recidiviz.prototypes.case_note_search.exact_match.bigquery.Client")
-    def test_exact_match_search_acronym(self, mock_bq_client: Any) -> None:
+    async def test_exact_match_search_acronym(self, mock_bq_client: Any) -> None:
         # Mock BigQuery client and query method
         mock_client_instance = MagicMock()
         mock_bq_client.return_value = mock_client_instance
 
         # Query an acronym.
         query_term = "UA"
-        exact_match_search(query_term=query_term)
+        await exact_match_search(query_term=query_term)
 
         expected_query = """
         select *
@@ -112,7 +112,7 @@ class TestExactMatchSearchQuery(unittest.TestCase):
             self.assertEqual(query_term_param.value, "\\bUA\\b")
 
     @patch("recidiviz.prototypes.case_note_search.exact_match.bigquery.Client")
-    def test_exact_match_search_with_filters(self, mock_bq_client: Any) -> None:
+    async def test_exact_match_search_with_filters(self, mock_bq_client: Any) -> None:
         # Mock BigQuery client and query method
         mock_client_instance = MagicMock()
         mock_bq_client.return_value = mock_client_instance
@@ -120,7 +120,7 @@ class TestExactMatchSearchQuery(unittest.TestCase):
         # Call the function with filter conditions
         query_term = "query_term"
         include_filter_conditions = {"state_code": ["US_ME"]}
-        exact_match_search(
+        await exact_match_search(
             query_term=query_term, include_filter_conditions=include_filter_conditions
         )
 
