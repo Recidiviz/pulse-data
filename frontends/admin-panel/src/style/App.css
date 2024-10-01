@@ -184,6 +184,11 @@ tr.metadata-table-row > td.ant-table-cell > div {
   background-color: #ffff00;
 }
 
+.ingest-status-cell-gated {
+  color: #ffffff;
+  background-color: #2e2e2e;
+}
+
 .queue-status-running {
   color: #ffffff;
   background-color: #389e0d;

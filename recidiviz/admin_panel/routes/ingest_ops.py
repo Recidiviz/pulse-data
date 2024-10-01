@@ -64,6 +64,9 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2
 from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
     LegacyDirectIngestRawFileMetadataManager,
 )
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_launched_in_env,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.flash_database_tools import (
     copy_raw_data_between_instances,
@@ -736,6 +739,27 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         return (
             jsonify(is_raw_data_import_dag_enabled(state_code, ingest_instance)),
+            HTTPStatus.OK,
+        )
+
+        # TODO(#28239): delete once raw data import dag is enabled in all states
+
+    @bp.route("/api/ingest_operations/is_raw_data_import_dag_enabled_all")
+    def _raw_data_import_dag_enabled_all() -> Tuple[Union[str, Response], HTTPStatus]:
+        return (
+            jsonify(
+                {
+                    state_code.value: {
+                        "primary": is_raw_data_import_dag_enabled(
+                            state_code, DirectIngestInstance.PRIMARY
+                        ),
+                        "secondary": is_raw_data_import_dag_enabled(
+                            state_code, DirectIngestInstance.SECONDARY
+                        ),
+                    }
+                    for state_code in get_direct_ingest_states_launched_in_env()
+                }
+            ),
             HTTPStatus.OK,
         )
 

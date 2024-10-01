@@ -152,11 +152,22 @@ export const getLegacyIngestStatusSortedOrder = (): string[] => {
 
 export const renderLegacyIngestStatusCell = (
   status: string | undefined,
-  timestamp: string | undefined
+  timestamp: string | undefined,
+  isDagEnabled: boolean | undefined
 ): React.ReactElement => {
-  if (status === undefined || timestamp === undefined) return <Spin />;
-  const statusColorClassName = getLegacyIngestStatusBoxColor(status);
-  const statusMessage = getLegacyIngestStatusMessage(status, timestamp);
+  if (
+    status === undefined ||
+    timestamp === undefined ||
+    isDagEnabled === undefined
+  )
+    return <Spin />;
+
+  const statusColorClassName = isDagEnabled
+    ? "ingest-status-cell-gated"
+    : getLegacyIngestStatusBoxColor(status);
+  const statusMessage = isDagEnabled
+    ? "Legacy raw data infra has been disabled."
+    : getLegacyIngestStatusMessage(status, timestamp);
 
   return (
     <div className={classNames("ingest-status-cell", statusColorClassName)}>
