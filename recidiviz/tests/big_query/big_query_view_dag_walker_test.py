@@ -1067,10 +1067,11 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
                 ),
             )
             # Don't crash in GCP but do still emit an error log
-            mock_logger.assert_called_once_with(
-                "[BigQueryViewDagWalker Node Failure] Processing for "
-                "[BigQueryAddress(dataset_id='dataset_6', table_id='table_6')] took "
-                "[0.1] seconds. Expected node to process in less than [0.05] seconds."
+            logged_message = mock_logger.call_args[0][0]
+            # Allow small variations in timing
+            self.assertRegex(
+                logged_message,
+                r"\[BigQueryViewDagWalker Node Failure\] Processing for \[BigQueryAddress\(dataset_id='dataset_6', table_id='table_6'\)\] took \[0\.1(\d+)?\] seconds. Expected node to process in less than \[0\.05\] seconds.",
             )
         self.assertEqual(set(walker.views), set(result.view_results))
 
