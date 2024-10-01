@@ -53,8 +53,14 @@ class FirestoreClientImplTest(unittest.TestCase):
         self.metadata_patcher.stop()
         self.admin_client_fn.stop()
 
+    @mock.patch(
+        "recidiviz.firestore.firestore_client.assert_type",
+        wraps=lambda value, _type: value,
+    )
     @mock.patch("recidiviz.firestore.firestore_client.FieldFilter")
-    def test_delete_old_documents(self, field_filter_mock: Mock) -> None:
+    def test_delete_old_documents(
+        self, field_filter_mock: Mock, _assert_type_mock: Mock
+    ) -> None:
         """Tests that the call to delete old documents actually filters for old documents."""
         self.firestore_client.delete_old_documents(
             "clients", "US_XX", "__lastUpdated", datetime(2022, 1, 1)

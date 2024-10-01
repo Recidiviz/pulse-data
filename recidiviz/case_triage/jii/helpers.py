@@ -23,9 +23,10 @@ import datetime
 import logging
 from ast import literal_eval
 from collections import defaultdict
-from typing import Dict, Generator, Optional
+from typing import Any, Dict, Generator, Optional
 
 from google.cloud import bigquery
+from google.cloud.firestore_v1 import DocumentSnapshot
 
 from recidiviz.case_triage.workflows.utils import (
     TwilioStatus,
@@ -221,7 +222,7 @@ def construct_text_body(
 def update_status_helper(
     message_status: Optional[str],
     firestore_client: FirestoreClientImpl,
-    jii_updates_docs: Generator,
+    jii_updates_docs: Generator[DocumentSnapshot, Any, Any],
     error_code: Optional[str],
 ) -> set:
     """
