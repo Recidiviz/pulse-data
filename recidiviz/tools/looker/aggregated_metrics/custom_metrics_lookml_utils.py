@@ -21,6 +21,10 @@ from typing import Dict, List, Optional, Tuple
 from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
     UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
 )
+from recidiviz.aggregated_metrics.assignment_sessions_view_builder import (
+    get_metric_assignment_sessions_materialized_table_address,
+    has_configured_assignment_query,
+)
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
@@ -46,7 +50,6 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
-    UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT,
     MetricUnitOfAnalysisType,
     get_static_attributes_query_for_unit_of_analysis,
 )
@@ -587,7 +590,7 @@ def generate_assignments_view(
 
         # For all assignment types that already have a materialized metric assignment session in bigquery,
         # generate a query fragment that combines the assignment session view with the static attributes query.
-        _, unit_of_analysis_type = assignment_types_dict[assignment_type]
+        population_type, unit_of_analysis_type = assignment_types_dict[assignment_type]
         unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
         primary_columns_str = unit_of_analysis.get_primary_key_columns_query_string()
         shared_columns = sorted(
@@ -612,11 +615,20 @@ def generate_assignments_view(
             if static_attributes_source_table
             else ""
         )
-        if (
-            unit_of_observation.type,
-            unit_of_analysis_type,
-        ) in UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT:
-            source_table = f"aggregated_metrics.{assignment_type.lower()}_metrics_{unit_of_observation.type.short_name}_assignment_sessions_materialized{static_attributes_join_query_fragment}"
+
+        if has_configured_assignment_query(
+            unit_of_analysis_type, unit_of_observation.type
+        ):
+            source_table_address = (
+                get_metric_assignment_sessions_materialized_table_address(
+                    unit_of_observation_type=unit_of_observation.type,
+                    unit_of_analysis_type=unit_of_analysis_type,
+                    population_type=population_type,
+                ).to_str()
+            )
+            source_table = (
+                f"{source_table_address}{static_attributes_join_query_fragment}"
+            )
         else:
             # If no assignment table has been defined, create a dummy assignment table with all NULL fields
             placeholder_columns_query_string = ", ".join(

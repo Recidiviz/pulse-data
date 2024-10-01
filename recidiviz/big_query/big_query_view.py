@@ -313,6 +313,18 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
         if materialized_address_override:
             return materialized_address_override
 
+        return cls.build_standard_materialized_address(
+            dataset_id=dataset_id, view_id=view_id
+        )
+
+    @classmethod
+    def build_standard_materialized_address(
+        cls, *, dataset_id: str, view_id: str
+    ) -> BigQueryAddress:
+        """Returns the standard materialized location for a given BigQueryView address.
+        This address is what would be used if no materialized_address_override is used
+        when building a view.
+        """
         return BigQueryAddress(
             dataset_id=dataset_id,
             table_id=view_id + _DEFAULT_MATERIALIZED_SUFFIX,
