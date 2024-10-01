@@ -125,8 +125,12 @@ METRICS_BY_UNIT_OF_ANALYSIS_TYPE: dict[
     ],
 }
 
-MIN_DATE = datetime.datetime.today() - relativedelta(months=2)
-MAX_DATE = datetime.datetime.today()
+# today is the current datetime
+today = datetime.datetime.today()
+# most_recent_monday is the date of the most recent first of the month
+most_recent_first_of_month = datetime.datetime(today.year, today.month, 1)
+MIN_DATE = most_recent_first_of_month - relativedelta(months=2)
+MAX_DATE = most_recent_first_of_month
 
 
 def get_metrics_subset(
