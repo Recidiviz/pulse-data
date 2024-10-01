@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 
 import {
+  fetchIngestStateCodes,
   getAllIngestInstanceStatuses,
   getAllLatestDataflowJobs,
   getAllLatestRawDataImportRunInfo,
@@ -63,18 +64,22 @@ import {
 
 export type IngestInstanceDataflowStatusTableInfo = {
   stateCode: string;
-  ingestPipelineStatus: DataflowJobStatusMetadata;
-  primaryRawDataStatus: string;
-  secondaryRawDataStatus: string;
-  primaryRawDataTimestamp: string;
-  secondaryRawDataTimestamp: string;
-  queueInfo: string | undefined;
-  rawDataImportRunStatus: RawDataImportRunStatusInfo;
-  rawDataResourceLockStatus: RawDataResourceLockStatuses;
+  ingestPipelineStatus?: DataflowJobStatusMetadata;
+  primaryRawDataStatus?: string;
+  secondaryRawDataStatus?: string;
+  primaryRawDataTimestamp?: string;
+  secondaryRawDataTimestamp?: string;
+  queueInfo?: string;
+  rawDataImportRunStatus?: RawDataImportRunStatusInfo;
+  rawDataResourceLockStatus?: RawDataResourceLockStatuses;
 };
 
 const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
   const history = useHistory();
+
+  const { loading: loadingStateCodeInfos, data: stateCodeInfos } =
+    useFetchedDataJSON<StateCodeInfo[]>(fetchIngestStateCodes);
+
   const { loading: dataflowPipelinesLoading, data: dataflowPipelines } =
     useFetchedDataJSON<DataflowIngestPipelineJobResponse>(
       getAllLatestDataflowJobs
@@ -104,11 +109,13 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
   >(undefined);
 
   useEffect(() => {
-    if (rawDataStatuses === undefined) {
+    if (stateCodeInfos === undefined) {
       return;
     }
     const loadAllStatesQueueStatuses = async (): Promise<void> => {
-      const stateCodes = Object.keys(rawDataStatuses);
+      const stateCodes = stateCodeInfos.map(
+        (stateCodeInfo) => stateCodeInfo.code
+      );
       // For each state code, request info about all ingest queues for that state
       const queueStatusResponses = await Promise.all(
         stateCodes.map(async (stateCode) => getIngestQueuesState(stateCode))
@@ -136,14 +143,9 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       setStateIngestQueueStatuses(stateCodeToQueueStatus);
     };
     loadAllStatesQueueStatuses();
-  }, [rawDataStatuses]);
+  }, [stateCodeInfos]);
 
-  if (
-    dataflowPipelinesLoading ||
-    loadingRawDataStatuses ||
-    loadingRawDataImportRunStatuses ||
-    loadingRawDataResourceLockStatuses
-  ) {
+  if (loadingStateCodeInfos) {
     return (
       <div className="center">
         <Spin size="large" />
@@ -151,17 +153,24 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     );
   }
 
-  if (dataflowPipelines === undefined) {
+  if (stateCodeInfos === undefined) {
+    return <Alert message="Failed to load state codes." type="error" />;
+  }
+
+  if (!dataflowPipelinesLoading && dataflowPipelines === undefined) {
     return (
       <Alert message="Failed to load ingest pipeline statuses." type="error" />
     );
   }
 
-  if (rawDataStatuses === undefined) {
+  if (!loadingRawDataStatuses && rawDataStatuses === undefined) {
     return <Alert message="Failed to load raw data statuses." type="error" />;
   }
 
-  if (rawDataImportRunStatuses === undefined) {
+  if (
+    !loadingRawDataImportRunStatuses &&
+    rawDataImportRunStatuses === undefined
+  ) {
     return (
       <Alert
         message="Failed to load raw data import dag statuses"
@@ -169,7 +178,10 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       />
     );
   }
-  if (rawDataResourceLockStatuses === undefined) {
+  if (
+    !loadingRawDataResourceLockStatuses &&
+    rawDataResourceLockStatuses === undefined
+  ) {
     return (
       <Alert
         message="Failed to load raw data resource lock statuses"
@@ -178,38 +190,45 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     );
   }
 
-  const dataSource: IngestInstanceDataflowStatusTableInfo[] = Object.keys(
-    dataflowPipelines
-  ).map((key) => {
-    const stateRawDataStatuses = rawDataStatuses[key];
-    const queueInfo = stateIngestQueueStatuses
-      ? stateIngestQueueStatuses[key]
-      : undefined;
+  const dataSource: IngestInstanceDataflowStatusTableInfo[] = stateCodeInfos
+    .map((info) => info.code)
+    .map((key) => {
+      const stateRawDataStatuses = rawDataStatuses
+        ? rawDataStatuses[key]
+        : undefined;
+      const queueInfo = stateIngestQueueStatuses
+        ? stateIngestQueueStatuses[key]
+        : undefined;
 
-    const primaryRawDataStatus: string = stateRawDataStatuses.primary.status;
-    const secondaryRawDataStatus: string =
-      stateRawDataStatuses.secondary.status;
+      const primaryRawDataStatus: string | undefined =
+        stateRawDataStatuses?.primary.status;
+      const secondaryRawDataStatus: string | undefined =
+        stateRawDataStatuses?.secondary.status;
 
-    const primaryRawDataTimestamp: string =
-      stateRawDataStatuses.primary.statusTimestamp;
-    const secondaryRawDataTimestamp: string =
-      stateRawDataStatuses.secondary.statusTimestamp;
+      const primaryRawDataTimestamp: string | undefined =
+        stateRawDataStatuses?.primary.statusTimestamp;
+      const secondaryRawDataTimestamp: string | undefined =
+        stateRawDataStatuses?.secondary.statusTimestamp;
 
-    const rawDataImportRunStatus = rawDataImportRunStatuses[key];
-    const rawDataResourceLockStatus = rawDataResourceLockStatuses[key];
+      const rawDataImportRunStatus = rawDataImportRunStatuses
+        ? rawDataImportRunStatuses[key]
+        : undefined;
+      const rawDataResourceLockStatus = rawDataResourceLockStatuses
+        ? rawDataResourceLockStatuses[key]
+        : undefined;
 
-    return {
-      stateCode: key,
-      ingestPipelineStatus: getJobMetadataForCell(key, dataflowPipelines),
-      primaryRawDataStatus,
-      secondaryRawDataStatus,
-      primaryRawDataTimestamp,
-      secondaryRawDataTimestamp,
-      queueInfo,
-      rawDataImportRunStatus,
-      rawDataResourceLockStatus,
-    };
-  });
+      return {
+        stateCode: key,
+        ingestPipelineStatus: getJobMetadataForCell(key, dataflowPipelines),
+        primaryRawDataStatus,
+        secondaryRawDataStatus,
+        primaryRawDataTimestamp,
+        secondaryRawDataTimestamp,
+        queueInfo,
+        rawDataImportRunStatus,
+        rawDataResourceLockStatus,
+      };
+    });
 
   const columns: ColumnsType<IngestInstanceDataflowStatusTableInfo> = [
     {
@@ -246,9 +265,17 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
           )}
         </span>
       ),
-      sorter: (a, b) =>
-        getLegacyIngestStatusSortedOrder().indexOf(a.primaryRawDataStatus) -
-        getLegacyIngestStatusSortedOrder().indexOf(b.primaryRawDataStatus),
+      sorter: (a, b) => {
+        if (
+          a.primaryRawDataStatus === undefined ||
+          b.primaryRawDataStatus === undefined
+        )
+          return 0;
+        return (
+          getLegacyIngestStatusSortedOrder().indexOf(a.primaryRawDataStatus) -
+          getLegacyIngestStatusSortedOrder().indexOf(b.primaryRawDataStatus)
+        );
+      },
     },
     // TODO(#28239): remove once the raw data import dag is fully rolled out
     {
@@ -263,9 +290,17 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
           )}
         </span>
       ),
-      sorter: (a, b) =>
-        getLegacyIngestStatusSortedOrder().indexOf(a.secondaryRawDataStatus) -
-        getLegacyIngestStatusSortedOrder().indexOf(b.secondaryRawDataStatus),
+      sorter: (a, b) => {
+        if (
+          a.secondaryRawDataStatus === undefined ||
+          b.secondaryRawDataStatus === undefined
+        )
+          return 0;
+        return (
+          getLegacyIngestStatusSortedOrder().indexOf(a.secondaryRawDataStatus) -
+          getLegacyIngestStatusSortedOrder().indexOf(b.secondaryRawDataStatus)
+        );
+      },
     },
     // TODO(#28239): remove once the raw data import dag is fully rolled out
     {
@@ -287,9 +322,17 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       render: (rawDataImportRunStatus: RawDataImportRunStatusInfo) => (
         <span>{renderRawDataImportRunStatusCell(rawDataImportRunStatus)}</span>
       ),
-      sorter: (a, b) =>
-        getRawDataImportRunStatusSortedOrder(a.rawDataImportRunStatus) -
-        getRawDataImportRunStatusSortedOrder(b.rawDataImportRunStatus),
+      sorter: (a, b) => {
+        if (
+          a.rawDataImportRunStatus === undefined ||
+          b.rawDataImportRunStatus === undefined
+        )
+          return 0;
+        return (
+          getRawDataImportRunStatusSortedOrder(a.rawDataImportRunStatus) -
+          getRawDataImportRunStatusSortedOrder(b.rawDataImportRunStatus)
+        );
+      },
     },
     {
       title: "New Raw Data Import Blocked by Manual Hold?",
@@ -301,9 +344,17 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
           {renderRawDataResourceLockStatusesCell(rawDataResourceLockStatus)}
         </span>
       ),
-      sorter: (a, b) =>
-        getRawDataResourceLockStateSortedOrder(a.rawDataResourceLockStatus) -
-        getRawDataResourceLockStateSortedOrder(b.rawDataResourceLockStatus),
+      sorter: (a, b) => {
+        if (
+          a.rawDataResourceLockStatus === undefined ||
+          b.rawDataResourceLockStatus === undefined
+        )
+          return 0;
+        return (
+          getRawDataResourceLockStateSortedOrder(a.rawDataResourceLockStatus) -
+          getRawDataResourceLockStateSortedOrder(b.rawDataResourceLockStatus)
+        );
+      },
     },
   ];
 

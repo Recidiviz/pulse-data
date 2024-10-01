@@ -151,9 +151,10 @@ export const getLegacyIngestStatusSortedOrder = (): string[] => {
 };
 
 export const renderLegacyIngestStatusCell = (
-  status: string,
-  timestamp: string
+  status: string | undefined,
+  timestamp: string | undefined
 ): React.ReactElement => {
+  if (status === undefined || timestamp === undefined) return <Spin />;
   const statusColorClassName = getLegacyIngestStatusBoxColor(status);
   const statusMessage = getLegacyIngestStatusMessage(status, timestamp);
 
@@ -209,8 +210,9 @@ function getDataflowJobStateColor(currentState: DataflowJobState): string {
 // for primary only
 export function getJobMetadataForCell(
   key: string,
-  pipelineStatuses: DataflowIngestPipelineJobResponse
-): DataflowJobStatusMetadata {
+  pipelineStatuses: DataflowIngestPipelineJobResponse | undefined
+): DataflowJobStatusMetadata | undefined {
+  if (pipelineStatuses === undefined) return undefined;
   return {
     status: getCurrentStatus(pipelineStatuses[key]),
     terminationTime: pipelineStatuses[key]?.terminationTime,
@@ -227,8 +229,9 @@ export const getDataflowEnabledSortedOrder = (
 };
 
 export const renderDataflowStatusCell = (
-  statusMetadata: DataflowJobStatusMetadata
+  statusMetadata: DataflowJobStatusMetadata | undefined
 ) => {
+  if (statusMetadata === undefined) return <Spin />;
   return (
     <div
       className={classNames(getDataflowJobStateColor(statusMetadata.status))}
@@ -401,8 +404,9 @@ const getRawDataStatusMessage = (
 };
 
 export const renderRawDataImportRunStatusCell = (
-  rawDataImportRunStatus: RawDataImportRunStatusInfo
+  rawDataImportRunStatus: RawDataImportRunStatusInfo | undefined
 ) => {
+  if (rawDataImportRunStatus === undefined) return <Spin />;
   return (
     <div
       className={classNames(
@@ -472,8 +476,9 @@ export function getRawDataResourceLockStateSortedOrder(
 }
 
 export const renderRawDataResourceLockStatusesCell = (
-  rawDataResourceLockStatus: RawDataResourceLockStatuses
+  rawDataResourceLockStatus: RawDataResourceLockStatuses | undefined
 ) => {
+  if (rawDataResourceLockStatus === undefined) return <Spin />;
   return (
     <div
       className={classNames(
