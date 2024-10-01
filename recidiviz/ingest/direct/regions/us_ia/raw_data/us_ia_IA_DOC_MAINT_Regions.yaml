@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_MAINT_Regions
+file_description: |-
+  This is a maintenance table for regions
+data_classification: source
+primary_key_cols:
+  - RegionId
+columns:
+  - name: RegionId
+    description: |-
+      Pk for table
+  - name: RegionNm
+    description: |-
+      Region name
+  - name: RegionCd
+    description: |-
+      Region code
+  - name: RegionType
+    description: |-
+      Region type
+  - name: Comments
+    description: |-
+      Comments about the region
+  - name: Active
+    description: |-
+      Indicates if region is active

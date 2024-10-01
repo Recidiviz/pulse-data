@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_Housing
+file_description: |-
+  This file contains housing unit information
+data_classification: source
+primary_key_cols:
+  - HousingId
+columns:
+  - name: HousingId
+    description: |-
+      PK for the table
+  - name: OffenderCd
+    description: |-
+      Offender code
+    is_pii: True
+  - name: RegionId
+    description: |-
+      Region id
+  - name: FacilityId
+    description: |-
+      Facility id
+  - name: HousingUnitId
+    description: |-
+      Housing unit id
+  - name: RoomId
+    description: |-
+      Room id
+  - name: BedId
+    description: |-
+      Bed id
+  - name: HousingStartDt
+    field_type: datetime
+    description: |-
+      Housing start date
+  - name: HousingEndDt
+    field_type: datetime
+    description: |-
+      Housing end date
+  - name: EnteredDt
+    field_type: datetime
+    description: |-
+      Date entered

@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_Housing_PrivilegeLevels
+file_description: |-
+  This table contains privilege levels associated with housing units
+data_classification: source
+primary_key_cols:
+  - OffenderPrivilegeLevelInstSWId
+columns:
+  - name: OffenderPrivilegeLevelInstSWId
+    description: |-
+      PK for the table
+  - name: OffenderCd
+    description: |-
+      Offender code
+    is_pii: True
+  - name: HousingPrivilegeLevelInstSWId
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: HousingPrivilegeLevelInstSW
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: HousingPrivilegeLevelInstSWCd
+    description: |-
+      TODO(#33241): Fill in with information from IA
+  - name: PrivilegeLevelStartDt
+    field_type: datetime
+    description: |-
+      Privelege level start date
+  - name: PrivilegeLevelReviewDt
+    field_type: datetime
+    description: |-
+      Privilege level review date
+  - name: PrivilegeLevelReleaseDt
+    field_type: datetime
+    description: |-
+      Privilege level release date
+  - name: PrivilegeLevelEndDt
+    field_type: datetime
+    description: |-
+      Privilege level end date
+  - name: EnteredDt
+    field_type: datetime
+    description: |-
+      Entered date
