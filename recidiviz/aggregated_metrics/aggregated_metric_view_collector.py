@@ -26,9 +26,6 @@ from recidiviz.aggregated_metrics.assignment_event_aggregated_metrics import (
 from recidiviz.aggregated_metrics.assignment_span_aggregated_metrics import (
     generate_assignment_span_aggregated_metrics_view_builder,
 )
-from recidiviz.aggregated_metrics.metrics_assignment_sessions import (
-    generate_metric_assignment_sessions_view_builder,
-)
 from recidiviz.aggregated_metrics.misc_aggregated_metrics import (
     generate_misc_aggregated_metrics_view_builder,
 )
@@ -181,12 +178,10 @@ from recidiviz.aggregated_metrics.period_span_aggregated_metrics import (
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    POPULATION_TYPE_TO_SPAN_SELECTOR_BY_UNIT_OF_OBSERVATION,
     MetricPopulationType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
-    UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT,
     MetricUnitOfAnalysisType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -440,6 +435,7 @@ UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS: List[
 
 
 def collect_aggregated_metrics_view_builders(
+    *,
     metrics_by_population_dict: Dict[MetricPopulationType, List[AggregatedMetric]],
     units_of_analysis_by_population_dict: Dict[
         MetricPopulationType, List[MetricUnitOfAnalysisType]
@@ -454,30 +450,6 @@ def collect_aggregated_metrics_view_builders(
     """
     view_builders = []
 
-    # Produce a metric assignment sessions view for every combination of population
-    # and configured unit of observation type.
-    for (
-        population_type,
-        unit_of_analysis_types,
-    ) in units_of_analysis_by_population_dict.items():
-        # For every population, create all the assignment tables having a corresponding unit of analysis
-        for (
-            unit_of_observation_type,
-            unit_of_analysis_type,
-        ) in UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT:
-            if (unit_of_analysis_type in unit_of_analysis_types) and (
-                unit_of_observation_type
-                in POPULATION_TYPE_TO_SPAN_SELECTOR_BY_UNIT_OF_OBSERVATION[
-                    population_type
-                ]
-            ):
-                view_builders.append(
-                    generate_metric_assignment_sessions_view_builder(
-                        unit_of_analysis_type=unit_of_analysis_type,
-                        unit_of_observation_type=unit_of_observation_type,
-                        population_type=population_type,
-                    )
-                )
     # TODO(#29291): Filter all_metrics list down to only metrics we use downstream in
     #  products / Looker, then make it easier for DAs, etc to query configured metrics
     #  in an ad-hoc way from notebooks, etc.
@@ -608,6 +580,7 @@ def collect_aggregated_metrics_view_builders(
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         for view_builder in collect_aggregated_metrics_view_builders(
-            METRICS_BY_POPULATION_TYPE, UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE
+            metrics_by_population_dict=METRICS_BY_POPULATION_TYPE,
+            units_of_analysis_by_population_dict=UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
         ):
             view_builder.build_and_print()

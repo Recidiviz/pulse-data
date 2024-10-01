@@ -17,6 +17,12 @@
 """Joins together all aggregated metric views for the specified population and unit of analysis"""
 from typing import List, Optional
 
+from recidiviz.aggregated_metrics.assignment_sessions_view_builder import (
+    get_assignment_query_for_unit_of_analysis,
+)
+from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
+    get_standard_population_selector_for_unit_of_observation,
+)
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.aggregated_metrics.misc_aggregated_metrics import (
     generate_misc_aggregated_metrics_view_builder,
@@ -32,12 +38,10 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    POPULATION_TYPE_TO_SPAN_SELECTOR_BY_UNIT_OF_OBSERVATION,
     MetricPopulationType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
-    get_assignment_query_for_unit_of_analysis,
     get_static_attributes_query_for_unit_of_analysis,
 )
 from recidiviz.observations.metric_unit_of_observation_type import (
@@ -57,9 +61,20 @@ def generate_aggregated_metrics_view_builder(
     """
     unit_of_analysis_name = unit_of_analysis.type.short_name
     population_name = population_type.population_name_short
-    person_population_query = POPULATION_TYPE_TO_SPAN_SELECTOR_BY_UNIT_OF_OBSERVATION[
-        population_type
-    ][MetricUnitOfObservationType.PERSON_ID].generate_span_selector_query()
+    unit_of_observation_type = MetricUnitOfObservationType.PERSON_ID
+
+    population_selector = get_standard_population_selector_for_unit_of_observation(
+        population_type=population_type,
+        unit_of_observation_type=unit_of_observation_type,
+    )
+
+    if not population_selector:
+        raise ValueError(
+            f"Cannot build an aggregated_metrics view for [{population_type}] and "
+            f"[{unit_of_observation_type}]"
+        )
+
+    person_population_query = population_selector.generate_span_selector_query()
     view_id = f"{population_name}_{unit_of_analysis_name}_aggregated_metrics"
     included_metrics = [
         metric
@@ -92,7 +107,7 @@ Query for person unit of observation:
 
 Source table:
 ```
-{get_assignment_query_for_unit_of_analysis(unit_of_analysis.type, MetricUnitOfObservationType.PERSON_ID)}
+{get_assignment_query_for_unit_of_analysis(unit_of_analysis.type, unit_of_observation_type)}
 ```
 
 Primary key columns: `{unit_of_analysis.get_primary_key_columns_query_string()}`

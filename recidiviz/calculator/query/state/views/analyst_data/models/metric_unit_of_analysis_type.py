@@ -16,13 +16,9 @@
 # =============================================================================
 """Constants related to a MetricUnitOfAnalysisType."""
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import attr
-
-from recidiviz.observations.metric_unit_of_observation_type import (
-    MetricUnitOfObservationType,
-)
 
 
 # TODO(#32921): Unit of analysis types / constants to the recidiviz.aggregated_metrics
@@ -161,169 +157,6 @@ METRIC_UNITS_OF_ANALYSIS = [
 
 METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {u.type: u for u in METRIC_UNITS_OF_ANALYSIS}
 
-# Dictionary of queries define periods of assignment of a unit of observation to a unit of analysis
-UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT: Dict[
-    Tuple[MetricUnitOfObservationType, MetricUnitOfAnalysisType], str
-] = {
-    (
-        MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.PERSON_ID,
-    ): "SELECT * FROM `{project_id}.sessions.system_sessions_materialized`",
-    (
-        MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
-    ): """
-SELECT *, supervising_officer_external_id AS officer_id
-FROM `{project_id}.sessions.supervision_officer_transitional_caseload_type_sessions_materialized`
-""",
-    (
-        MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
-    ): """SELECT
-    *, 
-    supervision_district AS district,
-    supervision_office AS office,
-FROM
-    `{project_id}.sessions.location_sessions_materialized`
-""",
-    (
-        MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-    ): "SELECT *, supervision_district AS district, FROM `{project_id}.sessions.location_sessions_materialized`",
-    (
-        MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
-    ): "SELECT * FROM `{project_id}.sessions.supervision_unit_supervisor_sessions_materialized`",
-    (
-        MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
-    ): "SELECT * FROM `{project_id}.sessions.person_caseload_location_sessions_materialized`",
-    (
-        MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
-    ): "SELECT * FROM `{project_id}.sessions.person_caseload_location_sessions_materialized`",
-    (
-        MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.STATE_CODE,
-    ): "SELECT * FROM `{project_id}.sessions.compartment_sessions_materialized`",
-    (
-        MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.FACILITY,
-    ): "SELECT * FROM `{project_id}.sessions.location_sessions_materialized`",
-    (
-        MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
-    ): """
-SELECT 
-    * EXCEPT (incarceration_staff_assignment_id),
-    incarceration_staff_assignment_id AS facility_counselor_id,
-FROM
-    `{project_id}.sessions.incarceration_staff_assignment_sessions_preprocessed_materialized`
-WHERE
-    incarceration_staff_assignment_role_subtype = "COUNSELOR"
-""",
-    (
-        MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY,
-    ): """
-SELECT * FROM `{project_id}.analyst_data.insights_caseload_category_sessions_materialized`
-""",
-    (
-        MetricUnitOfObservationType.SUPERVISION_OFFICER,
-        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
-    ): """
-SELECT * FROM `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
-WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
-""",
-    (
-        MetricUnitOfObservationType.SUPERVISION_OFFICER,
-        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
-    ): """SELECT
-    *, 
-    supervision_office_id AS office,
-    supervision_district_id AS district,
-FROM
-    `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
-WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
-""",
-    (
-        MetricUnitOfObservationType.SUPERVISION_OFFICER,
-        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-    ): """SELECT
-    *, supervision_district_id AS district,
-FROM
-    `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
-WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
-""",
-    (
-        MetricUnitOfObservationType.SUPERVISION_OFFICER,
-        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
-    ): """SELECT
-    *, 
-    supervisor_staff_id AS unit_supervisor,
-FROM
-    `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`,
-    UNNEST(supervisor_staff_id_array) AS supervisor_staff_id
-WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
-""",
-    (
-        MetricUnitOfObservationType.SUPERVISION_OFFICER,
-        MetricUnitOfAnalysisType.STATE_CODE,
-    ): """
-SELECT * FROM `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
-WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
-""",
-    (
-        MetricUnitOfObservationType.WORKFLOWS_USER,
-        MetricUnitOfAnalysisType.STATE_CODE,
-    ): """SELECT
-    state_code,
-    workflows_user_email_address AS email_address,
-    start_date,
-    end_date_exclusive, 
-FROM
-    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`""",
-    (
-        MetricUnitOfObservationType.WORKFLOWS_USER,
-        MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
-    ): """SELECT
-    state_code,
-    workflows_user_email_address AS email_address,
-    start_date,
-    end_date_exclusive,
-    location_id,
-FROM
-    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`""",
-    (
-        MetricUnitOfObservationType.WORKFLOWS_USER,
-        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-    ): """SELECT
-        state_code,
-        workflows_user_email_address AS email_address,
-        start_date,
-        end_date_exclusive,
-        location_id AS district,
-    FROM
-        `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`
-    WHERE
-        system_type = "SUPERVISION"
-""",
-    (
-        MetricUnitOfObservationType.WORKFLOWS_USER,
-        MetricUnitOfAnalysisType.FACILITY,
-    ): """SELECT
-        state_code,
-        workflows_user_email_address AS email_address,
-        start_date,
-        end_date_exclusive,
-        location_id AS facility,
-    FROM
-        `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`
-    WHERE
-        system_type = "INCARCERATION"
-""",
-}
-
 UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT: Dict[
     MetricUnitOfAnalysisType, str
 ] = {
@@ -382,22 +215,6 @@ FROM
     `{project_id}.reference_views.state_staff_with_names`
 """,
 }
-
-
-def get_assignment_query_for_unit_of_analysis(
-    unit_of_analysis_type: MetricUnitOfAnalysisType,
-    unit_of_observation_type: MetricUnitOfObservationType,
-) -> str:
-    """Returns the assignment query that associates a unit of analysis with its assigned
-    units of observation.
-    """
-    unit_pair_key = (unit_of_observation_type, unit_of_analysis_type)
-    if unit_pair_key not in UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT:
-        raise ValueError(
-            f"No assignment query found for {unit_of_analysis_type=}, "
-            f"{unit_of_observation_type=}."
-        )
-    return UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT[unit_pair_key]
 
 
 def get_static_attributes_query_for_unit_of_analysis(

@@ -24,6 +24,9 @@ from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
     UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS,
     collect_aggregated_metrics_view_builders,
 )
+from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
+    collect_assignment_sessions_view_builders,
+)
 from recidiviz.aggregated_metrics.metric_time_periods import (
     METRIC_TIME_PERIODS_VIEW_BUILDER,
 )
@@ -41,8 +44,9 @@ def get_aggregated_metrics_view_builders() -> Sequence[BigQueryViewBuilder]:
         METRIC_TIME_PERIODS_VIEW_BUILDER,
         SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
         *collect_aggregated_metrics_view_builders(
-            METRICS_BY_POPULATION_TYPE,
-            UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
-            UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS,
+            metrics_by_population_dict=METRICS_BY_POPULATION_TYPE,
+            units_of_analysis_by_population_dict=UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
+            units_of_analysis_to_exclude_from_non_assignment_views=UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS,
         ),
+        *collect_assignment_sessions_view_builders(),
     ]

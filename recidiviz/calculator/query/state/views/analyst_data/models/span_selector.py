@@ -32,6 +32,8 @@ from recidiviz.observations.metric_unit_of_observation_type import (
 from recidiviz.observations.span_type import SpanType
 
 
+# TODO(#23055): Add state_code and person_id filters to support selecting custom
+#  populations
 @attr.define(frozen=True, kw_only=True)
 class SpanSelector:
     """

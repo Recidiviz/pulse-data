@@ -16,18 +16,6 @@
 # =============================================================================
 """Constants related to a MetricPopulationType."""
 from enum import Enum
-from typing import Dict, List
-
-from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
-    SpanSelector,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateSpecializedPurposeForIncarceration,
-)
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
-)
-from recidiviz.observations.span_type import SpanType
 
 
 class MetricPopulationType(Enum):
@@ -46,86 +34,3 @@ class MetricPopulationType(Enum):
     @property
     def population_name_title(self) -> str:
         return self.value.title().replace("_", " ")
-
-
-# TODO(#23055): Add state_code and person_id filters
-
-POPULATION_TYPE_TO_SPAN_SELECTOR_LIST: Dict[
-    MetricPopulationType, List[SpanSelector]
-] = {
-    MetricPopulationType.INCARCERATION: [
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["INCARCERATION"],
-                "compartment_level_2": [
-                    StateSpecializedPurposeForIncarceration.GENERAL.value,
-                    StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD.value,
-                    StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION.value,
-                    StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON.value,
-                    StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY.value,
-                    StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT.value,
-                    StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT.value,
-                ],
-            },
-        ),
-        SpanSelector(
-            span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
-            span_conditions_dict={"system_type": ["INCARCERATION"]},
-        ),
-    ],
-    MetricPopulationType.SUPERVISION: [
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["SUPERVISION"],
-                "compartment_level_2": [
-                    StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT.value,
-                    StateSupervisionPeriodSupervisionType.DUAL.value,
-                    StateSupervisionPeriodSupervisionType.PAROLE.value,
-                    StateSupervisionPeriodSupervisionType.PROBATION.value,
-                    StateSupervisionPeriodSupervisionType.WARRANT_STATUS.value,
-                ],
-            },
-        ),
-        SpanSelector(
-            span_type=SpanType.SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION,
-            span_conditions_dict={},
-        ),
-        SpanSelector(
-            span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
-            span_conditions_dict={"system_type": ["SUPERVISION"]},
-        ),
-    ],
-    MetricPopulationType.JUSTICE_INVOLVED: [
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                # every compartment in the union of incarceration and supervision
-                "compartment_level_1": ["INCARCERATION", "SUPERVISION"],
-                "compartment_level_2": [
-                    StateSpecializedPurposeForIncarceration.GENERAL.value,
-                    StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD.value,
-                    StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION.value,
-                    StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON.value,
-                    StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY.value,
-                    StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT.value,
-                    StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT.value,
-                    StateSupervisionPeriodSupervisionType.DUAL.value,
-                    StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION.value,
-                    StateSupervisionPeriodSupervisionType.PAROLE.value,
-                    StateSupervisionPeriodSupervisionType.PROBATION.value,
-                ],
-            },
-        ),
-        SpanSelector(
-            span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
-            span_conditions_dict={},
-        ),
-    ],
-}
-
-POPULATION_TYPE_TO_SPAN_SELECTOR_BY_UNIT_OF_OBSERVATION = {
-    population_type: {u.unit_of_observation_type: u for u in span_selectors}
-    for population_type, span_selectors in POPULATION_TYPE_TO_SPAN_SELECTOR_LIST.items()
-}
