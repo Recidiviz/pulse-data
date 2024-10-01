@@ -35,6 +35,12 @@ resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
           name       = "cloudsql"
           mount_path = "/cloudsql"
         }
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "768Mi"
+          }
+        }
       }
       volumes {
         name = "cloudsql"
