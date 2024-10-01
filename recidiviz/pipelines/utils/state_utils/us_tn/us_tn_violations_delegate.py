@@ -43,7 +43,7 @@ class UsTnViolationDelegate(StateSpecificViolationDelegate):
         ],
         default_violation_history_window_months: int,
     ) -> DateRange:
-        """For US_TN we look for violation responses with a response_date within 10 days after
+        """For US_TN we look for violation responses with a response_date within 1 month after
         the incarceration period admission date (critical date). We set the lower bound to 24 months so we
         only attach violations that have happened within 24 months since the incarceration period admission date.
         """
@@ -51,7 +51,7 @@ class UsTnViolationDelegate(StateSpecificViolationDelegate):
         violation_window_lower_bound_inclusive = critical_date - relativedelta(
             months=24
         )
-        violation_window_upper_bound_exclusive = critical_date + relativedelta(days=10)
+        violation_window_upper_bound_exclusive = critical_date + relativedelta(months=1)
         return DateRange(
             lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
             upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
