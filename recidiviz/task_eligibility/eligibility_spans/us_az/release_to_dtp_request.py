@@ -35,11 +35,12 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     meets_functional_literacy,
     no_active_felony_detainers,
     no_major_violent_violation_during_incarceration,
+    no_sexual_exploitation_of_children_conviction,
     no_unsatisfactory_program_ratings_within_3_months,
+    not_previous_dtp_participant,
     not_serving_for_dangerous_crimes_against_children,
     not_serving_for_domestic_violence,
     not_serving_for_drug_offense,
-    not_serving_for_sexual_exploitation_of_children,
     time_90_days_before_release,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -66,7 +67,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_serving_for_sexual_offense.VIEW_BUILDER,
         not_serving_for_arson_offense.VIEW_BUILDER,
         not_serving_for_domestic_violence.VIEW_BUILDER,
-        not_serving_for_sexual_exploitation_of_children.VIEW_BUILDER,
+        no_sexual_exploitation_of_children_conviction.VIEW_BUILDER,
         not_serving_for_violent_offense.VIEW_BUILDER,
         no_active_felony_detainers.VIEW_BUILDER,
         custody_level_is_minimum_or_medium.VIEW_BUILDER,
@@ -76,13 +77,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
         not_serving_for_dangerous_crimes_against_children.VIEW_BUILDER,
         OrTaskCriteriaGroup(
-            criteria_name="US_AZ_ENROLLED_OR_MEETS_MANDATORY_LITERACY",
+            criteria_name="US_AZ_ENROLLED_IN_OR_MEETS_MANDATORY_LITERACY",
             sub_criteria_list=[
                 meets_functional_literacy.VIEW_BUILDER,
                 enrolled_in_functional_literacy.VIEW_BUILDER,
             ],
             allowed_duplicate_reasons_keys=[],
         ),
+        not_previous_dtp_participant.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )
