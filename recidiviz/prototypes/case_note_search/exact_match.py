@@ -21,6 +21,7 @@ For sanity checking these functions, you can run this file using:
 pipenv run python -m recidiviz.prototypes.case_note_search.exact_match
 """
 
+import asyncio
 import json
 from typing import Any, Dict, List, Optional
 
@@ -63,7 +64,20 @@ def validate_includes_excludes(includes_excludes: Dict[str, List[str]]) -> None:
             validate_state_codes(values)
 
 
-def exact_match_search(
+def run_query_and_get_dataframe(
+    client: Any, query: str, job_config: bigquery.QueryJobConfig
+) -> pd.DataFrame:
+    """Execute a BigQuery query, retrieve the results, and convert the results into a
+    Dataframe.
+    This function groups together multiple blocking synchronous calls and is meant to be
+    used within asyncio.to_thread.
+    """
+    query_job = client.query(query, job_config=job_config)
+    job_result = query_job.result()
+    return job_result.to_dataframe()
+
+
+async def exact_match_search(
     query_term: str,
     include_filter_conditions: Optional[Dict[str, List[str]]] = None,
     exclude_filter_conditions: Optional[Dict[str, List[str]]] = None,
@@ -130,9 +144,9 @@ def exact_match_search(
         bigquery.ScalarQueryParameter("query_term", "STRING", query_term)
     ]
     job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
-    contains_exact_match_df: pd.DataFrame = client.query(
-        query, job_config=job_config
-    ).to_dataframe()
+    contains_exact_match_df: pd.DataFrame = await asyncio.to_thread(
+        run_query_and_get_dataframe, client=client, query=query, job_config=job_config
+    )
 
     # Return a dict instead of a dataframe object.
     document_id_to_data: Dict = {}
