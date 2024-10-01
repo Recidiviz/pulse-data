@@ -27,10 +27,12 @@ from google.cloud.firestore_v1 import FieldFilter
 from google.cloud.firestore_v1.collection import CollectionReference
 from google.cloud.firestore_v1.document import DocumentReference
 from google.cloud.firestore_v1.query import BaseQuery, CollectionGroup
+from google.cloud.firestore_v1.stream_generator import StreamGenerator
 
 from recidiviz.common.google_cloud.protobuf_builder import ProtoPlusBuilder
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
+from recidiviz.utils.types import assert_type
 
 FIRESTORE_STAGING_PROJECT_ID = "recidiviz-dashboard-staging"
 FIRESTORE_PRODUCTION_PROJECT_ID = "recidiviz-dashboard-production"
@@ -246,7 +248,13 @@ class FirestoreClientImpl(FirestoreClient):
         self, query: Union[CollectionReference, BaseQuery], deleted_so_far: int = 0
     ) -> int:
         batch = self.batch()
-        docs = query.limit(FIRESTORE_DELETE_BATCH_SIZE).stream()
+        # .stream()'s return value in the query interface could return either an AsyncStreamGenerator or StreamGenerator
+        # however, since we do not use the async client, it will always be a StreamGenerator
+        # asserting the type removes a MyPy error for a missing `__iter__` attribute in the loop below
+        docs = assert_type(
+            query.limit(FIRESTORE_DELETE_BATCH_SIZE).stream(),
+            StreamGenerator,
+        )
         deleted_count = 0
 
         for doc in docs:
