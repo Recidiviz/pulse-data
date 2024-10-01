@@ -18,12 +18,10 @@
 from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -31,6 +29,28 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = "US_AZ_ENROLLED_IN_FUNCTIONAL_LITERACY"
 
 _DESCRIPTION = """Describes spans of time when someone is enrolled in a functional literacy program"""
+
+_QUERY_TEMPLATE = """
+    SELECT
+      state_code,
+      person_id,
+      start_date,
+      COALESCE(discharge_date, CAST(NULL AS DATE)) AS end_date,
+      TRUE AS meets_criteria,
+      TO_JSON(STRUCT(
+                start_date AS enrollment_date
+            )) AS reason,
+      start_date AS enrollment_date,
+    FROM
+    #TODO(#33858): Ingest into state task deadline or find some way to view this historically
+      `{project_id}.{normalized_state_dataset}.state_program_assignment`
+    WHERE state_code = 'US_AZ'
+    AND participation_status_raw_text IN ('PARTICIPATING')
+    AND program_id LIKE '%MAN%LIT%'
+    AND start_date != COALESCE(discharge_date, CAST(NULL AS DATE))
+    #TODO(#33737): Look into multiple span cases for residents participating in MAN-LIT programs
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY start_date ASC) = 1
+"""
 
 _REASONS_FIELDS = [
     ReasonsField(
@@ -41,11 +61,13 @@ _REASONS_FIELDS = [
 ]
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_AZ,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
     )
 )
 
