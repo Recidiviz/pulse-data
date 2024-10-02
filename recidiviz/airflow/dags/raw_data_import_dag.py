@@ -100,6 +100,7 @@ from recidiviz.airflow.dags.raw_data.raw_data_branching import (
 from recidiviz.airflow.dags.raw_data.release_resource_lock_sql_query_generator import (
     ReleaseRawDataResourceLockSqlQueryGenerator,
 )
+from recidiviz.airflow.dags.raw_data.sequencing_tasks import has_files_to_import
 from recidiviz.airflow.dags.raw_data.write_file_import_start_sql_query_generator import (
     WriteImportStartCloudSqlGenerator,
 )
@@ -205,6 +206,14 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
+        should_run_import = has_files_to_import(
+            get_all_unprocessed_bq_file_metadata.output
+        )
+
+        # we set this explicitly here, and then also set should_run_import as upstream of
+        # write_import_start and serialized_import_ready_files further down in the DAG
+        get_all_unprocessed_bq_file_metadata >> should_run_import
+
         write_import_start = CloudSqlQueryOperator(
             task_id="write_import_start",
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
@@ -230,6 +239,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             file_ids_to_headers=file_headers[FILE_IDS_TO_HEADERS],
         )
 
+        # sequencing if we have files to import
         (
             list_normalized_unprocessed_gcs_file_paths
             >> get_all_unprocessed_gcs_file_metadata
@@ -298,11 +308,17 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # execution layer: celery
         # outputs: [ AppendReadyFile ], [ AppendSummary ]
 
-        # trigger rule is ALL_DONE
         serialized_import_ready_files = coalesce_import_ready_files(
             files_to_process[IMPORT_READY_FILES],
             pre_import_normalization_result,
         )
+
+        # if we didn't have files to import, let's cascade our skip down through ALL_SUCCESS
+        # trigger rules and override downstream ALL_DONE trigger rules
+        should_run_import >> [
+            write_import_start,
+            serialized_import_ready_files,
+        ]
 
         with TaskGroup("big_query_load") as big_query_load:
             # load paths into temp table
@@ -427,6 +443,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
     return [
         raw_data_branch,
         ensure_release_resource_locks_release_if_acquired,
+        serialized_import_ready_files,
         clean_and_storage_jobs,
     ]
 

@@ -181,6 +181,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             ["get_all_unprocessed_gcs_file_metadata"],
             ["get_all_unprocessed_bq_file_metadata"],
             [
+                "has_files_to_import",
                 "write_import_start",
                 "coalesce_results_and_errors",
                 "read_and_verify_column_headers",
@@ -261,7 +262,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         )
         ordered_step_4_task_ids = [
             ["coalesce_import_ready_files"],
-            ["load_and_prep_paths_for_batch"],
+            ["branch_end", "load_and_prep_paths_for_batch"],
             [
                 "coalesce_results_and_errors",
                 "raise_load_prep_errors",
@@ -357,6 +358,16 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
     metas = [OperationsBase]
     conn_id = "operations_postgres_conn_id"
 
+    operations_registrations_tasks_ids = [
+        "raw_data_branching.us_xx_primary_import_branch.list_normalized_unprocessed_gcs_file_paths",
+        "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_gcs_file_metadata",
+        "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_bq_file_metadata",
+        "raw_data_branching.us_xx_primary_import_branch.read_and_verify_column_headers",
+        "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
+        "raw_data_branching.us_xx_primary_import_branch.write_import_start",
+        "raw_data_branching.us_xx_primary_import_branch.has_files_to_import",
+    ]
+
     def setUp(self) -> None:
         super().setUp()
         self.dag_id = get_raw_data_import_dag_id(_PROJECT_ID)
@@ -429,13 +440,17 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         self.header_reader_patcher.stop()
         super().tearDown()
 
-    def _create_dag(self) -> DAG:
+    def _create_operations_registration_only_dag(self) -> DAG:
         # pylint: disable=import-outside-toplevel
         from recidiviz.airflow.dags.raw_data_import_dag import (
             create_raw_data_import_dag,
         )
 
-        return create_raw_data_import_dag()
+        return create_raw_data_import_dag().partial_subset(
+            task_ids_or_regex=self.operations_registrations_tasks_ids,
+            include_upstream=False,
+            include_downstream=False,
+        )
 
     def test_no_chunked_files(self) -> None:
         self.list_normalized_unprocessed_files_mock.side_effect = fake_operator_with_return_value(
@@ -450,22 +465,9 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
             region_code="us_xx", region_module=fake_regions
         )
 
-        step_2_only_dag = self._create_dag().partial_subset(
-            task_ids_or_regex=[
-                "raw_data_branching.us_xx_primary_import_branch.list_normalized_unprocessed_gcs_file_paths",
-                "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_gcs_file_metadata",
-                "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_bq_file_metadata",
-                "raw_data_branching.us_xx_primary_import_branch.read_and_verify_column_headers",
-                "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
-                "raw_data_branching.us_xx_primary_import_branch.write_import_start",
-            ],
-            include_upstream=False,
-            include_downstream=False,
-        )
-
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
-                step_2_only_dag,
+                self._create_operations_registration_only_dag(),
                 session=session,
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[],  # none!
@@ -651,22 +653,9 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         )
         self.header_reader_mock.return_value = ["col1", "col2", "col3"]
 
-        step_2_only_dag = self._create_dag().partial_subset(
-            task_ids_or_regex=[
-                "raw_data_branching.us_xx_primary_import_branch.list_normalized_unprocessed_gcs_file_paths",
-                "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_gcs_file_metadata",
-                "raw_data_branching.us_xx_primary_import_branch.get_all_unprocessed_bq_file_metadata",
-                "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
-                "raw_data_branching.us_xx_primary_import_branch.write_import_start",
-                "raw_data_branching.us_xx_primary_import_branch.read_and_verify_column_headers",
-            ],
-            include_upstream=False,
-            include_downstream=False,
-        )
-
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
-                step_2_only_dag,
+                self._create_operations_registration_only_dag(),
                 session=session,
                 expected_failure_task_id_regexes=[],  # none!
                 expected_skipped_task_id_regexes=[],  # none!
@@ -2578,6 +2567,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
+                    r".*_primary_import_branch\.has_files_to_import",
                     r".*_primary_import_branch\.write_import_start",
                     r".*_primary_import_branch\.read_and_verify_column_headers",
                     r".*_primary_import_branch\.raise_header_verification_errors",
@@ -2623,6 +2613,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     # downstream failures
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
+                    r".*_primary_import_branch\.has_files_to_import",
                     r".*_primary_import_branch\.write_import_start",
                     r".*_primary_import_branch\.read_and_verify_column_headers",
                     r".*_primary_import_branch\.raise_header_verification_errors",
@@ -2637,6 +2628,39 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ],
             )
             # failed state will only happen when resource releasing failed
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            for lock_released in session.execute(
+                text("SELECT released FROM direct_ingest_raw_data_resource_lock")
+            ):
+                assert lock_released[0]
+
+    def test_no_files_to_import(self) -> None:
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                expected_failure_task_id_regexes=[],  # none!
+                expected_skipped_task_id_regexes=[
+                    # step 2 tasks
+                    "raw_data_branching.us_xx_primary_import_branch.write_import_start",
+                    "raw_data_branching.us_xx_primary_import_branch.read_and_verify_column_headers",
+                    "raw_data_branching.us_xx_primary_import_branch.raise_header_verification_errors",
+                    "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
+                    # step 3, 4 all skipped
+                    r"raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.*",
+                    "raw_data_branching.us_xx_primary_import_branch.coalesce_import_ready_files",
+                    r"raw_data_branching.us_xx_primary_import_branch.big_query_load.*",
+                    # clean still runs, we just don't have any metadata to write
+                    "raw_data_branching.us_xx_primary_import_branch.cleanup_and_storage.write_import_completions",
+                    "raw_data_branching.us_xx_primary_import_branch.cleanup_and_storage.write_file_processed_time",
+                    # other branches
+                    r"raw_data_branching.us_ll_primary_import_branch.*",
+                    r".*_secondary_import_branch\..*",
+                ],
+            )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
             for lock_released in session.execute(
@@ -3076,7 +3100,12 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 expected_skipped_task_id_regexes=[
                     r".*_secondary_import_branch\..*",
                     # us_ll primary had no files
-                    r"raw_data_branching\.us_ll_primary_import_branch\.pre_import_normalization\.(?!generate_file_chunking_pod_arguments)",
+                    "raw_data_branching.us_ll_primary_import_branch.write_import_start",
+                    "raw_data_branching.us_ll_primary_import_branch.read_and_verify_column_headers",
+                    "raw_data_branching.us_ll_primary_import_branch.raise_header_verification_errors",
+                    "raw_data_branching.us_ll_primary_import_branch.split_by_pre_import_normalization_type",
+                    r"raw_data_branching\.us_ll_primary_import_branch\.pre_import_normalization\..*",
+                    "raw_data_branching.us_ll_primary_import_branch.coalesce_import_ready_files",
                     r"raw_data_branching\.us_ll_primary_import_branch\.big_query_load\..*",
                     r"raw_data_branching\.us_ll_primary_import_branch\.cleanup_and_storage\.write_import_completions",
                     r"raw_data_branching\.us_ll_primary_import_branch\.cleanup_and_storage\.write_file_processed_time",
