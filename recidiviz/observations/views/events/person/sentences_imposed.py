@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
+"""View with sentences imposed"""
+from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summary import (
+    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 )
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
@@ -25,17 +25,23 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = "Sentences imposed"
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+    event_type=EventType.SENTENCES_IMPOSED,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
+    sql_source=SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.table_for_query,
     attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
+        "max_sentence_imposed_group_length_days",
+        "projected_completion_date_max",
+        "projected_completion_date_min",
+        "any_is_drug_uniform",
+        "any_is_violent_uniform",
+        "most_severe_classification_type",
+        "most_severe_classification_subtype",
+        "most_severe_description",
     ],
-    event_date_col="start_date",
+    event_date_col="date_imposed",
 )
 
 if __name__ == "__main__":

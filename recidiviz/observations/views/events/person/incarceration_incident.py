@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
+"""View with incarceration incidents"""
+from recidiviz.calculator.query.state.views.analyst_data.incarceration_incidents_preprocessed import (
+    INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
@@ -25,17 +25,20 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = "Incarceration incidents"
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+    event_type=EventType.INCARCERATION_INCIDENT,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
+    sql_source=INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER.table_for_query,
     attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
+        "incident_class",
+        "injury_level",
+        "disposition",
+        "incident_type",
+        "incident_type_raw_text",
     ],
-    event_date_col="start_date",
+    event_date_col="incident_date",
 )
 
 if __name__ == "__main__":

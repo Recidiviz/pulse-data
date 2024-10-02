@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with spans of time between assessment scores of the same type"""
+"""View with non-overlapping spans of time over which a person has a certain housing
+type, where all solitary confinement housing types are collapsed.
+"""
 
 from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
@@ -23,32 +25,31 @@ from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Spans of time between assessment scores of the same type"
+_VIEW_DESCRIPTION = (
+    "Non-overlapping spans of time over which a person has a certain housing type, "
+    "where all solitary confinement housing types are collapsed."
+)
 
 _SOURCE_DATA_QUERY_TEMPLATE = """
-SELECT 
+SELECT
     state_code,
     person_id,
-    assessment_date,
-    score_end_date_exclusive,
-    assessment_type,
-    assessment_score,
-    assessment_level
+    housing_unit_type_collapsed_solitary,
+    start_date,
+    end_date_exclusive
 FROM
-    `{project_id}.sessions.assessment_score_sessions_materialized`
+    `{project_id}.sessions.housing_unit_type_non_protective_custody_solitary_sessions_materialized`
 WHERE
-    assessment_date IS NOT NULL
-    AND assessment_type IS NOT NULL
-    AND assessment_score IS NOT NULL
+    housing_unit_type_collapsed_solitary IS NOT NULL
 """
 
 VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBuilder(
-    span_type=SpanType.ASSESSMENT_SCORE_SESSION,
+    span_type=SpanType.HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSION,
     description=_VIEW_DESCRIPTION,
     sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
-    attribute_cols=["assessment_type", "assessment_score", "assessment_level"],
-    span_start_date_col="assessment_date",
-    span_end_date_col="score_end_date_exclusive",
+    attribute_cols=["housing_unit_type_collapsed_solitary"],
+    span_start_date_col="start_date",
+    span_end_date_col="end_date_exclusive",
 )
 
 if __name__ == "__main__":

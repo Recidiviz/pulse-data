@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
-)
+"""View with supervision contacts, keeping one contact per person-day-event_attributes.
+"""
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
@@ -25,17 +25,22 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = (
+    "Supervision contacts, keeping one contact per person-day-event_attributes"
+)
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+    event_type=EventType.SUPERVISION_CONTACT,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
+    sql_source=BigQueryAddress(
+        dataset_id=NORMALIZED_STATE_DATASET, table_id="state_supervision_contact"
+    ),
     attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
+        "contact_type",
+        "location",
+        "status",
     ],
-    event_date_col="start_date",
+    event_date_col="contact_date",
 )
 
 if __name__ == "__main__":

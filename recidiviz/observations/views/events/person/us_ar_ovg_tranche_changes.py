@@ -14,10 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
-)
+"""View with US_AR OVG Points Tranche Changes"""
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
@@ -25,16 +22,33 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = "US_AR OVG Points Tranche Changes"
+
+_SOURCE_DATA_QUERY_TEMPLATE = """
+-- TODO(#31020): Revisit moving some of this information into upstream ingest / creating a state agnostic view
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    points,
+    tranche,
+    IF(tranche > previous_tranche, "INCREASE", "DECREASE") AS change_type
+FROM (
+    SELECT s.*, 
+            s_lag.tranche AS previous_tranche,
+    FROM `{project_id}.analyst_data.us_ar_ovg_timeline_materialized` s
+    LEFT JOIN `{project_id}.analyst_data.us_ar_ovg_timeline_materialized` s_lag
+        ON s.person_id = s_lag.person_id
+        AND s.start_date = s_lag.end_date
+)
+WHERE tranche != previous_tranche
+"""
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+    event_type=EventType.US_AR_OVG_TRANCHE_CHANGES,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
-    attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
-    ],
+    sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
+    attribute_cols=["points", "tranche", "change_type"],
     event_date_col="start_date",
 )
 

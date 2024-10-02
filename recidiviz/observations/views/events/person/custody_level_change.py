@@ -14,10 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
-)
+"""View with custody level changes"""
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
@@ -25,15 +22,38 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = "Custody level changes"
+
+_SOURCE_DATA_QUERY_TEMPLATE = """
+SELECT 
+    cl.state_code,
+    cl.person_id,
+    cl.custody_level_num_change,
+    months_between_assessment_due_and_downgrade,
+    IF(custody_downgrade > 0, "DOWNGRADE", "UPGRADE") AS change_type,
+    cl.previous_custody_level,
+    cl.custody_level AS new_custody_level,
+    cl.start_date
+FROM
+    `{project_id}.sessions.custody_level_sessions_materialized` cl
+LEFT JOIN `{project_id}.analyst_data.number_months_between_custody_downgrade_and_assessment_due_materialized` n
+    ON cl.person_id = n.person_id
+    AND cl.state_code = n.state_code
+    AND cl.custody_level_session_id = n.custody_level_session_id
+WHERE
+    custody_downgrade > 0 OR custody_upgrade > 0
+"""
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+    event_type=EventType.CUSTODY_LEVEL_CHANGE,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
+    sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
     attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
+        "change_type",
+        "previous_custody_level",
+        "new_custody_level",
+        "custody_level_num_change",
+        "months_between_assessment_due_and_downgrade",
     ],
     event_date_col="start_date",
 )

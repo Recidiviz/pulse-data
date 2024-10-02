@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
-)
+"""View with transitions to a new housing unit type - end of housing unit type
+session.
+"""
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
@@ -25,17 +24,27 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = (
+    "Transitions to a new housing unit type - end of housing unit type session"
+)
+
+_SOURCE_DATA_QUERY_TEMPLATE = """
+SELECT 
+    state_code,
+    person_id,
+    housing_unit_type,
+    DATE_DIFF(end_date_exclusive, start_date, DAY) AS length_of_stay,
+    end_date_exclusive
+FROM `{project_id}.sessions.housing_unit_type_sessions_materialized`
+WHERE end_date_exclusive IS NOT NULL
+"""
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+    event_type=EventType.HOUSING_UNIT_TYPE_END,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
-    attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
-    ],
-    event_date_col="start_date",
+    sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
+    attribute_cols=["housing_unit_type", "length_of_stay"],
+    event_date_col="end_date_exclusive",
 )
 
 if __name__ == "__main__":

@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with spans of time between assessment scores of the same type"""
+"""View with spans between completed contact dates and the subsequent contact date to
+ identify the most recent completed contact"""
 
 from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
@@ -23,32 +24,35 @@ from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Spans of time between assessment scores of the same type"
-
+_VIEW_DESCRIPTION = (
+    "Spans between completed contact dates and the subsequent contact date to help "
+    "identify the most recent completed contact"
+)
 _SOURCE_DATA_QUERY_TEMPLATE = """
-SELECT 
+SELECT
     state_code,
     person_id,
-    assessment_date,
-    score_end_date_exclusive,
-    assessment_type,
-    assessment_score,
-    assessment_level
-FROM
-    `{project_id}.sessions.assessment_score_sessions_materialized`
-WHERE
-    assessment_date IS NOT NULL
-    AND assessment_type IS NOT NULL
-    AND assessment_score IS NOT NULL
+    contact_date,
+    LEAD(contact_date) OVER (
+        PARTITION BY person_id ORDER BY contact_date
+    ) AS next_completed_contact_date
+FROM (
+    SELECT DISTINCT
+        state_code,
+        person_id,
+        contact_date
+    FROM `{project_id}.normalized_state.state_supervision_contact`
+    WHERE status = "COMPLETED"
+)
 """
 
 VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBuilder(
-    span_type=SpanType.ASSESSMENT_SCORE_SESSION,
+    span_type=SpanType.COMPLETED_CONTACT_SESSION,
     description=_VIEW_DESCRIPTION,
     sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
-    attribute_cols=["assessment_type", "assessment_score", "assessment_level"],
-    span_start_date_col="assessment_date",
-    span_end_date_col="score_end_date_exclusive",
+    attribute_cols=[],
+    span_start_date_col="contact_date",
+    span_end_date_col="next_completed_contact_date",
 )
 
 if __name__ == "__main__":

@@ -14,10 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
-)
+"""View with employment status changes"""
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
@@ -25,17 +22,30 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = "Employment status changes"
+
+_SOURCE_DATA_QUERY_TEMPLATE = """
+SELECT
+    state_code,
+    person_id,
+    is_employed,
+    employment_status_start_date
+FROM `{project_id}.sessions.supervision_employment_status_sessions_materialized`
+QUALIFY
+    # only keep transitions where the person gained or lost employment
+    # edge case: treat jobs at supervision start as employment gains
+    # but no job at supervision start is not an employment loss
+    is_employed != IFNULL(LAG(is_employed) OVER (
+        PARTITION BY person_id ORDER BY employment_status_start_date
+    ), FALSE)
+"""
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+    event_type=EventType.EMPLOYMENT_STATUS_CHANGE,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
-    attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
-    ],
-    event_date_col="start_date",
+    sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
+    attribute_cols=["is_employed"],
+    event_date_col="employment_status_start_date",
 )
 
 if __name__ == "__main__":

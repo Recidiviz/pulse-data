@@ -14,28 +14,31 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
+"""View with person days of justice involvement weighted by type"""
+from recidiviz.calculator.query.state.views.sessions.justice_impact_sessions import (
+    JUSTICE_IMPACT_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.observations.event_observation_big_query_view_builder import (
-    EventObservationBigQueryViewBuilder,
+from recidiviz.observations.span_observation_big_query_view_builder import (
+    SpanObservationBigQueryViewBuilder,
 )
-from recidiviz.observations.event_type import EventType
+from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = "Person days of justice involvement weighted by type"
 
-VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBuilder(
+    span_type=SpanType.JUSTICE_IMPACT_SESSION,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
+    sql_source=JUSTICE_IMPACT_SESSIONS_VIEW_BUILDER.table_for_query,
     attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
+        "justice_impact_type",
+        "justice_impact_weight",
+        "unweighted_days_justice_impacted",
+        "weighted_days_justice_impacted",
     ],
-    event_date_col="start_date",
+    span_start_date_col="start_date",
+    span_end_date_col="end_date_exclusive",
 )
 
 if __name__ == "__main__":

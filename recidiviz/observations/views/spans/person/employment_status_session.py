@@ -14,28 +14,41 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
+"""View with non-overlapping spans of time over which a person has a certain employment
+status.
+"""
+
+from recidiviz.observations.span_observation_big_query_view_builder import (
+    SpanObservationBigQueryViewBuilder,
 )
-from recidiviz.observations.event_observation_big_query_view_builder import (
-    EventObservationBigQueryViewBuilder,
-)
-from recidiviz.observations.event_type import EventType
+from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = (
+    "Non-overlapping spans of time over which a person has a certain employment status"
+)
 
-VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+_SOURCE_DATA_QUERY_TEMPLATE = """
+SELECT
+    state_code,
+    person_id,
+    is_employed,
+    employment_status_start_date,
+    employment_status_end_date_exclusive
+FROM
+    `{project_id}.sessions.supervision_employment_status_sessions_materialized`
+WHERE
+    employment_status_start_date IS NOT NULL
+"""
+
+VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBuilder(
+    span_type=SpanType.EMPLOYMENT_STATUS_SESSION,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
-    attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
-    ],
-    event_date_col="start_date",
+    sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
+    attribute_cols=["is_employed"],
+    span_start_date_col="employment_status_start_date",
+    span_end_date_col="employment_status_end_date_exclusive",
 )
 
 if __name__ == "__main__":

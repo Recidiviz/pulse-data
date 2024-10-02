@@ -14,28 +14,37 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
+"""View with US_AR spans of time between OVG points changing"""
+
+from recidiviz.observations.span_observation_big_query_view_builder import (
+    SpanObservationBigQueryViewBuilder,
 )
-from recidiviz.observations.event_observation_big_query_view_builder import (
-    EventObservationBigQueryViewBuilder,
-)
-from recidiviz.observations.event_type import EventType
+from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = "US_AR Spans of time between OVG points changing"
 
-VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+_SOURCE_DATA_QUERY_TEMPLATE = """
+-- TODO(#31020): Revisit moving some of this information into upstream ingest / creating a state agnostic view
+SELECT
+    state_code,
+    person_id,
+    points,
+    points > 0 AS has_points,
+    start_date,
+    end_date    
+FROM
+    `{project_id}.analyst_data.us_ar_ovg_timeline_materialized`
+"""
+
+VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBuilder(
+    span_type=SpanType.US_AR_OVG_SESSIONS,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
-    attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
-    ],
-    event_date_col="start_date",
+    sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
+    attribute_cols=["points", "has_points"],
+    span_start_date_col="start_date",
+    span_end_date_col="end_date",
 )
 
 if __name__ == "__main__":

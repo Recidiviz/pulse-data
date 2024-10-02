@@ -14,8 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with spans of time between assessment scores of the same type"""
-
+"""View with non-overlapping spans unique on all population attributes"""
+from recidiviz.calculator.query.state.views.sessions.compartment_sub_sessions import (
+    COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
 )
@@ -23,32 +25,37 @@ from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Spans of time between assessment scores of the same type"
-
-_SOURCE_DATA_QUERY_TEMPLATE = """
-SELECT 
-    state_code,
-    person_id,
-    assessment_date,
-    score_end_date_exclusive,
-    assessment_type,
-    assessment_score,
-    assessment_level
-FROM
-    `{project_id}.sessions.assessment_score_sessions_materialized`
-WHERE
-    assessment_date IS NOT NULL
-    AND assessment_type IS NOT NULL
-    AND assessment_score IS NOT NULL
-"""
+_VIEW_DESCRIPTION = "Non-overlapping spans unique on all population attributes"
 
 VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBuilder(
-    span_type=SpanType.ASSESSMENT_SCORE_SESSION,
+    span_type=SpanType.COMPARTMENT_SUB_SESSION,
     description=_VIEW_DESCRIPTION,
-    sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
-    attribute_cols=["assessment_type", "assessment_score", "assessment_level"],
-    span_start_date_col="assessment_date",
-    span_end_date_col="score_end_date_exclusive",
+    sql_source=COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER.table_for_query,
+    attribute_cols=[
+        "compartment_level_1",
+        "compartment_level_2",
+        "compartment_location",
+        "facility",
+        "facility_name",
+        "supervision_office",
+        "supervision_office_name",
+        "supervision_district",
+        "supervision_district_name",
+        "supervision_region_name",
+        "correctional_level",
+        "correctional_level_raw_text",
+        "housing_unit",
+        "housing_unit_category",
+        "housing_unit_type",
+        "housing_unit_type_raw_text",
+        "case_type",
+        "prioritized_race_or_ethnicity",
+        "gender",
+        "age",
+        "assessment_score",
+    ],
+    span_start_date_col="start_date",
+    span_end_date_col="end_date_exclusive",
 )
 
 if __name__ == "__main__":
