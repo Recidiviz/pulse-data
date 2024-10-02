@@ -447,30 +447,6 @@ def _check_for_invalid_ignores(
         sys.exit(1)
 
 
-def _get_all_addresses_between_start_and_end_collections(
-    all_views_dag_walker: BigQueryViewDagWalker,
-    start_addresses: Set[BigQueryAddress],
-    end_addresses: Set[BigQueryAddress],
-) -> Set[BigQueryAddress]:
-    """Given a set of addresses to start from and a set of addresses to end at, returns
-    the set of addresses including the start addresses, end addresses, and any views in
-    a dependency chain between the between start and end addresses.
-    """
-
-    start_views = all_views_dag_walker.views_for_addresses(list(start_addresses))
-    start_descendants = {
-        v.address
-        for v in all_views_dag_walker.get_descendants_sub_dag(start_views).views
-    }
-
-    end_views = all_views_dag_walker.views_for_addresses(list(end_addresses))
-    end_ancestors = {
-        v.address for v in all_views_dag_walker.get_ancestors_sub_dag(end_views).views
-    }
-
-    return end_ancestors.intersection(start_descendants)
-
-
 def _load_views_changed_on_branch_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
@@ -554,10 +530,12 @@ def _load_views_changed_on_branch_to_sandbox(
             "load_up_to_addresses to be set."
         )
 
-    addresses_to_load = _get_all_addresses_between_start_and_end_collections(
-        full_dag_walker,
-        start_addresses=changed_views_to_load,
-        end_addresses=end_addresses,
+    addresses_to_load = full_dag_walker.get_all_node_addresses_between_start_and_end_collections(
+        # TODO(#33733): Add source table overrides here when we allow source table
+        #  overrides.
+        start_source_addresses=set(),
+        start_node_addresses=changed_views_to_load,
+        end_node_addresses=end_addresses,
     )
     collected_builders = [
         vb for vb in view_builders_in_full_dag if vb.address in addresses_to_load

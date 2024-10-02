@@ -997,6 +997,115 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             },
         )
 
+    def test_get_all_node_addresses_between_start_and_end_collections(self) -> None:
+        # DAG Walker for views with the following structure
+        #  source table 1    source table 2
+        #             \       /
+        #              1     2
+        #               \   /
+        #                 3
+        #               /   \
+        #              4     5
+        all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+
+        source_table_1_address = BigQueryAddress(
+            dataset_id="source_dataset", table_id="source_table"
+        )
+        source_table_2_address = BigQueryAddress(
+            dataset_id="source_dataset", table_id="source_table_2"
+        )
+        view_1_address = self.x_shaped_dag_views_list[0].address
+        view_2_address = self.x_shaped_dag_views_list[1].address
+        view_3_address = self.x_shaped_dag_views_list[2].address
+        view_4_address = self.x_shaped_dag_views_list[3].address
+        view_5_address = self.x_shaped_dag_views_list[4].address
+
+        addresses = all_views_dag_walker.get_all_node_addresses_between_start_and_end_collections(
+            start_source_addresses=set(),
+            start_node_addresses={view_2_address},
+            end_node_addresses={view_5_address},
+        )
+
+        self.assertEqual({view_2_address, view_3_address, view_5_address}, addresses)
+
+        addresses = all_views_dag_walker.get_all_node_addresses_between_start_and_end_collections(
+            start_source_addresses=set(),
+            start_node_addresses={view_2_address},
+            end_node_addresses={view_2_address},
+        )
+
+        self.assertEqual({view_2_address}, addresses)
+
+        addresses = all_views_dag_walker.get_all_node_addresses_between_start_and_end_collections(
+            start_source_addresses={source_table_1_address},
+            start_node_addresses={view_2_address},
+            end_node_addresses={view_3_address},
+        )
+
+        self.assertEqual({view_1_address, view_2_address, view_3_address}, addresses)
+
+        addresses = all_views_dag_walker.get_all_node_addresses_between_start_and_end_collections(
+            start_source_addresses=set(),
+            # View 4 is not a descendant of any of the end addresses, but it should
+            # still be included.
+            start_node_addresses={view_4_address, view_5_address},
+            end_node_addresses={view_5_address},
+        )
+
+        self.assertEqual({view_4_address, view_5_address}, addresses)
+
+        addresses = all_views_dag_walker.get_all_node_addresses_between_start_and_end_collections(
+            start_source_addresses={source_table_1_address, source_table_2_address},
+            start_node_addresses=set(),
+            end_node_addresses={view_4_address, view_5_address},
+        )
+
+        self.assertEqual(
+            {
+                view_1_address,
+                view_2_address,
+                view_3_address,
+                view_4_address,
+                view_5_address,
+            },
+            addresses,
+        )
+
+        addresses = all_views_dag_walker.get_all_node_addresses_between_start_and_end_collections(
+            start_source_addresses=set(),
+            start_node_addresses={view_4_address},
+            # End address that is upstream of all start addresses should still be
+            # included.
+            end_node_addresses={view_1_address},
+        )
+
+        self.assertEqual(
+            {
+                view_1_address,
+                view_4_address,
+            },
+            addresses,
+        )
+
+        # If only source table addresses are specified, everything view that is a direct
+        # child of a source table should be loaded.
+        addresses = all_views_dag_walker.get_all_node_addresses_between_start_and_end_collections(
+            start_source_addresses={source_table_1_address},
+            start_node_addresses=set(),
+            end_node_addresses=set(),
+        )
+
+        self.assertEqual({view_1_address}, addresses)
+
+        # Empty case
+        addresses = all_views_dag_walker.get_all_node_addresses_between_start_and_end_collections(
+            start_source_addresses=set(),
+            start_node_addresses=set(),
+            end_node_addresses=set(),
+        )
+
+        self.assertEqual(set(), addresses)
+
     def test_dag_perf_config(self) -> None:
         walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
 
