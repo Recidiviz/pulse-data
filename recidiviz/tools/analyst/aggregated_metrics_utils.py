@@ -411,7 +411,7 @@ def get_person_events(
                         s.officer_id,
                         s.assignment_date,
                         s.end_date_exclusive,
-                    FROM `analyst_data.person_events_materialized` e
+                    FROM `observations__person_event.all_person_events_materialized` e
                     INNER JOIN `aggregated_metrics.supervision_officer_metrics_person_assignment_sessions_materialized` s
                         ON e.person_id = s.person_id
                         AND (e.event_date between s.assignment_date and COALESCE(s.end_date,'9999-01-01'))

@@ -41,10 +41,12 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
 )
+from recidiviz.observations.dataset_config import dataset_for_observation_type_cls
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+from recidiviz.observations.span_type import SpanType
 
 
 def get_period_span_time_specific_cte(
@@ -98,6 +100,11 @@ def get_period_span_time_specific_cte(
         unit_of_analysis_join_columns_str = (
             unit_of_analysis.get_primary_key_columns_query_string()
         )
+
+        spans_dataset_id = dataset_for_observation_type_cls(
+            unit_of_observation=unit_of_observation.type, observation_type_cls=SpanType
+        )
+
         metric_subquery = f"""
 SELECT
     {unit_of_analysis_join_columns_str},
@@ -116,7 +123,7 @@ FROM (
         span,
         span_attributes,
     FROM
-        `{{project_id}}.analyst_data.{unit_of_observation.type.value.lower()}_spans_materialized` AS spans
+        `{{project_id}}.{spans_dataset_id}.all_{unit_of_observation.type.value.lower()}_spans_materialized` AS spans
     INNER JOIN
         `{{project_id}}.aggregated_metrics.{population_type.population_name_short}_{unit_of_analysis.type.short_name}_metrics_{unit_of_observation.type.short_name}_assignment_sessions_materialized` assign
     ON

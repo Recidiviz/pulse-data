@@ -25,6 +25,16 @@ from unittest.mock import MagicMock, patch
 import sqlglot
 from parameterized import parameterized
 
+from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
+    METRICS_BY_POPULATION_TYPE,
+    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
+    UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS,
+    collect_aggregated_metrics_view_builders,
+)
+from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
+from recidiviz.aggregated_metrics.impact_reports_aggregated_metrics_view_collector import (
+    get_impact_reports_aggregated_metrics_view_builders,
+)
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
@@ -40,8 +50,23 @@ from recidiviz.calculator.query.state.views.analyst_data.all_task_eligibility_sp
 from recidiviz.calculator.query.state.views.analyst_data.all_task_type_ineligible_criteria_sessions import (
     ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+    MetricPopulationType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events import (
+    WORKFLOWS_PERSON_EVENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.outliers.outliers_views import (
+    INSIGHTS_AGGREGATED_METRICS_VIEW_BUILDERS,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
+    SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
@@ -323,6 +348,31 @@ class ViewDagInvariantTests(unittest.TestCase):
                 b.address: b for b in all_deployed_builders
             }
 
+    # TODO(#32921): We can delete this test when we delete the legacy views
+    def test_no_legacy_observations_views_references(self) -> None:
+        legacy_observations_views = {
+            BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="officer_spans"),
+            BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_events"),
+            BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_spans"),
+            BigQueryAddress(
+                dataset_id=ANALYST_VIEWS_DATASET, table_id="workflows_user_events"
+            ),
+            BigQueryAddress(
+                dataset_id=ANALYST_VIEWS_DATASET, table_id="workflows_user_spans"
+            ),
+        }
+
+        for node in self.dag_walker.nodes_by_address.values():
+            bad_parents = node.parent_node_addresses.intersection(
+                legacy_observations_views
+            )
+            if bad_parents:
+                raise ValueError(
+                    f"Found view [{node.view.address.to_str()}] referencing legacy "
+                    f"view(s) {[a.to_str() for a in bad_parents]}. Use a view in the "
+                    f"new observations__* datasets instead."
+                )
+
     def test_no_expensive_union_all_view_queries(self) -> None:
         """Test that fails when a view is doing an overly expensive query of a UNION ALL
         view when it could instead be querying one of the component parent views.
@@ -338,7 +388,6 @@ class ViewDagInvariantTests(unittest.TestCase):
         allowed_union_all_view_children = {
             # TODO(#32921): Delete person_events and person_spans from this list when we
             #  delete those views.
-            # These views produce generic analysis based on all TES spans.
             BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="officer_spans"),
             BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_events"),
             BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_spans"),
@@ -348,6 +397,52 @@ class ViewDagInvariantTests(unittest.TestCase):
             BigQueryAddress(
                 dataset_id=ANALYST_VIEWS_DATASET, table_id="workflows_user_spans"
             ),
+            # TODO(#29291): Refactor aggregated metrics to query observation-specific
+            #  views directly rather than the all_* observation views.
+            *{
+                b.address
+                for b in (
+                    collect_aggregated_metrics_view_builders(
+                        metrics_by_population_dict=METRICS_BY_POPULATION_TYPE,
+                        units_of_analysis_by_population_dict=UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
+                        units_of_analysis_to_exclude_from_non_assignment_views=UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS,
+                    )
+                    + get_impact_reports_aggregated_metrics_view_builders()
+                    + INSIGHTS_AGGREGATED_METRICS_VIEW_BUILDERS
+                )
+                if b.address
+                not in {
+                    # These views are all generated by joining together other
+                    # aggregated metrics views and don't query
+                    # UnionAlLBigQueryViewBuilder views directly.
+                    BigQueryAddress.from_str(
+                        "outliers_views.supervision_insights_caseload_category_aggregated_metrics"
+                    ),
+                    *{
+                        BigQueryAddress(
+                            dataset_id=AGGREGATED_METRICS_DATASET_ID,
+                            table_id=f"{p.population_name_short}_{u.short_name}_misc_aggregated_metrics",
+                        )
+                        for p in MetricPopulationType
+                        for u in MetricUnitOfAnalysisType
+                    },
+                    *{
+                        BigQueryAddress(
+                            dataset_id=AGGREGATED_METRICS_DATASET_ID,
+                            table_id=f"{p.population_name_short}_{u.short_name}_aggregated_metrics",
+                        )
+                        for p in MetricPopulationType
+                        for u in MetricUnitOfAnalysisType
+                    },
+                }
+            },
+            # TODO(#29291): Refactor to query observation-specific views rather than
+            #  the all_person_events view.
+            SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address,
+            # TODO(#29291): Refactor to query observation-specific views rather than
+            #  the all_workflows_user_events view.
+            WORKFLOWS_PERSON_EVENTS_VIEW_BUILDER.address,
+            # These views produce generic analysis based on all TES spans.
             CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
             WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,
             # TODO(#29291): Revisit whether we need to have these observations views
@@ -402,6 +497,17 @@ class ViewDagInvariantTests(unittest.TestCase):
                     f"If [{child_address.to_str()}] is doing generic, state-agnostic "
                     f"analysis of all data in [{parent_address.to_str()}], you may add "
                     f"it to the allowed_union_all_view_children list above."
+                )
+
+        for exempt_child_address in allowed_union_all_view_children:
+            node = self.dag_walker.nodes_by_address[exempt_child_address]
+            if not any(
+                a in union_all_view_addresses for a in node.parent_node_addresses
+            ):
+                raise ValueError(
+                    f"Found child address [{exempt_child_address.to_str()}] which does "
+                    f"not have any UnionAllBigQueryViewBuilder type parents. It should "
+                    f"be removed from the allowed_union_all_view_children list."
                 )
 
     @parameterized.expand(

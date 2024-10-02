@@ -39,10 +39,12 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
 )
+from recidiviz.observations.dataset_config import dataset_for_observation_type_cls
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+from recidiviz.observations.span_type import SpanType
 
 
 def get_assignment_span_time_specific_cte(
@@ -99,6 +101,11 @@ def get_assignment_span_time_specific_cte(
         unit_of_analysis_join_columns_str = (
             unit_of_analysis.get_primary_key_columns_query_string()
         )
+
+        spans_dataset_id = dataset_for_observation_type_cls(
+            unit_of_observation=unit_of_observation.type, observation_type_cls=SpanType
+        )
+
         metric_subquery = f"""
 SELECT
     {unit_of_analysis_join_columns_str},
@@ -121,7 +128,7 @@ FROM (
     ON
         assign.assignment_date BETWEEN population_start_date AND DATE_SUB(population_end_date, INTERVAL 1 DAY)
     LEFT JOIN
-        `{{project_id}}.analyst_data.{unit_of_observation.type.short_name}_spans_materialized` spans
+        `{{project_id}}.{spans_dataset_id}.all_{unit_of_observation.type.short_name}_spans_materialized` spans
     ON
         {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="spans", table2="assign")}
         AND (

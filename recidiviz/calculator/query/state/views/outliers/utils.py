@@ -60,7 +60,9 @@ def format_state_specific_person_events_filters(years_lookback: int = 2) -> str:
         event_date,
         person_id,
         CAST(NULL AS STRING) AS attributes
-    FROM `{{project_id}}.analyst_data.person_events_materialized`
+    -- TODO(#29291): Refactor so we query only from the observation-specific views for 
+    --   this metric
+    FROM `{{project_id}}.observations__person_event.all_person_events_materialized`
     WHERE 
         state_code = '{state_code}' 
         -- Limit the events lookback to minimize the size of the subqueries

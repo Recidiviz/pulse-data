@@ -38,6 +38,8 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
 )
+from recidiviz.observations.dataset_config import dataset_for_observation_type_cls
+from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
@@ -83,6 +85,10 @@ def get_period_event_time_specific_cte(
             unit_of_analysis.get_primary_key_columns_query_string("assign")
         )
 
+        events_dataset_id = dataset_for_observation_type_cls(
+            unit_of_observation=unit_of_observation_type, observation_type_cls=EventType
+        )
+
         metric_subquery = f"""
 SELECT
     {unit_of_analysis_join_columns_str},
@@ -98,7 +104,7 @@ ON
     assign.assignment_date < pop.population_end_date
     AND {nonnull_end_date_clause("assign.end_date")} >= pop.population_start_date
 LEFT JOIN
-    `{{project_id}}.analyst_data.{unit_of_observation.type.value.lower()}_events_materialized` AS events
+    `{{project_id}}.{events_dataset_id}.all_{unit_of_observation.type.value.lower()}_events_materialized` AS events
 ON
     {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="events", table2="assign")}
     -- Include events occurring on the last date of an end-date exclusive span,
