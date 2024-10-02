@@ -41,9 +41,8 @@ class EventSelectorTest(unittest.TestCase):
         query_string = my_events.generate_event_selector_query()
         expected_query_string = """
 SELECT *, end_date AS end_date_exclusive
-FROM `{project_id}.analyst_data.person_events_materialized`
-WHERE event = "COMPARTMENT_LEVEL_2_START"
-        AND JSON_EXTRACT_SCALAR(event_attributes, "$.compartment_level_1") IN ("XXX")
+FROM `{project_id}.observations__person_event.compartment_level_2_start_materialized`
+WHERE JSON_EXTRACT_SCALAR(event_attributes, "$.compartment_level_1") IN ("XXX")
         AND JSON_EXTRACT_SCALAR(event_attributes, "$.start_reason") IN ("YYY")
 """
         self.assertEqual(query_string, expected_query_string)
@@ -59,9 +58,8 @@ WHERE event = "COMPARTMENT_LEVEL_2_START"
         query_string = my_events.generate_event_selector_query()
         expected_query_string = """
 SELECT *, end_date AS end_date_exclusive
-FROM `{project_id}.analyst_data.workflows_user_events_materialized`
-WHERE event = "WORKFLOWS_USER_CLIENT_STATUS_UPDATE"
-        AND JSON_EXTRACT_SCALAR(event_attributes, "$.violation_type") IN ("TECHNICAL")
+FROM `{project_id}.observations__workflows_user_event.workflows_user_client_status_update_materialized`
+WHERE JSON_EXTRACT_SCALAR(event_attributes, "$.violation_type") IN ("TECHNICAL")
 """
         self.assertEqual(query_string, expected_query_string)
 
@@ -77,9 +75,8 @@ WHERE event = "WORKFLOWS_USER_CLIENT_STATUS_UPDATE"
         query_string = my_events.generate_event_selector_query()
         expected_query_string = """
 SELECT *, end_date AS end_date_exclusive
-FROM `{project_id}.analyst_data.person_events_materialized`
-WHERE event = "SENTENCES_IMPOSED"
-        AND JSON_EXTRACT_SCALAR(event_attributes, "$.most_severe_description") LIKE "%DRUG%"
+FROM `{project_id}.observations__person_event.sentences_imposed_materialized`
+WHERE JSON_EXTRACT_SCALAR(event_attributes, "$.most_severe_description") LIKE "%DRUG%"
         AND JSON_EXTRACT_SCALAR(event_attributes, "$.any_is_violent_uniform") IN ("False")
 """
         self.assertEqual(query_string, expected_query_string)
@@ -94,7 +91,7 @@ WHERE event = "SENTENCES_IMPOSED"
 
         expected_query_string = """
 SELECT *, end_date AS end_date_exclusive
-FROM `{project_id}.analyst_data.person_events_materialized`
-WHERE event = "SENTENCES_IMPOSED"
+FROM `{project_id}.observations__person_event.sentences_imposed_materialized`
+
 """
         self.assertEqual(query_string, expected_query_string)

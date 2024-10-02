@@ -638,7 +638,13 @@ The following views have less restrictive projects_to_deploy than their parents:
                 vb.build() for vb in self.all_deployed_view_builders_by_address.values()
             ]
         for view in views:
-            tree = sqlglot.parse_one(view.view_query, dialect="bigquery")
+            try:
+                tree = sqlglot.parse_one(view.view_query, dialect="bigquery")
+            except Exception as e:
+                raise ValueError(
+                    f"Failure to parse view [{view.address.table_id}]"
+                ) from e
+
             sqlglot_addresses = {
                 BigQueryAddress(dataset_id=table.db, table_id=table.name)
                 for table in list(tree.find_all(sqlglot.exp.Table))

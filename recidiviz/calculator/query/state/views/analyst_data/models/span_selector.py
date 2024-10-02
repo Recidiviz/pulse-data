@@ -29,6 +29,9 @@ from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObserv
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+from recidiviz.observations.span_observation_big_query_view_builder import (
+    SpanObservationBigQueryViewBuilder,
+)
 from recidiviz.observations.span_type import SpanType
 
 
@@ -57,11 +60,17 @@ class SpanSelector:
         """Returns the MetricUnitOfObservation object associated with the inputted type"""
         return MetricUnitOfObservation(type=self.unit_of_observation_type)
 
-    def generate_span_conditions_query_fragment(self) -> str:
+    def generate_span_conditions_query_fragment(self, filter_by_span_type: bool) -> str:
         """Returns a query fragment that filters a query based on configured span conditions"""
+        condition_strings = []
+
         # TODO(#32921): Shouldn't need to filter by span_type once we're querying from
-        #  the type-specific view.
-        condition_strings = [f'span = "{self.span_type.value}"']
+        #  the type-specific view. In order to do this, we will need to support having
+        #  an empty conditions fragment returned (or throw if this is called when
+        #  self.span_conditions_dict is empty).
+        if filter_by_span_type:
+            condition_strings.append(f'span = "{self.span_type.value}"')
+
         for attribute, conditions in self.span_conditions_dict.items():
             if isinstance(conditions, str):
                 attribute_condition_string = conditions
@@ -84,13 +93,23 @@ class SpanSelector:
         """Returns a standalone query that filters the appropriate spans table based on
         configured span conditions
         """
-        # TODO(#32921): Query from SpanObservationBigQueryViewBuilder.materialized_view_address_for_span(self.span_type)
-        #  once all span-specific views have been hydrated.
+        span_observation_address = (
+            SpanObservationBigQueryViewBuilder.materialized_view_address_for_span(
+                self.span_type
+            )
+        )
+
+        conditions_fragment = self.generate_span_conditions_query_fragment(
+            filter_by_span_type=False
+        )
+        filter_clause = (
+            f"WHERE {conditions_fragment}" if self.span_conditions_dict else ""
+        )
         return f"""
 WITH filtered_spans AS (
     SELECT *, end_date AS end_date_exclusive
-    FROM `{{project_id}}.analyst_data.{self.unit_of_observation_type.short_name}_spans_materialized`
-    WHERE {self.generate_span_conditions_query_fragment()}
+    FROM `{{project_id}}.{span_observation_address.to_str()}`
+    {filter_clause}
 )
 ,
 {create_sub_sessions_with_attributes("filtered_spans", end_date_field_name="end_date_exclusive",index_columns=sorted(self.unit_of_observation.primary_key_columns))}

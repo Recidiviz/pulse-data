@@ -99,7 +99,7 @@ class SpanMetricConditionsMixin(MetricConditionsMixin):
 
     def get_metric_conditions(self) -> List[str]:
         return [
-            f"({s.generate_span_conditions_query_fragment()})"
+            f"({s.generate_span_conditions_query_fragment(filter_by_span_type=True)})"
             for s in self.span_selectors
         ]
 
@@ -125,7 +125,7 @@ class EventMetricConditionsMixin(MetricConditionsMixin):
 
     def get_metric_conditions(self) -> List[str]:
         return [
-            f"({s.generate_event_conditions_query_fragment()})"
+            f"({s.generate_event_conditions_query_fragment(filter_by_event_type=True)})"
             for s in self.event_selectors
         ]
 

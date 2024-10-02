@@ -47,9 +47,8 @@ class SpanSelectorTest(unittest.TestCase):
         expected_query_string = f"""
 WITH filtered_spans AS (
     SELECT *, end_date AS end_date_exclusive
-    FROM `{{project_id}}.analyst_data.person_spans_materialized`
-    WHERE span = "SENTENCE_SPAN"
-        AND JSON_EXTRACT_SCALAR(span_attributes, "$.any_is_drug_uniform") IN ("True")
+    FROM `{{project_id}}.observations__person_span.sentence_span_materialized`
+    WHERE JSON_EXTRACT_SCALAR(span_attributes, "$.any_is_drug_uniform") IN ("True")
         AND JSON_EXTRACT_SCALAR(span_attributes, "$.any_is_crime_against_person") IN ("False")
 )
 ,
@@ -84,9 +83,8 @@ sub_sessions_dedup AS (
         expected_query_string = f"""
 WITH filtered_spans AS (
     SELECT *, end_date AS end_date_exclusive
-    FROM `{{project_id}}.analyst_data.officer_spans_materialized`
-    WHERE span = "SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION"
-        AND JSON_EXTRACT_SCALAR(span_attributes, "$.custody_level") IN ("MAXIMUM")
+    FROM `{{project_id}}.observations__officer_span.supervision_officer_inferred_location_session_materialized`
+    WHERE JSON_EXTRACT_SCALAR(span_attributes, "$.custody_level") IN ("MAXIMUM")
 )
 ,
 {create_sub_sessions_with_attributes("filtered_spans", end_date_field_name="end_date_exclusive", index_columns=["officer_id", "state_code"])}
@@ -120,9 +118,8 @@ sub_sessions_dedup AS (
         expected_query_string = f"""
 WITH filtered_spans AS (
     SELECT *, end_date AS end_date_exclusive
-    FROM `{{project_id}}.analyst_data.person_spans_materialized`
-    WHERE span = "SENTENCE_SPAN"
-        AND JSON_EXTRACT_SCALAR(span_attributes, "$.any_is_drug_uniform") IN ("True")
+    FROM `{{project_id}}.observations__person_span.sentence_span_materialized`
+    WHERE JSON_EXTRACT_SCALAR(span_attributes, "$.any_is_drug_uniform") IN ("True")
         AND JSON_EXTRACT_SCALAR(span_attributes, "$.any_is_crime_against_person") IN ("False")
 )
 ,
@@ -155,8 +152,8 @@ sub_sessions_dedup AS (
         expected_query_string = f"""
 WITH filtered_spans AS (
     SELECT *, end_date AS end_date_exclusive
-    FROM `{{project_id}}.analyst_data.person_spans_materialized`
-    WHERE span = "SENTENCE_SPAN"
+    FROM `{{project_id}}.observations__person_span.sentence_span_materialized`
+    
 )
 ,
 {create_sub_sessions_with_attributes("filtered_spans", end_date_field_name="end_date_exclusive",index_columns=["person_id", "state_code"])}

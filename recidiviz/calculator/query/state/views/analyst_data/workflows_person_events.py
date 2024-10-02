@@ -82,7 +82,7 @@ def get_usage_status_case_statement(
     return "\n".join(
         [
             f"""
-        WHEN {v.generate_event_conditions_query_fragment()}
+        WHEN {v.generate_event_conditions_query_fragment(filter_by_event_type=True)}
         THEN "{k}"
     """
             for k, v in usage_event_selectors.items()
