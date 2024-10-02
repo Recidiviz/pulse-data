@@ -197,8 +197,22 @@ US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
     LEFT JOIN unable_to_work u ON cc.person_id = u.person_id
     WHERE state_code = 'US_IX'
     ),
+    most_recent_address_change AS (
+        SELECT OffenderId, MAX(DATE(StartDate)) as most_recent_address_change_date
+        FROM `{{project_id}}.us_ix_raw_data_up_to_date_views.ind_Offender_Address_latest` add
+        INNER JOIN `{{project_id}}.{{workflows_views}}.client_record_materialized` client
+            ON add.OffenderId = client.person_external_id
+        WHERE 
+            -- this is marked as the primary address
+            PrimaryAddress = '1' 
+            -- this is listed as a local or permanent address
+            AND AddressTypeId IN ('1', '2')
+            -- and this address change occurred after the start of supervision
+            AND DATE(StartDate) > supervision_start_date
+        GROUP BY 1
+    ),
     case_compliance_with_next_recommended_recalculated AS (
-        SELECT * EXCEPT(unable_to_work),
+        SELECT * EXCEPT(unable_to_work, next_recommended_home_visit_date),
             CASE 
             -- When this person has an open employment period with status = 'UNABLE_TO_WORK', we do not recommend an employment verification
             WHEN unable_to_work = True
@@ -220,8 +234,20 @@ US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
                 AND most_recent_employment_verification_date IS NOT NULL
                 THEN DATE_ADD(most_recent_employment_verification_date, INTERVAL 60 DAY)
             ELSE orig_next_recommended_employment_verification_date
-        END AS next_recommended_employment_verification_date
+            END AS next_recommended_employment_verification_date,
+            -- recalculate the next recommended home visit date, taking into account the policy that a home visit is required within 30 days of an address change
+                 -- when a home visit was never originally recommended, then don't recommend a home visit
+            CASE WHEN next_recommended_home_visit_date IS NULL
+                    THEN NULL
+                 -- when there's been an address change since the last home visit date, calculate the next recommended home visit date as either 30 days
+                 -- after the address change date or the originally recommended home visit date, whichever comes earlier
+                 WHEN most_recent_address_change_date > COALESCE(most_recent_home_visit_date, DATE(1111,1,1))
+                    THEN LEAST(next_recommended_home_visit_date, COALESCE(DATE_ADD(most_recent_address_change_date, INTERVAL 30 DAY), DATE(9999,9,9))) 
+                 -- in all other scenarios, stick with the originally recommended home visit date
+                 ELSE next_recommended_home_visit_date
+              END AS next_recommended_home_visit_date
         FROM case_compliances_with_income_verification
+        LEFT JOIN most_recent_address_change ON person_external_id = OffenderId
     ),
     
     all_supervision_tasks AS ({get_case_compliance_task_ctes()}),
