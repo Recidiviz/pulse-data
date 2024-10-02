@@ -204,7 +204,7 @@ function confirm_cmd {
 STATE_CODE_LOWERCASE=${STATE_CODE,,} # convert to lowercase
 
 SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET="${SANDBOX_PREFIX}_${STATE_CODE_LOWERCASE}_normalized_state"
-STANDARD_NORMALIZED_STATE_DATASET="normalized_state"
+STANDARD_NORMALIZED_STATE_DATASET="${STATE_CODE_LOWERCASE}_normalized_state"
 
 # Create datasets
 echo "Ready to create sandbox metrics dataset for ${STATE_CODE}."
