@@ -16,6 +16,7 @@
 # =============================================================================
 """Common test cases for column validations."""
 import abc
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Type
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -66,6 +67,7 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
             file_tag=self.file_tag,
             temp_table_address=self.temp_table_address,
             column=column,
+            file_upload_datetime=datetime.now(tz=timezone.utc),
         )
 
     @abc.abstractmethod

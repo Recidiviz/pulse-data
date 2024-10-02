@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Validation to check if a column has values that are not one of the known_values supplied in the column config."""
+from datetime import datetime
 from typing import Any, Dict, List
 
 import attr
@@ -50,8 +51,13 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
         file_tag: str,
         project_id: str,
         temp_table_address: BigQueryAddress,
+        file_upload_datetime: datetime,
         column: RawTableColumnInfo,
     ) -> "KnownValuesColumnValidation":
+        if not (temp_table_col_name := column.name_at_datetime(file_upload_datetime)):
+            raise ValueError(
+                f"Column [{column.name}] does not exist at datetime [{file_upload_datetime}]"
+            )
         if not column.known_values:
             raise ValueError(f"known_values for {column.name} must not be empty")
 
@@ -59,7 +65,7 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
             project_id=project_id,
             temp_table_address=temp_table_address,
             file_tag=file_tag,
-            column_name=column.name,
+            column_name=temp_table_col_name,
             known_values=[known_value.value for known_value in column.known_values],
         )
 

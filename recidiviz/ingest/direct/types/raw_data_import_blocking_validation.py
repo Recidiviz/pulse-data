@@ -16,6 +16,7 @@
 # =============================================================================
 """Classes for raw table validations."""
 import abc
+from datetime import datetime
 from typing import Any, Dict, List
 
 import attr
@@ -90,13 +91,19 @@ class RawDataColumnImportBlockingValidation(RawDataImportBlockingValidation):
         file_tag: str,
         project_id: str,
         temp_table_address: BigQueryAddress,
+        file_upload_datetime: datetime,
         column: RawTableColumnInfo,
     ) -> "RawDataColumnImportBlockingValidation":
         """Factory method to create a column validation."""
+        if not (temp_table_col_name := column.name_at_datetime(file_upload_datetime)):
+            raise ValueError(
+                f"Column [{column.name}] does not exist at datetime [{file_upload_datetime}]"
+            )
+
         return cls(
             project_id=project_id,
             temp_table_address=temp_table_address,
-            column_name=column.name,
+            column_name=temp_table_col_name,
             file_tag=file_tag,
         )
 
