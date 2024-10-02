@@ -264,6 +264,9 @@ class DirectIngestRawGCSFileMetadata(Entity, BuildableAttr, DefaultableAttr):
     update_datetime: datetime.datetime = attr.ib(
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
+    # Whether or not this row is still valid. *should* always match the is_invalidated
+    # value of the associated file_id, if one exists
+    is_invalidated: bool = attr.ib(validator=attr_validators.is_bool)
     # Time when the file is actually discovered by the raw data DAG
     file_discovery_time: datetime.datetime = attr.ib(
         validator=attr_validators.is_utc_timezone_aware_datetime

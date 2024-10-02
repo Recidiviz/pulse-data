@@ -36,13 +36,14 @@ SELECT gcs_file_id, file_id, normalized_file_name
 FROM direct_ingest_raw_gcs_file_metadata
 WHERE region_code = '{region_code}'
 AND raw_data_instance = '{raw_data_instance}'
+AND is_invalidated is FALSE
 AND normalized_file_name in ({normalized_file_names});"""
 
 
 # file_id on this query will always be None, but is included in the RETURNING statement
 # to match the schema of the existing files by path return format
 ADD_ROWS_WITHOUT_FILE_ID = """
-INSERT INTO direct_ingest_raw_gcs_file_metadata (region_code, raw_data_instance, file_tag, normalized_file_name, update_datetime, file_discovery_time) 
+INSERT INTO direct_ingest_raw_gcs_file_metadata (region_code, raw_data_instance, file_tag, normalized_file_name, update_datetime, file_discovery_time, is_invalidated) 
 VALUES {values}
 RETURNING gcs_file_id, file_id, normalized_file_name;"""
 
@@ -165,6 +166,7 @@ class GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
             file.blob_name,
             filename_parts.utc_upload_datetime.isoformat(),
             datetime.datetime.now(tz=datetime.UTC).isoformat(),
+            0,  # "0"::bool evaluates to False
         ]
 
         return "\n(" + ", ".join([f"'{value}'" for value in row_contents]) + ")"
