@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with spans of time between assessment scores of the same type"""
+"""View with spans of time over which a person is eligible for a given criteria"""
 
 from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
@@ -23,32 +23,64 @@ from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Spans of time between assessment scores of the same type"
+_VIEW_DESCRIPTION = "Spans of time over which a person is eligible for a given criteria"
 
 _SOURCE_DATA_QUERY_TEMPLATE = """
-SELECT 
+WITH relevant_criteria AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        "INCARCERATION_PAST_FULL_TERM_RELEASE_DATE" AS criteria,
+        meets_criteria,
+    FROM
+        `{project_id}.task_eligibility_criteria_general.incarceration_past_full_term_completion_date_materialized`
+    
+    UNION ALL
+    
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        "SUPERVISION_PAST_FULL_TERM_RELEASE_DATE" AS criteria,
+        meets_criteria,
+    FROM
+        `{project_id}.task_eligibility_criteria_general.supervision_past_full_term_completion_date_materialized`
+    
+    UNION ALL
+    
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        "INCARCERATION_PAST_PAROLE_ELIGIBILITY_DATE" AS criteria,
+        meets_criteria,
+    FROM
+        `{project_id}.task_eligibility_criteria_general.incarceration_past_parole_eligibility_date_materialized`
+)
+SELECT
     state_code,
     person_id,
-    assessment_date,
-    score_end_date_exclusive,
-    assessment_type,
-    assessment_score,
-    assessment_level
-FROM
-    `{project_id}.sessions.assessment_score_sessions_materialized`
-WHERE
-    assessment_date IS NOT NULL
-    AND assessment_type IS NOT NULL
-    AND assessment_score IS NOT NULL
+    start_date,
+    end_date,
+    criteria,
+    meets_criteria
+FROM relevant_criteria
 """
 
 VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBuilder(
-    span_type=SpanType.ASSESSMENT_SCORE_SESSION,
+    span_type=SpanType.TASK_CRITERIA_SPAN,
     description=_VIEW_DESCRIPTION,
     sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
-    attribute_cols=["assessment_type", "assessment_score", "assessment_level"],
-    span_start_date_col="assessment_date",
-    span_end_date_col="score_end_date_exclusive",
+    attribute_cols=[
+        "criteria",
+        "meets_criteria",
+    ],
+    span_start_date_col="start_date",
+    span_end_date_col="end_date",
 )
 
 if __name__ == "__main__":

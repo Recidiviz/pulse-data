@@ -14,10 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
-)
+"""View with transitions to a new incarceration or supervision compartment level 2"""
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
@@ -25,15 +22,38 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = (
+    "Transitions to a new incarceration or supervision compartment level 2"
+)
+
+_SOURCE_DATA_QUERY_TEMPLATE = """
+SELECT
+    state_code,
+    person_id,
+    compartment_level_1,
+    compartment_level_2,
+    inflow_from_level_1,
+    inflow_from_level_2,
+    start_reason,
+    start_sub_reason,
+    start_date
+FROM
+    `{project_id}.sessions.compartment_sessions_materialized`
+WHERE
+    compartment_level_1 IN ("INCARCERATION", "SUPERVISION")
+"""
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+    event_type=EventType.COMPARTMENT_LEVEL_2_START,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
+    sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
     attribute_cols=[
+        "compartment_level_1",
+        "compartment_level_2",
         "inflow_from_level_1",
         "inflow_from_level_2",
+        "start_reason",
+        "start_sub_reason",
     ],
     event_date_col="start_date",
 )

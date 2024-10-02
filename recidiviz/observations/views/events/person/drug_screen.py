@@ -14,10 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
-)
+"""View with drug screen with a non-null result"""
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
@@ -25,17 +23,42 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = "Drug screens with a non-null result"
+
+_SOURCE_DATA_QUERY_TEMPLATE = f"""
+SELECT
+    d.state_code,
+    d.person_id,
+    drug_screen_date,
+    is_positive_result,
+    substance_detected,
+    d.is_positive_result
+        AND ROW_NUMBER() OVER (
+            PARTITION BY
+                sss.person_id, sss.supervision_super_session_id, is_positive_result
+            ORDER BY drug_screen_date
+        ) = 1 AS is_initial_within_supervision_super_session,
+FROM
+    `{{project_id}}.sessions.drug_screens_preprocessed_materialized` d
+INNER JOIN
+    `{{project_id}}.sessions.supervision_super_sessions_materialized` sss
+ON
+    d.person_id = sss.person_id
+    AND d.drug_screen_date BETWEEN sss.start_date AND {nonnull_end_date_exclusive_clause("sss.end_date_exclusive")}
+WHERE
+    is_positive_result IS NOT NULL
+"""
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+    event_type=EventType.DRUG_SCREEN,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
+    sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
     attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
+        "is_positive_result",
+        "substance_detected",
+        "is_initial_within_supervision_super_session",
     ],
-    event_date_col="start_date",
+    event_date_col="drug_screen_date",
 )
 
 if __name__ == "__main__":

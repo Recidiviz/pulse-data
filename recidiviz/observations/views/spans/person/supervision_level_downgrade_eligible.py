@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with spans of time between assessment scores of the same type"""
+"""View with open supervision mismatch (downgrades only), ends when mismatch corrected
+or supervision period ends.
+"""
 
 from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
@@ -23,32 +25,37 @@ from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Spans of time between assessment scores of the same type"
+_VIEW_DESCRIPTION = (
+    "Open supervision mismatch (downgrades only), ends when mismatch "
+    "corrected or supervision period ends"
+)
 
 _SOURCE_DATA_QUERY_TEMPLATE = """
 SELECT 
     state_code,
     person_id,
-    assessment_date,
-    score_end_date_exclusive,
-    assessment_type,
-    assessment_score,
-    assessment_level
+    "SUPERVISION_DOWNGRADE" AS task_name,
+    mismatch_corrected,
+    recommended_supervision_downgrade_level,
+    start_date,
+    DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
 FROM
-    `{project_id}.sessions.assessment_score_sessions_materialized`
+    `{project_id}.sessions.supervision_downgrade_sessions_materialized`
 WHERE
-    assessment_date IS NOT NULL
-    AND assessment_type IS NOT NULL
-    AND assessment_score IS NOT NULL
+    recommended_supervision_downgrade_level IS NOT NULL
 """
 
 VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBuilder(
-    span_type=SpanType.ASSESSMENT_SCORE_SESSION,
+    span_type=SpanType.SUPERVISION_LEVEL_DOWNGRADE_ELIGIBLE,
     description=_VIEW_DESCRIPTION,
     sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
-    attribute_cols=["assessment_type", "assessment_score", "assessment_level"],
-    span_start_date_col="assessment_date",
-    span_end_date_col="score_end_date_exclusive",
+    attribute_cols=[
+        "task_name",
+        "mismatch_corrected",
+        "recommended_supervision_downgrade_level",
+    ],
+    span_start_date_col="start_date",
+    span_end_date_col="end_date",
 )
 
 if __name__ == "__main__":

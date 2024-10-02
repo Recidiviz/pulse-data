@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
+"""View with parole board hearings"""
+from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_sessions import (
+    PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
@@ -25,17 +25,14 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = "Parole board hearings"
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+    event_type=EventType.PAROLE_HEARING,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
-    attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
-    ],
-    event_date_col="start_date",
+    sql_source=PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER.table_for_query,
+    attribute_cols=["decision", "days_since_incarceration_start"],
+    event_date_col="hearing_date",
 )
 
 if __name__ == "__main__":

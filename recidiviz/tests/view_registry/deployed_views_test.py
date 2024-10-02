@@ -58,6 +58,12 @@ from recidiviz.ingest.views.dataset_config import (
     STATE_BASE_DATASET,
 )
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
+from recidiviz.observations.views.events.person.task_completed import (
+    VIEW_BUILDER as TASK_COMPLETED_OBSERVATIONS_VIEW_BUILDER,
+)
+from recidiviz.observations.views.spans.person.task_eligibility_session import (
+    VIEW_BUILDER as TASK_ELIGIBILITY_SESSION_OBSERVATIONS_VIEW_BUILDER,
+)
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
     get_all_source_table_datasets,
@@ -337,6 +343,10 @@ class ViewDagInvariantTests(unittest.TestCase):
             BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_spans"),
             CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
             WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,
+            # TODO(#29291): Revisit whether we need to have these observations views
+            #  that look at all tasks.
+            TASK_COMPLETED_OBSERVATIONS_VIEW_BUILDER.address,
+            TASK_ELIGIBILITY_SESSION_OBSERVATIONS_VIEW_BUILDER.address,
             # TODO(#29650): Generate opportunity-specific eligibility sessions views,
             #  then convert all_task_eligibility_spans (renamed to
             #  all_task_eligibility_sessions) to a UnionAllBigQueryViewBuilder view and
@@ -344,6 +354,13 @@ class ViewDagInvariantTests(unittest.TestCase):
             ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER.address,
             ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER.address,
         }
+
+        for exempt_child_address in allowed_union_all_view_children:
+            if exempt_child_address not in self.all_deployed_view_builders_by_address:
+                raise ValueError(
+                    f"Address [{exempt_child_address.to_str()}] is not a valid view "
+                    f"address."
+                )
 
         for parent_address, node in self.dag_walker.nodes_by_address.items():
             for child_address in node.child_node_addresses:

@@ -152,7 +152,12 @@ def check_view_has_no_state_specific_logic(view_builder: BigQueryViewBuilder) ->
         1) Querying from state-specific tables
         2) Explicitly referencing a state code (e.g. "US_XX") in the query
     """
-    view = view_builder.build(sandbox_context=None)
+    try:
+        view = view_builder.build(sandbox_context=None)
+    except Exception as e:
+        raise ValueError(
+            f"Unable to build view [{view_builder.address.to_str()}]"
+        ) from e
 
     state_specific_addresses = [
         a.to_str() for a in view.parent_tables if a.is_state_specific_address()

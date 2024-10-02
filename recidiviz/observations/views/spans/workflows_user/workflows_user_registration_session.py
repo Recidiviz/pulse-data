@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with spans of time between assessment scores of the same type"""
+"""View with spans of time over which a primary workflows user is a registered user of
+the workflows tool.
+"""
 
 from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
@@ -23,32 +25,44 @@ from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Spans of time between assessment scores of the same type"
+_VIEW_DESCRIPTION = "Spans of time over which a primary workflows user is a registered user of the workflows tool"
 
 _SOURCE_DATA_QUERY_TEMPLATE = """
-SELECT 
+SELECT
     state_code,
-    person_id,
-    assessment_date,
-    score_end_date_exclusive,
-    assessment_type,
-    assessment_score,
-    assessment_level
+    sessions.workflows_user_email_address AS email_address,
+    metadata.completion_event_type AS task_type,
+    system_type,
+    launches.first_access_date IS NOT NULL AS task_type_is_live,
+    IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
+    start_date,
+    end_date_exclusive
 FROM
-    `{project_id}.sessions.assessment_score_sessions_materialized`
-WHERE
-    assessment_date IS NOT NULL
-    AND assessment_type IS NOT NULL
-    AND assessment_score IS NOT NULL
+    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized` sessions
+# Join with completion event metadata on system_type to get all task types that a user
+# could theoretically access based on their system type access (supervision vs. incarceration)
+LEFT JOIN
+    `{project_id}.reference_views.completion_event_type_metadata_materialized` metadata
+USING
+    (system_type)
+LEFT JOIN
+    `{project_id}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
+USING
+    (state_code, completion_event_type)
 """
 
 VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBuilder(
-    span_type=SpanType.ASSESSMENT_SCORE_SESSION,
+    span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
     description=_VIEW_DESCRIPTION,
     sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
-    attribute_cols=["assessment_type", "assessment_score", "assessment_level"],
-    span_start_date_col="assessment_date",
-    span_end_date_col="score_end_date_exclusive",
+    attribute_cols=[
+        "task_type",
+        "system_type",
+        "task_type_is_live",
+        "task_type_is_fully_launched",
+    ],
+    span_start_date_col="start_date",
+    span_end_date_col="end_date_exclusive",
 )
 
 if __name__ == "__main__":

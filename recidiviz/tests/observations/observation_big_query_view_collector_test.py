@@ -29,6 +29,15 @@ from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
 )
 from recidiviz.observations.span_type import SpanType
+from recidiviz.observations.views.events.person.us_ar_incentives import (
+    VIEW_BUILDER as US_AR_INCENTIVES_VIEW_BUILDER,
+)
+from recidiviz.observations.views.events.person.us_ar_ovg_tranche_changes import (
+    VIEW_BUILDER as US_AR_OVG_TRANCHE_CHANGES_VIEW_BUILDER,
+)
+from recidiviz.observations.views.spans.person.us_ar_ovg_sessions import (
+    VIEW_BUILDER as US_AR_OVG_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.tests.big_query.sqlglot_helpers import (
     check_query_selects_output_columns,
     check_view_has_no_state_specific_logic,
@@ -85,12 +94,11 @@ class ObservationBigQueryViewCollectorTest(unittest.TestCase):
                 )
             seen_types.add(observation_type)
 
-        # TODO(#32921): Uncomment when we've implemented views for all observation types
-        # expected_types = {*SpanType, *EventType}
-        # if missing_types := expected_types - seen_types:
-        #     raise ValueError(
-        #         f"No view defined for the following observation types: {missing_types}"
-        #     )
+        expected_types = {*SpanType, *EventType}
+        if missing_types := expected_types - seen_types:
+            raise ValueError(
+                f"No view defined for the following observation types: {missing_types}"
+            )
 
     def test_observation_views_explicitly_select_correct_columns(self) -> None:
         for view_builder in ObservationBigQueryViewCollector().collect_view_builders():
@@ -111,8 +119,16 @@ class ObservationBigQueryViewCollectorTest(unittest.TestCase):
                 ) from e
 
     def test_observation_views_have_no_state_specific_logic(self) -> None:
+        exempt_views = {
+            US_AR_OVG_SESSIONS_VIEW_BUILDER.address,
+            US_AR_OVG_TRANCHE_CHANGES_VIEW_BUILDER.address,
+            US_AR_INCENTIVES_VIEW_BUILDER.address,
+        }
+
         with local_project_id_override("recidiviz-456"):
             for (
                 view_builder
             ) in ObservationBigQueryViewCollector().collect_view_builders():
+                if view_builder.address in exempt_views:
+                    continue
                 check_view_has_no_state_specific_logic(view_builder)

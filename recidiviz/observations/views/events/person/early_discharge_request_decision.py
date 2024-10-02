@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with transition to absconsion or bench warrant status events"""
-from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
-    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
-)
+"""View with valid early discharge request decisions, with one event per
+person-day-decision_type.
+"""
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
@@ -25,17 +24,27 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transition to absconsion or bench warrant status events"
+_VIEW_DESCRIPTION = "Valid early discharge request decisions, with one event per person-day-decision_type"
+
+_SOURCE_DATA_QUERY_TEMPLATE = """
+SELECT
+    state_code,
+    person_id,
+    decision,
+    decision_date
+FROM
+    `{project_id}.normalized_state.state_early_discharge`
+WHERE
+    decision_status != "INVALID"
+    AND decision_date IS NOT NULL
+"""
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.ABSCONSION_BENCH_WARRANT,
+    event_type=EventType.EARLY_DISCHARGE_REQUEST_DECISION,
     description=_VIEW_DESCRIPTION,
-    sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
-    attribute_cols=[
-        "inflow_from_level_1",
-        "inflow_from_level_2",
-    ],
-    event_date_col="start_date",
+    sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
+    attribute_cols=["decision"],
+    event_date_col="decision_date",
 )
 
 if __name__ == "__main__":
