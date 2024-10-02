@@ -38,6 +38,8 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
 )
+from recidiviz.observations.dataset_config import dataset_for_observation_type_cls
+from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
@@ -99,6 +101,11 @@ def get_assignment_event_time_specific_cte(
         unit_of_analysis_join_columns_str = (
             unit_of_analysis.get_primary_key_columns_query_string()
         )
+
+        events_dataset_id = dataset_for_observation_type_cls(
+            unit_of_observation=unit_of_observation_type, observation_type_cls=EventType
+        )
+
         metric_subquery = f"""
         SELECT
             {unit_of_analysis_join_columns_str},
@@ -121,7 +128,7 @@ def get_assignment_event_time_specific_cte(
             ON
                 assign.assignment_date BETWEEN population_start_date AND DATE_SUB(population_end_date, INTERVAL 1 DAY)
             LEFT JOIN
-                `{{project_id}}.analyst_data.{unit_of_observation.type.short_name}_events_materialized` events
+                `{{project_id}}.{events_dataset_id}.all_{unit_of_observation.type.short_name}_events_materialized` events
             ON
                 {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="events", table2="assign")}
                 AND events.event_date >= assign.assignment_date

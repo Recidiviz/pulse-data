@@ -70,10 +70,13 @@ from recidiviz.looker.lookml_view_field_parameter import (
     LookMLSqlReferenceType,
 )
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
+from recidiviz.observations.dataset_config import dataset_for_observation_type_cls
+from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+from recidiviz.observations.span_type import SpanType
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils import (
     get_metric_explore_parameter,
     get_metric_value_measure,
@@ -199,6 +202,10 @@ def generate_period_span_metric_view(
         else ""
     )
 
+    spans_dataset_id = dataset_for_observation_type_cls(
+        unit_of_observation=unit_of_observation.type, observation_type_cls=SpanType
+    )
+
     derived_table_query = f"""
     WITH eligible_spans AS (
         SELECT
@@ -213,7 +220,7 @@ def generate_period_span_metric_view(
             span,
             span_attributes,
         FROM
-            `analyst_data.{unit_of_observation.type.short_name}_spans_materialized` AS spans
+            `{spans_dataset_id}.all_{unit_of_observation.type.short_name}_spans_materialized` AS spans
         INNER JOIN
             ${{{unit_of_observation.type.short_name}_{assignments_with_attributes_view}_{view_name}.SQL_TABLE_NAME}} assignments
         ON
@@ -308,6 +315,9 @@ def generate_period_event_metric_view(
         if len(json_field_filters) > 0
         else ""
     )
+    events_dataset_id = dataset_for_observation_type_cls(
+        unit_of_observation=unit_of_observation.type, observation_type_cls=EventType
+    )
     derived_table_query = f"""
     SELECT
         -- assignments
@@ -328,7 +338,7 @@ def generate_period_event_metric_view(
     FROM
         ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
     LEFT JOIN
-        `analyst_data.{unit_of_observation.type.short_name}_events_materialized` AS events
+        `{events_dataset_id}.all_{unit_of_observation.type.short_name}_events_materialized` AS events
     ON
         {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="events", table2="assignments")}
         AND events.event_date BETWEEN GREATEST(assignments.assignment_date, assignments.start_date)
@@ -404,6 +414,11 @@ def generate_assignment_span_metric_view(
         if len(json_field_filters) > 0
         else ""
     )
+
+    spans_dataset_id = dataset_for_observation_type_cls(
+        unit_of_observation=unit_of_observation.type, observation_type_cls=SpanType
+    )
+
     derived_table_query = f"""
     SELECT
         -- assignments
@@ -424,7 +439,7 @@ def generate_assignment_span_metric_view(
     FROM
         ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
     LEFT JOIN
-        `analyst_data.{unit_of_observation.type.short_name}_spans_materialized` spans
+        `{spans_dataset_id}.all_{unit_of_observation.type.short_name}_spans_materialized` spans
     ON
         {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="assignments", table2="spans")}
         AND (

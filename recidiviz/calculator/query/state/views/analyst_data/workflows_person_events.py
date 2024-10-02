@@ -108,7 +108,8 @@ WITH usage_events AS (
         END AS usage_event_type,
         event_attributes
     FROM
-        `{{project_id}}.analyst_data.workflows_user_events_materialized` a
+        -- TODO(#29291): Refactor this view so it queries from observation-specific views
+        `{{project_id}}.observations__workflows_user_event.all_workflows_user_events_materialized` a
     INNER JOIN
         `{{project_id}}.normalized_state.state_person_external_id` b
     ON
