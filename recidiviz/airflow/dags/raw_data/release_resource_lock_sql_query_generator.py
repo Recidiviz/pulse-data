@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A CloudSQLQueryGenerator for releasing raw data resource locks"""
-from typing import Any, Dict, List, NamedTuple
+from typing import List
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -25,15 +25,14 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_types import RawDataResourceLock
 from recidiviz.persistence.errors import (
     DirectIngestRawDataResourceLockAlreadyReleasedError,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
-LockSummary = NamedTuple("LockSummary", [("lock_id", int), ("released", bool)])
-
 GET_LOCKS_BY_IDS = """
-SELECT lock_id, released
+SELECT lock_id, lock_resource, released
 FROM direct_ingest_raw_data_resource_lock
 WHERE region_code = '{region_code}' 
 AND raw_data_source_instance = '{raw_data_instance}' 
@@ -46,12 +45,10 @@ SET released = TRUE
 WHERE region_code = '{region_code}' 
 AND raw_data_source_instance = '{raw_data_instance}' 
 AND lock_id in ({lock_ids})
-RETURNING lock_id, released;"""
+RETURNING lock_id, lock_resource, released;"""
 
 
-class ReleaseRawDataResourceLockSqlQueryGenerator(
-    CloudSqlQueryGenerator[List[Dict[str, Any]]]
-):
+class ReleaseRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGenerator[None]):
     """Custom query generator for releasing raw data resource locks"""
 
     def __init__(
@@ -70,11 +67,16 @@ class ReleaseRawDataResourceLockSqlQueryGenerator(
         operator: CloudSqlQueryOperator,
         postgres_hook: PostgresHook,
         context: Context,
-    ) -> List[Dict[str, Any]]:
+    ) -> None:
         # get lock info from xcom
-        locks_to_release: List[Dict[str, Any]] = operator.xcom_pull(
-            context, key="return_value", task_ids=self._acquire_resource_lock_task_id
-        )
+        locks_to_release: List[RawDataResourceLock] = [
+            RawDataResourceLock.deserialize(serialized_lock)
+            for serialized_lock in operator.xcom_pull(
+                context,
+                key="return_value",
+                task_ids=self._acquire_resource_lock_task_id,
+            )
+        ]
 
         if locks_to_release is None:
             # this mean we couldn't pull this info from xcom which probably means that
@@ -83,8 +85,8 @@ class ReleaseRawDataResourceLockSqlQueryGenerator(
 
         # get existing locks to make sure they are valid lock_ids and they are not
         # released
-        existing_locks: List[LockSummary] = [
-            LockSummary(*row)
+        existing_locks: List[RawDataResourceLock] = [
+            RawDataResourceLock.from_table_row(row)
             for row in postgres_hook.get_records(
                 self.get_locks_by_id_sql_query(locks_to_release)
             )
@@ -101,8 +103,8 @@ class ReleaseRawDataResourceLockSqlQueryGenerator(
             )
 
         # update the released col to be True
-        updated_locks: List[LockSummary] = [
-            LockSummary(*row)
+        updated_locks: List[RawDataResourceLock] = [
+            RawDataResourceLock.from_table_row(row)
             for row in postgres_hook.get_records(
                 self.set_locks_as_released_by_ids_sql_query(locks_to_release)
             )
@@ -113,16 +115,11 @@ class ReleaseRawDataResourceLockSqlQueryGenerator(
                 f"Updated the wrong number of locks; tried to update {len(locks_to_release)}, but updated {len(updated_locks)}"
             )
 
-        return [
-            {"lock_id": lock.lock_id, "released": lock.released}
-            for lock in updated_locks
-        ]
-
     @staticmethod
-    def _locks_ids_as_str(lock: List[Dict[str, Any]]) -> str:
-        return ", ".join([str(lock["lock_id"]) for lock in lock])
+    def _locks_ids_as_str(lock: List[RawDataResourceLock]) -> str:
+        return ", ".join([str(lock.lock_id) for lock in lock])
 
-    def get_locks_by_id_sql_query(self, locks: List[Dict[str, Any]]) -> str:
+    def get_locks_by_id_sql_query(self, locks: List[RawDataResourceLock]) -> str:
 
         return StrictStringFormatter().format(
             GET_LOCKS_BY_IDS,
@@ -132,7 +129,7 @@ class ReleaseRawDataResourceLockSqlQueryGenerator(
         )
 
     def set_locks_as_released_by_ids_sql_query(
-        self, locks_to_release: List[Dict[str, Any]]
+        self, locks_to_release: List[RawDataResourceLock]
     ) -> str:
         return StrictStringFormatter().format(
             SET_LOCKS_AS_RELEASED_BY_IDS,

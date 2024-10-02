@@ -35,6 +35,9 @@ from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoun
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.csv import DEFAULT_CSV_ENCODING
+from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
+    DirectIngestRawDataResourceLockResource,
+)
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
 )
@@ -294,6 +297,52 @@ class RawDataAppendImportError(RawDataImportError):
 # --------------------------------------------------------------------------------------
 # v                        step 2: processing logic types                              v
 # --------------------------------------------------------------------------------------
+
+
+@attr.define
+class RawDataResourceLock(BaseResult):
+    """Represent information about a raw data resource lock
+
+    Attributes:
+        lock_id (int): the pk of the raw data resource lock
+        lock_resource (DirectIngestRawDataResourceLockResource): the raw data infra
+            resource that this lock corresponds to
+        released (bool): whether or not this lock has been released
+    """
+
+    lock_id: int = attr.ib(validator=attr_validators.is_int)
+    lock_resource: DirectIngestRawDataResourceLockResource = attr.ib(
+        validator=attr.validators.in_(DirectIngestRawDataResourceLockResource)
+    )
+    released: bool = attr.ib(validator=attr_validators.is_bool)
+
+    def serialize(self) -> str:
+        return json.dumps(
+            {
+                "lock_id": self.lock_id,
+                "lock_resource": self.lock_resource.value,
+                "released": self.released,
+            }
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RawDataResourceLock":
+        data = json.loads(json_str)
+        return RawDataResourceLock(
+            lock_id=data["lock_id"],
+            lock_resource=DirectIngestRawDataResourceLockResource(
+                data["lock_resource"]
+            ),
+            released=data["released"],
+        )
+
+    @classmethod
+    def from_table_row(cls, row: Tuple[int, str, bool]) -> "RawDataResourceLock":
+        return cls(
+            lock_id=row[0],
+            lock_resource=DirectIngestRawDataResourceLockResource(row[1]),
+            released=row[2],
+        )
 
 
 @attr.define

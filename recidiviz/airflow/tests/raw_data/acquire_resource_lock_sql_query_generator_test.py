@@ -31,9 +31,9 @@ from recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator i
 from recidiviz.airflow.dags.raw_data.metadata import RESOURCE_LOCKS_NEEDED
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_types import RawDataResourceLock
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.persistence.errors import DirectIngestRawDataResourceLockHeldError
-from recidiviz.utils.types import assert_type
 
 
 class TestAcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnitTest):
@@ -61,11 +61,14 @@ class TestAcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnit
             mock_operator, self.mock_pg_hook, mock_context
         )
 
-        resources_locked = {result["lock_resource"] for result in results}
+        locks = [RawDataResourceLock.deserialize(result) for result in results]
 
-        self.assertSetEqual(resources_locked, {r.value for r in RESOURCE_LOCKS_NEEDED})
-        for result in results:
-            assert_type(result["lock_id"], int)
+        self.assertSetEqual(
+            {lock.lock_resource for lock in locks},
+            set(RESOURCE_LOCKS_NEEDED),
+        )
+
+        assert all(not lock.released for lock in locks)
 
     @freeze_time(datetime.datetime(2023, 1, 26, 0, 0, 0, 0))
     def test_acquires_lock_fails(self) -> None:
@@ -76,11 +79,14 @@ class TestAcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnit
             mock_operator, self.mock_pg_hook, mock_context
         )
 
-        resources_locked = {result["lock_resource"] for result in results}
+        locks = [RawDataResourceLock.deserialize(result) for result in results]
 
-        self.assertSetEqual(resources_locked, {r.value for r in RESOURCE_LOCKS_NEEDED})
-        for result in results:
-            assert_type(result["lock_id"], int)
+        self.assertSetEqual(
+            {lock.lock_resource for lock in locks},
+            set(RESOURCE_LOCKS_NEEDED),
+        )
+
+        assert all(not lock.released for lock in locks)
 
         with self.assertRaises(DirectIngestRawDataResourceLockHeldError):
             results = self.generator.execute_postgres_query(
@@ -96,19 +102,28 @@ class TestAcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnit
                 mock_operator, self.mock_pg_hook, mock_context
             )
 
-        resources_locked = {result["lock_resource"] for result in results}
+        old_locks = [RawDataResourceLock.deserialize(result) for result in results]
 
-        self.assertSetEqual(resources_locked, {r.value for r in RESOURCE_LOCKS_NEEDED})
-        old_ids = set()
-        for result in results:
-            assert_type(result["lock_id"], int)
-            old_ids.add(result["lock_id"])
+        self.assertSetEqual(
+            {lock.lock_resource for lock in old_locks},
+            set(RESOURCE_LOCKS_NEEDED),
+        )
+
+        assert all(not lock.released for lock in old_locks)
 
         results_new = self.generator.execute_postgres_query(
             mock_operator, self.mock_pg_hook, mock_context
         )
+        new_locks = [RawDataResourceLock.deserialize(result) for result in results_new]
 
-        self.assertSetEqual(resources_locked, {r.value for r in RESOURCE_LOCKS_NEEDED})
-        for result in results_new:
-            assert_type(result["lock_id"], int)
-            assert result["lock_id"] not in old_ids
+        self.assertSetEqual(
+            {lock.lock_resource for lock in new_locks},
+            set(RESOURCE_LOCKS_NEEDED),
+        )
+
+        assert all(not lock.released for lock in new_locks)
+
+        # lock id sets are disjoint
+        assert {lock.lock_id for lock in old_locks} & {
+            lock.lock_id for lock in new_locks
+        } == set()

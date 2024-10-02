@@ -16,7 +16,7 @@
 # =============================================================================
 """Unit tests for ReleaseRawDataResourceLockSqlQueryGenerator"""
 import datetime
-from typing import Any, Dict, List
+from typing import List
 from unittest.mock import create_autospec
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -34,7 +34,11 @@ from recidiviz.airflow.dags.raw_data.release_resource_lock_sql_query_generator i
     ReleaseRawDataResourceLockSqlQueryGenerator,
 )
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
+from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
+    DirectIngestRawDataResourceLockResource,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_types import RawDataResourceLock
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.persistence.errors import (
     DirectIngestRawDataResourceLockAlreadyReleasedError,
@@ -62,12 +66,18 @@ class TestReleaseRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnit
         )
         self.mock_pg_hook = PostgresHook(postgres_conn_id=self.conn_id)
 
-    def _acquire_locks(self) -> List[Dict[str, Any]]:
+    def _acquire_locks(self) -> List[str]:
         return self.acquire_generator.execute_postgres_query(
             create_autospec(CloudSqlQueryOperator),
             self.mock_pg_hook,
             create_autospec(Context),
         )
+
+    def _get_current_locks(self) -> List[RawDataResourceLock]:
+        results: List = self.mock_pg_hook.get_records(
+            "SELECT lock_id, lock_resource, released FROM direct_ingest_raw_data_resource_lock"
+        )
+        return [RawDataResourceLock.from_table_row(row) for row in results]
 
     @freeze_time(datetime.datetime(2023, 1, 26, 0, 0, 0, 0))
     def test_release_lock(self) -> None:
@@ -76,22 +86,28 @@ class TestReleaseRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnit
         written_locks = self._acquire_locks()
         mock_operator.xcom_pull.return_value = written_locks
 
-        results = self.release_generator.execute_postgres_query(
+        locks_before_release = self._get_current_locks()
+
+        assert all(not lock.released for lock in locks_before_release)
+
+        self.release_generator.execute_postgres_query(
             mock_operator, self.mock_pg_hook, mock_context
         )
 
+        locks_after_release = self._get_current_locks()
+
         self.assertSetEqual(
-            {lock["lock_id"] for lock in results},
-            {lock["lock_id"] for lock in written_locks},
+            {lock.lock_id for lock in locks_before_release},
+            {lock.lock_id for lock in locks_after_release},
         )
 
-        self.assertTrue(all(lock["released"] for lock in results))
+        assert all(lock.released for lock in locks_after_release)
 
         with self.assertRaisesRegex(
             DirectIngestRawDataResourceLockAlreadyReleasedError,
             r"Lock has already been released: .*",
         ):
-            _ = self.release_generator.execute_postgres_query(
+            self.release_generator.execute_postgres_query(
                 mock_operator, self.mock_pg_hook, mock_context
             )
 
@@ -99,14 +115,18 @@ class TestReleaseRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnit
     def test_release_invalid_lock(self) -> None:
         mock_operator = create_autospec(CloudSqlQueryOperator)
         mock_operator.xcom_pull.return_value = [
-            {"lock_id": 1, "lock_resource": "BUCKET"}
+            RawDataResourceLock(
+                lock_id=1,
+                lock_resource=DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET,
+                released=False,
+            ).serialize()
         ]
 
         with self.assertRaisesRegex(
             LookupError,
             r"Could not find all locks with the ids provided: .*",
         ):
-            _ = self.release_generator.execute_postgres_query(
+            self.release_generator.execute_postgres_query(
                 mock_operator, self.mock_pg_hook, create_autospec(Context)
             )
 
@@ -124,6 +144,6 @@ class TestReleaseRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnit
             DirectIngestRawDataResourceLockAlreadyReleasedError,
             r"Lock has already been released: .*",
         ):
-            _ = self.release_generator.execute_postgres_query(
+            self.release_generator.execute_postgres_query(
                 mock_operator, self.mock_pg_hook, create_autospec(Context)
             )
