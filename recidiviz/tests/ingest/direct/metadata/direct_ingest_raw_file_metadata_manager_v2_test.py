@@ -162,6 +162,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             ),
             normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
             raw_data_instance=DirectIngestInstance.PRIMARY,
+            is_invalidated=False,
         )
 
         self.assertIsInstance(metadata, DirectIngestRawGCSFileMetadata)
@@ -197,6 +198,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                 2015, 1, 2, 3, 3, 3, 3, tzinfo=datetime.UTC
             ),
             raw_data_instance=DirectIngestInstance.PRIMARY,
+            is_invalidated=False,
         )
 
         self.assertIsInstance(metadata, DirectIngestRawGCSFileMetadata)
@@ -551,6 +553,11 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
 
         assert metadata.is_invalidated is True
 
+        gcs_metadata = self.raw_metadata_manager.get_raw_gcs_file_metadata(
+            raw_unprocessed_path
+        )
+        assert gcs_metadata.is_invalidated is True
+
     @freeze_time("2015-01-02T03:04:06")
     def test_get_unprocessed_raw_files_eligible_for_import_when_no_files(self) -> None:
         # Assert
@@ -611,6 +618,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             normalized_file_name="unprocessed_2015-01-02T03:04:06:000000_raw_file_tag.csv",
             update_datetime=datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=datetime.UTC),
             raw_data_instance=DirectIngestInstance.PRIMARY,
+            is_invalidated=False,
         )
 
         expected_bq_metadata = DirectIngestRawBigQueryFileMetadata.new_with_defaults(
@@ -723,6 +731,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                     )
                     + timedelta(hours=i),
                     raw_data_instance=DirectIngestInstance.SECONDARY,
+                    is_invalidated=False,
                 )
             )
 
@@ -916,6 +925,48 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
         self.raw_metadata_manager.mark_instance_data_invalidated()
         self.assertEqual(
             0, len(self.raw_metadata_manager.get_non_invalidated_raw_big_query_files())
+        )
+        assert (
+            self.raw_metadata_manager.get_raw_gcs_file_metadata(
+                raw_unprocessed_path_1
+            ).is_invalidated
+            is True
+        )
+
+    def test_mark_instance_as_invalidated_ungrouped(self) -> None:
+        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+            "bucket/file_tag.csv",
+            dt=datetime.datetime.now(tz=datetime.UTC),
+        )
+        self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+            raw_unprocessed_path_1
+        )
+        raw_ungrouped_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+            "bucket/file_tag.csv",
+            dt=datetime.datetime.now(tz=datetime.UTC),
+        )
+        self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+            raw_ungrouped_unprocessed_path_1, is_chunked_file=True
+        )
+        self.assertEqual(
+            1, len(self.raw_metadata_manager.get_non_invalidated_raw_big_query_files())
+        )
+
+        self.raw_metadata_manager.mark_instance_data_invalidated()
+        self.assertEqual(
+            0, len(self.raw_metadata_manager.get_non_invalidated_raw_big_query_files())
+        )
+        assert (
+            self.raw_metadata_manager.get_raw_gcs_file_metadata(
+                raw_unprocessed_path_1
+            ).is_invalidated
+            is True
+        )
+        assert (
+            self.raw_metadata_manager.get_raw_gcs_file_metadata(
+                raw_ungrouped_unprocessed_path_1
+            ).is_invalidated
+            is True
         )
 
     def test_get_unprocessed_raw_files_eligible_for_import_when_secondary_db(

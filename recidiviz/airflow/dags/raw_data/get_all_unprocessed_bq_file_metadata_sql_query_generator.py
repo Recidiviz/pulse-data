@@ -313,7 +313,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             self._raw_data_instance.value,
             metadata.file_tag,
             metadata.update_datetime.isoformat(),
-            0,  # False
+            0,  # "0"::bool evaluates to False
         ]
 
         return "\n(" + ", ".join([f"'{value}'" for value in row_contents]) + ")"

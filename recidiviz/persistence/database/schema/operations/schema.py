@@ -398,6 +398,9 @@ class DirectIngestRawBigQueryFileMetadata(OperationsBase):
     update_datetime = Column(DateTime(timezone=True), nullable=False)
 
     # Whether or not this row is still valid.
+    # n.b.: when joining against direct_ingest_raw_gcs_file_metadata, be mindful
+    # of `IS FALSE` vs `IS NOT TRUE` boolean logic as they can evaluate differently for
+    # ungrouped direct_ingest_raw_gcs_file_metadata rows that have a null file_id
     is_invalidated = Column(Boolean, nullable=False)
 
     # Time when all parts of this conceptual file finished uploading to BigQuery
@@ -453,6 +456,13 @@ class DirectIngestRawGCSFileMetadata(OperationsBase):
     # The instance of the bucket that this raw data file was discovered in.
     raw_data_instance = Column(direct_ingest_instance, nullable=False, index=True)
 
+    # Whether or not this row is still valid. if this row has a non-null file_id,
+    # this value should always match the value in direct_ingest_raw_big_query_file_metadata.
+    # n.b.: when joining against direct_ingest_raw_big_query_file_metadata, be mindful
+    # of `IS FALSE` vs `IS NOT TRUE` boolean logic as they can evaluate differently for
+    # ungrouped files that have a null file_id
+    is_invalidated = Column(Boolean, nullable=False)
+
     # Shortened name for the raw file that corresponds to its YAML schema definition
     file_tag = Column(String(255), nullable=False, index=True)
 
@@ -465,6 +475,17 @@ class DirectIngestRawGCSFileMetadata(OperationsBase):
 
     # Time when the file is actually discovered by the raw data DAG
     file_discovery_time = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index(
+            "one_non_invalidated_normalized_file_name_per_region_instance",
+            "region_code",
+            "raw_data_instance",
+            "normalized_file_name",
+            unique=True,
+            postgresql_where=(~is_invalidated),
+        ),
+    )
 
 
 class DirectIngestRawFileImportRun(OperationsBase):

@@ -104,6 +104,21 @@ class DirectIngestRawFileMetadataManagerV2:
             .one()
         )
 
+    def _get_non_invalidated_raw_gcs_file_metadata_for_file_id(
+        self, session: Session, file_id: int
+    ) -> List[schema.DirectIngestRawGCSFileMetadata]:
+        """Returns non-invalidated gcs metadata rows for the provided |file_id|"""
+        return (
+            session.query(schema.DirectIngestRawGCSFileMetadata)
+            .filter_by(
+                region_code=self.region_code,
+                file_id=file_id,
+                raw_data_instance=self.raw_data_instance.value,
+                is_invalidated=False,
+            )
+            .all()
+        )
+
     # --- row-level object retrieval ---------------------------------------------------
 
     def get_raw_big_query_file_metadata(
@@ -189,6 +204,7 @@ class DirectIngestRawFileMetadataManagerV2:
                 normalized_file_name=path.file_name,
                 update_datetime=parts.utc_upload_datetime,
                 file_discovery_time=datetime.datetime.now(tz=datetime.UTC),
+                is_invalidated=False,
             )
             session.add(new_gcs_file)
             session.flush()
@@ -338,10 +354,9 @@ class DirectIngestRawFileMetadataManagerV2:
     def mark_raw_big_query_file_as_invalidated_by_file_id(self, file_id: int) -> None:
         """Marks the row associated with the |file_id| as invalidated=True."""
         with SessionFactory.using_database(self.database_key) as session:
-            metadata = self._get_raw_big_query_file_metadata_for_file_id(
+            self.mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
                 session, file_id
             )
-            metadata.is_invalidated = True
 
     def mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
         self, session: Session, file_id: int
@@ -349,8 +364,15 @@ class DirectIngestRawFileMetadataManagerV2:
         """Marks the row associated with the |file_id| as invalidated=True using the
         provided |session|.
         """
-        metadata = self._get_raw_big_query_file_metadata_for_file_id(session, file_id)
-        metadata.is_invalidated = True
+        bq_metadata = self._get_raw_big_query_file_metadata_for_file_id(
+            session, file_id
+        )
+        gcs_metadata = self._get_non_invalidated_raw_gcs_file_metadata_for_file_id(
+            session, file_id
+        )
+        bq_metadata.is_invalidated = True
+        for gcs_file in gcs_metadata:
+            gcs_file.is_invalidated = True
 
     # --- aggregate file retrieval logic -----------------------------------------------
 
@@ -477,7 +499,8 @@ class DirectIngestRawFileMetadataManagerV2:
                     == self.region_code,
                     schema.DirectIngestRawGCSFileMetadata.raw_data_instance
                     == self.raw_data_instance.value,
-                    schema.DirectIngestRawBigQueryFileMetadata.is_invalidated.isnot(
+                    schema.DirectIngestRawGCSFileMetadata.is_invalidated.is_(False),
+                    schema.DirectIngestRawBigQueryFileMetadata.is_invalidated.is_not(
                         True
                     ),
                 )
@@ -643,7 +666,7 @@ class DirectIngestRawFileMetadataManagerV2:
             self.database_key,
         ) as session:
             table_cls = schema.DirectIngestRawBigQueryFileMetadata
-            update_query = (
+            bq_update_query = (
                 table_cls.__table__.update()
                 .where(
                     and_(
@@ -653,7 +676,19 @@ class DirectIngestRawFileMetadataManagerV2:
                 )
                 .values(is_invalidated=True)
             )
-            session.execute(update_query)
+            session.execute(bq_update_query)
+            table_cls = schema.DirectIngestRawGCSFileMetadata
+            gcs_update_query = (
+                table_cls.__table__.update()
+                .where(
+                    and_(
+                        table_cls.region_code == self.region_code.upper(),
+                        table_cls.raw_data_instance == self.raw_data_instance.value,
+                    )
+                )
+                .values(is_invalidated=True)
+            )
+            session.execute(gcs_update_query)
 
     def _earliest_file_discovery_time(
         self, session: Session
@@ -704,7 +739,9 @@ class DirectIngestRawFileMetadataManagerV2:
                     ON gcs.file_id = bq.file_id
                 WHERE gcs.raw_data_instance = 'PRIMARY'
                 AND gcs.region_code = '{self.region_code}'
-                AND bq.is_invalidated IS False
+                AND gcs.is_invalidated IS False
+                -- we do not TRUE here since there is a chance that it is NULL (i.e. ungrouped chunks)
+                AND bq.is_invalidated IS NOT True
             ), secondary_raw_data AS (
                 SELECT *
                 FROM direct_ingest_raw_gcs_file_metadata AS gcs
@@ -712,7 +749,9 @@ class DirectIngestRawFileMetadataManagerV2:
                     ON gcs.file_id = bq.file_id
                 WHERE gcs.raw_data_instance = 'SECONDARY'
                 AND gcs.region_code = '{self.region_code}'
-                AND bq.is_invalidated IS False
+                AND gcs.is_invalidated IS False
+                -- we do not TRUE here since there is a chance that it is NULL (i.e. ungrouped chunks)
+                AND bq.is_invalidated IS NOT True
             )
             SELECT primary_raw_data.normalized_file_name
             FROM primary_raw_data

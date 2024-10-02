@@ -127,7 +127,8 @@ export class NewCurrentRawFileProcessingStatus {
             <ul>
               {this.unprocessedFilesInSecondary().map((item) => (
                 <li>
-                  {item.fileTag}: {item.numberUnprocessedFiles}
+                  {item.fileTag}:{" "}
+                  {item.numberUnprocessedFiles + item.numberUngroupedFiles}
                 </li>
               ))}
             </ul>

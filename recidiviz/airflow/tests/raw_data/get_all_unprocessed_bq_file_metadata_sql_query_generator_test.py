@@ -314,7 +314,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-1.csv",
             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-2.csv",
             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-3.csv",
-            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-3.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-4.csv",
         ]
         inputs = self._insert_rows_into_gcs(paths)
 
@@ -349,7 +349,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-1.csv",
             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-2.csv",
             "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-3.csv",
-            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-3.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-4.csv",
         ]
         inputs = self._insert_rows_into_gcs(paths)
 
