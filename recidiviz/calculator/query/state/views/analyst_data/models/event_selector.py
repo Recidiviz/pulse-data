@@ -21,6 +21,9 @@ from typing import Dict, List, Sequence, Union
 import attr
 
 from recidiviz.calculator.query.sessions_query_fragments import list_to_query_string
+from recidiviz.observations.event_observation_big_query_view_builder import (
+    EventObservationBigQueryViewBuilder,
+)
 from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
@@ -51,12 +54,19 @@ class EventSelector:
         """Returns the MetricUnitOfObservation object associated with the event type"""
         return MetricUnitOfObservation(type=self.unit_of_observation_type)
 
-    def generate_event_conditions_query_fragment(self) -> str:
+    def generate_event_conditions_query_fragment(
+        self, filter_by_event_type: bool
+    ) -> str:
         """Returns a query fragment that filters a query based on configured event conditions"""
+        condition_strings = []
 
         # TODO(#32921): Shouldn't need to filter by span_type once we're querying from
-        #  the type-specific view.
-        condition_strings = [f'event = "{self.event_type.value}"']
+        #  the type-specific view. In order to do this, we will need to support having
+        #  an empty conditions fragment returned (or throw if this is called when
+        #  self.event_conditions_dict is empty).
+        if filter_by_event_type:
+            condition_strings.append(f'event = "{self.event_type.value}"')
+
         for attribute, conditions in self.event_conditions_dict.items():
             if isinstance(conditions, str):
                 attribute_condition_string = conditions
@@ -77,10 +87,20 @@ class EventSelector:
 
     def generate_event_selector_query(self) -> str:
         """Returns a standalone query that filters the appropriate events table based on configured event conditions"""
-        # TODO(#32921): Query from EventObservationBigQueryViewBuilder.materialized_view_address_for_span(self.span_type)
-        #  once all span-specific views have been hydrated.
+        event_observations_address = (
+            EventObservationBigQueryViewBuilder.materialized_view_address_for_event(
+                self.event_type
+            )
+        )
+        conditions_fragment = self.generate_event_conditions_query_fragment(
+            filter_by_event_type=False
+        )
+        filter_clause = (
+            f"WHERE {conditions_fragment}" if self.event_conditions_dict else ""
+        )
+
         return f"""
 SELECT *, end_date AS end_date_exclusive
-FROM `{{project_id}}.analyst_data.{self.unit_of_observation_type.short_name}_events_materialized`
-WHERE {self.generate_event_conditions_query_fragment()}
+FROM `{{project_id}}.{event_observations_address.to_str()}`
+{filter_clause}
 """
