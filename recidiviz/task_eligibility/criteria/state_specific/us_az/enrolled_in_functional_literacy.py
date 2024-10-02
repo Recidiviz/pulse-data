@@ -47,7 +47,11 @@ _QUERY_TEMPLATE = """
     WHERE state_code = 'US_AZ'
     AND participation_status_raw_text IN ('PARTICIPATING')
     AND program_id LIKE '%MAN%LIT%'
-    AND start_date != COALESCE(discharge_date, CAST(NULL AS DATE))
+    # Fixing the issue of zero-day spans while still keeping all participating individuals
+    AND CASE WHEN discharge_date IS NULL
+        THEN True
+        ELSE start_date != discharge_date 
+        END 
     #TODO(#33737): Look into multiple span cases for residents participating in MAN-LIT programs
     QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY start_date ASC) = 1
 """
