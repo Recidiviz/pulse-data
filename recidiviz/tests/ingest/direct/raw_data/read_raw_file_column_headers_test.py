@@ -17,6 +17,8 @@
 """Test for read_raw_file_column_headers.py"""
 import os
 import unittest
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 import attr
 
@@ -42,7 +44,7 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
 
         self.state_code = "us_xx"
         file_tag = "tagCustomLineTerminatorNonUTF8"
-        self.file_path = self._get_and_register_csv_gcs_path(file_tag, ".txt")
+        self.file_path = self._get_and_register_csv_gcs_path(file_tag, suffix=".txt")
 
         self.region_raw_file_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx", region_module=fake_regions_module
@@ -50,6 +52,13 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         self.default_file_config = self.region_raw_file_config.raw_file_configs[
             file_tag
         ]
+        self.filename_parts = MagicMock()
+        self.filename_parts.utc_upload_datetime = datetime.now()
+        self.filename_patcher = patch(
+            "recidiviz.ingest.direct.raw_data.read_raw_file_column_headers.filename_parts_from_path",
+            return_value=self.filename_parts,
+        ).start()
+        self.addCleanup(self.filename_patcher.stop)
 
     def test_no_valid_encoding(self) -> None:
         updated_file_config = attr.evolve(
@@ -132,11 +141,12 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
 
         header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
 
-        with self.assertRaisesRegex(
-            ValueError,
-            "Found unexpected header in the CSV. Please remove the header row from the CSV",
-        ):
+        with self.assertRaises(ValueError) as context:
             header_reader.read_and_validate_column_headers(file_path)
+        self.assertEqual(
+            "Found unexpected header [COL1] in the CSV. Please remove the header row from the CSV.",
+            str(context.exception),
+        )
 
     def test_headers_normalized_for_bq(self) -> None:
         file_tag = "tagInvalidCharacters"
@@ -217,8 +227,25 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         result = header_reader.read_and_validate_column_headers(file_path)
         self.assertEqual(result, ["COL1", "COL2", "COL3"])
 
+    def test_missing_column_in_file(self) -> None:
+        file_tag = "tagColumnMissingInRawData"
+        file_config = self.region_raw_file_config.raw_file_configs[file_tag]
+        file_path = self._get_and_register_csv_gcs_path(file_tag)
+
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
+
+        with self.assertRaises(ValueError) as context:
+            header_reader.read_and_validate_column_headers(file_path)
+
+        expected_msg = (
+            "Columns [COL2] found in config for [tagColumnMissingInRawData] were not found in the raw data file.",
+        )
+        self.assertEqual(expected_msg, context.exception.args)
+
     def _get_and_register_csv_gcs_path(
-        self, file_tag: str, suffix: str = ".csv"
+        self,
+        file_tag: str,
+        suffix: str = ".csv",
     ) -> GcsfsFilePath:
         local_path = os.path.join(
             os.path.relpath(
