@@ -62,7 +62,7 @@ def get_task_eligible_event_query_builder(
         a.person_id,
         DATE_ADD(a.start_date, INTERVAL {days_overdue} DAY) AS overdue_date,
         a.task_name,
-        b.completion_event_type AS task_type,
+        a.task_type,
         COALESCE(c.surfaced, FALSE) AS after_tool_action,
         -- Flag if person was previously almost eligible before becoming fully eligible
         COALESCE(
@@ -74,10 +74,6 @@ def get_task_eligible_event_query_builder(
         IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
     FROM
         `{{project_id}}.analyst_data.all_task_eligibility_spans_materialized` a
-    INNER JOIN
-        `{{project_id}}.reference_views.task_to_completion_event` b
-    USING
-        (task_name)
     -- Get information about impact funnel status.
     -- We convert the eligibility start date to a timestamp having the last time (23:59:59) on that date,
     -- to account for any usage events that may have occurred on the same date.
@@ -85,13 +81,13 @@ def get_task_eligible_event_query_builder(
         `{{project_id}}.analyst_data.workflows_person_impact_funnel_status_sessions_materialized` c
     ON
         a.person_id = c.person_id
-        AND b.completion_event_type = c.task_type
+        AND a.task_type = c.task_type
         AND DATETIME_SUB(DATETIME(DATE_ADD(a.start_date, INTERVAL 1 DAY)), INTERVAL 1 SECOND)
             BETWEEN c.start_date AND {nonnull_end_date_exclusive_clause("c.end_date")}
     INNER JOIN
         `{{project_id}}.reference_views.completion_event_type_metadata_materialized` d
-    USING
-        (completion_event_type)
+    ON
+        a.task_type = d.completion_event_type
     LEFT JOIN
         `{{project_id}}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
     ON

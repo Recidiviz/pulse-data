@@ -44,7 +44,7 @@ ALL_TASK_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
         `{{project_id}}.task_eligibility.all_tasks_materialized`
     INNER JOIN
         `{{project_id}}.reference_views.task_to_completion_event`
-    USING (task_name)
+    USING (state_code, task_name)
     )
     ,
     sessionized_cte AS

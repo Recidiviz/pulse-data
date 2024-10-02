@@ -397,7 +397,7 @@ FROM
 INNER JOIN
     `{project_id}.reference_views.task_to_completion_event`
 USING
-    (task_name)
+    (state_code, task_name)
 INNER JOIN
     `{project_id}.reference_views.completion_event_type_metadata_materialized` metadata
 USING

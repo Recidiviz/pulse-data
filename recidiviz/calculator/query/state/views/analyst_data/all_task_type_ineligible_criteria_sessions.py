@@ -19,12 +19,12 @@ accross any overlapping span collapses spans based on the `task_name` and `is_el
 fields for each client"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 ALL_TASK_INELIGIBLE_CRITERIA_SUBSESSION_VIEW_NAME = (
     "all_task_type_ineligible_criteria_sessions"
@@ -48,8 +48,8 @@ ALL_TASK_INELIGIBLE_CRITERIA_SUBSESSIONS_QUERY_TEMPLATE = f"""
             `{{project_id}}.task_eligibility.all_tasks_materialized` atm
         LEFT JOIN
             `{{project_id}}.reference_views.task_to_completion_event` t_e
-        ON
-            atm.task_name = t_e.task_name
+        USING
+            (state_code, task_name)
     ),
     {create_sub_sessions_with_attributes(table_name='joined_tasks',
                        index_columns=['completion_event_type', 'person_id', 'state_code'],
