@@ -30,6 +30,9 @@ from recidiviz.common.constants.csv import (
     DEFAULT_CSV_ENCODING,
     DEFAULT_CSV_LINE_TERMINATOR,
 )
+from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
+    DirectIngestRawDataResourceLockResource,
+)
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
 )
@@ -53,6 +56,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawBigQueryFileMetadata,
     RawBigQueryFileProcessedTime,
     RawDataAppendImportError,
+    RawDataResourceLock,
     RawFileBigQueryLoadConfig,
     RawFileImport,
     RawFileLoadAndPrepError,
@@ -217,6 +221,15 @@ class TestSerialization(unittest.TestCase):
         )
 
         self._validate_serialization(error, RawDataAppendImportError)
+
+    def test_resource_lock(self) -> None:
+        original = RawDataResourceLock(
+            lock_id=1,
+            lock_resource=DirectIngestRawDataResourceLockResource.BUCKET,
+            released=False,
+        )
+
+        self._validate_serialization(original, RawDataResourceLock)
 
     def test_bq_table_schema(self) -> None:
         original = RawFileBigQueryLoadConfig(

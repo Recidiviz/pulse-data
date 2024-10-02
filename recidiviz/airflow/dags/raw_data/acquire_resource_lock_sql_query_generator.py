@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A CloudSQLQueryGenerator for acquiring raw data resource locks"""
-from typing import Any, Dict, List
+from typing import List
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -33,6 +33,7 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
     DirectIngestRawDataResourceLockResource,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.raw_data_import_types import RawDataResourceLock
 from recidiviz.persistence.errors import DirectIngestRawDataResourceLockHeldError
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -51,12 +52,10 @@ AND EXTRACT(epoch FROM '{current_datetime}'::timestamp with time zone - lock_acq
 ADD_LOCKS_SQL_QUERY = """
 INSERT INTO direct_ingest_raw_data_resource_lock (lock_actor, lock_resource, region_code, raw_data_source_instance, released, lock_acquisition_time, lock_ttl_seconds, lock_description) 
 VALUES {values}
-RETURNING lock_id, lock_resource;"""
+RETURNING lock_id, lock_resource, released;"""
 
 
-class AcquireRawDataResourceLockSqlQueryGenerator(
-    CloudSqlQueryGenerator[List[Dict[str, Any]]]
-):
+class AcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]):
     """Custom query generator for acquiring raw data resource locks"""
 
     def __init__(
@@ -80,7 +79,7 @@ class AcquireRawDataResourceLockSqlQueryGenerator(
         operator: CloudSqlQueryOperator,
         postgres_hook: PostgresHook,
         context: Context,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[str]:
         # postgres_hook.run can take multiple statements that, if autocommit is set False
         # which is the default behavior, will all be executed w/in the same cursor using
         # psycopg2 w/in the same commit. thus if one of them fails, they'll all get
@@ -104,11 +103,7 @@ class AcquireRawDataResourceLockSqlQueryGenerator(
             raise ValueError("Expected a return result when creating locks")
 
         return [
-            {
-                "lock_id": lock[0],
-                "lock_resource": DirectIngestRawDataResourceLockResource(lock[1]).value,
-            }
-            for lock in add_result
+            RawDataResourceLock.from_table_row(lock).serialize() for lock in add_result
         ]
 
     @property
