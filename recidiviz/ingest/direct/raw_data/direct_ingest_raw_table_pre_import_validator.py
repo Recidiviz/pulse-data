@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Run import-blocking validations on a raw data temp table in BigQuery."""
-import datetime
 from concurrent import futures
+from datetime import datetime, timezone
 from typing import List, Type
 
 from google.api_core import retry
@@ -83,12 +83,15 @@ class DirectIngestRawTablePreImportValidator:
     def _collect_validations_to_run(
         self,
         file_tag: str,
-        file_update_datetime: datetime.datetime,
+        file_update_datetime: datetime,
         temp_table_address: BigQueryAddress,
     ) -> List[RawDataImportBlockingValidation]:
         """Collect all validations to be run on the temp table.
         This method gathers both table-level and column-level validations, checking if
         they apply to the file and are not exempt based on the raw file configuration.
+        Column validations are only collected for columns that are relevant at the given
+        file update datetime, meaning they are present in the temp table and have not been
+        since deleted from the raw table.
         """
         all_validations: List[RawDataImportBlockingValidation] = []
         raw_file_config = self.region_raw_file_config.raw_file_configs[file_tag]
@@ -109,7 +112,10 @@ class DirectIngestRawTablePreImportValidator:
                 )
             )
 
-        for column in raw_file_config.columns:
+        for column in raw_file_config.columns_at_datetime(file_update_datetime):
+            if not column.name_at_datetime(datetime.now(tz=timezone.utc)):
+                # We don't care about running this validation if the column doesn't exist in this file anymore
+                continue
             for col_validation_cls in COLUMN_VALIDATION_CLASSES:
                 if not raw_file_config.column_is_exempt_from_validation(
                     column.name, col_validation_cls.validation_type()
@@ -119,6 +125,7 @@ class DirectIngestRawTablePreImportValidator:
                             file_tag,
                             self.project_id,
                             temp_table_address,
+                            file_update_datetime,
                             column,
                         )
                     )
@@ -157,7 +164,7 @@ class DirectIngestRawTablePreImportValidator:
     def run_raw_data_temp_table_validations(
         self,
         file_tag: str,
-        file_update_datetime: datetime.datetime,
+        file_update_datetime: datetime,
         temp_table_address: BigQueryAddress,
     ) -> None:
         """Run all applicable validation queries against the temp raw table in BigQuery and

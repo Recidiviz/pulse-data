@@ -15,10 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit tests for direct_ingest_raw_table_pre_import_validator.py."""
-import datetime
 import textwrap
 import unittest
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
+
+import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
@@ -26,6 +28,8 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validat
     DirectIngestRawTablePreImportValidator,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    ColumnUpdateInfo,
+    ColumnUpdateOperation,
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
@@ -58,7 +62,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
         self.region_code = "us_xx"
         self.raw_data_instance = DirectIngestInstance.PRIMARY
         self.file_tag = "myFile"
-        self.file_update_datetime = datetime.datetime.now()
+        self.file_update_datetime = datetime(2022, 1, 1, tzinfo=timezone.utc)
         self.column_name = "Col1"
 
         self.raw_file_config = DirectIngestRawFileConfig(
@@ -73,7 +77,35 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
                     description="description",
                     is_pii=True,
                     field_type=RawTableColumnFieldType.STRING,
-                )
+                ),
+                # We should not run validations on columns that have since been deleted
+                # because we don't want to block import for issues with data that is no longer being used
+                RawTableColumnInfo(
+                    name="Col2",
+                    description="description",
+                    is_pii=True,
+                    field_type=RawTableColumnFieldType.STRING,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.DELETION,
+                            update_datetime=datetime(2023, 1, 1, tzinfo=timezone.utc),
+                        )
+                    ],
+                ),
+                # Should not run validations on columns that have been added after the file upload datetime
+                # because it won't exist in the temp table
+                RawTableColumnInfo(
+                    name="Col3",
+                    description="description",
+                    is_pii=True,
+                    field_type=RawTableColumnFieldType.STRING,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.ADDITION,
+                            update_datetime=datetime(2023, 1, 1, tzinfo=timezone.utc),
+                        )
+                    ],
+                ),
             ],
             primary_key_cols=[],
             supplemental_order_by_clause="",
@@ -123,6 +155,61 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
 
         # should be called for historical stable counts validation and non-null validation for Col1
         self.assertEqual(self.big_query_client.run_query_async.call_count, 2)
+
+    def test_run_raw_table_validations_renamed_col(self) -> None:
+        nonnull_values_job = MagicMock()
+        # non-null validation should pass if at least one non-null value is found
+        nonnull_values_job.result.return_value = [{"OldCol1": "mocked_result_value"}]
+        self.big_query_client.run_query_async.side_effect = [
+            self.stable_counts_job,
+            nonnull_values_job,
+        ]
+        raw_file_config = attr.evolve(
+            self.raw_file_config,
+            columns=[
+                # Since column was renamed after the file upload datetime, we should query for the old column name
+                RawTableColumnInfo(
+                    name=self.column_name,
+                    description="description",
+                    is_pii=True,
+                    field_type=RawTableColumnFieldType.STRING,
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.RENAME,
+                            update_datetime=datetime(
+                                2023,
+                                1,
+                                1,
+                                tzinfo=timezone.utc,
+                            ),
+                            previous_value="OldCol1",
+                        )
+                    ],
+                ),
+            ],
+        )
+        self.region_raw_file_config.raw_file_configs[self.file_tag] = raw_file_config
+
+        validator = DirectIngestRawTablePreImportValidator(
+            project_id=self.project_id,
+            region_raw_file_config=self.region_raw_file_config,
+            region_code=self.region_code,
+            raw_data_instance=self.raw_data_instance,
+            big_query_client=self.big_query_client,
+        )
+
+        # should not raise any exceptions
+        validator.run_raw_data_temp_table_validations(
+            self.file_tag, self.file_update_datetime, self.temp_table_address
+        )
+
+        # should be called for historical stable counts validation and non-null validation for Col1
+        self.assertEqual(self.big_query_client.run_query_async.call_count, 2)
+        # Should be querying for OldCol1
+        self.big_query_client.run_query_async.assert_called_with(
+            query_str="\nSELECT OldCol1\nFROM test-project.test_dataset.test_table\nWHERE OldCol1 IS NOT NULL\nLIMIT 1\n",
+            use_query_cache=True,
+        )
 
     def test_run_raw_table_validations_failure(self) -> None:
         nonnull_values_job = MagicMock()

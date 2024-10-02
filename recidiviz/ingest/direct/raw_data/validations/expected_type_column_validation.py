@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Validation to check if a column has values that can't be cast to the expected type."""
+from datetime import datetime
 from typing import Any, Dict, List
 
 import attr
@@ -60,13 +61,18 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
         file_tag: str,
         project_id: str,
         temp_table_address: BigQueryAddress,
+        file_upload_datetime: datetime,
         column: RawTableColumnInfo,
     ) -> "ExpectedTypeColumnValidation":
+        if not (temp_table_col_name := column.name_at_datetime(file_upload_datetime)):
+            raise ValueError(
+                f"Column [{column.name}] does not exist at datetime [{file_upload_datetime}]"
+            )
         return cls(
             file_tag=file_tag,
             project_id=project_id,
             temp_table_address=temp_table_address,
-            column_name=column.name,
+            column_name=temp_table_col_name,
             column_type=column.field_type,
         )
 

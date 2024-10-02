@@ -859,6 +859,14 @@ class DirectIngestRawFileConfig:
             if (col_name := column.name_at_datetime(dt)) is not None
         ]
 
+    def columns_at_datetime(self, dt: datetime) -> List[RawTableColumnInfo]:
+        """
+        Returns a list of column info objects that existed at the given datetime.
+        """
+        return [
+            column for column in self.columns if column.name_at_datetime(dt) is not None
+        ]
+
     def column_mapping_from_datetime_to_current(self, dt: datetime) -> Dict[str, str]:
         """
         Returns a dictionary mapping with the key being the column name at the given datetime

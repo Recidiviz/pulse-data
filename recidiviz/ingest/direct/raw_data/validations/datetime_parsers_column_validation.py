@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Validation that checks if a datetime column has values that don't match any of its datetime parsers."""
+from datetime import datetime
 from typing import Any, Dict, List
 
 import attr
@@ -50,8 +51,13 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
         file_tag: str,
         project_id: str,
         temp_table_address: BigQueryAddress,
+        file_upload_datetime: datetime,
         column: RawTableColumnInfo,
     ) -> "DatetimeParsersColumnValidation":
+        if not (temp_table_col_name := column.name_at_datetime(file_upload_datetime)):
+            raise ValueError(
+                f"Column [{column.name}] does not exist at datetime [{file_upload_datetime}]"
+            )
         if not column.datetime_sql_parsers:
             raise ValueError(
                 f"datetime_sql_parsers for {column.name} must not be empty"
@@ -61,7 +67,7 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
             project_id=project_id,
             temp_table_address=temp_table_address,
             file_tag=file_tag,
-            column_name=column.name,
+            column_name=temp_table_col_name,
             datetime_sql_parsers=column.datetime_sql_parsers,
         )
 
