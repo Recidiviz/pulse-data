@@ -1207,3 +1207,48 @@ class BigQueryViewDagWalker:
                 node = self.nodes_by_address[ancestor]
                 related_addresses |= node.parent_node_addresses | node.source_addresses
         return related_addresses
+
+    def get_all_node_addresses_between_start_and_end_collections(
+        self,
+        start_source_addresses: set[BigQueryAddress],
+        start_node_addresses: set[BigQueryAddress],
+        end_node_addresses: set[BigQueryAddress],
+    ) -> set[BigQueryAddress]:
+        """Given sets of addresses to start from and to end at, returns the set of
+        node (i.e. view) addresses including the start_node_addresses,
+        end_node_addresses, and any views in a dependency chain between the between
+        start and end addresses.
+
+        Args:
+            start_source_addresses: A set of addresses that are not nodes in the DAG but
+                are parents in the DAG. In other words, source table addresses. These
+                addresses will not be returned as part of the result addresses set but
+                will be points to start graph exploration from. Any views in a
+                dependency chain between one of these addresses and an end address will
+                be included in the result.
+            start_node_addresses: As set of addresses for views in this DAG to start
+                exploration from. Any views in a dependency chain between one of these
+                addresses and an end address will be included in the result.
+            end_node_addresses: A set of addresses for views in this DAG to end
+                exploration at.
+        """
+
+        all_start_node_addresses = set(start_node_addresses)
+
+        for view_node in self.nodes_by_address.values():
+            if view_node.source_addresses.intersection(start_source_addresses):
+                all_start_node_addresses.add(view_node.view.address)
+
+        start_views = self.views_for_addresses(list(all_start_node_addresses))
+        start_descendants = {
+            v.address for v in self.get_descendants_sub_dag(start_views).views
+        }
+
+        end_views = self.views_for_addresses(list(end_node_addresses))
+        end_ancestors = {v.address for v in self.get_ancestors_sub_dag(end_views).views}
+
+        return (
+            end_ancestors.intersection(start_descendants)
+            | all_start_node_addresses
+            | end_node_addresses
+        )
