@@ -18,6 +18,7 @@
 """
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -63,6 +64,8 @@ _QUERY_TEMPLATE = f"""
         is_90_day_revocation,
         TO_JSON(STRUCT(is_90_day_revocation)) AS reason
     FROM sub_sessions_with_attributes
+    -- TODO(#33097): Remove once we can identify 90-day revocations in sessions
+    WHERE start_date != {nonnull_end_date_clause('end_date')}
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
