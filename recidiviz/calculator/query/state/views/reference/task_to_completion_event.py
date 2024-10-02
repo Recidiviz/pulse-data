@@ -35,6 +35,7 @@ TASK_TO_COMPLETION_EVENT_QUERY_TEMPLATE = "UNION DISTINCT".join(
     [
         f"""
 SELECT
+    "{task_builder.state_code.name}" AS state_code,
     "{task_builder.task_name}" AS task_name,
     "{task_builder.completion_event_builder.completion_event_type.name}" AS completion_event_type
 """
