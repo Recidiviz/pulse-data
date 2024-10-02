@@ -339,8 +339,15 @@ class ViewDagInvariantTests(unittest.TestCase):
             # TODO(#32921): Delete person_events and person_spans from this list when we
             #  delete those views.
             # These views produce generic analysis based on all TES spans.
+            BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="officer_spans"),
             BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_events"),
             BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_spans"),
+            BigQueryAddress(
+                dataset_id=ANALYST_VIEWS_DATASET, table_id="workflows_user_events"
+            ),
+            BigQueryAddress(
+                dataset_id=ANALYST_VIEWS_DATASET, table_id="workflows_user_spans"
+            ),
             CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
             WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,
             # TODO(#29291): Revisit whether we need to have these observations views

@@ -25,12 +25,16 @@ from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.spans import (
-    SPANS_BY_TYPE,
-)
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+from recidiviz.observations.observation_big_query_view_collector import (
+    ObservationBigQueryViewCollector,
+)
+from recidiviz.observations.span_observation_big_query_view_builder import (
+    SpanObservationBigQueryViewBuilder,
+)
+from recidiviz.observations.span_type import SpanType
 
 
 class MetricPopulationsByTypeTest(unittest.TestCase):
@@ -47,6 +51,11 @@ class MetricPopulationsByTypeTest(unittest.TestCase):
     # Check that all attribute filters are compatible with person spans in configured
     # MetricPopulation
     def test_compatible_person_span_filters(self) -> None:
+        collector = ObservationBigQueryViewCollector()
+        span_builders_by_span_type: dict[
+            SpanType, SpanObservationBigQueryViewBuilder
+        ] = {b.span_type: b for b in collector.collect_span_builders()}
+
         for population_type in MetricPopulationType:
             if population_type is MetricPopulationType.CUSTOM:
                 continue
@@ -60,13 +69,12 @@ class MetricPopulationsByTypeTest(unittest.TestCase):
 
                 if not span_selector:
                     continue
-
+                supported_attributes = span_builders_by_span_type[
+                    span_selector.span_type
+                ].attribute_cols
                 for attribute in span_selector.span_conditions_dict:
-                    if (
-                        attribute
-                        not in SPANS_BY_TYPE[span_selector.span_type].attribute_cols
-                    ):
+                    if attribute not in supported_attributes:
                         raise ValueError(
                             f"Span attribute `{attribute}` is not supported by {span_selector.span_type.value} span. "
-                            f"Supported attributes: {SPANS_BY_TYPE[span_selector.span_type].attribute_cols}"
+                            f"Supported attributes: {supported_attributes}"
                         )
