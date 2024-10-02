@@ -359,6 +359,11 @@ US_IX:
   ind_Offender_Address:
     sentencing_views.sentencing_client_record: |-
       Used to grab JII address for PSI tool. 05/21/24
+    workflows_views.us_ix_supervision_tasks_record: |-
+      Used to track address changes for next recommended home contacts dates.  The alternative 
+      would have been to ingest address periods and then track changes in the case compliance pipeline
+      in calc, but that was too big of a lift at this time and we plan to readdress
+      this tech debt when we work on Texas Tasks.
   ind_Offender_Alert:
     task_eligibility_criteria_us_ix.no_active_nco: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
