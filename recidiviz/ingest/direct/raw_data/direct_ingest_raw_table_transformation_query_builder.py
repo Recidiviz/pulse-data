@@ -72,7 +72,8 @@ class DirectIngestTempRawTablePreMigrationTransformationQueryBuilder:
         raw_table_config = self._region_raw_file_config.raw_file_configs[file_tag]
 
         trimmed_cols = ", ".join(
-            f"TRIM({col.name}) as {col.name}" for col in raw_table_config.columns
+            f"NULLIF(TRIM({col.name}),'') as {col.name}"
+            for col in raw_table_config.columns
         )
 
         filter_all_nulls_where = "\n  OR ".join(
