@@ -14,40 +14,55 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes spans of time when someone is not serving for domestic violence"""
+"""Describes spans of time when someone is ineligible due to a current or past conviction for a drug-related offense"""
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    no_current_or_prior_convictions,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_AZ_NOT_SERVING_FOR_DOMESTIC_VIOLENCE"
+_CRITERIA_NAME = "US_AZ_NO_DRUG_OFFENSE_CONVICTION"
 
-_DESCRIPTION = (
-    """Describes spans of time when someone is not serving for domestic violence"""
-)
+_DESCRIPTION = """Describes spans of time when someone is ineligible due to a current or
+past conviction for a drug-related offense"""
+
+
+_DRUG_STATUTES = [
+    "13-3405",  # MARIJUANA
+    "13-3407",  # DANGEROUS DRUG
+    "13-3408",  # NARCOTIC
+    "13-3415",  # DRUG PARAPHERNALIA
+]
+
+_QUERY_TEMPLATE = no_current_or_prior_convictions(statute=_DRUG_STATUTES)
 
 _REASONS_FIELDS = [
     ReasonsField(
         name="ineligible_offenses",
         type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-        description="A list of ineligible offenses related to domestic violence",
-    ),
+        description="A list of ineligible drug offenses a resident is serving",
+    )
 ]
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_AZ,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
     )
 )
 

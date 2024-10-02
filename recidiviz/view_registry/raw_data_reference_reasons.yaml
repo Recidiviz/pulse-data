@@ -87,19 +87,11 @@ US_AZ:
   AZ_DOC_SC_OFFENSE:
     analyst_data.us_az_early_discharge_sessions_preprocessing: |-
       We don't ingest early discharge data.
-  AZ_DOC_TRANSITION_PRG_ELIG:
-    task_eligibility_criteria_us_az.meets_functional_literacy: |-
-      Needed information on when residents meet literacy requirements, this information is not ingested.
-  AZ_DOC_TRANSITION_PRG_EVAL:
-    task_eligibility_criteria_us_az.meets_functional_literacy: |-
-      Needed information on when residents meet literacy requirements, this information is not ingested.
   DEMOGRAPHICS:
     task_eligibility_criteria_us_az.is_us_citizen_or_legal_permanent_resident:
       |-
       Needed a way to map the different citizen status ids in AZ to one another.
   DOC_EPISODE:
-    task_eligibility_criteria_us_az.meets_functional_literacy: |-
-      Needed a way to map the different ids in AZ to one another.
     task_eligibility_criteria_us_az.no_active_felony_detainers: |-
       Needed a way to map the different ids in AZ to one another.
   DPP_OFFICE_LOCATION:
@@ -126,9 +118,6 @@ US_AZ:
       This table is used to join officer names available in external data to PERSON_IDs
       used internally in the external comparison validation view.
   PERSON:
-    task_eligibility_criteria_us_az.meets_functional_literacy: |-
-      This table is used to convert ADC_NUMBER identifiers available in external data
-      into PERSON_ID identifiers used internally in the external comparison validation view.
     task_eligibility_criteria_us_az.no_active_felony_detainers: |-
       This table is used to convert ADC_NUMBER identifiers available in external data
       into PERSON_ID identifiers used internally in the external comparison validation view.
