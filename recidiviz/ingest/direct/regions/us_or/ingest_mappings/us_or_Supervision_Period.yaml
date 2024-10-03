@@ -122,6 +122,8 @@ output:
                   - INAC # Off Sentenced to out-of-State Facility
                   - PSRB # Psychiatric Review Board-Order Req.
                   - OC # Out Count
+                  - PVPD # TODO(#33927): Definition for this value is currently unknown,
+                    # remap to the appropriate enum value once we have the definition.
                 StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN:
                   - JDET # (only 14 instances)
           termination_reason:
