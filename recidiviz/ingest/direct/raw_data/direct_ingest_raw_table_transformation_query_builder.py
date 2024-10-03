@@ -64,7 +64,8 @@ class DirectIngestTempRawTablePreMigrationTransformationQueryBuilder:
         update_datetime: datetime.datetime,
         is_deleted: bool,
     ) -> str:
-        """Builds a SQL query that trims whitespace from all columns, removes all NULL rows,
+        """Builds a SQL query that trims whitespace from all columns, converts any value containing only
+        whitespace and/or ascii control characters (0x00-0x1F and 0x7F) to null, removes all NULL rows,
         and adds file_id, update_datetime, and is_deleted metadata columns to a raw data
         table that has been newly loaded from a CSV.
         """
@@ -72,7 +73,8 @@ class DirectIngestTempRawTablePreMigrationTransformationQueryBuilder:
         raw_table_config = self._region_raw_file_config.raw_file_configs[file_tag]
 
         trimmed_cols = ", ".join(
-            f"NULLIF(TRIM({col.name}),'') as {col.name}"
+            rf"CASE WHEN REGEXP_CONTAINS({col.name}, r'^[\s\x00-\x1F\x7F]*$') "
+            f"THEN NULL ELSE TRIM({col.name}) END as {col.name}"
             for col in raw_table_config.columns
         )
 

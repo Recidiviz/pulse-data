@@ -111,7 +111,11 @@ class DirectIngestRawFileLoadManager:
         skip_leading_rows: int,
     ) -> int:
         """Loads the raw data in the list of files at the provided |paths| into into
-        |destination_address|, not including recidivz-managed fields
+        |destination_address|, not including recidiviz-managed fields.
+        We preserve ascii control characters on load else the import into BQ will fail if ascii 0
+        or any other ascii control character are present. Since ascii is a subset of utf-8, we want to
+        be able to load ascii into BQ without doing any normalization of the csv data, and we can translate
+        any values containing only ascii control characters to nulls in the transformation step.
         """
         try:
             load_job: LoadJob = (
@@ -121,6 +125,7 @@ class DirectIngestRawFileLoadManager:
                     destination_table_schema=table_schema,
                     write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
                     skip_leading_rows=skip_leading_rows,
+                    preserve_ascii_control_characters=True,
                 )
             )
         except Exception as e:

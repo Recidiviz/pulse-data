@@ -326,6 +326,7 @@ class BigQueryClient:
         destination_table_schema: List[bigquery.SchemaField],
         write_disposition: str,
         skip_leading_rows: int = 0,
+        preserve_ascii_control_characters: bool = False,
     ) -> bigquery.job.LoadJob:
         """Loads a table from CSV data in GCS to BigQuery.
 
@@ -350,6 +351,8 @@ class BigQueryClient:
                 (WRITE_APPEND). By default, WRITE_APPEND is used.
             skip_leading_rows: Optional number of leading rows to skip on each input
                 file. Defaults to zero
+            preserve_ascii_control_characters: Whether to preserve ASCII control characters in the data. Defaults to
+                False. When disabled, we will fail the load if we encounter ASCII control characters in the data.
         Returns:
             The LoadJob object containing job details.
         """
@@ -1280,6 +1283,7 @@ class BigQueryClientImpl(BigQueryClient):
         destination_table_schema: List[bigquery.SchemaField],
         write_disposition: str,
         skip_leading_rows: int = 0,
+        preserve_ascii_control_characters: bool = False,
     ) -> bigquery.job.LoadJob:
         """Triggers a load job, i.e. a job that will copy all of the data from the given
         Cloud Storage source into the given BigQuery destination. Returns once the job
@@ -1296,6 +1300,7 @@ class BigQueryClientImpl(BigQueryClient):
         job_config.allow_quoted_newlines = True
         job_config.write_disposition = write_disposition
         job_config.skip_leading_rows = skip_leading_rows
+        job_config.preserve_ascii_control_characters = preserve_ascii_control_characters
 
         load_job = self.client.load_table_from_uri(
             source_uris, destination_table_ref, job_config=job_config
