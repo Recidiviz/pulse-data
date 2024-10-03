@@ -17,6 +17,56 @@
 /* File containing functions that construct SQL Queries used in CreateReport.gs. */
 
 /**
+ * Get MAU WAU By Location
+ * 
+*/
+function getMauWauByLocation(stateCode, endDateString, completionEventType, system) {
+  const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
+  const distinctRegisteredUsers = `distinct_registered_users_${system.toLowerCase()}`;
+  let xAxisColumn = "";
+  let location = "";
+  
+  if (system === "SUPERVISION") {
+    xAxisColumn = "district_name";
+    location = "district";
+  } else if (system === "INCARCERATION") {
+    xAxisColumn = "facility_name";
+    location = "facility";
+  } else {
+    throw new Error(
+      "Invalid system provided. Please check all Google Form Inputs."
+    );
+  }
+
+  const mauTable = `justice_involved_${location}_month_aggregated_metrics_materialized`;
+  const wauTable = `justice_involved_${location}_week_aggregated_metrics_materialized`;
+
+  const queryStringMonthly = `
+    SELECT
+      ${location},
+      ${distinctActiveUsers},
+      ${distinctRegisteredUsers}
+    FROM \`impact_reports.${mauTable}\`
+    WHERE state_code = '${stateCode}'
+    AND end_date = '${endDateString}'`;
+
+  const queryStringWeekly = `
+    SELECT
+      ${location},
+      ${distinctActiveUsers},
+      ${distinct_registered_users}
+    FROM \`impact_reports.${wauTable}\`
+    WHERE state_code = '${stateCode}'
+    AND end_date = '${endDateString}'`;
+
+  return {
+    mauLocationData: runQuery(queryStringMonthly),
+    wauLocationData: runQuery(queryStringWeekly),
+    mauWauXAxisColumn: xAxisColumn
+  };
+}
+
+/**
  * Get usage and impact district data
  * Given parameters provided by the user, constructs a query string and calls runQuery
  * to query the BiqQuery database.

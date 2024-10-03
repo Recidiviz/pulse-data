@@ -50,6 +50,7 @@ function main(e) {
   const workflowToSystem = {};
   const workflowToUsageAndImpactText = {};
   const workflowToUsageAndImpactChart = {};
+  const workflowToMauWauByRegionChart = {};
 
   const stateCodeToRows = getSheetValues();
   const stateRows = stateCodeToRows[stateCode];
@@ -67,6 +68,13 @@ function main(e) {
     const system = workflowRow.system;
     Logger.log("system: %s", system);
     workflowToSystem[workflow] = system;
+
+    const { mauLocationData, wauLocationData, mauWauXAxisColumn } = getMauWauByLocation(
+      stateCode,
+      endDateString,
+      completionEventType,
+      system
+    )
 
     const {
       almostEligible,
@@ -103,6 +111,7 @@ function main(e) {
       completionEventType,
       system
     );
+    
 
     const { supervisionDistrictData, xAxisColumn, yAxisColumn } =
       getSupervisionDistrictData(
@@ -495,16 +504,18 @@ function copyAndPopulateWorkflowSection(
         if (altTitle === "Impact Column Chart") {
           // Replace with generated chart
           if (workflowToDistrictOrFacilitiesColumnChart[workflow]) {
-            body.appendImage(
+            let img = body.appendImage(
               workflowToDistrictOrFacilitiesColumnChart[workflow]
             );
+            img.setWidth(639).setHeight(455);
           }
         } else if (altTitle === "Impact Column Chart by District or Region") {
           // Replace with generated chart
           if (workflowToUsageAndImpactChart[workflow]) {
-            body.appendImage(
+            let img = body.appendImage(
               workflowToUsageAndImpactChart[workflow]
             );
+            img.setWidth(639).setHeight(455);
           }
         } else {
           // Put back original image
