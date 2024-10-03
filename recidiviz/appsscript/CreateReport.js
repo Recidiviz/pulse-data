@@ -50,6 +50,7 @@ function main(e) {
   const workflowToSystem = {};
   const workflowToUsageAndImpactText = {};
   const workflowToUsageAndImpactChart = {};
+  const workflowToMaxMarkedIneligibleLocation = {};
   const workflowToMauWauByRegionChart = {};
 
   const stateCodeToRows = getSheetValues();
@@ -69,12 +70,13 @@ function main(e) {
     Logger.log("system: %s", system);
     workflowToSystem[workflow] = system;
 
-    const { mauLocationData, wauLocationData, mauWauXAxisColumn } = getMauWauByLocation(
-      stateCode,
-      endDateString,
-      completionEventType,
-      system
-    )
+    const { mauLocationData, wauLocationData, mauWauXAxisColumn } =
+      getMauWauByLocation(
+        stateCode,
+        endDateString,
+        completionEventType,
+        system
+      );
 
     const {
       almostEligible,
@@ -88,21 +90,37 @@ function main(e) {
       completionEventType
     );
 
-    const { usageAndImpactDistrictData, usageAndImpactXAxisColumn, eligibleAndViewedColumn, markedIneligibleColumn, eligibleAndNotViewedColumn } =
-      getUsageAndImpactDistrictData(
-        stateCode,
-        endDateString,
-        completionEventType,
-        system
-      );
+    const {
+      usageAndImpactDistrictData,
+      usageAndImpactXAxisColumn,
+      eligibleAndViewedColumn,
+      markedIneligibleColumn,
+      eligibleAndNotViewedColumn,
+    } = getUsageAndImpactDistrictData(
+      stateCode,
+      endDateString,
+      completionEventType,
+      system
+    );
 
-    const usageAndImpactColumnChart = constructUsageAndImpactDistrictColumnChart(
+    const usageAndImpactColumnChart =
+      constructUsageAndImpactDistrictColumnChart(
         usageAndImpactXAxisColumn,
         eligibleAndViewedColumn,
         markedIneligibleColumn,
         eligibleAndNotViewedColumn,
         usageAndImpactDistrictData
       );
+
+    const usageAndImpactDistrictDataMarkedIneligible = [];
+    usageAndImpactDistrictData.forEach((row) => {
+      usageAndImpactDistrictDataMarkedIneligible.push([row[0], row[2]]);
+    });
+
+    var { maxLocation, maxValue } = getMaxLocation(
+      usageAndImpactDistrictDataMarkedIneligible
+    );
+    workflowToMaxMarkedIneligibleLocation[workflow] = { maxLocation, maxValue };
 
     var opportunityGranted = constructOpportunitiesGrantedText(
       stateCode,
@@ -111,7 +129,6 @@ function main(e) {
       completionEventType,
       system
     );
-    
 
     const { supervisionDistrictData, xAxisColumn, yAxisColumn } =
       getSupervisionDistrictData(
@@ -122,7 +139,8 @@ function main(e) {
         system
       );
 
-    const maxRegion = getMaxRegion(supervisionDistrictData);
+    var { maxLocation, _ } = getMaxLocation(supervisionDistrictData);
+    workflowToMaxOpportunityGrantedLocation[workflow] = maxLocation;
 
     var districtOrFacilitiesColumnChart =
       constructSupervisionDistrictColumnChart(
@@ -137,7 +155,12 @@ function main(e) {
       distinctMonthlyRegisteredUsers,
       distinctWeeklyActiveUsers,
       distinctWeeklyRegisteredUsers,
-    } = constructMauAndWauText(stateCode, endDateString, completionEventType, system);
+    } = constructMauAndWauText(
+      stateCode,
+      endDateString,
+      completionEventType,
+      system
+    );
 
     workflowToDistrictOrFacilitiesColumnChart[workflow] =
       districtOrFacilitiesColumnChart;
@@ -148,7 +171,6 @@ function main(e) {
       distinctWeeklyActiveUsers,
       distinctWeeklyRegisteredUsers,
     };
-    workflowToMaxOpportunityGrantedLocation[workflow] = maxRegion;
     workflowToUsageAndImpactText[workflow] = {
       almostEligible,
       eligible,
@@ -171,6 +193,7 @@ function main(e) {
     workflowToSystem,
     workflowToUsageAndImpactText,
     workflowToUsageAndImpactChart,
+    workflowToMaxMarkedIneligibleLocation
   );
 }
 
@@ -189,7 +212,8 @@ function main(e) {
  * @param {map} workflowToMaxOpportunityGrantedLocation An object that maps the workflow name to the district or facility with the most number of opportunities granted
  * @param {map} workflowToSystem An object that maps the workflow name to it's system ('SUPERVISION' or 'INCARCERATION')
  * @param {map} workflowToUsageAndImpactText An object that maps the workflow name to its number of people almost eligible, eligible, marked ineligible, eligible and viewed, and eligible and not viewed
-  * @param {map} workflowToUsageAndImpactChart An object that maps the workflow name to its usageAndImpactColumnChart
+ * @param {map} workflowToUsageAndImpactChart An object that maps the workflow name to its usageAndImpactColumnChart
+ * @param {map} workflowToMaxMarkedIneligibleLocation An object that maps the workflow name to an object containing maxLocation (the location associated with the max number of people marked ineligible) and maxValue (the max number of people marked ineligible)
  */
 function copyAndPopulateTemplateDoc(
   workflowToDistrictOrFacilitiesColumnChart,
@@ -202,7 +226,8 @@ function copyAndPopulateTemplateDoc(
   workflowToMaxOpportunityGrantedLocation,
   workflowToSystem,
   workflowToUsageAndImpactText,
-  workflowToUsageAndImpactChart
+  workflowToUsageAndImpactChart,
+  workflowToMaxMarkedIneligibleLocation
 ) {
   const template = DriveApp.getFileById(
     "1nsc_o2fTlldTQavxJveucWgDKkic_clKZjn0GuyF2N8"
@@ -248,7 +273,8 @@ function copyAndPopulateTemplateDoc(
     workflowToMaxOpportunityGrantedLocation,
     workflowToUsageAndImpactText,
     endDateClean,
-    workflowToUsageAndImpactChart
+    workflowToUsageAndImpactChart,
+    workflowToMaxMarkedIneligibleLocation
   );
 }
 
@@ -459,6 +485,7 @@ function copyAndPopulateOpportunityGrants(
  * @param {map} workflowToUsageAndImpactText An object that maps the workflow name to it's number of people almost eligible, eligible, marked ineligible, eligible and viewed, and eligible and not viewed
  * @param {string} endDateClean The end date (provided by the user via Google Form) (ex: '2023-03-01')
  * @param {map} workflowToUsageAndImpactChart An object that maps the workflow name to its usageAndImpactColumnChart
+ * @param {map} workflowToMaxMarkedIneligibleLocation An object that maps the workflow name to an object containing maxLocation (the location associated with the max number of people marked ineligible) and maxValue (the max number of people marked ineligible)
  */
 function copyAndPopulateWorkflowSection(
   body,
@@ -469,7 +496,8 @@ function copyAndPopulateWorkflowSection(
   workflowToMaxOpportunityGrantedLocation,
   workflowToUsageAndImpactText,
   endDateClean,
-  workflowToUsageAndImpactChart
+  workflowToUsageAndImpactChart,
+  workflowToMaxMarkedIneligibleLocation
 ) {
   const childIdx = getIndexOfElementToReplace(
     body,
@@ -512,9 +540,7 @@ function copyAndPopulateWorkflowSection(
         } else if (altTitle === "Impact Column Chart by District or Region") {
           // Replace with generated chart
           if (workflowToUsageAndImpactChart[workflow]) {
-            let img = body.appendImage(
-              workflowToUsageAndImpactChart[workflow]
-            );
+            let img = body.appendImage(workflowToUsageAndImpactChart[workflow]);
             img.setWidth(639).setHeight(455);
           }
         } else {
@@ -542,6 +568,23 @@ function copyAndPopulateWorkflowSection(
             workflow
           ].eligibleAndViewed.toLocaleString()
         );
+
+        const largestLocationTextToReplace =
+          "{{, with the largest number of people marked ineligible in {{region_ineligible}} [[:graph:]]with {{region_ineligible_num}}[[:graph:]]}}";
+
+        if (workflowToMaxMarkedIneligibleLocation[workflow]["maxLocation"]) {
+          const largestLocationReplacement = `, with the largest number of people marked ineligible in ${
+            workflowToMaxMarkedIneligibleLocation[workflow]["maxLocation"]
+          } (with ${parseFloat(
+            workflowToMaxMarkedIneligibleLocation[workflow].maxValue
+          )})`;
+          elementCopy.replaceText(
+            largestLocationTextToReplace,
+            largestLocationReplacement
+          );
+        } else {
+          elementCopy.replaceText(largestLocationTextToReplace, "");
+        }
 
         const maxOpportunityGrantedLocation =
           workflowToMaxOpportunityGrantedLocation[workflow];

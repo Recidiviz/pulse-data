@@ -54,7 +54,7 @@ function getMauWauByLocation(stateCode, endDateString, completionEventType, syst
     SELECT
       ${location},
       ${distinctActiveUsers},
-      ${distinct_registered_users}
+      ${distinctRegisteredUsers}
     FROM \`impact_reports.${wauTable}\`
     WHERE state_code = '${stateCode}'
     AND end_date = '${endDateString}'`;
@@ -76,7 +76,12 @@ function getMauWauByLocation(stateCode, endDateString, completionEventType, syst
  * @param {string} system The system of the workflow (ex: 'SUPERVISION' or 'INCARCERATION')
  * @returns {object} usageAndImpactDistrictData An array or arrays containing data for each district/facility. Also returns the usageAndImpactXAxisColumn, eligibleAndViewedColumn, markedIneligibleColumn, and eligibleAndNotViewedColumn
  */
-function getUsageAndImpactDistrictData(stateCode, endDateString, completionEventType, system) {
+function getUsageAndImpactDistrictData(
+  stateCode,
+  endDateString,
+  completionEventType,
+  system
+) {
   let usageAndImpactXAxisColumn = "";
   let tableName = "";
 
@@ -91,7 +96,7 @@ function getUsageAndImpactDistrictData(stateCode, endDateString, completionEvent
       "Invalid system provided. Please check all Google Form Inputs."
     );
   }
-  
+
   const eligibleAndViewedColumn = `avg_daily_population_task_eligible_and_viewed_${completionEventType.toLowerCase()}`;
   const markedIneligibleColumn = `avg_daily_population_task_marked_ineligible_${completionEventType.toLowerCase()}`;
   const eligibleAndNotViewedColumn = `avg_daily_population_task_eligible_and_not_viewed_${completionEventType.toLowerCase()}`;
@@ -129,16 +134,21 @@ function getUsageAndImpactDistrictData(stateCode, endDateString, completionEvent
  * @param {string} system The system of the workflow (ex: 'SUPERVISION' or 'INCARCERATION')
  * @returns {map} an object that contains the number of distinctMonthlyActiveUsers, distinctMonthlyRegisteredUsers, distinctWeeklyActiveUsers, and distinctWeeklyRegisteredUsers
  **/
-function constructMauAndWauText(stateCode, endDateString, completionEventType, system) {
+function constructMauAndWauText(
+  stateCode,
+  endDateString,
+  completionEventType,
+  system
+) {
   const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
-  const distinct_registered_users = `distinct_registered_users_${system.toLowerCase()}`;
+  const distinctRegisteredUsers = `distinct_registered_users_${system.toLowerCase()}`;
   const mauTable = `justice_involved_state_month_aggregated_metrics_materialized`;
   const wauTable = `justice_involved_state_week_aggregated_metrics_materialized`;
 
   const queryStringMonthly = `
     SELECT
       ${distinctActiveUsers},
-      ${distinct_registered_users}
+      ${distinctRegisteredUsers}
     FROM \`impact_reports.${mauTable}\`
     WHERE state_code = '${stateCode}'
     AND end_date = '${endDateString}'`;
@@ -154,7 +164,7 @@ function constructMauAndWauText(stateCode, endDateString, completionEventType, s
   const queryStringWeekly = `
     SELECT
       ${distinctActiveUsers},
-      ${distinct_registered_users}
+      ${distinctRegisteredUsers}
     FROM \`impact_reports.${wauTable}\`
     WHERE state_code = '${stateCode}'
     AND end_date = '${endDateString}'`;
@@ -329,22 +339,22 @@ function constructOpportunitiesGrantedText(
 }
 
 /**
- * Get max region
- * Given an array of arrays that contain the number of opportunities granted for each region, return the region with the max number of opportunities granted.
- * @param {array} supervisionDistrictData
- * @returns {string} the region with with max number of opportunities granted
+ * Get max location
+ * Given an array of arrays that contain a datapoint/value for each location, return the location name associated with the max value as well as the max value.
+ * @param {array} locationData An array of arrays containing locations and values (ex: [["Region 1", 90], ["Region 5", 25]])
+ * @returns {map} the location name with max value and the max value itself
  **/
-function getMaxRegion(supervisionDistrictData) {
-  var maxRegion = null;
-  var maxNum = 0;
-  supervisionDistrictData.forEach((arr) => {
-    if (parseFloat(arr[1]) > maxNum) {
-      maxNum = arr[1];
-      maxRegion = arr[0];
+function getMaxLocation(locationData) {
+  var maxLocation = null;
+  var maxValue = 0;
+  locationData.forEach((arr) => {
+    if (parseFloat(arr[1]) > maxValue) {
+      maxValue = arr[1];
+      maxLocation = arr[0];
     }
   });
 
-  return maxRegion;
+  return { maxLocation, maxValue };
 }
 
 /**
@@ -435,7 +445,6 @@ function constructSupervisionDistrictColumnChart(
   return supervisionColumnChart;
 }
 
-
 /**
  * Construct usage and impact district column chart
  * Populates a new supervision column chart.
@@ -464,7 +473,6 @@ function constructUsageAndImpactDistrictColumnChart(
     .addColumn(Charts.ColumnType.NUMBER, markedIneligibleAxisClean)
     .addColumn(Charts.ColumnType.NUMBER, eligibleAndNotViewedAxisClean);
 
-
   // Since this chart does not have a title or a y-axis label, we pass those arguments in as null
   // We pass setColors in as true since this chart has some custom colors
   // We pass stacked in as true since this chart is a stacked column chart
@@ -480,4 +488,3 @@ function constructUsageAndImpactDistrictColumnChart(
 
   return usageAndImpactDistrictColumnChart;
 }
-
