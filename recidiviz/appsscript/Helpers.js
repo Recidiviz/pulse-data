@@ -73,7 +73,6 @@ function runQuery(queryString) {
   return data;
 }
 
-
 /**
  * Create column chart
  * Builds and populates a new column chart.
@@ -84,8 +83,16 @@ function runQuery(queryString) {
  * @param {string} yAxis The y-axis lable of the chart
  * @returns {Chart} The built/populated column chart or null if there is no data to display (all 0 values)
  */
-function createColumnChart(data, chartData, title, xAxis, yAxis, setColors = false, stacked = false) {
-  const enCollator = new Intl.Collator('en', {"numeric": true});
+function createColumnChart(
+  data,
+  chartData,
+  title,
+  xAxis,
+  yAxis,
+  setColors = false,
+  stacked = false
+) {
+  const enCollator = new Intl.Collator("en", { numeric: true });
   let buildChart = false;
   data.sort(enCollator.compare).forEach((newRow) => {
     if (
@@ -116,7 +123,7 @@ function createColumnChart(data, chartData, title, xAxis, yAxis, setColors = fal
     .setXAxisTextStyle(Charts.newTextStyle().setFontSize(20))
     .setYAxisTextStyle(Charts.newTextStyle().setFontSize(20))
     .setOption("chartArea.top", 50)
-    .setOption("chartArea.width", "80%")
+    .setOption("chartArea.width", "80%");
 
   if (title) {
     chart = chart.setTitle(title);
@@ -201,7 +208,6 @@ function getIndexOfElementToReplace(body, elementType, textToMatch) {
 
   return childIdx;
 }
-
 
 /**
  * Calculate active users percent
