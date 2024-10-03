@@ -48,6 +48,7 @@ from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import (
     METRIC_KEY_TO_V2_DASHBOARD_METRIC_KEY,
     DatapointGetRequestEntryPoint,
+    ReportingAgencyCategory,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
@@ -95,10 +96,20 @@ class MetricInterface:
     custom_reporting_frequency: CustomReportingFrequency = CustomReportingFrequency()
 
     # Whether or not the top-level includes/excludes settings are considered fully
-    # configured by an agency
+    # configured by an agency.
     is_includes_excludes_configured: Optional[ConfigurationStatus] = attr.field(
         default=None
     )
+
+    # Agency / Source ID responsible for reporting the metric.
+    reporting_agency_id: Optional[int] = attr.field(default=None)
+
+    # Indicates whether the agency is self-reporting. If true, the agency's
+    # metadata is available in the agency section of the API response. If None,
+    # the agency has not set up a reporting agency. If false, another agency
+    # is reporting on its behalf and the other reporting_agency fields
+    # will be populated.
+    is_self_reported: Optional[bool] = attr.field(default=None)
 
     @property
     def metric_definition(self) -> MetricDefinition:
@@ -224,6 +235,8 @@ class MetricInterface:
             "is_includes_excludes_configured": ConfigurationStatus.to_json(
                 self.is_includes_excludes_configured
             ),
+            "reporting_agency_id": self.reporting_agency_id,
+            "is_self_reported": self.is_self_reported,
             "version": "v1",
         }
 
@@ -304,6 +317,8 @@ class MetricInterface:
             is_includes_excludes_configured=ConfigurationStatus.from_json(
                 json.get("is_includes_excludes_configured")
             ),
+            reporting_agency_id=json.get("reporting_agency_id"),
+            is_self_reported=json.get("is_self_reported"),
         )
 
     def get_reporting_frequency_to_use(
@@ -330,6 +345,7 @@ class MetricInterface:
     def to_json(
         self,
         entry_point: DatapointGetRequestEntryPoint,
+        reporting_agency_id_to_agency: Optional[Dict[int, schema.Agency]] = None,
         aggregate_datapoints_json: Optional[List[DatapointJson]] = None,
         dimension_id_to_dimension_member_to_datapoints_json: Optional[
             DefaultDict[str, DefaultDict[str, List[DatapointJson]]]
@@ -440,12 +456,44 @@ class MetricInterface:
         }
 
         if is_v2 is True:
+            reporting_agency_url = None
+            reporting_agency_name = None
+            reporting_agency_category = None
+            if (
+                self.reporting_agency_id is not None
+                and reporting_agency_id_to_agency is not None
+            ):
+                reporting_agency = reporting_agency_id_to_agency[
+                    self.reporting_agency_id
+                ]
+
+                reporting_agency_name = reporting_agency.name
+                if reporting_agency.type == "agency":
+                    reporting_agency_category = (
+                        ReportingAgencyCategory.SUPER_AGENCY.value
+                    )
+                elif reporting_agency.type == ReportingAgencyCategory.CSG.value:
+                    reporting_agency_category = ReportingAgencyCategory.CSG.value
+                else:
+                    reporting_agency_category = ReportingAgencyCategory.VENDOR.value
+
+                urls = list(
+                    filter(
+                        lambda setting: setting.setting_type
+                        in [
+                            schema.AgencySettingType.HOMEPAGE_URL.value,
+                        ],
+                        reporting_agency.agency_settings,
+                    )
+                )
+                reporting_agency_url = urls[0].value if len(urls) == 1 else None
+
             response["sector"] = system_value
-            response["is_self_reported"] = None
-            response["reporting_agency_id"] = None
-            response["reporting_agency_name"] = None
-            response["reporting_agency_url"] = None
-            response["reporting_agency_category"] = None
+            response["is_self_reported"] = self.is_self_reported
+            response["reporting_agency_id"] = self.reporting_agency_id
+            response["reporting_agency_name"] = reporting_agency_name
+            response["reporting_agency_url"] = reporting_agency_url
+            response["reporting_agency_category"] = reporting_agency_category
             return response
 
         response["system"] = system_value
@@ -540,6 +588,8 @@ class MetricInterface:
             is_includes_excludes_configured=ConfigurationStatus.from_json(
                 json.get("is_includes_excludes_configured")
             ),
+            reporting_agency_id=json.get("reporting_agency_id"),
+            is_self_reported=json.get("is_self_reported"),
         )
 
     ### Helpers ###

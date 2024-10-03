@@ -53,6 +53,12 @@ class UploadMethod(enum.Enum):
     AUTOMATED_BULK_UPLOAD = "AUTOMATED_BULK_UPLOAD"
 
 
+class ReportingAgencyCategory(enum.Enum):
+    SUPER_AGENCY = "SUPER_AGENCY"
+    CSG = "COUNCIL_OF_STATE_GOVERNMENTS"
+    VENDOR = "VENDOR"
+
+
 # Column headers for single-page upload.
 BREAKDOWN_CATEGORY = "breakdown_category"
 BREAKDOWN = "breakdown"
