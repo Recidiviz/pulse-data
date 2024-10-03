@@ -220,5 +220,5 @@ function calculateActiveUsersPercent(activeUsers, registeredUsers) {
   if (registeredUsers === 0) {
     return 0;
   }
-  return ((activeUsers / registeredUsers) * 100).toFixed(2);
+  return ((activeUsers / registeredUsers) * 100).toFixed(1);
 }
