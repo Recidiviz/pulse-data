@@ -210,7 +210,7 @@ function main(e) {
  * @param {map} workflowToOpportunityGrantedAndMauAndWau An object that maps the workflow name to the number of opportunities granted, the number of distinct monthly and weekly active users, and the number of distinct monthly and weekly registered users for that workflow
  * @param {string} startDate The start date (queried from BigQuery) (ex: '2023-02-01')
  * @param {map} workflowToMaxOpportunityGrantedLocation An object that maps the workflow name to the district or facility with the most number of opportunities granted
- * @param {map} workflowToSystem An object that maps the workflow name to it's system ('SUPERVISION' or 'INCARCERATION')
+ * @param {map} workflowToSystem An object that maps the workflow name to its system ('SUPERVISION' or 'INCARCERATION')
  * @param {map} workflowToUsageAndImpactText An object that maps the workflow name to its number of people almost eligible, eligible, marked ineligible, eligible and viewed, and eligible and not viewed
  * @param {map} workflowToUsageAndImpactChart An object that maps the workflow name to its usageAndImpactColumnChart
  * @param {map} workflowToMaxMarkedIneligibleLocation An object that maps the workflow name to an object containing maxLocation (the location associated with the max number of people marked ineligible) and maxValue (the max number of people marked ineligible)
@@ -258,7 +258,7 @@ function copyAndPopulateTemplateDoc(
   const timeRange = `${startDate}-${endDateClean}`;
   body.replaceText("{{time_range}}", timeRange);
 
-  copyAndPopulateOpportunityGrants(
+  const workflowToMauWauNumAndPercent = copyAndPopulateOpportunityGrants(
     body,
     workflowToOpportunityGrantedAndMauAndWau,
     workflowToSystem
@@ -274,6 +274,7 @@ function copyAndPopulateTemplateDoc(
     workflowToUsageAndImpactText,
     endDateClean,
     workflowToUsageAndImpactChart,
+    workflowToMauWauNumAndPercent,
     workflowToMaxMarkedIneligibleLocation
   );
 }
@@ -283,13 +284,16 @@ function copyAndPopulateTemplateDoc(
  * Identifies, copies, and populates the total number of opportunuties granted (over all workflows) as well as the number of opportunities granted for each workflow.
  * @param {Body} body The template document body
  * @param {map} workflowToOpportunityGrantedAndMauAndWau An object that maps the workflow name to the number of opportunities granted, the number of distinct monthly and weekly active users, and the number of distinct monthly and weekly registered users for that workflow
- * @param {map} workflowToSystem An object that maps the workflow name to it's system ('SUPERVISION' or 'INCARCERATION')
+ * @param {map} workflowToSystem An object that maps the workflow name to its system ('SUPERVISION' or 'INCARCERATION')
+ * @returns {map} workflowToMauWauNumAndPercent An object that maps the workflow name to its distinctMonthlyRegisteredUsers, distinctMonthlyActiveUsers, distinctWeeklyActiveUsers, workflowPercentMAU, and workflowPercentWAU
  */
 function copyAndPopulateOpportunityGrants(
   body,
   workflowToOpportunityGrantedAndMauAndWau,
   workflowToSystem
 ) {
+  const workflowToMauWauNumAndPercent = {};
+
   // First, populate the sum of all Opportunities Granted, MAU, and WAU (for all Workflows)
   var totalSupervisionOpportunitiesGranted = 0;
   var totalFacilitiesOpportunitiesGranted = 0;
@@ -306,29 +310,48 @@ function copyAndPopulateOpportunityGrants(
 
   Object.entries(workflowToOpportunityGrantedAndMauAndWau).forEach(
     ([workflow, opportunityGrantedAndMauAndWau]) => {
+      const distinctMonthlyActiveUsers =
+        opportunityGrantedAndMauAndWau.distinctMonthlyActiveUsers;
+      const distinctMonthlyRegisteredUsers =
+        opportunityGrantedAndMauAndWau.distinctMonthlyRegisteredUsers;
+      const distinctWeeklyActiveUsers =
+        opportunityGrantedAndMauAndWau.distinctWeeklyActiveUsers;
+      const distinctWeeklyRegisteredUsers =
+        opportunityGrantedAndMauAndWau.distinctWeeklyRegisteredUsers;
+
+      const workflowPercentMAU = calculateActiveUsersPercent(
+        distinctMonthlyActiveUsers,
+        distinctMonthlyRegisteredUsers
+      );
+      const workflowPercentWAU = calculateActiveUsersPercent(
+        distinctWeeklyActiveUsers,
+        distinctWeeklyRegisteredUsers
+      );
+
+      workflowToMauWauNumAndPercent[workflow] = {
+        distinctMonthlyRegisteredUsers,
+        distinctMonthlyActiveUsers,
+        distinctWeeklyActiveUsers,
+        workflowPercentMAU,
+        workflowPercentWAU,
+      };
+
       if (workflowToSystem[workflow] === "SUPERVISION") {
         totalSupervisionOpportunitiesGranted +=
           opportunityGrantedAndMauAndWau.opportunityGranted;
-        totalSupervisionMonthlyActiveUsers +=
-          opportunityGrantedAndMauAndWau.distinctMonthlyActiveUsers;
+        totalSupervisionMonthlyActiveUsers += distinctMonthlyActiveUsers;
         totalSupervisionMonthlyRegisteredUsers +=
-          opportunityGrantedAndMauAndWau.distinctMonthlyRegisteredUsers;
-        totalSupervisionWeeklyActiveUsers +=
-          opportunityGrantedAndMauAndWau.distinctWeeklyActiveUsers;
-        totalSupervisionWeeklyRegisteredUsers +=
-          opportunityGrantedAndMauAndWau.distinctWeeklyRegisteredUsers;
+          distinctMonthlyRegisteredUsers;
+        totalSupervisionWeeklyActiveUsers += distinctWeeklyActiveUsers;
+        totalSupervisionWeeklyRegisteredUsers += distinctWeeklyRegisteredUsers;
         numSupervisionWorkflows += 1;
       } else if (workflowToSystem[workflow] === "INCARCERATION") {
         totalFacilitiesOpportunitiesGranted +=
           opportunityGrantedAndMauAndWau.opportunityGranted;
-        totalFacilitiesMonthlyActiveUsers +=
-          opportunityGrantedAndMauAndWau.distinctMonthlyActiveUsers;
-        totalFacilitiesMonthlyRegisteredUsers +=
-          opportunityGrantedAndMauAndWau.distinctMonthlyRegisteredUsers;
-        totalFacilitiesWeeklyActiveUsers +=
-          opportunityGrantedAndMauAndWau.distinctWeeklyActiveUsers;
-        totalFacilitiesWeeklyRegisteredUsers +=
-          opportunityGrantedAndMauAndWau.distinctWeeklyRegisteredUsers;
+        totalFacilitiesMonthlyActiveUsers += distinctMonthlyActiveUsers;
+        totalFacilitiesMonthlyRegisteredUsers += distinctMonthlyRegisteredUsers;
+        totalFacilitiesWeeklyActiveUsers += distinctWeeklyActiveUsers;
+        totalFacilitiesWeeklyRegisteredUsers += distinctWeeklyRegisteredUsers;
         numFacilitiesWorkflows += 1;
       }
     }
@@ -470,6 +493,8 @@ function copyAndPopulateOpportunityGrants(
 
   // Once we have copied all Workflows rows, we can delete the placeholder row
   child.removeRow(2);
+
+  return workflowToMauWauNumAndPercent;
 }
 
 /**
@@ -478,13 +503,14 @@ function copyAndPopulateOpportunityGrants(
  * It then copies each element and replaces relevant text and images.
  * @param {Body} body The template document body
  * @param {array} workflowsToInclude A list of Workflows to be included in the report
- * @param {map} workflowToDistrictOrFacilitiesColumnChart An object that maps the workflow name to it's districtOrFacilitiesColumnChart
+ * @param {map} workflowToDistrictOrFacilitiesColumnChart An object that maps the workflow name to its districtOrFacilitiesColumnChart
  * @param {map} workflowToOpportunityGrantedAndMauAndWau An object that maps the workflow name to the number of opportunities granted, the number of distinct monthly and weekly active users, and the number of distinct monthly and weekly registered users for that workflow
  * @param {string} startDate The start date (queried from BigQuery) (ex: '2023-02-01')
  * @param {map} workflowToMaxOpportunityGrantedLocation An object that maps the workflow name to the district or facility with the most number of opportunities granted
- * @param {map} workflowToUsageAndImpactText An object that maps the workflow name to it's number of people almost eligible, eligible, marked ineligible, eligible and viewed, and eligible and not viewed
+ * @param {map} workflowToUsageAndImpactText An object that maps the workflow name to its number of people almost eligible, eligible, marked ineligible, eligible and viewed, and eligible and not viewed
  * @param {string} endDateClean The end date (provided by the user via Google Form) (ex: '2023-03-01')
  * @param {map} workflowToUsageAndImpactChart An object that maps the workflow name to its usageAndImpactColumnChart
+ * @param {map} workflowToMauWauNumAndPercent An object that maps the workflow name to its distinctMonthlyRegisteredUsers, distinctMonthlyActiveUsers, distinctWeeklyActiveUsers, workflowPercentMAU, and workflowPercentWAU
  * @param {map} workflowToMaxMarkedIneligibleLocation An object that maps the workflow name to an object containing maxLocation (the location associated with the max number of people marked ineligible) and maxValue (the max number of people marked ineligible)
  */
 function copyAndPopulateWorkflowSection(
@@ -497,6 +523,7 @@ function copyAndPopulateWorkflowSection(
   workflowToUsageAndImpactText,
   endDateClean,
   workflowToUsageAndImpactChart,
+  workflowToMauWauNumAndPercent,
   workflowToMaxMarkedIneligibleLocation
 ) {
   const childIdx = getIndexOfElementToReplace(
@@ -552,6 +579,28 @@ function copyAndPopulateWorkflowSection(
         elementCopy.replaceText("{{workflow_name}}", workflow);
         elementCopy.replaceText("{{start_date}}", startDate);
         elementCopy.replaceText("{{end_date}}", endDateClean);
+
+        elementCopy.replaceText(
+          "{{num_monthly_registered_users}}",
+          workflowToMauWauNumAndPercent[workflow].distinctMonthlyRegisteredUsers
+        );
+        elementCopy.replaceText(
+          "{{num_mau}}",
+          workflowToMauWauNumAndPercent[workflow].distinctMonthlyActiveUsers
+        );
+        elementCopy.replaceText(
+          "{{percent_mau}}",
+          workflowToMauWauNumAndPercent[workflow].workflowPercentMAU
+        );
+        elementCopy.replaceText(
+          "{{num_wau}}",
+          workflowToMauWauNumAndPercent[workflow].distinctWeeklyActiveUsers
+        );
+        elementCopy.replaceText(
+          "{{percent_wau}}",
+          workflowToMauWauNumAndPercent[workflow].workflowPercentWAU
+        );
+
         elementCopy.replaceText(
           "{{num_ineligible}}",
           workflowToUsageAndImpactText[
