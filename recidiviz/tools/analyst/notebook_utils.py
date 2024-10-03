@@ -48,7 +48,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from IPython import get_ipython
-from IPython.display import display
+from IPython.display import HTML, display
 from tqdm.notebook import tqdm
 
 # adds pulse-data repo to path
@@ -70,8 +70,9 @@ from recidiviz.tools.analyst.plots import (  # isort:skip
     add_legend,
     line_labels,
     group_into_other,
+    adjust_plot_scale,
+    plot_settings,
 )
-
 
 # IPython magics - only run if in notebook environment
 def is_notebook() -> bool:
@@ -95,6 +96,7 @@ if is_notebook():
     )  # 2 => reload ALL modules on every code run
     plt.rcParams.update(plt.rcParamsDefault)
     ipython.run_line_magic("matplotlib", "inline")
+    display(HTML("<style>.container { width:100% !important; }</style>"))
 
 # change default pandas options to show more of dataframe than default
 pd.set_option("display.max_columns", 100)

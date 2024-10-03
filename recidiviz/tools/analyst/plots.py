@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import math
+from os.path import abspath, dirname
 
 # imports for notebooks
 from typing import Any, Callable, List, Optional, Union
@@ -29,11 +30,12 @@ import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
 from matplotlib import axes
+from matplotlib.ticker import MaxNLocator
 from matplotx._labels import _move_min_distance
 
 from recidiviz.tools.analyst.estimate_effects import partial_regression
 
-# plotting colors
+# Recidiviz plotting colors
 RECIDIVIZ_COLORS = [
     "#25636F",
     "#D9A95F",
@@ -48,11 +50,117 @@ RECIDIVIZ_COLORS = [
     "#5F8FD9",
 ]
 
+# Plot settings
+def plot_settings(
+    ax: Optional[plt.Axes] = None,
+    *,
+    title: str = "",
+    subtitle: str = "",
+    subtitle_offset_x: float = 0,
+    subtitle_offset_y: float = 0,
+    y_label: str = "",
+    x_label: str = "",
+    y_max: Optional[int] = None,
+    y_min: int = 0,
+    x_max: Optional[int] = None,
+    x_min: Optional[int] = None,
+    exclude_legend: bool = False,
+    remove_gridlines: bool = False,
+    only_integer_ticks_in_x_axis: bool = False,
+    only_integer_ticks_in_y_axis: bool = False,
+) -> None:
+    """
+    Configures the settings for a plot.
+
+    Args:
+        ax (Optional[plt.Axes]): The axes object to configure. If None, uses the current axes (default: None).
+        title (str): The main title of the plot.
+        subtitle (str): The subtitle of the plot, positioned below the main title.
+        subtitle_offset_x (float): The horizontal alignment for the subtitle, relative to the figure area (default: 0).
+            Positive values bring it closer to the right edge.
+        subtitle_offset_y (float): The vertical alignment for the subtitle, relative to the figure area (default: 0).
+            Positive values bring it closer to the top edge.
+        y_label (str): The label for the y-axis.
+        x_label (str): The label for the x-axis.
+        y_max (Optional[int]): The upper limit for the y-axis. If None, the y-axis will be automatically scaled (default: None).
+        y_min (int): The lower limit for the y-axis (default: 0).
+        x_max (Optional[int]): The upper limit for the x-axis. If None, the x-axis will be automatically scaled (default: None).
+        x_min (Optional[int]): The lower limit for the x-axis (default: None).
+        include_legend (bool): Whether to include a legend in the plot (default: True). If you want to customize the legend,
+            use the `add_legend` function
+        remove_gridlines (bool): Whether to remove gridlines from the plot (default: False).
+        only_integer_ticks_in_x_axis (bool): Whether to only show integer ticks on the x-axis (default: False).
+        only_integer_ticks_in_y_axis (bool): Whether to only show integer ticks on the y-axis (default: False).
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    # Title
+    pad = plt.rcParams["axes.titlepad"]
+    if subtitle != "":
+        # Increase padding if there is a subtitle
+        pad *= 2
+    ax.set_title(title, pad=pad)
+
+    # Calculate the scale compared to recidiviz.mplstyle
+    path = dirname(abspath(__file__))
+    recidiviz_params = matplotlib.rc_params_from_file(
+        path + "/recidiviz.mplstyle", use_default_template=False
+    )
+    # Actual parameter / recidiviz parameter
+    scale_factor = plt.rcParams["font.size"] / recidiviz_params["font.size"]
+
+    ### Calculate the y position of the subtitle
+    # These values were chosen based on a linear regression on the scale factor and
+    # what we thought was the right y position for the subtitle. So they minimize
+    # the amount of manual adjustment needed for the subtitle.
+    estimated_subtitle_y = 1.05 - 0.08 * scale_factor
+
+    ### Subtitle
+    # Reminder: plt.suptitle is a Figure-level function, this subtitle functionality
+    # is only going to work correctly in cases where you're applying this to a
+    # single-paneled plot.
+    plt.suptitle(
+        t=subtitle,
+        x=plt.rcParams["figure.subplot.left"] + subtitle_offset_x,
+        y=estimated_subtitle_y + subtitle_offset_y,
+        ha="left",
+        size=plt.rcParams["axes.titlesize"] / 1.4,
+        weight="medium",
+    )
+
+    # Axis labels
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+
+    # Upper and lower limits for x-axis
+    ax.set_xlim(left=x_min, right=x_max)
+    # Upper and lower limits for y-axis
+    ax.set_ylim(bottom=y_min, top=y_max)
+
+    # Remove legend if requested
+    if exclude_legend:
+        legend = ax.legend()
+        legend.remove()
+
+    # Remove gridlines if requested
+    if remove_gridlines:
+        ax.grid(False)
+
+    # Set the x-axis and y-axis to have integer ticks only
+    if only_integer_ticks_in_x_axis:
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    if only_integer_ticks_in_y_axis:
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
 
 # Plotting resize method
 def adjust_plot_scale(scale_factor: float = 1.0) -> None:
     """
-    Adjusts size of plot scaling text and plot area proportionally.
+    Adjusts size of plot scaling text and plot area proportionally, starting from the
+    values set in recidiviz.mplstyle. In other words, we are scaling based off the style
+    parameters in our .mplstyle file and not based on the (potentially already re-scaled)
+    parameters that may have been used in a previous notebook run
 
     The list of params is not exhaustive and will likely need some additions for
     plots other than scatter and line.
@@ -66,7 +174,9 @@ def adjust_plot_scale(scale_factor: float = 1.0) -> None:
         "axes.axisbelow",
         "axes.labelsize",
         "axes.titlesize",
+        "axes.titlepad",
         "font.size",
+        "figure.titlesize",
         "grid.linewidth",
         "legend.fontsize",
         "legend.title_fontsize",
@@ -77,6 +187,10 @@ def adjust_plot_scale(scale_factor: float = 1.0) -> None:
         "ytick.major.size",
         "ytick.major.width",
     ]
+
+    # We start from recidiviz.mplstyle and scale from there
+    path = dirname(abspath(__file__))
+    plt.style.use(path + "/recidiviz.mplstyle")
 
     plt.rcParams["figure.figsize"] = [
         x * scale_factor**2 for x in plt.rcParams["figure.figsize"]
@@ -90,9 +204,48 @@ def adjust_plot_scale(scale_factor: float = 1.0) -> None:
             plt.rcParams[param] *= scale_factor
 
 
-# function for adding legend (outside the plot)
-def add_legend(title: Optional[str] = None) -> None:
-    plt.legend(loc="center left", bbox_to_anchor=(1, 0.5), title=title)
+# Add a legend to your plot
+def add_legend(
+    ax: Optional[plt.Axes] = None,
+    title: Optional[str] = None,
+    location: tuple[float, float] = (1, 0.5),
+    labels: Optional[List[str]] = None,
+    label_formatter: Callable = lambda s: s.title().replace("_", " ").replace("-", " "),
+    **kwargs: Optional[Any],
+) -> None:
+
+    """
+    Adds a legend to the plot with the option to customize the title, location, and labels.
+
+    Args:
+        ax (Optional[plt.Axes]): The axes object to add the legend to (default: None).
+        title (Optional[str]): The title of the legend.
+        location (tuple[float, float]): The location of the legend on the plot.
+        labels (Optional[List[str]]): A list of labels to replace the original labels in the legend.
+        format_labels (bool): Whether to format the legend labels (default: True).
+            This will title case the labels and replace underscores with spaces.
+        **kwargs: Additional keyword arguments to pass to the legend function.
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    # Get handles and original labels
+    handles, original_labels = ax.get_legend_handles_labels()
+
+    ### Change legend labels if requested
+    # Overwrite legend labels if provided
+    if labels:
+        legend_labels = labels
+    # Otherwise, use the original labels with optional formatting
+    else:
+        legend_labels = [
+            label_formatter(str(original_label)) for original_label in original_labels
+        ]
+
+    # Add the legend
+    plt.legend(
+        loc=location, title=title, labels=legend_labels, handles=handles, **kwargs
+    )
 
 
 # binned scatterplot function
@@ -370,7 +523,7 @@ def line_labels(
     vertical_distance: float = float("nan"),
     horizontal_distance: float = 0.98,
     color: str = "auto",
-    weight: int = 551,
+    weight: Union[int, str] = 551,
     label_formatter: Callable = lambda s: s.title().replace("_", " ").replace("-", " "),
     **text_kwargs: Optional[Any],
 ) -> None:
@@ -393,6 +546,7 @@ def line_labels(
     label_formatter: lambda
         specifies the string formatting of the line labels (e.g. line_labels(label_formatter = lambda s: s.lower()))
         by default, converts labels to title case and replaces hyphens and underscores with spaces
+        This also accepts string values like 'light', 'normal', 'medium', 'bold', 'extra bold'.
     **text_kwargs
         the user can specify any other matplotlib text arguments (font, size, etc.)
         see https://matplotlib.org/stable/api/text_api.html for all options
@@ -406,6 +560,7 @@ def line_labels(
     ax = df.plot()
     line_labels()
     """
+    # TODO(#33313) - make this fxn work with stacked plots
     if ax is None:
         ax = plt.gca()
 

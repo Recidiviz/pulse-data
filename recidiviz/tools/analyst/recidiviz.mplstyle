@@ -2,31 +2,34 @@ axes.axisbelow: True
 axes.facecolor: 'none'
 axes.grid: True
 axes.grid.which: major
-axes.labelsize: 11
+axes.labelsize: 5.5
 axes.labelweight: regular
 axes.linewidth: 0
 axes.prop_cycle: cycler('color',['25636F', 'D9A95F',  'BA4F4F', '4C6290',  '90AEB5', 'CC989C', 'B6CC98','56256F', '4FBABA', '904C84', '5F8FD9', '25636F', 'D9A95F',  'BA4F4F', '4C6290',  '90AEB5', 'CC989C', 'B6CC98', '56256F', '4FBABA', '904C84', '5F8FD9'])
-axes.titlesize: 14
+axes.titlesize: 7
 axes.titleweight: semibold
 axes.titlelocation: left
-figure.dpi: 300
-figure.figsize: 12.0, 7.0
+axes.titlepad: 7.5
+axes.titley: 1
+figure.dpi: 400
+figure.figsize: 3, 1.75
+figure.facecolor: None
 font.family: sans-serif
 font.sans-serif: Public Sans
-font.size: 10
+font.size: 5
 font.weight: regular
 grid.alpha: 0.25
-grid.linewidth: 1
+grid.linewidth: 0.5
 legend.frameon: False
-legend.fontsize: 10
+legend.fontsize: 5
 legend.loc: right
-legend.title_fontsize: 12
-lines.linewidth : 2
-lines.markersize: 6
+legend.title_fontsize: 6
+lines.linewidth : 1
+lines.markersize: 3
 savefig.bbox: tight
 savefig.format: png
 savefig.transparent: True
-xtick.major.size: 3.5
-xtick.major.width: 1
-ytick.major.size: 3.5
-ytick.major.width: 1
+xtick.major.size: 1.75
+xtick.major.width: 0.5
+ytick.major.size: 1.75
+ytick.major.width: 0.5
