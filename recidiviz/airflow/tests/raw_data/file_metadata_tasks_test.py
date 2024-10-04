@@ -21,7 +21,6 @@ from typing import Dict, List
 from unittest import TestCase
 from unittest.mock import patch
 
-from airflow.exceptions import AirflowSkipException
 from more_itertools import one
 
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
@@ -290,9 +289,11 @@ class CoalesceImportReadyFiles(TestCase):
 
     def test_failed_upstream(self) -> None:
         with self.assertRaisesRegex(
-            AirflowSkipException,
+            ValueError,
             re.escape(
-                "Import ready files that dont require pre-import normalization is None; skipping as we cannot proceed!"
+                "If there are no import ready files, we expect an empty list; however since"
+                "we found None, that means the task failed to run upstream so let's fail "
+                "loud."
             ),
         ):
             coalesce_import_ready_files.function(None, None)
@@ -403,23 +404,22 @@ class CoalesceResultsAndErrorsTest(TestCase):
             TEMPORARY_PATHS_TO_CLEAN: [],
             TEMPORARY_TABLES_TO_CLEAN: [],
         }
-
-    def test_skipped_upstream(self) -> None:
-        with self.assertRaisesRegex(
-            AirflowSkipException,
-            re.escape("Found no bq metadata, so assuming that this is an empty branch"),
-        ):
-            coalesce_results_and_errors.function(
-                region_code="US_XX",
-                raw_data_instance=DirectIngestInstance.PRIMARY,
-                serialized_bq_metadata=None,
-                serialized_header_verification_errors=None,
-                serialized_chunking_errors=None,
-                serialized_pre_import_normalization_result=None,
-                serialized_load_prep_results=None,
-                serialized_append_batches=None,
-                serialized_append_result=None,
-            )
+        assert coalesce_results_and_errors.function(
+            region_code="US_XX",
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+            serialized_bq_metadata=None,
+            serialized_header_verification_errors=None,
+            serialized_chunking_errors=None,
+            serialized_pre_import_normalization_result=None,
+            serialized_load_prep_results=None,
+            serialized_append_batches=None,
+            serialized_append_result=None,
+        ) == {
+            FILE_IMPORTS: [],
+            PROCESSED_PATHS_TO_RENAME: [],
+            TEMPORARY_PATHS_TO_CLEAN: [],
+            TEMPORARY_TABLES_TO_CLEAN: [],
+        }
 
     def test_build_file_imports_for_results_all_matching(self) -> None:
         summaries = [

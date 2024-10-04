@@ -69,19 +69,21 @@ class ReleaseRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGenerator[None]):
         context: Context,
     ) -> None:
         # get lock info from xcom
-        locks_to_release: List[RawDataResourceLock] = [
-            RawDataResourceLock.deserialize(serialized_lock)
-            for serialized_lock in operator.xcom_pull(
-                context,
-                key="return_value",
-                task_ids=self._acquire_resource_lock_task_id,
-            )
-        ]
+        serialized_locks_to_release = operator.xcom_pull(
+            context,
+            key="return_value",
+            task_ids=self._acquire_resource_lock_task_id,
+        )
 
-        if locks_to_release is None:
+        if serialized_locks_to_release is None:
             # this mean we couldn't pull this info from xcom which probably means that
             # lock acquisition failed. in case it didn't fail loudly so we know
             raise ValueError("Couldn't retrieve locks to release from xcom")
+
+        locks_to_release: List[RawDataResourceLock] = [
+            RawDataResourceLock.deserialize(serialized_lock)
+            for serialized_lock in serialized_locks_to_release
+        ]
 
         # get existing locks to make sure they are valid lock_ids and they are not
         # released

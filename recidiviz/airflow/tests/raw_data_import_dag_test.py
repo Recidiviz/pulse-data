@@ -19,19 +19,23 @@ import datetime
 import json
 import os
 from typing import Any, Callable, Dict, Iterator, List, Tuple
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, create_autospec, patch
 
 import attr
 from airflow.models import DAG, DagBag
 from airflow.models.baseoperator import partial
 from airflow.models.mappedoperator import OperatorPartial
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.utils.context import Context
 from airflow.utils.state import DagRunState
 from google.cloud.bigquery import Row
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.monitoring.dag_registry import get_raw_data_import_dag_id
+from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
+    CloudSqlQueryOperator,
+)
 from recidiviz.airflow.dags.raw_data.metadata import (
     CHUNKING_ERRORS,
     IMPORT_READY_FILES,
@@ -51,6 +55,9 @@ from recidiviz.airflow.tests.utils.dag_helper_functions import (
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
+    DirectIngestRawDataResourceLockResource,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks import (
@@ -2537,6 +2544,27 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
         return create_raw_data_import_dag()
 
+    def _acquire_a_resource_lock(self, states: List[StateCode]) -> None:
+        # pylint: disable=import-outside-toplevel
+        from recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator import (
+            AcquireRawDataResourceLockSqlQueryGenerator,
+        )
+
+        for state in states:
+            AcquireRawDataResourceLockSqlQueryGenerator(
+                region_code=state.value,
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+                resources=[
+                    DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET
+                ],
+                lock_description="t3st!ng",
+                lock_ttl_seconds=100000,
+            ).execute_postgres_query(
+                create_autospec(CloudSqlQueryOperator),
+                PostgresHook(self.conn_id),
+                create_autospec(Context),
+            )
+
     def _load_fixture_data(self, bucket: str, *tags: str) -> None:
         fixture_directory = os.path.dirname(raw_data_fixtures.__file__)
         for file in os.listdir(fixture_directory):
@@ -2561,36 +2589,54 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=[
                     # intended tasks to fail
                     r".*_primary_import_branch\.acquire_raw_data_resource_locks",
-                    # since the task above failed, we had no lock_ids to pull from xcom
-                    r".*_primary_import_branch\.release_raw_data_resource_locks",
-                    # downstream failures
-                    r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
-                    r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
-                    r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
-                    r".*_primary_import_branch\.has_files_to_import",
-                    r".*_primary_import_branch\.write_import_start",
-                    r".*_primary_import_branch\.read_and_verify_column_headers",
-                    r".*_primary_import_branch\.raise_header_verification_errors",
-                    r".*_primary_import_branch\.split_by_pre_import_normalization_type",
-                    r".*_primary_import_branch\.pre_import_normalization\.*",
-                    r"raw_data_branching\.branch_end",
                 ],
                 expected_skipped_task_id_regexes=[
-                    r".*_primary_import_branch\.coalesce_import_ready_files",
-                    r".*_primary_import_branch\.big_query_load\..*",
-                    r".*_primary_import_branch\.cleanup_and_storage\..*",
+                    # everything but first and last should be skipped
+                    r".*_primary_import_branch\.(?!acquire_raw_data_resource_locks|successfully_acquired_all_locks)",
                     # non-primary branches
                     r".*_secondary_import_branch\..*",
+                    "raw_data_branching.branch_end",  # ew, dont make it skip this
+                ],
+                expected_success_task_id_regexes=[
+                    r".*_primary_import_branch.successfully_acquired_all_locks",
+                    r"initialize_dag..*",
+                    "raw_data_branching.branch_start",
                 ],
             )
-            # failed state will only happen when resource releasing failed
-            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
             assert not list(
                 session.execute(
                     text("SELECT * FROM direct_ingest_raw_data_resource_lock")
                 )
             )
+
+    def test_branching_resource_lock_already_held(self) -> None:
+
+        self._acquire_a_resource_lock(states=[StateCode.US_XX, StateCode.US_LL])
+
+        with Session(bind=self.engine) as session:
+
+            result = self.run_dag_test(
+                self._create_dag(),
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY"},
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # everything but first and last should be skipped
+                    r".*_primary_import_branch\.(?!acquire_raw_data_resource_locks|successfully_acquired_all_locks)",
+                    # non-primary branches
+                    r".*_secondary_import_branch\..*",
+                    "raw_data_branching.branch_end",  # ew, dont make it skip this
+                ],
+                expected_success_task_id_regexes=[
+                    r".*_primary_import_branch\.acquire_raw_data_resource_locks",
+                    r".*_primary_import_branch.successfully_acquired_all_locks",
+                    r"initialize_dag..*",
+                    "raw_data_branching.branch_start",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
     def test_branching_resource_lock_acquisition_succeeds_but_we_fail_after(
         self,
@@ -2608,8 +2654,12 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                 },
                 expected_failure_task_id_regexes=[
-                    # intended failures
+                    # intended failure
                     r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
+                    # this will fail as a result of split_by_pre_import norm not running
+                    r".*_primary_import_branch\.big_query_load\..*",
+                    # this will fail as a result of write_import_start not running
+                    r".*_primary_import_branch.cleanup_and_storage.write_import_completions",
                     # downstream failures
                     r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
@@ -2619,16 +2669,16 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.raise_header_verification_errors",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",
                     r".*_primary_import_branch\.pre_import_normalization\.*",
+                    r".*primary_import_branch.coalesce_import_ready_files",
+                    r".*_primary_import_branch.cleanup_and_storage.write_file_processed_time",
+                    "raw_data_branching.branch_end",
                 ],
                 expected_skipped_task_id_regexes=[
-                    r".*_primary_import_branch\.coalesce_import_ready_files",
-                    r".*_primary_import_branch\.big_query_load\..*",
-                    r".*_primary_import_branch\.cleanup_and_storage.*",
                     r".*_secondary_import_branch\..*",
                 ],
             )
             # failed state will only happen when resource releasing failed
-            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
 
             for lock_released in session.execute(
                 text("SELECT released FROM direct_ingest_raw_data_resource_lock")

@@ -18,7 +18,6 @@
 import datetime
 from typing import Dict, List, NamedTuple, Optional
 
-from airflow.exceptions import AirflowSkipException
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 
@@ -111,11 +110,8 @@ class WriteImportCompletionsSqlQueryGenerator(CloudSqlQueryGenerator[List[str]])
         if not import_run_id_xcom or not isinstance(
             import_run_id := import_run_id_xcom.get(IMPORT_RUN_ID), int
         ):
-            # if we can't find an import_run_udm we assume that we either
-            #   - must have failed upstream before we started a new import run
-            #   - the whole branch must have skipped
-            raise AirflowSkipException(
-                "Could not retrieve import_run_id from upstream; skipping writing file imports to operations db"
+            raise ValueError(
+                f"Could not retrieve import_run_id from upstream; found: [{import_run_id_xcom}]"
             )
 
         existing_file_imports = [
