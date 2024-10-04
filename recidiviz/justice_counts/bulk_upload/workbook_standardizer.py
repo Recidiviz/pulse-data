@@ -199,6 +199,17 @@ class WorkbookStandardizer:
             if column == "row_number":
                 continue
 
+            if (
+                column == "month"
+                and self.is_single_page_upload is True
+                and "metric" not in sheet_df.columns
+            ):
+                # Don't add Unexpected Month Column Error if there
+                # is no metric column. We cannot be sure what metric(s)
+                # are included in the upload and, as a result, cannot correctly
+                # determine if there should be a month column.
+                continue
+
             message_type = BulkUploadMessageType.ERROR
             description = f"A '{column}' column was found in your sheet. Only the following columns were expected in your sheet: {', '.join(expected_columns)}. "
             standardized_column_header = self._standardize_string(
@@ -259,6 +270,18 @@ class WorkbookStandardizer:
             message_type = BulkUploadMessageType.ERROR
             title = ""
             description = ""
+
+            if (
+                column == "month"
+                and self.is_single_page_upload is True
+                and "metric" not in sheet_df.columns
+            ):
+                # Don't add Missing Month Column Errors if there
+                # is no metric column. We cannot be sure what metric(s)
+                # are included in the upload and, as a result, cannot correctly
+                # determine if there should be a month column.
+                continue
+
             if column not in standardized_column_actual_column.keys():
                 title = f"Missing '{column}' Column"
                 description = (
@@ -537,7 +560,9 @@ class WorkbookStandardizer:
         else:
             # In a single-page upload, there should be a month column if there is a
             # metric in the sheet that has a monthly reporting frequency.
-            unique_metrics = sheet_df["metric"].unique()
+            unique_metrics = (
+                sheet_df["metric"].unique() if "metric" in sheet_df.columns else []
+            )
             metric_keys_in_sheet = {
                 self.canonical_file_name_to_metric_key.get(m) for m in unique_metrics
             }
@@ -1045,15 +1070,21 @@ class WorkbookStandardizer:
 
         workbook_df = pd.read_excel(excel_file, sheet_name=None)
         can_workbook_be_ingested = True
-        if len(excel_file.sheet_names) == 1:
-            sheet_df = workbook_df[excel_file.sheet_names[0]]
-            if "metric" in sheet_df.columns:
-                self.is_single_page_upload = True
-                (
-                    can_workbook_be_ingested,
-                    standardized_sheet_df,
-                ) = self.standardize_sheet(sheet_df=sheet_df)
-
+        single_page_upload_columns = ["metric", "breakdown", "breakdown_category"]
+        self.is_single_page_upload = len(excel_file.sheet_names) == 1 and any(
+            col in workbook_df[excel_file.sheet_names[0]].columns
+            for col in single_page_upload_columns
+        )
+        if self.is_single_page_upload is True:
+            # If it's a single-page upload, run the workbook through standardize_sheet
+            # to catch column warnings specific to the single-page upload format.
+            (
+                can_workbook_be_ingested,
+                standardized_sheet_df,
+            ) = self.standardize_sheet(sheet_df=workbook_df[excel_file.sheet_names[0]])
+            if can_workbook_be_ingested is True:
+                # If the workbook can be ingested and it's a single-page upload,
+                # reformat the workbook_df to be in the standard format.
                 workbook_df = self._transform_combined_metric_file_upload(
                     df=standardized_sheet_df
                 )
