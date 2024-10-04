@@ -30,18 +30,20 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_AZ_RELEASE_TO_TPR_REQUEST_VIEW_NAME = "us_az_release_to_tpr_request_record"
+US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_NAME = (
+    "us_az_approaching_acis_or_recidiviz_tpr_request_record"
+)
 
-US_AZ_RELEASE_TO_TPR_REQUEST_DESCRIPTION = """
+US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_DESCRIPTION = """
     Queries information needed to surface eligible folks to be early released on a Transition Program Release AZ.
     """
 
 
-US_AZ_RELEASE_TO_TPR_REQUEST_QUERY_TEMPLATE = f"""
-
+US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_QUERY_TEMPLATE = f"""
+# TODO(#33958) - Add all the relevant components of this opportunity record
 WITH eligible_and_almost_eligible AS (
 {join_current_task_eligibility_spans_with_external_id(state_code="'US_AZ'",
-                                                      tes_task_query_view='release_to_tpr_request_materialized',
+                                                      tes_task_query_view='overdue_for_recidiviz_tpr_request_materialized',
                                                       id_type="'US_AZ_ADC_NUMBER'",
                                                       eligible_only=True)}
 )
@@ -55,11 +57,11 @@ FROM
     eligible_and_almost_eligible
 """
 
-US_AZ_RELEASE_TO_TPR_REQUEST_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    view_id=US_AZ_RELEASE_TO_TPR_REQUEST_VIEW_NAME,
-    view_query_template=US_AZ_RELEASE_TO_TPR_REQUEST_QUERY_TEMPLATE,
-    description=US_AZ_RELEASE_TO_TPR_REQUEST_DESCRIPTION,
+    view_id=US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_NAME,
+    view_query_template=US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_QUERY_TEMPLATE,
+    description=US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_AZ
@@ -69,4 +71,4 @@ US_AZ_RELEASE_TO_TPR_REQUEST_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_AZ_RELEASE_TO_TPR_REQUEST_VIEW_BUILDER.build_and_print()
+        US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_BUILDER.build_and_print()

@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shows the eligibility spans for residents in AZ who are eligible for a TPR release.
+"""Shows the eligibility spans for residents in AZ who are eligible for a Transition 
+Program Release (TPR) release according to our (Recidiviz) calculations. 
 """
 
 from recidiviz.common.constants.states import StateCode
@@ -49,13 +50,13 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the eligibility spans for residents in AZ
- who are eligible for a TPR release.
+_DESCRIPTION = """Shows the eligibility spans for residents in AZ who are eligible for a Transition
+Program Release (TPR) release according to our (Recidiviz) calculations. 
 """
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
-    task_name="RELEASE_TO_TPR_REQUEST",
+    task_name="OVERDUE_FOR_RECIDIVIZ_TPR_REQUEST",
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
@@ -80,6 +81,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_serving_for_dangerous_crimes_against_children.VIEW_BUILDER,
         meets_functional_literacy.VIEW_BUILDER,
     ],
+    # TODO(#33655): Update this to the correct task completion event
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )
 
