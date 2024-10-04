@@ -33,7 +33,6 @@ from recidiviz.ingest.views.dataset_config import (
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
-    get_all_source_table_datasets,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -209,7 +208,9 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             if view_builder.address not in skipped_views
         ]
         create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=get_all_source_table_datasets(),
+            view_source_table_datasets={
+                a.dataset_id for a in self._source_table_addresses
+            },
             view_builders_to_update=view_builders_to_update,
             view_update_sandbox_context=None,
             # This script does not do any clean up of previously managed views

@@ -37,8 +37,9 @@ from recidiviz.big_query.view_update_manager import (
     execute_update_all_managed_views,
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_all_source_table_datasets,
+    get_source_table_datasets,
 )
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
     GCP_PROJECT_PRODUCTION,
     GCP_PROJECT_STAGING,
@@ -78,7 +79,9 @@ class ViewManagerTest(unittest.TestCase):
         )
         self.client_patcher_2.start()
 
-        self.view_source_table_datasets = get_all_source_table_datasets()
+        self.view_source_table_datasets = get_source_table_datasets(
+            metadata.project_id()
+        )
 
     def tearDown(self) -> None:
         self.client_patcher.stop()
@@ -912,9 +915,13 @@ class TestExecuteUpdateAllManagedViews(unittest.TestCase):
         )
         self.environment_patcher.start()
 
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = GCP_PROJECT_PRODUCTION
+
     def tearDown(self) -> None:
         self.environment_patcher.stop()
         self.all_views_update_success_persister_patcher.stop()
+        self.project_id_patcher.stop()
 
     @mock.patch(
         "recidiviz.big_query.view_update_manager.deployed_view_builders",

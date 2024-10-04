@@ -25,8 +25,6 @@ from recidiviz.aggregated_metrics.view_config import (
     get_aggregated_metrics_view_builders,
 )
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.calculator.query.experiments_metadata.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXPERIMENTS_VIEW_BUILDERS,
 )
@@ -46,9 +44,6 @@ from recidiviz.observations.view_config import (
     get_view_builders_for_views_to_update as get_observations_view_builders,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_all_source_table_datasets,
-)
 from recidiviz.task_eligibility.view_config import (
     get_view_builders_for_views_to_update as get_task_eligibility_view_builders,
 )
@@ -97,20 +92,6 @@ def all_deployed_view_builders() -> List[BigQueryViewBuilder]:
     the builder configuration.
     """
     return _all_deployed_view_builders()
-
-
-@environment.local_only
-def build_all_deployed_views_dag_walker() -> BigQueryViewDagWalker:
-    """Returns a BigQueryViewDagWalker representing the DAG of all deployed views in
-    the main view graph.
-    """
-    return BigQueryViewDagWalker(
-        build_views_to_update(
-            view_source_table_datasets=get_all_source_table_datasets(),
-            candidate_view_builders=all_deployed_view_builders(),
-            sandbox_context=None,
-        )
-    )
 
 
 # A list of all datasets that have ever held managed views that were updated by our

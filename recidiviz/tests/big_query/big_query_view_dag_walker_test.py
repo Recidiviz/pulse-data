@@ -37,9 +37,10 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_all_source_table_datasets,
+    get_source_table_datasets,
 )
-from recidiviz.view_registry.deployed_views import all_deployed_view_builders
+from recidiviz.utils import metadata
+from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 LATEST_VIEW_DATASET_REGEX = re.compile(r"(us_[a-z]{2})_raw_data_up_to_date_views")
 MOCK_VIEW_PROCESS_TIME_SECONDS = 0.01
@@ -130,7 +131,7 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             mock_table_has_column.return_value = True
 
             cls.all_views = [
-                view_builder.build() for view_builder in all_deployed_view_builders()
+                view_builder.build() for view_builder in deployed_view_builders()
             ]
 
         cls.x_shaped_dag_views_list = [
@@ -196,22 +197,24 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             with mutex:
                 node = walker.node_for_view(view)
                 if not node.is_root:
-                    for parent_key in node.parent_node_addresses:
-                        if parent_key not in all_processed:
-                            # The only parents that won't have been fully processed are source data tables
+                    for parent_address in node.parent_node_addresses:
+                        if parent_address not in all_processed:
+                            # The only parents that won't have been fully processed are
+                            # source data tables
                             try:
                                 self.assertIsValidSourceDataTable(
-                                    child_view_key=node.view.address,
-                                    source_table_key=parent_key,
+                                    child_view_address=node.view.address,
+                                    source_table_address=parent_address,
                                 )
                             except ValueError as e:
                                 raise ValueError(
-                                    f"Found parent view [{parent_key}] that was not processed before "
-                                    f"child [{node.view.address}] started processing."
+                                    f"Found parent view [{parent_address.to_str()}] "
+                                    f"that was not processed before child "
+                                    f"[{node.view.address}] started processing."
                                 ) from e
                         else:
                             self.assertIn(
-                                walker.view_for_address(parent_key),
+                                walker.view_for_address(parent_address),
                                 parent_results,
                             )
 
@@ -1296,14 +1299,17 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
 
     @staticmethod
     def assertIsValidSourceDataTable(
-        child_view_key: BigQueryAddress, source_table_key: BigQueryAddress
+        child_view_address: BigQueryAddress, source_table_address: BigQueryAddress
     ) -> None:
-        if source_table_key.dataset_id in get_all_source_table_datasets():
+        if source_table_address.dataset_id in get_source_table_datasets(
+            metadata.project_id()
+        ):
             return
 
         raise ValueError(
-            f"Found parent [{source_table_key}] of BQ graph root node [{child_view_key}] that is not in an "
-            f"expected raw inputs dataset."
+            f"Found parent [{source_table_address.to_str()}] of BQ graph root node "
+            f"[{child_view_address.to_str()}] that is not in an expected raw inputs "
+            f"dataset."
         )
 
     @staticmethod

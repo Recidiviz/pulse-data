@@ -26,61 +26,75 @@ from recidiviz.source_tables.source_table_config import (
     StateSpecificSourceTableLabel,
     UnionedStateAgnosticSourceTableLabel,
 )
+from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.metadata import local_project_id_override
 
 
 class CollectAllSourceTableConfigsTest(unittest.TestCase):
     """Test for built source table collections"""
 
     def test_state_schema_tables_have_state_code(self) -> None:
-        source_table_repository = build_source_table_repository_for_collected_schemata(
-            project_id=None
-        )
-        dataset_collections = (
-            source_table_repository.collections_labelled_with(
-                label_type=NormalizedStateAgnosticEntitySourceTableLabel
-            )
-            + source_table_repository.collections_labelled_with(
-                label_type=StateSpecificSourceTableLabel
-            )
-            + source_table_repository.collections_labelled_with(
-                label_type=UnionedStateAgnosticSourceTableLabel
-            )
-        )
-
-        for dataset_collection in dataset_collections:
-            if any(
-                isinstance(label, RawDataSourceTableLabel)
-                for label in dataset_collection.labels
-            ):
-                # Raw data tables are state-specific tables but we do not expect them
-                # to have `state_code` columns.
-                continue
-
-            # TODO(#30495): When we add *ingest_view_results datasets into the normal
-            #  set of collected schema, we'll need to make an exemption for those here
-            #  since they don't have state_code columns.
-            for table in dataset_collection.source_tables:
-                self.assertIn(
-                    "state_code",
-                    {schema_field.name for schema_field in table.schema_fields},
-                    msg=f"Expected table {table.address} to have state_code column; actual was {table.schema_fields}",
+        for project_id in GCP_PROJECTS:
+            with local_project_id_override(project_id):
+                source_table_repository = (
+                    build_source_table_repository_for_collected_schemata(
+                        project_id=project_id
+                    )
+                )
+                dataset_collections = (
+                    source_table_repository.collections_labelled_with(
+                        label_type=NormalizedStateAgnosticEntitySourceTableLabel
+                    )
+                    + source_table_repository.collections_labelled_with(
+                        label_type=StateSpecificSourceTableLabel
+                    )
+                    + source_table_repository.collections_labelled_with(
+                        label_type=UnionedStateAgnosticSourceTableLabel
+                    )
                 )
 
+                for dataset_collection in dataset_collections:
+                    if any(
+                        isinstance(label, RawDataSourceTableLabel)
+                        for label in dataset_collection.labels
+                    ):
+                        # Raw data tables are state-specific tables but we do not expect
+                        # them to have `state_code` columns.
+                        continue
+
+                    # TODO(#30495): When we add *ingest_view_results datasets into the
+                    #  normal set of collected schema, we'll need to make an exemption
+                    #  for those here since they don't have state_code columns.
+                    for table in dataset_collection.source_tables:
+                        self.assertIn(
+                            "state_code",
+                            {schema_field.name for schema_field in table.schema_fields},
+                            msg=(
+                                f"Expected table {table.address} to have state_code "
+                                f"column; actual was {table.schema_fields}"
+                            ),
+                        )
+
     def test_no_duplicate_addresses_across_collections(self) -> None:
-        source_table_repository = build_source_table_repository_for_collected_schemata(
-            project_id=None
-        )
-        visited_addresses = set()
-        duplicate_addresses = set()
+        for project_id in GCP_PROJECTS:
+            with local_project_id_override(project_id):
+                source_table_repository = (
+                    build_source_table_repository_for_collected_schemata(
+                        project_id=project_id
+                    )
+                )
+                visited_addresses = set()
+                duplicate_addresses = set()
 
-        for collection in source_table_repository.source_table_collections:
-            for source_table_config in collection.source_tables:
-                address = source_table_config.address
-                if address in visited_addresses:
-                    duplicate_addresses.add(address.to_str())
-                visited_addresses.add(address)
+                for collection in source_table_repository.source_table_collections:
+                    for source_table_config in collection.source_tables:
+                        address = source_table_config.address
+                        if address in visited_addresses:
+                            duplicate_addresses.add(address.to_str())
+                        visited_addresses.add(address)
 
-        if duplicate_addresses:
-            raise ValueError(
-                f"Expected no duplicate addresses across source table collections; found: {duplicate_addresses}"
-            )
+                if duplicate_addresses:
+                    raise ValueError(
+                        f"Expected no duplicate addresses across source table "
+                        f"collections; found: {duplicate_addresses}"
+                    )

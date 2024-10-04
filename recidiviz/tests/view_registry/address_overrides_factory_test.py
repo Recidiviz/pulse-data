@@ -18,6 +18,7 @@
 
 import unittest
 from typing import List, Sequence, Set
+from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -26,6 +27,7 @@ from recidiviz.big_query.big_query_view import (
     SimpleBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_input_source_tables,
     address_overrides_for_view_builders,
@@ -111,6 +113,10 @@ class TestAddressOverrides(unittest.TestCase):
                     sandbox_materialized_address.dataset_id.startswith(expected_prefix)
                 )
 
+    @patch(
+        "recidiviz.utils.metadata.project_id",
+        MagicMock(return_value=GCP_PROJECT_STAGING),
+    )
     def test_address_overrides_for_input_source_tables_empty(self) -> None:
         overrides = address_overrides_for_input_source_tables({})
 
@@ -119,6 +125,10 @@ class TestAddressOverrides(unittest.TestCase):
             overrides.get_sandbox_address(BigQueryAddress.from_str("random.table")),
         )
 
+    @patch(
+        "recidiviz.utils.metadata.project_id",
+        MagicMock(return_value=GCP_PROJECT_STAGING),
+    )
     def test_address_overrides_for_input_source_tables(self) -> None:
         overrides = address_overrides_for_input_source_tables(
             {
@@ -148,6 +158,10 @@ class TestAddressOverrides(unittest.TestCase):
             ),
         )
 
+    @patch(
+        "recidiviz.utils.metadata.project_id",
+        MagicMock(return_value=GCP_PROJECT_STAGING),
+    )
     def test_address_overrides_for_input_source_tables_invalid_table(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -159,6 +173,29 @@ class TestAddressOverrides(unittest.TestCase):
                 }
             )
 
+    @patch(
+        "recidiviz.utils.metadata.project_id",
+        MagicMock(return_value=GCP_PROJECT_PRODUCTION),
+    )
+    def test_address_overrides_for_input_source_tables_invalid_table_in_project(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Dataset \[us_oz_state\] is not a valid source table dataset - cannot "
+            r"override.",
+        ):
+            _ = address_overrides_for_input_source_tables(
+                {
+                    # us_oz_state does not exist in production
+                    "us_oz_state": "some_prefix_us_oz_state",
+                }
+            )
+
+    @patch(
+        "recidiviz.utils.metadata.project_id",
+        MagicMock(return_value=GCP_PROJECT_STAGING),
+    )
     def test_address_overrides_for_input_source_tables_sandbox_matches_dataset(
         self,
     ) -> None:

@@ -63,7 +63,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
             client=self.bq_client
         )
         self.repository = build_source_table_repository_for_collected_schemata(
-            project_id=None
+            project_id=self.bq_client.project_id
         )
         self.source_table_collection = one(
             [

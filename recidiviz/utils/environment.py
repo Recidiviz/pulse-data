@@ -210,7 +210,7 @@ def local_only(func: Callable) -> Callable:
             raise RuntimeError("Not available, see service logs.")
 
         # Local development server - continue
-        logging.info("Test environment, proceeding.")
+        logging.debug("Test environment, proceeding.")
 
         return func(*args, **kwargs)
 

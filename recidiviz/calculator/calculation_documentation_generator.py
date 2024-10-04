@@ -90,11 +90,15 @@ from recidiviz.pipelines.metrics.utils.metric_utils import (
 from recidiviz.pipelines.metrics.violation.metrics import ViolationMetric
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_all_source_table_datasets,
-    get_all_source_table_datasets_to_descriptions,
+    get_source_table_datasets_to_descriptions,
 )
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import persist_file_contents
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCPEnvironment
+from recidiviz.utils.environment import (
+    GCP_PROJECT_STAGING,
+    GCP_PROJECTS,
+    GCPEnvironment,
+)
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
@@ -245,11 +249,22 @@ class CalculationDocumentationGenerator:
                     self.products_by_state[state][environment].append(product_name)
         all_view_builders = all_deployed_view_builders()
         self.view_builders_by_address = {vb.address: vb for vb in all_view_builders}
-        views_to_update = build_views_to_update(
-            view_source_table_datasets=get_all_source_table_datasets(),
-            candidate_view_builders=all_view_builders,
-            sandbox_context=None,
+
+        self.all_source_table_datasets = get_all_source_table_datasets()
+
+        # It doesn't matter what the project_id is - we're just building the graph to
+        # understand view relationships
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            views_to_update = build_views_to_update(
+                view_source_table_datasets=self.all_source_table_datasets,
+                candidate_view_builders=all_view_builders,
+                sandbox_context=None,
+            )
+
+        self.all_source_table_datasets_to_descriptions = (
+            self._get_all_source_table_datasets_to_descriptions()
         )
+
         self.dag_walker = BigQueryViewDagWalker(views_to_update)
         self.dag_walker.populate_ancestor_sub_dags()
         self.dag_walker.populate_descendant_sub_dags()
@@ -290,6 +305,17 @@ class CalculationDocumentationGenerator:
             for v in views_to_update
             if not v.address.dataset_id in DATASETS_TO_SKIP_VIEW_DOCUMENTATION
         ]
+
+    @staticmethod
+    def _get_all_source_table_datasets_to_descriptions() -> dict[str, str]:
+        all_datasets_to_descriptions: dict[str, str] = {}
+        for project_id in GCP_PROJECTS:
+            with local_project_id_override(project_id):
+                all_datasets_to_descriptions = {
+                    **all_datasets_to_descriptions,
+                    **get_source_table_datasets_to_descriptions(project_id),
+                }
+        return all_datasets_to_descriptions
 
     def get_states_by_product(
         self,
@@ -526,7 +552,7 @@ class CalculationDocumentationGenerator:
         those addresses, organized by dataset.
         """
         datasets_to_descriptions = {
-            **get_all_source_table_datasets_to_descriptions(),
+            **self.all_source_table_datasets_to_descriptions,
             NORMALIZED_STATE_DATASET: (
                 "Contains normalized versions of the entities in the state dataset "
                 "produced by the ingest pipeline."
@@ -720,7 +746,7 @@ class CalculationDocumentationGenerator:
             address
             for address in all_parent_addresses
             if address.dataset_id
-            in get_all_source_table_datasets()
+            in self.all_source_table_datasets
             - {
                 # Metric info will be included in the metric-specific section
                 DATAFLOW_METRICS_DATASET,
@@ -918,7 +944,7 @@ class CalculationDocumentationGenerator:
         products_section: bool,
     ) -> str:
         """Gitbook-specific formatting for the generated dependency tree."""
-        is_source_table = address.dataset_id in get_all_source_table_datasets() or (
+        is_source_table = address.dataset_id in self.all_source_table_datasets or (
             address.dataset_id
             in {
                 # Tables in this dataset are not technically source tables because they
@@ -1305,16 +1331,15 @@ def generate_calculation_documentation(
 
 
 def main() -> int:
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        products = ProductConfigs.from_file(PRODUCTS_CONFIG_PATH).products
-        docs_generator = CalculationDocumentationGenerator(products, CALC_DOCS_PATH)
-        modified = generate_calculation_documentation(docs_generator)
-        if modified:
-            update_summary_file(
-                _create_ingest_catalog_calculation_summary(docs_generator),
-                "## Calculation Catalog",
-            )
-        return 1 if modified else 0
+    products = ProductConfigs.from_file(PRODUCTS_CONFIG_PATH).products
+    docs_generator = CalculationDocumentationGenerator(products, CALC_DOCS_PATH)
+    modified = generate_calculation_documentation(docs_generator)
+    if modified:
+        update_summary_file(
+            _create_ingest_catalog_calculation_summary(docs_generator),
+            "## Calculation Catalog",
+        )
+    return 1 if modified else 0
 
 
 if __name__ == "__main__":

@@ -27,6 +27,7 @@ from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATAS
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.calculator.query.experiments_metadata.views.officer_assignments import (
     OFFICER_ASSIGNMENTS_VIEW_BUILDER,
 )
@@ -163,6 +164,9 @@ from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_source_table_datasets,
+)
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
 )
@@ -172,7 +176,7 @@ from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
 from recidiviz.validation.views.dataset_config import (
     VIEWS_DATASET as VALIDATION_VIEWS_DATASET,
 )
-from recidiviz.view_registry.deployed_views import build_all_deployed_views_dag_walker
+from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 # List of views that are definitely referenced in Looker (as of 11/29/23). This list is
 # incomplete and you should add to this list / update the date in this comment as you
@@ -486,7 +490,14 @@ def get_unused_across_all_projects_addresses_from_all_views_dag(
     unused_addresses: Optional[Set[BigQueryAddress]] = None
     for project in GCP_PROJECTS:
         with local_project_id_override(project):
-            project_dag_walker = build_all_deployed_views_dag_walker()
+            project_dag_walker = BigQueryViewDagWalker(
+                build_views_to_update(
+                    view_source_table_datasets=get_source_table_datasets(project),
+                    candidate_view_builders=deployed_view_builders(),
+                    sandbox_context=None,
+                )
+            )
+
             if len(project_dag_walker.views) == 0:
                 raise ValueError(f"Failed to collect views for project {project}.")
 

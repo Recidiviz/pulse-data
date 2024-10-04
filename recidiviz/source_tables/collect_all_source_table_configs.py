@@ -21,6 +21,7 @@ from functools import cache
 from itertools import groupby
 from types import ModuleType
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_EVENTS,
     AUTH0_PROD_ACTION_LOGS,
@@ -73,6 +74,9 @@ from recidiviz.source_tables.source_table_repository import SourceTableRepositor
 from recidiviz.source_tables.us_mi_validation_oneoffs import (
     collect_duplicative_us_mi_validation_oneoffs,
 )
+from recidiviz.utils import environment, metadata
+from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.metadata import local_project_id_override
 
 ONE_DAY_MS = 24 * 60 * 60 * 1000
 
@@ -206,7 +210,11 @@ def collect_externally_managed_source_table_collections(
 ) -> list[SourceTableCollection]:
     """
     Collects all externally managed source tables.
-    We declare datasets here where we are only interested in validating a subset of fields.
+    We declare datasets here where we are only interested in validating a subset of
+    fields.
+
+    If project_id is None, returns all source tables that exist in any project.
+    Otherwise, only returns the collections that are deployed to the given project.
     """
     yaml_paths = glob.glob(
         os.path.join(os.path.dirname(__file__), "externally_managed/**/*.yaml")
@@ -258,15 +266,26 @@ def collect_externally_managed_source_table_collections(
     ]
 
 
+@cache
 def build_source_table_repository_for_collected_schemata(
-    project_id: str | None,
+    # We require project_id as an argument so that we don't return incorrect cached
+    # results when metadata.project_id() changes (e.g. in tests).
+    project_id: str,
 ) -> SourceTableRepository:
     """Builds a source table repository for all source tables in a project's BigQuery graph
     If the project is unspecified, source tables for all projects are collected.
     """
+    if project_id != metadata.project_id():
+        raise ValueError(
+            f"Expected project_id [{project_id}] to match metadata.project_id() "
+            f"[{metadata.project_id()}]"
+        )
+
     return SourceTableRepository(
         source_table_collections=[
-            *collect_externally_managed_source_table_collections(project_id=project_id),
+            *collect_externally_managed_source_table_collections(
+                project_id=metadata.project_id()
+            ),
             *collect_raw_data_source_table_collections(),
             *_collect_cloudsql_mirror_source_table_collections(),
             *collect_duplicative_us_mi_validation_oneoffs(),
@@ -277,10 +296,14 @@ def build_source_table_repository_for_collected_schemata(
 
 
 @cache
-def get_all_source_table_datasets_to_descriptions() -> dict[str, str]:
+def get_source_table_datasets_to_descriptions(
+    # We require project_id as an argument so that we don't return incorrect cached
+    # results when metadata.project_id() changes (e.g. in tests).
+    project_id: str,
+) -> dict[str, str]:
     datasets_to_descriptions: dict[str, str] = {}
     for c in build_source_table_repository_for_collected_schemata(
-        project_id=None
+        project_id
     ).source_table_collections:
         if (
             c.dataset_id in datasets_to_descriptions
@@ -297,11 +320,57 @@ def get_all_source_table_datasets_to_descriptions() -> dict[str, str]:
 
 
 @cache
+def get_source_table_addresses(
+    # We require project_id as an argument so that we don't return incorrect cached
+    # results when metadata.project_id() changes (e.g. in tests).
+    project_id: str,
+) -> set[BigQueryAddress]:
+    """Returns the addresses of all the source tables deployed to the given project."""
+    return set(
+        build_source_table_repository_for_collected_schemata(
+            project_id
+        ).source_tables.keys()
+    )
+
+
+@environment.local_only
+@cache
+def get_all_source_table_addresses() -> set[BigQueryAddress]:
+    """Returns the addresses of all the source tables deployed across any GCP
+    project.
+    """
+    all_addresses = set()
+    for project_id in GCP_PROJECTS:
+        with local_project_id_override(project_id):
+            all_addresses |= get_source_table_addresses(project_id)
+    return all_addresses
+
+
+@cache
+def get_source_table_datasets(
+    # We require project_id as an argument so that we don't return incorrect cached
+    # results when metadata.project_id() changes (e.g. in tests).
+    project_id: str,
+) -> set[str]:
+    """Returns the dataset ids of all the source tables deployed to the given
+    project.
+    """
+    return set(a.dataset_id for a in get_source_table_addresses(project_id))
+
+
+@environment.local_only
+@cache
 def get_all_source_table_datasets() -> set[str]:
-    return set(get_all_source_table_datasets_to_descriptions())
+    """Returns the dataset ids of all the source tables deployed across any GCP
+    project.
+    """
+    return set(a.dataset_id for a in get_all_source_table_addresses())
 
 
 if __name__ == "__main__":
     import pprint
 
-    pprint.pprint(build_source_table_repository_for_collected_schemata(project_id=None))
+    with local_project_id_override("recidiviz-staging"):
+        pprint.pprint(
+            build_source_table_repository_for_collected_schemata(metadata.project_id())
+        )

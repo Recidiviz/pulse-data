@@ -116,10 +116,11 @@ from recidiviz.common.git import (
     is_commit_in_current_branch,
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_all_source_table_datasets,
+    get_source_table_datasets,
 )
 from recidiviz.tools.utils.arg_parsers import str_to_address_list
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
 from recidiviz.utils.params import str_to_bool, str_to_list
@@ -484,7 +485,7 @@ def _load_views_changed_on_branch_to_sandbox(
     view_builders_in_full_dag = deployed_view_builders()
 
     all_views = build_views_to_update(
-        view_source_table_datasets=get_all_source_table_datasets(),
+        view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
         candidate_view_builders=view_builders_in_full_dag,
         sandbox_context=None,
     )
@@ -604,7 +605,7 @@ def _load_collected_views_to_sandbox(
         )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
-        view_source_table_datasets=get_all_source_table_datasets(),
+        view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
         view_builders_to_update=collected_builders,
         view_update_sandbox_context=view_update_sandbox_context,
         # Don't clean up datasets when running a sandbox script
