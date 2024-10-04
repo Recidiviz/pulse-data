@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows transfers to Community Reentry Centers (CRC)
-in ID."""
+"""Defines a view that shows transfers to minimum security
+facilities or units."""
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -23,33 +23,39 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
-from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
-    IX_CRC_FACILITIES,
-    ix_crc_facilities_in_location_sessions,
+from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
+    MINIMUM_SECURITY_FACILITIES_WHERE_CLAUSE,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows transfers to Community Reentry Centers (CRC)
-in ID."""
+_DESCRIPTION = """Defines a view that shows transfers to minimum security
+facilities or units."""
 
-_QUERY_TEMPLATE = f"""WITH crc_spans AS (
-    {ix_crc_facilities_in_location_sessions(
-            crc_facilities_list=IX_CRC_FACILITIES)}
+_QUERY_TEMPLATE = f"""
+WITH housing_unit_sess AS (
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
+    WHERE state_code = 'US_ND'
+    {MINIMUM_SECURITY_FACILITIES_WHERE_CLAUSE}
 )
 SELECT 
-    state_code,
-    person_id,
-    start_date AS completion_event_date,
-FROM (
-    {aggregate_adjacent_spans(table_name="crc_spans")}
-)
+  state_code,
+  person_id,
+  start_date AS completion_event_date,
+FROM ({aggregate_adjacent_spans(table_name='housing_unit_sess',
+                               end_date_field_name='end_date')})
+GROUP BY 1,2,3
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
     StateSpecificTaskCompletionEventBigQueryViewBuilder(
-        state_code=StateCode.US_IX,
-        completion_event_type=TaskCompletionEventType.TRANSFER_TO_REENTRY_CENTER,
+        state_code=StateCode.US_ND,
+        completion_event_type=TaskCompletionEventType.TRANSFER_TO_MINIMUM_FACILITY,
         description=_DESCRIPTION,
         completion_event_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,

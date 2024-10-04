@@ -433,7 +433,7 @@ completion_events AS (
     UNION ALL
 
     SELECT *
-    FROM `{project_id}.{us_nd_task_eligibility_completion_events_dataset}.transfer_to_reentry_center_materialized`
+    FROM `{project_id}.{us_nd_task_eligibility_completion_events_dataset}.transfer_to_minimum_facility_materialized`
 ),
 
 min_referrals_with_external_id_and_ce AS (
