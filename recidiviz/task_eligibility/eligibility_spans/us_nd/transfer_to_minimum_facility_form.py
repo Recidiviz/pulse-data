@@ -24,7 +24,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_nd import (
-    transfer_to_reentry_center,
+    transfer_to_minimum_facility,
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
@@ -72,7 +72,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_recent_referrals_to_minimum_housing.VIEW_BUILDER,
         not_enrolled_in_relevant_program.VIEW_BUILDER,
     ],
-    completion_event_builder=transfer_to_reentry_center.VIEW_BUILDER,
+    completion_event_builder=transfer_to_minimum_facility.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
-    transfer_to_reentry_center,
+    transfer_to_minimum_facility,
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
@@ -79,7 +79,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         tentative_parole_date_not_within_6_months.VIEW_BUILDER,
         not_serving_a_rider_sentence.VIEW_BUILDER,
     ],
-    completion_event_builder=transfer_to_reentry_center.VIEW_BUILDER,
+    completion_event_builder=transfer_to_minimum_facility.VIEW_BUILDER,
     almost_eligible_condition=NotEligibleCriteriaCondition(
         criteria=not_serving_for_violent_offense.VIEW_BUILDER,
         description="Serving a sentence for a violent offense",
