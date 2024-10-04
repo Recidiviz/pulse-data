@@ -285,7 +285,7 @@ def check_user_permissions(
     def add_users(text: str, user_infos: List[List[Any]]) -> str:
         # Add information about these users to the text string
         for (name, agencies) in user_infos:
-            text += f"* {name}: [Agencies] {', '.join(agencies)}\n"
+            text += f"* {name}: {len(agencies)} Agencies\n"
         text += "\n"
         return text
 
@@ -293,7 +293,7 @@ def check_user_permissions(
     if csg_users_with_wrong_role:
         text += "The following CSG users have non-read-only access to a production agency: \n"
         for (name, agencies, role) in csg_users_with_wrong_role:
-            text += f"* {name}: [Role] {format_role(role)}, [Agencies] {', '.join(agencies)}\n"
+            text += f"* {name}: [Role] {format_role(role)}, {len(agencies)} Agencies\n"
         text += "\n"
 
     if users_with_missing_child_agencies:
@@ -301,9 +301,9 @@ def check_user_permissions(
         for (
             name,
             super_agency,
-            missing_child_agencies,
+            _,
         ) in users_with_missing_child_agencies:
-            text += f"{name}: [Superagency] {super_agency}, [Missing Children] {', '.join(missing_child_agencies)}\n"
+            text += f"{name}: [Superagency] {super_agency}\n"
 
     if users_with_multiple_agencies_no_super:
         text += "The following users have access to multiple agencies but no superagency: \n"
@@ -316,7 +316,9 @@ def check_user_permissions(
     if users_with_multiple_states:
         text += "The following users have access to agencies in multiple states: \n"
         for (name, states, agencies) in users_with_multiple_states:
-            text += f"* {name}: [States] {', '.join(states)}, [Agencies] {', '.join(agencies)}\n"
+            text += (
+                f"* {name}: [States] {', '.join(states)}, {len(agencies)} Agencies\n"
+            )
         text += "\n"
 
     if users_with_no_agencies:
