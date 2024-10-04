@@ -466,7 +466,7 @@ class SpreadsheetInterface:
         destination_blob_name = spreadsheet.standardized_name.replace("xlsx", "json")
         blob = bucket.blob(destination_blob_name)
         blob.upload_from_string(
-            json.dumps(transformed_ingested_spreadsheet_json, default=str)
+            json.dumps(transformed_ingested_spreadsheet_json, default=str), timeout=1800
         )
         logging.info("%s stored in GCP", destination_blob_name)
 
