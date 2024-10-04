@@ -19,7 +19,6 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from airflow.decorators import task
-from airflow.exceptions import AirflowSkipException
 from airflow.utils.trigger_rule import TriggerRule
 from more_itertools import distribute
 
@@ -162,15 +161,17 @@ def split_by_pre_import_normalization_type(
 
 @task(trigger_rule=TriggerRule.ALL_DONE)
 def coalesce_import_ready_files(
-    serialized_input_ready_files_no_normalization: Optional[List[str]],
+    maybe_serialized_import_ready_files_no_normalization: Optional[List[str]],
     serialized_pre_import_normalization_result: Optional[str],
 ) -> List[List[str]]:
     """Combines import ready file objects from pre-import normalization and files that
     did not need pre-import normalization into equally sized batches.
     """
-    if serialized_input_ready_files_no_normalization is None:
-        raise AirflowSkipException(
-            "Import ready files that dont require pre-import normalization is None; skipping as we cannot proceed!"
+    if maybe_serialized_import_ready_files_no_normalization is None:
+        raise ValueError(
+            "If there are no import ready files, we expect an empty list; however since"
+            "we found None, that means the task failed to run upstream so let's fail "
+            "loud."
         )
 
     pre_import_normalization_results = (
@@ -184,7 +185,7 @@ def coalesce_import_ready_files(
     )
 
     all_import_ready_files = [
-        *serialized_input_ready_files_no_normalization,
+        *maybe_serialized_import_ready_files_no_normalization,
         *[result.serialize() for result in pre_import_normalization_results],
     ]
 
@@ -201,13 +202,13 @@ def coalesce_results_and_errors(
     *,
     region_code: str,
     raw_data_instance: DirectIngestInstance,
-    serialized_bq_metadata: List[str],
-    serialized_header_verification_errors: List[str],
-    serialized_chunking_errors: List[str],
-    serialized_pre_import_normalization_result: str,
-    serialized_load_prep_results: List[str],
-    serialized_append_batches: Dict[str, List[str]],
-    serialized_append_result: List[str],
+    serialized_bq_metadata: Optional[List[str]],
+    serialized_header_verification_errors: Optional[List[str]],
+    serialized_chunking_errors: Optional[List[str]],
+    serialized_pre_import_normalization_result: Optional[str],
+    serialized_load_prep_results: Optional[List[str]],
+    serialized_append_batches: Optional[Dict[str, List[str]]],
+    serialized_append_result: Optional[List[str]],
 ) -> Dict[str, List[str]]:
     """Reconciles RawBigQueryFileMetadata objects against the results and errors
     of the pre-import normalization and big query load steps, returning a dictionary
@@ -451,7 +452,7 @@ def _build_file_imports_for_results(
 def _deserialize_coalesce_results_and_errors_inputs(
     serialized_bq_metadata: Optional[List[str]],
     serialized_header_verification_errors: Optional[List[str]],
-    serialized_chunking_errors: List[str],
+    serialized_chunking_errors: Optional[List[str]],
     serialized_pre_import_normalization_result: Optional[str],
     serialized_load_prep_results: Optional[List[str]],
     serialized_append_batches: Optional[Dict[str, List[str]]],
@@ -465,20 +466,16 @@ def _deserialize_coalesce_results_and_errors_inputs(
         List[RawDataAppendImportError],
     ],
 ]:
-    """Deserialize and group inputs of coalesce_results_and_errors.
+    """Deserialize and group inputs of coalesce_results_and_errors"""
 
-    If |serialized_bq_metadata| is empty, we don't have the starting list of files
-    that we intended to import, so we will assume this is an empty branch.
-    """
-    if serialized_bq_metadata is None:
-        raise AirflowSkipException(
-            "Found no bq metadata, so assuming that this is an empty branch"
-        )
-
-    bq_metadata = [
-        RawBigQueryFileMetadata.deserialize(serialized_bq_metadata)
-        for serialized_bq_metadata in serialized_bq_metadata
-    ]
+    bq_metadata = (
+        [
+            RawBigQueryFileMetadata.deserialize(serialized_bq_metadata)
+            for serialized_bq_metadata in serialized_bq_metadata
+        ]
+        if serialized_bq_metadata
+        else []
+    )
 
     header_verification_errors = (
         [

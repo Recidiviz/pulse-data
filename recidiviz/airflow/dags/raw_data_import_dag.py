@@ -100,7 +100,10 @@ from recidiviz.airflow.dags.raw_data.raw_data_branching import (
 from recidiviz.airflow.dags.raw_data.release_resource_lock_sql_query_generator import (
     ReleaseRawDataResourceLockSqlQueryGenerator,
 )
-from recidiviz.airflow.dags.raw_data.sequencing_tasks import has_files_to_import
+from recidiviz.airflow.dags.raw_data.sequencing_tasks import (
+    has_files_to_import,
+    successfully_acquired_all_locks,
+)
 from recidiviz.airflow.dags.raw_data.write_file_import_start_sql_query_generator import (
     WriteImportStartCloudSqlGenerator,
 )
@@ -166,6 +169,17 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
+        # ensure_locks_acquired is upstream of (set further down in the dag):
+        #   - list_normalized_unprocessed_gcs_file_paths
+        #   - serialized_import_ready_files
+        #   - clean_and_storage_jobs
+        #   - ensure_release_resource_locks_release_if_acquired
+        # TriggerRule is ALL_DONE
+        ensure_locks_acquired = successfully_acquired_all_locks(
+            maybe_serialized_acquired_locks=acquire_locks.output,
+            resources_needed=RESOURCE_LOCKS_NEEDED,
+        )
+
         list_normalized_unprocessed_gcs_file_paths = (
             DirectIngestListNormalizedUnprocessedFilesOperator(
                 task_id="list_normalized_unprocessed_gcs_file_paths",
@@ -177,7 +191,10 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             )
         )
 
-        acquire_locks >> list_normalized_unprocessed_gcs_file_paths
+        acquire_locks >> [
+            ensure_locks_acquired,
+            list_normalized_unprocessed_gcs_file_paths,
+        ]
 
         # ------------------------------------------------------------------------------
 
@@ -206,12 +223,14 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
+        # should_run_import is upstream of (set further down in the dag):
+        #   - write_import_start
+        #   - serialized_import_ready_files
+        #   - write_import_completions
         should_run_import = has_files_to_import(
             get_all_unprocessed_bq_file_metadata.output
         )
 
-        # we set this explicitly here, and then also set should_run_import as upstream of
-        # write_import_start and serialized_import_ready_files further down in the DAG
         get_all_unprocessed_bq_file_metadata >> should_run_import
 
         write_import_start = CloudSqlQueryOperator(
@@ -313,13 +332,6 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             pre_import_normalization_result,
         )
 
-        # if we didn't have files to import, let's cascade our skip down through ALL_SUCCESS
-        # trigger rules and override downstream ALL_DONE trigger rules
-        should_run_import >> [
-            write_import_start,
-            serialized_import_ready_files,
-        ]
-
         with TaskGroup("big_query_load") as big_query_load:
             # load paths into temp table
             load_and_prep_results = load_and_prep_paths_for_batch.partial(
@@ -408,6 +420,8 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                 renamed_imported_paths,
             ]
 
+            write_import_start >> write_import_completions
+
             write_import_completions >> write_file_processed_times
 
         [
@@ -438,12 +452,30 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             acquire_locks,
         ] >> release_locks
 
+        # if we didn't have files to import, let's cascade our skip down through ALL_SUCCESS
+        # trigger rules and override downstream ALL_DONE trigger rules
+        should_run_import >> [
+            write_import_start,  # cascades skip through ALL_SUCCESS
+            serialized_import_ready_files,  # override ALL_DONE
+            write_import_completions,  # override ALL_DONE of clean_and_storage_jobs
+        ]
+
+        # if we didn't acquire resource locks, let's cascade our skip down through ALL_SUCCESS
+        # and then also override ALL_DONE trigger rules
+        ensure_locks_acquired >> [
+            list_normalized_unprocessed_gcs_file_paths,  # cascades skip through ALL_SUCCESS
+            serialized_import_ready_files,  # override ALL_DONE
+            clean_and_storage_jobs,  # override ALL_DONE
+            ensure_release_resource_locks_release_if_acquired,  # override ALL_DONE
+        ]
+
         # ------------------------------------------------------------------------------
 
     return [
         raw_data_branch,
         ensure_release_resource_locks_release_if_acquired,
         serialized_import_ready_files,
+        ensure_locks_acquired,
         clean_and_storage_jobs,
     ]
 

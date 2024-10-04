@@ -17,7 +17,14 @@
 """Tests for sequencing_tasks"""
 from unittest import TestCase
 
-from recidiviz.airflow.dags.raw_data.sequencing_tasks import has_files_to_import
+from recidiviz.airflow.dags.raw_data.sequencing_tasks import (
+    has_files_to_import,
+    successfully_acquired_all_locks,
+)
+from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
+    DirectIngestRawDataResourceLockResource,
+)
+from recidiviz.ingest.direct.types.raw_data_import_types import RawDataResourceLock
 
 
 class SequencingTests(TestCase):
@@ -27,3 +34,40 @@ class SequencingTests(TestCase):
         assert not has_files_to_import.function(None)
         assert not has_files_to_import.function([])
         assert has_files_to_import.function(["a"])
+
+    def test_successfully_acquired_all_locks(self) -> None:
+        assert not successfully_acquired_all_locks.function(None, [])
+        assert successfully_acquired_all_locks.function([], [])
+        assert not successfully_acquired_all_locks.function(
+            [], [DirectIngestRawDataResourceLockResource.BUCKET]
+        )
+        assert not successfully_acquired_all_locks.function(
+            [
+                RawDataResourceLock(
+                    lock_id=1,
+                    lock_resource=DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET,
+                    released=False,
+                ).serialize()
+            ],
+            [DirectIngestRawDataResourceLockResource.BUCKET],
+        )
+        assert not successfully_acquired_all_locks.function(
+            [
+                RawDataResourceLock(
+                    lock_id=1,
+                    lock_resource=DirectIngestRawDataResourceLockResource.BUCKET,
+                    released=True,
+                ).serialize()
+            ],
+            [DirectIngestRawDataResourceLockResource.BUCKET],
+        )
+        assert successfully_acquired_all_locks.function(
+            [
+                RawDataResourceLock(
+                    lock_id=1,
+                    lock_resource=DirectIngestRawDataResourceLockResource.BUCKET,
+                    released=False,
+                ).serialize()
+            ],
+            [DirectIngestRawDataResourceLockResource.BUCKET],
+        )

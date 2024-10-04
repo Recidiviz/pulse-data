@@ -33,7 +33,6 @@ from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import RawDataResourceLock
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
-from recidiviz.persistence.errors import DirectIngestRawDataResourceLockHeldError
 
 
 class TestAcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnitTest):
@@ -88,10 +87,12 @@ class TestAcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnit
 
         assert all(not lock.released for lock in locks)
 
-        with self.assertRaises(DirectIngestRawDataResourceLockHeldError):
-            results = self.generator.execute_postgres_query(
+        assert (
+            self.generator.execute_postgres_query(
                 mock_operator, self.mock_pg_hook, mock_context
             )
+            == []
+        )
 
     def test_acquires_lock_updates_correctly(self) -> None:
         mock_operator = create_autospec(CloudSqlQueryOperator)

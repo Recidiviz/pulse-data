@@ -34,7 +34,6 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import RawDataResourceLock
-from recidiviz.persistence.errors import DirectIngestRawDataResourceLockHeldError
 from recidiviz.utils.string import StrictStringFormatter
 
 LOCK_UNIQUE_CONSTRAINT = "at_most_one_active_lock_per_resource_region_and_instance"
@@ -93,7 +92,7 @@ class AcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGenerator[List[st
             results = postgres_hook.get_records(statements)
         except UniqueViolation as e:
             if e.diag.constraint_name == LOCK_UNIQUE_CONSTRAINT:
-                raise DirectIngestRawDataResourceLockHeldError from e
+                return []
             raise e
 
         # results is list of both queries, should have length of 2

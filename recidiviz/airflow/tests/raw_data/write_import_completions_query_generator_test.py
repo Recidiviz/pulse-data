@@ -16,11 +16,9 @@
 # =============================================================================
 """Unit tests for WriteImportCompletionsSqlQueryGenerator"""
 import datetime
-import re
 from typing import Any, Dict, List, NamedTuple, Optional
 from unittest.mock import create_autospec
 
-from airflow.exceptions import AirflowSkipException
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 from freezegun import freeze_time
@@ -134,10 +132,8 @@ class WriteImportCompletionsSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest
     def test_write_no_import_written(self) -> None:
         mock_hook = create_autospec(PostgresHook)
         with self.assertRaisesRegex(
-            AirflowSkipException,
-            re.escape(
-                "Could not retrieve import_run_id from upstream; skipping writing file imports to operations db"
-            ),
+            ValueError,
+            r"Could not retrieve import_run_id from upstream; found: \[.*\]",
         ):
             _ = self.generator.execute_postgres_query(
                 self.mock_operator, mock_hook, self.mock_context
@@ -147,10 +143,8 @@ class WriteImportCompletionsSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest
         mock_hook = create_autospec(PostgresHook)
         self.import_run_id_xcom = {IMPORT_RUN_ID: None}
         with self.assertRaisesRegex(
-            AirflowSkipException,
-            re.escape(
-                "Could not retrieve import_run_id from upstream; skipping writing file imports to operations db"
-            ),
+            ValueError,
+            r"Could not retrieve import_run_id from upstream; found: \[.*\]",
         ):
             _ = self.generator.execute_postgres_query(
                 self.mock_operator, mock_hook, self.mock_context
