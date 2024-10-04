@@ -51,9 +51,9 @@ from recidiviz.common import attr_validators
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import CounterInstrumentKey
 from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_all_source_table_datasets,
+    get_source_table_datasets,
 )
-from recidiviz.utils import structured_logging
+from recidiviz.utils import metadata, structured_logging
 from recidiviz.utils.environment import gcp_only
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
@@ -109,7 +109,7 @@ def execute_update_all_managed_views(sandbox_prefix: Optional[str]) -> None:
         )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
-        view_source_table_datasets=get_all_source_table_datasets(),
+        view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
         view_builders_to_update=view_builders,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         view_update_sandbox_context=view_update_sandbox_context,

@@ -29,8 +29,10 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_all_source_table_datasets,
+    get_source_table_datasets,
 )
+from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.metadata import local_project_id_override
 
 
 class CloudSqlToBQConfigTest(unittest.TestCase):
@@ -44,7 +46,12 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             if CloudSqlToBQConfig.is_valid_schema_type(schema_type)
         ]
 
-        self.view_source_table_datasets = get_all_source_table_datasets()
+        all_source_table_datasets = set()
+        for project_id in GCP_PROJECTS:
+            with local_project_id_override(project_id):
+                all_source_table_datasets |= get_source_table_datasets(project_id)
+
+        self.view_source_table_datasets = all_source_table_datasets
 
     def test_for_schema_type_raises_error(self) -> None:
         with self.assertRaises(ValueError):

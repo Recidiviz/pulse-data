@@ -90,8 +90,8 @@ from recidiviz.observations.views.spans.person.task_eligibility_session import (
     VIEW_BUILDER as TASK_ELIGIBILITY_SESSION_OBSERVATIONS_VIEW_BUILDER,
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-    get_all_source_table_datasets,
+    get_all_source_table_addresses,
+    get_source_table_datasets,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
@@ -273,11 +273,14 @@ class DeployedViewsTest(unittest.TestCase):
             with local_project_id_override(project_id):
                 candidate_view_builders = deployed_view_builders()
 
+                source_table_datasets = get_source_table_datasets(project_id)
+
                 views = build_views_to_update(
-                    view_source_table_datasets=get_all_source_table_datasets(),
+                    view_source_table_datasets=source_table_datasets,
                     candidate_view_builders=candidate_view_builders,
                     sandbox_context=None,
                 )
+
             view_addresses = set()
             for view in views:
                 view_addresses.add(view.address)
@@ -288,7 +291,7 @@ class DeployedViewsTest(unittest.TestCase):
                     parent_address
                     for parent_address in view.parent_tables
                     if (
-                        parent_address.dataset_id not in get_all_source_table_datasets()
+                        parent_address.dataset_id not in source_table_datasets
                         and parent_address not in view_addresses
                     )
                 }
@@ -308,7 +311,9 @@ class DeployedViewsTest(unittest.TestCase):
         )
 
         views = build_views_to_update(
-            view_source_table_datasets=get_all_source_table_datasets(),
+            view_source_table_datasets=get_source_table_datasets(
+                project_id=metadata.project_id()
+            ),
             candidate_view_builders=deployed_view_builders(),
             sandbox_context=None,
         )
@@ -336,7 +341,9 @@ class ViewDagInvariantTests(unittest.TestCase):
         with patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-456"):
             view_builders = deployed_view_builders()
             views = build_views_to_update(
-                view_source_table_datasets=get_all_source_table_datasets(),
+                view_source_table_datasets=get_source_table_datasets(
+                    project_id=metadata.project_id()
+                ),
                 candidate_view_builders=view_builders,
                 sandbox_context=None,
             )
@@ -712,12 +719,7 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_no_conflicts_between_source_tables_and_views(self) -> None:
         view_builder_addresses = set(self.all_deployed_view_builders_by_address)
-        source_table_addresses = set(
-            build_source_table_repository_for_collected_schemata(
-                project_id=None
-            ).source_tables.keys()
-        )
-
+        source_table_addresses = get_all_source_table_addresses()
         if not view_builder_addresses.isdisjoint(source_table_addresses):
             overlapping_elements = ", ".join(
                 [

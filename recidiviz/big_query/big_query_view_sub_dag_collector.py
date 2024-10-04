@@ -26,8 +26,9 @@ from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_all_source_table_datasets,
+    get_source_table_datasets,
 )
+from recidiviz.utils import metadata
 
 
 class BigQueryViewSubDagCollector(BigQueryViewCollector[BigQueryViewBuilder]):
@@ -66,7 +67,7 @@ class BigQueryViewSubDagCollector(BigQueryViewCollector[BigQueryViewBuilder]):
 
     def collect_view_builders(self) -> List[BigQueryViewBuilder]:
         views_to_builders = build_views_to_update(
-            view_source_table_datasets=get_all_source_table_datasets(),
+            view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
             candidate_view_builders=self.view_builders_in_full_dag,
             sandbox_context=None,
         )

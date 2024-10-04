@@ -16,12 +16,10 @@
 # =============================================================================
 """Tests for functionality used by display_bq_dag_for_view.py."""
 import unittest
-from unittest.mock import Mock, patch
 
 from recidiviz.tools.display_bq_dag_for_view import print_dfs_tree
 
 
-@patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-456"))
 class TestDisplayBQDAGForView(unittest.TestCase):
     """Tests for functionality used by display_bq_dag_for_view.py."""
 

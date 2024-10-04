@@ -22,8 +22,9 @@ from typing import Sequence
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryViewBuilder
 from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_all_source_table_datasets,
+    get_source_table_datasets,
 )
+from recidiviz.utils import metadata
 
 
 def address_overrides_for_view_builders(
@@ -61,7 +62,7 @@ def address_overrides_for_input_source_tables(
     Throws if the source table datasets to override are not valid source table datasets.
     """
 
-    valid_source_table_datasets = get_all_source_table_datasets()
+    valid_source_table_datasets = get_source_table_datasets(metadata.project_id())
     builder = BigQueryAddressOverrides.Builder(sandbox_prefix=None)
     for (
         original_dataset,

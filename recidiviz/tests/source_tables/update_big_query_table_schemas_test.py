@@ -19,9 +19,6 @@
 import pytest
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    build_source_table_repository_for_collected_schemata,
-)
 from recidiviz.source_tables.dataflow_output_table_collector import (
     get_dataflow_output_source_table_collections,
 )
@@ -1820,25 +1817,3 @@ class UpdateBigQueryTableSchemasTest(BigQueryEmulatorTestCase):
             sorted(EXPECTED_DATAFLOW_OUTPUT_TABLES),
             "EXPECTED_DATAFLOW_OUTPUT_TABLES should be alphabetically sorted",
         )
-
-    def test_no_overlapping_addresses(self) -> None:
-        source_table_repository = build_source_table_repository_for_collected_schemata(
-            project_id=None
-        )
-        source_table_collections = collect_managed_source_table_collections(
-            source_table_repository=source_table_repository,
-        )
-        visited_addresses = set()
-        duplicate_addresses = set()
-
-        for source_table_collection in source_table_collections:
-            for source_table_config in source_table_collection.source_tables:
-                address = source_table_config.address
-                if address in visited_addresses:
-                    duplicate_addresses.add(address.to_str())
-                visited_addresses.add(address)
-
-        if duplicate_addresses:
-            raise ValueError(
-                f"Expected no duplicate addresses across source table collections; found: {duplicate_addresses}"
-            )

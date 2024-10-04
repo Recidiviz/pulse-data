@@ -24,16 +24,34 @@ import argparse
 import logging
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.build_views_to_update import build_views_to_update
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_all_source_table_datasets,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
-from recidiviz.view_registry.deployed_views import build_all_deployed_views_dag_walker
+from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 
 def print_dfs_tree(
     dataset_id: str, view_id: str, print_downstream_tree: bool = False
 ) -> None:
-    dag_walker = build_all_deployed_views_dag_walker()
+
+    all_source_datasets = get_all_source_table_datasets()
+    all_view_builders = all_deployed_view_builders()
+
+    # It doesn't matter what the project_id is - we're just building the graph to
+    # understand view relationships
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        views = build_views_to_update(
+            view_source_table_datasets=all_source_datasets,
+            candidate_view_builders=all_view_builders,
+            sandbox_context=None,
+        )
+
+    dag_walker = BigQueryViewDagWalker(views)
 
     address = BigQueryAddress(dataset_id=dataset_id, table_id=view_id)
     if address not in dag_walker.nodes_by_address:
