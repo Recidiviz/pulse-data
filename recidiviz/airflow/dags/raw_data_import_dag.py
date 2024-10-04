@@ -453,20 +453,20 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         ] >> release_locks
 
         # if we didn't have files to import, let's cascade our skip down through ALL_SUCCESS
-        # trigger rules and override downstream ALL_DONE trigger rules
+        # trigger rules and have the short circuit override (skip without respecting) the ALL_DONE trigger rules
         should_run_import >> [
-            write_import_start,  # cascades skip through ALL_SUCCESS
-            serialized_import_ready_files,  # override ALL_DONE
-            write_import_completions,  # override ALL_DONE of clean_and_storage_jobs
+            write_import_start,  # if we short circuit, will cascade skip through ALL_SUCCESS trigger rules
+            serialized_import_ready_files,  # if we short circuit, will skip task despite ALL_DONE trigger rule
+            write_import_completions,  # if we short circuit, will skip task despite ALL_DONE trigger rule of clean_and_storage_jobs
         ]
 
         # if we didn't acquire resource locks, let's cascade our skip down through ALL_SUCCESS
-        # and then also override ALL_DONE trigger rules
+        # and have the short circuit override (skip without respecting) the ALL_DONE trigger rules
         ensure_locks_acquired >> [
-            list_normalized_unprocessed_gcs_file_paths,  # cascades skip through ALL_SUCCESS
-            serialized_import_ready_files,  # override ALL_DONE
-            clean_and_storage_jobs,  # override ALL_DONE
-            ensure_release_resource_locks_release_if_acquired,  # override ALL_DONE
+            list_normalized_unprocessed_gcs_file_paths,  # if we short circuit, will cascade skip through ALL_SUCCESS trigger rules
+            serialized_import_ready_files,  # if we short circuit, will skip task despite ALL_DONE trigger rule
+            clean_and_storage_jobs,  # if we short circuit, will skip task despite ALL_DONE trigger rule
+            ensure_release_resource_locks_release_if_acquired,  # if we short circuit, will skip task despite ALL_DONE trigger rule
         ]
 
         # ------------------------------------------------------------------------------

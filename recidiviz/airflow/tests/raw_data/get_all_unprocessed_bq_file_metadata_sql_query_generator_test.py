@@ -15,11 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit tests for GetAllUnprocessedBQFileMetadataSqlQueryGenerator"""
+import datetime
 from typing import List
 from unittest.mock import create_autospec, patch
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
+from more_itertools import one
 
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
@@ -30,15 +32,20 @@ from recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_qu
 from recidiviz.airflow.dags.raw_data.get_all_unprocessed_gcs_file_metadata_sql_query_generator import (
     GetAllUnprocessedGCSFileMetadataSqlQueryGenerator,
 )
+from recidiviz.airflow.dags.raw_data.write_file_processed_time_to_bq_file_metadata_sql_query_generator import (
+    WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator,
+)
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawBigQueryFileMetadata,
+    RawBigQueryFileProcessedTime,
     RawGCSFileMetadata,
 )
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.utils.types import assert_type
 
 
 class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
@@ -119,34 +126,36 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         mock_postgres.get_records.assert_not_called()
 
     def test_all_pre_registered(self) -> None:
-        inputs = [
-            RawGCSFileMetadata(
-                gcs_file_id=1,
-                file_id=2,
-                path=GcsfsFilePath.from_absolute_path(
-                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv"
-                ),
-            ),
-            RawGCSFileMetadata(
-                gcs_file_id=3,
-                file_id=4,
-                path=GcsfsFilePath.from_absolute_path(
-                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag-1.csv",
-                ),
-            ),
-            RawGCSFileMetadata(
-                gcs_file_id=5,
-                file_id=6,
-                path=GcsfsFilePath.from_absolute_path(
-                    "testing/unprocessed_2024-01-25T16:35:33:617135_raw_test_file_tag.csv",
-                ),
-            ),
+
+        # first, not registered at all
+        paths = [
+            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_file_tag_first.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_file_tag_first.csv",
+            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_file_tag_first.csv",
         ]
 
+        inputs = self._insert_rows_into_gcs(paths)
+
         self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
-        mock_postgres = create_autospec(PostgresHook)
         results = self.generator.execute_postgres_query(
-            self.mock_operator, mock_postgres, self.mock_context
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+        metadata_results = [
+            RawBigQueryFileMetadata.deserialize(result) for result in results
+        ]
+
+        assert len(metadata_results) == len(inputs)
+
+        for i, result in enumerate(metadata_results):
+            assert isinstance(result.file_id, int)
+            assert len(result.gcs_files) == 1
+            assert result.gcs_files[0].path == inputs[i].path
+            inputs[i].file_id = result.file_id
+
+        # then, all registered
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
+        results = self.generator.execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
         )
         metadata_results = [
             RawBigQueryFileMetadata.deserialize(result) for result in results
@@ -159,7 +168,59 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             assert len(result.gcs_files) == 1
             assert result.gcs_files[0].path == inputs[i].path
 
-        mock_postgres.get_records.assert_not_called()
+    def test_filter_already_processsed(self) -> None:
+
+        # first, not registered at all
+        paths = [
+            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_file_tag_first.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_file_tag_first.csv",
+            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_file_tag_first.csv",
+        ]
+
+        inputs = self._insert_rows_into_gcs(paths)
+
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
+        results = self.generator.execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+        metadata_results = [
+            RawBigQueryFileMetadata.deserialize(result) for result in results
+        ]
+
+        assert len(metadata_results) == len(inputs)
+
+        for i, result in enumerate(metadata_results):
+            assert isinstance(result.file_id, int)
+            assert len(result.gcs_files) == 1
+            assert result.gcs_files[0].path == inputs[i].path
+            inputs[i].file_id = result.file_id
+
+        # mark as processed
+
+        self.mock_operator.xcom_pull.return_value = [
+            RawBigQueryFileProcessedTime(
+                file_id=assert_type(i.file_id, int),
+                file_processed_time=datetime.datetime.now(tz=datetime.UTC),
+            ).serialize()
+            for i in inputs
+        ]
+
+        WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator(
+            "fake_task_id"
+        ).execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+
+        # if we try to reimport them, we wont because we have already processed them!
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
+        results = self.generator.execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+        metadata_results = [
+            RawBigQueryFileMetadata.deserialize(result) for result in results
+        ]
+
+        assert len(metadata_results) == 0
 
     def test_no_recognized_paths(self) -> None:
         inputs = [
@@ -333,9 +394,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         )
         self.assertRegex(
             logs.output[1],
-            r"ERROR:raw_data:Skipping grouping for tagChunkedFile on 2024-01-26 as we "
-            r"could not successfully group tagChunkedFile on 2024-01-25 and we want to "
-            r"guarantee upload order in big query",
+            r"ERROR:raw_data:Skipping import for file_id \[2\], file_tag \[tagChunkedFile\] as path \[unprocessed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-1\.csv\] was previously skipped",
         )
 
     def test_multiple_chunks(self) -> None:
@@ -365,3 +424,65 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         assert len({meta.file_id for meta in metadata}) == 3
 
         self._validate_results(results, inputs)
+
+    def test_chunks_change(self) -> None:
+        # simple case first
+        paths = [
+            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_tagBasicData.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFile-1.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFile-2.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFile-3.csv",
+            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagChunkedFile-1.csv",
+            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagChunkedFile-2.csv",
+            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_tagChunkedFile-3.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-1.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-2.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-3.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFileTwo-4.csv",
+        ]
+        inputs = self._insert_rows_into_gcs(paths)
+
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
+        results = self.generator.execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+
+        metadata = [
+            RawBigQueryFileMetadata.deserialize(result_str) for result_str in results
+        ]
+
+        assert len({meta.file_id for meta in metadata}) == 4
+
+        self._validate_results(results, inputs)
+
+        all_gcs_files = [gcs_file for m in metadata for gcs_file in m.gcs_files]
+
+        print(all_gcs_files)
+
+        excluded_chunk = one(
+            filter(
+                lambda x: x.path.blob_name
+                == "unprocessed_2024-01-26T16:35:33:617135_raw_tagChunkedFile-2.csv",
+                all_gcs_files,
+            )
+        )
+
+        all_gcs_files_minus_chunk = list(
+            filter(lambda x: x != excluded_chunk, all_gcs_files)
+        )
+
+        self.mock_operator.xcom_pull.return_value = [
+            i.serialize() for i in all_gcs_files_minus_chunk
+        ]
+        results = self.generator.execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+
+        metadata = [
+            RawBigQueryFileMetadata.deserialize(result_str) for result_str in results
+        ]
+
+        metadata_file_ids = {meta.file_id for meta in metadata}
+        # we excluded that chunk as incomplete & the one after since it blocks
+        assert len(metadata_file_ids) == 2
+        assert excluded_chunk.file_id not in metadata_file_ids
