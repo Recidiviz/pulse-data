@@ -74,6 +74,9 @@ if in_gcp():
 # Flask setup
 app = Flask(__name__)
 
+# TODO(#33956) Remove this once workflows no longer depends on key order
+app.json.sort_keys = False  # type: ignore[attr-defined]
+
 # Need to silence mypy error `Cannot assign to a method`
 app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore[assignment]
 register_error_handlers(app)
