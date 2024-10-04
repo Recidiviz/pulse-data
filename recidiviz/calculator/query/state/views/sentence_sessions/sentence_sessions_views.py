@@ -19,8 +19,14 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_group_projected_dates import (
+    INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_projected_dates import (
     INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_inferred_group_projected_dates import (
+    SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_to_consecutive_parent_sentence import (
     CONSECUTIVE_SENTENCES_VIEW_BUILDER,
@@ -31,6 +37,12 @@ from recidiviz.calculator.query.state.views.sentence_sessions.sentences_and_char
 
 SENTENCE_SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     CONSECUTIVE_SENTENCES_VIEW_BUILDER,
+    # NormalizedStateSentenceGroupLength aggregated to inferred groups
+    INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER,
+    # NormalizedStateSentenceLength aggregated to inferred groups
     INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER,
+    # The set of projected dates for every sentence inferred group
+    # to be used in analysis and product.
+    SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VIEW_BUILDER,
     SENTENCES_AND_CHARGES_VIEW_BUILDER,
 ]
