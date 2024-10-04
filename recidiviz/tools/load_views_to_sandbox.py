@@ -55,11 +55,11 @@ To load ALL views to a sandbox (this should be used only in rare circumstances),
     python -m recidiviz.tools.load_views_to_sandbox \
        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] all
 
-To load all views downstream of a sandbox dataflow dataset, run:
+To load all views downstream of a sandbox dataset, run:
     python -m recidiviz.tools.load_views_to_sandbox \
-       --dataflow_dataset_override [SANDBOX_DATAFLOW_DATASET] \
+       --input_source_table_dataset_overrides_json [SANDBOX_DATASET_OVERRIDES_JSON] \
        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] manual \
-       --dataset_ids_to_load dataflow_metrics_materialized
+       --dataset_ids_to_load [DATASET_ID_1,DATASET_ID_2,...]
 
 For any of the above commands, you can add a `--prompt` flag BEFORE the auto/manual/all
 keyword. This will make the script ask you if you want to proceed with loading the
@@ -109,13 +109,16 @@ from recidiviz.big_query.view_update_manager import (
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.calculator.query.state.dataset_config import (
+    DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
+from recidiviz.common.attr_converters import optional_json_str_to_dict
 from recidiviz.common.git import (
     get_hash_of_deployed_commit,
     is_commit_in_current_branch,
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
+    get_source_table_addresses,
     get_source_table_datasets,
 )
 from recidiviz.tools.utils.arg_parsers import str_to_address_list
@@ -124,6 +127,7 @@ from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
 from recidiviz.utils.params import str_to_bool, str_to_list
+from recidiviz.utils.types import assert_type
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_input_source_tables,
 )
@@ -147,14 +151,11 @@ def load_all_views_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
     prompt: bool,
-    dataflow_dataset_override: Optional[str],
+    input_source_table_dataset_overrides_dict: dict[str, str] | None,
     filter_union_all: bool,
     allow_slow_views: bool,
 ) -> None:
-    """Loads ALL views to sandbox datasets with prefix |sandbox_dataset_prefix|. If
-    |dataflow_dataset_override| is not set, excludes views in
-    DATAFLOW_METRICS_MATERIALIZED_DATASET, which is very expensive to materialize.
-    """
+    """Loads ALL views to sandbox datasets with prefix |sandbox_dataset_prefix|."""
     prompt_for_confirmation(
         "This will load ALL sandbox views. This can be a very slow / expensive "
         "operation. If you just want to test that your view changes do not introduce "
@@ -164,37 +165,24 @@ def load_all_views_to_sandbox(
     )
 
     logging.info("Gathering views to load to sandbox...")
-    collected_builders = _AllButSomeBigQueryViewsCollector(
-        datasets_to_exclude=_datasets_to_exclude_from_sandbox(dataflow_dataset_override)
-    ).collect_view_builders()
+    collected_builders = deployed_view_builders()
     _load_collected_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
         prompt=prompt,
         collected_builders=collected_builders,
-        dataflow_dataset_override=dataflow_dataset_override,
+        input_source_table_dataset_overrides_dict=(
+            input_source_table_dataset_overrides_dict
+        ),
         filter_union_all=filter_union_all,
         allow_slow_views=allow_slow_views,
     )
-
-
-def _datasets_to_exclude_from_sandbox(
-    dataflow_dataset_override: Optional[str] = None,
-) -> Set[str]:
-    datasets_to_exclude = set()
-    # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the
-    # dataflow_dataset_override is set
-    if not dataflow_dataset_override:
-        # TODO(#28430): These are expensive, but we should still load them if these
-        # views have actually changed.
-        datasets_to_exclude.add(DATAFLOW_METRICS_MATERIALIZED_DATASET)
-    return datasets_to_exclude
 
 
 def _load_manually_filtered_views_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
     prompt: bool,
-    dataflow_dataset_override: Optional[str],
+    input_source_table_dataset_overrides_dict: dict[str, str] | None,
     filter_union_all: bool,
     allow_slow_views: bool,
     view_ids_to_load: Optional[List[BigQueryAddress]],
@@ -210,8 +198,9 @@ def _load_manually_filtered_views_to_sandbox(
         Loads datasets that all take the form of
         "<sandbox_dataset_prefix>_<original dataset_id>"
 
-    dataflow_dataset_override : Optional[str]
-        If True, updates views in the DATAFLOW_METRICS_MATERIALIZED_DATASET
+    input_source_table_dataset_overrides_json : Optional[str]
+        If specified, views will read from the override address for any parent source
+            tables.
 
     view_ids_to_load : Optional[List[BigQueryAddress]]
         If specified, only loads views whose view_id matches one of the listed view_ids.
@@ -268,9 +257,7 @@ Are you sure you still want to continue with `manual` mode?
         view_addresses_in_sub_dag=addresses_to_load,
         include_ancestors=update_ancestors,
         include_descendants=update_descendants,
-        datasets_to_exclude=_datasets_to_exclude_from_sandbox(
-            dataflow_dataset_override
-        ),
+        datasets_to_exclude=set(),
     )
 
     logging.info("Gathering views to load to sandbox...")
@@ -278,7 +265,9 @@ Are you sure you still want to continue with `manual` mode?
     _load_collected_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
         prompt=prompt,
-        dataflow_dataset_override=dataflow_dataset_override,
+        input_source_table_dataset_overrides_dict=(
+            input_source_table_dataset_overrides_dict
+        ),
         filter_union_all=filter_union_all,
         collected_builders=collected_builders,
         allow_slow_views=allow_slow_views,
@@ -452,7 +441,7 @@ def _load_views_changed_on_branch_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
     prompt: bool,
-    dataflow_dataset_override: Optional[str],
+    input_source_table_dataset_overrides_dict: dict[str, str] | None,
     filter_union_all: bool,
     allow_slow_views: bool,
     changed_datasets_to_include: Optional[List[str]],
@@ -495,17 +484,23 @@ def _load_views_changed_on_branch_to_sandbox(
     logging.info("Checking for changes against [%s] BigQuery...", project_id())
     address_to_change_type = _get_all_views_changed_on_branch(full_dag_walker)
 
-    changed_views_to_load = _get_changed_views_to_load_to_sandbox(
+    changed_view_addresses = _get_changed_views_to_load_to_sandbox(
         address_to_change_type=address_to_change_type,
         changed_datasets_to_ignore=changed_datasets_to_ignore,
         changed_datasets_to_include=changed_datasets_to_include,
     )
 
-    # TODO(#33733): Change logic here to expand the set of views to load when source
-    #  table overrides are defined (all parents of the source tables should be loaded by
-    #  default).
+    changed_source_table_addresses: Set[BigQueryAddress] = (
+        {
+            a
+            for a in get_source_table_addresses(metadata.project_id())
+            if a.dataset_id in input_source_table_dataset_overrides_dict
+        }
+        if input_source_table_dataset_overrides_dict
+        else set()
+    )
 
-    if not changed_views_to_load:
+    if not changed_view_addresses and not changed_source_table_addresses:
         logging.warning(
             "Did not find any changed views to load to the sandbox. Exiting."
         )
@@ -524,19 +519,19 @@ def _load_views_changed_on_branch_to_sandbox(
             else set()
         )
     elif load_changed_views_only:
-        end_addresses = changed_views_to_load
+        end_addresses = changed_view_addresses
     else:
         raise ValueError(
             "Expected one of load_changed_views_only, load_up_to_datasets or "
             "load_up_to_addresses to be set."
         )
 
-    addresses_to_load = full_dag_walker.get_all_node_addresses_between_start_and_end_collections(
-        # TODO(#33733): Add source table overrides here when we allow source table
-        #  overrides.
-        start_source_addresses=set(),
-        start_node_addresses=changed_views_to_load,
-        end_node_addresses=end_addresses,
+    addresses_to_load = (
+        full_dag_walker.get_all_node_addresses_between_start_and_end_collections(
+            start_source_addresses=changed_source_table_addresses,
+            start_node_addresses=changed_view_addresses,
+            end_node_addresses=end_addresses,
+        )
     )
     collected_builders = [
         vb for vb in view_builders_in_full_dag if vb.address in addresses_to_load
@@ -551,7 +546,9 @@ def _load_views_changed_on_branch_to_sandbox(
     _load_collected_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
         prompt=prompt,
-        dataflow_dataset_override=dataflow_dataset_override,
+        input_source_table_dataset_overrides_dict=(
+            input_source_table_dataset_overrides_dict
+        ),
         filter_union_all=filter_union_all,
         allow_slow_views=allow_slow_views,
         collected_builders=collected_builders,
@@ -567,7 +564,7 @@ def _load_collected_views_to_sandbox(
     sandbox_dataset_prefix: str,
     prompt: bool,
     collected_builders: List[BigQueryViewBuilder],
-    dataflow_dataset_override: Optional[str],
+    input_source_table_dataset_overrides_dict: dict[str, str] | None,
     filter_union_all: bool,
     allow_slow_views: bool,
 ) -> None:
@@ -582,23 +579,42 @@ def _load_collected_views_to_sandbox(
         )
 
     if filter_union_all:
-        addresses_to_load = {b.address for b in collected_builders}
+        valid_source_table_addresses = get_source_table_addresses(metadata.project_id())
+        addresses_to_load = {
+            b.address for b in collected_builders
+        } | valid_source_table_addresses
         for builder in collected_builders:
             if isinstance(builder, UnionAllBigQueryViewBuilder):
                 builder.set_parent_address_filter(addresses_to_load)
+
+    input_source_table_overrides = (
+        address_overrides_for_input_source_tables(
+            input_source_table_dataset_overrides_dict
+        )
+        if input_source_table_dataset_overrides_dict
+        else BigQueryAddressOverrides.empty()
+    )
+
+    has_dataflow_metrics_override = (
+        DATAFLOW_METRICS_DATASET
+        != input_source_table_overrides.get_dataset(DATAFLOW_METRICS_DATASET)
+    )
+    is_loading_dataflow_metrics_views = any(
+        b.dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET
+        for b in collected_builders
+    )
+
+    if is_loading_dataflow_metrics_views and not has_dataflow_metrics_override:
+        prompt_for_confirmation(
+            f"⚠️This selection of views includes views in the "
+            f"[{DATAFLOW_METRICS_MATERIALIZED_DATASET}] dataset which is relatively "
+            f"expensive to materialize - are you sure you want to update these views?"
+        )
 
     logging.info("Updating %s views...", len(collected_builders))
 
     view_update_sandbox_context = None
     if sandbox_dataset_prefix:
-        input_source_table_overrides = BigQueryAddressOverrides.empty()
-        # TODO(#33733): Generalize this script to allow for an arbitrary set of source
-        #  table overrides.
-        if dataflow_dataset_override:
-            input_source_table_overrides = address_overrides_for_input_source_tables(
-                {DATAFLOW_METRICS_MATERIALIZED_DATASET: dataflow_dataset_override}
-            )
-
         view_update_sandbox_context = BigQueryViewUpdateSandboxContext(
             output_sandbox_dataset_prefix=sandbox_dataset_prefix,
             input_source_table_overrides=input_source_table_overrides,
@@ -647,10 +663,10 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--dataflow_dataset_override",
-        dest="dataflow_dataset_override",
-        help="An override of the dataset containing Dataflow metric output that the "
-        "updated views should reference.",
+        "--input_source_table_dataset_overrides_json",
+        dest="input_source_table_dataset_overrides_json",
+        help="A JSON string containing mapping of source table datasets to the "
+        "replacement sandbox datasets that updated views should reference.",
         type=str,
         required=False,
     )
@@ -786,6 +802,36 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _parse_input_source_table_dataset_overrides(
+    input_source_table_dataset_overrides_json: str | None,
+) -> dict[str, str] | None:
+    """Given a JSON string defining a mapping between source table dataset and override
+    source table dataset, parses
+
+    Raises a ValueError if any dataset to override is not a valid source table dataset.
+    """
+    parsed_dict = optional_json_str_to_dict(input_source_table_dataset_overrides_json)
+
+    if parsed_dict is None:
+        return None
+
+    input_source_table_dataset_overrides_dict = {
+        dataset_id: assert_type(override_dataset_id, str)
+        for dataset_id, override_dataset_id in parsed_dict.items()
+    }
+
+    valid_source_table_datasets = get_source_table_datasets(metadata.project_id())
+    for dataset in input_source_table_dataset_overrides_dict.keys():
+        if dataset not in valid_source_table_datasets:
+            raise ValueError(
+                f"Found dataset [{dataset}] which is not a valid source table dataset "
+                f"in input_source_table_dataset_overrides_json: "
+                f"{input_source_table_dataset_overrides_json}"
+            )
+
+    return input_source_table_dataset_overrides_dict
+
+
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     args = parse_arguments()
@@ -795,7 +841,11 @@ if __name__ == "__main__":
             load_all_views_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
                 prompt=args.prompt,
-                dataflow_dataset_override=args.dataflow_dataset_override,
+                input_source_table_dataset_overrides_dict=(
+                    _parse_input_source_table_dataset_overrides(
+                        args.input_source_table_dataset_overrides_json
+                    )
+                ),
                 filter_union_all=args.filter_union_all,
                 allow_slow_views=args.allow_slow_views,
             )
@@ -803,7 +853,11 @@ if __name__ == "__main__":
             _load_manually_filtered_views_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
                 prompt=args.prompt,
-                dataflow_dataset_override=args.dataflow_dataset_override,
+                input_source_table_dataset_overrides_dict=(
+                    _parse_input_source_table_dataset_overrides(
+                        args.input_source_table_dataset_overrides_json
+                    )
+                ),
                 filter_union_all=args.filter_union_all,
                 allow_slow_views=args.allow_slow_views,
                 view_ids_to_load=args.view_ids_to_load,
@@ -815,7 +869,11 @@ if __name__ == "__main__":
             _load_views_changed_on_branch_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
                 prompt=args.prompt,
-                dataflow_dataset_override=args.dataflow_dataset_override,
+                input_source_table_dataset_overrides_dict=(
+                    _parse_input_source_table_dataset_overrides(
+                        args.input_source_table_dataset_overrides_json
+                    )
+                ),
                 filter_union_all=args.filter_union_all,
                 allow_slow_views=args.allow_slow_views,
                 changed_datasets_to_include=args.changed_datasets_to_include,
