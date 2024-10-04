@@ -127,6 +127,7 @@ def plot_settings(
         ha="left",
         size=plt.rcParams["axes.titlesize"] / 1.4,
         weight="medium",
+        color="#585858",
     )
 
     # Axis labels
