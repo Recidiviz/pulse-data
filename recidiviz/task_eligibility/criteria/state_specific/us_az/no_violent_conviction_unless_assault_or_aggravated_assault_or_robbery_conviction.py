@@ -15,32 +15,33 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Defines a criteria span view that shows spans of time during which
-someone in AZ has a Aggravated Assault, Assault, or Robbery setence, which
-are the only violent crimes eligible for TPR.
+Defines a criteria span view that shows spans of time during which 
+someone in AZ has a violent conviction but not an Aggravated Assault, Assault, 
+or Robbery conviction.
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_sessions,
-)
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    no_current_or_prior_convictions,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_AZ_SERVING_ASSAULT_OR_AGGRAVATED_ASSAULT_OR_ROBBERY"
+_CRITERIA_NAME = "US_AZ_NO_VIOLENT_CONVICTION_UNLESS_ASSAULT_OR_AGGRAVATED_ASSAULT_OR_ROBBERY_CONVICTION"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone in AZ has a Aggravated Assault, Assault, or Robbery setence, which
-are the only violent crimes eligible for TPR.
+someone in AZ has a violent conviction but not an Aggravated Assault, Assault,
+or Robbery conviction.
 """
 
-_INELIGIBLE_STATUTES = [
+_ELIGIBLE_STATUTES = [
     # Robbery
     "13-1902-1",
     "13-1902-2",
@@ -79,21 +80,11 @@ _INELIGIBLE_STATUTES = [
     "13-1204-Y",
 ]
 
-_QUERY_TEMPLATE = f"""
-    SELECT
-        span.state_code,
-        span.person_id,
-        span.start_date,
-        span.end_date,
-        TRUE AS meets_criteria,
-        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute ORDER BY statute) AS eligible_offenses)) AS reason,
-        ARRAY_AGG(DISTINCT statute ORDER BY statute) AS eligible_offenses,
-        --ARRAY_AGG(DISTINCT description ORDER BY description) AS description,
-    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap='INCARCERATION')}
-    AND sent.statute IN {tuple(_INELIGIBLE_STATUTES)}
-    AND span.state_code = 'US_AZ'
-    GROUP BY 1,2,3,4,5
-"""
+_QUERY_TEMPLATE = no_current_or_prior_convictions(
+    statute=_ELIGIBLE_STATUTES,
+    negate_statute=True,
+    additional_where_clause="sent.is_violent",
+)
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
@@ -102,11 +93,12 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     sessions_dataset=SESSIONS_DATASET,
     description=_DESCRIPTION,
     meets_criteria_default=False,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     reasons_fields=[
         ReasonsField(
-            name="eligible_offenses",
+            name="ineligible_offenses",
             type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-            description="List of statutes that make the person eligible: robbery, assault, or aggravated assault",
+            description="List of violent crime statutes that make the person ineligible",
         ),
     ],
 )
