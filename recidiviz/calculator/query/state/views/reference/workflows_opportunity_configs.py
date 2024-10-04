@@ -77,9 +77,10 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         state_code=StateCode.US_AZ,
         opportunity_type="usAzReleaseToTPR",
         experiment_id="US_AZ_RELEASE_TO_TPR_WORKFLOWS",
-        opportunity_record_view_name="us_az_release_to_tpr_request_record_materialized",
+        opportunity_record_view_name="us_az_approaching_acis_or_recidiviz_tpr_request_record_materialized",
+        # TODO(#33655): Update this to the correct task completion event
         task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
-        source_filename="us_az_release_to_tpr_request_record.json",
+        source_filename="us_az_approaching_acis_or_recidiviz_tpr_request_record.json",
         export_collection_name="US_AZ-TPRReferrals",
         opportunity_type_path_str="TPR",
         person_record_type=PersonRecordType.RESIDENT,
