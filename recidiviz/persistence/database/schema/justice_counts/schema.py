@@ -325,6 +325,8 @@ class Source(JusticeCountsBase):
     # internally.
     is_dashboard_enabled = Column(Boolean, nullable=True)
 
+    agency_settings = relationship("AgencySetting")
+
     __table_args__ = tuple(
         [
             PrimaryKeyConstraint(id),
@@ -382,8 +384,6 @@ class Agency(Source):
     user_account_assocs = relationship(
         "AgencyUserAccountAssociation", back_populates="agency"
     )
-
-    agency_settings = relationship("AgencySetting")
 
     __mapper_args__ = {
         "polymorphic_identity": "agency",
