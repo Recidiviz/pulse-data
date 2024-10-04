@@ -25,5 +25,5 @@ columns:
         description: This person is a man.
       - value: Maiar
         description: This maiar is a maiar.
-      - value: Dunedain
+      - value: Dúnedain
         description: This person is a Dúnedain.
