@@ -107,6 +107,9 @@ from recidiviz.calculator.query.state.views.prototypes.case_note_search.us_me.us
 from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_projected_dates import (
     INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_inferred_group_projected_dates import (
+    SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_to_consecutive_parent_sentence import (
     CONSECUTIVE_SENTENCES_VIEW_BUILDER,
 )
@@ -203,6 +206,10 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
 # as possible when updating this list, including a point of contact and date we were
 # still using this view where possible.
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
+    SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VIEW_BUILDER.address: (
+        "Inferred group projected dates for v2 sentences will be used in downstream analysis"
+        "(Nick Tallant, 2024-10-03)"
+    ),
     INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER.address: (
         "This will be used to build inferred group projected dates for v2 sentences"
         "(Nick Tallant, 2024-09-23)"

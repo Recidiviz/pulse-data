@@ -23,9 +23,9 @@ and does not include any NormalizedStateSentenceLength data.
 
 Related views are:
 - inferred_group_aggregated_sentence_projected_dates
+- sentence_inferred_group_projected_dates
 - TODO(#33498) Create validation for aggregated_sentence_projected_dates 
                and aggregated_sentence_group_projected_dates
-- TODO(#33499) Create sentence_inferred_group_projected_dates
 
 Output fields for this view are:
 
@@ -61,7 +61,7 @@ from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DA
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES = (
+INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_ID = (
     "inferred_sentence_group_aggregated_sentence_group_projected_dates"
 )
 
@@ -132,7 +132,7 @@ GROUP BY
 INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER = (
     SimpleBigQueryViewBuilder(
         dataset_id=SENTENCE_SESSIONS_DATASET,
-        view_id=AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES,
+        view_id=INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_ID,
         view_query_template=QUERY_TEMPLATE,
         description=__doc__,
         should_materialize=True,
