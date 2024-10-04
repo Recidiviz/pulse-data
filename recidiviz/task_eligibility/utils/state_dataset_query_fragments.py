@@ -36,7 +36,9 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 
 
 def task_deadline_critical_date_update_datetimes_cte(
-    task_type: StateTaskType, critical_date_column: str
+    task_type: StateTaskType,
+    critical_date_column: str,
+    additional_where_clause: str = "",
 ) -> str:
     """Returns a CTE that selects all StateTaskDeadline rows with the provided
     |task_type] and renames the |critical_date_column| to `critical_date` for standard
@@ -51,7 +53,7 @@ def task_deadline_critical_date_update_datetimes_cte(
             {critical_date_column} AS critical_date,
             update_datetime
         FROM `{{project_id}}.{{normalized_state_dataset}}.state_task_deadline`
-        WHERE task_type = '{task_type.value}'
+        WHERE task_type = '{task_type.value}' {additional_where_clause}
     )"""
 
 

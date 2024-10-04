@@ -36,6 +36,12 @@ from recidiviz.calculator.query.state.views.workflows.firestore.supervision_staf
 from recidiviz.calculator.query.state.views.workflows.firestore.us_az_approaching_acis_or_recidiviz_tpr_request_record import (
     US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_az_overdue_for_acis_dtp_request_record import (
+    US_AZ_OVERDUE_FOR_ACIS_DTP_REQUEST_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_az_overdue_for_acis_tpr_request_record import (
+    US_AZ_OVERDUE_FOR_ACIS_TPR_REQUEST_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ca_supervision_level_downgrade_form_record import (
     US_CA_SUPERVISION_LEVEL_DOWNGRADE_VIEW_BUILDER,
 )
@@ -164,6 +170,8 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_STAFF_RECORD_VIEW_BUILDER,
     LOCATION_RECORD_VIEW_BUILDER,
     US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_BUILDER,
+    US_AZ_OVERDUE_FOR_ACIS_DTP_REQUEST_RECORD_VIEW_BUILDER,
+    US_AZ_OVERDUE_FOR_ACIS_TPR_REQUEST_RECORD_VIEW_BUILDER,
     US_CA_SUPERVISION_LEVEL_DOWNGRADE_VIEW_BUILDER,
     US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
     US_IX_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,

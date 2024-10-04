@@ -86,6 +86,30 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         person_record_type=PersonRecordType.RESIDENT,
     ),
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_AZ,
+        opportunity_type="usAzOverdueForACISDTP",
+        experiment_id="OVERDUE_FOR_ACIS_DTP_WORKFLOWS",
+        opportunity_record_view_name="us_az_overdue_for_acis_dtp_request_record_materialized",
+        # TODO(#33655): Correct task completion event
+        task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
+        source_filename="overdue_for_acis_dtp_request_record.json",
+        export_collection_name="US_AZ-OverdueForDTPReferrals",
+        opportunity_type_path_str="OverdueForDTP",
+        person_record_type=PersonRecordType.RESIDENT,
+    ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_AZ,
+        opportunity_type="usAzOverdueForACISTPR",
+        experiment_id="OVERDUE_FOR_ACIS_TPR_WORKFLOWS",
+        opportunity_record_view_name="us_az_overdue_for_acis_tpr_request_record_materialized",
+        # TODO(#33655): Correct task completion event
+        task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
+        source_filename="overdue_for_acis_tpr_request_record.json",
+        export_collection_name="US_AZ-OverdueForTPRReferrals",
+        opportunity_type_path_str="OverdueForTPR",
+        person_record_type=PersonRecordType.RESIDENT,
+    ),
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_CA,
         opportunity_type="usCaSupervisionLevelDowngrade",
         experiment_id="US_CA_SUPERVISION_LEVEL_DOWNGRADE",
