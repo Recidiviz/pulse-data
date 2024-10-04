@@ -75,6 +75,12 @@ MetricExportTimelinessEntrypoint:
       cpu: 500m
       memory: 500Mi
 
+ReportAirflowEnvironmentAgeEntrypoint:
+  default_resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi
+
 IngestPipelineShouldRunInDagEntrypoint:
   default_resources:
     limits:

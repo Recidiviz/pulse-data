@@ -59,6 +59,7 @@ email = pagerduty_service.service_integration_email
     render_template_as_native_obj=True,
 )
 def create_monitoring_dag() -> None:
+    """Creates the hourly monitoring dag"""
     build_kubernetes_pod_task(
         task_id="generate_export_timeliness_metrics",
         container_name="generate_export_timeliness_metric",
@@ -75,6 +76,14 @@ def create_monitoring_dag() -> None:
     PythonOperator(
         task_id="cleanup_exited_pods",
         python_callable=cleanup_exited_pods,
+    )
+
+    build_kubernetes_pod_task(
+        task_id="generate_airflow_environment_age_metrics",
+        container_name="generate_airflow_environment_age_metrics",
+        arguments=[
+            "--entrypoint=ReportAirflowEnvironmentAgeEntrypoint",
+        ],
     )
 
 

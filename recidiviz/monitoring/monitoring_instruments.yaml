@@ -72,6 +72,14 @@ instruments:
           - METRIC_VIEW_EXPORT_NAME
           - EXPORT_FILE
 
+  - instrument_key: airflow.environment_age
+    description: The age of a composer environment
+    callbacks:
+      - recidiviz.monitoring.airflow_monitoring.get_airflow_environment_ages
+    views:
+      - attributes:
+          - AIRFLOW_ENVIRONMENT_NAME
+
   - instrument_key: function_duration
     description: The distribution of function durations
     unit: s
