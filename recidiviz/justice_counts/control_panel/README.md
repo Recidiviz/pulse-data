@@ -89,19 +89,19 @@ NOTE: If you get a 401 Unauthorized permissions error, run `gcloud auth configur
 
 1. Make sure you've followed the steps above to build our Docker image.
 
-2. Run the Justice Counts Docker image using `docker-compose`:
+2. Run the Justice Counts Docker image using `docker compose`:
 
 ```bash
 pipenv run docker-jc
 ```
 
-We use `docker-compose` to run all services that the app depends on. This includes:
+We use `docker compose` to run all services that the app depends on. This includes:
 
 - [`flask`](https://flask.palletsprojects.com/en/1.1.x/) web server
 - [`postgres`](https://www.postgresql.org/) database
 - `migrations` container, which automatically runs the [`alembic`](https://alembic.sqlalchemy.org/) migrations for the Justice Counts database
 
-3. [Only needs to be done once] In another tab, while `docker-compose` is running, load fake data into your local database:
+3. [Only needs to be done once] In another tab, while `docker compose` is running, load fake data into your local database:
 
 ```bash
 pipenv run fixtures-jc
@@ -115,7 +115,7 @@ docker exec <name of your Docker container> pipenv run python -m recidiviz.tools
 
 4. In another tab, clone the [justice-counts](https://github.com/Recidiviz/justice-counts) repo and `cd` into the `publisher` directory.
 
-5. [Only needs to be done once] Run `cp .env.example .env` and `yarn install`. (Note: the `.env` file determines which backend the frontend will run against. It defaults to your local backend, which you started running via `docker-compose`. If you want the frontend to use a staging backend, adjust the file to point to the corresponding URL.)
+5. [Only needs to be done once] Run `cp .env.example .env` and `yarn install`. (Note: the `.env` file determines which backend the frontend will run against. It defaults to your local backend, which you started running via `docker compose`. If you want the frontend to use a staging backend, adjust the file to point to the corresponding URL.)
 
 6. Run `yarn run dev`
 
@@ -129,7 +129,7 @@ This enables us to set breakpoints in the codebase which are acknowledged by a l
 
 To enable the flask app to listen for VSCode breakpoints:
 
-1. Start up a local instance of the JC app. You should see docker-compose logs indicating that the debugger can now be attached.
+1. Start up a local instance of the JC app. You should see docker compose logs indicating that the debugger can now be attached.
 
 2. Set the desired breakpoints in VSCode.
 
