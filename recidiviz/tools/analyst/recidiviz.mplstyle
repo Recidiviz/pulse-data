@@ -2,6 +2,7 @@ axes.axisbelow: True
 axes.facecolor: 'none'
 axes.grid: True
 axes.grid.which: major
+axes.labelcolor: "#585858"
 axes.labelsize: 5.5
 axes.labelweight: regular
 axes.linewidth: 0
@@ -31,5 +32,7 @@ savefig.format: png
 savefig.transparent: True
 xtick.major.size: 1.75
 xtick.major.width: 0.5
+xtick.color: "#585858"
 ytick.major.size: 1.75
 ytick.major.width: 0.5
+ytick.color: "#585858"
