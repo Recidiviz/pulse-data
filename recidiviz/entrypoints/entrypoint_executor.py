@@ -40,6 +40,9 @@ from recidiviz.entrypoints.ingest.ingest_pipeline_should_run_in_dag import (
 from recidiviz.entrypoints.metric_export.metric_view_export import (
     MetricViewExportEntrypoint,
 )
+from recidiviz.entrypoints.monitoring.report_airflow_environment_age import (
+    ReportAirflowEnvironmentAgeEntrypoint,
+)
 from recidiviz.entrypoints.monitoring.report_metric_export_timeliness import (
     MetricExportTimelinessEntrypoint,
 )
@@ -69,6 +72,7 @@ from recidiviz.utils.metadata import set_development_project_id_override
 ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     BigQueryRefreshEntrypoint,
     MetricViewExportEntrypoint,
+    ReportAirflowEnvironmentAgeEntrypoint,
     MetricExportTimelinessEntrypoint,
     RawDataChunkNormalizationEntrypoint,
     RawDataFileChunkingEntrypoint,

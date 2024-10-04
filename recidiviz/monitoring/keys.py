@@ -28,6 +28,7 @@ class ObservableGaugeInstrumentKey(InstrumentEnum):
     See: https://opentelemetry-python.readthedocs.io/en/latest/sdk/metrics.view.html"""
 
     EXPORT_FILE_AGE = "metric_view_export_manager.export_file_age"
+    AIRFLOW_ENVIRONMENT_AGE = "airflow.environment_age"
 
 
 class HistogramInstrumentKey(InstrumentEnum):
@@ -84,6 +85,9 @@ class AttributeKey:
 
     # Export related attributes
     EXPORT_FILE = "export_file"
+
+    # Airflow attributes
+    AIRFLOW_ENVIRONMENT_NAME = "airflow_environment_name"
 
 
 def build_instrument_key(instrument_name: str) -> InstrumentEnum:
