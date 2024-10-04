@@ -24,7 +24,10 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 
 
 def no_current_or_prior_convictions(
-    statute: Optional[str] | Optional[list] = None, description: Optional[list] = None
+    statute: Optional[str] | Optional[list] = None,
+    description: Optional[list] = None,
+    additional_where_clause: Optional[str] = None,
+    negate_statute: bool = False,
 ) -> str:
     """Helper function for a denial reason for a current or prior conviction.
     Requires a state specific jargon due to charge_v2 change.
@@ -37,9 +40,14 @@ def no_current_or_prior_convictions(
         statute = []
     if description is None:
         description = []
+    negate_statute_string = ""
+    if negate_statute:
+        negate_statute_string = "NOT"
     assert isinstance(description, list), "description must be of type list"
-    if not statute and not description:
-        raise ValueError("Either 'statute' or 'description' must be provided.")
+    if not statute and not description and not additional_where_clause:
+        raise ValueError(
+            "Either 'statute', 'description' or 'additional_where_clause' must be provided."
+        )
 
     return f"""
     WITH
@@ -72,11 +80,12 @@ def no_current_or_prior_convictions(
               AND charge.charge_v2_id = assoc.charge_v2_id
           WHERE
             span.state_code = 'US_AZ'
-            {f"AND charge.statute LIKE '%{statute}%'" if isinstance(statute, str) else
-    "AND (" + " OR ".join([f"charge.statute LIKE '%{s}%'" for s in statute]) + ")" if statute
+            {f"AND {negate_statute_string} charge.statute LIKE '%{statute}%'" if isinstance(statute, str) else
+    f"AND {negate_statute_string} (" + " OR ".join([f"charge.statute LIKE '%{s}%'" for s in statute]) + ")" if statute
     else ""}
             {"AND (" + " OR ".join([f"charge.description LIKE '%{d}%'" for d in description]) + ")" if description 
-    else ""}),
+    else ""}
+            {f"AND {additional_where_clause}" if additional_where_clause else ""}),
       {create_sub_sessions_with_attributes('ineligible_spans')}
         SELECT
             state_code,

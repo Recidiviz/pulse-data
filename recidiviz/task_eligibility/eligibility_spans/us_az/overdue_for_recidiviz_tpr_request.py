@@ -26,26 +26,22 @@ from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum_or_medium,
     no_nonviolent_incarceration_violation_within_6_months,
-    not_serving_for_arson_offense,
-    not_serving_for_sexual_offense,
-    not_serving_for_violent_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     at_least_24_months_since_last_csed,
     is_us_citizen_or_legal_permanent_resident,
     meets_functional_literacy,
     no_active_felony_detainers,
+    no_arson_conviction,
+    no_dangerous_crimes_against_children_conviction,
     no_major_violent_violation_during_incarceration,
+    no_sexual_offense_conviction,
     no_unsatisfactory_program_ratings_within_3_months,
-    not_serving_for_dangerous_crimes_against_children,
-    serving_assault_or_aggravated_assault_or_robbery,
+    no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction,
     time_90_days_before_release,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -61,16 +57,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         time_90_days_before_release.VIEW_BUILDER,
-        not_serving_for_sexual_offense.VIEW_BUILDER,
-        not_serving_for_arson_offense.VIEW_BUILDER,
-        OrTaskCriteriaGroup(
-            criteria_name="US_AZ_SERVING_NONVIOLENT_OFFENSE_WITH_B1B_EXCEPTIONS",
-            sub_criteria_list=[
-                not_serving_for_violent_offense.VIEW_BUILDER,
-                serving_assault_or_aggravated_assault_or_robbery.VIEW_BUILDER,
-            ],
-            allowed_duplicate_reasons_keys=[],
-        ),
+        no_sexual_offense_conviction.VIEW_BUILDER,
+        no_arson_conviction.VIEW_BUILDER,
+        no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction.VIEW_BUILDER,
         no_active_felony_detainers.VIEW_BUILDER,
         custody_level_is_minimum_or_medium.VIEW_BUILDER,
         no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
@@ -78,7 +67,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         at_least_24_months_since_last_csed.VIEW_BUILDER,
         is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
         no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
-        not_serving_for_dangerous_crimes_against_children.VIEW_BUILDER,
+        no_dangerous_crimes_against_children_conviction.VIEW_BUILDER,
         meets_functional_literacy.VIEW_BUILDER,
     ],
     # TODO(#33655): Update this to the correct task completion event
