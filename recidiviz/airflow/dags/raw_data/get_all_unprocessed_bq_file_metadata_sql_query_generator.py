@@ -81,6 +81,24 @@ ExistingGCSBQMetadata = NamedTuple(
     ],
 )
 
+MAX_PROCESSED_UPDATE_DATETIME_FOR_FILE_TAG = """
+SELECT file_tag, MAX(update_datetime) AS max_processed_update_datetime
+FROM direct_ingest_raw_big_query_file_metadata
+WHERE raw_data_instance = '{raw_data_instance}' 
+AND is_invalidated IS FALSE 
+AND file_processed_time IS NOT NULL 
+AND region_code = '{region_code}'
+GROUP BY file_tag;
+"""
+
+FileTagMaxUpdateDatetime = NamedTuple(
+    "FileTagMaxUpdateDatetime",
+    [
+        ("file_tag", str),
+        ("max_processed_update_datetime", datetime.datetime),
+    ],
+)
+
 
 class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
     CloudSqlQueryGenerator[List[str]]
@@ -96,7 +114,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         get_all_unprocessed_gcs_file_metadata_task_id: str,
     ) -> None:
         super().__init__()
-        self._region_code = region_code
+        self._region_code = region_code.upper()
         self._raw_data_instance = raw_data_instance
         self._get_all_unprocessed_gcs_file_metadata_task_id = (
             get_all_unprocessed_gcs_file_metadata_task_id
@@ -173,14 +191,17 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             *skipped_registered_gcs_metadata,
         ]
 
-        # TODO(#33879) validate that we aren't importing out of order for files that
-        # aren't present (i.e. we uploaded old data or we haven't invalidated old data
-        # that has already be registered)
+        if not all_registered_bq_metadata:
+            return []
 
-        all_import_ready_bq_metadata = (
-            self._filter_registered_bq_metadata_by_skipped_files(
-                all_registered_bq_metadata, all_skipped_gcs_metadata
-            )
+        file_tag_max_update_datetime = self._get_file_tag_max_processed_update_datetime(
+            postgres_hook
+        )
+
+        all_import_ready_bq_metadata = self._filter_registered_bq_metadata_by_skipped_files_and_max_update_datetime(
+            all_registered_bq_metadata,
+            all_skipped_gcs_metadata,
+            file_tag_max_update_datetime,
         )
 
         # --- build xcom output ----------------–––-------------------------------------
@@ -427,16 +448,15 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         return valid_unprocessed_bq_metadata, skipped_files
 
     @staticmethod
-    def _filter_registered_bq_metadata_by_skipped_files(
+    def _filter_registered_bq_metadata_by_skipped_files_and_max_update_datetime(
         all_registered_bq_metadata: List[RawBigQueryFileMetadata],
         all_skipped_gcs_metadata: List[RawGCSFileMetadata],
+        file_tag_max_update_datetime: Dict[str, FileTagMaxUpdateDatetime],
     ) -> List[RawBigQueryFileMetadata]:
         """Filters out registered bq metadata that have an gcs file that was skipped
-        with the same file_tag and an update_datetime before it.
+        with the same file_tag and an update_datetime before it, and any files that
+        have an update_datetime before their file_tag's max processed update_datetime.
         """
-
-        if not all_skipped_gcs_metadata:
-            return all_registered_bq_metadata
 
         file_tag_to_min_skipped_update_datetime = {
             file_tag: min(group, key=lambda x: x.parts.utc_upload_datetime)
@@ -458,7 +478,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             ):
                 # TODO(#33879) add alerting infra to notify folks of skipped files
                 logger.error(
-                    "Skipping import for file_id [%s], file_tag [%s] as path [%s] was "
+                    "Skipping import for file_id [%s], file_tag [%s]: path [%s] was "
                     "previously skipped",
                     bq_metadata.file_id,
                     bq_metadata.file_tag,
@@ -467,6 +487,30 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
                     ].path.blob_name,
                 )
                 continue
+
+            if (
+                bq_metadata.file_tag in file_tag_max_update_datetime
+                and bq_metadata.update_datetime
+                < file_tag_max_update_datetime[
+                    bq_metadata.file_tag
+                ].max_processed_update_datetime
+            ):
+                # TODO(#33879) add alerting infra to notify folks of skipped files
+                logger.error(
+                    "Skipping import for file_id [%s], file_tag [%s]: update_datetime "
+                    "[%s] is before max processed update_datetime [%s]. In order to "
+                    "import this file, you must invalidate and re-import data from [%s] "
+                    "to present",
+                    bq_metadata.file_id,
+                    bq_metadata.file_tag,
+                    bq_metadata.update_datetime.isoformat(),
+                    file_tag_max_update_datetime[
+                        bq_metadata.file_tag
+                    ].max_processed_update_datetime.isoformat(),
+                    bq_metadata.update_datetime.isoformat(),
+                )
+                continue
+
             non_blocked_registered_bq_metadata.append(bq_metadata)
 
         return non_blocked_registered_bq_metadata
@@ -525,3 +569,25 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         return StrictStringFormatter().format(
             GET_EXISTING_BQ_METADATA_INFO_FOR_GCS_ROWS, file_ids=file_ids_str
         )
+
+    def _build_max_update_datetime_query(self) -> str:
+        return StrictStringFormatter().format(
+            MAX_PROCESSED_UPDATE_DATETIME_FOR_FILE_TAG,
+            raw_data_instance=self._raw_data_instance.value,
+            region_code=self._region_code,
+        )
+
+    def _get_file_tag_max_processed_update_datetime(
+        self, postgres_hook: PostgresHook
+    ) -> Dict[str, FileTagMaxUpdateDatetime]:
+        max_update_datetimes = [
+            FileTagMaxUpdateDatetime(*row)
+            for row in postgres_hook.get_records(
+                self._build_max_update_datetime_query()
+            )
+        ]
+
+        return {
+            max_update_datetime.file_tag: max_update_datetime
+            for max_update_datetime in max_update_datetimes
+        }

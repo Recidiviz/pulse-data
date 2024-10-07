@@ -394,7 +394,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         )
         self.assertRegex(
             logs.output[1],
-            r"ERROR:raw_data:Skipping import for file_id \[2\], file_tag \[tagChunkedFile\] as path \[unprocessed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-1\.csv\] was previously skipped",
+            r"ERROR:raw_data:Skipping import for file_id \[2\], file_tag \[tagChunkedFile\]: path \[unprocessed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-1\.csv\] was previously skipped",
         )
 
     def test_multiple_chunks(self) -> None:
@@ -486,3 +486,81 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         # we excluded that chunk as incomplete & the one after since it blocks
         assert len(metadata_file_ids) == 2
         assert excluded_chunk.file_id not in metadata_file_ids
+
+    def test_uploaded_old_data(self) -> None:
+        # first, upload new data
+        new_paths = [
+            "testing/unprocessed_2024-01-25T16:35:33:617135_raw_file_tag_first.csv",
+            "testing/unprocessed_2024-01-26T16:35:33:617135_raw_file_tag_first.csv",
+            "testing/unprocessed_2024-01-27T16:35:33:617135_raw_file_tag_first.csv",
+        ]
+
+        inputs = self._insert_rows_into_gcs(new_paths)
+
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
+        results = self.generator.execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+        metadata_results = [
+            RawBigQueryFileMetadata.deserialize(result) for result in results
+        ]
+
+        assert len(metadata_results) == len(inputs)
+
+        for i, result in enumerate(metadata_results):
+            assert isinstance(result.file_id, int)
+            assert len(result.gcs_files) == 1
+            assert result.gcs_files[0].path == inputs[i].path
+            inputs[i].file_id = result.file_id
+
+        # mark as processed
+
+        self.mock_operator.xcom_pull.return_value = [
+            RawBigQueryFileProcessedTime(
+                file_id=assert_type(metadata.file_id, int),
+                file_processed_time=datetime.datetime.now(tz=datetime.UTC),
+            ).serialize()
+            for metadata in metadata_results
+        ]
+
+        WriteFileProcessedTimeToBQFileMetadataSqlQueryGenerator(
+            "fake_task_id"
+        ).execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+
+        # then, try to upload an old file
+        old_file = [
+            "testing/unprocessed_2024-01-24T16:35:33:617135_raw_file_tag_first.csv",
+        ]
+        old_input = self._insert_rows_into_gcs(old_file)
+
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in old_input]
+        results = self.generator.execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+        metadata_results = [
+            RawBigQueryFileMetadata.deserialize(result) for result in results
+        ]
+
+        assert len(metadata_results) == 0
+
+        # but uploading a newer file should work
+        newer_file = [
+            "testing/unprocessed_2024-01-28T16:35:33:617135_raw_file_tag_first.csv",
+        ]
+        newer_input = self._insert_rows_into_gcs(newer_file)
+
+        self.mock_operator.xcom_pull.return_value = [i.serialize() for i in newer_input]
+        results = self.generator.execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+        metadata_results = [
+            RawBigQueryFileMetadata.deserialize(result) for result in results
+        ]
+
+        assert len(metadata_results) == len(newer_file)
+        for i, result in enumerate(metadata_results):
+            assert isinstance(result.file_id, int)
+            assert len(result.gcs_files) == 1
+            assert result.gcs_files[0].path == newer_input[i].path
