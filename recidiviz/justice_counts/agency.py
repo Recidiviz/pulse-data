@@ -140,10 +140,12 @@ class AgencyInterface:
         # Convert agency names to dropdown names. An agency dropdown name contains the
         # two-letter state code if the state code does not appear in the agency name.
         agency_id_to_dropdown_name = {
-            agency.id: f"{agency.name} ({agency.state_code.split('_')[1].upper()})"
-            if agency.state_code
-            and agency.state_code.split("_")[1].upper() not in agency.name
-            else agency.name
+            agency.id: (
+                f"{agency.name} ({agency.state_code.split('_')[1].upper()})"
+                if agency.state_code
+                and agency.state_code.split("_")[1].upper() not in agency.name
+                else agency.name
+            )
             for agency in agencies
         }
         return agency_id_to_dropdown_name
@@ -175,6 +177,30 @@ class AgencyInterface:
             logging.warning(msg)
 
         return agencies
+
+    @staticmethod
+    def get_reporting_agencies_by_id(
+        session: Session,
+        reporting_agency_ids: List[int],
+        raise_on_missing: bool = False,
+    ) -> List[schema.Agency]:
+        set_reporting_agency_ids = set(reporting_agency_ids)
+        reporting_agencies = (
+            session.query(schema.Source)
+            .filter(schema.Source.id.in_(set_reporting_agency_ids))
+            # eagerly load the agency settings
+            .options(selectinload(schema.Source.agency_settings))
+            .all()
+        )
+        found_agency_ids = {a.id for a in reporting_agencies}
+        if len(reporting_agencies) != len(found_agency_ids):
+            missing_agency_ids = set_reporting_agency_ids.difference(found_agency_ids)
+            msg = f"Could not find the following agencies: {missing_agency_ids}"
+            if raise_on_missing:
+                raise ValueError(msg)
+            logging.warning(msg)
+
+        return reporting_agencies
 
     @staticmethod
     def get_agency_by_name_state_and_systems(

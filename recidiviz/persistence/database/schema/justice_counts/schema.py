@@ -479,6 +479,26 @@ class Agency(Source):
         return response
 
 
+class Vendor(Source):
+    """A vendor that supplies products or services but does not have users
+    or publish reports in the same way as agencies.
+
+    All Vendors are Sources, but not all Sources are Vendors.
+    """
+
+    __mapper_args__ = {
+        "polymorphic_identity": "vendor",
+    }
+
+
+class CSG(Source):
+    """A Council of State Governments entity that uploads data for some agencies."""
+
+    __mapper_args__ = {
+        "polymorphic_identity": "csg",
+    }
+
+
 class UserAccount(JusticeCountsBase):
     """A user (belonging to one or multiple Agencies) who publishes reports via the Publisher.
     This table should only be used when necessary as a cache for certain features."""
