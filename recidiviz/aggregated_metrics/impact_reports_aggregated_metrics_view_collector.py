@@ -159,21 +159,35 @@ def get_impact_reports_aggregated_metrics_view_builders() -> List[
                 time_period=time_period,
                 unit_of_analysis_type=unit_of_analysis_type,
             )
+
+            # The MIN_DATE and MAX_DATE correspond to the start_date
+            # For monthly metrics, we want all start_dates and end_dates to land on the 1st of the month
+            # For daily and weekly metrics, we want to ensure that all end_dates land on the 1st of the month
+            # This logic shifts the min and max dates to ensure that all daily and weekly metrics have end_dates that fall on the first of the month
+            min_date = MIN_DATE
+            max_date = MAX_DATE
+            if time_period == MetricTimePeriod.DAY:
+                min_date = MIN_DATE - relativedelta(days=1)
+                max_date = MAX_DATE - relativedelta(days=1)
+            elif time_period == MetricTimePeriod.WEEK:
+                min_date = MIN_DATE - relativedelta(days=7)
+                max_date = MAX_DATE - relativedelta(days=7)
+
             query_template = get_custom_aggregated_metrics_query_template(
                 metrics=metrics,
                 unit_of_analysis_type=unit_of_analysis_type,
                 population_type=MetricPopulationType.JUSTICE_INVOLVED,
                 time_interval_unit=time_period,
                 time_interval_length=1,
-                min_date=MIN_DATE,
-                max_date=MAX_DATE,
+                min_date=min_date,
+                max_date=max_date,
                 # The rolling_period parameters let us get metrics for any time interval, each day. For
                 # example, if time_period is MONTH, then we can get month-long metrics for each day of
                 # the month instead of the default, which would be to do month-long metrics on just the
                 # first of the month. This allows us to generate reports for periods that don't fall
                 # neatly along month boundaries.
-                rolling_period_unit=MetricTimePeriod.DAY,
-                rolling_period_length=7,
+                rolling_period_unit=MetricTimePeriod.MONTH,
+                rolling_period_length=1,
             )
 
             view_id = f"{MetricPopulationType.JUSTICE_INVOLVED.population_name_short}_{unit_of_analysis_type.short_name}_{time_period.value.lower()}_aggregated_metrics"
