@@ -94,13 +94,26 @@ function rawDataImportStatusSortRank(importStatus: RawDataImportStatus) {
   return rawDataImportStatusColorDict[importStatus].sortRank;
 }
 
+const stagingDAGURL =
+  "https://941882c9ef884317b481f986ea6d3a40-dot-us-central1.composer.googleusercontent.com/dags/recidiviz-staging_raw_data_import_dag/grid?dag_run_id=";
+const prodDAGURL =
+  "https://ef0f054ee6474821b3cd53e384c3e980-dot-us-central1.composer.googleusercontent.com/dags/recidiviz-123_raw_data_import_dag/grid?dag_run_id=";
+
+function buildDagLink(dagRunId: string) {
+  const urlBase =
+    window.RUNTIME_GCP_ENVIRONMENT === "production"
+      ? prodDAGURL
+      : stagingDAGURL;
+
+  return `${urlBase}${encodeURIComponent(dagRunId)}`;
+}
+
 function renderRunId(record: RawDataImportStartRow) {
-  const env =
-    window.RUNTIME_GCP_ENVIRONMENT === "production" ? "prod" : "staging";
   const dt = new Date(record.importRunStart);
   const timeAgo = moment(dt).fromNow();
   return (
-    <NewTabLink href={`http://go/raw-data-${env}-dag-run/${record.dagRunId}}`}>
+    // TODO(trotto/go-links#245) return to a go link if they don't decode our values
+    <NewTabLink href={buildDagLink(record.dagRunId)}>
       {`${record.importRunId} (${timeAgo})`}
     </NewTabLink>
   );
