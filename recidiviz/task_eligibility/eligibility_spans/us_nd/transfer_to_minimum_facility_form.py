@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
     incarceration_within_3_months_of_full_term_completion_date,
     incarceration_within_42_months_of_full_term_completion_date,
+    no_escape_in_current_incarceration,
     not_in_work_release,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
@@ -71,6 +72,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD,
         no_recent_referrals_to_minimum_housing.VIEW_BUILDER,
         not_enrolled_in_relevant_program.VIEW_BUILDER,
+        no_escape_in_current_incarceration.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_minimum_facility.VIEW_BUILDER,
 )
