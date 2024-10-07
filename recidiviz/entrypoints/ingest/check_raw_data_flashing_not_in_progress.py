@@ -22,14 +22,42 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_flash_status_manager import (
+    DirectIngestRawDataFlashStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
-# TODO(#29058): add gated check w/ new DirectIngestRawDataFlashStatusManager, maybe move
-# this into a sql query generator??
+def _legacy_verify_raw_data_flashing_not_in_progress(
+    state_code: StateCode, ingest_instance: DirectIngestInstance
+) -> bool:
+    """Checks the raw data processing status for the given state code and ingest
+    instance.
+    """
+    status_manager = DirectIngestInstanceStatusManager(
+        region_code=state_code.value,
+        ingest_instance=ingest_instance,
+    )
+
+    return status_manager.get_current_status() == DirectIngestStatus.FLASH_IN_PROGRESS
+
+
+def _new_verify_raw_data_flashing_not_in_progress(state_code: StateCode) -> bool:
+    """
+    Checks the raw data processing status for the given state code and ingest instance.
+     Raises an exception if the raw data flashing is in progress.
+    """
+    status_manager = DirectIngestRawDataFlashStatusManager(
+        region_code=state_code.value,
+    )
+
+    return status_manager.is_flashing_in_progress()
+
+
 def _verify_raw_data_flashing_not_in_progress(
     state_code: StateCode, ingest_instance: DirectIngestInstance
 ) -> None:
@@ -37,17 +65,21 @@ def _verify_raw_data_flashing_not_in_progress(
     Checks the raw data processing status for the given state code and ingest instance.
      Raises an exception if the raw data flashing is in progress.
     """
-    status_manager = DirectIngestInstanceStatusManager(
-        region_code=state_code.value,
-        ingest_instance=ingest_instance,
+    is_flashing_in_progress = (
+        _new_verify_raw_data_flashing_not_in_progress(state_code)
+        if is_raw_data_import_dag_enabled(state_code, ingest_instance)
+        else _legacy_verify_raw_data_flashing_not_in_progress(
+            state_code, ingest_instance
+        )
     )
 
-    if status_manager.get_current_status() == DirectIngestStatus.FLASH_IN_PROGRESS:
+    if is_flashing_in_progress:
         raise ValueError(
             f"Raw data flashing is in progress for {state_code.value} {ingest_instance.value}."
         )
 
 
+# TODO(#33953): move this into a sql query generator
 class IngestCheckRawDataFlashingEntrypoint(EntrypointInterface):
     """Entrypoint for checking the raw data flashing"""
 
