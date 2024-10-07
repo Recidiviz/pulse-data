@@ -32,13 +32,13 @@ Revocation matrix comparison of summed revocation counts by month """
 
 REVOCATION_MATRIX_COMPARISON_BY_MONTH_QUERY_TEMPLATE = """
     WITH event_based_counts AS (
-      SELECT state_code as region_code, year, month, COUNT(*) as total_revocations
+      SELECT state_code, year, month, COUNT(*) as total_revocations
       FROM `{project_id}.{shared_metric_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
         WHERE admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 35 MONTH)
       GROUP BY state_code, year, month
     ),
     month_counts AS (
-      SELECT state_code as region_code, year, month, total_revocations
+      SELECT state_code, year, month, total_revocations
       FROM `{project_id}.{view_dataset}.revocations_matrix_events_by_month_materialized`
       WHERE DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH),
                                                       INTERVAL 35 MONTH)
@@ -47,9 +47,9 @@ REVOCATION_MATRIX_COMPARISON_BY_MONTH_QUERY_TEMPLATE = """
         AND level_1_supervision_location = 'ALL' AND level_2_supervision_location = 'ALL'
       GROUP BY state_code, year, month, total_revocations
     )
-    SELECT e.region_code, e.year, e.month, e.total_revocations as reference_sum, m.total_revocations as month_sum
+    SELECT e.state_code, e.state_code AS region_code, e.year, e.month, e.total_revocations as reference_sum, m.total_revocations as month_sum
     FROM event_based_counts e
-    JOIN month_counts m USING(region_code, year, month)
+    JOIN month_counts m USING(state_code, year, month)
 """
 
 REVOCATION_MATRIX_COMPARISON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(

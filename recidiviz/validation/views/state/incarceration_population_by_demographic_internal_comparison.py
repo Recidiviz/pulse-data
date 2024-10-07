@@ -47,7 +47,7 @@ incarceration_population_by_facility_by_demographics AS (
   GROUP BY state_code, date_of_stay, race_or_ethnicity, gender, age_bucket
 )
 SELECT 
-  state_code AS region_code, date_of_stay, race_or_ethnicity, gender, age_bucket, 
+  state_code, state_code AS region_code, date_of_stay, race_or_ethnicity, gender, age_bucket, 
   IFNULL(population_by_admission_reason_total_population, 0) AS population_by_admission_reason_total_population, 
   IFNULL(population_by_facility_by_demographics_total_population, 0) AS population_by_facility_by_demographics_total_population
 FROM

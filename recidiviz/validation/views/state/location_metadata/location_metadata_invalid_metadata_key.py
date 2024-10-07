@@ -44,6 +44,7 @@ LOCATION_METADATA_INVALID_METADATA_KEY_DESCRIPTION = (
 
 LOCATION_METADATA_INVALID_METADATA_KEY_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   metadata_key AS unexpected_metadata_key,
   location_external_id,

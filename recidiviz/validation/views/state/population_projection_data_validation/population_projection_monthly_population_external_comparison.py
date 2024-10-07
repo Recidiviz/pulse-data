@@ -38,7 +38,7 @@ incarceration/supervision populations.
 POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 WITH external_data AS (
     SELECT
-        region_code,
+        state_code,
         compartment,
         year,
         month,
@@ -48,7 +48,7 @@ WITH external_data AS (
 ),
 internal_metrics AS (
     SELECT
-        state_code AS region_code,
+        state_code,
         compartment,
         year,
         month,
@@ -56,17 +56,18 @@ internal_metrics AS (
     FROM `{project_id}.{population_projection_dataset}.microsim_projection`
     WHERE simulation_group != 'ALL'
         AND legal_status != 'ALL'
-    GROUP BY region_code, year, month, compartment
+    GROUP BY state_code, year, month, compartment
 ),
 internal_metrics_for_valid_regions_and_dates AS (
     SELECT * FROM
     -- Only compare regions, date_of_stay, and legal statuses for which we have external validation data
-    (SELECT DISTINCT region_code, compartment, year, month FROM external_data)
+    (SELECT DISTINCT state_code, compartment, year, month FROM external_data)
     LEFT JOIN internal_metrics
-    USING (region_code, compartment, year, month)
+    USING (state_code, compartment, year, month)
 )
 SELECT
-    region_code,
+    state_code,
+    state_code AS region_code,
     compartment,
     year,
     month,
@@ -76,8 +77,8 @@ FROM
     external_data
 FULL OUTER JOIN
     internal_metrics_for_valid_regions_and_dates internal_data
-USING (region_code, compartment, year, month)
-ORDER BY region_code, compartment, year, month
+USING (state_code, compartment, year, month)
+ORDER BY state_code, compartment, year, month
 """
 
 POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(

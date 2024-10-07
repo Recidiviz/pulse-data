@@ -34,7 +34,7 @@ Revocation matrix comparison of summed revocation counts by officer """
 REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_QUERY_TEMPLATE = """
     WITH by_officer as (
       SELECT
-        state_code as region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+        state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
         officer, SUM(revocation_count) as total_revocations
       FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_officer_materialized`
       WHERE supervision_level = 'ALL'
@@ -46,7 +46,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_QUERY_TEMPLATE = """
       GROUP BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location, officer
     ), caseload_counts AS (
       SELECT
-        state_code as region_code, metric_period_months,
+        state_code, metric_period_months,
         level_1_supervision_location, level_2_supervision_location, officer,
         COUNT(DISTINCT state_id) as total_revocations
       FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload_materialized`
@@ -54,7 +54,8 @@ REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_QUERY_TEMPLATE = """
     )
     
    SELECT
-      region_code,
+      state_code,
+      state_code AS region_code,
       metric_period_months,
       level_1_supervision_location, level_2_supervision_location,
       officer,
@@ -62,7 +63,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_QUERY_TEMPLATE = """
       c.total_revocations as caseload_sum
     FROM by_officer bo
     JOIN caseload_counts c
-    USING (region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location, officer)
+    USING (state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location, officer)
 """
 
 REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -39,6 +39,7 @@ the query.
 
 MAGIC_END_DATE_TASK_ELIGIBILITY_SPANS_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   task_name,
   person_id,

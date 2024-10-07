@@ -35,7 +35,7 @@ from recidiviz.validation.views import dataset_config
 
 VIEW_QUERY_TEMPLATE = """
   SELECT 
-    'US_OZ' as region_code,
+    'US_OZ' AS state_code,
     CAST(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', Date) AS DATE) as date_of_stay,
     CASE
       WHEN data_system = 'vfds' THEN 'US_OZ_VFDS'

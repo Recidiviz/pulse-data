@@ -89,6 +89,7 @@ previous_export AS (
 )
 
 SELECT 
+  state_code,
   state_code AS region_code,
   role,
   previous_export_count.last_export_date,
@@ -105,6 +106,6 @@ SELECT
 FROM current_staff
 FULL OUTER JOIN previous_export_count
   USING (state_code, role)
-GROUP BY 1, 2, 3, 4
+GROUP BY 1, 2, 3, 4, 5
 ORDER BY 1, 2
 """

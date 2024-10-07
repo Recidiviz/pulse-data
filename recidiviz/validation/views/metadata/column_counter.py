@@ -41,7 +41,7 @@ from recidiviz.validation.views.metadata.validation_schema_config import (
 COLUMN_COUNTER_STATE_QUERY_TEMPLATE = """
 WITH table_rows AS (
   SELECT
-    region_code as state_code,
+    state_code,
     IF({column_name} IS NULL, 'NULL', 'NOT_NULL') AS {column_name}
   FROM
     `{project_id}.{validation_dataset}.{table_name}`

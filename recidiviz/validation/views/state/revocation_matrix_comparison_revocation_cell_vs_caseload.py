@@ -34,7 +34,7 @@ Revocation matrix comparison of summed revocation counts between the grid cells 
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
     WITH cell_counts AS (
       SELECT 
-        state_code AS region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+        state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
         charge_category, supervision_type, supervision_level, admission_type,
         SUM(total_revocations) AS total_revocations
       FROM `{project_id}.{view_dataset}.revocations_matrix_cells_materialized`
@@ -65,7 +65,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
     ),
     caseload_counts AS (
       SELECT 
-        state_code AS region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+        state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
         charge_category, supervision_type, supervision_level, admission_type,
         COUNT(DISTINCT state_id) AS total_revocations,
         -- This should always be equal to the total_revocations since a single state_id should never be included
@@ -92,10 +92,10 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
       
       UNION ALL
       
-      -- The caseload has only 1 row per region_code, metric_period_months, and state_id. We want to make sure
+      -- The caseload has only 1 row per state_code, metric_period_months, and state_id. We want to make sure
       -- the sum over all dimensions is the same as the sum where all fields are ALL in the matrix --
       SELECT
-        state_code AS region_code,
+        state_code,
         metric_period_months,
         'ALL' AS level_1_supervision_location,
         'ALL' AS level_2_supervision_location,
@@ -113,16 +113,16 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
                charge_category, supervision_type, supervision_level, admission_type
     )
     SELECT 
-      region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location, charge_category,
+      state_code, state_code AS region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location, charge_category,
       supervision_type, supervision_level, admission_type,
       IFNULL(c.total_revocations, 0) AS cell_sum,
       IFNULL(cl.total_revocations, 0) AS caseload_sum,
       IFNULL(cl.total_rows, 0) AS caseload_num_rows
     FROM cell_counts c 
     FULL OUTER JOIN caseload_counts cl
-    USING (region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+    USING (state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
            charge_category, supervision_type, supervision_level, admission_type)
-    ORDER BY region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+    ORDER BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
              charge_category, supervision_type, supervision_level, admission_type
 """
 

@@ -36,6 +36,7 @@ SESSIONS_IN_INCARCERATION_OR_SUPERVISION_DESCRIPTION = (
 SESSIONS_IN_INCARCERATION_OR_SUPERVISION_QUERY_TEMPLATE = """
     SELECT DISTINCT
         person_id,
+        state_code,
         state_code AS region_code,
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
     LEFT JOIN (

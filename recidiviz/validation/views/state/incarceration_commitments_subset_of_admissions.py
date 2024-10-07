@@ -31,21 +31,24 @@ INCARCERATION_COMMITMENTS_SUBSET_OF_ADMISSIONS_DESCRIPTION = """A view revealing
 also included in the admission metrics."""
 
 INCARCERATION_COMMITMENTS_SUBSET_OF_ADMISSIONS_QUERY_TEMPLATE = """
-    (SELECT DISTINCT state_code as region_code, person_id, admission_date, admission_reason, included_in_state_population
+SELECT state_code, state_code AS region_code, person_id, admission_date, admission_reason, included_in_state_population
+FROM (
+    (SELECT DISTINCT state_code, person_id, admission_date, admission_reason, included_in_state_population
     FROM `{project_id}.{metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized`
     EXCEPT DISTINCT
     (
-      SELECT DISTINCT state_code as region_code, person_id, admission_date, admission_reason, included_in_state_population
+      SELECT DISTINCT state_code, person_id, admission_date, admission_reason, included_in_state_population
       FROM `{project_id}.{metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized`  
     ))
     UNION ALL
-    (SELECT DISTINCT state_code as region_code, person_id, admission_date, admission_reason, included_in_state_population
+    (SELECT DISTINCT state_code, person_id, admission_date, admission_reason, included_in_state_population
     FROM `{project_id}.{metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_not_included_in_state_population_materialized`
     EXCEPT DISTINCT
     (
-      SELECT DISTINCT state_code as region_code, person_id, admission_date, admission_reason, included_in_state_population
+      SELECT DISTINCT state_code, person_id, admission_date, admission_reason, included_in_state_population
       FROM `{project_id}.{metrics_dataset}.most_recent_incarceration_admission_metrics_not_included_in_state_population_materialized`  
     ))
+)
 """
 
 INCARCERATION_COMMITMENTS_SUBSET_OF_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

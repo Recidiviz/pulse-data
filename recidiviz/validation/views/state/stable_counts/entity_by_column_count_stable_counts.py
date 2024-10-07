@@ -37,7 +37,7 @@ LAST_N_MONTHS_ENTITY_TEMPLATE = """
 WITH {col}_{entity}_counts AS (
     SELECT 
         DATE_TRUNC({col}, MONTH) AS month,
-        state_code as region_code,
+        state_code,
         COUNT(*) AS {col}_count,
     FROM `{{project_id}}.{{normalized_state_dataset}}.{entity}`
     WHERE DATE_TRUNC({col}, MONTH) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 12 MONTH)
@@ -56,27 +56,30 @@ cross_joined AS (
     SELECT * 
     FROM last_12_month_dates
     CROSS JOIN (
-        SELECT distinct region_code 
+        SELECT distinct state_code 
         FROM {col}_{entity}_counts
         )
 ),
 all_months_filled_zeroes AS (
     SELECT 
         cross_joined.month AS month, 
-        cross_joined.region_code AS region_code, 
+        cross_joined.state_code AS state_code, 
         COALESCE({col}_count, 0) AS {col}_count
     FROM {col}_{entity}_counts 
     FULL JOIN cross_joined on {col}_{entity}_counts.month = cross_joined.month 
-        and {col}_{entity}_counts.region_code = cross_joined.region_code 
+        and {col}_{entity}_counts.state_code = cross_joined.state_code 
     )
     
-SELECT * FROM (
+SELECT
+    *,
+    state_code AS region_code
+FROM (
     SELECT * FROM (
         SELECT 
             month,
-            region_code, 
+            state_code, 
             {col}_count, 
-            LAG({col}_count) OVER (PARTITION BY region_code ORDER BY month) AS previous_month_{col}_count, 
+            LAG({col}_count) OVER (PARTITION BY state_code ORDER BY month) AS previous_month_{col}_count, 
         FROM all_months_filled_zeroes
         -- select where the month < first of the current month
         -- A 1 month delay (DATE_ADD(month, INTERVAL 1 MONTH) is added to ensure that we don't start 
@@ -97,10 +100,10 @@ def exemptions_string_builder(exemptions: Dict[StateCode, List[date]]) -> str:
     if not exemptions:
         return "TRUE"
     region_exemption_clauses = []
-    for region_code, exemption_dates in exemptions.items():
+    for state_code, exemption_dates in exemptions.items():
         exemption_months_str = ", ".join([f'"{str(d)}"' for d in exemption_dates])
         region_exemption_clauses.append(
-            f'NOT (region_code = "{region_code.name}" AND month IN ({exemption_months_str}))'
+            f'NOT (state_code = "{state_code.name}" AND month IN ({exemption_months_str}))'
         )
     return "\n      AND ".join(region_exemption_clauses)
 

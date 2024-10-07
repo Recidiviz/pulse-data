@@ -89,7 +89,8 @@ QUERY = f"""
 WITH 
     v2 AS ({V2_SENTENCES}),
     v1 AS ({V1_SENTENCES})
-SELECT 
+SELECT
+    state_code,
     state_code AS region_code,
     sentence_external_id,
     charge_v1_external_id,

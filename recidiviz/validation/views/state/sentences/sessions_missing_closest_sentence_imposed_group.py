@@ -34,6 +34,7 @@ date before session end date.
 
 SESSIONS_MISSING_CLOSEST_SENTENCE_IMPOSED_GROUP_QUERY_TEMPLATE = """
 SELECT
+    ses.state_code,
     ses.state_code AS region_code,
     ses.person_id,
     ses.session_id,

@@ -92,7 +92,10 @@ _SUB_QUERY_TEMPLATE = """
 """
 
 _QUERY_TEMPLATE = """
-SELECT *, "{region_code}" AS region_code
+SELECT 
+    *,
+    "{region_code}" AS state_code,
+    "{region_code}" AS region_code
 FROM (
     {all_sub_queries}
 )

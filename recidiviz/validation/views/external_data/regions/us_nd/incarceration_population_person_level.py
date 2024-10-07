@@ -25,7 +25,7 @@ from recidiviz.validation.views import dataset_config
 # remove the LIMIT 0 when we are sure it is correct.
 VIEW_QUERY_TEMPLATE = """
 SELECT
-  'US_ND' as region_code,
+  'US_ND' AS state_code,
   Offender_ID as person_external_id,
   'US_ND_ELITE' as external_id_type,
   DATE('2021-11-01') as date_of_stay,

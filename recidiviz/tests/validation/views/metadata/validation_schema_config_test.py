@@ -73,8 +73,8 @@ class TestDatasetSchemaInfoParsing(TestCase):
             self.assertIsNotNone(table.table_name)
             self.assertTrue(len(table.columns) > 0)
 
-    def test_external_validation_config_always_has_region_code(self) -> None:
+    def test_external_validation_config_always_has_state_code(self) -> None:
         validation_schema_config = get_external_validation_schema()
 
         for table in validation_schema_config.tables:
-            self.assertTrue("region_code" in table.columns)
+            self.assertTrue("state_code" in table.columns)

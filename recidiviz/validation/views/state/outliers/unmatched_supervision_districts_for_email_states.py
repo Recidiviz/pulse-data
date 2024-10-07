@@ -79,7 +79,8 @@ officers_with_metrics AS (
   ORDER BY 1, 2
 )
 
-SELECT 
+SELECT
+  state_code,
   state_code AS region_code, 
   email,
   external_id,

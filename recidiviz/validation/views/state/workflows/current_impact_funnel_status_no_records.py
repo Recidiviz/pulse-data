@@ -34,7 +34,7 @@ CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_DESCRIPTION = """Opportunity
 
 CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_QUERY_TEMPLATE = """
 SELECT
-  state_code AS region_code, opportunity_type
+  state_code, state_code AS region_code, opportunity_type
 FROM `{project_id}.{reference_views_dataset}.workflows_opportunity_configs_materialized`
 INNER JOIN `{project_id}.{experiments_dataset}.officer_assignments_materialized` assignments
     USING (state_code, experiment_id)

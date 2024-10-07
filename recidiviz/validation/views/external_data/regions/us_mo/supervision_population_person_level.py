@@ -23,7 +23,7 @@ from recidiviz.validation.views import dataset_config
 
 VIEW_QUERY_TEMPLATE = """
 SELECT 
-    region_code, 
+    region_code AS state_code, 
     person_external_id, 
     'US_MO_DOC' as external_id_type, 
     date_of_supervision, 

@@ -33,33 +33,34 @@ Revocation matrix comparison of summed supervision population counts """
 
 REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY_TEMPLATE = """
     WITH by_district as (
-      SELECT state_code as region_code, SUM(supervision_population_count) as total_supervision
+      SELECT state_code, SUM(supervision_population_count) as total_supervision
       FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_district_materialized`
       GROUP BY state_code
     ),
     by_risk_level as (
-      SELECT state_code as region_code, SUM(supervision_population_count) as total_supervision
+      SELECT state_code, SUM(supervision_population_count) as total_supervision
       FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_risk_level_materialized`
       GROUP BY state_code
     ),
     by_gender as (
-      SELECT state_code as region_code, SUM(supervision_population_count) as total_supervision
+      SELECT state_code, SUM(supervision_population_count) as total_supervision
       FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_gender_materialized`
       GROUP BY state_code
     ),
     by_race as (
-      SELECT state_code as region_code, SUM(supervision_population_count) as total_supervision
+      SELECT state_code, SUM(supervision_population_count) as total_supervision
       FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_race_materialized`
       GROUP BY state_code
     )
-    SELECT bd.region_code,
+    SELECT bd.state_code,
+           bd.state_code AS region_code,
            bd.total_supervision as district_sum,
            brl.total_supervision as risk_level_sum,
            bg.total_supervision as gender_sum,
            br.total_supervision as race_sum
-    FROM by_district bd JOIN by_risk_level brl on bd.region_code = brl.region_code
-    JOIN by_gender bg on brl.region_code = bg.region_code
-    JOIN by_race br on bg.region_code = br.region_code
+    FROM by_district bd JOIN by_risk_level brl on bd.state_code = brl.state_code
+    JOIN by_gender bg on brl.state_code = bg.state_code
+    JOIN by_race br on bg.state_code = br.state_code
 """
 
 REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(

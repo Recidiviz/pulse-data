@@ -30,7 +30,7 @@ from recidiviz.validation.views import dataset_config
 VIEW_QUERY_TEMPLATE = """
 WITH legacy_data AS (
   SELECT
-    region_code,
+    region_code AS state_code,
     person_external_id,
     'US_IX_DOC' AS external_id_type,
     date_of_stay,
@@ -39,7 +39,7 @@ WITH legacy_data AS (
   FROM `{project_id}.{us_ix_validation_oneoff_dataset}.incarceration_population_person_level_raw`
 ), daily_summary AS (
   SELECT
-    'US_IX' AS region_code,
+    'US_IX' AS state_code,
     ofndr_num AS person_external_id,
     'US_IX_DOC' AS external_id_type,
     EXTRACT(DATE FROM CAST(popdate AS DATETIME)) AS date_of_stay,

@@ -64,7 +64,7 @@ most_recent_metrics AS (
     GROUP BY state_code, person_id
 )
 
-SELECT state_code as region_code, person_id, death_periods.death_date, death_periods.death_date_period_type, 
+SELECT state_code, state_code as region_code, person_id, death_periods.death_date, death_periods.death_date_period_type, 
 most_recent_metrics.most_recent_population_date, most_recent_metrics.most_recent_population_date_metric
 FROM death_periods 
 LEFT JOIN most_recent_metrics

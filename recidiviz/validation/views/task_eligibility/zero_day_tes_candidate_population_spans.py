@@ -37,6 +37,7 @@ end_date. All zero-day spans should be filtered out of population views.
 
 ZERO_DAY_TES_CANDIDATE_POPULATION_SPANS_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   population_name,
   person_id,

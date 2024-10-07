@@ -41,7 +41,7 @@ MONTHS_WITH_AVAILABLE_DATA = [
 def from_query_template(month: date) -> str:
     return f"""
 SELECT 
-    'US_PA' as region_code,
+    'US_PA' AS state_code,
     control_number as person_external_id, 
     'US_PA_CONT' as external_id_type,
     LAST_DAY(DATE '{month.strftime('%Y-%m-%d')}', MONTH) as date_of_stay, 
@@ -54,7 +54,7 @@ TIMESERIES_DATA = [from_query_template(month) for month in MONTHS_WITH_AVAILABLE
 
 SUPPLEMENTAL_DATA = """
 SELECT 
-    region_code, 
+    region_code AS state_code,
     person_external_id, 
     'US_PA_CONT' as external_id_type, 
     date_of_stay, 

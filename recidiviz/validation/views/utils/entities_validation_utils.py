@@ -30,13 +30,14 @@ from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_subclass
 
 SELECT_FROM_NORMALIZED_ENTITY_TABLE_TEMPLATE = (
-    "(SELECT state_code AS region_code, {id_column}, {columns} "
+    "(SELECT state_code, state_code AS region_code, {id_column}, {columns} "
     "FROM `{{project_id}}.{{normalized_state_dataset}}.{table_id}` "
     "{invalid_rows_filter_clause})"
 )
 
 PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_QUERY_TEMPLATE = """
 SELECT
+    'ALL' AS state_code,
     'ALL' AS region_code,
     '{table_id}' AS entity_name,
     COUNT(*) as total_count,

@@ -42,7 +42,8 @@ INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY_TEMPLATE = """
         WHERE admission_date != release_date OR release_date IS NULL
     ),
     periods_with_next_admission AS (
-      SELECT 
+      SELECT
+        state_code,
         state_code as region_code, 
         external_id,
         person_id,

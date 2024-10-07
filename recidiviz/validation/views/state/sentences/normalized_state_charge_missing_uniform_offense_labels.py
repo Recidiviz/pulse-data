@@ -37,6 +37,7 @@ https://docs.google.com/document/d/1f1QDDAwSST82io1dFxaRZHZLcnawfzQLQlqyodAYCnk/
 
 NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   person_id,
   charge_id,

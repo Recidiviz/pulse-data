@@ -34,11 +34,11 @@ SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_DESCRIPTION = """ Comparison 
 SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
     WITH external_validation_dates_and_supervision_types AS (
         -- Only compare states and months for which we have external validation data
-        SELECT DISTINCT region_code, date_of_supervision, supervision_type FROM
+        SELECT DISTINCT state_code, date_of_supervision, supervision_type FROM
         `{project_id}.{external_accuracy_dataset}.supervision_population_by_type_materialized`
     ), internal_supervision_population AS (
         SELECT
-            state_code as region_code, date_of_supervision,
+            state_code, date_of_supervision,
             COUNT(DISTINCT(person_id)) as internal_population_count,
             supervision_type
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized`
@@ -49,11 +49,11 @@ SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
           external_validation_dates_and_supervision_types      
         LEFT JOIN
           internal_supervision_population        
-        USING(region_code, date_of_supervision, supervision_type)
+        USING(state_code, date_of_supervision, supervision_type)
     ),
     comparison AS (
         SELECT
-          region_code,
+          state_code,
           date_of_supervision,
           supervision_type,
           IFNULL(population_count, 0) as external_population_count,
@@ -62,11 +62,11 @@ SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
           `{project_id}.{external_accuracy_dataset}.supervision_population_by_type_materialized`
         FULL OUTER JOIN
           relevant_internal_supervision_population
-        USING (region_code, date_of_supervision, supervision_type)
+        USING (state_code, date_of_supervision, supervision_type)
     )
-    SELECT *
+    SELECT *, state_code AS region_code
     FROM comparison
-    ORDER BY region_code, date_of_supervision, supervision_type
+    ORDER BY state_code, date_of_supervision, supervision_type
 """
 
 SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(

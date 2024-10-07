@@ -320,7 +320,7 @@ _SUBQUERY_TEMPLATE = "UNION ALL\n".join(
 
 VIEW_QUERY_TEMPLATE = f"""
 SELECT
-  'US_MI' as region_code,
+  'US_MI' AS state_code,
   person_external_id,
   'US_MI_DOC' as external_id_type,
   date_of_stay,

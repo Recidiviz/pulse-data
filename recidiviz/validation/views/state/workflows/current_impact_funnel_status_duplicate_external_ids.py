@@ -31,7 +31,7 @@ CURRENT_IMPACT_FUNNEL_STATUS_DUPLICATE_EXTERNAL_IDS_DESCRIPTION = """Duplicate p
 
 CURRENT_IMPACT_FUNNEL_STATUS_DUPLICATE_EXTERNAL_IDS_QUERY_TEMPLATE = """
 SELECT
-  state_code AS region_code, person_external_id, opportunity_type, COUNT(*) AS total_rows
+  state_code, state_code AS region_code, person_external_id, opportunity_type, COUNT(*) AS total_rows
 FROM `{project_id}.{workflows_dataset}.current_impact_funnel_status_materialized`
 GROUP BY region_code, person_external_id, opportunity_type
 HAVING total_rows > 1

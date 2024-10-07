@@ -36,6 +36,7 @@ for a person comes before the previous eligibility span end date.
 OVERLAPPING_TASK_ELIGIBILITY_SPANS_QUERY_TEMPLATE = """
 SELECT
   task_name,
+  state_code,
   state_code AS region_code,
   person_id,
   start_date,

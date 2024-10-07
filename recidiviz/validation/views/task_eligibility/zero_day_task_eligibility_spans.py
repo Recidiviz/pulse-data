@@ -35,6 +35,7 @@ end_date. All zero-day spans should be filtered out of task eligibility views.
 
 ZERO_DAY_TASK_ELIGIBILITY_SPANS_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   task_name,
   person_id,

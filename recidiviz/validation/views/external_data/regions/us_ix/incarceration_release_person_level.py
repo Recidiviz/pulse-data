@@ -32,7 +32,7 @@ WITH releases AS (
     FROM `{project_id}.{us_ix_validation_oneoff_dataset}.idoc_prison_admissions_releases`
 )
 SELECT
-    'US_IX' as region_code,
+    'US_IX' AS state_code,
     person_external_id,
     'US_IX_DOC' AS external_id_type,
     movement_date as release_date,

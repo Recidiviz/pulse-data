@@ -30,13 +30,15 @@ from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.utils.string import StrictStringFormatter
 
 SELECT_FROM_METRICS_TEMPLATE = (
-    "(SELECT state_code AS region_code, {columns} FROM "
+    "(SELECT state_code, state_code AS region_code, {columns} FROM "
     "`{{project_id}}.{{materialized_metrics_dataset}}.most_recent_{metric_view_name}_materialized` "
     "{invalid_rows_filter_clause})"
 )
 
 SELECT_ROWS_FROM_METRIC_ALL_INVALID_FIELD_TEMPLATE = """
-SELECT state_code AS region_code, 
+SELECT
+    state_code, 
+    state_code AS region_code, 
     '{field}' AS field_name,
     '{metric_view_name}' AS metric,
     COUNTIF({field} {invalid_clause}) AS invalid_count,

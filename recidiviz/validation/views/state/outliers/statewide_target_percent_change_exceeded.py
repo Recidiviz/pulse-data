@@ -87,6 +87,7 @@ archived_metrics_types AS (
 SELECT * EXCEPT(earliest_export_date)
 FROM (
   SELECT
+    state_code,
     state_code AS region_code,
     metric_id,
     category_type,

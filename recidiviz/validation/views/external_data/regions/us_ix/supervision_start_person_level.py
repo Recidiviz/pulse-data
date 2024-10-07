@@ -23,7 +23,7 @@ from recidiviz.validation.views import dataset_config
 
 VIEW_QUERY_TEMPLATE = """
 SELECT
-    region_code,
+    region_code AS state_code,
     person_external_id,
     start_date
 FROM `{project_id}.{us_ix_validation_oneoff_dataset}.supervision_start_person_level_raw`

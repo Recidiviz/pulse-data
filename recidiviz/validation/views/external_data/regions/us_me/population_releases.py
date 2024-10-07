@@ -28,6 +28,7 @@ from recidiviz.validation.views import dataset_config
 
 VIEW_QUERY_TEMPLATE = """
 SELECT 
+    "US_ME" AS state_code,
     CIS_CLIENT_ID AS person_external_id,
     CURRENT_CLIENT_STATUS AS current_status,
     current_housing AS released_from_housing_unit,

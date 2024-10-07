@@ -37,18 +37,18 @@ INCARCERATION_RELEASE_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 WITH external_data AS (
   -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to
   -- generate data to insert into the `incarceration_release_person_level` table.
-  SELECT region_code, person_external_id, external_id_type, release_date
+  SELECT state_code, person_external_id, external_id_type, release_date
   FROM `{project_id}.{external_accuracy_dataset}.incarceration_release_person_level_materialized`
 ), external_data_with_ids AS (
     -- Find the internal person_id for the people in the external data
-    SELECT region_code, release_date, external_data.person_external_id, person_id
+    SELECT external_data.state_code, release_date, external_data.person_external_id, person_id
     FROM external_data
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` all_state_person_ids
-    ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
+    ON external_data.state_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
     -- Limit to the correct ID type in states that have multiple
     AND external_data.external_id_type = all_state_person_ids.id_type
 ), internal_data AS (
-  SELECT internal.state_code as region_code, internal.person_external_id, internal.person_id, release_date
+  SELECT internal.state_code, internal.person_external_id, internal.person_id, release_date
   FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_included_in_state_population_materialized` internal
   -- Need to filter out all PA releases that occur on the same date as a PA admission, since those aren't counted in external and may actually be transfers
   LEFT JOIN 
@@ -66,13 +66,14 @@ WITH external_data AS (
 ), internal_metrics_for_valid_regions_and_dates AS (
   SELECT * FROM
   -- Only compare regions and dates for which we have external validation data
-  (SELECT DISTINCT region_code, release_date FROM external_data_with_ids)
+  (SELECT DISTINCT state_code, release_date FROM external_data_with_ids)
   LEFT JOIN
     internal_data
-  USING (region_code, release_date)
+  USING (state_code, release_date)
 ) 
 SELECT
-  region_code,
+  state_code,
+  state_code AS region_code,
   release_date,
   CAST(external_data.person_id AS STRING) AS external_data_person_id,
   CAST(internal_data.person_id AS STRING) AS internal_data_person_id,
@@ -81,7 +82,7 @@ FROM
     external_data_with_ids external_data
 FULL OUTER JOIN
     internal_metrics_for_valid_regions_and_dates internal_data
-USING (region_code, release_date, person_id)
+USING (state_code, release_date, person_id)
 """
 
 INCARCERATION_RELEASE_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
