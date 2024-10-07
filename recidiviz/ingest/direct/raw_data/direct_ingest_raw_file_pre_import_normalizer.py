@@ -67,14 +67,22 @@ class DirectIngestRawFilePreImportNormalizer:
         self._read_chunk_size = read_chunk_size
 
     @staticmethod
-    def _requires_prepended_headers(
-        chunk_num: int, infer_columns_from_config: bool
-    ) -> bool:
-        """We will prepend headers for all chunks for files that have
-        |infer_columns_from_config| as True. For all other files, we will want to
-        prepend headers for all but the first chunk (chunk_num = 0).
-        """
-        return infer_columns_from_config or chunk_num != 0
+    def _should_strip_headers(chunk_num: int, infer_columns_from_config: bool) -> bool:
+        """Return True if |chunk_num| is 0 and |infer_columns_from_config| is False (the
+        raw csv contains a header line)."""
+        return not infer_columns_from_config and chunk_num == 0
+
+    @staticmethod
+    def strip_first_line(decoded_output: str) -> str:
+        """Find the first newline in the decoded_output and return the substring starting
+        after this newline. If no newline is found, return the original string.
+        We do not expect any newline to appear within the text of a header, so we don't
+        handle escaping here."""
+        return (
+            decoded_output[i + 1 :]
+            if (i := decoded_output.find("\n")) != -1
+            else decoded_output
+        )
 
     def output_path_for_chunk(
         self, chunk: RequiresPreImportNormalizationFileChunk
@@ -92,14 +100,14 @@ class DirectIngestRawFilePreImportNormalizer:
     ) -> PreImportNormalizedCsvChunkResult:
         """Given |chunk|, normalize the chunk according to it's normalization_type so
         it can be imported to BQ and write the result out to a temp Google Cloud Storage
-        path.
+        path. If the chunk is the first chunk and the raw file has a header line, the header
+        line will be stripped from the output.
         """
 
         if chunk.pre_import_normalization_type is None:
             raise ValueError("No pass is required for this chunk")
 
         # first, get all the info we need about the chunk
-
         path_parts = filename_parts_from_path(chunk.path)
         config = self._region_config.raw_file_configs[path_parts.file_tag]
         output_path = self.output_path_for_chunk(chunk)
@@ -108,7 +116,6 @@ class DirectIngestRawFilePreImportNormalizer:
         with self._fs.open(
             chunk.path, mode="rb", chunk_size=self._read_chunk_size, verifiable=False
         ) as f:
-
             offset_reader = BytesChunkReader(
                 f,
                 read_start_inclusive=chunk.chunk_boundary.start_inclusive,
@@ -138,11 +145,10 @@ class DirectIngestRawFilePreImportNormalizer:
                 output_reader = text_reader
 
             decoded_output = output_reader.read()
-
-            if self._requires_prepended_headers(
+            if self._should_strip_headers(
                 chunk.chunk_boundary.chunk_num, config.infer_columns_from_config
             ):
-                decoded_output = ",".join(chunk.headers) + "\n" + decoded_output
+                decoded_output = self.strip_first_line(decoded_output)
 
             # lastly, upload the output
             # upload_from_string does the encoding for us. when we pass it a string, it

@@ -49,7 +49,6 @@ class TestRawDataChunkNormalization(unittest.TestCase):
             path=self.file_path,
             pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
             chunk_boundary=self.chunk_boundary,
-            headers=["ID", "Name", "DOB"],
         )
         self.serialized_requires_normalization_chunks = [
             self.requires_normalization_chunk.serialize()

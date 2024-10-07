@@ -267,7 +267,6 @@ class TestSerialization(unittest.TestCase):
             path=GcsfsFilePath.from_absolute_path("path/to/file.csv"),
             pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
             chunk_boundary=chunk_boundary,
-            headers=["id", "name", "age"],
         )
 
         self._validate_serialization(original, RequiresPreImportNormalizationFileChunk)
@@ -281,7 +280,6 @@ class TestSerialization(unittest.TestCase):
             path=GcsfsFilePath.from_absolute_path("path/to/file.csv"),
             pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
             chunk_boundaries=chunk_boundaries,
-            headers=["id", "name", "age"],
         )
 
         self._validate_serialization(original, RequiresPreImportNormalizationFile)

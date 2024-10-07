@@ -175,7 +175,7 @@ class SplitByPreImportNormalizationTest(TestCase):
                         column="col1a", description=""
                     )
                 ],
-                skip_leading_rows=1,
+                skip_leading_rows=0,
             )
         }
 
@@ -271,7 +271,7 @@ class SplitByPreImportNormalizationTest(TestCase):
                         column="col1a", description=""
                     )
                 ],
-                skip_leading_rows=1,
+                skip_leading_rows=0,
             )
         }
 
