@@ -193,6 +193,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 "coalesce_results_and_errors",
                 "read_and_verify_column_headers",
                 "split_by_pre_import_normalization_type",
+                "raise_skipped_file_errors",
             ],
         ]
 
@@ -373,6 +374,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
         "raw_data_branching.us_xx_primary_import_branch.write_import_start",
         "raw_data_branching.us_xx_primary_import_branch.has_files_to_import",
+        "raw_data_branching.us_xx_primary_import_branch.raise_skipped_file_errors",
     ]
 
     def setUp(self) -> None:
@@ -664,10 +666,12 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
             result = self.run_dag_test(
                 self._create_operations_registration_only_dag(),
                 session=session,
-                expected_failure_task_id_regexes=[],  # none!
+                expected_failure_task_id_regexes=[
+                    "raw_data_branching.us_xx_primary_import_branch.raise_skipped_file_errors"
+                ],
                 expected_skipped_task_id_regexes=[],  # none!
             )
-            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
 
             import_ready_files_jsonb = self.get_xcom_for_task_id(
                 "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
@@ -2665,6 +2669,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
                     r".*_primary_import_branch\.has_files_to_import",
                     r".*_primary_import_branch\.write_import_start",
+                    r".*primary_import_branch.raise_skipped_file_errors",
                     r".*_primary_import_branch\.read_and_verify_column_headers",
                     r".*_primary_import_branch\.raise_header_verification_errors",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",

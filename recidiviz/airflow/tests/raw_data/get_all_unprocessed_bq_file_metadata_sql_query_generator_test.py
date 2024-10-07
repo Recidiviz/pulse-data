@@ -240,18 +240,18 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             ),
         ]
         self.mock_operator.xcom_pull.return_value = [i.serialize() for i in inputs]
-        mock_postgres = create_autospec(PostgresHook)
         with self.assertLogs("raw_data", level="INFO") as logs:
-            _ = self.generator.execute_postgres_query(
-                self.mock_operator, mock_postgres, self.mock_context
+            results = self.generator.execute_postgres_query(
+                self.mock_operator, self.mock_pg_hook, self.mock_context
             )
+
+        assert results == []
 
         assert len(logs.output) == 1
         self.assertRegex(
             logs.output[0],
             r"Found unrecognized file tags that we will skip marking in direct_ingest_raw_big_query_file_metadata: \[.*,.*\]",
         )
-        mock_postgres.get_records.assert_not_called()
 
     def test_none_pre_registered_no_chunks(self) -> None:
         paths = [
@@ -341,7 +341,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
         self.assertRegex(
             logs.output[0],
-            r"ERROR:raw_data:Skipping grouping for tagChunkedFile on 2024-01-25, found 2 but expected 3 paths: \[.*\]",
+            r"ERROR:raw_data:Skipping grouping for \[tagChunkedFile\] on \[2024-01-25\], found \[2\] but expected \[3\] paths: \[.*\]",
         )
 
         new_paths = [
@@ -361,7 +361,7 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
         self.assertRegex(
             logs.output[0],
-            r"ERROR:raw_data:Skipping grouping for tagChunkedFile on 2024-01-25, found 4 but expected 3 paths: \[.*\]",
+            r"ERROR:raw_data:Skipping grouping for \[tagChunkedFile\] on \[2024-01-25\], found \[4\] but expected \[3\] paths: \[.*\]",
         )
 
     def test_incorrect_chunk_count_subsequent_fail(self) -> None:
@@ -390,11 +390,11 @@ class TestGetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
         self.assertRegex(
             logs.output[0],
-            r"ERROR:raw_data:Skipping grouping for tagChunkedFile on 2024-01-25, found 2 but expected 3 paths: \[.*\]",
+            r"ERROR:raw_data:Skipping grouping for \[tagChunkedFile\] on \[2024-01-25\], found \[2\] but expected \[3\] paths: \[.*\]",
         )
         self.assertRegex(
             logs.output[1],
-            r"ERROR:raw_data:Skipping import for file_id \[2\], file_tag \[tagChunkedFile\]: path \[unprocessed_2024-01-25T16:35:33:617135_raw_tagChunkedFile-1\.csv\] was previously skipped",
+            r"ERROR:raw_data:Skipping import for file_id \[2\], file_tag \[tagChunkedFile\]: path \[.*\] was previously skipped",
         )
 
     def test_multiple_chunks(self) -> None:

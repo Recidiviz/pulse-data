@@ -290,6 +290,44 @@ class RawDataAppendImportError(RawDataImportError):
         )
 
 
+@attr.define
+class RawDataFilesSkippedError(BaseError):
+    """Represents any sort of error where there's bad / inconsistent state that prevents
+    us from importing a given file or set of files, but which doesn't actually have to
+    do with the contents of the files itself
+    """
+
+    file_paths: List[GcsfsFilePath] = attr.ib(
+        validator=attr_validators.is_list_of(GcsfsFilePath)
+    )
+    skipped_message: str = attr.ib(validator=attr_validators.is_str)
+    file_tag: str = attr.ib(validator=attr_validators.is_str)
+    update_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+
+    def serialize(self) -> str:
+        result_dict = {
+            "file_paths": [path.uri() for path in self.file_paths],
+            "skipped_message": self.skipped_message,
+            "file_tag": self.file_tag,
+            "update_datetime": self.update_datetime.isoformat(),
+        }
+        return json.dumps(result_dict)
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RawDataFilesSkippedError":
+        data = json.loads(json_str)
+        return RawDataFilesSkippedError(
+            file_paths=[
+                GcsfsFilePath.from_absolute_path(path) for path in data["file_paths"]
+            ],
+            skipped_message=data["skipped_message"],
+            file_tag=data["file_tag"],
+            update_datetime=datetime.datetime.fromisoformat(data["update_datetime"]),
+        )
+
+
 # --------------------------------------------------------------------------------------
 # ^                        raw data import error types                                 ^
 # --------------------------------------------------------------------------------------

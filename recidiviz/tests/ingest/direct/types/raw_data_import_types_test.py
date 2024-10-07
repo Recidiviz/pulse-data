@@ -56,6 +56,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawBigQueryFileMetadata,
     RawBigQueryFileProcessedTime,
     RawDataAppendImportError,
+    RawDataFilesSkippedError,
     RawDataResourceLock,
     RawFileBigQueryLoadConfig,
     RawFileImport,
@@ -221,6 +222,18 @@ class TestSerialization(unittest.TestCase):
         )
 
         self._validate_serialization(error, RawDataAppendImportError)
+
+    def test_raw_data_skipped(self) -> None:
+        error = RawDataFilesSkippedError(
+            file_paths=[
+                GcsfsFilePath.from_absolute_path("path/to/skipped/file_one.csv"),
+                GcsfsFilePath.from_absolute_path("path/to/skipped/file_two.csv"),
+            ],
+            skipped_message="skipped msg",
+            file_tag="tag1",
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+        )
+        self._validate_serialization(error, RawDataFilesSkippedError)
 
     def test_resource_lock(self) -> None:
         original = RawDataResourceLock(
