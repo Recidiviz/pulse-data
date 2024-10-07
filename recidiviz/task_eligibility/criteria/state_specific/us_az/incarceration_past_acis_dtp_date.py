@@ -45,8 +45,8 @@ _QUERY_TEMPLATE = f"""
 WITH
 {task_deadline_critical_date_update_datetimes_cte(
     task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
-    critical_date_column='due_date',
-    additional_where_clause="AND task_subtype = 'DRUG TRANSITION RELEASE' AND state_code = 'US_AZ'")
+    critical_date_column='eligible_date',
+    additional_where_clause="AND task_subtype = 'DRUG TRANSITION RELEASE' AND state_code = 'US_AZ' AND eligible_date IS NOT NULL AND eligible_date > '1900-01-01'")
 },
 {critical_date_spans_cte()},
 {critical_date_has_passed_spans_cte()}
