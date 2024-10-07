@@ -73,13 +73,14 @@ class DirectIngestTempRawTablePreMigrationTransformationQueryBuilder:
         raw_table_config = self._region_raw_file_config.raw_file_configs[file_tag]
 
         trimmed_cols = ", ".join(
-            rf"CASE WHEN REGEXP_CONTAINS({col.name}, r'^[\s\x00-\x1F\x7F]*$') "
-            f"THEN NULL ELSE TRIM({col.name}) END as {col.name}"
-            for col in raw_table_config.columns
+            rf"CASE WHEN REGEXP_CONTAINS({col_name}, r'^[\s\x00-\x1F\x7F]*$') "
+            f"THEN NULL ELSE TRIM({col_name}) END as {col_name}"
+            for col_name in raw_table_config.column_names_at_datetime(update_datetime)
         )
 
         filter_all_nulls_where = "\n  OR ".join(
-            f"{col.name} IS NOT NULL" for col in raw_table_config.columns
+            f"{col_name} IS NOT NULL"
+            for col_name in raw_table_config.column_names_at_datetime(update_datetime)
         )
 
         # TODO(#30325) we are only including microseconds if they are non-zero to match legacy ingest
