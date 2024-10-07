@@ -52,6 +52,7 @@ from recidiviz.airflow.dags.raw_data.clean_up_tasks import (
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
     coalesce_import_ready_files,
     coalesce_results_and_errors,
+    raise_skipped_file_errors,
     split_by_pre_import_normalization_type,
 )
 from recidiviz.airflow.dags.raw_data.filtering_tasks import (
@@ -231,7 +232,16 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             get_all_unprocessed_bq_file_metadata.output
         )
 
-        get_all_unprocessed_bq_file_metadata >> should_run_import
+        skipped_file_errors = raise_skipped_file_errors(
+            serialized_skipped_file_errors=get_all_unprocessed_bq_file_metadata.output[
+                SKIPPED_FILE_ERRORS
+            ]
+        )
+
+        get_all_unprocessed_bq_file_metadata >> [
+            should_run_import,
+            skipped_file_errors,
+        ]
 
         write_import_start = CloudSqlQueryOperator(
             task_id="write_import_start",
@@ -427,6 +437,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         [
             big_query_load,
             header_errors,
+            skipped_file_errors,
         ] >> cleanup_and_storage
 
         ensure_release_resource_locks_release_if_acquired = EmptyOperator(

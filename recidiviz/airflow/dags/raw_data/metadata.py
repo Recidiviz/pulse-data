@@ -50,6 +50,7 @@ FILE_IDS_TO_HEADERS: str = "file_ids_to_headers"
 HEADER_VERIFICATION_ERRORS: str = "header_verification_errors"
 CHUNKING_RESULTS: str = "chunking_results"
 CHUNKING_ERRORS: str = "chunking_errors"
+BQ_METADATA: str = "bq_metadata"
 
 
 def get_resource_lock_ttl(raw_data_instance: DirectIngestInstance) -> int:

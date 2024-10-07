@@ -29,6 +29,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
+from recidiviz.airflow.dags.raw_data.metadata import SKIPPED_FILE_ERRORS
 from recidiviz.airflow.dags.raw_data.utils import (
     get_direct_ingest_region_raw_config,
     logger,
@@ -40,6 +41,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawBigQueryFileMetadata,
+    RawDataFilesSkippedError,
     RawGCSFileMetadata,
 )
 from recidiviz.utils.string import StrictStringFormatter
@@ -154,6 +156,12 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
 
         if not unprocessed_gcs_file_metadata:
             logger.info("Found no gcs file paths to process; skipping bq registration")
+            # TODO(#33971) add multiple outputs here to automatically do this
+            operator.xcom_push(
+                context=context,
+                key=SKIPPED_FILE_ERRORS,
+                value=[],
+            )
             return []
 
         # --- splits between new and already seen metadata -----------------------------
@@ -186,25 +194,34 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             *already_bq_registered_bq_metadata,
         ]
         # TODO(#33879) add alerting infra to notify folks of skipped files
-        all_skipped_gcs_metadata = [
+        skipped_file_errors = [
             *skipped_unregistered_gcs_metadata,
             *skipped_registered_gcs_metadata,
         ]
-
-        if not all_registered_bq_metadata:
-            return []
 
         file_tag_max_update_datetime = self._get_file_tag_max_processed_update_datetime(
             postgres_hook
         )
 
-        all_import_ready_bq_metadata = self._filter_registered_bq_metadata_by_skipped_files_and_max_update_datetime(
+        (
+            all_import_ready_bq_metadata,
+            all_skipped_file_errors,
+        ) = self._filter_registered_bq_metadata_by_skipped_files_and_max_update_datetime(
             all_registered_bq_metadata,
-            all_skipped_gcs_metadata,
+            skipped_file_errors,
             file_tag_max_update_datetime,
         )
 
         # --- build xcom output ----------------–––-------------------------------------
+
+        # TODO(#33971) add multiple outputs here to automatically do this
+        operator.xcom_push(
+            context=context,
+            key=SKIPPED_FILE_ERRORS,
+            value=[
+                skipped_error.serialize() for skipped_error in all_skipped_file_errors
+            ],
+        )
 
         return [metadata.serialize() for metadata in all_import_ready_bq_metadata]
 
@@ -212,7 +229,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         self,
         postgres_hook: PostgresHook,
         bq_unregistered_gcs_metadata: List[RawGCSFileMetadata],
-    ) -> Tuple[List[RawBigQueryFileMetadata], List[RawGCSFileMetadata]]:
+    ) -> Tuple[List[RawBigQueryFileMetadata], List[RawDataFilesSkippedError]]:
         """Uses |bq_unregistered_gcs_metadata| to build a list of RawBigQueryFileMetadata
         objects, not registering unrecognized file tags. Returns both our newly
         registered RawBigQueryFileMetadata and any RawGCSFileMetadata we didn't register
@@ -273,7 +290,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
     def _group_unregistered_conceptual_files(
         self,
         bq_unregistered_recognized_gcs_metadata: List[RawGCSFileMetadata],
-    ) -> Tuple[List[RawBigQueryFileMetadata], List[RawGCSFileMetadata]]:
+    ) -> Tuple[List[RawBigQueryFileMetadata], List[RawDataFilesSkippedError]]:
         """Uses |bq_unregistered_recognized_gcs_metadata| to build 'conceptual'
         RawBigQueryFileMetadata by grouping files whose raw file config indicates
         that they are a 'chunked file' by upload_date. Returns both our newly grouped
@@ -282,7 +299,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         """
         # --- group chunked files by (file_tag, upload_date) ---------------------------
 
-        skipped_files: List[RawGCSFileMetadata] = []
+        skipped_files: List[RawDataFilesSkippedError] = []
         conceptual_files: List[RawBigQueryFileMetadata] = []
         chunked_files: Dict[
             str, Dict[datetime.date, List[RawGCSFileMetadata]]
@@ -342,15 +359,22 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
                             )
                         )
                     else:
-                        logger.error(
-                            "Skipping grouping for %s on %s, found %s but expected %s paths: %s",
-                            file_tag,
-                            upload_date.isoformat(),
-                            len(gcs_files),
-                            expected_chunk_count,
-                            [f.path.file_name for f in gcs_files],
+                        skipped_error = RawDataFilesSkippedError(
+                            file_paths=[gcs_file.path for gcs_file in gcs_files],
+                            file_tag=file_tag,
+                            update_datetime=max(
+                                gcs_file.parts.utc_upload_datetime
+                                for gcs_file in gcs_files
+                            ),
+                            skipped_message=(
+                                f"Skipping grouping for [{file_tag}] on [{upload_date.isoformat()}], "
+                                f"found [{len(gcs_files)}] but expected [{expected_chunk_count}] "
+                                f"paths: {[f.path.file_name for f in gcs_files]}"
+                            ),
                         )
-                        skipped_files.extend(gcs_files)
+
+                        logger.error(skipped_error.skipped_message)
+                        skipped_files.append(skipped_error)
 
         return conceptual_files, skipped_files
 
@@ -358,7 +382,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         self,
         postgres_hook: PostgresHook,
         already_bq_registered_gcs_metadata: List[RawGCSFileMetadata],
-    ) -> Tuple[List[RawBigQueryFileMetadata], List[RawGCSFileMetadata]]:
+    ) -> Tuple[List[RawBigQueryFileMetadata], List[RawDataFilesSkippedError]]:
         """Reconciles |already_bq_registered_gcs_metadata| against with the state of the
         operations database.
 
@@ -402,7 +426,7 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
         }
 
         valid_unprocessed_bq_metadata: List[RawBigQueryFileMetadata] = []
-        skipped_files: List[RawGCSFileMetadata] = []
+        skipped_files: List[RawDataFilesSkippedError] = []
 
         for file_id, gcs_files in gcs_files_by_file_id.items():
             existing_gcs_bq_metadata = existing_gcs_and_bq_rows_by_file_id[file_id]
@@ -413,17 +437,22 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
             }
 
             if paths_only_in_one := paths_in_bucket ^ paths_in_operations_db:
-                logger.error(
-                    "Skipping import for file_id [%s], file_tag [%s]: mismatched grouped "
-                    "paths [%s] \n\t - paths in bucket: [%s] \n\t - paths in operations "
-                    "db: [%s]",
-                    file_id,
-                    gcs_files[0].parts.file_tag,
-                    paths_only_in_one,
-                    paths_in_bucket,
-                    paths_in_operations_db,
+
+                skipped_error = RawDataFilesSkippedError(
+                    file_paths=[gcs_file.path for gcs_file in gcs_files],
+                    file_tag=gcs_files[0].parts.file_tag,
+                    update_datetime=max(
+                        gcs_file.parts.utc_upload_datetime for gcs_file in gcs_files
+                    ),
+                    skipped_message=(
+                        f"Skipping import for file_id [{file_id}], file_tag [{gcs_files[0].parts.file_tag}]: "
+                        f"mismatched grouped paths [{paths_only_in_one}] \n\t - paths in bucket: "
+                        f"[{paths_in_bucket}] \n\t - paths in operations db: [{paths_in_operations_db}]"
+                    ),
                 )
-                skipped_files.extend(gcs_files)
+
+                logger.error(skipped_error.skipped_message)
+                skipped_files.append(skipped_error)
                 continue
 
             if already_processed := [
@@ -431,14 +460,15 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
                 for metadata in existing_gcs_bq_metadata
                 if metadata.file_processed_time is not None
             ]:
+                # not adding to skipped files here, since we already have processed these
+                # files, they are not important in determining if they are blocking
+                # other imports. we assume this means that we failed to import the
+                # last time
                 logger.error(
                     "Skipping import for file_id [%s] as [%s] is already been processed",
                     file_id,
                     already_processed,
                 )
-                # not adding to skipped files here, since we already have processed these
-                # files, they are not important in determining if they are blocking
-                # other imports
                 continue
 
             valid_unprocessed_bq_metadata.append(
@@ -450,42 +480,47 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
     @staticmethod
     def _filter_registered_bq_metadata_by_skipped_files_and_max_update_datetime(
         all_registered_bq_metadata: List[RawBigQueryFileMetadata],
-        all_skipped_gcs_metadata: List[RawGCSFileMetadata],
+        previous_skipped_file_errors: List[RawDataFilesSkippedError],
         file_tag_max_update_datetime: Dict[str, FileTagMaxUpdateDatetime],
-    ) -> List[RawBigQueryFileMetadata]:
+    ) -> Tuple[List[RawBigQueryFileMetadata], List[RawDataFilesSkippedError]]:
         """Filters out registered bq metadata that have an gcs file that was skipped
         with the same file_tag and an update_datetime before it, and any files that
         have an update_datetime before their file_tag's max processed update_datetime.
         """
 
         file_tag_to_min_skipped_update_datetime = {
-            file_tag: min(group, key=lambda x: x.parts.utc_upload_datetime)
+            file_tag: min(group, key=lambda x: x.update_datetime)
             for file_tag, group in groupby(
-                sorted(all_skipped_gcs_metadata, key=lambda x: x.parts.file_tag),
-                lambda x: x.parts.file_tag,
+                sorted(previous_skipped_file_errors, key=lambda x: x.file_tag),
+                lambda x: x.file_tag,
             )
         }
 
         non_blocked_registered_bq_metadata: List[RawBigQueryFileMetadata] = []
+        all_skipped_errors: List[RawDataFilesSkippedError] = [
+            *previous_skipped_file_errors
+        ]
 
         for bq_metadata in all_registered_bq_metadata:
             if (
                 bq_metadata.file_tag in file_tag_to_min_skipped_update_datetime
                 and file_tag_to_min_skipped_update_datetime[
                     bq_metadata.file_tag
-                ].parts.utc_upload_datetime
+                ].update_datetime
                 < bq_metadata.update_datetime
             ):
-                # TODO(#33879) add alerting infra to notify folks of skipped files
-                logger.error(
-                    "Skipping import for file_id [%s], file_tag [%s]: path [%s] was "
-                    "previously skipped",
-                    bq_metadata.file_id,
-                    bq_metadata.file_tag,
-                    file_tag_to_min_skipped_update_datetime[
-                        bq_metadata.file_tag
-                    ].path.blob_name,
+                skipped_error = RawDataFilesSkippedError(
+                    file_paths=[gcs_file.path for gcs_file in bq_metadata.gcs_files],
+                    file_tag=bq_metadata.file_tag,
+                    update_datetime=bq_metadata.update_datetime,
+                    skipped_message=(
+                        f"Skipping import for file_id [{bq_metadata.file_id}], file_tag [{bq_metadata.file_tag}]: "
+                        f"path {[path.file_name for path in file_tag_to_min_skipped_update_datetime[bq_metadata.file_tag].file_paths]} was previously skipped"
+                    ),
                 )
+
+                logger.error(skipped_error.skipped_message)
+                all_skipped_errors.append(skipped_error)
                 continue
 
             if (
@@ -495,25 +530,29 @@ class GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
                     bq_metadata.file_tag
                 ].max_processed_update_datetime
             ):
-                # TODO(#33879) add alerting infra to notify folks of skipped files
-                logger.error(
-                    "Skipping import for file_id [%s], file_tag [%s]: update_datetime "
-                    "[%s] is before max processed update_datetime [%s]. In order to "
-                    "import this file, you must invalidate and re-import data from [%s] "
-                    "to present",
-                    bq_metadata.file_id,
-                    bq_metadata.file_tag,
-                    bq_metadata.update_datetime.isoformat(),
-                    file_tag_max_update_datetime[
-                        bq_metadata.file_tag
-                    ].max_processed_update_datetime.isoformat(),
-                    bq_metadata.update_datetime.isoformat(),
+                max_update_datetime_str = file_tag_max_update_datetime[
+                    bq_metadata.file_tag
+                ].max_processed_update_datetime.isoformat()
+                skipped_error = RawDataFilesSkippedError(
+                    file_paths=[gcs_file.path for gcs_file in bq_metadata.gcs_files],
+                    file_tag=bq_metadata.file_tag,
+                    update_datetime=bq_metadata.update_datetime,
+                    skipped_message=(
+                        f"Skipping import for file_id [{bq_metadata.file_id}], file_tag "
+                        f"[{bq_metadata.file_tag}]: update_datetime [{bq_metadata.update_datetime.isoformat()}] "
+                        f"is before max processed update_datetime [{max_update_datetime_str}]. "
+                        f"In order to import this file, you must invalidate and re-import "
+                        f"data from [{bq_metadata.update_datetime.isoformat()}] to present"
+                    ),
                 )
+
+                logger.error(skipped_error.skipped_message)
+                all_skipped_errors.append(skipped_error)
                 continue
 
             non_blocked_registered_bq_metadata.append(bq_metadata)
 
-        return non_blocked_registered_bq_metadata
+        return non_blocked_registered_bq_metadata, all_skipped_errors
 
     def _build_insert_row_for_conceptual_file(
         self, metadata: RawBigQueryFileMetadata

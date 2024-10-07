@@ -344,11 +344,11 @@ class DirectIngestRawDataResourceLock(OperationsBase):
     lock_acquisition_time = Column(DateTime(timezone=True))
 
     # The TTL for this lock in seconds. consider switching this to pg Interval which
-    # sqlalchemy converst to datetime.timedelta object if bq federated queries support
+    # sqlalchemy converts to datetime.timedelta object if bq federated queries support
     # the pg interval type in the future
     lock_ttl_seconds = Column(Integer)
 
-    # Descirption for why the lock was acquired
+    # Description for why the lock was acquired
     lock_description = Column(String(255), nullable=False)
 
     __table_args__ = (

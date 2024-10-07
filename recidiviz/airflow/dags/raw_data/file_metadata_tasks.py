@@ -19,6 +19,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from airflow.decorators import task
+from airflow.exceptions import AirflowException
 from airflow.utils.trigger_rule import TriggerRule
 from more_itertools import distribute
 
@@ -56,6 +57,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
     RawBigQueryFileMetadata,
     RawDataAppendImportError,
+    RawDataFilesSkippedError,
     RawFileBigQueryLoadConfig,
     RawFileImport,
     RawFileLoadAndPrepError,
@@ -557,3 +559,15 @@ def _deserialize_coalesce_results_and_errors_inputs(
             append_step_output.flatten_errors(),
         ),
     )
+
+
+@task
+def raise_skipped_file_errors(serialized_skipped_file_errors: List[str]) -> None:
+    skipped_file_errors = [
+        RawDataFilesSkippedError.deserialize(serialized_skipped_file_error)
+        for serialized_skipped_file_error in serialized_skipped_file_errors
+    ]
+
+    if skipped_file_errors:
+        error_msg = "\n\n".join([str(error) for error in skipped_file_errors])
+        raise AirflowException(f"Error(s) occurred in file registration:\n{error_msg}")
