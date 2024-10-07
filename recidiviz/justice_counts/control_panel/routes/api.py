@@ -2189,6 +2189,15 @@ def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
         session=current_session,
         agency=agency,
     )
+    reporting_agency_ids = [
+        m.reporting_agency_id for m in metrics if m.reporting_agency_id is not None
+    ]
+
+    reporting_agencies = AgencyInterface.get_reporting_agencies_by_id(
+        session=current_session, reporting_agency_ids=reporting_agency_ids
+    )
+
+    reporting_agency_id_to_agency = {r.id: r for r in reporting_agencies}
 
     metrics_json = [
         metric.to_json(
@@ -2200,6 +2209,7 @@ def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
                 metric.key
             ),
             is_v2=is_v2,
+            reporting_agency_id_to_agency=reporting_agency_id_to_agency,
         )
         for metric in metrics
     ]
