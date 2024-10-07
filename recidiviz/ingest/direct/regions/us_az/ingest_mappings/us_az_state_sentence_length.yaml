@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - OFFENSE_ID
+  - PERSON_ID
+  - UPDT_DTM
+  - CommunitySupervisionBeginDate
+  - EarnedReleaseCreditDate
+  - SentenceExpirationDate
+  - TransitionToAbsoluteDischargeDate
+  - AbsoluteDischargeDate
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    sentences:
+      - StateSentence:
+          external_id: OFFENSE_ID
+          sentence_lengths:
+            - StateSentenceLength:
+                length_update_datetime: UPDT_DTM
+                # TR to ADD date is the equivalent of CSBD when a person is being released
+                # to probation instead of community supervision. We want to include
+                # whichever of these dates a person has in this field.
+                parole_eligibility_date_external:
+                  $conditional:
+                    - $if:
+                        $is_null: CommunitySupervisionBeginDate
+                      $then: TransitionToAbsoluteDischargeDate
+                    - $else: CommunitySupervisionBeginDate
+                # ADD is the equivalent of ERCD when a person is being released
+                # to probation instead of community supervision. We want to include
+                # whichever of these dates a person has in this field.
+                projected_completion_date_min_external:
+                  $conditional:
+                    - $if:
+                        $is_null: EarnedReleaseCreditDate
+                      $then: AbsoluteDischargeDate
+                    - $else: EarnedReleaseCreditDate
+                # If a person is not eligible for community supervision, then the latest
+                # they can be released from prison is their Sentence Expiration Date (SED). If they
+                # are eligible for community supervision, then the latest they can be released
+                # from prison is their Community Supervision End Date, which is 115% of the SED.
+                # For the purpose of sentence calculations, we never want to key off of CSED,
+                # so we consider SED to be the maximum completion date.
+                projected_completion_date_max_external: SentenceExpirationDate
