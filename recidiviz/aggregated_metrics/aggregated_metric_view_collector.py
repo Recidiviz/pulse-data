@@ -404,8 +404,6 @@ UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: Dict[
     MetricPopulationType.INCARCERATION: [
         MetricUnitOfAnalysisType.FACILITY,
         MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
-        MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
-        MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
         MetricUnitOfAnalysisType.STATE_CODE,
     ],
     MetricPopulationType.SUPERVISION: [
@@ -413,13 +411,12 @@ UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: Dict[
         MetricUnitOfAnalysisType.SUPERVISION_UNIT,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-        MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
-        MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
         MetricUnitOfAnalysisType.STATE_CODE,
     ],
     MetricPopulationType.JUSTICE_INVOLVED: [
         MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
-        MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
+        MetricUnitOfAnalysisType.LOCATION_DETAIL,
+        MetricUnitOfAnalysisType.LOCATION,
         MetricUnitOfAnalysisType.STATE_CODE,
         MetricUnitOfAnalysisType.FACILITY,
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
@@ -430,7 +427,8 @@ UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS: List[
     MetricUnitOfAnalysisType
 ] = [
     MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
-    MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
+    MetricUnitOfAnalysisType.LOCATION_DETAIL,
+    MetricUnitOfAnalysisType.LOCATION,
 ]
 
 

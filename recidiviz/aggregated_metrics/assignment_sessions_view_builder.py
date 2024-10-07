@@ -84,7 +84,11 @@ FROM
     ): "SELECT * FROM `{project_id}.sessions.person_caseload_location_sessions_materialized`",
     (
         MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
+        MetricUnitOfAnalysisType.LOCATION_DETAIL,
+    ): "SELECT * FROM `{project_id}.sessions.person_caseload_location_sessions_materialized`",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.LOCATION,
     ): "SELECT * FROM `{project_id}.sessions.person_caseload_location_sessions_materialized`",
     (
         MetricUnitOfObservationType.PERSON_ID,
@@ -169,17 +173,6 @@ FROM
     `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`""",
     (
         MetricUnitOfObservationType.WORKFLOWS_USER,
-        MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
-    ): """SELECT
-    state_code,
-    workflows_user_email_address AS email_address,
-    start_date,
-    end_date_exclusive,
-    location_id,
-FROM
-    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`""",
-    (
-        MetricUnitOfObservationType.WORKFLOWS_USER,
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
     ): """SELECT
         state_code,
@@ -206,6 +199,17 @@ FROM
     WHERE
         system_type = "INCARCERATION"
 """,
+    (
+        MetricUnitOfObservationType.WORKFLOWS_USER,
+        MetricUnitOfAnalysisType.LOCATION,
+    ): """SELECT
+    state_code,
+    workflows_user_email_address AS email_address,
+    start_date,
+    end_date_exclusive,
+    location_name,
+FROM
+    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`""",
 }
 
 
