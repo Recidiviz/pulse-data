@@ -54,6 +54,10 @@ PRIMARY_USER_ROLE_TYPES = sorted(
     set().union(*PRIMARY_USER_ROLE_TYPES_BY_SYSTEM_TYPE.values())
 )
 
+# Indicate states where product roster uses office names instead of district id's
+# as the location id
+STATES_WITH_OFFICE_NAME_LOCATION_DEFAULT = ["US_ND", "US_CA"]
+
 # Date after which we consider product roster archive to reflect validated
 # role and location information. We will backfill information starting at a user's
 # first signup date and ending on this date, for users present in the roster on this
@@ -137,25 +141,60 @@ aggregated_roster_sessions AS (
         end_date_field_name='end_date_exclusive'
     )}
 )
--- Truncate all registration sessions to start after the first signup/login event
+,
+registration_sessions AS (
+    -- Truncate all registration sessions to start after the first signup/login event
+    SELECT
+        a.state_code,
+        a.workflows_user_email_address,
+        GREATEST(a.start_date, b.workflows_signup_date) AS start_date,
+        a.end_date_exclusive,
+        a.registration_session_id,
+        a.system_type,
+        a.location_id,
+    FROM
+        aggregated_roster_sessions a
+    # Only include roster sessions that overlap with the period following first signup
+    INNER JOIN
+        `{{project_id}}.analyst_data.workflows_user_signups_materialized` b
+    ON
+        a.state_code = b.state_code
+        AND a.workflows_user_email_address = b.workflows_user_email_address
+        AND b.workflows_signup_date < {nonnull_end_date_clause("a.end_date_exclusive")}
+)
 SELECT
-    a.state_code,
-    a.workflows_user_email_address,
-    GREATEST(a.start_date, b.workflows_signup_date) AS start_date,
-    a.end_date_exclusive,
-    a.registration_session_id,
-    a.system_type,
-    a.location_id,
+    registration_sessions.*,
+    ANY_VALUE(
+        CASE system_type 
+        WHEN "SUPERVISION" THEN supervision_district_name 
+        WHEN "INCARCERATION" THEN facility_name END
+    ) AS location_name,
 FROM
-    aggregated_roster_sessions a
-# Only include roster sessions that overlap with the period following first signup
-INNER JOIN
-    `{{project_id}}.analyst_data.workflows_user_signups_materialized` b
+    registration_sessions
+LEFT JOIN
+    `{{project_id}}.sessions.session_location_names_materialized` AS sessions
 ON
-    a.state_code = b.state_code
-    AND a.workflows_user_email_address = b.workflows_user_email_address
-    AND b.workflows_signup_date < {nonnull_end_date_clause("a.end_date_exclusive")}
-
+    registration_sessions.state_code = sessions.state_code
+    AND (
+        -- Supervision locations joining on district
+        (
+            system_type = "SUPERVISION" 
+            AND location_id = supervision_district 
+            AND registration_sessions.state_code NOT IN ({list_to_query_string(STATES_WITH_OFFICE_NAME_LOCATION_DEFAULT, quoted=True)})
+        )
+        -- Supervision locations joining on office name
+        OR (
+            system_type = "SUPERVISION" 
+            AND location_id = supervision_office_name 
+            AND registration_sessions.state_code IN ({list_to_query_string(STATES_WITH_OFFICE_NAME_LOCATION_DEFAULT, quoted=True)})
+        )
+        -- Incarceration locations joining on facility
+        OR (
+            system_type = "INCARCERATION" 
+            AND location_id = facility
+        )
+    )
+GROUP BY 1, 2, 3, 4, 5, 6, 7
 """
 
 WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

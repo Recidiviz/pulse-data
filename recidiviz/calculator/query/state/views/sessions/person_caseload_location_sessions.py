@@ -46,12 +46,13 @@ day snapshot align with the location and caseload information in person_record.
 |	start_date	|	Start day of session	|
 |	end_date_exclusive	|	Day that session ends	|
 |	caseload_id	|	Caseload under which the person may be surfaced for a Workflows opportunity (see below for further details)	|
-|	location_id	|	Location to which the person is associated (see below for further details)	|
+|	location_detail_id	|	Location, at the level of available granularity, to which the person is associated (see below for further details)	|
+|	location_name	|	The name of the district or facility (i.e., the standardized "region" for a given system type) to which the person is associated	|
 
 The logic for deriving caseload and location differs by compartment:
-* Supervision: caseload_id = supervising_officer_external_id; location_id = supervision_district
-* Incarceration: caseload_id = facility; location_id = "<facility>, <housing_unit>"
-    * Some states (US_IX, US_ME, US_TN) don't use housing_unit in person_record.location, so for those states, we use location_id = facility 
+* Supervision: caseload_id = supervising_officer_external_id; location_detail_id = supervision_district
+* Incarceration: caseload_id = facility; location_detail_id = "<facility>, <housing_unit>"
+    * Some states (US_IX, US_ME, US_TN) don't use housing_unit in person_record.location, so for those states, we use location_detail_id = facility 
 """
 
 NO_HOUSING_UNIT_STATES = ["US_IX", "US_ME", "US_TN"]
@@ -70,7 +71,8 @@ WITH sub_sessions AS (
             WHEN compartment_level_1 LIKE 'SUPERVISION%' THEN supervising_officer_external_id
             WHEN compartment_level_1 LIKE 'INCARCERATION%' THEN facility
             END
-            AS caseload_id,
+        AS caseload_id,
+        -- location_detail_id is the most granular location that's surfaced in the Workflows tool
         CASE
             WHEN compartment_level_1 LIKE 'SUPERVISION%' THEN supervision_district_name
             WHEN compartment_level_1 LIKE 'INCARCERATION%' THEN
@@ -79,7 +81,13 @@ WITH sub_sessions AS (
                     ELSE ARRAY_TO_STRING([facility, housing_unit], ', ')
                 END
             END
-            AS location_id,
+        AS location_detail_id,
+        -- location_name is the highest granularity location (facility or district)
+        CASE
+            WHEN compartment_level_1 LIKE 'SUPERVISION%' THEN supervision_district_name
+            WHEN compartment_level_1 LIKE 'INCARCERATION%' THEN facility_name
+            END
+        AS location_name,
     FROM
         `{{project_id}}.sessions.compartment_sub_sessions_materialized`
     WHERE NOT (
@@ -100,6 +108,7 @@ WITH sub_sessions AS (
             end_date_exclusive,
             compartment_level_1,
             facility,
+            facility_name,
             housing_unit,
             NULL AS incarceration_staff_assignment_external_id,
         FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized`
@@ -115,6 +124,7 @@ WITH sub_sessions AS (
             end_date_exclusive,
             CAST(NULL AS STRING) AS compartment_level_1,
             CAST(NULL AS STRING) AS facility,
+            CAST(NULL AS STRING) AS facility_name,
             CAST(NULL AS STRING) AS housing_unit,
             incarceration_staff_assignment_external_id,
         FROM `{{project_id}}.sessions.incarceration_staff_assignment_sessions_preprocessed_materialized`
@@ -137,7 +147,8 @@ WITH sub_sessions AS (
                 WHEN state_code IN ('{{no_housing_unit_states}}') THEN facility
                 ELSE ARRAY_TO_STRING([facility, housing_unit], ', ')
             END
-        ) AS location_id
+        ) AS location_detail_id,
+        MAX(facility_name) AS location_name,
     FROM sub_sessions_with_attributes
     GROUP BY 1, 2, 3, 4
     -- this ensures that we only select spans that are incarceration periods according to compartment_sub_sessions
@@ -148,7 +159,7 @@ sessionized_cte AS
 (
 {aggregate_adjacent_spans(
     table_name='sub_sessions',
-    attribute=['compartment_level_1', 'caseload_id', 'location_id'],
+    attribute=['compartment_level_1', 'caseload_id', 'location_detail_id', 'location_name'],
     end_date_field_name='end_date_exclusive'
 )}
 )
@@ -159,7 +170,8 @@ SELECT
     end_date_exclusive,
     compartment_level_1,
     caseload_id,
-    location_id
+    location_detail_id,
+    location_name,
 FROM sessionized_cte
 """
 

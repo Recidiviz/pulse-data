@@ -40,8 +40,9 @@ class MetricUnitOfAnalysisType(Enum):
     SUPERVISION_OFFICE = "OFFICE"
     SUPERVISION_OFFICER = "OFFICER"
     SUPERVISION_UNIT = "UNIT"
-    WORKFLOWS_CASELOAD = "CASELOAD"
-    WORKFLOWS_LOCATION = "LOCATION"
+    WORKFLOWS_CASELOAD = "WORKFLOWS_CASELOAD"
+    LOCATION = "LOCATION"
+    LOCATION_DETAIL = "LOCATION_DETAIL"
     PERSON_ID = "PERSON"
 
     @property
@@ -144,8 +145,13 @@ METRIC_UNITS_OF_ANALYSIS = [
         static_attribute_columns=[],
     ),
     MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
-        primary_key_columns=["state_code", "location_id"],
+        type=MetricUnitOfAnalysisType.LOCATION_DETAIL,
+        primary_key_columns=["state_code", "location_detail_id"],
+        static_attribute_columns=[],
+    ),
+    MetricUnitOfAnalysis(
+        type=MetricUnitOfAnalysisType.LOCATION,
+        primary_key_columns=["state_code", "location_name"],
         static_attribute_columns=[],
     ),
     MetricUnitOfAnalysis(

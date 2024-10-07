@@ -954,7 +954,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_name_suffix="location",
             sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
-                "location_id",
+                "location_detail_id",
                 "location",
             ],
             validation_category=ValidationCategory.CONSISTENCY,

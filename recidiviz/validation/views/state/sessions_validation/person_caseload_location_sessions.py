@@ -39,7 +39,7 @@ PERSON_CASELOAD_LOCATION_SESSIONS_QUERY_TEMPLATE = """
         pcls.compartment_level_1,
         pcls.caseload_id,
         pr.officer_id,
-        pcls.location_id,
+        pcls.location_detail_id,
         pr.location
     FROM `{project_id}.sessions.person_caseload_location_sessions_materialized` pcls
     INNER JOIN `{project_id}.normalized_state.state_person_external_id` spei

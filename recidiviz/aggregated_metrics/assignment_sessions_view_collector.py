@@ -56,8 +56,6 @@ def _relevant_units_of_analysis_for_population_type(
             return [
                 MetricUnitOfAnalysisType.FACILITY,
                 MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
-                MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
-                MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
                 MetricUnitOfAnalysisType.STATE_CODE,
             ]
         case MetricPopulationType.SUPERVISION:
@@ -67,14 +65,13 @@ def _relevant_units_of_analysis_for_population_type(
                 MetricUnitOfAnalysisType.SUPERVISION_UNIT,
                 MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
                 MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-                MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
-                MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
                 MetricUnitOfAnalysisType.STATE_CODE,
             ]
         case MetricPopulationType.JUSTICE_INVOLVED:
             return [
                 MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
-                MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
+                MetricUnitOfAnalysisType.LOCATION_DETAIL,
+                MetricUnitOfAnalysisType.LOCATION,
                 MetricUnitOfAnalysisType.STATE_CODE,
                 MetricUnitOfAnalysisType.FACILITY,
                 MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
