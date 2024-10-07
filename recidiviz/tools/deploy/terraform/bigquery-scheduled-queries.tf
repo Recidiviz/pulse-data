@@ -69,27 +69,6 @@ module "manually_updated_source_tables" {
   description = "This dataset includes source tables that are updated manually at some cadence, e.g. via a script or a manual BQ query in the UI to insert rows. Descriptions for tables added to this dataset should include information about how/when the table is updated."
 }
 
-#TODO(#33694) - Remove this module once the new experiments_metadata dataset is fully operational
-# `experiment_assignments` is a log of which units are assigned to which experiments.
-# The source data is located in a Google Sheet.
-resource "google_bigquery_data_transfer_config" "experiment_assignments" {
-  display_name           = "experiment_assignments"
-  location               = "US"
-  data_source_id         = "scheduled_query"
-  schedule               = "every day 08:00" # In UTC
-  service_account_name   = google_service_account.bigquery_scheduled_queries.email
-  destination_dataset_id = module.static_reference_tables.dataset_id
-  params = {
-    destination_table_name_template = "experiment_assignments_materialized"
-    write_disposition               = "WRITE_TRUNCATE"
-    query                           = <<-EOT
-SELECT * 
-FROM `${var.project_id}.static_reference_tables.experiment_assignments`
-WHERE state_code IS NOT NULL
-EOT
-  }
-}
-
 # `workflows_launch_metadata` contains information about each fully launched Workflows opportunity in our states.
 # The source data is located in a Google Sheet.
 resource "google_bigquery_data_transfer_config" "workflows_launch_metadata" {
