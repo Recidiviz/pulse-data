@@ -133,6 +133,9 @@ class FilterHeaderResultsTest(TestCase):
             "test_bucket/unprocessed_2021-01-01T00:00:00:000000_raw_tagBasicData.csv"
         ),
         GcsfsFilePath.from_absolute_path(
+            "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagBasicData.csv"
+        ),
+        GcsfsFilePath.from_absolute_path(
             "test_bucket/unprocessed_2021-01-03T00:00:00:000000_raw_tagBasicData.csv"
         ),
         GcsfsFilePath.from_absolute_path(
@@ -143,6 +146,7 @@ class FilterHeaderResultsTest(TestCase):
         1: ["ID", "Name", "Age"],
         2: ["ID", "Name", "Age"],
         3: ["ID", "Name", "Age"],
+        4: ["ID", "Name", "Age"],
     }
     bq_metadata = [
         RawBigQueryFileMetadata(
@@ -157,15 +161,23 @@ class FilterHeaderResultsTest(TestCase):
             file_id=2,
             file_tag="tagBasicData",
             gcs_files=[
-                RawGCSFileMetadata(gcs_file_id=2, file_id=2, path=file_paths[1])
+                RawGCSFileMetadata(gcs_file_id=1, file_id=1, path=file_paths[1])
+            ],
+            update_datetime=datetime.datetime(2021, 1, 2, 0, 0, 0, tzinfo=datetime.UTC),
+        ),
+        RawBigQueryFileMetadata(
+            file_id=3,
+            file_tag="tagBasicData",
+            gcs_files=[
+                RawGCSFileMetadata(gcs_file_id=2, file_id=2, path=file_paths[2])
             ],
             update_datetime=datetime.datetime(2021, 1, 3, 1, 1, 1, tzinfo=datetime.UTC),
         ),
         RawBigQueryFileMetadata(
-            file_id=3,
+            file_id=4,
             file_tag="tagBasicerData",
             gcs_files=[
-                RawGCSFileMetadata(gcs_file_id=3, file_id=3, path=file_paths[2])
+                RawGCSFileMetadata(gcs_file_id=3, file_id=3, path=file_paths[3])
             ],
             update_datetime=datetime.datetime(2021, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
         ),
@@ -192,17 +204,22 @@ class FilterHeaderResultsTest(TestCase):
                 error_msg="Oops!",
             )
         ]
+        file_ids_to_headers = {
+            1: ["ID", "Name", "Age"],
+            3: ["ID", "Name", "Age"],
+            4: ["ID", "Name", "Age"],
+        }
 
-        results, errors = filter_header_results_by_processing_errors(
-            self.bq_metadata, self.file_ids_to_headers, blocking_errors
+        results, skipped_errors = filter_header_results_by_processing_errors(
+            self.bq_metadata, file_ids_to_headers, blocking_errors
         )
 
         assert results == {
             1: ["ID", "Name", "Age"],
-            3: ["ID", "Name", "Age"],
+            4: ["ID", "Name", "Age"],
         }
 
-        assert len(errors) == 1
-        assert errors[0].original_file_path == GcsfsFilePath.from_absolute_path(
+        assert len(skipped_errors) == 1
+        assert skipped_errors[0].original_file_path == GcsfsFilePath.from_absolute_path(
             "test_bucket/unprocessed_2021-01-03T00:00:00:000000_raw_tagBasicData.csv"
         )

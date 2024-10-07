@@ -124,6 +124,12 @@ def filter_header_results_by_processing_errors(
         if (
             metadata.file_tag in blocking_errors_by_file_tag
             and blocking_errors_by_file_tag[metadata.file_tag].parts.utc_upload_datetime
+            == metadata.update_datetime
+        ):
+            continue
+        if (
+            metadata.file_tag in blocking_errors_by_file_tag
+            and blocking_errors_by_file_tag[metadata.file_tag].parts.utc_upload_datetime
             < metadata.update_datetime
         ):
             blocking_error = blocking_errors_by_file_tag[metadata.file_tag]
