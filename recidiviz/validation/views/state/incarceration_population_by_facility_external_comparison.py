@@ -37,11 +37,11 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_DESCRIPTION = """ Compa
 INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
     WITH external_validation_dates AS (
         -- Only compare states and months for which we have external validation data
-        SELECT DISTINCT region_code, date_of_stay FROM
+        SELECT DISTINCT state_code, date_of_stay FROM
         `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility_materialized`
     ), internal_incarceration_population AS (
         SELECT
-            state_code as region_code, date_of_stay,
+            state_code, date_of_stay,
             {state_specific_dataflow_facility_name_transformation},
             COUNT(DISTINCT(person_id)) as internal_population_count
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
@@ -52,11 +52,11 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
           external_validation_dates      
         LEFT JOIN
           internal_incarceration_population        
-        USING(region_code, date_of_stay)
+        USING(state_code, date_of_stay)
     ),
     comparison AS (
         SELECT
-          region_code,
+          state_code,
           date_of_stay,
           facility,
           IFNULL(population_count, 0) as external_population_count,
@@ -65,14 +65,14 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
           `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility_materialized`
         FULL OUTER JOIN
           relevant_internal_incarceration_population
-        USING (region_code, date_of_stay, facility)
+        USING (state_code, date_of_stay, facility)
     )
-    SELECT *
+    SELECT *, state_code AS region_code
     FROM comparison
     -- We filter out populations where the facility has fewer than 10 because an off by one error can cause a huge error
     -- percentage.
     WHERE external_population_count >= 10
-    ORDER BY region_code, date_of_stay, facility
+    ORDER BY state_code, date_of_stay, facility
 """
 
 INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(

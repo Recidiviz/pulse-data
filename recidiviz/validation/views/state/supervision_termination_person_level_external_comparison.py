@@ -37,23 +37,23 @@ SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 WITH external_data AS (
   -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to
   -- generate data to insert into the `supervision_termination_person_level` table.
-  SELECT region_code, person_external_id, termination_date
+  SELECT state_code, person_external_id, termination_date
   FROM `{project_id}.{external_accuracy_dataset}.supervision_termination_person_level_materialized`
 ), external_data_with_ids AS (
   SELECT
-    region_code,
+    external_data.state_code,
     termination_date,
     external_data.person_external_id,
     COALESCE(CAST(person_id AS STRING), 'UNKNOWN_PERSON') as person_id 
   FROM external_data
   LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` all_state_person_ids
-  ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
+  ON external_data.state_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
   -- Limit to supervision IDs in states that have multiple
-  AND (region_code != 'US_ND' OR id_type = 'US_ND_SID')
-  AND (region_code != 'US_PA' OR id_type = 'US_PA_PBPP')
+  AND (external_data.state_code != 'US_ND' OR id_type = 'US_ND_SID')
+  AND (external_data.state_code != 'US_PA' OR id_type = 'US_PA_PBPP')
 ), internal_data AS (
   SELECT
-    state_code as region_code,
+    state_code,
     termination_date,
     person_external_id,
     CAST(person_id AS STRING) AS person_id
@@ -66,14 +66,15 @@ WITH external_data AS (
 ), internal_metrics_for_valid_regions_and_dates AS (
   SELECT * FROM
   -- Only compare regions and months for which we have external validation data
-  (SELECT DISTINCT region_code, termination_date FROM external_data)
+  (SELECT DISTINCT state_code, termination_date FROM external_data)
   LEFT JOIN
     internal_data
-  USING (region_code, termination_date)
+  USING (state_code, termination_date)
 )
 
 SELECT
-  region_code,
+  state_code,
+  state_code AS region_code,
   termination_date,
   external_data.person_id AS external_person_id,
   internal_data.person_id AS internal_person_id,
@@ -83,7 +84,7 @@ FROM
   external_data_with_ids external_data
 FULL OUTER JOIN
   internal_metrics_for_valid_regions_and_dates internal_data
-USING(region_code, termination_date, person_id)
+USING(state_code, termination_date, person_id)
 """
 
 SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(

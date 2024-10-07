@@ -59,6 +59,7 @@ FLAG_NEW_OFFENSE_CODES_QUERY_TEMPLATE = """
   )
   SELECT
     'US_MI' AS region_code,
+    'US_MI' AS state_code,
     cc.statute AS new_code,
     COUNT(*) AS num_rows_with_new_code
   FROM 

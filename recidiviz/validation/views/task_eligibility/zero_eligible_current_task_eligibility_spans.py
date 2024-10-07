@@ -36,13 +36,14 @@ Identifies when no one is currently eligible for a given opportunity
 ZERO_ELIGIBLE_CURRENT_TASK_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
 WITH zero_current_spans AS(
 SELECT
+    state_code,
     state_code AS region_code, 
     task_name,
     COUNTIF(is_eligible) AS total_eligible
 FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized`
 WHERE CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')}
     AND state_code != 'US_ID'
-GROUP BY 1,2
+GROUP BY 1,2,3
 )
 SELECT
     *

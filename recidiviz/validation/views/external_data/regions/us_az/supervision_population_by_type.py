@@ -25,7 +25,7 @@ from recidiviz.validation.views import dataset_config
 
 VIEW_QUERY_TEMPLATE = """
 SELECT DISTINCT 
-        'US_AZ' AS region_code, 
+        'US_AZ' AS state_code, 
         CAST(date_of_supervision AS DATE) AS date_of_supervision, 
         'PAROLE' AS supervision_type,
         SUM(CAST(population_count AS INT64)) OVER (PARTITION BY date_of_supervision) AS population_count

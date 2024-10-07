@@ -36,7 +36,7 @@ WITH unnested_records AS (
 )
 
 SELECT
-  state_code AS region_code, opportunity_type
+  state_code, state_code AS region_code, opportunity_type
 FROM `{project_id}.{reference_views_dataset}.workflows_opportunity_configs_materialized`
 LEFT JOIN unnested_records USING (state_code, opportunity_type)
 WHERE unnested_records.person_external_id IS NULL

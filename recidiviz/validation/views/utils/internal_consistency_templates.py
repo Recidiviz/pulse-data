@@ -185,10 +185,7 @@ def internal_consistency_query(
     breakdown_table_join_clauses_str = "\n".join(breakdown_table_join_clauses)
 
     partition_columns_str_renamed_state_code = ", ".join(
-        [
-            col if col != "state_code" else "state_code AS region_code"
-            for col in partition_columns
-        ]
+        partition_columns + ["state_code AS region_code"]
     )
 
     return StrictStringFormatter().format(
@@ -260,6 +257,7 @@ def sums_and_totals_consistency_query(
     )
     
     SELECT
+      state_code,
       state_code AS region_code,
       {dimension_cols_without_state_code},
       {totals_columns},

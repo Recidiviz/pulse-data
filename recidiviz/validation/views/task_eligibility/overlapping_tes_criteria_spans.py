@@ -36,6 +36,7 @@ for a person comes before the previous criteria span end date.
 OVERLAPPING_TES_CRITERIA_SPANS_QUERY_TEMPLATE = """
 SELECT
   criteria_name,
+  state_code,
   state_code AS region_code,
   person_id,
   start_date,

@@ -28,7 +28,7 @@ def month_specific_table_query_template(
     """query template for tables with mov_date_std col"""
     return f"""
 SELECT
-    'US_PA' as region_code,
+    'US_PA' AS state_code,
     control_number as person_external_id,
     'US_PA_CONT' as external_id_type,
     PARSE_DATE('%m/%d/%Y', {date_col_name}) as release_date

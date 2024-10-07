@@ -25,7 +25,7 @@ from recidiviz.validation.views import dataset_config
 
 VIEW_QUERY_TEMPLATE = """
 SELECT
-    'US_AZ' AS region_code,
+    'US_AZ' AS state_code,
     CAST(COUNT_DATE AS DATE) AS date_of_stay,
     UPPER(CUSTODY_LEVEL) AS custody_level,
     CAST(population_count AS INT64) AS population_count,

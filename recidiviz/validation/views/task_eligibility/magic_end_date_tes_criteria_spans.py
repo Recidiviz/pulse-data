@@ -35,6 +35,7 @@ All magic end date values should be converted back to NULL before the end of the
 
 MAGIC_END_DATE_TES_CRITERIA_SPANS_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   criteria_name,
   person_id,

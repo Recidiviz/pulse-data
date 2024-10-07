@@ -23,6 +23,7 @@ from recidiviz.validation.views import dataset_config
 
 VIEW_QUERY_TEMPLATE = """
 SELECT
+    region_code AS state_code,
     region_code,
     compartment,
     year,

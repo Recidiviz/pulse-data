@@ -33,11 +33,11 @@ external_data AS (
   -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to generate
   -- data to insert into the `incarceration_population_person_level` table.
   SELECT
-    region_code,
+    state_code,
     person_external_id,
     external_id_type,
     date_of_stay,
-    CASE region_code
+    CASE state_code
       WHEN 'US_PA' THEN UPPER(LEFT(facility, 3))
       ELSE facility
     END AS facility
@@ -45,39 +45,45 @@ external_data AS (
 ), external_data_with_ids AS (
     -- Find the internal person_id for the people in the external data
     SELECT
-      region_code,
+      external_data.state_code,
       date_of_stay,
       facility,
       external_data.person_external_id,
       COALESCE(CAST(person_id AS STRING), 'UNKNOWN_PERSON') AS person_id
     FROM external_data
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` all_state_person_ids
-    ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
+    ON external_data.state_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
     -- Limit to the correct ID type in states that have multiple
     AND external_data.external_id_type = all_state_person_ids.id_type
 ),
 dates_per_region AS (
     -- Only compare regions and months for which we have external validation data
-    SELECT DISTINCT region_code, date_of_stay FROM external_data_with_ids {external_data_required_fields_clause}
+    SELECT DISTINCT state_code, date_of_stay FROM external_data_with_ids {external_data_required_fields_clause}
 ),
 sanitized_internal_metrics AS (
-  SELECT
-      state_code AS region_code, 
+  SELECT 
+    * EXCEPT (facility),
+    {state_specific_dataflow_facility_name_transformation},
+  FROM (
+    SELECT
+      dataflow.state_code, 
       date_of_stay, 
       person_external_id, 
       CAST(person_id AS STRING) AS person_id,
-      {state_specific_dataflow_facility_name_transformation},
-   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized` dataflow
-   INNER JOIN dates_per_region dates
-      ON dataflow.state_code = dates.region_code
+      facility,
+    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized` dataflow
+    INNER JOIN dates_per_region dates
+      ON dataflow.state_code = dates.state_code
       AND dates.date_of_stay BETWEEN dataflow.start_date_inclusive AND {non_null_end_date}
-   WHERE included_in_state_population
-   -- For MI, exclude incarceration periods that are TEMPORARY_CUSTODY incarceration periods inferred during normalization
-   -- (which have custodial authority set to 'INTERNAL_UNKNOWN' as opposed to 'STATE_PRISON' like all other ingested incarceration periods)
-   AND (state_code <> 'US_MI' OR custodial_authority = 'STATE_PRISON')
+    WHERE included_in_state_population
+    -- For MI, exclude incarceration periods that are TEMPORARY_CUSTODY incarceration periods inferred during normalization
+    -- (which have custodial authority set to 'INTERNAL_UNKNOWN' as opposed to 'STATE_PRISON' like all other ingested incarceration periods)
+    AND (dataflow.state_code <> 'US_MI' OR custodial_authority = 'STATE_PRISON')
+  )
 )
 SELECT
-  region_code,
+  state_code,
+  state_code AS region_code,
   date_of_stay,
   external_data.person_id AS external_data_person_id,
   internal_data.person_id AS internal_data_person_id,
@@ -88,7 +94,7 @@ FROM
     external_data_with_ids external_data
 FULL OUTER JOIN
     sanitized_internal_metrics internal_data
-USING (region_code, date_of_stay, person_id)
+USING (state_code, date_of_stay, person_id)
 {filter_clause}
 """
 

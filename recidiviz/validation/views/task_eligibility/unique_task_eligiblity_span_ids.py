@@ -35,13 +35,14 @@ task and person.
 
 UNIQUE_TASK_ELIGIBILITY_SPAN_IDS_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   task_name,
   person_id,
   task_eligibility_span_id,
   COUNT(*) AS num_instances_span_id
 FROM `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
-GROUP BY 1, 2, 3, 4
+GROUP BY 1, 2, 3, 4, 5
 HAVING num_instances_span_id > 1;
 """
 

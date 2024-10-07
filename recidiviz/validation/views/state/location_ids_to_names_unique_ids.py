@@ -32,6 +32,7 @@ duplicate id values."""
 
 LOCATION_IDS_TO_NAMES_UNIQUE_IDS_QUERY_TEMPLATE = """
 SELECT
+    state_code,
     state_code AS region_code,
     level_1_incarceration_location_external_id AS location_id,
     "incarceration" AS location_type,
@@ -44,6 +45,7 @@ HAVING total_rows > 1
 UNION ALL
 
 SELECT
+    state_code,
     state_code AS region_code,
     CONCAT(
         level_1_supervision_location_external_id,

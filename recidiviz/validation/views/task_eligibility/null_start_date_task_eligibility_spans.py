@@ -36,6 +36,7 @@ Identifies task eligibility spans with a null start date.
 
 NULL_START_DATE_TASK_ELIGIBILITY_SPANS_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   task_name,
   person_id,

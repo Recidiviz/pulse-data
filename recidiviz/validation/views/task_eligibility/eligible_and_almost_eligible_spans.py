@@ -34,6 +34,7 @@ Identifies task_eligiblity spans that are marked as eligible and almost eligible
 
 ELIGIBLE_AND_ALMOST_ELIGIBLE_SPANS_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   task_name,
   person_id,

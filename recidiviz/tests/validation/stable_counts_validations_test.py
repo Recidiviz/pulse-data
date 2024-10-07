@@ -60,7 +60,7 @@ class TestStableCountsExemptions(unittest.TestCase):
     def test_exemptions_string_builder_single_exemption(self) -> None:
         exemptions = {StateCode.US_MI: [date(2023, 4, 1)]}
         output = exemptions_string_builder(exemptions)
-        expected_output = 'NOT (region_code = "US_MI" AND month IN ("2023-04-01"))'
+        expected_output = 'NOT (state_code = "US_MI" AND month IN ("2023-04-01"))'
         self.assertEqual(output, expected_output)
 
     def test_exemptions_string_builder_multiple_exemptions(self) -> None:
@@ -68,7 +68,7 @@ class TestStableCountsExemptions(unittest.TestCase):
             StateCode.US_MO: [date(2023, 3, 1), date(2023, 4, 1), date(2023, 5, 1)],
         }
         output = exemptions_string_builder(exemptions)
-        expected_output = 'NOT (region_code = "US_MO" AND month IN ("2023-03-01", "2023-04-01", "2023-05-01"))'
+        expected_output = 'NOT (state_code = "US_MO" AND month IN ("2023-03-01", "2023-04-01", "2023-05-01"))'
 
         self.assertEqual(output, expected_output)
 
@@ -79,8 +79,8 @@ class TestStableCountsExemptions(unittest.TestCase):
         }
         output = exemptions_string_builder(exemptions)
         expected_output = (
-            'NOT (region_code = "US_PA" AND month IN ("2023-02-01", "2023-03-01"))'
-            '\n      AND NOT (region_code = "US_MO" AND month IN ("2023-03-01", "2023-04-01", "2023-05-01"))'
+            'NOT (state_code = "US_PA" AND month IN ("2023-02-01", "2023-03-01"))'
+            '\n      AND NOT (state_code = "US_MO" AND month IN ("2023-03-01", "2023-04-01", "2023-05-01"))'
         )
 
         self.assertEqual(output, expected_output)

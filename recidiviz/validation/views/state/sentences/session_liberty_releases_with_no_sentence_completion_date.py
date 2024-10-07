@@ -35,7 +35,7 @@ do not have a corresponding sentence completed on the same date.
 SESSION_LIBERTY_RELEASES_WITH_NO_SENTENCE_COMPLETION_DATE_QUERY_TEMPLATE = """
 WITH sessions_to_sentences AS (
     SELECT
-        ses.state_code AS region_code,
+        ses.state_code,
         ses.person_id,
         ses.session_id,
         ses.compartment_level_1,
@@ -59,7 +59,7 @@ WITH sessions_to_sentences AS (
         AND compartment_level_1 IN ("SUPERVISION", "INCARCERATION")
     -- Pick the closest sentence imposed for each session start
     QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY region_code, person_id, start_date
+        PARTITION BY state_code, person_id, start_date
         ORDER BY ABS(DATE_DIFF(
             DATE_ADD(ses.end_date, INTERVAL 1 DAY),
             sen.completion_date,
@@ -67,7 +67,8 @@ WITH sessions_to_sentences AS (
         )) ASC) = 1
 )
 SELECT
-    region_code,
+    state_code,
+    state_code AS region_code,
     person_id,
     session_id,
     compartment_level_1,

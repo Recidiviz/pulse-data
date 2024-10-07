@@ -33,6 +33,7 @@ PERSON_CASELOAD_LOCATION_SESSIONS_DESCRIPTION = """
 
 PERSON_CASELOAD_LOCATION_SESSIONS_QUERY_TEMPLATE = """
     SELECT
+        pcls.state_code,
         pcls.state_code as region_code,
         spei.person_id,
         pcls.compartment_level_1,

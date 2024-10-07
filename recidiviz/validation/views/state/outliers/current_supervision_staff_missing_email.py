@@ -82,6 +82,7 @@ _QUERY_TEMPLATE = """
     )
 
     SELECT
+        relevant_supervision_staff.state_code,
         relevant_supervision_staff.state_code AS region_code,
         relevant_supervision_staff.external_id as external_id,
         relevant_supervision_staff.role_subtype

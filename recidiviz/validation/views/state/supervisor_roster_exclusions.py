@@ -90,6 +90,7 @@ WITH current_atlas_employee_info AS (
         DIST,
         "OFFICER" AS POSITION,
         COALESCE(EmployeeId_email_match, EmployeeId_name_match) AS EmployeeId,
+        "US_IX" AS state_code,
         "US_IX" AS region_code
     FROM employee_exclusions
         WHERE row_num = 1
@@ -100,6 +101,7 @@ WITH current_atlas_employee_info AS (
         DIST,
         "SUPERVISOR" AS POSITION,
         COALESCE(EmployeeId_email_match, EmployeeId_name_match) AS EmployeeId,
+        "US_IX" AS state_code,
         "US_IX" AS region_code
     FROM supervisor_exclusions
         WHERE row_num = 1

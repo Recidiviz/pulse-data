@@ -73,7 +73,7 @@ def build_cb_971_supervision_report_table_name(date_of_data: date) -> str:
 
 def query_template(date_of_data: date) -> str:
     table_name = build_cb_971_supervision_report_table_name(date_of_data=date_of_data)
-    return f"SELECT *, DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_supervision FROM `{{project_id}}.{{us_mi_validation_oneoff_dataset}}.{table_name}`\n"
+    return f"SELECT 'US_MI' AS state_code, *, DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_supervision FROM `{{project_id}}.{{us_mi_validation_oneoff_dataset}}.{table_name}`\n"
 
 
 VIEW_QUERY_TEMPLATE = "UNION ALL\n".join(

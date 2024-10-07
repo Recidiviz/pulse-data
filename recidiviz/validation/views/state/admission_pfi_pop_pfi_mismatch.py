@@ -42,7 +42,7 @@ day but extends to at least the next day.
 """
 
 ADMISSION_PFI_POP_PFI_MISMATCH_QUERY_TEMPLATE = """
-SELECT state_code as region_code, person_id, metric_date, included_in_state_population, admission_pfi, population_pfi 
+SELECT state_code, state_code as region_code, person_id, metric_date, included_in_state_population, admission_pfi, population_pfi 
 FROM
 (
     SELECT * FROM

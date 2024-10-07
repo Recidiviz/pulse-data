@@ -50,6 +50,7 @@ grouped AS (
   GROUP BY ParoleAgentName, EMAILADDRESS, BadgeNumber
 )
 SELECT *,
+    "US_CA" as state_code,
     "US_CA" as region_code
 FROM grouped
 ORDER BY ParoleAgentName, EMAILADDRESS, update_datetimes[SAFE_OFFSET(0)]

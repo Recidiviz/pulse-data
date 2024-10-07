@@ -37,7 +37,7 @@ _VIEW_DESCRIPTION = (
 _QUERY_TEMPLATE = """
 WITH all_supervisors_from_metrics AS (
     SELECT
-        o.state_code AS region_code,
+        o.state_code,
         o.supervisor_external_id as external_id,
         o.supervision_district,
         COUNT(DISTINCT o.external_id) AS num_officers_supervised_with_metrics,
@@ -52,10 +52,11 @@ WITH all_supervisors_from_metrics AS (
 )
 
 SELECT
-    asfm.*
+    asfm.*,
+    asfm.state_code AS region_code
 FROM all_supervisors_from_metrics asfm
 LEFT JOIN `{project_id}.{outliers_dataset}.supervision_officer_supervisors_materialized` sos
-    ON asfm.region_code = sos.state_code AND asfm.external_id = sos.external_id
+    ON asfm.state_code = sos.state_code AND asfm.external_id = sos.external_id
 WHERE sos.staff_id IS NULL AND asfm.external_id IS NOT NULL
 """
 

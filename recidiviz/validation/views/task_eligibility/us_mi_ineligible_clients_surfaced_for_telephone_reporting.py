@@ -65,6 +65,7 @@ WITH
     AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
     )
 SELECT
+  tr.state_code,
   tr.state_code as region_code,
   tr.person_id,
 FROM

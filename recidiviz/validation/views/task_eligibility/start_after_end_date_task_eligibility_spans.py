@@ -37,6 +37,7 @@ Identifies task eligibility spans with a start date that comes after the end dat
 
 START_AFTER_END_DATE_TASK_ELIGIBILITY_SPANS_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   task_name,
   person_id,

@@ -35,6 +35,7 @@ All zero-day spans should be filtered out of criteria views.
 
 ZERO_DAY_TES_CRITERIA_SPANS_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   criteria_name,
   person_id,

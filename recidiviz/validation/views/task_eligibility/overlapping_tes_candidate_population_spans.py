@@ -38,6 +38,7 @@ for a person comes before the previous population span end date.
 OVERLAPPING_TES_CANDIDATE_POPULATION_SPANS_QUERY_TEMPLATE = """
 SELECT
   population_name,
+  state_code,
   state_code AS region_code,
   person_id,
   start_date,

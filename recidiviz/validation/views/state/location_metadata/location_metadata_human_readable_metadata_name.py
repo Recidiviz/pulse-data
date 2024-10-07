@@ -41,6 +41,7 @@ LOCATION_METADATA_HUMAN_READABLE_METADATA_NAME_DESCRIPTION = (
 
 _SINGLE_KEY_FRAGMENT_TEMPLATE = """
   SELECT
+    state_code, 
     state_code AS region_code,
     '{metadata_key}' AS metadata_key,
     JSON_EXTRACT_SCALAR(location_metadata, '$.{metadata_key}') metadata_value,

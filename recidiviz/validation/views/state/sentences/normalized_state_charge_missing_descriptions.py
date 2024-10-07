@@ -34,6 +34,7 @@ Workflows auto-filled forms and any analysis by offense type.
 
 NORMALIZED_STATE_CHARGE_MISSING_DESCRIPTIONS_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   person_id,
   charge_id,

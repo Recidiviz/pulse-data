@@ -25,7 +25,7 @@ from recidiviz.validation.views import dataset_config
 
 VIEW_QUERY_TEMPLATE = """
 SELECT
-  'US_TN' as region_code,
+  'US_TN' AS state_code,
   OffenderID as person_external_id,
   'US_TN_DOC' as external_id_type,
   DATE(Date) as date_of_stay,

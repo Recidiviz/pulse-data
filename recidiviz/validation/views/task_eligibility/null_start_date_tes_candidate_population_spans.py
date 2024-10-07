@@ -37,6 +37,7 @@ collapsed into eligibility spans properly.
 
 NULL_START_DATE_TES_CANDIDATE_POPULATION_SPANS_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   population_name,
   person_id,

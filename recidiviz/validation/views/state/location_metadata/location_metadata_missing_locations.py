@@ -34,7 +34,8 @@ LOCATION_METADATA_MISSING_LOCATIONS_DESCRIPTION = (
 )
 
 LOCATION_METADATA_MISSING_LOCATIONS_QUERY_TEMPLATE = """
-SELECT 
+SELECT
+  state_code,
   state_code AS region_code,
   p.location_external_id,
   COUNT(*) AS num_periods_with_this_location,
@@ -45,7 +46,7 @@ LEFT JOIN
   `{project_id}.{reference_views_dataset}.location_metadata_materialized` m
 USING (state_code, location_external_id)
 WHERE m.location_external_id IS NULL
-GROUP BY 1, 2
+GROUP BY 1, 2, 3
 """
 
 LOCATION_METADATA_MISSING_LOCATIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

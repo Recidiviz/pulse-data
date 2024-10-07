@@ -112,10 +112,10 @@ current_live_opportunities AS (
   SELECT DISTINCT state_code, opportunity_type
   FROM `{project_id}.{reference_views_dataset}.workflows_opportunity_configs_materialized`
 )
-SELECT * EXCEPT(earliest_export_date)
+SELECT * EXCEPT(earliest_export_date), state_code AS region_code
 FROM (
   SELECT
-    state_code AS region_code,
+    state_code,
     opportunity_type,
     date_of_data,
     eligibility_count AS current_eligibility_count,

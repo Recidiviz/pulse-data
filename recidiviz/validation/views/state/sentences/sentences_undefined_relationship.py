@@ -36,6 +36,7 @@ These undefined sentences will impact the accuracy of the field `max_sentence_im
 
 SENTENCES_UNDEFINED_RELATIONSHIP_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   sentence_type,
   person_id,

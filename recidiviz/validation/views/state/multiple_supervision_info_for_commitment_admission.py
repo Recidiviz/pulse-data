@@ -42,6 +42,7 @@ calculation logic."""
 
 MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_QUERY_TEMPLATE = """
 SELECT
+    state_code,
     state_code as region_code,
     person_id,
     admission_date,
@@ -49,7 +50,7 @@ SELECT
     COUNT(DISTINCT(level_1_supervision_location_external_id)) as num_level_1,
     COUNT(DISTINCT(level_2_supervision_location_external_id)) as num_level_2
 FROM `{project_id}.{metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized`
-GROUP BY 1,2,3
+GROUP BY 1,2,3,4
 HAVING num_officers > 1
 OR num_level_1 > 1
 OR num_level_2 > 1

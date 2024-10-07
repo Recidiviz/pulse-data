@@ -59,7 +59,8 @@ SELECT
   file_tag,
   most_recent_rows_datetime,
   ROUND(SAFE_DIVIDE(hours_stale, 24), 1) as days_stale,
-  "{region_code}" as region_code
+  "{region_code}" AS state_code,
+  "{region_code}" AS region_code
 FROM ({all_sub_queries})
 """
 

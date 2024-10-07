@@ -34,11 +34,11 @@ INCARCERATION_POPULATION_BY_CUSTODY_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION = """ 
 INCARCERATION_POPULATION_BY_CUSTODY_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
     WITH external_validation_dates AS (
         -- Only compare states and months for which we have external validation data
-        SELECT DISTINCT region_code, date_of_stay FROM
+        SELECT DISTINCT state_code, date_of_stay FROM
         `{project_id}.{external_accuracy_dataset}.incarceration_population_by_custody_level_materialized`
     ), internal_incarceration_population AS (
         SELECT
-            state_code as region_code, date_of_stay,
+            state_code, date_of_stay,
             CASE WHEN state_code='US_AZ' THEN
               CASE
                 WHEN custody_level_raw_text LIKE "%INTAKE%" THEN 'RECEPTION'
@@ -59,11 +59,11 @@ INCARCERATION_POPULATION_BY_CUSTODY_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = "
           external_validation_dates
         LEFT JOIN
           internal_incarceration_population
-        USING(region_code, date_of_stay)
+        USING(state_code, date_of_stay)
     ),
     comparison AS (
         SELECT
-          region_code,
+          state_code,
           date_of_stay,
           custody_level,
           IFNULL(population_count, 0) as external_population_count,
@@ -72,14 +72,14 @@ INCARCERATION_POPULATION_BY_CUSTODY_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = "
           `{project_id}.{external_accuracy_dataset}.incarceration_population_by_custody_level_materialized`
         FULL OUTER JOIN
           relevant_internal_incarceration_population
-        USING (region_code, date_of_stay, custody_level)
+        USING (state_code, date_of_stay, custody_level)
     )
-    SELECT *
+    SELECT *, state_code AS region_code
     FROM comparison
     -- We filter out populations where the custody level has fewer than 10 because an 
     -- off by one error can cause a huge error percentage.
     WHERE external_population_count >= 10
-    ORDER BY region_code, date_of_stay, custody_level
+    ORDER BY state_code, date_of_stay, custody_level
 """
 
 INCARCERATION_POPULATION_BY_CUSTODY_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(

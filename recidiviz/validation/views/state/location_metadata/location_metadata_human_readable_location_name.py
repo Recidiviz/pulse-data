@@ -35,7 +35,7 @@ LOCATION_METADATA_HUMAN_READABLE_LOCATION_NAME_DESCRIPTION = (
 )
 
 LOCATION_METADATA_HUMAN_READABLE_LOCATION_NAME_QUERY_TEMPLATE = """
-SELECT state_code AS region_code, location_external_id, location_name
+SELECT state_code, state_code AS region_code, location_external_id, location_name
 FROM `{project_id}.{reference_views_dataset}.location_metadata_materialized`
 WHERE SAFE_CAST(location_name AS INT64) IS NOT NULL
 """

@@ -33,6 +33,7 @@ CLIENT_RECORD_DUPLICATE_PERSON_EXTERNAL_IDS_DESCRIPTION = (
 
 CLIENT_RECORD_DUPLICATE_PERSON_EXTERNAL_IDS_QUERY_TEMPLATE = """
     SELECT
+        state_code,
         state_code as region_code,
         COUNT(DISTINCT person_external_id) AS unique_person_external_ids,
         COUNT(person_external_id) AS client_records,

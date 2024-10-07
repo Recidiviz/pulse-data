@@ -35,7 +35,7 @@ do not have a corresponding sentence imposed on the same date.
 SESSION_NEW_ADMISSIONS_WITH_NO_SENTENCE_DATE_IMPOSED_QUERY_TEMPLATE = """
 WITH sessions_to_sentences AS (
     SELECT
-        ses.state_code AS region_code,
+        ses.state_code,
         ses.person_id,
         ses.session_id,
         ses.compartment_level_1,
@@ -54,11 +54,12 @@ WITH sessions_to_sentences AS (
     WHERE inflow_from_level_1 IN ("LIBERTY", "INVESTIGATION")
         AND compartment_level_1 IN ("SUPERVISION", "INCARCERATION")
     -- Pick the closest sentence imposed for each session start
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY region_code, person_id, start_date
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id, start_date
             ORDER BY ABS(DATE_DIFF(ses.start_date, sen.imposed_date, DAY)) ASC) = 1
 )
 SELECT
-    region_code,
+    state_code,
+    state_code AS region_code,
     person_id,
     session_id,
     compartment_level_1,

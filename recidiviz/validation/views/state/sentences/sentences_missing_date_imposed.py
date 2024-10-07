@@ -31,6 +31,7 @@ to any corresponding sessions.
 
 SENTENCES_MISSING_DATE_IMPOSED_QUERY_TEMPLATE = """
 SELECT
+  state_code,
   state_code AS region_code,
   sentence_type,
   person_id,

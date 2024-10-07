@@ -26,7 +26,7 @@ from recidiviz.validation.views import dataset_config
 VIEW_QUERY_TEMPLATE = """
 WITH base AS (
 SELECT
-  'US_AZ' AS region_code,
+  'US_AZ' AS state_code,
   person.PERSON_ID AS person_external_id,
   'US_AZ_PERSON_ID' AS external_id_type,
   CAST(REPORT_DATE AS DATETIME) AS date_of_supervision,
@@ -67,7 +67,8 @@ ELSE 4
 END )) = 1
 )
 SELECT 
-  region_code,
+  state_code,
+  state_code AS region_code,
   person_external_id,
   external_id_type,
   date_of_supervision,
