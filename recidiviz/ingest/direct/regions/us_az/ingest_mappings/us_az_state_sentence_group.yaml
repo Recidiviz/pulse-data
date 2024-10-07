@@ -1,14 +1,12 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
+launch_env:
+  $env: is_local
 input_columns:
-  - COMMITMENT_ID
-  - DOC_ID
   - PERSON_ID
-  - group_update_datetime
-  - CommunitySupervisionBeginDate
-  - CommunitySupervisionEndDate
-  - EarnedReleaseCreditDate
-  - SentenceExpirationDate
+  - SC_EPISODE_ID
+  - UPDT_DTM
+  - EXPIRATION_DTM
 unused_columns: []
 output:
   StatePerson:
@@ -18,23 +16,11 @@ output:
           id_type: $literal("US_AZ_PERSON_ID")
     sentence_groups:
       - StateSentenceGroup:
-          external_id:
-            $concat:
-              $values:
-                - COMMITMENT_ID
-                - DOC_ID
+          external_id: SC_EPISODE_ID
           sentence_group_lengths:
             - StateSentenceGroupLength:
-                group_update_datetime: group_update_datetime
-                parole_eligibility_date_external: CommunitySupervisionBeginDate
-                projected_full_term_release_date_min_external: EarnedReleaseCreditDate
-                projected_full_term_release_date_max_external:
-                  # If a person is not eligible for community supervision, then the latest
-                  # they can be released from prison is their Sentence Expiration Date (SED). If they
-                  # are eligible for community supervision, then the latest they can be released
-                  # from prison is their Community Supervision End Date, which is 115% of the SED.
-                  $conditional:
-                    - $if:
-                        $is_null: CommunitySupervisionEndDate
-                      $then: SentenceExpirationDate
-                    - $else: CommunitySupervisionEndDate
+                # Note that due to a system migration many of these will be
+                # after the projected dates. This is OK, we currently need the most
+                # recently updated set of projected dates downstream.
+                group_update_datetime: UPDT_DTM
+                projected_full_term_release_date_min_external: EXPIRATION_DTM

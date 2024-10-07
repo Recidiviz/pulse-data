@@ -1,49 +1,105 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - external_id
-  - sentence_group_external_id
+  - PERSON_ID
+  - SC_EPISODE_ID # Unique for each StateSentenceGroup
+  - OFFENSE_ID # Unique for each StateSentence
+  - SENTENCED_DTM # imposed_date
+  - NUM_JAIL_CREDIT_DAYS # initial_time_served_days
+  - ICC_COMMITMENT_FLAG # for sentencing_authority
+  - county
   - is_life
-  - is_capital
+  - is_capital_punishment
   - parole_possible
-  - imposed_date
-  - person_id
-  - county_code
-  - jail_credit_days
-unused_columns: []
-variables:
-  - life_bool:
-      $equal:
-        - is_life
-        - $literal("1")
-  - is_capital_bool:
-      $equal:
-        - is_capital
-        - $literal("1")
-  - is_parole_bool:
-      $equal:
-        - parole_possible
-        - $literal("1")
+  - parent_sentence_external_id_array
+  - JUDGE_ID # judge external ID
+  - OFFENSE_NUMBER # charge count
+  - OFFENSE_DTM
+  - NCIC_CODE
+  - ARS_CODE # used for statute
+  - SUBSECTION_CODE # used for statute
+  - DESCRIPTION
+  - MURDER_DEGREE # classification_subtype
+  - VIOLENCE_FLAG
+  - SEX_OFFENSE_FLAG
+  - TPR_ELIGIBILITY_NOTE
+  - is_controlling
+unused_columns:
+  - parole_possible
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: person_id
+          external_id: PERSON_ID
           id_type: $literal("US_AZ_PERSON_ID")
     sentence_groups:
       - StateSentenceGroup:
-          external_id: sentence_group_external_id
+          external_id: SC_EPISODE_ID
     sentences:
       - StateSentence:
-          county_code: county_code
-          imposed_date: imposed_date
-          is_life: $variable(life_bool)
-          is_capital_punishment: $variable(is_capital_bool)
-          external_id: external_id
-          parole_possible: $variable(is_parole_bool)
-          initial_time_served_days: jail_credit_days
-          # TODO(#30295) Hydrate sentencing_authority in US_AZ
-          sentencing_authority: $literal_enum(StateSentencingAuthority.INTERNAL_UNKNOWN)
-          #set to internal unkown until we know how to map sentence type
-          sentence_type: $literal_enum(StateSentenceType.INTERNAL_UNKNOWN)
-          sentence_group_external_id: sentence_group_external_id
+          external_id: OFFENSE_ID
+          sentence_group_external_id: SC_EPISODE_ID
+          imposed_date: SENTENCED_DTM
+          county_code: county
+          is_life:
+            $equal:
+              - is_life
+              - $literal("True")
+          is_capital_punishment:
+            $equal:
+              - is_capital_punishment
+              - $literal("True")
+          # TODO(#33969) Hydrate this value
+          # parole_possible:
+          #   $equal:
+          #     - parole_possible
+          #     - $literal("True")
+          initial_time_served_days: NUM_JAIL_CREDIT_DAYS
+          parent_sentence_external_id_array: parent_sentence_external_id_array
+          sentencing_authority:
+            $conditional:
+              - $if:
+                  $equal:
+                    - ICC_COMMITMENT_FLAG
+                    - $literal("Y")
+                $then: $literal_enum(StateSentencingAuthority.OTHER_STATE)
+              - $else: $literal_enum(StateSentencingAuthority.COUNTY)
+          #  TODO(#29562) Investigate PROBATION sentences.
+          #  ---------------------------------------------
+          #  Everyone who we ingest has at least one incarceration sentence.
+          #  However, a person could in theory have a concurrent probation sentence
+          #  that needs to be served alongside an incarceration sentence (not to mention
+          #  the sentence type of interstate compact supervision).
+          #  Our needs are currently based on charge+statute information, as well
+          #  as sentence start and end dates... so STATE_PRISON is an ok enough
+          #  assumption for now.
+          sentence_type: $literal_enum(StateSentenceType.STATE_PRISON)
+          charges:
+            - StateChargeV2:
+                external_id: OFFENSE_ID
+                offense_date: OFFENSE_DTM
+                county_code: county
+                ncic_code: NCIC_CODE
+                statute:
+                  $concat:
+                    $values:
+                      - ARS_CODE
+                      - SUBSECTION_CODE
+                description: DESCRIPTION
+                classification_subtype: MURDER_DEGREE
+                is_violent:
+                  $equal:
+                    - VIOLENCE_FLAG
+                    - $literal("Y")
+                is_sex_offense:
+                  $equal:
+                    - SEX_OFFENSE_FLAG
+                    - $literal("Y")
+                counts: OFFENSE_NUMBER
+                charge_notes: TPR_ELIGIBILITY_NOTE
+                is_controlling:
+                  $equal:
+                    - is_controlling
+                    - $literal("True")
+                judge_external_id: JUDGE_ID
+                status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)

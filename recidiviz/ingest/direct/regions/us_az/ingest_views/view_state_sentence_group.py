@@ -14,76 +14,81 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query for state sentence groups.
+"""
+Ingest view for state sentence group lengths.
 
-For each of the date fields in the entity, we coalesce three fields from 
+For each of the date fields in the entity, we coalesce two fields from 
 the source raw data. This is to accomodate the way automatic and manual overrides are
 documented in ACIS. The system prioritizes Manual Lock fields first, because these
 contain dates that were manually entered by an officer to override the automatically calculated
-date. Then, Adjust Release Date fields are prioritized. These are automatic adjustments
-made by ACIS to release dates that fall on weekends or holidays. The final field is the
-original release date calculated by ACIS based on sentence information. 
+date. The other field is the original release date calculated by ACIS based on sentence information. 
 
-We define a "sentence group" in this case as a single commitment. Many offenses can 
-be associated with a single commitment, each having their own sentencing requirements.
-There is one controlling offense that determines the final release dates for a given 
-sentence group."""
+We define a "sentence group" as a single episode. Many offenses can be associated with a 
+single commitment, and many commitments can be affiliated with a single episode. 
+
+FUTURE WORK
+-----------
+The RELEASE_DTM and RELEASE_DTM_ML fields encapsulate projected_parole_release.
+They are described in the data as the "Earliest release date from all active 
+offenses in all active commitments in this episode". However, we often get cases
+where the projected parole release is AFTER the projected sentence expiration.
+We'll need to reconcile this data to include it in the schema.
+"""
+from recidiviz.ingest.direct.regions.us_az.ingest_views.common_sentencing_views_and_utils import (
+    VALID_PEOPLE_AND_SENTENCES,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH 
--- The result of this CTE is one row for each combination of commitment and set of
--- release dates. Whenever one of the release dates changes, a row will be added
--- with the updated information about the commitment and the date on which that information
--- changed.
-base AS (
-SELECT DISTINCT
-    -- sentence group external ID is COMMITMENT_ID-DOC_ID
-    off.COMMITMENT_ID,
-    doc.DOC_ID,
-    doc.PERSON_ID,
-    off.UPDT_DTM AS group_update_datetime,
-    -- See view description for explanation of datetime field hierarchy.
-    COALESCE(
-        NULLIF(COMMUNITY_SUPV_BEGIN_DTM_ML, 'NULL'),
-        NULLIF(COMMUNITY_SUPV_BEGIN_DTM_ARD, 'NULL'), 
-        NULLIF(COMMUNITY_SUPV_BEGIN_DTM, 'NULL')) AS CommunitySupervisionBeginDate, -- CSBD
-    COALESCE(
-        NULLIF(COMMUNITY_SUPV_END_DTM_ML, 'NULL'), 
-        NULLIF(COMMUNITY_SUPV_END_DTM_ARD, 'NULL'), 
-        NULLIF(COMMUNITY_SUPV_END_DTM, 'NULL')) AS CommunitySupervisionEndDate, -- CSED
-    COALESCE(
-        NULLIF(EARNED_RLS_CREDIT_DTM_ML, 'NULL'), 
-        NULLIF(EARNED_RLS_CREDIT_DTM_ARD, 'NULL'), 
-        NULLIF(EARNED_RLS_CREDIT_DTM, 'NULL')) AS EarnedReleaseCreditDate, -- ERCD
-    COALESCE(
-        NULLIF(EXPIRATION_DTM_ML, 'NULL'), 
-        NULLIF(EXPIRATION_DTM, 'NULL')) AS SentenceExpirationDate, -- SED
-FROM 
-    {AZ_DOC_SC_OFFENSE@ALL} AS off
-LEFT JOIN 
-    {AZ_DOC_SC_EPISODE} AS sc_episode 
-ON 
-    off.OFFENSE_ID = sc_episode.FINAL_OFFENSE_ID
-LEFT JOIN 
-    {DOC_EPISODE} AS doc 
-ON 
-    sc_episode.DOC_ID = doc.DOC_ID
-WHERE 
-    doc.PERSON_ID IS NOT NULL
-AND 
-    off.OFFENSE_ID = sc_episode.FINAL_OFFENSE_ID
-)
 
-SELECT *
-FROM base
--- This is only the case for 68 offenses that do not have any listed release dates.
-WHERE group_update_datetime IS NOT NULL
+-- Maps epiodes to people with valid sentences
+valid_people AS ({VALID_PEOPLE_AND_SENTENCES}),
+
+-- There are confilicting values for some episodes
+-- with the same update datetime. This CTE parses them
+-- and we take the minimum value in the output
+parsed_dates AS (
+    SELECT DISTINCT
+        PERSON_ID,
+        SC_EPISODE_ID, -- StateSentenceGroup.external_id
+        UPDT_DTM,      -- StateSentenceGroupLength.group_update_datetime
+        -- Earliest sentence expiration date (SED) from all active offenses 
+        -- in all active commitments in this episode
+        -- This is for projected_full_term_release_date_min_external
+        -- '_ML' columns are 'manual lock', meaning they were manually
+        -- updated by staff for a particular reason.
+        COALESCE(
+            NULLIF(EXPIRATION_DTM_ML, 'NULL'), NULLIF(EXPIRATION_DTM, 'NULL')
+        ) AS EXPIRATION_DTM
+    FROM 
+        {{AZ_DOC_SC_EPISODE@ALL}} AS episode 
+    JOIN 
+        valid_people
+    USING
+        (SC_EPISODE_ID)
+    WHERE 
+        COALESCE(
+            NULLIF(EXPIRATION_DTM_ML, 'NULL'), NULLIF(EXPIRATION_DTM, 'NULL')
+        ) IS NOT NULL
+)
+SELECT
+    PERSON_ID,
+    SC_EPISODE_ID,
+    UPDT_DTM,
+    MIN(EXPIRATION_DTM) AS EXPIRATION_DTM
+FROM
+    parsed_dates
+WHERE
+    EXPIRATION_DTM IS NOT NULL
+GROUP BY 
+    PERSON_ID, SC_EPISODE_ID, UPDT_DTM
 """
+
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_az",
     ingest_view_name="state_sentence_group",
