@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Queries information needed to surface eligible folks to be early released on a Transition Program Release AZ.
+Queries information needed to surface eligible folks to be early released on a Drug Transition Program in AZ.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -30,68 +30,68 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_NAME = (
-    "us_az_approaching_acis_or_recidiviz_tpr_request_record"
+US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_DTP_REQUEST_RECORD_VIEW_NAME = (
+    "us_az_approaching_acis_or_recidiviz_dtp_request_record"
 )
 
-US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_DESCRIPTION = """
-    Queries information needed to surface eligible folks to be early released on a Transition Program Release AZ.
+US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_DTP_REQUEST_RECORD_DESCRIPTION = """
+    Queries information needed to surface eligible folks to be early released on a Drug Transition Program in AZ.
     """
 
 
-US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_QUERY_TEMPLATE = f"""
+US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_DTP_REQUEST_RECORD_QUERY_TEMPLATE = f"""
 # TODO(#33958) - Add all the relevant components of this opportunity record
-WITH recidiviz_tpr_date_approaching AS (
+WITH recidiviz_dtp_date_approaching AS (
 {join_current_task_eligibility_spans_with_external_id(
     state_code="'US_AZ'",
-    tes_task_query_view='overdue_for_recidiviz_tpr_request_materialized',
+    tes_task_query_view='overdue_for_recidiviz_dtp_request_materialized',
     id_type="'US_AZ_ADC_NUMBER'",
     almost_eligible_only=True)}
 ),
 
-acis_tpr_date_approaching AS (
+acis_dtp_date_approaching AS (
 {join_current_task_eligibility_spans_with_external_id(
     state_code="'US_AZ'",
-    tes_task_query_view='overdue_for_acis_tpr_request_materialized',
+    tes_task_query_view='overdue_for_acis_dtp_request_materialized',
     id_type="'US_AZ_ADC_NUMBER'",
     almost_eligible_only=True)}
 ),
 
-combine_acis_and_recidiviz_tpr_dates AS (
-    -- Fast track: ACIS TPR date within 1 days and 30 days
+combine_acis_and_recidiviz_dtp_dates AS (
+    -- Fast track: ACIS DTP date within 1 days and 30 days
     SELECT
         * EXCEPT(criteria_reason),
         "FAST_TRACK" AS metadata_tab_description,
-    FROM acis_tpr_date_approaching,
+    FROM acis_dtp_date_approaching,
     UNNEST(JSON_QUERY_ARRAY(reasons)) AS criteria_reason
-    WHERE "US_AZ_INCARCERATION_PAST_ACIS_TPR_DATE" IN UNNEST(ineligible_criteria)
-        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_AZ_INCARCERATION_PAST_ACIS_TPR_DATE"
-        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.acis_tpr_date') AS DATE) BETWEEN 
+    WHERE "US_AZ_INCARCERATION_PAST_ACIS_DTP_DATE" IN UNNEST(ineligible_criteria)
+        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_AZ_INCARCERATION_PAST_ACIS_DTP_DATE"
+        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.acis_dtp_date') AS DATE) BETWEEN 
             DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 DAY) AND DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 30 DAY)
 
     UNION ALL
 
-    -- Approved by Time Comp: ACIS TPR date within 31 days and 180 days
+    -- Approved by Time Comp: ACIS DTP date within 31 days and 180 days
     SELECT
         * EXCEPT(criteria_reason),
         "APPROVED_BY_TIME_COMP" AS metadata_tab_description 
-    FROM acis_tpr_date_approaching,
+    FROM acis_dtp_date_approaching,
     UNNEST(JSON_QUERY_ARRAY(reasons)) AS criteria_reason
-    WHERE "US_AZ_INCARCERATION_PAST_ACIS_TPR_DATE" IN UNNEST(ineligible_criteria)
-        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_AZ_INCARCERATION_PAST_ACIS_TPR_DATE"
-        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.acis_tpr_date') AS DATE) BETWEEN 
+    WHERE "US_AZ_INCARCERATION_PAST_ACIS_DTP_DATE" IN UNNEST(ineligible_criteria)
+        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_AZ_INCARCERATION_PAST_ACIS_DTP_DATE"
+        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.acis_dtp_date') AS DATE) BETWEEN 
             DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 31 DAY) AND DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
 
     UNION ALL
 
-    -- Almost eligible section 1: Projected TPR date within 7 days and 180 days
+    -- Almost eligible section 1: Projected DTP date within 7 days and 180 days
     # TODO(#33958) - recidiviz_tpr_date_approaching needs to be split into section 1 and 2
     SELECT 
         *,
         "ALMOST_ELIGIBLE_SECTION_1" AS metadata_tab_description 
-    FROM recidiviz_tpr_date_approaching
+    FROM recidiviz_dtp_date_approaching
 
-    -- Almost eligible section 2: Projected TPR date within 181 days and 365 days
+    -- Almost eligible section 2: Projected DTP date within 181 days and 365 days
 )
 
 SELECT 
@@ -101,14 +101,14 @@ SELECT
     ineligible_criteria,
     metadata_tab_description,
 FROM 
-    combine_acis_and_recidiviz_tpr_dates
+    combine_acis_and_recidiviz_dtp_dates
 """
 
-US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_DTP_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    view_id=US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_NAME,
-    view_query_template=US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_QUERY_TEMPLATE,
-    description=US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_DESCRIPTION,
+    view_id=US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_DTP_REQUEST_RECORD_VIEW_NAME,
+    view_query_template=US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_DTP_REQUEST_RECORD_QUERY_TEMPLATE,
+    description=US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_DTP_REQUEST_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_AZ
@@ -118,4 +118,4 @@ US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQ
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_BUILDER.build_and_print()
+        US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_DTP_REQUEST_RECORD_VIEW_BUILDER.build_and_print()

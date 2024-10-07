@@ -29,6 +29,7 @@ def join_current_task_eligibility_spans_with_external_id(
     additional_columns: str = "",
     eligible_only: bool = False,
     eligible_and_almost_eligible_only: bool = False,
+    almost_eligible_only: bool = False,
 ) -> str:
     """
     It joins a task eligibility span view with the state_person_external_id to retrieve external ids.
@@ -43,15 +44,20 @@ def join_current_task_eligibility_spans_with_external_id(
         tes_task_query_view (str): The task query view that we're interested in querying.
             E.g. 'work_release_materialized'.
     """
-    if eligible_only and eligible_and_almost_eligible_only:
+    if (
+        sum([eligible_only, eligible_and_almost_eligible_only, almost_eligible_only])
+        > 1
+    ):
         raise ValueError(
-            f"|eligible_only| and |eligible_and_almost_eligible_only| cannot both be true for [{tes_task_query_view}]"
+            f"Only one of |eligible_only|, |eligible_and_almost_eligible_only|, or |almost_eligible_only| can be True for [{tes_task_query_view}]"
         )
     eligible_condition = ""
     if eligible_only:
         eligible_condition = "AND tes.is_eligible"
     elif eligible_and_almost_eligible_only:
         eligible_condition = "AND (tes.is_eligible OR tes.is_almost_eligible)"
+    elif almost_eligible_only:
+        eligible_condition = "AND tes.is_almost_eligible"
 
     return f"""SELECT
         pei.external_id,
