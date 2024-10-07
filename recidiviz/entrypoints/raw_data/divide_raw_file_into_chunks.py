@@ -36,9 +36,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
     get_region_raw_file_config,
 )
-from recidiviz.ingest.direct.raw_data.read_raw_file_column_headers import (
-    DirectIngestRawFileHeaderReader,
-)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
     RawFileProcessingError,
@@ -119,16 +116,9 @@ def _extract_file_chunks(
         region_raw_file_config, requires_pre_import_normalization_file_path
     )
 
-    # TODO(#33195) remove this and read headers for all files earlier in the import process
-    # and consider not prepending the headers onto chunks at all
-    # since they will be ignored when loaded to bq
-    headers = _get_file_headers(
-        fs, requires_pre_import_normalization_file_path, raw_file_config
-    )
-
     chunker = GcsfsCsvChunkBoundaryFinder(fs)
     chunks = chunker.get_chunks_for_gcs_path(
-        requires_pre_import_normalization_file_path
+        requires_pre_import_normalization_file_path,
     )
 
     return RequiresPreImportNormalizationFile(
@@ -140,17 +130,7 @@ def _extract_file_chunks(
             PreImportNormalizationType,
         ),
         chunk_boundaries=chunks,
-        headers=headers,
     )
-
-
-def _get_file_headers(
-    fs: GCSFileSystem,
-    input_gcs_path: GcsfsFilePath,
-    raw_file_config: DirectIngestRawFileConfig,
-) -> List[str]:
-    file_reader = DirectIngestRawFileHeaderReader(fs, raw_file_config)
-    return file_reader.read_and_validate_column_headers(input_gcs_path)
 
 
 def _get_raw_file_config(

@@ -105,7 +105,7 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         with self.fs.open(pass_result.output_file_path, "r", encoding="UTF-8") as f:
             assert f.read() == expected_output
 
-    def test_encoding_pass_simple(self) -> None:
+    def test_encoding_pass_simple_strip_headers(self) -> None:
         windows_config = attr.evolve(self.sparse_config, encoding="WINDOWS-1252")
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
@@ -117,13 +117,12 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=28, chunk_num=0
             ),
-            headers=["we-dont-want-headers-here"],
         )
-        expected_output = "col1,col2,col3\nhello,its,me\n"
+        expected_output = "hello,its,me\n"
 
         self.run_local_test(WINDOWS_FILE, chunk, expected_output)
 
-    def test_encoding_pass_simple_add_headers(self) -> None:
+    def test_encoding_pass_simple(self) -> None:
         windows_config = attr.evolve(self.sparse_config, encoding="WINDOWS-1252")
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
@@ -135,15 +134,12 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=28, end_exclusive=81, chunk_num=1
             ),
-            headers=["col1", "col2", "col3"],
         )
-        expected_output = (
-            "col1,col2,col3\ni was,wondering,if\nyou could, decode, the following:\n"
-        )
+        expected_output = "i was,wondering,if\nyou could, decode, the following:\n"
 
         self.run_local_test(WINDOWS_FILE, chunk, expected_output)
 
-    def test_encoding_pass_simple_add_headers_decode(self) -> None:
+    def test_encoding_pass_simple_decode(self) -> None:
         windows_config = attr.evolve(self.sparse_config, encoding="WINDOWS-1252")
         self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
 
@@ -155,13 +151,12 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=81, end_exclusive=93, chunk_num=2
             ),
-            headers=["col1", "col2", "col3"],
         )
-        expected_output = "col1,col2,col3\ná,æ,Ö\nì,ÿ,÷\n"
+        expected_output = "á,æ,Ö\nì,ÿ,÷\n"
 
         self.run_local_test(WINDOWS_FILE, chunk, expected_output)
 
-    def test_normalization_pass_simple(self) -> None:
+    def test_normalization_pass_simple_strip_headers(self) -> None:
         windows_config = attr.evolve(
             self.sparse_config,
             encoding="WINDOWS-1252",
@@ -177,12 +172,11 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=28, chunk_num=0
             ),
-            headers=["we-dont-want-to-add-headers"],
         )
-        expected_output = '"col1","col2","col3"\n"hello","its","me"\n'
+        expected_output = '"hello","its","me"\n'
         self.run_local_test(WINDOWS_FILE_CUSTOM_NEWLINES, chunk, expected_output)
 
-    def test_normalization_pass_simple_add_headers_decode(self) -> None:
+    def test_normalization_pass_simple_decode(self) -> None:
         windows_config = attr.evolve(
             self.sparse_config,
             encoding="WINDOWS-1252",
@@ -198,13 +192,12 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=81, end_exclusive=93, chunk_num=1
             ),
-            headers=['"col1"', '"col2"', '"col3"'],
         )
-        expected_output = '"col1","col2","col3"\n"á","æ","Ö"\n"ì","ÿ","÷"\n'
+        expected_output = '"á","æ","Ö"\n"ì","ÿ","÷"\n'
 
         self.run_local_test(WINDOWS_FILE_CUSTOM_NEWLINES, chunk, expected_output)
 
-    def test_normalization_pass_more_complex(self) -> None:
+    def test_normalization_pass_more_complex_strip_headers(self) -> None:
         windows_config = attr.evolve(
             self.sparse_config,
             encoding="WINDOWS-1252",
@@ -221,14 +214,13 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=40, chunk_num=0
             ),
-            headers=["we-dont-want-to-add-headers"],
         )
-        expected_output = '"col1","col2","col3"\n"hello,,,","its,,,,","me,,,,,"\n'
+        expected_output = '"hello,,,","its,,,,","me,,,,,"\n'
         self.run_local_test(
             WINDOWS_FILE_CUSTOM_NEWLINES_CUSTOM_DELIM, chunk, expected_output
         )
 
-    def test_normalization_pass_more_complex_add_headers_decode(self) -> None:
+    def test_normalization_pass_more_complex(self) -> None:
         windows_config = attr.evolve(
             self.sparse_config,
             encoding="WINDOWS-1252",
@@ -245,15 +237,14 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=96, end_exclusive=108, chunk_num=1
             ),
-            headers=['"col1"', '"col2"', '"col3"'],
         )
-        expected_output = '"col1","col2","col3"\n"á","æ","Ö"\n"ì","ÿ","÷"\n'
+        expected_output = '"á","æ","Ö"\n"ì","ÿ","÷"\n'
 
         self.run_local_test(
             WINDOWS_FILE_CUSTOM_NEWLINES_CUSTOM_DELIM, chunk, expected_output
         )
 
-    def test_normalization_pass_more_complex_ii(self) -> None:
+    def test_normalization_pass_more_complex_ii_strip_headers(self) -> None:
         windows_config = attr.evolve(
             self.sparse_config,
             encoding="WINDOWS-1252",
@@ -270,12 +261,11 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=42, chunk_num=0
             ),
-            headers=["we-dont-want-to-add-headers"],
         )
-        expected_output = '"col1","col2","col3"\n"hello,,,","its,,,,","me,,,,,"\n'
+        expected_output = '"hello,,,","its,,,,","me,,,,,"\n'
         self.run_local_test(WINDOWS_FILE_MULIBYTE_NEWLINES, chunk, expected_output)
 
-    def test_normalization_pass_more_complex_ii_add_headers_decode(self) -> None:
+    def test_normalization_pass_more_complex_ii(self) -> None:
         windows_config = attr.evolve(
             self.sparse_config,
             encoding="WINDOWS-1252",
@@ -292,9 +282,8 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=100, end_exclusive=107, chunk_num=3
             ),
-            headers=['"col1"', '"col2"', '"col3"'],
         )
-        expected_output = '"col1","col2","col3"\n"á","æ","Ö"\n'
+        expected_output = '"á","æ","Ö"\n'
 
         self.run_local_test(WINDOWS_FILE_MULIBYTE_NEWLINES, chunk, expected_output)
 
@@ -311,7 +300,6 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=100, chunk_num=0
             ),
-            headers=['"col1"', '"col2"', '"col3"'],
         )
         newer_path = GcsfsFilePath.from_absolute_path(
             f"gs://my-bucket/unprocessed_2024-01-21T16:35:33:617135_raw_{file_tag}.csv"
@@ -322,7 +310,6 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=100, chunk_num=0
             ),
-            headers=['"col1"', '"col2"', '"col3"'],
         )
 
         self.assertNotEqual(
@@ -344,7 +331,6 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=100, chunk_num=0
             ),
-            headers=['"col1"', '"col2"', '"col3"'],
         )
         chunked_file_2_path = GcsfsFilePath.from_absolute_path(
             f"gs://my-bucket/unprocessed_{update_datetime}_raw_{file_tag}-2.csv"
@@ -355,7 +341,6 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
             chunk_boundary=CsvChunkBoundary(
                 start_inclusive=0, end_exclusive=100, chunk_num=0
             ),
-            headers=['"col1"', '"col2"', '"col3"'],
         )
 
         self.assertNotEqual(

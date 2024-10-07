@@ -517,8 +517,10 @@ class RawFileBigQueryLoadConfig(BaseResult):
             appear in the raw file config if the headers are not present in the raw file.
             All fields are nullable and are of type STRING.
         skip_leading_rows: int: the number of rows to skip when loading the raw file to BQ.
-            If the raw file contains headers, all chunks will be prepended with the header
-            row, and this value should be 1 so the header row is skipped for all chunks.
+            If the raw file contains headers and does not require normalization, the file
+            will be uploaded as is, so this value should be 1 so the header row is skipped.
+            If the raw file contains headers and requires normalization, the first normalized
+            chunk will begin at the second row of the file, so this value should be 0.
             If the raw file does not contain headers, this should be 0."""
 
     schema_fields: List[bigquery.SchemaField] = attr.ib(
@@ -559,13 +561,23 @@ class RawFileBigQueryLoadConfig(BaseResult):
         raw_file_config: DirectIngestRawFileConfig,
     ) -> "RawFileBigQueryLoadConfig":
         raw_file_contains_headers = not raw_file_config.infer_columns_from_config
+        raw_file_requires_normalization = (
+            PreImportNormalizationType.required_pre_import_normalization_type(
+                raw_file_config
+            )
+            is not None
+        )
 
         return cls(
             schema_fields=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
                 raw_file_config=raw_file_config,
                 include_recidiviz_managed_fields=False,
             ),
-            skip_leading_rows=(1 if raw_file_contains_headers else 0),
+            skip_leading_rows=(
+                1
+                if raw_file_contains_headers and not raw_file_requires_normalization
+                else 0
+            ),
         )
 
     @classmethod
@@ -575,6 +587,12 @@ class RawFileBigQueryLoadConfig(BaseResult):
         raw_file_config: DirectIngestRawFileConfig,
     ) -> "RawFileBigQueryLoadConfig":
         raw_file_contains_headers = not raw_file_config.infer_columns_from_config
+        raw_file_requires_normalization = (
+            PreImportNormalizationType.required_pre_import_normalization_type(
+                raw_file_config
+            )
+            is not None
+        )
 
         return cls(
             schema_fields=RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config_from_columns(
@@ -582,7 +600,11 @@ class RawFileBigQueryLoadConfig(BaseResult):
                 include_recidiviz_managed_fields=False,
                 columns=file_headers,
             ),
-            skip_leading_rows=(1 if raw_file_contains_headers else 0),
+            skip_leading_rows=(
+                1
+                if raw_file_contains_headers and not raw_file_requires_normalization
+                else 0
+            ),
         )
 
 
@@ -632,7 +654,7 @@ class PreImportNormalizationType(Enum):
 
 @attr.define
 class RequiresPreImportNormalizationFile(BaseResult):
-    """Encapsulates the path, the headers, the chunk boundaries for the file
+    """Encapsulates the path, the chunk boundaries for the file
     and the type of normalization required for the CSV to conform to
     BigQuery's load job standards.
 
@@ -645,7 +667,6 @@ class RequiresPreImportNormalizationFile(BaseResult):
         chunk_boundaries (List[CsvChunkBoundary]): the start_inclusive and end_exclusive
             byte offsets that specifies where each pre-import normalization process should
             start and stop reading from.
-        headers (List[str]): the column headers for path
     """
 
     path: GcsfsFilePath = attr.ib(validator=attr.validators.instance_of(GcsfsFilePath))
@@ -655,7 +676,6 @@ class RequiresPreImportNormalizationFile(BaseResult):
     chunk_boundaries: List[CsvChunkBoundary] = attr.ib(
         validator=attr_validators.is_list_of(CsvChunkBoundary)
     )
-    headers: List[str] = attr.ib(validator=attr_validators.is_list_of(str))
 
     @cached_property
     def parts(self) -> DirectIngestRawFilenameParts:
@@ -669,7 +689,6 @@ class RequiresPreImportNormalizationFile(BaseResult):
                 "chunk_boundaries": [
                     boundary.serialize() for boundary in self.chunk_boundaries
                 ],
-                "headers": self.headers,
             }
         )
 
@@ -685,7 +704,6 @@ class RequiresPreImportNormalizationFile(BaseResult):
                 CsvChunkBoundary.deserialize(boundary)
                 for boundary in data["chunk_boundaries"]
             ],
-            headers=data["headers"],
         )
 
     def to_file_chunks(self) -> List["RequiresPreImportNormalizationFileChunk"]:
@@ -698,7 +716,6 @@ class RequiresPreImportNormalizationFile(BaseResult):
                 path=self.path,
                 pre_import_normalization_type=self.pre_import_normalization_type,
                 chunk_boundary=chunk_boundary,
-                headers=self.headers,
             )
             individual_chunks.append(chunk)
         return individual_chunks
@@ -718,8 +735,6 @@ class RequiresPreImportNormalizationFileChunk(BaseResult):
         chunk_boundary (CsvChunkBoundary): the start_inclusive and end_exclusive byte
             offsets that specifies where the pre-import normalization process should
             start and stop reading from.
-        headers (List[str]): the column headers for path
-
     """
 
     path: GcsfsFilePath = attr.ib(validator=attr.validators.instance_of(GcsfsFilePath))
@@ -731,7 +746,6 @@ class RequiresPreImportNormalizationFileChunk(BaseResult):
     chunk_boundary: CsvChunkBoundary = attr.ib(
         validator=attr.validators.instance_of(CsvChunkBoundary)
     )
-    headers: List[str] = attr.ib(validator=attr_validators.is_list_of(str))
 
     def serialize(self) -> str:
         return json.dumps(
@@ -743,7 +757,6 @@ class RequiresPreImportNormalizationFileChunk(BaseResult):
                     else ""
                 ),
                 "chunk_boundary": self.chunk_boundary.serialize(),
-                "headers": self.headers,
             }
         )
 
@@ -756,7 +769,6 @@ class RequiresPreImportNormalizationFileChunk(BaseResult):
                 data["normalization_type"]
             ),
             chunk_boundary=CsvChunkBoundary.deserialize(data["chunk_boundary"]),
-            headers=data["headers"],
         )
 
 

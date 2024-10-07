@@ -166,7 +166,6 @@ class TestCreateChunkBatches(unittest.TestCase):
                 path=GcsfsFilePath.from_absolute_path(f"test/path_{i}.csv"),
                 chunk_boundaries=self._generate_chunk_boundaries(count=4),
                 pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
-                headers=["ID", "Name", "Age"],
             )
             for i in range(5)
         ]
@@ -182,7 +181,6 @@ class TestCreateChunkBatches(unittest.TestCase):
                 path=GcsfsFilePath.from_absolute_path(f"test/path_{i}.csv"),
                 chunk_boundaries=self._generate_chunk_boundaries(count=3),
                 pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
-                headers=["ID", "Name", "Age"],
             )
             for i in range(5)
         ]
@@ -199,7 +197,6 @@ class TestCreateChunkBatches(unittest.TestCase):
                 path=GcsfsFilePath.from_absolute_path(f"test/path_{i}.csv"),
                 chunk_boundaries=self._generate_chunk_boundaries(count=3),
                 pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
-                headers=["ID", "Name", "Age"],
             )
             for i in range(2)
         ]

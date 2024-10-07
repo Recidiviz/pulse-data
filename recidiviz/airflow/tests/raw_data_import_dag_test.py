@@ -1051,7 +1051,6 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=2, start_inclusive=4, end_exclusive=6
                         ),
                     ],
-                    headers=["aaaaaa"],
                 ),
                 RequiresPreImportNormalizationFile(
                     path=GcsfsFilePath.from_absolute_path(
@@ -1069,7 +1068,6 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=2, start_inclusive=4, end_exclusive=6
                         ),
                     ],
-                    headers=["aaaaaa"],
                 ),
                 RequiresPreImportNormalizationFile(
                     path=GcsfsFilePath.from_absolute_path(
@@ -1087,7 +1085,6 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=2, start_inclusive=4, end_exclusive=6
                         ),
                     ],
-                    headers=["aaaaaa"],
                 ),
             ]
         ]
@@ -1419,7 +1416,6 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=2, start_inclusive=4, end_exclusive=6
                         ),
                     ],
-                    headers=["aaaaaa"],
                 ),
                 RequiresPreImportNormalizationFile(
                     path=GcsfsFilePath.from_absolute_path(
@@ -1437,7 +1433,6 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=2, start_inclusive=4, end_exclusive=6
                         ),
                     ],
-                    headers=["aaaaaa"],
                 ),
                 RequiresPreImportNormalizationFile(
                     path=GcsfsFilePath.from_absolute_path(
@@ -1455,7 +1450,6 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             chunk_num=2, start_inclusive=4, end_exclusive=6
                         ),
                     ],
-                    headers=["aaaaaa"],
                 ),
             ]
         ]
@@ -1821,7 +1815,6 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                     chunk_num=2, start_inclusive=4, end_exclusive=6
                                 ),
                             ],
-                            headers=["aaaaaa"],
                         ),
                     ],
                     [
@@ -1841,7 +1834,6 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                                     chunk_num=2, start_inclusive=4, end_exclusive=6
                                 ),
                             ],
-                            headers=["aaaaaa"],
                         ),
                     ],
                     [],

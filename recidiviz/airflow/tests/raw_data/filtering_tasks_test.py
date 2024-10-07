@@ -61,7 +61,6 @@ class FilterChunkingResultsTest(TestCase):
                 ),
                 chunk_boundaries=self._generate_chunk_boundaries(count=4),
                 pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
-                headers=["ID", "Name", "Age"],
             )
             for i in range(5)
         ]
@@ -81,7 +80,6 @@ class FilterChunkingResultsTest(TestCase):
                 ),
                 chunk_boundaries=self._generate_chunk_boundaries(count=4),
                 pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
-                headers=["ID", "Name", "Age"],
             )
             for i in range(5)
         ]
@@ -91,7 +89,6 @@ class FilterChunkingResultsTest(TestCase):
             ),
             chunk_boundaries=self._generate_chunk_boundaries(count=4),
             pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
-            headers=["ID", "Name", "Age"],
         )
 
         chunks = [*non_blocked_chunks, blocked_chunk]

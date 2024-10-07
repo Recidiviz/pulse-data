@@ -76,12 +76,6 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
         ).start()
         self.addCleanup(patch_chunker.stop)
 
-        patch_headers = patch(
-            "recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks._get_file_headers",
-            return_value=["ID", "Name", "Age"],
-        ).start()
-        self.addCleanup(patch_headers.stop)
-
     def test_successful_processing(self) -> None:
         serialized_result = extract_file_chunks_concurrently(
             self.requires_normalization_files,
@@ -112,7 +106,6 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
                 path=requires_pre_import_normalization_file_path,
                 chunk_boundaries=[],
                 pre_import_normalization_type=PreImportNormalizationType.ENCODING_UPDATE_ONLY,
-                headers=["ID", "Name", "Age"],
             )
 
         with patch(
