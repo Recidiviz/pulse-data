@@ -271,6 +271,7 @@ def main() -> int:
         "recidiviz.cloud_storage.gcsfs_path",
         "recidiviz.ingest.direct.dataset_config",
         "recidiviz.ingest.direct.direct_ingest_regions",
+        "recidiviz.ingest.direct.gating",
         "recidiviz.ingest.direct.regions.direct_ingest_region_utils",
         "recidiviz.ingest.direct.types.direct_ingest_instance",
         "recidiviz.metrics.export.products",

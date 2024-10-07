@@ -17,7 +17,7 @@
 """Unit tests for GetMaxUpdateDateTimeSqlQueryGenerator"""
 import datetime
 import unittest
-from unittest.mock import Mock, create_autospec
+from unittest.mock import Mock, create_autospec, patch
 
 import freezegun
 import pandas as pd
@@ -29,23 +29,63 @@ from recidiviz.airflow.dags.calculation.ingest.get_max_update_datetime_sql_query
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 class TestGetMaxUpdateDateTimeSqlQueryGenerator(unittest.TestCase):
     """Unit tests for GetWatermarkSqlQueryGenerator"""
 
-    def test_generates_sql_correctly(self) -> None:
+    maxDiff = None
+
+    def setUp(self) -> None:
+        self.raw_data_import_dag_enabled_patcher = patch(
+            "recidiviz.airflow.dags.calculation.ingest.get_max_update_datetime_sql_query_generator.is_raw_data_import_dag_enabled"
+        )
+        self.raw_data_import_dag_enabled_mock = (
+            self.raw_data_import_dag_enabled_patcher.start()
+        )
+        self.raw_data_import_dag_enabled_mock.side_effect = self._gating
+
+    def tearDown(self) -> None:
+        self.raw_data_import_dag_enabled_patcher.stop()
+
+    @staticmethod
+    def _gating(state_code: StateCode, raw_data_instance: DirectIngestInstance) -> bool:
+        return (
+            state_code == StateCode.US_LL
+            and raw_data_instance == DirectIngestInstance.PRIMARY
+        )
+
+    def test_generates_sql_correctly_with_legacy_raw_data(self) -> None:
         expected_query = """
-            SELECT file_tag, MAX(update_datetime) AS max_update_datetime
-            FROM direct_ingest_raw_file_metadata
-            WHERE raw_data_instance = 'PRIMARY' 
-            AND is_invalidated = false 
-            AND file_processed_time IS NOT NULL 
-            AND region_code = 'US_XX'
-            GROUP BY file_tag;
-        """
+SELECT file_tag, MAX(update_datetime) AS max_update_datetime
+FROM direct_ingest_raw_file_metadata
+WHERE raw_data_instance = 'PRIMARY' 
+AND is_invalidated = false 
+AND file_processed_time IS NOT NULL 
+AND region_code = 'US_XX'
+GROUP BY file_tag;
+"""
         self.assertEqual(
-            GetMaxUpdateDateTimeSqlQueryGenerator.sql_query(
+            GetMaxUpdateDateTimeSqlQueryGenerator.legacy_raw_data_sql_query(
+                region_code="US_XX", ingest_instance="PRIMARY"
+            ),
+            expected_query,
+        )
+
+    def test_generates_sql_correctly_with_new_raw_data(self) -> None:
+        expected_query = """
+SELECT file_tag, MAX(update_datetime) AS max_update_datetime
+FROM direct_ingest_raw_big_query_file_metadata
+WHERE raw_data_instance = 'PRIMARY' 
+AND is_invalidated IS FALSE
+AND file_processed_time IS NOT NULL 
+AND region_code = 'US_XX'
+GROUP BY file_tag;
+"""
+        self.assertEqual(
+            GetMaxUpdateDateTimeSqlQueryGenerator.new_raw_data_sql_query(
                 region_code="US_XX", ingest_instance="PRIMARY"
             ),
             expected_query,
@@ -82,3 +122,45 @@ class TestGetMaxUpdateDateTimeSqlQueryGenerator(unittest.TestCase):
         )
 
         self.assertDictEqual(results, sample_data)
+
+    def test_gating(self) -> None:
+        mock_operator = create_autospec(CloudSqlQueryOperator)
+
+        us_ll_generator = GetMaxUpdateDateTimeSqlQueryGenerator(region_code="US_LL")
+        us_yy_generator = GetMaxUpdateDateTimeSqlQueryGenerator(region_code="US_YY")
+
+        dag_run = Mock()
+        dag_run.conf = {"ingest_instance": "PRIMARY"}
+        dag_run.dag_id = "test_dag"
+        dag_run.run_id = "test_run"
+        mock_context = {"dag_run": dag_run}
+
+        us_ll_mock_postgres = create_autospec(PostgresHook)
+        us_ll_mock_postgres.get_pandas_df.return_value = pd.DataFrame()
+
+        us_ll_results = us_ll_generator.execute_postgres_query(
+            mock_operator, us_ll_mock_postgres, mock_context
+        )
+
+        assert us_ll_results == {}
+
+        assert us_ll_mock_postgres.get_pandas_df.call_args[0][
+            0
+        ] == us_ll_generator.new_raw_data_sql_query(
+            StateCode.US_LL.value, DirectIngestInstance.PRIMARY.value
+        )
+
+        us_yy_mock_postgres = create_autospec(PostgresHook)
+        us_yy_mock_postgres.get_pandas_df.return_value = pd.DataFrame()
+
+        us_yy_results = us_yy_generator.execute_postgres_query(
+            mock_operator, us_yy_mock_postgres, mock_context
+        )
+
+        assert us_yy_results == {}
+
+        assert us_yy_mock_postgres.get_pandas_df.call_args[0][
+            0
+        ] == us_yy_generator.legacy_raw_data_sql_query(
+            StateCode.US_YY.value, DirectIngestInstance.PRIMARY.value
+        )
