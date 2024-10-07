@@ -203,7 +203,7 @@ class StateIngestViewParserTestBase:
 
         result = []
         for file in os.listdir(manifest_dir):
-            if file == "__init__.py":
+            if file in ("__init__.py", "__pycache__"):
                 continue
             manifest_path = os.path.join(manifest_dir, file)
             result.append(manifest_path)

@@ -1,7 +1,12 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: AZ_DOC_SC_MAPPING
 file_description: |-
-  TODO(#25890): FILL IN
+  This file maps sentences to their concurrent or consecutive sentences if they exist.
+  For example, if sentence A and B are concurrent there will be a row with
+  OFFENSE_ID A, TYPE_ID concurrent (in lookups table), CC_CONS_OFFENSE_ID B.
+  If they are consecutive with A served before B there will be a row with,
+  OFFENSE_ID A, TYPE_ID consecutive (in lookups table), CC_CONS_OFFENSE_ID B.
+  Note in this example A is the "parent sentence"
 data_classification: source
 primary_key_cols:
   - MAPPING_ID
@@ -24,7 +29,8 @@ columns:
       Is record logically deleted?
   - name: CREATE_USERID
     description: |-
-      Foreign key to PERSON
+      The ID of the user that created this record (foreign key to that person).
+      This is not the ID of the person serving the sentence.
     is_pii: True
   - name: CREATE_DTM
     description: |-
