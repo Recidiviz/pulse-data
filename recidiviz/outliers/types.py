@@ -55,6 +55,7 @@ class OutliersMetricValueType(Enum):
     AVERAGE = "AVERAGE"
     # Implies that the value is divided by the avg_daily_population
     RATE = "RATE"
+    PROPORTION = "PROPORTION"
 
 
 class ConfigurationStatus(Enum):
