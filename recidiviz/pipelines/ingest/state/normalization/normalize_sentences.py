@@ -140,6 +140,7 @@ def normalize_sentence_lengths(
             length.projected_completion_date_max_external,
         )
 
+        # TODO(#34048): Consider disallowing default values in normalized entities.
         normalized_lengths.append(
             NormalizedStateSentenceLength(
                 sequence_num=idx + 1,
@@ -153,6 +154,7 @@ def normalize_sentence_lengths(
                 sentence_length_days_max=days_max,
                 projected_completion_date_min_external=comp_date_min,
                 projected_completion_date_max_external=comp_date_max,
+                parole_eligibility_date_external=length.parole_eligibility_date_external,
             )
         )
     return normalized_lengths
