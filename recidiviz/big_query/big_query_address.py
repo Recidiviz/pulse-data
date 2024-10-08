@@ -18,6 +18,7 @@
 or table.
 """
 import re
+from typing import Iterable
 
 import attr
 from google.cloud import bigquery
@@ -96,6 +97,23 @@ class BigQueryAddress:
         prefix ('us_xx_') or ends with a state code suffix ('_us_xx').
         """
         return bool(self.state_code_for_address())
+
+    @staticmethod
+    def addresses_to_str(
+        addresses: Iterable["BigQueryAddress"], *, indent_level: int = 0
+    ) -> str:
+        """Formats the collection of addresses as a sorted, bulleted, multi-line string.
+        If provided, the |indent_level| indicates the number of spaces each line of the
+        list will be indented by.
+        """
+        indent_str = " " * indent_level
+        if not addresses:
+            return ""
+        list_str = "\n".join(
+            f"{indent_str}* {a.to_str()}"
+            for a in sorted(addresses, key=lambda a: (a.dataset_id, a.table_id))
+        )
+        return f"\n{list_str}\n"
 
 
 @attr.s(frozen=True, kw_only=True, order=True)

@@ -247,3 +247,39 @@ class TestBigQueryAddress(unittest.TestCase):
             r"us_yy_raw_data_us_xx.my_table: \['US_XX', 'US_YY'\]",
         ):
             _ = address.state_code_for_address()
+
+    def test_addresses_to_str(self) -> None:
+        self.assertEqual("", BigQueryAddress.addresses_to_str([]))
+
+        expected = """
+* dataset.table
+* dataset.table_2
+* dataset_1.table
+* dataset_2.table
+"""
+        self.assertEqual(
+            expected,
+            BigQueryAddress.addresses_to_str(
+                {
+                    BigQueryAddress.from_str("dataset.table"),
+                    BigQueryAddress.from_str("dataset_1.table"),
+                    BigQueryAddress.from_str("dataset_2.table"),
+                    BigQueryAddress.from_str("dataset.table_2"),
+                }
+            ),
+        )
+
+        expected = """
+    * dataset.table_2
+    * dataset_2.table
+"""
+        self.assertEqual(
+            expected,
+            BigQueryAddress.addresses_to_str(
+                {
+                    BigQueryAddress.from_str("dataset_2.table"),
+                    BigQueryAddress.from_str("dataset.table_2"),
+                },
+                indent_level=4,
+            ),
+        )

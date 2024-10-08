@@ -16,12 +16,15 @@
 # =============================================================================
 """Tests for verifying view graph syntax and column names"""
 import logging
+from concurrent import futures
 from itertools import groupby
 from typing import Sequence
 
 import pytest
+from google.api_core.exceptions import InternalServerError
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager import (
@@ -38,10 +41,18 @@ from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    GCP_PROJECTS,
+)
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type
 from recidiviz.validation.views.view_config import (
     CROSS_PROJECT_VALIDATION_VIEW_BUILDERS,
+)
+from recidiviz.view_registry.deployed_address_schema_utils import (
+    get_deployed_addresses_without_state_code_column,
 )
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
@@ -117,7 +128,8 @@ def _preprocess_views_to_load_to_emulator(
 class BaseViewGraphTest(BigQueryEmulatorTestCase):
     """Base class for view graph validation tests"""
 
-    project_id: str | None = None
+    # The project_id to use for all view collection / building operations.
+    gcp_project_id: str | None = None
 
     # Currently, we only run one test per emulator set-up/teardown, so there's no benefit to wiping emulator data
     # We disable this functionality in order to save time on teardown
@@ -129,18 +141,31 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
 
     _view_builders_to_update: list[BigQueryViewBuilder] = []
     _source_table_addresses: list[BigQueryAddress] = []
+    _known_no_state_col_addresses: set[BigQueryAddress] = set()
+
+    @classmethod
+    def _get_gcp_project_id(cls) -> str:
+        if cls.gcp_project_id is None:
+            raise ValueError(
+                "Must specify gcp_project_id when running the view graph validation test"
+            )
+
+        if cls.gcp_project_id not in GCP_PROJECTS:
+            raise ValueError(f"Invalid project id: {cls.gcp_project_id}")
+
+        return cls.gcp_project_id
 
     @classmethod
     def setUpClass(cls) -> None:
-        if cls.project_id is None:
-            raise ValueError(
-                "Must specify project id when running the view graph validation test"
-            )
-
-        with local_project_id_override(cls.project_id):
+        with local_project_id_override(cls._get_gcp_project_id()):
             view_builders_to_update = deployed_view_builders()
             dag_walker = BigQueryViewDagWalker(
                 [view_builder.build() for view_builder in view_builders_to_update]
+            )
+            cls._known_no_state_col_addresses = (
+                get_deployed_addresses_without_state_code_column(
+                    cls._get_gcp_project_id()
+                )
             )
 
         if cls.addresses_to_test:
@@ -160,21 +185,108 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             cls._source_table_addresses = list(sub_dag.get_referenced_source_tables())
         else:
             cls._view_builders_to_update = view_builders_to_update
+            cls._source_table_addresses = list(
+                dag_walker.get_referenced_source_tables()
+            )
 
         super().setUpClass()
 
-    @classmethod
-    def get_source_tables(cls) -> list[SourceTableCollection]:
-        if cls.project_id is None:
+    def _has_state_code_column(self, address: BigQueryAddress) -> bool | None:
+        if not self.bq_client.table_exists(address):
+            # This view was skipped for optimization reasons, do not check for a
+            # state_code column.
+            return None
+
+        project_specific_address = address.to_project_specific_address(
+            assert_type(self.project_id, str)
+        )
+
+        # TODO(#33979): The emulator does not properly hydrate the the schema field
+        #  on tables so we test for the existence of a state_code column by trying
+        #  to query it. We can replace this with a call to
+        #  self.bq_client.get_table(address).schema when that issue is fixed.
+        try:
+            query = f"""
+                SELECT state_code 
+                FROM {project_specific_address.format_address_for_query()}
+                LIMIT 0
+            """
+            query_job = self.bq_client.run_query_async(
+                query_str=query, use_query_cache=False
+            )
+            query_job.result()
+            return True
+        except InternalServerError:
+            return False
+
+    def _check_for_missing_state_code_column_views(self) -> None:
+        """Raises an error if we find any views that do not have a state_code column
+        and have not been explicitly exempted from having one.
+        """
+
+        has_state_code_addresses = set()
+        missing_state_code_addresses = set()
+        skipped_addresses = set()
+        with futures.ThreadPoolExecutor(
+            # Conservatively allow only half as many workers as allowed connections.
+            # Lower this number if we see "urllib3.connectionpool:Connection pool is
+            # full, discarding connection" errors.
+            max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+        ) as executor:
+            get_has_column_futures = {
+                executor.submit(self._has_state_code_column, vb.address): vb.address
+                for vb in self._view_builders_to_update
+            }
+            for future in futures.as_completed(get_has_column_futures):
+                address = get_has_column_futures[future]
+                has_state_code_col = future.result()
+                if has_state_code_col is None:
+                    skipped_addresses.add(address)
+                elif has_state_code_col:
+                    has_state_code_addresses.add(address)
+                else:
+                    missing_state_code_addresses.add(address)
+
+        expected_missing_state_code_addresses = {
+            a for a in self._known_no_state_col_addresses if a not in skipped_addresses
+        }
+
+        unexpected_missing_state_code_addresses = (
+            missing_state_code_addresses - expected_missing_state_code_addresses
+        )
+        if unexpected_missing_state_code_addresses:
+            addresses_list = BigQueryAddress.addresses_to_str(
+                unexpected_missing_state_code_addresses, indent_level=2
+            )
             raise ValueError(
-                "Must specify project id when running the view graph validation test"
+                f"Found unexpected views with no state_code column:{addresses_list}"
+                f"\nIf there is an expected reason why these views don't have a "
+                f"state_code column, add exemptions in "
+                f"recidiviz/view_registry/deployed_address_schema_utils.py."
             )
 
+        unexpected_has_state_code_addresses = has_state_code_addresses.intersection(
+            expected_missing_state_code_addresses
+        )
+        if unexpected_has_state_code_addresses:
+            addresses_list = BigQueryAddress.addresses_to_str(
+                unexpected_has_state_code_addresses, indent_level=2
+            )
+            raise ValueError(
+                f"Found views / tables that have state_code columns but are returned "
+                f"by get_deployed_addresses_without_state_code_column() but which have "
+                f"a state_code column:{addresses_list}\nThese should be removed from "
+                f"that list."
+            )
+
+    @classmethod
+    def get_source_tables(cls) -> list[SourceTableCollection]:
         # The view graph validation test uses all source tables
-        # When debugging failures, it may be easier to filter this list of collections down to just the failing set
-        with local_project_id_override(cls.project_id):
+        # When debugging failures, it may be easier to filter this list of collections
+        # down to just the failing set
+        with local_project_id_override(cls._get_gcp_project_id()):
             repository = build_source_table_repository_for_collected_schemata(
-                project_id=cls.project_id
+                project_id=cls.gcp_project_id
             )
 
         if cls._source_table_addresses:
@@ -225,9 +337,11 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             allow_slow_views=True,
         )
 
+        self._check_for_missing_state_code_column_views()
+
 
 class StagingViewGraphTest(BaseViewGraphTest):
-    project_id = GCP_PROJECT_STAGING
+    gcp_project_id = GCP_PROJECT_STAGING
 
     # When debugging this test, view addresses can be added here in the form of `{dataset_id}.{view_id}`
     addresses_to_test: list[str] = []
@@ -237,7 +351,7 @@ class StagingViewGraphTest(BaseViewGraphTest):
 
 
 class ProductionViewGraphTest(BaseViewGraphTest):
-    project_id = GCP_PROJECT_PRODUCTION
+    gcp_project_id = GCP_PROJECT_PRODUCTION
 
     # When debugging this test, view addresses can be added here in the form of `{dataset_id}.{view_id}`
     addresses_to_test: list[str] = []

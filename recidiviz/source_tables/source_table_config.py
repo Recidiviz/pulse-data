@@ -47,6 +47,9 @@ class SourceTableConfig:
     deployed_projects: list[str] = attr.ib(factory=list)
     is_sandbox_table: bool = attr.ib(default=False)
 
+    def has_column(self, column: str) -> bool:
+        return any(c.name == column for c in self.schema_fields)
+
     def as_sandbox_table(self, sandbox_dataset_prefix: str) -> "SourceTableConfig":
         if self.is_sandbox_table:
             raise ValueError(
