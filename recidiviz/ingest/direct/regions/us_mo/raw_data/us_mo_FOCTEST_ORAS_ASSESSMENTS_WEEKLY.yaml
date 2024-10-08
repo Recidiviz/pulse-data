@@ -81,6 +81,12 @@ columns:
     is_pii: True
     description: |-
       Given name of the person who administered the assessment
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2021-09-04T00:00:00Z
   - name: E23
     description: |-
       Assessment Date (Date entered into UCCI system).
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2021-09-04T00:00:00Z
