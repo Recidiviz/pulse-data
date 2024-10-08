@@ -102,7 +102,7 @@ class SentenceToParentConsecutiveViewTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
         output_data = [
-            {"sentence_id": 2, "parent_sentence_id": 1},
+            {"state_code": "US_XX", "sentence_id": 2, "parent_sentence_id": 1},
         ]
         self.run_simple_view_builder_query_test_from_data(
             {self.sentence_address: input_data}, output_data
@@ -134,8 +134,8 @@ class SentenceToParentConsecutiveViewTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
         output_data = [
-            {"sentence_id": 2, "parent_sentence_id": 1},
-            {"sentence_id": 3, "parent_sentence_id": 1},
+            {"state_code": "US_XX", "sentence_id": 2, "parent_sentence_id": 1},
+            {"state_code": "US_XX", "sentence_id": 3, "parent_sentence_id": 1},
         ]
         self.run_simple_view_builder_query_test_from_data(
             {self.sentence_address: input_data}, output_data
@@ -167,8 +167,8 @@ class SentenceToParentConsecutiveViewTest(SimpleBigQueryViewBuilderTestCase):
             },
         ]
         output_data = [
-            {"sentence_id": 3, "parent_sentence_id": 1},
-            {"sentence_id": 3, "parent_sentence_id": 2},
+            {"state_code": "US_XX", "sentence_id": 3, "parent_sentence_id": 1},
+            {"state_code": "US_XX", "sentence_id": 3, "parent_sentence_id": 2},
         ]
         self.run_simple_view_builder_query_test_from_data(
             {self.sentence_address: input_data}, output_data
@@ -217,10 +217,10 @@ class SentenceToParentConsecutiveViewTest(SimpleBigQueryViewBuilderTestCase):
         ]
         # Sentence 1 <- [Sentence 2, Sentence 3] <- Sentence 4
         person_1_output = [
-            {"sentence_id": 2, "parent_sentence_id": 1},
-            {"sentence_id": 3, "parent_sentence_id": 1},
-            {"sentence_id": 4, "parent_sentence_id": 2},
-            {"sentence_id": 4, "parent_sentence_id": 3},
+            {"state_code": "US_XX", "sentence_id": 2, "parent_sentence_id": 1},
+            {"state_code": "US_XX", "sentence_id": 3, "parent_sentence_id": 1},
+            {"state_code": "US_XX", "sentence_id": 4, "parent_sentence_id": 2},
+            {"state_code": "US_XX", "sentence_id": 4, "parent_sentence_id": 3},
         ]
 
         person_2_input = [
@@ -241,7 +241,7 @@ class SentenceToParentConsecutiveViewTest(SimpleBigQueryViewBuilderTestCase):
         ]
         # Sentence 5 <- Sentence 6
         person_2_output = [
-            {"sentence_id": 6, "parent_sentence_id": 5},
+            {"state_code": "US_XX", "sentence_id": 6, "parent_sentence_id": 5},
         ]
         # Sentence 7 (no parent, no output)
         person_3_input = [

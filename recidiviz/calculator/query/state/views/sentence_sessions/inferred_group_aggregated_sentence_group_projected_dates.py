@@ -68,7 +68,8 @@ INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_ID = (
 QUERY_TEMPLATE = """
 WITH
 group_lengths AS (
-    SELECT 
+    SELECT
+        state_code,
         group_update_datetime, 
         sentence_group_id,
         sentence_inferred_group_id,
@@ -81,21 +82,22 @@ group_lengths AS (
     JOIN 
         `{project_id}.normalized_state.state_sentence_group`
     USING 
-        (sentence_group_id)
+        (state_code, sentence_group_id)
 ),
 -- We need this to get all critical dates
 _inferred_group_level AS (
-    SELECT DISTINCT group_update_datetime, sentence_inferred_group_id
+    SELECT DISTINCT state_code, group_update_datetime, sentence_inferred_group_id
     FROM group_lengths
 ),
 -- We need this to get all critical dates
 _external_groups_by_inferred_group AS (
-    SELECT DISTINCT sentence_group_id, sentence_inferred_group_id
+    SELECT DISTINCT state_code, sentence_group_id, sentence_inferred_group_id
     FROM group_lengths
 ),
 -- This gives us all external group projected dates for each inferred group critical date
 forward_filled_data AS (
     SELECT
+        state_code,
         group_update_datetime,
         sentence_group_id,
         sentence_inferred_group_id,
@@ -108,14 +110,15 @@ forward_filled_data AS (
     FULL JOIN
         _external_groups_by_inferred_group
     USING
-        (sentence_inferred_group_id)
+        (state_code, sentence_inferred_group_id)
     LEFT JOIN
         group_lengths
     USING
-        (sentence_group_id, sentence_inferred_group_id, group_update_datetime)
+        (state_code, sentence_group_id, sentence_inferred_group_id, group_update_datetime)
     WINDOW group_window AS (PARTITION BY sentence_group_id ORDER BY group_update_datetime)
 )
-SELECT 
+SELECT
+    state_code,
     sentence_inferred_group_id,
     group_update_datetime AS inferred_group_update_datetime,
     MAX(parole_eligibility_date_external) as parole_eligibility_date,
@@ -125,7 +128,7 @@ SELECT
 FROM
     forward_filled_data
 GROUP BY
-    sentence_inferred_group_id, group_update_datetime
+    state_code, sentence_inferred_group_id, group_update_datetime
 """
 
 
