@@ -36,7 +36,6 @@ from recidiviz.utils.metadata import local_project_id_override
 _DESCRIPTION = """Shows the spans of time during which someone in ME is eligible
 for a dishcarge from supervision
 """
-# TODO(#33472) - Fix the discrepancy between state_supervision_sentence and task_deadline
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_ME,
     task_name="OVERDUE_FOR_DISCHARGE_REQUEST",

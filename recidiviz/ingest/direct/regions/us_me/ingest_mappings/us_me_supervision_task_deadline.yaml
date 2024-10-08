@@ -7,8 +7,10 @@ input_columns:
   - Term_Id
   - Court_Order_Id
   - update_datetime
-  - Term_Comm_Rel_Date
-unused_columns: []
+  - Comm_Rel_Date
+  - PREV_Comm_Rel_Date
+unused_columns:
+  - PREV_Comm_Rel_Date
 output:
   StatePerson:
     external_ids:
@@ -18,7 +20,7 @@ output:
     task_deadlines:
       - StateTaskDeadline:
           task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_SUPERVISION)
-          eligible_date: Term_Comm_Rel_Date
+          eligible_date: Comm_Rel_Date
           update_datetime: update_datetime
           task_metadata:
             $json_dict:

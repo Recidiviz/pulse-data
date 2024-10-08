@@ -194,7 +194,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "sentences",
             "terms",
         ],
-        "supervision_task_deadline": ["sentences", "sorted", "terms"],
     },
     StateCode.US_NC: {
         "incarceration_periods": ["remove_nested_periods", "sentences"],
