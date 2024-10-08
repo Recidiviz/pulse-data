@@ -65,6 +65,10 @@ WHERE TRANSITION_PROGRAM_STATUS_ID IN (
 AND sc.FINAL_OFFENSE_ID = off.OFFENSE_ID
 -- This is only true in 52 rows out of ~30k
 AND PERSON_ID IS NOT NULL
+AND COALESCE(
+    NULLIF(TRANSITION_PROGRAM_RLS_DTM_ML, 'NULL'),
+    NULLIF(TRANSITION_PROGRAM_RLS_DTM_ARD, 'NULL'), 
+    NULLIF(TRANSITION_PROGRAM_RLS_DTM, 'NULL'), '1900-01-01') BETWEEN '1900-01-01' AND '2100-01-01'
 ),
 -- Return one row per person, per incarceration stint, when the person has been approved
 -- or tentatively approved for drug transition release for that stint. Each row will contain
@@ -99,7 +103,12 @@ WHERE DRUG_TRANSITION_PROGRAM_STATUS_ID IN (
 )
 -- This is only true in 52 rows out of ~30k
 AND PERSON_ID IS NOT NULL
+AND COALESCE(
+    NULLIF(DRUG_TRANSITION_PGM_RLS_DTM_ML, 'NULL'),
+    NULLIF(DRUG_TRANSITION_PGM_RLS_DTM_ARD, 'NULL'), 
+    NULLIF(DRUG_TRANSITION_PGM_RLS_DTM, 'NULL'), '1900-01-01') BETWEEN '1900-01-01' AND '2100-01-01'
 ),
+
 -- Maintain rows where the eligibility date for TPR changed; discard the rest. 
 tpr_changed_rows AS (
 -- 43,946 rows total
