@@ -44,6 +44,7 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
         ON
             cs.person_id = pei.person_id
             AND pei.state_code = 'US_AR'
+            AND pei.id_type = 'US_AR_OFFENDERID'
         WHERE cs.state_code = 'US_AR'
         AND cs.compartment_level_1 = 'INCARCERATION'
         AND cs.end_date_exclusive IS NULL
