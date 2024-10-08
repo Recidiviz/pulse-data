@@ -22,8 +22,10 @@ import re
 import attr
 from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference, TableReference
+from more_itertools import one
 
 from recidiviz.common import attr_validators
+from recidiviz.common.constants.states import StateCode
 
 
 @attr.s(frozen=True, kw_only=True, order=True)
@@ -66,18 +68,34 @@ class BigQueryAddress:
             table_id=self.table_id,
         )
 
+    def state_code_for_address(self) -> StateCode | None:
+        """Returns the StateCode associated with this address if this is a
+        state-specific address, otherwise returns None.
+        """
+        found_state_codes = set()
+        for s in [self.dataset_id, self.table_id]:
+            s_lower = s.lower()
+
+            if match := re.match("^(?P<state>us_[a-z]{2})_.*$", s_lower):
+                found_state_codes.add(StateCode(match.group("state").upper()))
+            if match := re.match("^.*_(?P<state>us_[a-z]{2})$", s_lower):
+                found_state_codes.add(StateCode(match.group("state").upper()))
+
+        if not found_state_codes:
+            return None
+
+        if len(found_state_codes) > 1:
+            raise ValueError(
+                f"Found more than one state code referenced by address "
+                f"{self.to_str()}: {sorted({s.value for s in found_state_codes})}"
+            )
+        return one(found_state_codes)
+
     def is_state_specific_address(self) -> bool:
         """Returns true if either of the dataset_id or table_id starts with a state code
         prefix ('us_xx_') or ends with a state code suffix ('_us_xx').
         """
-        is_state_specific = False
-        for s in [self.dataset_id, self.table_id]:
-            s_lower = s.lower()
-            is_state_specific |= bool(re.match("^us_[a-z]{2}_.*$", s_lower)) or bool(
-                re.match("^.*_us_[a-z]{2}$", s_lower)
-            )
-
-        return is_state_specific
+        return bool(self.state_code_for_address())
 
 
 @attr.s(frozen=True, kw_only=True, order=True)
