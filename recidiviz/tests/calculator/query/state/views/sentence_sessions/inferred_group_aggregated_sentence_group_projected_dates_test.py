@@ -128,6 +128,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         ]
         expected_data = [
             {
+                "state_code": self.state_code.value,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_1,
                 "parole_eligibility_date": None,
@@ -136,6 +137,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_full_term_release_date_max": self.projected_date_4,
             },
             {
+                "state_code": self.state_code.value,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_2,
                 "parole_eligibility_date": None,
@@ -183,6 +185,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         ]
         expected_data = [
             {
+                "state_code": self.state_code.value,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_1,
                 "parole_eligibility_date": None,
@@ -191,6 +194,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_full_term_release_date_max": self.projected_date_4,
             },
             {
+                "state_code": self.state_code.value,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_2,
                 "parole_eligibility_date": None,
@@ -199,6 +203,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 "projected_full_term_release_date_max": self.projected_date_2,
             },
             {
+                "state_code": self.state_code.value,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_3,
                 "parole_eligibility_date": None,

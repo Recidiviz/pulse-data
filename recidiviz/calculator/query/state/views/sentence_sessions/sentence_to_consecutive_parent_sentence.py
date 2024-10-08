@@ -31,7 +31,8 @@ from recidiviz.utils.metadata import local_project_id_override
 CONSECUTIVE_SENTENCE_VIEW_ID = "sentence_id_to_consecutive_sentence_id"
 
 QUERY_TEMPLATE = """
-    SELECT 
+    SELECT
+      child_sentences.state_code,
       child_sentences.sentence_id, 
       parent_sentences.sentence_id AS parent_sentence_id
     FROM 
