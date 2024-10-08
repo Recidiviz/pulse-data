@@ -145,7 +145,11 @@ US_OR_SERVED_6_MONTHS_SUPERVISION_QUERY_TEMPLATE = f"""
     {critical_date_has_passed_spans_cte(attributes=['sentence_id'])},
     critical_date_has_passed_spans_aggregated AS (
         -- aggregate adjacent spans to reduce number of rows
-        {aggregate_adjacent_spans("critical_date_has_passed_spans", index_columns=['state_code', 'person_id', 'sentence_id'], attribute=['critical_date_has_passed'])}
+        {aggregate_adjacent_spans(
+            "critical_date_has_passed_spans",
+            index_columns=['state_code', 'person_id', 'sentence_id'],
+            attribute=['critical_date_has_passed', 'critical_date']
+        )}
     )
     SELECT
         state_code,
@@ -154,6 +158,7 @@ US_OR_SERVED_6_MONTHS_SUPERVISION_QUERY_TEMPLATE = f"""
         start_date,
         end_date,
         critical_date_has_passed AS meets_criteria,
+        critical_date AS sentence_critical_date,
     FROM critical_date_has_passed_spans_aggregated
 """
 

@@ -128,6 +128,7 @@ _QUERY_TEMPLATE = f"""
             start_date,
             ssa.end_date,
             ssa.is_eligible,
+            ssa.sentence_eligibility_date,
             TO_JSON(STRUCT(
                 sentences.date_imposed AS sentence_imposed_date,
                 sentences.sentence_start_date AS supervision_sentence_start_date,
@@ -151,7 +152,10 @@ _QUERY_TEMPLATE = f"""
                 tool currently. */
                 COALESCE(days_absconded_by_span.days_absconded, 0) AS num_days_absconsion,
                 sentences.statute AS sentence_statute,
-                sentence_id AS sentence_id
+                sentence_id AS sentence_id,
+                ssa.sentence_eligibility_date,
+                ssa.is_eligible,
+                ssa.is_almost_eligible
             )) AS reason,
         FROM sub_sessions_with_attributes ssa
         LEFT JOIN sentences
@@ -168,36 +172,51 @@ _QUERY_TEMPLATE = f"""
         end_date,
         -- if any sentence is eligible, we consider the person to be eligible
         LOGICAL_OR(is_eligible) AS meets_criteria,
-        -- split out eligible and ineligible sentences
-        TO_JSON(STRUCT(ARRAY_AGG(IF(is_eligible, reason, NULL) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS eligible_sentences,
-                       ARRAY_AGG(IF(is_eligible, NULL, reason) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS ineligible_sentences)) AS reason,
+        TO_JSON(STRUCT(ARRAY_AGG(reason ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS active_sentences,
+                       MIN(sentence_eligibility_date) AS earliest_sentence_eligibility_date,
+                       # TODO(#33043): drop these 2 fields after the Polaris migration
+                       ARRAY_AGG(IF(is_eligible, reason, NULL) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS eligible_sentences,
+                       ARRAY_AGG(IF(is_eligible, NULL, reason) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS ineligible_sentences
+        )) AS reason,
+        ARRAY_AGG(reason ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS active_sentences,
+        MIN(sentence_eligibility_date) AS earliest_sentence_eligibility_date,
+        # TODO(#33043): drop these 2 fields after the Polaris migration
         ARRAY_AGG(IF(is_eligible, reason, NULL) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS eligible_sentences,
-        ARRAY_AGG(IF(is_eligible, NULL, reason) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS ineligible_sentences,          
+        ARRAY_AGG(IF(is_eligible, NULL, reason) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS ineligible_sentences,
     FROM sub_sessions_with_attributes_with_reasons
     GROUP BY 1, 2, 3, 4
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        state_code=StateCode.US_OR,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
-        sessions_dataset=SESSIONS_DATASET,
-        reasons_fields=[
-            ReasonsField(
-                name="eligible_sentences",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="Sentences eligible for earned discharge",
-            ),
-            ReasonsField(
-                name="ineligible_sentences",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="Sentences ineligible for earned discharge",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    state_code=StateCode.US_OR,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
+    reasons_fields=[
+        ReasonsField(
+            name="active_sentences",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Supervision sentences considered active during the criteria span",
+        ),
+        ReasonsField(
+            name="earliest_sentence_eligibility_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="The earliest earned discharge eligibility date over all active sentences",
+        ),
+        # TODO(#33043): drop these 2 fields after the Polaris migration to us_or_earned_discharge_sentence_record.py
+        ReasonsField(
+            name="eligible_sentences",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Sentences eligible for earned discharge",
+        ),
+        ReasonsField(
+            name="ineligible_sentences",
+            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+            description="Sentences ineligible for earned discharge",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

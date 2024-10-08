@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#33043): deprecate this file once the Polaris migration to us_or_earned_discharge_sentence_record is completed
 US_OR_EARNED_DISCHARGE_RECORD_VIEW_NAME = "us_or_earned_discharge_record"
 
 US_OR_EARNED_DISCHARGE_RECORD_DESCRIPTION = """
@@ -51,7 +52,7 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
                 COUNTY as county,
                 CONDITION_CODE as condition_code, 
                 CONDITION_DESC as condition_description
-            )) AS conditions
+            ) ORDER BY COUNTY, CONDITION_CODE, CONDITION_DESC) AS conditions
         FROM `{{project_id}}.us_or_raw_data_up_to_date_views.RCDVZ_CISPRDDTA_OPCOND_latest` op
         LEFT JOIN `{{project_id}}.us_or_raw_data_up_to_date_views.RCDVZ_DOCDTA_TBCOND_latest` 
         USING (CONDITION_CODE, CONDITION_TYPE)

@@ -554,6 +554,7 @@ def violations_within_time_interval_criteria_builder(
             vr.person_id,
             COALESCE(v.violation_date, vr.response_date) AS start_date,
             DATE_ADD(COALESCE(v.violation_date, vr.response_date), INTERVAL {date_interval} {date_part}) AS end_date,
+            DATE_ADD(COALESCE(v.violation_date, vr.response_date), INTERVAL {date_interval} {date_part}) AS violation_expiration_date,
             COALESCE(v.violation_date, vr.response_date) AS violation_date,
             {bool_column}
         FROM `{{project_id}}.normalized_state.state_supervision_violation_response` vr
@@ -572,8 +573,12 @@ def violations_within_time_interval_criteria_builder(
         start_date,
         end_date,
         LOGICAL_AND(meets_criteria) AS meets_criteria,
-        TO_JSON(STRUCT({violation_date_content_in_reason_blob} AS {violation_date_name_in_reason_blob})) AS reason,
+        TO_JSON(STRUCT(
+            {violation_date_content_in_reason_blob} AS {violation_date_name_in_reason_blob},
+            MAX(violation_expiration_date) AS violation_expiration_date
+        )) AS reason,
         {violation_date_content_in_reason_blob} AS {violation_date_name_in_reason_blob},
+        MAX(violation_expiration_date) AS violation_expiration_date,
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4
     """
@@ -592,6 +597,11 @@ def violations_within_time_interval_criteria_builder(
                     type=bigquery.enums.StandardSqlTypeNames.DATE,
                     description="Date when the violation occurred",
                 ),
+                ReasonsField(
+                    name="violation_expiration_date",
+                    type=bigquery.enums.StandardSqlTypeNames.DATE,
+                    description="Date when the violations will age out of the time interval",
+                ),
             ],
         )
 
@@ -605,6 +615,11 @@ def violations_within_time_interval_criteria_builder(
                 name=violation_date_name_in_reason_blob,
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date when the violation occurred",
+            ),
+            ReasonsField(
+                name="violation_expiration_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date when the violations will age out of the time interval",
             ),
         ],
     )

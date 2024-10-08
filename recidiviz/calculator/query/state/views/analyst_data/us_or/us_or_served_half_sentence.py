@@ -139,6 +139,7 @@ US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
         start_date,
         end_date,
         critical_date_has_passed AS meets_criteria,
+        critical_date AS sentence_critical_date,
     FROM critical_date_has_passed_spans
 """
 
