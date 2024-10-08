@@ -10,6 +10,7 @@ input_columns:
   - DISCVIOLSTATUSDT
   - HRGDATETIME
   - RPTDATETIME
+  - TYPEOFDISCCODE
   - DISCCODEVIOL
   - violation_seq
   - outcome_list
@@ -36,6 +37,18 @@ output:
                 - OFFENDERID
                 - VIOLATIONDATETIME
                 - violation_seq
+          incident_severity:
+            $conditional:
+              - $if:
+                  $not_null: TYPEOFDISCCODE
+                $then:
+                  $enum_mapping:
+                    $raw_text: TYPEOFDISCCODE
+                    $mappings:
+                      StateIncarcerationIncidentSeverity.HIGHEST:
+                        - "1" # Major
+                      StateIncarcerationIncidentSeverity.SECOND_HIGHEST:
+                        - "2" # Minor
           incident_type:
             $enum_mapping:
               $raw_text: DISCCODEVIOL
