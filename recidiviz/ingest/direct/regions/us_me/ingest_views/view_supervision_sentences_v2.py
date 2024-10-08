@@ -44,6 +44,10 @@ sentences as (
         Court_Order_Sent_Date,
         COALESCE(Est_Sent_Start_Date, Prob_Start_Date) AS Sentence_Start_Date,
         Comm_Rel_Date,
+        -- If the Comm_Rel_Date is in the future, the sentence hasn't been completed
+        -- yet, so we set completion date to null. If Comm_Rel_Date has passed, this
+        -- person has completed their sentence, and we can set the completion date
+        -- accordingly.
         IF(SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', Comm_Rel_Date) < @{UPDATE_DATETIME_PARAM_NAME}, Comm_Rel_Date, NULL) as completion_date,
         Prob_Yrs_Num,
         Prob_Mths_Num,

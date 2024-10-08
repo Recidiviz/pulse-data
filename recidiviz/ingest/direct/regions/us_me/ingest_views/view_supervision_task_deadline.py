@@ -23,49 +23,26 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH terms as (
-    SELECT
-        Term_Id,
-        Cis_100_Client_Id as Client_Id,
-        Comm_Rel_Date,
-        update_datetime
-    FROM {CIS_319_TERM@ALL} term
-),
-sentences as (
+WITH 
+-- `court_orders` adds the previous Comm_Rel_Date as an output column, so we can keep
+-- only record which indicate a change in the final query.
+court_orders as (
     SELECT
         Cis_400_Cis_100_Client_Id as Client_Id,
         Cis_319_Term_Id as Term_Id,
         Court_Order_Id,
-    FROM {CIS_401_CRT_ORDER_HDR} co
-    -- This is how we identify supervision sentences. All rows with this indicate a sentence to supervision.
-    WHERE Comm_Rel_Date IS NOT NULL
-),
-
-sorted as (SELECT DISTINCT
-    sentence.Client_Id as Client_Id,
-    sentence.Term_Id as Term_Id,
-    sentence.Court_Order_Id as Court_Order_Id,
-    term.Comm_Rel_Date AS Term_Comm_Rel_Date,
-    term.update_datetime as update_datetime,
-FROM sentences sentence
-LEFT JOIN terms term on sentence.Term_Id = term.Term_Id)
-
-SELECT 
-    Client_Id,
-    Term_Id,
-    Court_Order_Id,
-    Term_Comm_Rel_Date,
-    update_datetime
-FROM (SELECT 
-        Client_Id,
-        Term_Id,
-        Court_Order_Id,
-        Term_Comm_Rel_Date,
-        update_datetime,
-        LAG(Term_Comm_Rel_Date) OVER (PARTITION BY Client_Id, Term_Id,Court_Order_Id ORDER BY update_datetime) AS PREV_Term_Comm_Rel_Date
-from sorted) 
-where Term_Comm_Rel_Date != PREV_Term_Comm_Rel_Date
-or PREV_Term_Comm_Rel_Date is NULL
+        Comm_Rel_Date,
+        LAG(Comm_Rel_Date) OVER (PARTITION BY Cis_400_Cis_100_Client_Id, Cis_319_Term_Id, Court_Order_Id ORDER BY update_datetime) AS PREV_Comm_Rel_Date,
+        update_datetime
+    FROM {CIS_401_CRT_ORDER_HDR@ALL} co
+    -- This is how we identify supervision sentences. All rows with this indicate a
+    -- sentence to supervision.
+    WHERE Comm_Rel_Date is not null
+)
+select *
+from court_orders
+where Comm_Rel_Date != PREV_Comm_Rel_Date 
+or PREV_Comm_Rel_Date is NULL;
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
