@@ -16,6 +16,7 @@
 # =============================================================================
 """Returns all aggregated metric view builders for specified populations and units of analysis related to impact reports"""
 
+from calendar import monthrange
 import datetime
 from typing import List
 from dateutil.relativedelta import relativedelta
@@ -166,12 +167,21 @@ def get_impact_reports_aggregated_metrics_view_builders() -> List[
             # This logic shifts the min and max dates to ensure that all daily and weekly metrics have end_dates that fall on the first of the month
             min_date = MIN_DATE
             max_date = MAX_DATE
+            rolling_period_unit = MetricTimePeriod.MONTH
+            rolling_period_length = 1
+            if time_period in [MetricTimePeriod.DAY, MetricTimePeriod.WEEK]:
+                rolling_period_unit = MetricTimePeriod.DAY
+                # rolling_period_length should be the previous months number of days
+                if today.month == 1:
+                    rolling_period_length = monthrange((today.year - 1), 12)[1]
+                else:
+                    rolling_period_length = monthrange(today.year, (today.month - 1))[1]
             if time_period == MetricTimePeriod.DAY:
-                min_date = MIN_DATE - relativedelta(days=1)
-                max_date = MAX_DATE - relativedelta(days=1)
+                min_date = (MIN_DATE + relativedelta(months=1)) - relativedelta(days=1)
+                max_date = (MAX_DATE + relativedelta(months=1)) - relativedelta(days=1)
             elif time_period == MetricTimePeriod.WEEK:
-                min_date = MIN_DATE - relativedelta(days=7)
-                max_date = MAX_DATE - relativedelta(days=7)
+                min_date = (MIN_DATE + relativedelta(months=1)) - relativedelta(weeks=1)
+                max_date = (MAX_DATE + relativedelta(months=1)) - relativedelta(weeks=1)
 
             query_template = get_custom_aggregated_metrics_query_template(
                 metrics=metrics,
@@ -186,8 +196,8 @@ def get_impact_reports_aggregated_metrics_view_builders() -> List[
                 # the month instead of the default, which would be to do month-long metrics on just the
                 # first of the month. This allows us to generate reports for periods that don't fall
                 # neatly along month boundaries.
-                rolling_period_unit=MetricTimePeriod.MONTH,
-                rolling_period_length=1,
+                rolling_period_unit=rolling_period_unit,
+                rolling_period_length=rolling_period_length,
             )
 
             view_id = f"{MetricPopulationType.JUSTICE_INVOLVED.population_name_short}_{unit_of_analysis_type.short_name}_{time_period.value.lower()}_aggregated_metrics"
