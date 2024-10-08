@@ -125,5 +125,21 @@ AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)
 """
                 subqueries.append(completion_count_subquery)
 
+            officer_active_prop_subquery = f"""
+SELECT
+    {list_to_query_string(unit_of_analysis.primary_key_columns)},
+    period,
+    end_date,
+    "prop_period_with_critical_caseload" AS metric_id,
+    prop_period_with_critical_caseload AS metric_value,
+    "{OutliersMetricValueType.PROPORTION.value}" AS value_type
+FROM {source_table}
+WHERE state_code = '{state_code}'
+AND period = "YEAR"
+-- This will be used in tandem with opportunity completions, so we only need the most recent month's data.
+AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)
+"""
+            subqueries.append(officer_active_prop_subquery)
+
     query = "\nUNION ALL\n".join(subqueries)
     return query
