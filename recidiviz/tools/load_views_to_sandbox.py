@@ -41,7 +41,8 @@ To load all views that have changed since the last view deploy, but only look in
 datasets when considering which views have changed, run:
     python -m recidiviz.tools.load_views_to_sandbox \
        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto \
-       --changed_datasets_to_include [DATASET_ID_1,DATASET_ID_2,...]
+       --changed_datasets_to_include [DATASET_ID_1,DATASET_ID_2,...] \
+       --load_changed_views_only
 
 To manually choose which views to load, run:
     python -m recidiviz.tools.load_views_to_sandbox \

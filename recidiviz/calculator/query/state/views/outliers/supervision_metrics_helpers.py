@@ -21,9 +21,14 @@ from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATAS
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
+    MetricUnitOfAnalysisType,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states_for_bigquery,
+)
+from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
+    WORKFLOWS_OPPORTUNITY_CONFIGS,
+    PersonRecordType,
 )
 from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 from recidiviz.outliers.types import OutliersMetricValueType
@@ -42,7 +47,6 @@ def supervision_metric_query_template(
         if not cte_source
         else cte_source
     )
-
     subqueries = []
     for state_code in get_outliers_enabled_states_for_bigquery():
         config = get_outliers_backend_config(state_code)
@@ -96,6 +100,30 @@ AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
 """
 
             subqueries.extend([rate_subquery, count_subquery])
+        # If we're building an officer query, append subqueries for officer task
+        # completions (metrics that are unrelated to outlier outcomes)
+        if unit_of_analysis.type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
+            for opp_config in [
+                c
+                for c in WORKFLOWS_OPPORTUNITY_CONFIGS
+                if c.state_code.value == state_code
+                and c.person_record_type == PersonRecordType.CLIENT
+            ]:
+                completion_count_subquery = f"""
+SELECT
+    {list_to_query_string(unit_of_analysis.primary_key_columns)},
+    period,
+    end_date,
+    "task_completions_{opp_config.opportunity_type}" AS metric_id,
+    task_completions_{opp_config.task_completion_event.value} AS metric_value,
+    "{OutliersMetricValueType.COUNT.value}" AS value_type
+FROM {source_table}
+WHERE state_code = '{state_code}'
+AND period = "YEAR"
+-- For opportunity completions, we only need the most recent month's data.
+AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)
+"""
+                subqueries.append(completion_count_subquery)
 
     query = "\nUNION ALL\n".join(subqueries)
     return query
