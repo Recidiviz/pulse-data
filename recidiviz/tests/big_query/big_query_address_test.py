@@ -24,6 +24,7 @@ from recidiviz.big_query.big_query_address import (
     BigQueryAddress,
     ProjectSpecificBigQueryAddress,
 )
+from recidiviz.common.constants.states import StateCode
 
 
 class TestBigQueryAddress(unittest.TestCase):
@@ -181,3 +182,68 @@ class TestBigQueryAddress(unittest.TestCase):
                 f"Did not expect address [{address.to_str()}] to be identified as a "
                 f"state-specific address",
             )
+
+    def test_state_code_for_address(self) -> None:
+        us_xx_state_specific_addresses = [
+            BigQueryAddress.from_str("us_xx_raw_data.my_table"),
+            BigQueryAddress.from_str("us_xx_raw_data.us_xx_my_table"),
+            BigQueryAddress.from_str("my_dataset.us_xx_table"),
+            BigQueryAddress.from_str("my_dataset_us_xx.my_table"),
+            BigQueryAddress.from_str("my_dataset.my_table_us_xx"),
+            BigQueryAddress.from_str("US_XX_raw_data.my_table"),
+            BigQueryAddress.from_str("my_dataset.Us_Xx_table"),
+            BigQueryAddress.from_str("my_dataset_Us_Xx.my_table"),
+            BigQueryAddress.from_str("my_dataset.my_table_US_XX"),
+        ]
+
+        for address in us_xx_state_specific_addresses:
+            self.assertEqual(
+                StateCode.US_XX,
+                address.state_code_for_address(),
+                f"Expected address [{address.to_str()}] to be identified as a "
+                f"state-specific address for state US_XX",
+            )
+
+        us_yy_state_specific_addresses = [
+            BigQueryAddress.from_str("us_yy_raw_data.my_table"),
+            BigQueryAddress.from_str("my_dataset.my_table_us_yy"),
+        ]
+
+        for address in us_yy_state_specific_addresses:
+            self.assertEqual(
+                StateCode.US_YY,
+                address.state_code_for_address(),
+                f"Expected address [{address.to_str()}] to be identified as a "
+                f"state-specific address for state US_YY",
+            )
+
+        not_state_specific_addresses = [
+            BigQueryAddress.from_str("my_dataset.my_table"),
+            BigQueryAddress.from_str("us_states.my_table"),
+            BigQueryAddress.from_str("my_dataset.us_states"),
+            BigQueryAddress.from_str("my_dataset.US_STATES"),
+        ]
+
+        for address in not_state_specific_addresses:
+            self.assertIsNone(
+                address.state_code_for_address(),
+                f"Did not expect address [{address.to_str()}] to be identified as a "
+                f"state-specific address",
+            )
+
+    def test_state_code_for_address_multiple_states_referenced(self) -> None:
+        address = BigQueryAddress.from_str("us_yy_raw_data.us_xx_my_table")
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found more than one state code referenced by address "
+            r"us_yy_raw_data.us_xx_my_table: \['US_XX', 'US_YY'\]",
+        ):
+            _ = address.state_code_for_address()
+
+        address = BigQueryAddress.from_str("us_yy_raw_data_us_xx.my_table")
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found more than one state code referenced by address "
+            r"us_yy_raw_data_us_xx.my_table: \['US_XX', 'US_YY'\]",
+        ):
+            _ = address.state_code_for_address()
