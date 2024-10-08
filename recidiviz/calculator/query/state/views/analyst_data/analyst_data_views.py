@@ -105,6 +105,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_early_disch
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_home_plan_preprocessed import (
     US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_projected_dates import (
+    US_AZ_PROJECTED_DATES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_ca.us_ca_sustainable_housing_status_periods import (
     US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER,
 )
@@ -356,6 +359,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
     US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER,
+    US_AZ_PROJECTED_DATES_VIEW_BUILDER,
     US_TN_CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_PREPROCESSED_VIEW_BUILDER,
     CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_VIEW_BUILDER,
     NUMBER_MONTHS_BETWEEN_CUSTODY_DOWNGRADE_AND_ASSESSMENT_DUE_VIEW_BUILDER,
