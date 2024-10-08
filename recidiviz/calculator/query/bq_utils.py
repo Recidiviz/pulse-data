@@ -131,16 +131,6 @@ def filter_out_absconsions(
         "AND metric.included_in_state_population" if include_state_pop else ""
     )
     return f"""
-        WITH latest_periods AS (
-          SELECT
-            person_id,
-            state_code
-          FROM
-            `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
-          WHERE
-            termination_date IS NULL
-            AND IFNULL(admission_reason, '') != 'ABSCONSION'
-        )
         SELECT
             metric.*,
             staff.external_id AS supervising_officer_external_id,
@@ -149,10 +139,14 @@ def filter_out_absconsions(
             `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
         ON
             metric.supervising_officer_staff_id = staff.staff_id
-        INNER JOIN latest_periods lp
-        USING (person_id, state_code)
+        INNER JOIN
+            `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` supervision_period
+        ON
+            metric.person_id = supervision_period.person_id
+            AND metric.date_of_supervision BETWEEN supervision_period.start_date AND {nonnull_end_date_clause("supervision_period.termination_date")}
         WHERE staff.external_id IS NOT NULL
-            AND supervision_level IS NOT NULL
+            AND metric.supervision_level IS NOT NULL
+            AND IFNULL(supervision_period.admission_reason, '') != 'ABSCONSION'
             {include_state_pop_string}
     """
 
