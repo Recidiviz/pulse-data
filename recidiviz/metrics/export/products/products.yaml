@@ -121,6 +121,8 @@ products:
         environment: production
       - state_code: US_AR
         environment: production
+      - state_code: US_AZ
+        environment: production
   - name: Insights
     description: Insights is a state-agnostic product offering for staff performance and accountability.
     exports:
