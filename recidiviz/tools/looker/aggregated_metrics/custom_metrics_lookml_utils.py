@@ -535,6 +535,10 @@ def generate_assignment_event_metric_view(
         ]
     )
 
+    events_dataset_id = dataset_for_observation_type_cls(
+        unit_of_observation=unit_of_observation.type, observation_type_cls=EventType
+    )
+
     derived_table_query = f"""
     SELECT
         -- assignments
@@ -566,7 +570,7 @@ def generate_assignment_event_metric_view(
         FROM
             ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
         LEFT JOIN
-            `analyst_data.{unit_of_observation.type.short_name}_events_materialized` events
+            `{events_dataset_id}.all_{unit_of_observation.type.short_name}_events_materialized` events
         ON
             {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="assignments", table2="events")}
             AND events.event_date >= assignments.assignment_date
