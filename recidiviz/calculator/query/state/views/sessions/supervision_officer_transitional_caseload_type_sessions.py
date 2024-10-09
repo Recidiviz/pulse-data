@@ -68,6 +68,9 @@ SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
         --join all supervision officer sessions that start within the prioritized_supervision_session
         AND so.start_date BETWEEN ss.start_date AND {nonnull_end_date_exclusive_clause('ss.end_date_exclusive')}
     ),
+    caseload_type_sessions AS (
+        SELECT * FROM `{{project_id}}.sessions.supervision_staff_primary_specialized_caseload_type_sessions_materialized`
+    ),
     intersection_spans_cte AS (
     /* This CTE takes the intersection of supervision_officer_sessions_lookback and 
     supervision_staff_primary_specialized_caseload_type_sessions to add the field of specialized_caseload_type_primary
@@ -75,7 +78,7 @@ SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
      is subsessionized. */
         {create_intersection_spans(
             table_1_name= "supervision_officer_sessions_lookback",
-            table_2_name= "`{project_id}.{sessions_dataset}.supervision_staff_primary_specialized_caseload_type_sessions_materialized`",
+            table_2_name= "caseload_type_sessions",
             index_columns= ["state_code", "officer_id"],
             use_left_join = True,
             table_1_columns=["person_id"],
@@ -139,7 +142,6 @@ SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_VIEW_BUILDER = SimpleBig
     view_query_template=SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_QUERY_TEMPLATE,
     description=SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_VIEW_DESCRIPTION,
     clustering_fields=["state_code", "person_id"],
-    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 

@@ -733,7 +733,9 @@ The following views have less restrictive projects_to_deploy than their parents:
                 f"Found overlapping addresses between source tables and views: {overlapping_elements}"
             )
 
-    def test_regex_parent_table_parsing_matches_expected(self) -> None:
+    def _assert_regex_parent_table_parsing_matches_expected(
+        self, view: BigQueryView, tree_expression: sqlglot.exp.Expression
+    ) -> None:
         """In production code we use an (imperfect) regex mechanism to determine the
         parent tables of each of our BigQuery views because it is ~800x faster than the
         more correct alternative. This test makes sure that table references in our
@@ -741,6 +743,58 @@ The following views have less restrictive projects_to_deploy than their parents:
         getting identified as those that would be identified by the slower alternative
         (sqlglot).
         """
+
+        sqlglot_addresses = {
+            BigQueryAddress(dataset_id=table.db, table_id=table.name)
+            for table in list(tree_expression.find_all(sqlglot.exp.Table))
+            # If there's no dataset, then the reference is a CTE reference
+            if table.db
+        }
+
+        regex_addresses = view.parent_tables
+
+        if sqlglot_addresses != regex_addresses:
+            if missing_from_regex := sqlglot_addresses - regex_addresses:
+                raise ValueError(
+                    f"Found parent tables for view [{view.address.to_str()}] "
+                    f"identified by the sqlglot library that were not identified "
+                    f"by a regex. This will happen if you have a table that is not "
+                    f"formatted like `{{project_id}}.dataset.table` (surrounded "
+                    f"by backticks). Addresses not parsed by regexes: "
+                    f"{sorted(a.to_str() for a in missing_from_regex)}."
+                )
+            missing_from_sqlglot = regex_addresses - sqlglot_addresses
+            raise ValueError(
+                f"Found parent tables for view [{view.address.to_str()}] that were "
+                f"identified by regex that were not identified by the sqlglot "
+                f"library. This may happen when you have a table reference inside "
+                f"of a commented out piece of SQL code. You can fix this by "
+                f"removing the backticks from the table definitions so the table "
+                f"is not picked up by our regex matcher. Addresses not parsed by "
+                f"sqlglot: {sorted(a.to_str() for a in missing_from_sqlglot)}"
+            )
+
+    def _assert_valid_column_references(
+        self, view: BigQueryView, tree_expression: sqlglot.exp.Expression
+    ) -> None:
+        """Asserts that any column references in the view query are properly formatted."""
+        for column_expression in tree_expression.find_all(sqlglot.exp.Column):
+            if column_expression.catalog in {
+                view.project,
+                GCP_PROJECT_STAGING,
+                GCP_PROJECT_PRODUCTION,
+            }:
+                raise ValueError(
+                    f"Found column [{column_expression}] in view "
+                    f"[{view.address.to_str()}] which uses a fully-qualified reference "
+                    f"to its table. If you want to qualify a column name, use a table "
+                    f"alias. Columns formatted like "
+                    f"`recidiviz-staging.dataset.table`.column interfere with our "
+                    f"regex-based parent table inference."
+                )
+
+    def test_view_query_format(self) -> None:
+        """This test runs a series of checks on the parsed view query"""
         with local_project_id_override("recidiviz-456"):
             views = [
                 vb.build() for vb in self.all_deployed_view_builders_by_address.values()
@@ -753,35 +807,10 @@ The following views have less restrictive projects_to_deploy than their parents:
                     f"Failure to parse view [{view.address.table_id}]"
                 ) from e
 
-            sqlglot_addresses = {
-                BigQueryAddress(dataset_id=table.db, table_id=table.name)
-                for table in list(tree.find_all(sqlglot.exp.Table))
-                # If there's no dataset, then the reference is a CTE reference
-                if table.db
-            }
-
-            regex_addresses = view.parent_tables
-
-            if sqlglot_addresses != regex_addresses:
-                if missing_from_regex := sqlglot_addresses - regex_addresses:
-                    raise ValueError(
-                        f"Found parent tables for view [{view.address.to_str()}] "
-                        f"identified by the sqlglot library that were not identified "
-                        f"by a regex. This will happen if you have a table that is not "
-                        f"formatted like `{{project_id}}.dataset.table` (surrounded "
-                        f"by backticks). Addresses not parsed by regexes: "
-                        f"{sorted(a.to_str() for a in missing_from_regex)}."
-                    )
-                missing_from_sqlglot = regex_addresses - sqlglot_addresses
-                raise ValueError(
-                    f"Found parent tables for view [{view.address.to_str()}] that were "
-                    f"identified by regex that were not identified by the sqlglot "
-                    f"library. This may happen when you have a table reference inside "
-                    f"of a commented out piece of SQL code. You can fix this by "
-                    f"removing the backticks from the table definitions so the table "
-                    f"is not picked up by our regex matcher. Addresses not parsed by "
-                    f"sqlglot: {sorted(a.to_str() for a in missing_from_sqlglot)}"
-                )
+            self._assert_regex_parent_table_parsing_matches_expected(
+                view=view, tree_expression=tree
+            )
+            self._assert_valid_column_references(view=view, tree_expression=tree)
 
     def test_union_all_big_query_view_parents_valid(self) -> None:
         for view_address, node in self.dag_walker.nodes_by_address.items():
