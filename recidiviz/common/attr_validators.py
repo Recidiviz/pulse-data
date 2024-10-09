@@ -208,3 +208,31 @@ def is_list_of(list_item_expected_type: Type) -> IsListOfValidator:
 # Dict field validators
 is_dict = attr.validators.instance_of(dict)
 is_opt_dict = is_opt(dict)
+
+
+# Set field validators
+is_set = attr.validators.instance_of(set)
+is_opt_set = is_opt(set)
+
+
+class IsSetOfValidator:
+    def __init__(self, set_item_expected_type: Type) -> None:
+        self._set_item_expected_type = set_item_expected_type
+
+    def __call__(self, instance: Any, attribute: attr.Attribute, value: Any) -> None:
+        if not isinstance(value, set):
+            raise ValueError(
+                f"Found value for set type field [{attribute.name}] on class "
+                f"[{type(instance)}] which has non-set type [{type(value)}]."
+            )
+        for item in value:
+            if not isinstance(item, self._set_item_expected_type):
+                raise ValueError(
+                    f"Found item in set type field [{attribute.name}] on class "
+                    f"[{type(instance)}] which is not the expected type "
+                    f"[{self._set_item_expected_type}]: {type(item)}"
+                )
+
+
+def is_set_of(set_item_expected_type: Type) -> IsSetOfValidator:
+    return IsSetOfValidator(set_item_expected_type)

@@ -24,7 +24,7 @@ import attr
 import pytz
 
 from recidiviz.common import attr_validators
-from recidiviz.common.attr_validators import is_list_of
+from recidiviz.common.attr_validators import is_list_of, is_set_of
 
 
 class AttrValidatorsTest(unittest.TestCase):
@@ -316,7 +316,7 @@ class AttrValidatorsTest(unittest.TestCase):
         )
 
 
-@attr.s
+@attr.s(frozen=True)
 class _TestEmailClass:
     """
     Used in TestEmailValidator
@@ -482,4 +482,56 @@ class TestIsListOfValidator(unittest.TestCase):
             _ = self.TestClass(
                 list_of_str_field=[],
                 list_of_class_field=[None],  # type: ignore[list-item]
+            )
+
+
+class TestIsSetOfValidator(unittest.TestCase):
+    """Tests for the is_set_of() validator."""
+
+    @attr.define
+    class TestClass:
+        set_of_str_field: set[str] = attr.ib(validator=is_set_of(str))
+        set_of_class_field: set[_TestEmailClass] = attr.ib(
+            validator=is_set_of(_TestEmailClass)
+        )
+
+    def test_set_of_validator_correct_values(self) -> None:
+        _ = self.TestClass(
+            set_of_str_field={"a", "b"},
+            set_of_class_field={
+                _TestEmailClass(my_email="valid@example.com", my_opt_email=None)
+            },
+        )
+
+    def test_set_of_validator_empty_lists(self) -> None:
+        _ = self.TestClass(set_of_str_field=set(), set_of_class_field=set())
+
+    def test_set_of_validator_bad_types(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found item in set type field [set_of_str_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsSetOfValidator.TestClass'>] "
+                "which is not the expected type [<class 'str'>]: <class 'int'>",
+            ),
+        ):
+            _ = self.TestClass(
+                set_of_str_field={1},  # type: ignore[arg-type]
+                set_of_class_field=set(),
+            )
+
+    def test_set_of_validator_none_type(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Found item in set type field [set_of_class_field] on class "
+                "[<class 'recidiviz.tests.common.attr_validators_test.TestIsSetOfValidator.TestClass'>] "
+                "which is not the expected type "
+                "[<class 'recidiviz.tests.common.attr_validators_test._TestEmailClass'>]: "
+                "<class 'NoneType'>",
+            ),
+        ):
+            _ = self.TestClass(
+                set_of_str_field=set(),
+                set_of_class_field={None},  # type: ignore[arg-type]
             )
