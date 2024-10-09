@@ -276,6 +276,9 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_primary_user_
 from recidiviz.calculator.query.state.views.analyst_data.workflows_user_caseload_access_sessions import (
     WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_user_logins import (
+    WORKFLOWS_USER_LOGINS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_user_product_roster_archive_sessions import (
     WORKFLOWS_USER_PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER,
 )
@@ -372,4 +375,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     WORKFLOWS_LIVE_COMPLETION_EVENT_TYPES_BY_STATE_VIEW_BUILDER,
     WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_USER_PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER,
+    WORKFLOWS_USER_LOGINS_VIEW_BUILDER,
 ]
