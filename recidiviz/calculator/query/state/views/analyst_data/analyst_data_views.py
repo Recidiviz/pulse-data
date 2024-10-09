@@ -273,6 +273,12 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact
 from recidiviz.calculator.query.state.views.analyst_data.workflows_primary_user_registration_sessions import (
     WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_record_archive_surfaceable_caseload_sessions import (
+    WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_CASELOAD_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.workflows_record_archive_surfaceable_person_sessions import (
+    WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_PERSON_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_user_caseload_access_sessions import (
     WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
 )
@@ -376,4 +382,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_USER_PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_USER_LOGINS_VIEW_BUILDER,
+    WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_PERSON_SESSIONS_VIEW_BUILDER,
+    WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_CASELOAD_SESSIONS_VIEW_BUILDER,
 ]
