@@ -28,13 +28,15 @@ WITH
         CompletedDate AS completion_date,
         SentenceDate AS sentence_date,
         AssignedDate AS assigned_date,
-        loc.LocationName AS county,
+        countyLoc.LocationName AS county,
         PSIReportId AS external_id,
         id.person_id
     FROM 
     `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
     LEFT JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ref_Location_latest` loc 
         USING(LocationId)
+    LEFT JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ref_Location_latest` countyLoc 
+        ON loc.ParentCountyId = countyLoc.LocationId
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` id 
         on psi.OffenderId = id.external_id and id_type = 'US_IX_DOC'
     ),
