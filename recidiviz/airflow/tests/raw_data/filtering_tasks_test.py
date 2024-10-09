@@ -220,3 +220,36 @@ class FilterHeaderResultsTest(TestCase):
         assert skipped_errors[0].original_file_path == GcsfsFilePath.from_absolute_path(
             "test_bucket/unprocessed_2021-01-03T00:00:00:000000_raw_tagBasicData.csv"
         )
+
+    def test_dont_duplicate_errors(self) -> None:
+        blocking_errors = [
+            RawFileProcessingError(
+                original_file_path=GcsfsFilePath.from_absolute_path(
+                    "test_bucket/unprocessed_2021-01-02T00:00:00:000000_raw_tagBasicData.csv"
+                ),
+                temporary_file_paths=None,
+                error_msg="Oops!",
+            ),
+            RawFileProcessingError(
+                original_file_path=GcsfsFilePath.from_absolute_path(
+                    "test_bucket/unprocessed_2021-01-03T00:00:00:000000_raw_tagBasicData.csv"
+                ),
+                temporary_file_paths=None,
+                error_msg="Double Oops!",
+            ),
+        ]
+        file_ids_to_headers = {
+            1: ["ID", "Name", "Age"],
+            4: ["ID", "Name", "Age"],
+        }
+
+        results, skipped_errors = filter_header_results_by_processing_errors(
+            self.bq_metadata, file_ids_to_headers, blocking_errors
+        )
+
+        assert results == {
+            1: ["ID", "Name", "Age"],
+            4: ["ID", "Name", "Age"],
+        }
+
+        assert len(skipped_errors) == 0
