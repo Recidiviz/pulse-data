@@ -71,7 +71,15 @@ module "direct-ingest-temporary-files" {
       condition = {
         num_newer_versions = 2
       }
-    }
+    },
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        age = 7
+      }
+    },
   ]
 }
 
