@@ -1204,6 +1204,8 @@ US_ND:
   elite_offendersentenceaggs:
     sessions.us_nd_incarceration_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_nd.not_within_1_month_of_parole_start_date: |-
+      Needed expected parole date for a criteria query.
     workflows_views.us_nd_resident_metadata: |-
       Parole Dates are flagged as resident metadata.
   elite_offendersentences:
