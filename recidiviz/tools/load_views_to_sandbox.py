@@ -94,10 +94,11 @@ import argparse
 import logging
 import sys
 from enum import Enum
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from google.api_core import exceptions
 
+from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_address_formatter import (
@@ -105,7 +106,6 @@ from recidiviz.big_query.big_query_address_formatter import (
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
-from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.big_query_view_sub_dag_collector import (
     BigQueryViewSubDagCollector,
@@ -149,26 +149,12 @@ from recidiviz.view_registry.deployed_address_schema_utils import (
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
-class _AllButSomeBigQueryViewsCollector(BigQueryViewCollector[BigQueryViewBuilder]):
-    def __init__(self, datasets_to_exclude: Set[str]):
-        self.datasets_to_exclude = datasets_to_exclude
-
-    def collect_view_builders(self) -> List[BigQueryViewBuilder]:
-        all_deployed_builders = deployed_view_builders()
-        return [
-            builder
-            for builder in all_deployed_builders
-            if builder.dataset_id not in self.datasets_to_exclude
-        ]
-
-
 def load_all_views_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
     prompt: bool,
     state_code_filter: StateCode | None,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
-    filter_union_all: bool,
     allow_slow_views: bool,
 ) -> None:
     """Loads ALL views to sandbox datasets with prefix |sandbox_dataset_prefix|."""
@@ -190,7 +176,6 @@ def load_all_views_to_sandbox(
         input_source_table_dataset_overrides_dict=(
             input_source_table_dataset_overrides_dict
         ),
-        filter_union_all=filter_union_all,
         allow_slow_views=allow_slow_views,
     )
 
@@ -201,7 +186,6 @@ def _load_manually_filtered_views_to_sandbox(
     prompt: bool,
     state_code_filter: StateCode | None,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
-    filter_union_all: bool,
     allow_slow_views: bool,
     view_ids_to_load: Optional[List[BigQueryAddress]],
     dataset_ids_to_load: Optional[List[str]],
@@ -287,7 +271,6 @@ Are you sure you still want to continue with `manual` mode?
         input_source_table_dataset_overrides_dict=(
             input_source_table_dataset_overrides_dict
         ),
-        filter_union_all=filter_union_all,
         collected_builders=collected_builders,
         allow_slow_views=allow_slow_views,
     )
@@ -367,17 +350,17 @@ def _get_changed_views_to_load_to_sandbox(
     if added_view_addresses:
         logging.info(
             "Found the following view(s) which have been ADDED \n%s",
-            _sorted_address_list_str(added_view_addresses),
+            BigQueryAddress.addresses_to_str(added_view_addresses, indent_level=2),
         )
     if updated_view_addresses:
         logging.info(
             "Found the following view(s) which have been UPDATED \n%s",
-            _sorted_address_list_str(updated_view_addresses),
+            BigQueryAddress.addresses_to_str(updated_view_addresses, indent_level=2),
         )
     if ignored_changed_addresses:
         logging.info(
             "IGNORING changes to the following view(s) \n%s",
-            _sorted_address_list_str(ignored_changed_addresses),
+            BigQueryAddress.addresses_to_str(ignored_changed_addresses, indent_level=2),
         )
 
     return set(address_to_change_type) - ignored_changed_addresses
@@ -443,11 +426,11 @@ def _check_for_invalid_ignores(
         logging.error(
             "Attempting to load these views which are children of views that have been "
             "added since the last deploy but were excluded from this sandbox run:\n%s",
-            _sorted_address_list_str(invalid_views_to_load),
+            BigQueryAddress.addresses_to_str(invalid_views_to_load, indent_level=2),
         )
         logging.error(
             "New views excluded from this sandbox run:\n%s",
-            _sorted_address_list_str(ignored_added_views),
+            BigQueryAddress.addresses_to_str(ignored_added_views, indent_level=2),
         )
         logging.error(
             "You must include these new views in the sandbox load or ignore all "
@@ -462,7 +445,6 @@ def _load_views_changed_on_branch_to_sandbox(
     prompt: bool,
     state_code_filter: StateCode | None,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
-    filter_union_all: bool,
     allow_slow_views: bool,
     changed_datasets_to_include: Optional[List[str]],
     changed_datasets_to_ignore: Optional[List[str]],
@@ -570,14 +552,52 @@ def _load_views_changed_on_branch_to_sandbox(
         input_source_table_dataset_overrides_dict=(
             input_source_table_dataset_overrides_dict
         ),
-        filter_union_all=filter_union_all,
         allow_slow_views=allow_slow_views,
         collected_builders=collected_builders,
     )
 
 
-def _sorted_address_list_str(addresses: Iterable[BigQueryAddress]) -> str:
-    return "\n".join([f"- {a.dataset_id}.{a.table_id}" for a in sorted(addresses)])
+def _warn_on_expensive_views(
+    collected_builders: List[BigQueryViewBuilder],
+    state_code_filter: StateCode | None,
+    input_source_table_overrides: BigQueryAddressOverrides,
+) -> None:
+    """Prompts the user with a warning if any of the views we plan to load are
+    especially expensive / pull in a lot of data.
+    """
+    if state_code_filter:
+        # If we're running with a state_code filter, we're not worried about the
+        # materialization cost these more expensive views.
+        return
+
+    expensive_views = {
+        vb.address
+        for vb in collected_builders
+        if (
+            isinstance(vb, UnionAllBigQueryViewBuilder)
+            # TODO(#29291): Remove warning about views in this dataset once we've
+            #  optimized them and they aren't so expensive.
+            or vb.dataset_id == AGGREGATED_METRICS_DATASET_ID
+        )
+    }
+
+    has_dataflow_metrics_override = (
+        DATAFLOW_METRICS_DATASET
+        != input_source_table_overrides.get_dataset(DATAFLOW_METRICS_DATASET)
+    )
+    if not has_dataflow_metrics_override:
+        for vb in collected_builders:
+            if vb.dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET:
+                expensive_views.add(vb.address)
+
+    if expensive_views:
+        prompt_for_confirmation(
+            f"⚠️ This selection of views includes the following views that are "
+            f"relatively expensive to materialize:"
+            f"{BigQueryAddress.addresses_to_str(expensive_views, indent_level=2)}"
+            f"⚠️ Are you sure you want to continue loading views without a "
+            f"`--state_code_filter` set?"
+        )
 
 
 def _load_collected_views_to_sandbox(
@@ -587,27 +607,19 @@ def _load_collected_views_to_sandbox(
     state_code_filter: StateCode | None,
     collected_builders: List[BigQueryViewBuilder],
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
-    filter_union_all: bool,
     allow_slow_views: bool,
 ) -> None:
     """Loads the provided list of builders to a sandbox dataset."""
     logging.info(
         "Will load the following views to the sandbox: \n%s",
-        _sorted_address_list_str({b.address for b in collected_builders}),
+        BigQueryAddress.addresses_to_str(
+            {b.address for b in collected_builders}, indent_level=2
+        ),
     )
     if prompt:
         prompt_for_confirmation(
             f"Continue with loading {len(collected_builders)} views?"
         )
-
-    if filter_union_all:
-        valid_source_table_addresses = get_source_table_addresses(metadata.project_id())
-        addresses_to_load = {
-            b.address for b in collected_builders
-        } | valid_source_table_addresses
-        for builder in collected_builders:
-            if isinstance(builder, UnionAllBigQueryViewBuilder):
-                builder.set_parent_address_filter(addresses_to_load)
 
     input_source_table_overrides = (
         address_overrides_for_input_source_tables(
@@ -617,21 +629,11 @@ def _load_collected_views_to_sandbox(
         else BigQueryAddressOverrides.empty()
     )
 
-    has_dataflow_metrics_override = (
-        DATAFLOW_METRICS_DATASET
-        != input_source_table_overrides.get_dataset(DATAFLOW_METRICS_DATASET)
+    _warn_on_expensive_views(
+        collected_builders=collected_builders,
+        state_code_filter=state_code_filter,
+        input_source_table_overrides=input_source_table_overrides,
     )
-    is_loading_dataflow_metrics_views = any(
-        b.dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET
-        for b in collected_builders
-    )
-
-    if is_loading_dataflow_metrics_views and not has_dataflow_metrics_override:
-        prompt_for_confirmation(
-            f"⚠️This selection of views includes views in the "
-            f"[{DATAFLOW_METRICS_MATERIALIZED_DATASET}] dataset which is relatively "
-            f"expensive to materialize - are you sure you want to update these views?"
-        )
 
     logging.info("Updating %s views...", len(collected_builders))
 
@@ -693,7 +695,7 @@ def parse_arguments() -> argparse.Namespace:
         "modified to only return rows for the given state.",
         type=StateCode,
         choices=list(StateCode),
-        required=True,
+        required=False,
     )
 
     parser.add_argument(
@@ -713,17 +715,6 @@ def parse_arguments() -> argparse.Namespace:
         "replacement sandbox datasets that updated views should reference.",
         type=str,
         required=False,
-    )
-
-    parser.add_argument(
-        "--no-filter-union-all",
-        dest="filter_union_all",
-        action="store_false",
-        help="If True, all UnionAllBigQueryViewBuilder views (e.g. "
-        "task_eligibility.all_tasks) will only query from views loaded in the "
-        "sandbox. Otherwise, the UnionAllBigQueryViewBuilder views will query "
-        "ALL parent views like they do in production. This should generally be "
-        "set to false to avoid unnecessarily expensive sandbox runs.",
     )
 
     parser.add_argument(
@@ -891,7 +882,6 @@ if __name__ == "__main__":
                         args.input_source_table_dataset_overrides_json
                     )
                 ),
-                filter_union_all=args.filter_union_all,
                 allow_slow_views=args.allow_slow_views,
             )
         elif args.chosen_mode == "manual":
@@ -904,7 +894,6 @@ if __name__ == "__main__":
                         args.input_source_table_dataset_overrides_json
                     )
                 ),
-                filter_union_all=args.filter_union_all,
                 allow_slow_views=args.allow_slow_views,
                 view_ids_to_load=args.view_ids_to_load,
                 dataset_ids_to_load=args.dataset_ids_to_load,
@@ -921,7 +910,6 @@ if __name__ == "__main__":
                         args.input_source_table_dataset_overrides_json
                     )
                 ),
-                filter_union_all=args.filter_union_all,
                 allow_slow_views=args.allow_slow_views,
                 changed_datasets_to_include=args.changed_datasets_to_include,
                 changed_datasets_to_ignore=args.changed_datasets_to_ignore,
