@@ -121,11 +121,8 @@ def filter_header_results_by_processing_errors(
     }
 
     for metadata in bq_metadata:
-        if (
-            metadata.file_tag in blocking_errors_by_file_tag
-            and blocking_errors_by_file_tag[metadata.file_tag].parts.utc_upload_datetime
-            == metadata.update_datetime
-        ):
+        file_encountered_error = metadata.file_id not in file_ids_to_headers
+        if file_encountered_error:
             continue
         if (
             metadata.file_tag in blocking_errors_by_file_tag
