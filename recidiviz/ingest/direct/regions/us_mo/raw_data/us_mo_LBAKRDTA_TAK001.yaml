@@ -86,6 +86,9 @@ columns:
   - name: EK_LTR
     description: |-
       Last Transfer Remarks
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-01-11T00:00:00Z
   - name: EK_TPF
     description: |-
       Transfer Post Flag
