@@ -60,9 +60,6 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_supervision_of
 from recidiviz.calculator.query.state.views.analyst_data.invoices_preprocessed import (
     INVOICES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.analyst_data_view_collector import (
-    get_spans_and_events_view_builders,
-)
 from recidiviz.calculator.query.state.views.analyst_data.number_months_downgrade_and_assessment_due import (
     NUMBER_MONTHS_BETWEEN_CUSTODY_DOWNGRADE_AND_ASSESSMENT_DUE_VIEW_BUILDER,
 )
@@ -358,7 +355,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER,
     RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
     US_MO_CLASSIFICATION_HEARINGS_PREPROCESSED_RECORD_VIEW_BUILDER,
-    *get_spans_and_events_view_builders(),
     US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER,
     US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER,
     US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,

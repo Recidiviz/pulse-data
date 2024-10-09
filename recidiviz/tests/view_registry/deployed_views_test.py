@@ -43,7 +43,6 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.analyst_data.all_task_eligibility_spans import (
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
 )
@@ -355,31 +354,6 @@ class ViewDagInvariantTests(unittest.TestCase):
                 b.address: b for b in all_deployed_builders
             }
 
-    # TODO(#32921): We can delete this test when we delete the legacy views
-    def test_no_legacy_observations_views_references(self) -> None:
-        legacy_observations_views = {
-            BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="officer_spans"),
-            BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_events"),
-            BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_spans"),
-            BigQueryAddress(
-                dataset_id=ANALYST_VIEWS_DATASET, table_id="workflows_user_events"
-            ),
-            BigQueryAddress(
-                dataset_id=ANALYST_VIEWS_DATASET, table_id="workflows_user_spans"
-            ),
-        }
-
-        for node in self.dag_walker.nodes_by_address.values():
-            bad_parents = node.parent_node_addresses.intersection(
-                legacy_observations_views
-            )
-            if bad_parents:
-                raise ValueError(
-                    f"Found view [{node.view.address.to_str()}] referencing legacy "
-                    f"view(s) {[a.to_str() for a in bad_parents]}. Use a view in the "
-                    f"new observations__* datasets instead."
-                )
-
     def test_no_expensive_union_all_view_queries(self) -> None:
         """Test that fails when a view is doing an overly expensive query of a UNION ALL
         view when it could instead be querying one of the component parent views.
@@ -390,20 +364,9 @@ class ViewDagInvariantTests(unittest.TestCase):
             if isinstance(vb, UnionAllBigQueryViewBuilder)
         }
 
-        # TODO(#32921): Update these exemptions to explicitly list which parent UNION
+        # TODO(#29291): Update these exemptions to explicitly list which parent UNION
         #  ALL view is allowed.
         allowed_union_all_view_children = {
-            # TODO(#32921): Delete person_events and person_spans from this list when we
-            #  delete those views.
-            BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="officer_spans"),
-            BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_events"),
-            BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_spans"),
-            BigQueryAddress(
-                dataset_id=ANALYST_VIEWS_DATASET, table_id="workflows_user_events"
-            ),
-            BigQueryAddress(
-                dataset_id=ANALYST_VIEWS_DATASET, table_id="workflows_user_spans"
-            ),
             # TODO(#29291): Refactor aggregated metrics to query observation-specific
             #  views directly rather than the all_* observation views.
             *{
