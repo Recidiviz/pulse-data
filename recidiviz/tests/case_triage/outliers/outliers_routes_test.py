@@ -192,6 +192,25 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_product_configuration",
     )
+    def test_get_state_configuration_internal_error(
+        self, mock_config: MagicMock
+    ) -> None:
+        mock_config.side_effect = ValueError("oops")
+
+        response = self.test_client.get(
+            "/outliers/us_id/configuration",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertEqual(
+            (response.get_json() or {}).get("name"),
+            "Internal Server Error",
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_product_configuration",
+    )
     def test_get_state_configuration_success(self, mock_config: MagicMock) -> None:
         mock_config.return_value = OutliersProductConfiguration(
             updated_at=datetime(2024, 1, 1),

@@ -20,6 +20,7 @@ from flask import Flask, Response, jsonify
 from flask_wtf.csrf import CSRFError
 from jwt import MissingRequiredClaimError
 from marshmallow import ValidationError
+from werkzeug.exceptions import HTTPException
 
 from recidiviz.case_triage.pathways.exceptions import (
     MetricMappingError,
@@ -89,6 +90,22 @@ def handle_metric_not_enabled_error(error: MetricNotEnabledError) -> Response:
     )
 
 
+def handle_generic_http_exception(error: HTTPException) -> Response:
+    """Return JSON instead of HTML for HTTP errors.
+    https://flask.palletsprojects.com/en/3.0.x/errorhandling/#generic-exception-handlers
+    """
+
+    response = jsonify(
+        {
+            "code": error.code,
+            "name": error.name,
+            "description": error.description,
+        }
+    )
+    response.status_code = error.code or HTTPStatus.INTERNAL_SERVER_ERROR
+    return response
+
+
 def register_error_handlers(app: Flask) -> None:
     """Registers error handlers"""
     app.errorhandler(CSRFError)(handle_csrf_error)
@@ -97,3 +114,4 @@ def register_error_handlers(app: Flask) -> None:
     app.errorhandler(FlaskException)(handle_auth_error)
     app.errorhandler(MetricMappingError)(handle_metric_mapping_error)
     app.errorhandler(MetricNotEnabledError)(handle_metric_not_enabled_error)
+    app.errorhandler(HTTPException)(handle_generic_http_exception)
