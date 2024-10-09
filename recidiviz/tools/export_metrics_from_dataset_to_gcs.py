@@ -65,6 +65,7 @@ def export_metrics_from_dataset_to_gcs(
 
         view_sandbox_context = BigQueryViewSandboxContext(
             parent_address_overrides=sandbox_address_overrides,
+            parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix=sandbox_dataset_prefix,
         )
 

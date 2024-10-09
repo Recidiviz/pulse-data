@@ -128,6 +128,7 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
         query = self.query_builder.build_query(
             self.raw_file_config,
             parent_address_overrides=None,
+            parent_address_formatter_provider=None,
             normalized_column_values=True,
             raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5, 6),
             filter_to_latest=True,
@@ -176,6 +177,7 @@ FROM filtered_rows
         query = self.query_builder.build_query(
             self.raw_file_config,
             parent_address_overrides=None,
+            parent_address_formatter_provider=None,
             normalized_column_values=True,
             raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5, 6),
             filter_to_latest=False,
@@ -216,6 +218,7 @@ FROM filtered_rows
         query = self.query_builder.build_query(
             raw_file_config,
             parent_address_overrides=None,
+            parent_address_formatter_provider=None,
             normalized_column_values=True,
             raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5, 6),
             filter_to_latest=True,
@@ -273,6 +276,7 @@ FROM filtered_rows
         query = self.query_builder.build_query(
             raw_file_config,
             parent_address_overrides=None,
+            parent_address_formatter_provider=None,
             normalized_column_values=False,
             raw_data_datetime_upper_bound=None,
             filter_to_latest=False,
@@ -298,6 +302,7 @@ FROM filtered_rows
         query = self.query_builder.build_query(
             self.raw_file_config,
             parent_address_overrides=None,
+            parent_address_formatter_provider=None,
             normalized_column_values=True,
             raw_data_datetime_upper_bound=None,
             filter_to_latest=True,
@@ -348,6 +353,7 @@ FROM filtered_rows
         query = self.query_builder.build_query(
             self.raw_file_config,
             parent_address_overrides=None,
+            parent_address_formatter_provider=None,
             normalized_column_values=False,
             raw_data_datetime_upper_bound=None,
             filter_to_latest=True,
@@ -393,6 +399,7 @@ FROM filtered_rows
             _ = self.query_builder.build_query(
                 raw_file_config,
                 parent_address_overrides=None,
+                parent_address_formatter_provider=None,
                 normalized_column_values=False,
                 raw_data_datetime_upper_bound=None,
                 filter_to_latest=True,
@@ -406,6 +413,7 @@ FROM filtered_rows
             _ = self.query_builder.build_query(
                 raw_file_config,
                 parent_address_overrides=None,
+                parent_address_formatter_provider=None,
                 normalized_column_values=False,
                 raw_data_datetime_upper_bound=None,
                 filter_to_latest=False,
@@ -434,6 +442,7 @@ FROM filtered_rows
         query = self.query_builder.build_query(
             raw_file_config,
             parent_address_overrides=None,
+            parent_address_formatter_provider=None,
             normalized_column_values=True,
             raw_data_datetime_upper_bound=None,
             filter_to_latest=True,
@@ -491,6 +500,7 @@ FROM filtered_rows
         query = self.query_builder.build_query(
             raw_file_config,
             parent_address_overrides=None,
+            parent_address_formatter_provider=None,
             normalized_column_values=True,
             raw_data_datetime_upper_bound=None,
             filter_to_latest=True,
@@ -573,6 +583,7 @@ FROM filtered_rows
         query = self.query_builder.build_query(
             raw_file_config,
             parent_address_overrides=None,
+            parent_address_formatter_provider=None,
             normalized_column_values=True,
             raw_data_datetime_upper_bound=None,
             filter_to_latest=True,

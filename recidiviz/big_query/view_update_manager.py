@@ -27,6 +27,9 @@ from google.cloud import exceptions
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_address_formatter import (
+    BigQueryAddressFormatterProvider,
+)
 from recidiviz.big_query.big_query_client import (
     BQ_CLIENT_MAX_POOL_SIZE,
     BigQueryClient,
@@ -74,9 +77,9 @@ MAX_WORKERS = 10
 NUM_SLOW_VIEWS_TO_LOG = 25
 
 
-@attr.define
+@attr.define(kw_only=True)
 class BigQueryViewUpdateSandboxContext:
-    """Object that provides a set of address overrides for a collection of views that
+    """Object that provides a set of address overrides for a *collection of views* that
     will be loaded into a sandbox.
     """
 
@@ -90,6 +93,12 @@ class BigQueryViewUpdateSandboxContext:
     # The prefix to append to the output dataset for any views loaded by this view
     # update.
     output_sandbox_dataset_prefix: str = attr.ib(validator=attr_validators.is_str)
+
+    # If given, this will give us a formatter that can be used to apply additional
+    #  formatting on each parent address of views loaded by this view update.
+    parent_address_formatter_provider: BigQueryAddressFormatterProvider | None = (
+        attr.ib(validator=attr_validators.is_opt(BigQueryAddressFormatterProvider))
+    )
 
 
 @gcp_only
@@ -106,6 +115,7 @@ def execute_update_all_managed_views(sandbox_prefix: Optional[str]) -> None:
         view_update_sandbox_context = BigQueryViewUpdateSandboxContext(
             output_sandbox_dataset_prefix=sandbox_prefix,
             input_source_table_overrides=BigQueryAddressOverrides.empty(),
+            parent_address_formatter_provider=None,
         )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
@@ -180,6 +190,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
 
         sandbox_context = BigQueryViewSandboxContext(
             output_sandbox_dataset_prefix=view_update_sandbox_context.output_sandbox_dataset_prefix,
+            parent_address_formatter_provider=view_update_sandbox_context.parent_address_formatter_provider,
             parent_address_overrides=merged_overrides,
         )
 

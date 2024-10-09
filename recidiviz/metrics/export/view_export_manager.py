@@ -113,6 +113,7 @@ def execute_metric_view_data_export(
             view_sandbox_context = BigQueryViewSandboxContext(
                 parent_address_overrides=address_overrides,
                 output_sandbox_dataset_prefix=sandbox_prefix,
+                parent_address_formatter_provider=None,
             )
 
         export_view_data_to_cloud_storage(

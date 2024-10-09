@@ -254,6 +254,7 @@ def _get_validations_jobs(
             parent_address_overrides=address_overrides_for_view_builders(
                 sandbox_dataset_prefix, view_builders
             ),
+            parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix=sandbox_dataset_prefix,
         )
 

@@ -19,6 +19,9 @@ import datetime
 from typing import Optional
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_address_formatter import (
+    BigQueryAddressFormatterProvider,
+)
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.big_query.big_query_utils import datetime_clause
 from recidiviz.common.constants.states import StateCode
@@ -123,7 +126,8 @@ class RawTableQueryBuilder:
     def build_query(
         self,
         raw_file_config: DirectIngestRawFileConfig,
-        parent_address_overrides: Optional[BigQueryAddressOverrides],
+        parent_address_overrides: BigQueryAddressOverrides | None,
+        parent_address_formatter_provider: BigQueryAddressFormatterProvider | None,
         normalized_column_values: bool,
         raw_data_datetime_upper_bound: Optional[datetime.datetime],
         filter_to_latest: bool,
@@ -133,8 +137,10 @@ class RawTableQueryBuilder:
 
         Args:
             raw_file_config: The config for the raw table to query
-            parent_address_overrides: If provided, tables in the query will be replaced with
-                these overrides, if applicable.
+            parent_address_overrides: If provided, tables in the query will be replaced
+                with these overrides, if applicable.
+            parent_address_formatter_provider: If provided, informs how any tables
+                referenced by this query will be formatted.
             normalized_column_values: If true, columns values will be normalized
                 according to their config specification (e.g. datetime columns
                 normalized).
@@ -210,7 +216,8 @@ class RawTableQueryBuilder:
             "filtered_rows_cte": filtered_rows_cte,
         }
         return BigQueryQueryBuilder(
-            parent_address_overrides=parent_address_overrides
+            parent_address_overrides=parent_address_overrides,
+            parent_address_formatter_provider=parent_address_formatter_provider,
         ).build_query(
             project_id=self.project_id,
             query_template=RAW_DATA_VIEW_TEMPLATE,

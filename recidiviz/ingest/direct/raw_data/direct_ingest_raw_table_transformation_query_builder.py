@@ -20,9 +20,7 @@ into a temp table and adds appropriate metadata columns so that it matches the
 expected format of our main raw data tables.
 """
 import datetime
-from typing import Optional
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
@@ -46,12 +44,11 @@ class DirectIngestTempRawTablePreMigrationTransformationQueryBuilder:
         self,
         region_raw_file_config: DirectIngestRegionRawFileConfig,
         raw_data_instance: DirectIngestInstance,
-        parent_address_overrides: Optional[BigQueryAddressOverrides] = None,
     ) -> None:
         self._region_raw_file_config = region_raw_file_config
         self._raw_data_instance = raw_data_instance
         self._query_builder = BigQueryQueryBuilder(
-            parent_address_overrides=parent_address_overrides
+            parent_address_overrides=None, parent_address_formatter_provider=None
         )
 
     def build_pre_migration_transformations_query(

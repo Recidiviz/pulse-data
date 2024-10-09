@@ -22,6 +22,12 @@ To load all views that have changed since the last view deploy, run:
        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto \
        --load_changed_views_only
 
+To load all views that have changed since the last view deploy but only load rows for a
+given state_code (much cheaper / faster!), run:
+    python -m recidiviz.tools.load_views_to_sandbox \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] --state_code [STATE_CODE] auto \
+       --load_changed_views_only
+
 To load all views that have changed since the last view deploy and views
 downstream of those views, stopping once we've loaded all views specified by
 --load_up_to_addresses and --load_up_to_datasets, run:
@@ -54,7 +60,7 @@ To manually choose which views to load, run:
 
 To load ALL views to a sandbox (this should be used only in rare circumstances), run:
     python -m recidiviz.tools.load_views_to_sandbox \
-       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] all
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] --prompt all
 
 To load all views downstream of a sandbox dataset, run:
     python -m recidiviz.tools.load_views_to_sandbox \
@@ -94,6 +100,9 @@ from google.api_core import exceptions
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_address_formatter import (
+    StateFilteringBigQueryAddressFormatterProvider,
+)
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
@@ -114,6 +123,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 from recidiviz.common.attr_converters import optional_json_str_to_dict
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.git import (
     get_hash_of_deployed_commit,
     is_commit_in_current_branch,
@@ -131,6 +141,10 @@ from recidiviz.utils.params import str_to_bool, str_to_list
 from recidiviz.utils.types import assert_type
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_input_source_tables,
+)
+from recidiviz.view_registry.deployed_address_schema_utils import (
+    get_deployed_addresses_without_state_code_column,
+    get_source_tables_to_pseudocolumns,
 )
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
@@ -152,6 +166,7 @@ def load_all_views_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
     prompt: bool,
+    state_code_filter: StateCode | None,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     filter_union_all: bool,
     allow_slow_views: bool,
@@ -170,6 +185,7 @@ def load_all_views_to_sandbox(
     _load_collected_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
         prompt=prompt,
+        state_code_filter=state_code_filter,
         collected_builders=collected_builders,
         input_source_table_dataset_overrides_dict=(
             input_source_table_dataset_overrides_dict
@@ -183,6 +199,7 @@ def _load_manually_filtered_views_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
     prompt: bool,
+    state_code_filter: StateCode | None,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     filter_union_all: bool,
     allow_slow_views: bool,
@@ -266,6 +283,7 @@ Are you sure you still want to continue with `manual` mode?
     _load_collected_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
         prompt=prompt,
+        state_code_filter=state_code_filter,
         input_source_table_dataset_overrides_dict=(
             input_source_table_dataset_overrides_dict
         ),
@@ -442,6 +460,7 @@ def _load_views_changed_on_branch_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
     prompt: bool,
+    state_code_filter: StateCode | None,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     filter_union_all: bool,
     allow_slow_views: bool,
@@ -547,6 +566,7 @@ def _load_views_changed_on_branch_to_sandbox(
     _load_collected_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
         prompt=prompt,
+        state_code_filter=state_code_filter,
         input_source_table_dataset_overrides_dict=(
             input_source_table_dataset_overrides_dict
         ),
@@ -564,6 +584,7 @@ def _load_collected_views_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
     prompt: bool,
+    state_code_filter: StateCode | None,
     collected_builders: List[BigQueryViewBuilder],
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     filter_union_all: bool,
@@ -616,9 +637,21 @@ def _load_collected_views_to_sandbox(
 
     view_update_sandbox_context = None
     if sandbox_dataset_prefix:
+        missing_state_code_addresses = get_deployed_addresses_without_state_code_column(
+            metadata.project_id()
+        )
         view_update_sandbox_context = BigQueryViewUpdateSandboxContext(
             output_sandbox_dataset_prefix=sandbox_dataset_prefix,
             input_source_table_overrides=input_source_table_overrides,
+            parent_address_formatter_provider=(
+                StateFilteringBigQueryAddressFormatterProvider(
+                    state_code_filter=state_code_filter,
+                    missing_state_code_addresses=missing_state_code_addresses,
+                    pseudocolumns_by_address=get_source_tables_to_pseudocolumns(),
+                )
+                if state_code_filter
+                else None
+            ),
         )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
@@ -650,6 +683,16 @@ def parse_arguments() -> argparse.Namespace:
         help="A prefix to append to all names of the datasets where these views will "
         "be loaded.",
         type=str,
+        required=True,
+    )
+
+    parser.add_argument(
+        "--state_code_filter",
+        dest="state_code_filter",
+        help="If provided, all table references in any loaded view queries will be "
+        "modified to only return rows for the given state.",
+        type=StateCode,
+        choices=list(StateCode),
         required=True,
     )
 
@@ -842,6 +885,7 @@ if __name__ == "__main__":
             load_all_views_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
                 prompt=args.prompt,
+                state_code_filter=args.state_code_filter,
                 input_source_table_dataset_overrides_dict=(
                     _parse_input_source_table_dataset_overrides(
                         args.input_source_table_dataset_overrides_json
@@ -854,6 +898,7 @@ if __name__ == "__main__":
             _load_manually_filtered_views_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
                 prompt=args.prompt,
+                state_code_filter=args.state_code_filter,
                 input_source_table_dataset_overrides_dict=(
                     _parse_input_source_table_dataset_overrides(
                         args.input_source_table_dataset_overrides_json
@@ -870,6 +915,7 @@ if __name__ == "__main__":
             _load_views_changed_on_branch_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
                 prompt=args.prompt,
+                state_code_filter=args.state_code_filter,
                 input_source_table_dataset_overrides_dict=(
                     _parse_input_source_table_dataset_overrides(
                         args.input_source_table_dataset_overrides_json

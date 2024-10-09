@@ -113,7 +113,9 @@ class OnCallLogsSearch:
             requests_table = "appengine_googleapis_com_nginx_request"
             service_filter = ""
 
-        query_builder = BigQueryQueryBuilder(parent_address_overrides=None)
+        query_builder = BigQueryQueryBuilder(
+            parent_address_overrides=None, parent_address_formatter_provider=None
+        )
         query = query_builder.build_query(
             project_id=metadata.project_id(),
             query_template=PROCESSED_LOGS_QUERY_TEMPLATE,

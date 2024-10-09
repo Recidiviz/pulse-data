@@ -108,7 +108,9 @@ class RawDataDiffQueryBuilder:
     ):
         """Builds a query for computing the diffs between existing data in a raw data table and updated data for
         that table."""
-        self._query_builder = BigQueryQueryBuilder(parent_address_overrides=None)
+        self._query_builder = BigQueryQueryBuilder(
+            parent_address_overrides=None, parent_address_formatter_provider=None
+        )
         self.project_id = project_id
         self.state_code = state_code
         self.file_id = file_id
@@ -124,6 +126,7 @@ class RawDataDiffQueryBuilder:
         ).build_query(
             raw_file_config=raw_file_config,
             parent_address_overrides=None,
+            parent_address_formatter_provider=None,
             normalized_column_values=False,
             raw_data_datetime_upper_bound=None,
             filter_to_latest=True,

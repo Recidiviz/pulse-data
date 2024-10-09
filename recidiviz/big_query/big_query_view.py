@@ -82,7 +82,12 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         self.query_builder = BigQueryQueryBuilder(
             parent_address_overrides=(
                 sandbox_context.parent_address_overrides if sandbox_context else None
-            )
+            ),
+            parent_address_formatter_provider=(
+                sandbox_context.parent_address_formatter_provider
+                if sandbox_context
+                else None
+            ),
         )
 
         self._bq_description = bq_description

@@ -229,6 +229,7 @@ SELECT * FROM `recidiviz-789.parent_dataset_3.parent_table_3_materialized`"""
         )
         sandbox_context = BigQueryViewSandboxContext(
             parent_address_overrides=address_overrides,
+            parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_prefix",
         )
 
@@ -267,6 +268,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
 
         sandbox_context = BigQueryViewSandboxContext(
             parent_address_overrides=address_overrides,
+            parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_prefix",
         )
 
@@ -307,6 +309,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
         )
         sandbox_context = BigQueryViewSandboxContext(
             parent_address_overrides=address_overrides,
+            parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_prefix",
         )
 
@@ -340,6 +343,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
         )
         sandbox_context = BigQueryViewSandboxContext(
             parent_address_overrides=address_overrides,
+            parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_prefix",
         )
 
