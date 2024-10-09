@@ -45,8 +45,6 @@ from recidiviz.airflow.dags.raw_data.bq_load_tasks import (
     raise_load_prep_errors,
 )
 from recidiviz.airflow.dags.raw_data.clean_up_tasks import (
-    clean_up_temporary_files,
-    clean_up_temporary_tables,
     move_successfully_imported_paths_to_storage,
 )
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
@@ -89,8 +87,6 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     RESOURCE_LOCK_ACQUISITION_DESCRIPTION,
     RESOURCE_LOCKS_NEEDED,
     SKIPPED_FILE_ERRORS,
-    TEMPORARY_PATHS_TO_CLEAN,
-    TEMPORARY_TABLES_TO_CLEAN,
     get_resource_lock_ttl,
 )
 from recidiviz.airflow.dags.raw_data.raw_data_branching import (
@@ -411,12 +407,6 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
                 ),
             )
 
-            cleaned_temporary_files = clean_up_temporary_files(
-                clean_and_storage_jobs[TEMPORARY_PATHS_TO_CLEAN]
-            )
-            cleaned_temporary_tables = clean_up_temporary_tables(
-                clean_and_storage_jobs[TEMPORARY_TABLES_TO_CLEAN]
-            )
             renamed_imported_paths = move_successfully_imported_paths_to_storage(
                 state_code.value,
                 raw_data_instance,
@@ -425,8 +415,6 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
             clean_and_storage_jobs >> [
                 write_import_completions,
-                cleaned_temporary_files,
-                cleaned_temporary_tables,
                 renamed_imported_paths,
             ]
 

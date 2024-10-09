@@ -17,14 +17,11 @@
 """Tests for Airflow tasks for the clean up and storage step of the raw data import dag"""
 import re
 from unittest import TestCase
-from unittest.mock import call, patch
+from unittest.mock import patch
 
 from recidiviz.airflow.dags.raw_data.clean_up_tasks import (
-    clean_up_temporary_files,
-    clean_up_temporary_tables,
     move_successfully_imported_paths_to_storage,
 )
-from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.fakes.fake_gcs_file_system import (
     FakeGCSFileSystem,
@@ -35,142 +32,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-
-
-class CleanUpTemporaryFilesTest(TestCase):
-    """Unit tests for clean_up_temporary_files task"""
-
-    def setUp(self) -> None:
-        self.fs = FakeGCSFileSystem()
-        self.storage_patch = patch(
-            "recidiviz.airflow.dags.raw_data.clean_up_tasks.GcsfsFactory.build",
-            return_value=self.fs,
-        )
-        self.storage_mock = self.storage_patch.start()
-
-    def tearDown(self) -> None:
-        self.storage_patch.stop()
-
-    def test_no_files(self) -> None:
-        clean_up_temporary_files.function([])
-
-    def test_files_exist(self) -> None:
-        paths = [
-            GcsfsFilePath.from_absolute_path("temp/test-file-1.txt"),
-            GcsfsFilePath.from_absolute_path("temp/test-file-2.csv"),
-        ]
-
-        for path in paths:
-            self.fs.test_add_path(path, local_path=None)
-
-        assert set(self.fs.all_paths) == set(paths)
-        clean_up_temporary_files.function([p.abs_path() for p in paths])
-        assert len(self.fs.all_paths) == 0
-
-    def test_files_dont_exist_ok(self) -> None:
-        paths = [
-            GcsfsFilePath.from_absolute_path("temp/test-file-1.txt"),
-            GcsfsFilePath.from_absolute_path("temp/test-file-2.csv"),
-        ]
-
-        no_exists = [
-            GcsfsFilePath.from_absolute_path("temp/i-no-exist-file-2.csv"),
-        ]
-
-        for path in paths:
-            self.fs.test_add_path(path, local_path=None)
-
-        assert set(self.fs.all_paths) == set(paths)
-        clean_up_temporary_files.function([p.abs_path() for p in [*no_exists, *paths]])
-        assert len(self.fs.all_paths) == 0
-
-    def test_failed_all_others_execute(self) -> None:
-        paths = [
-            GcsfsFilePath.from_absolute_path("temp/test-file-BAD.txt"),
-            GcsfsFilePath.from_absolute_path("temp/test-file-1.csv"),
-            GcsfsFilePath.from_absolute_path("temp/test-file-2.csv"),
-            GcsfsFilePath.from_absolute_path("temp/test-file-3.csv"),
-        ]
-
-        for path in paths:
-            self.fs.test_add_path(path, local_path=None)
-
-        assert set(self.fs.all_paths) == set(paths)
-
-        class DeleteErrorFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
-            def on_file_added(self, path: GcsfsFilePath) -> None:
-                """Will be called whenever a new file path is successfully added to the file system."""
-
-            def on_file_delete(self, path: GcsfsFilePath) -> bool:
-                """Will be called whenever a new file path is to be deleted from the file system or not."""
-                if path == paths[0]:
-                    raise ValueError("nope!")
-
-                return True
-
-        self.fs.delegate = DeleteErrorFakeGCSFileSystemDelegate()
-
-        with self.assertRaisesRegex(
-            ExceptionGroup,
-            re.escape("Errors occurred during path deletion (1 sub-exception)"),
-        ):
-            clean_up_temporary_files.function([p.abs_path() for p in paths])
-        assert self.fs.all_paths == [paths[0]]
-
-
-class CleanUpTemporaryTables(TestCase):
-    """Unit tests for clean_up_temporary_files task"""
-
-    def setUp(self) -> None:
-        self.bq_patch = patch(
-            "recidiviz.airflow.dags.raw_data.clean_up_tasks.BigQueryClientImpl",
-        )
-        self.bq_mock = self.bq_patch.start()
-
-    def tearDown(self) -> None:
-        self.bq_patch.stop()
-
-    def test_no_tables(self) -> None:
-        clean_up_temporary_tables.function([])
-
-    def test_tables(self) -> None:
-        tables = [
-            BigQueryAddress(dataset_id="temp", table_id="table1"),
-            BigQueryAddress(dataset_id="temp", table_id="table2"),
-            BigQueryAddress(dataset_id="temp", table_id="table3"),
-        ]
-
-        clean_up_temporary_tables.function([a.to_str() for a in tables])
-
-        self.bq_mock.assert_has_calls(
-            [call().delete_table(a, not_found_ok=True) for a in tables]
-        )
-
-    def test_tables_with_errors(self) -> None:
-        tables = [
-            BigQueryAddress(dataset_id="temp", table_id="table1"),
-            BigQueryAddress(dataset_id="temp", table_id="table2"),
-            BigQueryAddress(dataset_id="temp", table_id="table3"),
-        ]
-
-        def _delete_table(
-            address: BigQueryAddress,
-            not_found_ok: bool = False,  # pylint: disable=unused-argument
-        ) -> None:
-            if address.table_id == "table1":
-                raise ValueError("oops!")
-
-        self.bq_mock().delete_table.side_effect = _delete_table
-
-        with self.assertRaisesRegex(
-            ExceptionGroup,
-            re.escape("Errors occurred during table deletion (1 sub-exception)"),
-        ):
-            clean_up_temporary_tables.function([a.to_str() for a in tables])
-
-        self.bq_mock.assert_has_calls(
-            [call().delete_table(a, not_found_ok=True) for a in tables]
-        )
 
 
 class RenameAndMoveFilesTest(TestCase):
