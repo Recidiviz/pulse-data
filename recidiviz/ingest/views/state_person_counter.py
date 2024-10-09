@@ -54,9 +54,11 @@ SELECT
   COUNT(*) AS total_count,
   IFNULL(SUM(CASE WHEN matching_id IS NULL THEN 1 END), 0) AS placeholder_count
 FROM
-  `{project_id}.{base_dataset}.state_person`
-LEFT OUTER JOIN person_ids ON
-  `{project_id}.{base_dataset}.state_person`.person_id = person_ids.matching_id
+  `{project_id}.{base_dataset}.state_person` person
+LEFT OUTER JOIN
+    person_ids
+ON
+  person.person_id = person_ids.matching_id
 GROUP BY state_code, `{column_name}`
 ORDER BY state_code, `{column_name}`;
 """
@@ -64,14 +66,14 @@ ORDER BY state_code, `{column_name}`;
 STATE_PERSON_NON_ENUM_QUERY_TEMPLATE = """
 WITH table_rows AS (
   SELECT
-    `{project_id}.{base_dataset}.state_person`.state_code,
-    IF(`{project_id}.{base_dataset}.state_person`.{column_name} IS NULL, 'NULL', 'NOT_NULL') AS {column_name},
-    `{project_id}.{base_dataset}.state_person_external_id` AS matching_id
+    person.state_code,
+    IF(person.{column_name} IS NULL, 'NULL', 'NOT_NULL') AS {column_name},
+    person_external_id AS matching_id
   FROM
-    `{project_id}.{base_dataset}.state_person`
+    `{project_id}.{base_dataset}.state_person` person
   LEFT OUTER JOIN
-    `{project_id}.{base_dataset}.state_person_external_id`
-  ON `{project_id}.{base_dataset}.state_person`.person_id = `{project_id}.{base_dataset}.state_person_external_id`.person_id
+    `{project_id}.{base_dataset}.state_person_external_id` person_external_id
+  USING (person_id)
 )
 SELECT
   state_code,
