@@ -37,8 +37,8 @@ Examples:
         --schema_type state
 
     python -m recidiviz.tools.ingest.testing.validate_state_dataset \
-        --output_sandbox_prefix ageiduschek \
-        --state_code_filter US_MO \
+        --output_sandbox_prefix my_prefix \
+        --state_code_filter US_CA \
         --reference_state_dataset us_ca_normalized_state \
         --sandbox_state_dataset another_prefix_us_ca_normalized_state \
         --schema_type normalized_state

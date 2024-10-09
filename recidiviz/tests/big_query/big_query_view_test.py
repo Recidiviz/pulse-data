@@ -22,6 +22,9 @@ from mock import patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_address_formatter import (
+    StateFilteringBigQueryAddressFormatterProvider,
+)
 from recidiviz.big_query.big_query_view import (
     BQ_TABLE_DESCRIPTION_MAX_LENGTH,
     BigQueryView,
@@ -30,6 +33,7 @@ from recidiviz.big_query.big_query_view import (
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
@@ -252,6 +256,7 @@ class BigQueryViewTest(unittest.TestCase):
 
         sandbox_context = BigQueryViewSandboxContext(
             parent_address_overrides=address_overrides,
+            parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_override",
         )
 
@@ -330,6 +335,7 @@ class BigQueryViewTest(unittest.TestCase):
 
         sandbox_context = BigQueryViewSandboxContext(
             parent_address_overrides=address_overrides,
+            parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="my_outputs_prefix",
         )
 
@@ -412,6 +418,120 @@ class BigQueryViewTest(unittest.TestCase):
                 dataset_id="my_outputs_prefix_view_dataset", table_id="my_view"
             ),
             view_not_materialized.table_for_query,
+        )
+
+    def test_sandbox_state_code_filter(self) -> None:
+        address_overrides = (
+            BigQueryAddressOverrides.Builder(sandbox_prefix="my_inputs_prefix")
+            .register_sandbox_override_for_entire_dataset("a_dataset")
+            .register_sandbox_override_for_entire_dataset("us_xx_dataset")
+            .register_sandbox_override_for_entire_dataset("us_yy_dataset")
+            .build()
+        )
+
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=address_overrides,
+            parent_address_formatter_provider=StateFilteringBigQueryAddressFormatterProvider(
+                state_code_filter=StateCode.US_XX,
+                missing_state_code_addresses={
+                    BigQueryAddress.from_str("dataset.missing_state_code")
+                },
+                pseudocolumns_by_address={},
+            ),
+            output_sandbox_dataset_prefix="my_outputs_prefix",
+        )
+
+        view = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            should_materialize=True,
+            view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            some_dataset="a_dataset",
+        ).build(sandbox_context=sandbox_context)
+
+        self.assertEqual(
+            'SELECT * FROM (SELECT * FROM `recidiviz-project-id.my_inputs_prefix_a_dataset.table` WHERE state_code = "US_XX")',
+            view.view_query,
+        )
+
+        view = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            should_materialize=True,
+            view_query_template="SELECT * FROM `{project_id}.us_xx_dataset.table`",
+        ).build(sandbox_context=sandbox_context)
+
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-project-id.my_inputs_prefix_us_xx_dataset.table`",
+            view.view_query,
+        )
+
+        view = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            should_materialize=True,
+            view_query_template="SELECT * FROM `{project_id}.us_yy_dataset.table`",
+        ).build(sandbox_context=sandbox_context)
+
+        self.assertEqual(
+            "SELECT * FROM (SELECT * FROM `recidiviz-project-id.my_inputs_prefix_us_yy_dataset.table` LIMIT 0)",
+            view.view_query,
+        )
+
+    def test_sandbox_state_code_filter_no_parent_overrides(self) -> None:
+        sandbox_context = BigQueryViewSandboxContext(
+            parent_address_overrides=None,
+            parent_address_formatter_provider=StateFilteringBigQueryAddressFormatterProvider(
+                state_code_filter=StateCode.US_XX,
+                missing_state_code_addresses={
+                    BigQueryAddress.from_str("dataset.missing_state_code")
+                },
+                pseudocolumns_by_address={},
+            ),
+            output_sandbox_dataset_prefix="my_outputs_prefix",
+        )
+
+        view = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            should_materialize=True,
+            view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
+            some_dataset="a_dataset",
+        ).build(sandbox_context=sandbox_context)
+
+        self.assertEqual(
+            'SELECT * FROM (SELECT * FROM `recidiviz-project-id.a_dataset.table` WHERE state_code = "US_XX")',
+            view.view_query,
+        )
+
+        view = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            should_materialize=True,
+            view_query_template="SELECT * FROM `{project_id}.us_xx_dataset.table`",
+        ).build(sandbox_context=sandbox_context)
+
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-project-id.us_xx_dataset.table`",
+            view.view_query,
+        )
+
+        view = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            should_materialize=True,
+            view_query_template="SELECT * FROM `{project_id}.us_yy_dataset.table`",
+        ).build(sandbox_context=sandbox_context)
+
+        self.assertEqual(
+            "SELECT * FROM (SELECT * FROM `recidiviz-project-id.us_yy_dataset.table` LIMIT 0)",
+            view.view_query,
         )
 
     def test_view_equality(self) -> None:

@@ -293,3 +293,20 @@ def get_deployed_addresses_without_state_code_column(
         | views_no_state_code
         | materialized_tables_no_state_code
     )
+
+
+def get_source_tables_to_pseudocolumns() -> dict[BigQueryAddress, list[str]]:
+    """Returns a map of source table addresses to any pseudocolumns present on that
+    table.
+    """
+    source_table_configs_by_address = (
+        build_source_table_repository_for_collected_schemata(
+            project_id=metadata.project_id()
+        ).source_tables
+    )
+
+    return {
+        a: [c.name for c in config.pseudocolumns]
+        for a, config in source_table_configs_by_address.items()
+        if config.pseudocolumns
+    }

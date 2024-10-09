@@ -493,6 +493,7 @@ class ViewManagerTest(unittest.TestCase):
                 view_dataset_override_prefix="test_prefix",
                 view_builders=mock_view_builders,
             ),
+            parent_address_formatter_provider=None,
             output_sandbox_dataset_prefix="test_prefix",
         )
 
@@ -502,6 +503,7 @@ class ViewManagerTest(unittest.TestCase):
             view_update_sandbox_context=BigQueryViewUpdateSandboxContext(
                 output_sandbox_dataset_prefix="test_prefix",
                 input_source_table_overrides=BigQueryAddressOverrides.empty(),
+                parent_address_formatter_provider=None,
             ),
             historically_managed_datasets_to_clean=None,
         )

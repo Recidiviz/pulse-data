@@ -17,8 +17,17 @@
 """Tests for the BigQueryQueryBuilder."""
 import unittest
 
+import attr
+
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_address import (
+    BigQueryAddress,
+    ProjectSpecificBigQueryAddress,
+)
+from recidiviz.big_query.big_query_address_formatter import (
+    BigQueryAddressFormatter,
+    BigQueryAddressFormatterProvider,
+)
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 
 _DATASET_1 = "dataset_1"
@@ -28,12 +37,25 @@ _TABLE_1 = "table_1"
 _TABLE_2 = "table_2"
 
 
+class _LimitOneFormatter(BigQueryAddressFormatter):
+    def format_address(self, address: ProjectSpecificBigQueryAddress) -> str:
+        return f"(SELECT * FROM {address.format_address_for_query()} LIMIT 1)"
+
+
+@attr.define
+class _LimitOneFormatterProvider(BigQueryAddressFormatterProvider):
+    def get_formatter(self, address: BigQueryAddress) -> BigQueryAddressFormatter:
+        return _LimitOneFormatter()
+
+
 class BigQueryQueryBuilderTest(unittest.TestCase):
     """Tests for the BigQueryQueryBuilder."""
 
     def setUp(self) -> None:
         self.project_id = "recidiviz-456"
-        self.builder_no_overrides = BigQueryQueryBuilder(parent_address_overrides=None)
+        self.builder_no_overrides = BigQueryQueryBuilder(
+            parent_address_overrides=None, parent_address_formatter_provider=None
+        )
 
         address_overrides = (
             BigQueryAddressOverrides.Builder(sandbox_prefix="my_prefix")
@@ -46,7 +68,12 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
             .build()
         )
         self.builder_with_overrides = BigQueryQueryBuilder(
-            parent_address_overrides=address_overrides
+            parent_address_overrides=address_overrides,
+            parent_address_formatter_provider=None,
+        )
+        self.builder_with_overrides_and_formatter = BigQueryQueryBuilder(
+            parent_address_overrides=address_overrides,
+            parent_address_formatter_provider=_LimitOneFormatterProvider(),
         )
 
     def test_build_no_table_no_args(self) -> None:
@@ -58,6 +85,11 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
         self.assertEqual(result, template)
 
         result = self.builder_with_overrides.build_query(
+            project_id=self.project_id, query_template=template, query_format_kwargs={}
+        )
+        self.assertEqual(result, template)
+
+        result = self.builder_with_overrides_and_formatter.build_query(
             project_id=self.project_id, query_template=template, query_format_kwargs={}
         )
         self.assertEqual(result, template)
@@ -77,6 +109,13 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
         self.assertEqual(result, expected_result)
 
         result = self.builder_with_overrides.build_query(
+            project_id=self.project_id,
+            query_template=template,
+            query_format_kwargs=query_args,
+        )
+        self.assertEqual(result, expected_result)
+
+        result = self.builder_with_overrides_and_formatter.build_query(
             project_id=self.project_id,
             query_template=template,
             query_format_kwargs=query_args,
@@ -106,6 +145,16 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
             result, "SELECT my_column FROM `recidiviz-456.my_prefix_dataset_1.table_1`;"
         )
 
+        result = self.builder_with_overrides_and_formatter.build_query(
+            project_id=self.project_id,
+            query_template=template,
+            query_format_kwargs=query_args,
+        )
+        self.assertEqual(
+            result,
+            "SELECT my_column FROM (SELECT * FROM `recidiviz-456.my_prefix_dataset_1.table_1` LIMIT 1);",
+        )
+
     def test_build_simple_inject_dataset_and_table(self) -> None:
         template = "SELECT {column_arg} FROM `{project_id}.{dataset_arg}.{table_arg}`;"
 
@@ -133,6 +182,16 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
             result, "SELECT my_column FROM `recidiviz-456.my_prefix_dataset_1.table_1`;"
         )
 
+        result = self.builder_with_overrides_and_formatter.build_query(
+            project_id=self.project_id,
+            query_template=template,
+            query_format_kwargs=query_args,
+        )
+        self.assertEqual(
+            result,
+            "SELECT my_column FROM (SELECT * FROM `recidiviz-456.my_prefix_dataset_1.table_1` LIMIT 1);",
+        )
+
     def test_build_no_overrides_apply_to_view(self) -> None:
         template = "SELECT {column_arg} FROM `{project_id}.{dataset_arg}.{table_arg}`;"
 
@@ -149,6 +208,16 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
         )
         self.assertEqual(
             result, "SELECT my_column FROM `recidiviz-456.other_dataset.other_table`;"
+        )
+
+        result = self.builder_with_overrides_and_formatter.build_query(
+            project_id=self.project_id,
+            query_template=template,
+            query_format_kwargs=query_args,
+        )
+        self.assertEqual(
+            result,
+            "SELECT my_column FROM (SELECT * FROM `recidiviz-456.other_dataset.other_table` LIMIT 1);",
         )
 
     def test_argument_has_project_id_format_arg(self) -> None:
@@ -174,6 +243,16 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
         )
         self.assertEqual(
             result, "SELECT my_column FROM `recidiviz-456.my_prefix_dataset_1.table_1`;"
+        )
+
+        result = self.builder_with_overrides_and_formatter.build_query(
+            project_id=self.project_id,
+            query_template=template,
+            query_format_kwargs=query_args,
+        )
+        self.assertEqual(
+            result,
+            "SELECT my_column FROM (SELECT * FROM `recidiviz-456.my_prefix_dataset_1.table_1` LIMIT 1);",
         )
 
     def test_argument_has_format_args_test(self) -> None:
@@ -230,6 +309,21 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
                 "SELECT my_column "
                 "FROM `recidiviz-456.my_prefix_dataset_1.table_1` "
                 "JOIN `recidiviz-789.dataset_1.table_1` "  # NOTE: No override here
+                "ON my_column;"
+            ),
+        )
+
+        result = self.builder_with_overrides_and_formatter.build_query(
+            project_id=self.project_id,
+            query_template=template,
+            query_format_kwargs=query_args,
+        )
+        self.assertEqual(
+            result,
+            (
+                "SELECT my_column "
+                "FROM (SELECT * FROM `recidiviz-456.my_prefix_dataset_1.table_1` LIMIT 1) "
+                "JOIN (SELECT * FROM `recidiviz-789.dataset_1.table_1` LIMIT 1) "  # NOTE: No override here
                 "ON my_column;"
             ),
         )

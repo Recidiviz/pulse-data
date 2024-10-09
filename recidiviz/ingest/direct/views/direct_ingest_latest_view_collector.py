@@ -87,6 +87,11 @@ class DirectIngestRawDataTableLatestViewBuilder(BigQueryViewBuilder):
                     if sandbox_context
                     else None
                 ),
+                parent_address_formatter_provider=(
+                    sandbox_context.parent_address_formatter_provider
+                    if sandbox_context
+                    else None
+                ),
                 normalized_column_values=True,
                 raw_data_datetime_upper_bound=None,
                 filter_to_latest=True,

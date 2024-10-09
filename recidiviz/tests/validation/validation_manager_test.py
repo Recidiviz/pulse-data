@@ -1090,6 +1090,7 @@ class TestFetchValidations(TestCase):
             region_code="US_XX",
             sandbox_context=BigQueryViewSandboxContext(
                 parent_address_overrides=parent_address_overrides,
+                parent_address_formatter_provider=None,
                 output_sandbox_dataset_prefix="prefix",
             ),
         )

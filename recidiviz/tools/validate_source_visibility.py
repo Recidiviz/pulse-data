@@ -240,6 +240,7 @@ def main() -> int:
         if "us_ix_case_note" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
+                    "recidiviz.big_query.big_query_address_formatter",
                     "recidiviz.big_query.big_query_query_builder",
                     "recidiviz.ingest.direct.types.direct_ingest_instance",
                     "recidiviz.ingest.direct.dataset_config",
@@ -249,6 +250,7 @@ def main() -> int:
         if "ingest" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
+                    "recidiviz.big_query.big_query_address_formatter",
                     "recidiviz.big_query.big_query_query_builder",
                     "recidiviz.big_query.big_query_view",
                     "recidiviz.big_query.big_query_view_collector",
@@ -313,6 +315,7 @@ def main() -> int:
         "recidiviz.airflow.dags",
         "recidiviz.big_query.address_overrides",
         "recidiviz.big_query.big_query_address",
+        "recidiviz.big_query.big_query_address_formatter",
         "recidiviz.big_query.big_query_client",
         "recidiviz.big_query.big_query_query_builder",
         "recidiviz.big_query.big_query_query_provider",

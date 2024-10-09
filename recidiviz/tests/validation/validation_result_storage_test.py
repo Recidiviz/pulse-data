@@ -95,6 +95,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 sandbox_context=BigQueryViewSandboxContext(
                     output_sandbox_dataset_prefix="test_prefix",
                     parent_address_overrides=None,
+                    parent_address_formatter_provider=None,
                 ),
             ),
             result_details=SamenessPerRowValidationResultDetails(

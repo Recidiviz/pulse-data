@@ -20,6 +20,7 @@ import typing
 from typing import Any
 
 import attr
+from google.cloud import bigquery
 from google.cloud.bigquery import ExternalConfig, SchemaField, Table
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -32,6 +33,9 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.yaml_dict import YAMLDict
 
 DEFAULT_SOURCE_TABLE_DESCRIPTION = "TODO(#29155): Add a description as to what this is used for and why it isn't managed in code"
+
+
+EXTERNAL_DATA_FILE_NAME_PSEUDOCOLUMN = "_FILE_NAME"
 
 
 @attr.s(auto_attribs=True)
@@ -48,7 +52,36 @@ class SourceTableConfig:
     is_sandbox_table: bool = attr.ib(default=False)
 
     def has_column(self, column: str) -> bool:
-        return any(c.name == column for c in self.schema_fields)
+        return any(c.name == column for c in self.schema_fields + self.pseudocolumns)
+
+    @property
+    def pseudocolumns(self) -> list[SchemaField]:
+        """Returns a list of pseudocolumns that are available for query on this table.
+        These are columns that will not be returned by a SELECT * query on this table,
+        but can be explicitly queried.
+        """
+        if not self.external_data_configuration:
+            return []
+
+        no_file_name_column_formats = {
+            # Google Sheets backed tables do not have the _FILE_NAME pseudocolumn
+            "GOOGLE_SHEETS",
+        }
+        if (
+            self.external_data_configuration.source_format
+            in no_file_name_column_formats
+        ):
+            return []
+
+        return [
+            # Most external tables have the _FILE_NAME column available for query, see:
+            # https://cloud.google.com/bigquery/docs/query-cloud-storage-data#query_the_file_name_pseudo-column
+            SchemaField(
+                name=EXTERNAL_DATA_FILE_NAME_PSEUDOCOLUMN,
+                field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,
+                mode="REQUIRED",
+            )
+        ]
 
     def as_sandbox_table(self, sandbox_dataset_prefix: str) -> "SourceTableConfig":
         if self.is_sandbox_table:

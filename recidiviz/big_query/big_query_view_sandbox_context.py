@@ -21,18 +21,27 @@ import attr
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_address_formatter import (
+    BigQueryAddressFormatterProvider,
+)
 from recidiviz.common import attr_validators
 
 
-@attr.define
+@attr.define(kw_only=True)
 class BigQueryViewSandboxContext:
-    """Object that provides a set of address overrides for a view that will be loaded
-    into a sandbox.
+    """Object that provides a set of address overrides for a *single BigQueryView* that
+    will be loaded into a sandbox.
     """
 
     # Address overrides for any parent tables this view may query.
     parent_address_overrides: BigQueryAddressOverrides | None = attr.ib(
         validator=attr_validators.is_opt(BigQueryAddressOverrides)
+    )
+
+    # If given, this will give us a formatter that can be used to apply additional
+    #  formatting on each parent address in this view.
+    parent_address_formatter_provider: BigQueryAddressFormatterProvider | None = (
+        attr.ib(validator=attr_validators.is_opt(BigQueryAddressFormatterProvider))
     )
 
     # The prefix to append to the output dataset this view will be loaded into

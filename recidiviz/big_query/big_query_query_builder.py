@@ -19,10 +19,14 @@ overrides to BigQuery queries.
 """
 
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
+from recidiviz.big_query.big_query_address_formatter import (
+    BigQueryAddressFormatterProvider,
+    SimpleBigQueryAddressFormatterProvider,
+)
 from recidiviz.big_query.big_query_query_provider import REFERENCED_BQ_ADDRESS_REGEX
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -43,9 +47,13 @@ class BigQueryQueryBuilder:
     """
 
     def __init__(
-        self, *, parent_address_overrides: Optional[BigQueryAddressOverrides]
+        self,
+        *,
+        parent_address_overrides: BigQueryAddressOverrides | None,
+        parent_address_formatter_provider: BigQueryAddressFormatterProvider | None,
     ) -> None:
         self._parent_address_overrides = parent_address_overrides
+        self._parent_address_formatter_provider = parent_address_formatter_provider
 
     def build_query(
         self,
@@ -63,11 +71,17 @@ class BigQueryQueryBuilder:
             query_template,
             query_format_kwargs,
         )
-        if not self._parent_address_overrides:
+        if (
+            not self._parent_address_overrides
+            and not self._parent_address_formatter_provider
+        ):
             return query_no_overrides
 
-        return self._apply_overrides_to_query(
-            project_id, query_no_overrides, self._parent_address_overrides
+        return self._apply_parent_table_reformatting_to_query(
+            project_id,
+            query_no_overrides,
+            self._parent_address_overrides,
+            self._parent_address_formatter_provider,
         )
 
     @classmethod
@@ -109,31 +123,75 @@ class BigQueryQueryBuilder:
                     f'project_id: "{arg_value}"'
                 ) from e
 
-    @staticmethod
-    def _apply_overrides_to_query(
+    @classmethod
+    def _apply_parent_table_reformatting_to_query(
+        cls,
         project_id: str,
         query: str,
-        parent_address_overrides: BigQueryAddressOverrides,
+        parent_address_overrides: BigQueryAddressOverrides | None,
+        parent_address_formatter_provider: BigQueryAddressFormatterProvider | None,
     ) -> str:
         """Takes the given query string, parses out the table references, and returns
-        the same query string, but with overrides applied to all relevant addresses.
+        the same query string, but with overrides / custom formatting applied to all
+        relevant addresses.
         """
         query_with_overrides = query
-        for ref_project_id, dataset_id, table_id in re.findall(
-            REFERENCED_BQ_ADDRESS_REGEX, query
-        ):
-            # We assume here that all overrides only apply to addresses within the
-            # current project. If we have a view that explicitly references an address
-            # in a different project (e.g. a prod/staging comparison view), then we do
-            # not override the address for the other project.
-            if project_id != ref_project_id:
-                continue
-            parent_table = BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
-            if override := parent_address_overrides.get_sandbox_address(
-                address=parent_table
-            ):
-                query_with_overrides = query_with_overrides.replace(
-                    f"`{ref_project_id}.{dataset_id}.{table_id}`",
-                    f"`{ref_project_id}.{override.dataset_id}.{override.table_id}`",
-                )
+
+        original_parent_addresses: set[ProjectSpecificBigQueryAddress] = {
+            ProjectSpecificBigQueryAddress(
+                project_id=ref_project_id, dataset_id=dataset_id, table_id=table_id
+            )
+            for ref_project_id, dataset_id, table_id in re.findall(
+                REFERENCED_BQ_ADDRESS_REGEX, query
+            )
+        }
+
+        for original_parent_address in original_parent_addresses:
+            sandbox_parent_address = original_parent_address
+
+            if parent_address_overrides:
+                # We assume here that all overrides only apply to addresses within the
+                # current project. If we have a view that explicitly references an
+                # address in a different project (e.g. a prod/staging comparison view),
+                # then we do not override the address for the other project.
+                if project_id == original_parent_address.project_id:
+                    if override := parent_address_overrides.get_sandbox_address(
+                        address=original_parent_address.to_project_agnostic_address()
+                    ):
+                        sandbox_parent_address = override.to_project_specific_address(
+                            original_parent_address.project_id
+                        )
+
+            query_with_overrides = query_with_overrides.replace(
+                original_parent_address.format_address_for_query(),
+                cls._format_address_for_sandbox_query(
+                    parent_address=original_parent_address,
+                    sandbox_parent_address=sandbox_parent_address,
+                    parent_address_formatter_provider=parent_address_formatter_provider,
+                ),
+            )
         return query_with_overrides
+
+    @staticmethod
+    def _format_address_for_sandbox_query(
+        parent_address: ProjectSpecificBigQueryAddress,
+        sandbox_parent_address: ProjectSpecificBigQueryAddress | None,
+        parent_address_formatter_provider: BigQueryAddressFormatterProvider | None,
+    ) -> str:
+        """Returns the |parent_address| as it should be formatted in the query. If a
+        |sandbox_parent_address| is provided, that will be referenced in place of the
+        original address.
+        """
+
+        address_formatter_provider = (
+            parent_address_formatter_provider
+            or SimpleBigQueryAddressFormatterProvider()
+        )
+
+        address_formatter = address_formatter_provider.get_formatter(
+            parent_address.to_project_agnostic_address()
+        )
+
+        return address_formatter.format_address(
+            sandbox_parent_address or parent_address
+        )

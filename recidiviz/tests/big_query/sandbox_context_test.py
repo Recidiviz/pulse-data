@@ -40,6 +40,7 @@ class BigQueryViewSandboxContextTest(unittest.TestCase):
         sandbox_context = BigQueryViewSandboxContext(
             output_sandbox_dataset_prefix="outputs_prefix",
             parent_address_overrides=overrides,
+            parent_address_formatter_provider=None,
         )
 
         self.assertEqual(
