@@ -511,7 +511,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 )
             )
 
-        self.assertTrue(len(self.fs.all_paths) == 0)
+        self.assertTrue(len(self.fs.all_paths) == 1)
         self.assertFalse(
             self.bq_client.table_exists(
                 BigQueryAddress(
@@ -554,8 +554,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 )
             )
 
-        self.assertTrue(len(self.fs.all_paths) == 0)
-        self.assertFalse(
+        self.assertTrue(len(self.fs.all_paths) == 1)
+        self.assertTrue(
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
@@ -601,8 +601,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                     )
                 )
 
-        self.assertTrue(len(self.fs.all_paths) == 0)
-        self.assertFalse(
+        self.assertTrue(len(self.fs.all_paths) == 1)
+        self.assertTrue(
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
@@ -715,7 +715,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             )
         )
 
-    def test_fail_validations_keeps_transformed_table(self) -> None:
+    def test_fail_validations_keeps_temp_table(self) -> None:
         self._set_pruning_mocks(True)
         file_tag, input_paths, *_ = self._prep_test(
             "no_migrations_no_changes_single_file"
@@ -744,7 +744,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 )
 
         self.assertTrue(len(self.fs.all_paths) == 1)
-        self.assertFalse(
+        self.assertTrue(
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
@@ -753,7 +753,6 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             )
         )
 
-        # should not have cleaned up transformed table
         self.assertTrue(
             self.bq_client.table_exists(
                 BigQueryAddress(

@@ -311,8 +311,6 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 [
                     "branch_end",
                     "move_successfully_imported_paths_to_storage",
-                    "clean_up_temporary_files",
-                    "clean_up_temporary_tables",
                     "write_import_completions",
                 ],
                 ["write_file_processed_time"],
@@ -322,21 +320,8 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             [
                 [
                     "branch_end",
-                    "move_successfully_imported_paths_to_storage",
                     "write_import_completions",
-                    "clean_up_temporary_tables",
-                    "clean_up_temporary_files",
-                ],
-                ["ensure_release_resource_locks_release_if_acquired"],
-                ["release_raw_data_resource_locks", "branch_end"],
-            ],
-            [
-                [
-                    "branch_end",
                     "move_successfully_imported_paths_to_storage",
-                    "write_import_completions",
-                    "clean_up_temporary_files",
-                    "clean_up_temporary_tables",
                 ],
                 ["ensure_release_resource_locks_release_if_acquired"],
                 ["release_raw_data_resource_locks", "branch_end"],
@@ -2473,11 +2458,6 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         future_mock.result.return_value = single_row_iterator_mock
         self.load_bq_mock().run_query_async.return_value = future_mock
 
-        self.clean_tasks_bq_patcher = patch(
-            "recidiviz.airflow.dags.raw_data.clean_up_tasks.BigQueryClientImpl",
-        )
-        self.clean_bq_mock = self.clean_tasks_bq_patcher.start()
-
         # compatibility issues w/ freezegun, see https://github.com/apache/airflow/pull/25511#issuecomment-1204297524
         self.frozen_time = datetime.datetime(2024, 1, 26, 3, 4, 6, tzinfo=datetime.UTC)
         self.processed_time_patcher = patch(
@@ -2500,7 +2480,6 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         for patcher in self.gcs_patchers:  # type: ignore
             patcher.stop()
         self.load_tasks_bq_patcher.stop()
-        self.clean_tasks_bq_patcher.stop()
         self.processed_time_patcher.stop()
         super().tearDown()
 
@@ -4047,12 +4026,17 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # conditions for success for a single file and failure for another:
             # (1) successful file has moved to storage, failed file stayed put
+            # and we left the temp files in place
             assert set(self.fs.all_paths) == {
                 GcsfsFilePath.from_absolute_path(
                     f'{gcsfs_direct_ingest_storage_directory_path_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}raw/2024/01/25/processed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv'
                 ),
                 GcsfsFilePath.from_absolute_path(
                     f'{gcsfs_direct_ingest_bucket_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv'
+                ),
+                GcsfsFilePath(
+                    bucket_name="recidiviz-testing-direct-ingest-temporary-files",
+                    blob_name="temp_unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8_0.csv",
                 ),
             }
 
@@ -4063,7 +4047,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             assert self.load_bq_mock().create_table_from_query_async.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
-            assert self.load_bq_mock().delete_table.call_count == 5
+            # we shouldn't delete the tables for the failed files
+            assert self.load_bq_mock().delete_table.call_count == 3
             assert (
                 self.load_bq_mock().insert_into_table_from_table_async.call_count == 1
             )
@@ -4154,6 +4139,10 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 GcsfsFilePath.from_absolute_path(
                     f'{gcsfs_direct_ingest_bucket_for_state(region_code="US_XX", ingest_instance=DirectIngestInstance.PRIMARY).abs_path()}/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv'
                 ),
+                GcsfsFilePath(
+                    bucket_name="recidiviz-testing-direct-ingest-temporary-files",
+                    blob_name="temp_unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8_0.csv",
+                ),
             }
 
             # (2) bq client has all the expected calls from last time
@@ -4163,7 +4152,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             assert self.load_bq_mock().create_table_from_query_async.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
-            assert self.load_bq_mock().delete_table.call_count == 7
+            assert self.load_bq_mock().delete_table.call_count == 3
             assert (
                 self.load_bq_mock().insert_into_table_from_table_async.call_count == 1
             )
@@ -4261,7 +4250,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             assert self.load_bq_mock().create_table_from_query_async.call_count == 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2
-            assert self.load_bq_mock().delete_table.call_count == 10
+            assert self.load_bq_mock().delete_table.call_count == 6
             assert (
                 self.load_bq_mock().insert_into_table_from_table_async.call_count == 2
             )
@@ -4396,7 +4385,9 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             assert self.load_bq_mock().create_table_from_query_async.call_count == 1 + 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2
-            assert self.load_bq_mock().delete_table.call_count == 3 * 2
+            # we should only delete the original temp table for the failed file
+            # since it is deleted after the temp transformed table is created
+            assert self.load_bq_mock().delete_table.call_count == (3 * 1) + (1 * 1)
             assert (
                 self.load_bq_mock().insert_into_table_from_table_async.call_count == 2
             )
@@ -4497,7 +4488,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2 + 1
-            assert self.load_bq_mock().delete_table.call_count == 3 * (2 + 1)
+            assert self.load_bq_mock().delete_table.call_count == (3 * 1) + (1 * 2)
             assert (
                 self.load_bq_mock().insert_into_table_from_table_async.call_count
                 == 2 + 1
@@ -4598,7 +4589,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2 + 1 + 1
-            assert self.load_bq_mock().delete_table.call_count == 3 * (2 + 1 + 1)
+            assert self.load_bq_mock().delete_table.call_count == (3 * 2) + (1 * 2)
             assert (
                 self.load_bq_mock().insert_into_table_from_table_async.call_count
                 == 2 + 1 + 1

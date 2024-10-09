@@ -32,11 +32,8 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA,
     SKIPPED_FILE_ERRORS,
-    TEMPORARY_PATHS_TO_CLEAN,
-    TEMPORARY_TABLES_TO_CLEAN,
 )
 from recidiviz.airflow.dags.raw_data.utils import get_direct_ingest_region_raw_config
-from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
@@ -247,11 +244,7 @@ def coalesce_results_and_errors(
 
     region_raw_config = get_direct_ingest_region_raw_config(region_code)
 
-    (
-        failed_file_imports_for_file_id,
-        temporary_file_paths_to_clean,
-        temporary_tables_to_clean,
-    ) = _build_file_imports_for_errors(
+    failed_file_imports_for_file_id = _build_file_imports_for_errors(
         region_raw_config, raw_data_instance, bq_metadata, *import_errors
     )
 
@@ -274,12 +267,6 @@ def coalesce_results_and_errors(
         ],
         PROCESSED_PATHS_TO_RENAME: [
             path.abs_path() for path in successfully_imported_paths
-        ],
-        TEMPORARY_PATHS_TO_CLEAN: [
-            path.abs_path() for path in temporary_file_paths_to_clean
-        ],
-        TEMPORARY_TABLES_TO_CLEAN: [
-            address.to_str() for address in temporary_tables_to_clean
         ],
     }
 
@@ -348,15 +335,10 @@ def _build_file_imports_for_errors(
     processing_errors: List[RawFileProcessingError],
     load_and_prep_errors: List[RawFileLoadAndPrepError],
     append_errors: List[RawDataAppendImportError],
-) -> Tuple[Dict[int, RawFileImport], List[GcsfsFilePath], List[BigQueryAddress],]:
-    """Builds RawFileImport objects for all errors seen during the import process,
-    additionally returning temporary file paths and temporary big query tables that we
-    want to make sure are cleaned up
-    """
+) -> Dict[int, RawFileImport]:
+    """Builds RawFileImport objects for all errors seen during the import process"""
 
     failed_file_imports: Dict[int, RawFileImport] = {}
-    temporary_file_paths_to_clean: List[GcsfsFilePath] = []
-    temporary_tables_to_clean: List[BigQueryAddress] = []
 
     # --- simple case: append_errors and load_and_prep_errors have file_id -------------
 
@@ -368,7 +350,6 @@ def _build_file_imports_for_errors(
                 raw_region_config, raw_data_instance, append_error.file_tag
             ),
         )
-        temporary_tables_to_clean.append(append_error.raw_temp_table)
 
     for load_and_prep_error in load_and_prep_errors:
         failed_file_imports[load_and_prep_error.file_id] = RawFileImport(
@@ -378,12 +359,6 @@ def _build_file_imports_for_errors(
                 raw_region_config, raw_data_instance, load_and_prep_error.file_tag
             ),
         )
-        if load_and_prep_error.pre_import_normalized_file_paths:
-            temporary_file_paths_to_clean.extend(
-                load_and_prep_error.pre_import_normalized_file_paths
-            )
-        if load_and_prep_error.temp_table:
-            temporary_tables_to_clean.append(load_and_prep_error.temp_table)
 
     # --- complex case: map file path back to file_id ----------------------------------
 
@@ -405,14 +380,8 @@ def _build_file_imports_for_errors(
                 processing_error.parts.file_tag,
             ),
         )
-        if processing_error.temporary_file_paths:
-            temporary_file_paths_to_clean.extend(processing_error.temporary_file_paths)
 
-    return (
-        failed_file_imports,
-        temporary_file_paths_to_clean,
-        temporary_tables_to_clean,
-    )
+    return failed_file_imports
 
 
 def _build_file_imports_for_results(

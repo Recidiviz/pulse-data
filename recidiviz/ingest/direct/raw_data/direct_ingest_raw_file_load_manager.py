@@ -48,9 +48,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
-    RawDataImportBlockingValidationError,
-)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
     AppendSummary,
@@ -110,7 +107,7 @@ class DirectIngestRawFileLoadManager:
         table_schema: List[bigquery.SchemaField],
         skip_leading_rows: int,
     ) -> int:
-        """Loads the raw data in the list of files at the provided |paths| into into
+        """Loads the raw data in the list of files at the provided |paths| into
         |destination_address|, not including recidiviz-managed fields.
         We preserve ascii control characters on load else the import into BQ will fail if ascii 0
         or any other ascii control character are present. Since ascii is a subset of utf-8, we want to
@@ -134,8 +131,6 @@ class DirectIngestRawFileLoadManager:
                 destination_address.to_str(),
                 paths,
             )
-            if should_delete_temp_files:
-                self._delete_temp_files(paths)
             raise e
 
         try:
@@ -151,6 +146,8 @@ class DirectIngestRawFileLoadManager:
                 datetime.datetime.now().isoformat(),
                 len(paths),
             )
+            if should_delete_temp_files:
+                self._delete_temp_files(paths)
         except Exception as e:
             logging.error(
                 "Insert job [%s] failed with errors: [%s]",
@@ -158,9 +155,6 @@ class DirectIngestRawFileLoadManager:
                 load_job.errors,
             )
             raise e
-        finally:
-            if should_delete_temp_files:
-                self._delete_temp_files(paths)
 
         loaded_row_count = load_job.output_rows
 
@@ -247,11 +241,18 @@ class DirectIngestRawFileLoadManager:
             (1) load raw data directly into a temp table
             (2) apply pre-migration transformations
             (3) apply raw data migrations
+            (4) run basic data integrity validations on the transformed temp table
+            (5) delete the original temp table if all of the above steps are successful
 
-        Then runs basic data integrity validations on the transformed temp table.
+        If we encounter an error during step (1), we will not clean up any temp files
+        containing the normalized output, and they will be overridden on the next run
+        or cleaned up by the bucket's lifecycle policy. If we encounter an error during
+        steps (2) through (4), we will not clean up the temp table, and it will be overridden
+        on the next run or cleaned up by the dataset's default table expiration policy.
 
         After this step, we should be ready to perform raw data pruning and append to
         the current raw data table.
+
         """
 
         temp_raw_file_address = BigQueryAddress(
@@ -269,48 +270,35 @@ class DirectIngestRawFileLoadManager:
             table_id=f"{file.file_tag}__{file.file_id}__transformed",
         )
 
-        try:
-            raw_rows_count = self._load_paths_to_temp_table(
-                file.paths_to_load,
-                temp_raw_file_address,
-                bool(file.pre_import_normalized_file_paths),
-                file.bq_load_config.schema_fields,
-                file.bq_load_config.skip_leading_rows,
-            )
+        raw_rows_count = self._load_paths_to_temp_table(
+            file.paths_to_load,
+            temp_raw_file_address,
+            bool(file.pre_import_normalized_file_paths),
+            file.bq_load_config.schema_fields,
+            file.bq_load_config.skip_leading_rows,
+        )
 
-            self._apply_pre_migration_transformations(
-                temp_raw_file_address,
-                temp_raw_file_with_transformations_address,
-                file.file_tag,
-                file.file_id,
-                file.update_datetime,
-            )
+        self._apply_pre_migration_transformations(
+            temp_raw_file_address,
+            temp_raw_file_with_transformations_address,
+            file.file_tag,
+            file.file_id,
+            file.update_datetime,
+        )
 
-            self._apply_migrations(
-                file.file_tag,
-                file.update_datetime,
-                temp_raw_file_with_transformations_address,
-            )
+        self._apply_migrations(
+            file.file_tag,
+            file.update_datetime,
+            temp_raw_file_with_transformations_address,
+        )
 
-            self.validator.run_raw_data_temp_table_validations(
-                file.file_tag,
-                file.update_datetime,
-                temp_raw_file_with_transformations_address,
-            )
+        self.validator.run_raw_data_temp_table_validations(
+            file.file_tag,
+            file.update_datetime,
+            temp_raw_file_with_transformations_address,
+        )
 
-        except RawDataImportBlockingValidationError as e:
-            # if any validations fail don't clean up transformed temp table for easier debugging
-            raise e
-
-        except Exception as e:
-            # if we fail during the above, we want to make sure that the transformed
-            # temp table is deleted, as the finally will always ensure that
-            # temp_raw_file_address is deleted
-            self._clean_up_temp_tables(temp_raw_file_with_transformations_address)
-            raise e
-
-        finally:
-            self._clean_up_temp_tables(temp_raw_file_address)
+        self._clean_up_temp_tables(temp_raw_file_address)
 
         return AppendReadyFile(
             import_ready_file=file,
@@ -438,7 +426,9 @@ class DirectIngestRawFileLoadManager:
     ) -> AppendSummary:
         """Appends already loaded and transformed data to the raw data table,
         optionally applying a historical data diff to the data if historical diffs
-        are active.
+        are active. If we encounter an error during the append, we will not clean up
+        the temp tables, and they will be overridden on the next run or cleaned up
+        by the dataset's default table expiration policy.
         """
         file = append_ready_file.import_ready_file
 
@@ -456,34 +446,31 @@ class DirectIngestRawFileLoadManager:
             table_id=file.file_tag,
         )
 
-        try:
+        if historical_diffs_active := self._should_generate_historical_diffs(
+            file.file_tag
+        ):
 
-            if historical_diffs_active := self._should_generate_historical_diffs(
-                file.file_tag
-            ):
-
-                self._generate_historical_diff(
-                    file_tag=file.file_tag,
-                    file_id=file.file_id,
-                    update_datetime=file.update_datetime,
-                    temp_raw_data_diff_table_address=temp_raw_data_diff_table_address,
-                    temp_raw_file_address=append_ready_file.append_ready_table_address,
-                )
-
-                append_source_table = temp_raw_data_diff_table_address
-            else:
-                append_source_table = append_ready_file.append_ready_table_address
-
-            self._ensure_no_conflicting_rows_in_bigquery(raw_data_table, file.file_id)
-
-            self._append_data_to_raw_table(
-                source_table=append_source_table, destination_table=raw_data_table
+            self._generate_historical_diff(
+                file_tag=file.file_tag,
+                file_id=file.file_id,
+                update_datetime=file.update_datetime,
+                temp_raw_data_diff_table_address=temp_raw_data_diff_table_address,
+                temp_raw_file_address=append_ready_file.append_ready_table_address,
             )
-        finally:
-            self._clean_up_temp_tables(
-                append_ready_file.append_ready_table_address,
-                temp_raw_data_diff_table_address,
-            )
+
+            append_source_table = temp_raw_data_diff_table_address
+        else:
+            append_source_table = append_ready_file.append_ready_table_address
+
+        self._ensure_no_conflicting_rows_in_bigquery(raw_data_table, file.file_id)
+
+        self._append_data_to_raw_table(
+            source_table=append_source_table, destination_table=raw_data_table
+        )
+        self._clean_up_temp_tables(
+            append_ready_file.append_ready_table_address,
+            temp_raw_data_diff_table_address,
+        )
 
         # TODO(#28694) add additional query to grab these stats
         return AppendSummary(

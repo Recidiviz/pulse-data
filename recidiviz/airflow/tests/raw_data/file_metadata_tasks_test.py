@@ -41,8 +41,6 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA,
     SKIPPED_FILE_ERRORS,
-    TEMPORARY_PATHS_TO_CLEAN,
-    TEMPORARY_TABLES_TO_CLEAN,
 )
 from recidiviz.airflow.dags.raw_data.utils import get_direct_ingest_region_raw_config
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -401,8 +399,6 @@ class CoalesceResultsAndErrorsTest(TestCase):
         ) == {
             FILE_IMPORTS: [],
             PROCESSED_PATHS_TO_RENAME: [],
-            TEMPORARY_PATHS_TO_CLEAN: [],
-            TEMPORARY_TABLES_TO_CLEAN: [],
         }
         assert coalesce_results_and_errors.function(
             region_code="US_XX",
@@ -417,8 +413,6 @@ class CoalesceResultsAndErrorsTest(TestCase):
         ) == {
             FILE_IMPORTS: [],
             PROCESSED_PATHS_TO_RENAME: [],
-            TEMPORARY_PATHS_TO_CLEAN: [],
-            TEMPORARY_TABLES_TO_CLEAN: [],
         }
 
     def test_build_file_imports_for_results_all_matching(self) -> None:
@@ -706,7 +700,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
 
         raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
-        file_imports, temp_files, temp_tables = _build_file_imports_for_errors(
+        file_imports = _build_file_imports_for_errors(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             [],
@@ -720,12 +714,6 @@ class CoalesceResultsAndErrorsTest(TestCase):
             one({summary.import_status for summary in file_imports.values()})
             == DirectIngestRawFileImportStatus.FAILED_LOAD_STEP
         )
-
-        assert temp_files == load_errors[1].pre_import_normalized_file_paths
-        assert temp_tables == [
-            append_errors[0].raw_temp_table,
-            load_errors[2].temp_table,
-        ]
 
     def test_build_file_imports_for_errors_processing_errors_single_chunk_fail_all_fail(
         self,
@@ -785,7 +773,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
 
         raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
-        file_imports, temp_files, temp_tables = _build_file_imports_for_errors(
+        file_imports = _build_file_imports_for_errors(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             bq_metadata,
@@ -800,8 +788,6 @@ class CoalesceResultsAndErrorsTest(TestCase):
             file_imports[2].import_status
             == DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
         )
-        assert not temp_tables
-        assert temp_files == processing_errors[0].temporary_file_paths
 
     def test_build_file_imports_for_errors_processing_errors_both(self) -> None:
         bq_metadata = [
@@ -869,7 +855,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
 
         raw_region_config = get_direct_ingest_region_raw_config("US_XX")
 
-        file_imports, temp_files, temp_tables = _build_file_imports_for_errors(
+        file_imports = _build_file_imports_for_errors(
             raw_region_config,
             DirectIngestInstance.PRIMARY,
             bq_metadata,
@@ -884,12 +870,6 @@ class CoalesceResultsAndErrorsTest(TestCase):
             file_imports[2].import_status
             == DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP
         )
-        assert not temp_tables
-        assert temp_files == [
-            path
-            for error in processing_errors
-            for path in error.temporary_file_paths or []
-        ]
 
     def test_build_file_imports_for_errors_processing_pruning_propagated(
         self,
