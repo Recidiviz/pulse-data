@@ -38,6 +38,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     no_recent_referrals_to_minimum_housing,
     not_enrolled_in_relevant_program,
     not_serving_ineligible_offense_for_atp_work_release,
+    not_within_1_month_of_parole_start_date,
     work_release_committee_requirements,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -77,6 +78,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_escape_in_current_incarceration.VIEW_BUILDER,
         not_enrolled_in_relevant_program.VIEW_BUILDER,
         has_facility_restrictions.VIEW_BUILDER,
+        not_within_1_month_of_parole_start_date.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
