@@ -92,7 +92,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     criteria_spans_query_template=_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
     description=_DESCRIPTION,
-    meets_criteria_default=False,
+    meets_criteria_default=True,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     reasons_fields=[
         ReasonsField(

@@ -36,6 +36,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_dangerous_crimes_against_children_conviction,
     no_domestic_violence_conviction,
     no_drug_offense_conviction,
+    no_dtp_denial_in_current_incarceration,
     no_major_violent_violation_during_incarceration,
     no_sexual_exploitation_of_children_conviction,
     no_sexual_offense_conviction,
@@ -86,6 +87,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             allowed_duplicate_reasons_keys=[],
         ),
         not_previous_dtp_participant.VIEW_BUILDER,
+        no_dtp_denial_in_current_incarceration.VIEW_BUILDER,
     ],
     # TODO(#33655): Update this to the correct task completion event
     completion_event_builder=early_discharge.VIEW_BUILDER,

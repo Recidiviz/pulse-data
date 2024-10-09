@@ -36,6 +36,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_dangerous_crimes_against_children_conviction,
     no_major_violent_violation_during_incarceration,
     no_sexual_offense_conviction,
+    no_tpr_denial_in_current_incarceration,
     no_unsatisfactory_program_ratings_within_3_months,
     no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction,
     time_90_days_before_release,
@@ -69,6 +70,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
         no_dangerous_crimes_against_children_conviction.VIEW_BUILDER,
         meets_functional_literacy.VIEW_BUILDER,
+        no_tpr_denial_in_current_incarceration.VIEW_BUILDER,
     ],
     # TODO(#33655): Update this to the correct task completion event
     completion_event_builder=early_discharge.VIEW_BUILDER,
