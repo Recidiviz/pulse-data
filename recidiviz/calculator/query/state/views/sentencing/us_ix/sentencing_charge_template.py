@@ -17,9 +17,27 @@
 """View logic to prepare US_IX Sentencing charge data for PSI tools"""
 
 US_IX_SENTENCING_CHARGE_TEMPLATE = """
-    SELECT DISTINCT 
-        most_severe_description AS charge,
-        "US_IX" AS state_code
-    FROM `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized`
-    WHERE state_code = "US_IX" and most_severe_description IS NOT NULL
+    SELECT
+      description AS charge,
+      "US_IX" AS state_code,
+    -- Determine if a charge is violent based what percentage of the time it is tagged as such, rounded down or up
+    IF
+      (ROUND(SUM(CASE
+              WHEN is_violent = TRUE THEN 1
+              ELSE 0
+          END
+            ) / COUNT(*)) = 1, TRUE, FALSE) AS is_violent,
+    -- Determine if a charge is a sex offense based what percentage of the time it is tagged as such, rounded down or up
+    IF
+      (ROUND(SUM(CASE
+              WHEN is_sex_offense = TRUE THEN 1
+              ELSE 0
+          END
+            ) / COUNT(*)) = 1, TRUE, FALSE) AS is_sex_offense
+    FROM
+      `{project_id}.normalized_state.state_charge`
+    WHERE
+      state_code = "US_IX"
+    GROUP BY
+      description
 """

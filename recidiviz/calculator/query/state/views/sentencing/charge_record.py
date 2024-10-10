@@ -19,7 +19,6 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_charge_template import (
     US_IX_SENTENCING_CHARGE_TEMPLATE,
 )
@@ -51,9 +50,8 @@ SENTENCING_CHARGE_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.SENTENCING_OUTPUT_DATASET,
     view_query_template=SENTENCING_CHARGE_RECORD_QUERY_TEMPLATE,
     description=SENTENCING_CHARGE_RECORD_DESCRIPTION,
-    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
-    columns=["state_code", "charge"],
+    columns=["state_code", "charge", "is_sex_offense", "is_violent"],
 )
 
 if __name__ == "__main__":
