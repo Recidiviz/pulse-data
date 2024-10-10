@@ -76,13 +76,15 @@ JOIN valid_people
 -- Filter malformed date values out of the query before any more processing is done.
 filter_to_valid_dates AS (
 SELECT 
-    * 
+    OFFENSE_ID,
+    PERSON_ID,
+    UPDT_DTM,
+    IF(SentenceExpirationDate BETWEEN '1900-01-01' AND '2100-01-01', SentenceExpirationDate, NULL) AS SentenceExpirationDate,
+    IF(CommunitySupervisionBeginDate BETWEEN '1900-01-01' AND '2100-01-01', CommunitySupervisionBeginDate, NULL) AS CommunitySupervisionBeginDate,
+    IF(EarnedReleaseCreditDate BETWEEN '1900-01-01' AND '2100-01-01', EarnedReleaseCreditDate, NULL) AS EarnedReleaseCreditDate,
+    IF(TransitionToAbsoluteDischargeDate BETWEEN '1900-01-01' AND '2100-01-01', TransitionToAbsoluteDischargeDate, NULL) AS TransitionToAbsoluteDischargeDate,
+    IF(AbsoluteDischargeDate BETWEEN '1900-01-01' AND '2100-01-01', AbsoluteDischargeDate, NULL) AS AbsoluteDischargeDate
 FROM base 
-WHERE COALESCE(CommunitySupervisionBeginDate, '1900-01-01') BETWEEN '1900-01-01' AND '2100-01-01'
-AND COALESCE(EarnedReleaseCreditDate, '1900-01-01') BETWEEN '1900-01-01' AND '2100-01-01'
-AND COALESCE(SentenceExpirationDate, '1900-01-01') BETWEEN '1900-01-01' AND '2100-01-01'
-AND COALESCE(TransitionToAbsoluteDischargeDate, '1900-01-01') BETWEEN '1900-01-01' AND '2100-01-01'
-AND COALESCE(AbsoluteDischargeDate, '1900-01-01') BETWEEN '1900-01-01' AND '2100-01-01'
 ),
 -- Collect the previous value of each release date for each sentence, so that we can
 -- filter these results to only include rows where a release date changed.
