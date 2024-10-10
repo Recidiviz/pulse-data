@@ -130,7 +130,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 # Need a "disable expression-not-assigned" because the chaining ('>>') doesn't need expressions to be assigned
 # pylint: disable=W0106 expression-not-assigned
 
-NUM_BATCHES = 5  # TODO(#29946) determine reasonable default
+NUM_BATCHES = 10  # TODO(#29946) determine reasonable default
 
 
 def create_single_state_code_ingest_instance_raw_data_import_branch(
