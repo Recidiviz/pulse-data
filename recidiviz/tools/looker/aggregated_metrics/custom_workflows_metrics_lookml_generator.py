@@ -137,7 +137,7 @@ def main(
                 generate_person_assignments_with_attributes_view(
                     view_name=view_name,
                     # Renaming caseload and location allows them to be properly parsed as Dynamic Attributes in Looker
-                    time_dependent_person_attribute_query="SELECT *, caseload_id as workflows_caseload, location_id as workflows_location FROM sessions.person_caseload_location_sessions_materialized",
+                    time_dependent_person_attribute_query="SELECT *, caseload_id as workflows_caseload, location_name as workflows_location FROM sessions.person_caseload_location_sessions_materialized",
                     time_dependent_person_attribute_fields=[
                         "compartment_level_1",
                         "workflows_caseload",
