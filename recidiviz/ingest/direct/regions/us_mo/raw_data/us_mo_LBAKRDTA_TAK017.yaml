@@ -54,6 +54,11 @@ columns:
         description: Permanent
       - value: T
         description: Temporary
+      # TODO(#13474) Fill in definition with more details.
+      - value: R
+        description: Unknown
+      - value: F
+        description: Unknown
   - name: BN_LOC
     description: |-
       Building Number
@@ -84,6 +89,11 @@ columns:
         description: Protective Custody
       - value: TAS
         description: Temporary Administrative Segregation
+      # TODO(#13474) Fill in definition with more details.
+      - value: INF
+        description: Unknown
+      - value: "***"
+        description: Unknown
   - name: BN_HDS
     description: |-
       Reason
