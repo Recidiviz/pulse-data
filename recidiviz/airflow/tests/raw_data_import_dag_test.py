@@ -1195,6 +1195,11 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                 [],
                 [],
                 [],
+                [],
+                [],
+                [],
+                [],
+                [],
             ]
         ]
 
@@ -1561,6 +1566,11 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                     [],
                     [],
                     [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
                 ],
                 [
                     [
@@ -1576,6 +1586,11 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             error_msg="Oops!",
                         )
                     ],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
                     [],
                     [],
                     [],
