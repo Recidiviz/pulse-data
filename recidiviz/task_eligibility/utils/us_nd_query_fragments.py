@@ -470,7 +470,8 @@ min_referrals_with_external_id_and_ce AS (
 
 _SSI_NOTE_TEXT_REGEX = "|".join(
     [
-        "SSI",
+        "SSI ",
+        " SSI",
         "SOCIAL SECURITY DISABILITY",
         "DISABILITY BENEFITS",
         "SOCIAL DISABILITY INSURANCE",
@@ -525,7 +526,7 @@ def get_ids_as_case_notes() -> str:
     return f"""
 SELECT 
     peid2.external_id,
-    "ID's available" AS criteria,
+    "Available IDs" AS criteria,
     CASE 
         WHEN CHECK_LIST_CODE = 'BC' THEN 'Birth Certificate'
         WHEN CHECK_LIST_CODE = 'BIA' THEN 'Bureau of Indian Affairs ID'
