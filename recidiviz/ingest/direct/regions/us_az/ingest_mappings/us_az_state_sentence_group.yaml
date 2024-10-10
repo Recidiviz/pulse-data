@@ -1,12 +1,14 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
-launch_env:
-  $env: is_local
 input_columns:
   - PERSON_ID
   - SC_EPISODE_ID
   - UPDT_DTM
-  - EXPIRATION_DTM
+  - SentenceExpirationDate
+  - CommunitySupervisionBeginDate
+  - TransitionToAbsoluteDischargeDate
+  - EarnedReleaseCreditDate
+  - AbsoluteDischargeDate
 unused_columns: []
 output:
   StatePerson:
@@ -23,4 +25,22 @@ output:
                 # after the projected dates. This is OK, we currently need the most
                 # recently updated set of projected dates downstream.
                 group_update_datetime: UPDT_DTM
-                projected_full_term_release_date_min_external: EXPIRATION_DTM
+                # TR to ADD date is the equivalent of CSBD when a person is being released
+                # to probation instead of community supervision. We want to include
+                # whichever of these dates a person has in this field.
+                parole_eligibility_date_external:
+                  $conditional:
+                    - $if:
+                        $is_null: CommunitySupervisionBeginDate
+                      $then: TransitionToAbsoluteDischargeDate
+                    - $else: CommunitySupervisionBeginDate
+                # ADD is the equivalent of ERCD when a person is being released
+                # to probation instead of community supervision. We want to include
+                # whichever of these dates a person has in this field.
+                projected_full_term_release_date_min_external:
+                  $conditional:
+                    - $if:
+                        $is_null: EarnedReleaseCreditDate
+                      $then: AbsoluteDischargeDate
+                    - $else: EarnedReleaseCreditDate
+                projected_full_term_release_date_max_external: SentenceExpirationDate
