@@ -28,8 +28,8 @@ from recidiviz.case_triage.views.dataset_config import (
     CASE_TRIAGE_FEDERATED_DATASET,
     CASE_TRIAGE_FEDERATED_REGIONAL_DATASET,
 )
-from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
-    FederatedSchemaTableRegionFilteredQueryBuilder,
+from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_query_builder import (
+    FederatedCloudSQLTableQueryBuilder,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
@@ -137,7 +137,7 @@ class CloudSqlToBQConfig:
         table = get_table_class_by_name(table_name, self.schema_type)
         columns = self._get_table_columns_to_export(table)
 
-        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+        query_builder = FederatedCloudSQLTableQueryBuilder(
             schema_type=self.schema_type, table=table, columns_to_include=columns
         )
         return query_builder.full_query()
