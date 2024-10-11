@@ -16,57 +16,53 @@
 # =============================================================================
 
 """Exports data from the state dataset in BigQuery to another dataset in BigQuery."""
-
+from types import ModuleType
 from typing import List, Optional
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
 )
-from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
-    BigQuerySchemaTableRegionFilteredQueryBuilder,
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entity_table,
 )
-from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 
 
 def state_table_export_query_str(
     table: bigquery.table.TableListItem, state_codes: List[str]
 ) -> Optional[str]:
-    """Returns a query string that can retrieve the data from the given table for the given states."""
+    """Returns a query string that can retrieve the data from the given table for the
+    given states.
+    """
 
-    source_table = table.table_id
-    source_dataset = table.dataset_id
-    project_id = table.project
+    address = ProjectSpecificBigQueryAddress.from_table_reference(table.reference)
 
-    if source_dataset not in (STATE_BASE_DATASET, NORMALIZED_STATE_DATASET):
+    if address.dataset_id == STATE_BASE_DATASET:
+        entities_module: ModuleType = state_entities
+    elif address.dataset_id == NORMALIZED_STATE_DATASET:
+        entities_module = normalized_entities
+    else:
         raise ValueError(
-            "Received export request for a table not in the `state` or `normalized_state` dataset, which is required. "
-            f"Was in dataset [{source_dataset}] instead"
+            f"Received export request for a table not in the `state` or "
+            f"`normalized_state` dataset, which is required. Was in dataset "
+            f"[{address.dataset_id}] instead"
         )
-
-    sqlalchemy_table = None
-
-    for t in StateBase.metadata.sorted_tables:
-        if t.name == source_table:
-            sqlalchemy_table = t
-
-    if sqlalchemy_table is None:
-        raise EnvironmentError(
-            "Unexpectedly did not find a table in SQLAlchemy metadata "
-            f"matching source table [{source_table}]"
-        )
-
-    column_names = [column.name for column in sqlalchemy_table.columns]
-    query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
-        project_id=project_id,
-        dataset_id=table.dataset_id,
-        schema_type=SchemaType.STATE,
-        table=sqlalchemy_table,
-        columns_to_include=column_names,
-        region_codes_to_include=state_codes,
+    table_schema = get_bq_schema_for_entity_table(
+        entities_module, table_id=address.table_id
     )
 
-    return f"{query_builder.full_query()};"
+    columns_str = ",".join(f"{address.table_id}.{c.name}" for c in table_schema)
+
+    state_codes_str = ",".join(
+        [f"'{region_code.upper()}'" for region_code in state_codes]
+    )
+    return (
+        f"SELECT {columns_str} "
+        f"FROM {address.format_address_for_query()} {address.table_id} "
+        f"WHERE state_code IN ({state_codes_str});"
+    )

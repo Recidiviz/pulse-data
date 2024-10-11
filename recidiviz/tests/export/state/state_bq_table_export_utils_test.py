@@ -43,8 +43,8 @@ class StateBQTableExportUtilsTest(unittest.TestCase):
         )
 
         expected_query = (
-            "SELECT state_person_race.person_race_id,state_person_race.state_code,"
-            "state_person_race.race,state_person_race.race_raw_text,state_person_race.person_id "
+            "SELECT state_person_race.state_code,"
+            "state_person_race.race,state_person_race.race_raw_text,state_person_race.person_race_id,state_person_race.person_id "
             "FROM `recidiviz-456.state.state_person_race` state_person_race "
             "WHERE state_code IN ('US_PA');"
         )
@@ -65,9 +65,8 @@ class StateBQTableExportUtilsTest(unittest.TestCase):
         )
 
         expected_query = (
-            "SELECT state_charge_supervision_sentence_association.charge_id,"
-            "state_charge_supervision_sentence_association.supervision_sentence_id,"
-            "state_charge_supervision_sentence_association.state_code AS state_code "
+            "SELECT state_charge_supervision_sentence_association.state_code,state_charge_supervision_sentence_association.charge_id,"
+            "state_charge_supervision_sentence_association.supervision_sentence_id "
             "FROM `recidiviz-456.state.state_charge_supervision_sentence_association` "
             "state_charge_supervision_sentence_association "
             "WHERE state_code IN ('US_PA');"
