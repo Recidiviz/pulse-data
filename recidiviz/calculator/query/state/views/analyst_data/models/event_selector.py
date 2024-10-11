@@ -60,7 +60,7 @@ class EventSelector:
         """Returns a query fragment that filters a query based on configured event conditions"""
         condition_strings = []
 
-        # TODO(#32921): Shouldn't need to filter by span_type once we're querying from
+        # TODO(#29291): Shouldn't need to filter by span_type once we're querying from
         #  the type-specific view. In order to do this, we will need to support having
         #  an empty conditions fragment returned (or throw if this is called when
         #  self.event_conditions_dict is empty).

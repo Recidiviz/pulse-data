@@ -259,9 +259,9 @@ def _get_metric_assignment_sessions_view_address(
     population_name = population_type.population_name_short
     view_id = f"{population_name}_{unit_of_analysis_name}_metrics_{unit_of_observation_name}_assignment_sessions"
     return BigQueryAddress(
-        # TODO(#32921): Change the dataset this is in to unit_of_analysis_assignments
+        # TODO(#29291): Change the dataset this is in to unit_of_analysis_assignments
         dataset_id=AGGREGATED_METRICS_DATASET_ID,
-        # TODO(#32921): Change this view_id to follow the format
+        # TODO(#29291): Change this view_id to follow the format
         #  population_unitofobservation_to_unitofanalysis_assignments. For example:
         #  supervision_person_to_supervision_unit_assignments.
         table_id=view_id,
