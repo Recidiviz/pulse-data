@@ -41,7 +41,7 @@ PRODUCT_ROSTER_QUERY_TEMPLATE = f"""
             `{{project_id}}.{{case_triage_federated_dataset_id}}.user_override` user_override
         USING (email_address)
         CROSS JOIN
-            UNNEST(COALESCE(user_override.roles, roster.roles)) AS role
+            UNNEST(IF(ARRAY_LENGTH(user_override.roles) != 0, user_override.roles, roster.roles)) AS role
     ),
     -- Combine the permissions from each role into arrays
     aggregated_permissions AS (
@@ -97,17 +97,20 @@ PRODUCT_ROSTER_QUERY_TEMPLATE = f"""
     FROM product_roster_permissions
 """
 
-ROSTER_COLUMNS = [
+ROSTER_ARRAY_COLUMNS = ["roles"]
+
+ROSTER_NON_ARRAY_COLUMNS = [
     "state_code",
     "external_id",
     "email_address",
-    "roles",
     "district",
     "user_hash",
     "pseudonymized_id",
     "first_name",
     "last_name",
 ]
+
+ROSTER_COLUMNS = ROSTER_ARRAY_COLUMNS + ROSTER_NON_ARRAY_COLUMNS
 
 PERMISSIONS_COLUMNS = [
     "routes",
@@ -141,7 +144,11 @@ PRODUCT_ROSTER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     columns_query="\n            ".join(
         [
             f"COALESCE(user_override.{col}, roster.{col}) AS {col},"
-            for col in ROSTER_COLUMNS
+            for col in ROSTER_NON_ARRAY_COLUMNS
+        ]
+        + [
+            f"IF(ARRAY_LENGTH(user_override.{col}) != 0, user_override.{col}, roster.{col}) AS {col},"
+            for col in ROSTER_ARRAY_COLUMNS
         ]
         + [
             f"""final_permissions.{col} AS default_{col},
