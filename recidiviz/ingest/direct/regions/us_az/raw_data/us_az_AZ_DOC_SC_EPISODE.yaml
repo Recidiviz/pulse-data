@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: AZ_DOC_SC_EPISODE
 file_description: |-
-  TODO(#25890): FILL IN
+  This table contains release dates associated with incarceration episodes - these
+  are the dates that correspond to the "final" or "ruling" offense from a given
+  commitment.
 data_classification: source
 primary_key_cols:
   - SC_EPISODE_ID
@@ -403,3 +405,7 @@ columns:
     description: |-
       VCSED date original offense number and commitment letter, for violators returning with new Sentences
   - name: IS_ANY_DPR_PROGRAM_COMPLETED
+table_relationships:
+  - foreign_table: AZ_DOC_SC_OFFENSE
+    join_logic:
+      - AZ_DOC_SC_EPISODE.FINAL_OFFENSE_ID = AZ_DOC_SC_OFFENSE.OFFENSE_ID

@@ -1,7 +1,17 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: AZ_DOC_HOME_PLAN
 file_description: |-
-  TODO(#000): FILL IN
+  A Home Plan is a required component of release planning at AZ facilities. Home plans
+  are drafted by case managers in prisons (COIIIs) while a person is still incarcerated; 
+  they contain information about where the person will live after their release, and 
+  other general release-planning details. The plan is sent to the community supervision 
+  office where the person will be supervised upon their release, and must be approved 
+  before the person can be released. 
+
+  This is the master table for Home Plans, and can be used to connect a particular home plan
+  to an individual using the DOC_ID field. There may be many rows in this table pertaining
+  to the same person. The details of the plan itself and whether or not it was approved 
+  are stored in AZ_DOC_HOME_PLAN_DETAIL and AZ_DOC_HOME_PLAN_APPROVAL, respectively.
 data_classification: source
 primary_key_cols: [HOME_PLAN_ID]
 columns:
@@ -10,7 +20,7 @@ columns:
       Primary Key
   - name: DOC_ID
     description: |-
-      Fk With Table DOC_EPISODE
+      Foreign Key to DOC_EPISODE table. The ID of a particular incarceration stint.
     is_pii: True
   - name: LOCATION_ID
     description: |-
@@ -46,7 +56,14 @@ columns:
       - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: CHANGE_ID
     description: |-
-      References CHNAGE_HISTORY table
+      References CHANGE_HISTORY table
   - name: ACTIVE_FLAG
     description: |-
       Is the record deleted Y/N
+table_relationships:
+  - foreign_table: AZ_DOC_HOME_PLAN_DETAIL
+    join_logic:
+      - AZ_DOC_HOME_PLAN.HOME_PLAN_ID = AZ_DOC_HOME_PLAN_DETAIL.HOME_PLAN_ID
+  - foreign_table: LOCATION
+    join_logic:
+      - AZ_DOC_HOME_PLAN.LOCATION_ID = LOCATION.LOCATION_ID

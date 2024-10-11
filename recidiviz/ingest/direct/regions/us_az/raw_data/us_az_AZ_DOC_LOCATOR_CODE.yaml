@@ -1,7 +1,17 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: AZ_DOC_LOCATOR_CODE
 file_description: |-
-  TODO(#25890): FILL IN
+  Locator codes are the primary way that locations are identified in AZ. Facilities
+  are organized specifically by locator code, so this information maps directly to 
+  the real world. 
+
+  When assessing the custody level an individual has been assigned, the custody level
+  assigned as a result of their most recent classification (found in DOC_CLASSIFICATION)
+  is more reliable than the custody level associated with the unit in which they are housed.
+  Overcrowding and other logistical challenges sometimes require prison administrators
+  to house people in locations that do not align with the custody level they were assigned; 
+  because of this, a person's most recent classification may not always align with the 
+  decoded CUSTODY_LEVEL_ID associated with their locator code.
 data_classification: source
 primary_key_cols:
   - LOCATOR_CODE_ID
@@ -78,3 +88,10 @@ columns:
     description: |-
       Free text comment field
     is_pii: True
+table_relationships:
+  - foreign_table: AZ_DOC_UNIT
+    join_logic:
+      - AZ_DOC_LOCATOR_CODE.UNIT_ID = AZ_DOC_UNIT.UNIT_ID
+  - foreign_table: LOOKUPS
+    join_logic:
+      - AZ_DOC_LOCATOR_CODE.CUSTODY_LEVEL_ID = LOOKUPS.LOOKUP_ID

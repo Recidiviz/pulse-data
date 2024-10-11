@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: AZ_DOC_HOME_PLAN_APPROVAL
 file_description: |-
-  TODO(#000): FILL IN
+  This table contains the the approval status of each Home Plan submitted to community
+  supervision for review. The APPROVAL_STATUS_ID field, when joined to the LOOKUPS table,
+  indicates whether the plan was approved.
 data_classification: source
 primary_key_cols: [APPROVAL_ID]
 columns:
@@ -100,3 +102,7 @@ columns:
   - name: DESIGNEE_SIGNATURE_ID
     description: |-
       Designee/Sponsor signature id refernces table E_SIGNATURES
+table_relationships:
+  - foreign_table: LOOKUPS
+    join_logic:
+      - AZ_DOC_HOME_PLAN_APPROVAL.APPROVAL_STATUS_ID = LOOKUPS.LOOKUP_ID
