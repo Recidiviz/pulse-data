@@ -42,6 +42,12 @@ export const insightsConfigurationSchema = z.object({
   atOrAboveRateLabel: z.string(),
   outliersHover: z.string(),
   docLabel: z.string(),
+  actionStrategyCopy: z.record(
+    z.object({
+      prompt: z.string(),
+      body: z.string(),
+    })
+  ),
 });
 
 export type InsightsConfiguration = z.infer<typeof insightsConfigurationSchema>;

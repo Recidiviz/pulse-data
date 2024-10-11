@@ -26,7 +26,7 @@ interface DraggableModalProps {
   onOk?: () => void;
   okText?: string;
   footer?: ReactNode;
-  width?: number;
+  width?: string | number;
 }
 
 export const DraggableModal: React.FC<DraggableModalProps> = ({

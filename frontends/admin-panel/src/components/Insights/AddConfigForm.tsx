@@ -21,6 +21,7 @@ import { observer } from "mobx-react-lite";
 import { InsightsConfiguration } from "../../InsightsStore/models/InsightsConfiguration";
 import ConfigurationPresenter from "../../InsightsStore/presenters/ConfigurationPresenter";
 import { DraggableModal } from "../Utilities/DraggableModal";
+import ActionStrategyFormItem from "./ActionStrategyFormItem";
 
 const AddConfigForm = ({
   visible,
@@ -57,10 +58,13 @@ const AddConfigForm = ({
       })
     : [];
 
+  const actionStrategies = Object.entries(baseConfig?.actionStrategyCopy ?? {});
+
   return (
     <DraggableModal
       visible={visible}
       title="Create new version"
+      width="50%"
       onCancel={() => setVisible(false)}
       onOk={() => {
         form
@@ -357,6 +361,21 @@ const AddConfigForm = ({
         >
           <Input />
         </Form.Item>
+        <h4>Action Strategy Copy</h4>
+        <div>
+          Both the prompt and body copy are in{" "}
+          <a href="https://www.markdownguide.org/cheat-sheet/">
+            Markdown format
+          </a>
+          . You can edit the Markdown text on the left and see a live preview of
+          the rendered Markdown on the right.
+        </div>
+        {actionStrategies.map((actionStrategy) => (
+          <ActionStrategyFormItem
+            key={actionStrategy[0]}
+            data={actionStrategy}
+          />
+        ))}
       </Form>
     </DraggableModal>
   );
