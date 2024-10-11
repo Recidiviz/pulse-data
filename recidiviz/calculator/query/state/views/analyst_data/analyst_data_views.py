@@ -54,8 +54,14 @@ from recidiviz.calculator.query.state.views.analyst_data.incarceration_incidents
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     INSIGHTS_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.insights_primary_user_registration_sessions import (
+    INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.insights_supervision_officer_caseload_category_sessions import (
     INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.insights_user_signups import (
+    INSIGHTS_USER_SIGNUPS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.invoices_preprocessed import (
     INVOICES_PREPROCESSED_VIEW_BUILDER,
@@ -71,6 +77,9 @@ from recidiviz.calculator.query.state.views.analyst_data.permanent_exemptions_pr
 )
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.product_roster_archive_sessions import (
+    PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.projected_discharges import (
     PROJECTED_DISCHARGES_VIEW_BUILDER,
@@ -282,9 +291,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_user_caseload
 from recidiviz.calculator.query.state.views.analyst_data.workflows_user_logins import (
     WORKFLOWS_USER_LOGINS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.workflows_user_product_roster_archive_sessions import (
-    WORKFLOWS_USER_PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_user_signups import (
     WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER,
 )
@@ -376,8 +382,10 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_LIVE_COMPLETION_EVENT_TYPES_BY_STATE_VIEW_BUILDER,
     WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
-    WORKFLOWS_USER_PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_USER_LOGINS_VIEW_BUILDER,
     WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_PERSON_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_CASELOAD_SESSIONS_VIEW_BUILDER,
+    PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER,
+    INSIGHTS_USER_SIGNUPS_VIEW_BUILDER,
+    INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
 ]

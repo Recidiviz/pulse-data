@@ -30,4 +30,7 @@ schema:
   - name: routes_workflowsFacilities
     type: BOOLEAN
     mode: NULLABLE
+  - name: routes_insights
+    type: BOOLEAN
+    mode: NULLABLE
 clustering_fields: null

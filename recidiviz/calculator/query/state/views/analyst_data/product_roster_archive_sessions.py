@@ -23,10 +23,10 @@ from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASE
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_NAME = "workflows_user_product_roster_archive_sessions"
+_VIEW_NAME = "product_roster_archive_sessions"
 
 _VIEW_DESCRIPTION = """A sessionized view of archived product roster information,
-reflecting historical changes in information about Workflows users as reflected
+reflecting historical changes in information about tool users as reflected
 in the admin panel.
 """
 
@@ -34,7 +34,7 @@ _QUERY_TEMPLATE = f"""
 WITH product_roster_archive AS (
     SELECT
         CASE state_code WHEN "US_ID" THEN "US_IX" ELSE state_code END AS state_code,
-        email_address AS workflows_user_email_address,
+        email_address,
         export_date AS start_date,
         LEAD(export_date) OVER (
             PARTITION BY state_code, email_address ORDER BY export_date
@@ -42,23 +42,22 @@ WITH product_roster_archive AS (
         ARRAY_TO_STRING(ARRAY(SELECT role FROM UNNEST(roles) AS role ORDER BY role), ",") AS roles_as_string,
         #TODO(#31965) district field is not guaranteed to be an id until roster sync is complete
         district AS location_id,
+        IFNULL(routes_workflows OR routes_workflowsFacilities OR routes_workflowsSupervision, FALSE) AS has_workflows_access,
+        IFNULL(routes_insights, FALSE) AS has_insights_access,
+
     FROM
         `{{project_id}}.export_archives.product_roster_archive`
-    WHERE
-        routes_workflows
-        OR routes_workflowsFacilities
-        OR routes_workflowsSupervision
 )
 {aggregate_adjacent_spans(
     table_name='product_roster_archive',
-    index_columns=["state_code", "workflows_user_email_address"],
-    attribute=['roles_as_string', 'location_id'],
+    index_columns=["state_code", "email_address"],
+    attribute=['roles_as_string', 'location_id', 'has_workflows_access', 'has_insights_access'],
     session_id_output_name='product_roster_session_id',
     end_date_field_name='end_date_exclusive'
 )}
 """
 
-WORKFLOWS_USER_PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     view_id=_VIEW_NAME,
     description=_VIEW_DESCRIPTION,
@@ -68,4 +67,4 @@ WORKFLOWS_USER_PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER = SimpleBigQueryView
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        WORKFLOWS_USER_PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER.build_and_print()
+        PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER.build_and_print()
