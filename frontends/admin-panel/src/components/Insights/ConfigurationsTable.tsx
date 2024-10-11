@@ -125,7 +125,7 @@ const ConfigurationsTable = ({
               .map((c) => {
                 return c.key;
               })
-              .includes(d)
+              .includes(d) && d !== "actionStrategyCopy" // hiding this column for now since it will get removed in #34023 anyway
         )
       : [];
   const copyColumns = copyColumnNames.map((c) => {
