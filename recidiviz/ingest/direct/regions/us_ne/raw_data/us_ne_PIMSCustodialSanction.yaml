@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSCustodialSanction
+file_description: |-
+  This table contains custodial sanction information
+data_classification: source
+primary_key_cols:
+  - pkPIMSCustodialSanctionId
+columns:
+  - name: pkPIMSCustodialSanctionId
+    description: |-
+      PK for the table
+  - name: inmateNumber
+    description: |-
+      Nebraska ID number
+    is_pii: True
+  - name: recommendedStartDate
+    field_type: datetime
+    description: |-
+      Recommended start date
+  - name: preferredLocationCode
+    description: |-
+      Preferred location code
+  - name: alternateLocationCode
+    description: |-
+      Alternate location code
+  - name: custodialSanctionDuration
+    description: |-
+      Custodial sanction duration
+  - name: revisedSanctionDuration
+    description: |-
+      Revised sanction duration
+  - name: contested
+    description: |-
+      Contested
+  - name: hearingDate
+    field_type: datetime
+    description: |-
+      Date of hearing
+  - name: actualJailAdmitDate
+    field_type: datetime
+    description: |-
+      Date admitted to jail
+  - name: useAltLocOnCommitmentPDF
+    description: |-
+      Use altenate location on commitment
+  - name: violationDescription
+    description: |-
+      Violation description
+    is_pii: True
+  - name: boardDecisionCode
+    description: |-
+      Board decision code
+  - name: notAppropriateOptionsCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: amountofGoodTimeinDays
+    description: |-
+      Amount of good time in days
+  - name: comments
+    description: |-
+      Comments
+    is_pii: True
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date created
+  - name: createdBy
+    description: |-
+      User created by
+    is_pii: True
+  - name: modifiedBy
+    description: |-
+      User modified by
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date modified
+  - name: version
+    description: |-
+      version
+  - name: actualJailDischargeDate
+    field_type: datetime
+    description: |-
+      Actual jail discharge date
+  - name: projectedReleaseDate
+    field_type: datetime
+    description: |-
+      Projected release date
+  - name: noShow
+    description: |-
+      Failed to appear
+  - name: revisedRecommendedStartDate
+    field_type: datetime
+    description: |-
+      Revised recommended start date

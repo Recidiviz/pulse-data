@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSSpecialCondition
+file_description: |-
+  This table contains special conditions for those on supervsion
+data_classification: source
+primary_key_cols:
+  - specialConditionId
+columns:
+  - name: specialConditionId
+    description: |-
+      PK for table
+  - name: inmateNumber
+    description: |-
+      Nebraska ID Number
+  - name: beginDate
+    field_type: datetime
+    description: |-
+      Begin date of special condition
+  - name: endDate
+    field_type: datetime
+    description: |-
+      End date special condition
+  - name: suspendedDate
+    field_type: datetime
+    description: |-
+      Date special condition suspended
+  - name: specialConditionType
+    description: |-
+      Special condition type
+  - name: otherSpecialConditionDescription
+    description: |-
+      Other special condition description
+  - name: reasonForSpecialCondition
+    description: |-
+      Reason for special condition
+  - name: otherReasonForSpecialCondition
+    description: |-
+      Other reason for special condition
+  - name: specialConditionText
+    description: |-
+      Special condition text
+  - name: newEntry
+    description: |-
+      New entry
+  - name: creationDateTime
+    field_type: datetime
+    description: |-
+      Record created datetime
+  - name: createdByUserid
+    description: |-
+      Record created by user
+    is_pii: True
+  - name: lastUpdatedDateTime
+    field_type: datetime
+    description: |-
+      Record last updated when
+  - name: lastUpdatedByUserid
+    description: |-
+      Record last updated by user
+    is_pii: True
+  - name: version
+  - name: fkPIMSCustodialSanctionId
+    description: |-
+      Foregin key id to PIMSCustodialSanction
+  - name: fkPIMSAPIWId
+    description: |-
+      Foregin key id to PIMSAPIW
+  - name: otherStateSCCode
+    description: |-
+      Other state special condition code
+  - name: sourceStartDate
+    field_type: datetime
+    description: |-
+      Source start date
+  - name: sourceOtherSpecialConditionDescription
+    description: |-
+      Source other special condition description
+  - name: sourceComments
+    description: |-
+      Source comments
+    is_pii: True
+  - name: lastName
+    description: |-
+      Last name
+    is_pii: True
+  - name: firstName
+    description: |-
+      First name
+    is_pii: True
+  - name: minor
+    description: |-
+      Minor
+  - name: relationship
+    description: |-
+      Relationship
+  - name: noContactEndDate
+    field_type: datetime
+    description: |-
+      Field type datetime
