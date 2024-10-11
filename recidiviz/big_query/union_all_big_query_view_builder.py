@@ -44,6 +44,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         view_id: str,
         description: str,
         parents: Sequence[BigQueryViewBuilderType] | Sequence[BigQueryAddress],
+        clustering_fields: list[str],
         custom_select_statement: Optional[str] = None,
         parent_to_select_statement: Optional[
             Callable[[BigQueryViewBuilderType], str]
@@ -56,6 +57,8 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             view_id: The view address table_id
             description: Description for this view
             parents: The list of view builders or tables to select from.
+            clustering_fields: Columns by which to cluster this view's materialized
+                table.
             custom_select_statement: A custom SELECT statement to be used for each
                 individual view / address query. May only be set if
                 |parent_to_select_statement| is null.
@@ -71,6 +74,12 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 f"Found no view builders / tables to union for view "
                 f"`{dataset_id}.{view_id}`"
             )
+
+        if not clustering_fields:
+            raise ValueError(
+                f"Found no clustering fields for UnionAllBigQueryViewBuilder view "
+                f"[{dataset_id}.{view_id}]."
+            )
         if custom_select_statement and parent_to_select_statement:
             raise ValueError(
                 f"May only set one of |custom_select_statement| and "
@@ -81,6 +90,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         self.view_id = view_id
         self.description = description
         self.parents = parents
+        self.clustering_fields = clustering_fields
         self.custom_select_statement = custom_select_statement
         self.parent_to_select_statement = parent_to_select_statement
         self.materialized_address = self._build_materialized_address(
@@ -193,7 +203,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             bq_description=self.description,
             view_query_template=view_query_template,
             materialized_address=self.materialized_address,
-            clustering_fields=None,
+            clustering_fields=self.clustering_fields,
             sandbox_context=sandbox_context,
             should_deploy_predicate=None,
             **query_format_args,

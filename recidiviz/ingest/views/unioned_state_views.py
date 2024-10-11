@@ -60,6 +60,7 @@ def _view_builder_for_table(
             f"ingest pipeline us_xx_state output datasets."
         ),
         parents=state_specific_addresses,
+        clustering_fields=["state_code"],
         custom_select_statement=f"SELECT {', '.join(column_names)}\n",
         materialized_address_override=BigQueryAddress(
             dataset_id=STATE_BASE_DATASET,
