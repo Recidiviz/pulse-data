@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: Assessment
+file_description: |-
+  This table contains information TDCJ assessments.
+data_classification: source
+primary_key_cols:
+  - SID_Number
+  - Assessment_Type
+  - Assessment_Approved_Date
+columns:
+  - name: SID_Number
+    is_pii: True
+    description: |-
+      This is a unique identifier assigned to a particular person. This ID will never change throughout a person's life.
+  - name: Deleted_Flag
+    description: |-
+      Deleted flag.
+  - name: Assessment_Type
+    description: |-
+      Type of assessment.
+  - name: Assessment_Level
+    description: |-
+      Level of assessment.
+  - name: Assessment_Class
+    description: |-
+      Class of assessment.
+  - name: Assessment_Approved_Date
+    description: |-
+      Date assessment was approved.
+    field_type: datetime
