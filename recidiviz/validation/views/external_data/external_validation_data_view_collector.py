@@ -87,6 +87,7 @@ class StateAgnosticExternalValidationDataViewConfig:
             view_id=self.view_id,
             description=self.view_id_description,
             parents=parents,
+            clustering_fields=["state_code"],
             parent_to_select_statement=lambda _: self.select_statement,
         )
 

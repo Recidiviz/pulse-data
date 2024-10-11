@@ -81,6 +81,7 @@ def _build_unioned_spans_builder(
         view_id=f"all_{unit_of_observation.short_name}_spans",
         description=_description_for_union_all_view(unit_of_observation, SpanType),
         parents=parent_span_views,
+        clustering_fields=["state_code", "span"],
         parent_to_select_statement=_parent_to_select_statement,
     )
 
@@ -107,6 +108,7 @@ def _build_unioned_events_builder(
         view_id=f"all_{unit_of_observation.short_name}_events",
         description=_description_for_union_all_view(unit_of_observation, EventType),
         parents=parent_event_views,
+        clustering_fields=["state_code", "event"],
         parent_to_select_statement=_parent_to_select_statement,
     )
 

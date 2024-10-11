@@ -163,6 +163,8 @@ def _get_eligiblity_spans_unioned_view_builders() -> Sequence[BigQueryViewBuilde
     b) one view that unions all the data from the state-specific 'all_tasks' views
     into one place.
     """
+    clustering_fields = ["state_code", "task_name"]
+
     state_specific_unioned_view_builders = []
     view_collector = SingleTaskEligibilityBigQueryViewCollector()
     for (
@@ -186,6 +188,7 @@ def _get_eligiblity_spans_unioned_view_builders() -> Sequence[BigQueryViewBuilde
                     state_specific_spans_dataset_id=dataset_id,
                 ),
                 parents=task_view_builders,
+                clustering_fields=clustering_fields,
             )
         )
 
@@ -200,6 +203,7 @@ def _get_eligiblity_spans_unioned_view_builders() -> Sequence[BigQueryViewBuilde
             view_id=TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID,
             description=ALL_TASKS_ALL_STATES_DESCRIPTION,
             parents=state_specific_unioned_view_builders,
+            clustering_fields=clustering_fields,
         )
     ]
 
@@ -227,6 +231,7 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
     def get_criteria_select_statement(vb: TaskCriteriaBigQueryViewBuilder) -> str:
         return f"SELECT '{vb.criteria_name}' AS criteria_name, state_code, person_id, start_date, end_date, meets_criteria, reason, reason_v2"
 
+    clustering_fields = ["state_code", "criteria_name"]
     subpart_unioned_view_builders = []
     for (
         state_code,
@@ -249,6 +254,7 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
                     state_specific_criteria_dataset_id=dataset_id,
                 ),
                 parents=criteria_view_builders,
+                clustering_fields=clustering_fields,
                 parent_to_select_statement=get_criteria_select_statement,
             )
         )
@@ -263,6 +269,7 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
                 general_criteria_dataset_id=dataset_id,
             ),
             parents=general_builders,
+            clustering_fields=clustering_fields,
             parent_to_select_statement=get_criteria_select_statement,
         )
     )
@@ -273,6 +280,7 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
             view_id=ALL_CRITERIA_VIEW_ID,
             description=ALL_CRITERIA_DESCRIPTION,
             parents=subpart_unioned_view_builders,
+            clustering_fields=clustering_fields,
         )
     ]
 
@@ -307,6 +315,7 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
     ) -> str:
         return f"SELECT '{vb.population_name}' AS population_name, state_code, person_id, start_date, end_date"
 
+    clustering_fields = ["state_code"]
     subpart_unioned_view_builders = []
     for (
         state_code,
@@ -329,6 +338,7 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
                     state_specific_populations_dataset_id=dataset_id,
                 ),
                 parents=population_view_builders,
+                clustering_fields=clustering_fields,
                 parent_to_select_statement=get_population_select_statement,
             )
         )
@@ -343,6 +353,7 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
                 general_population_dataset_id=dataset_id,
             ),
             parents=general_builders,
+            clustering_fields=clustering_fields,
             parent_to_select_statement=get_population_select_statement,
         )
     )
@@ -353,6 +364,7 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
             view_id=ALL_POPULATIONS_VIEW_ID,
             description=ALL_POPULATIONS_DESCRIPTION,
             parents=subpart_unioned_view_builders,
+            clustering_fields=clustering_fields,
         )
     ]
 
@@ -388,6 +400,7 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
     ) -> str:
         return f"SELECT '{vb.completion_event_type.name}' AS completion_event_type, state_code, person_id, completion_event_date"
 
+    clustering_fields = ["state_code", "completion_event_type"]
     subpart_unioned_view_builders = []
     for (
         state_code,
@@ -410,6 +423,7 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
                     state_specific_completion_event_dataset_id=dataset_id,
                 ),
                 parents=completion_event_view_builders,
+                clustering_fields=clustering_fields,
                 parent_to_select_statement=get_completion_event_select_statement,
             )
         )
@@ -424,6 +438,7 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
                 general_completion_event_dataset_id=dataset_id,
             ),
             parents=general_builders,
+            clustering_fields=clustering_fields,
             parent_to_select_statement=get_completion_event_select_statement,
         )
     )
@@ -436,6 +451,7 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
                 ALL_COMPLETION_EVENTS_DESCRIPTION_TEMPLATE,
             ),
             parents=view_collector.collect_view_builders(),
+            clustering_fields=clustering_fields,
             parent_to_select_statement=get_completion_event_select_statement,
         )
     ]

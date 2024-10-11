@@ -64,6 +64,7 @@ class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
             view_id="my_union_all_view",
             description="All data together",
             parents=self.view_builders[0:1],
+            clustering_fields=["state_code"],
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -80,10 +81,13 @@ class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
             view_id="my_union_all_view",
             description="All data together",
             parents=self.view_builders[0:2],
+            clustering_fields=["state_code"],
         )
 
         with local_project_id_override("recidiviz-456"):
             view = builder.build()
+
+        self.assertEqual(["state_code"], view.clustering_fields)
 
         expected_view_query = """SELECT * FROM `recidiviz-456.parent_dataset_1.parent_table_1_materialized`
 UNION ALL
@@ -102,6 +106,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
                 BigQueryAddress.from_str("source_table_dataset1.table_1"),
                 BigQueryAddress.from_str("source_table_dataset2.table_2"),
             ],
+            clustering_fields=["state_code"],
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -125,6 +130,7 @@ SELECT * FROM `recidiviz-456.source_table_dataset2.table_2`"""
                 BigQueryAddress.from_str("source_table_dataset2.table_2"),
             ],
             custom_select_statement="SELECT a, b",
+            clustering_fields=["state_code"],
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -150,6 +156,7 @@ SELECT a, b FROM `recidiviz-456.source_table_dataset2.table_2`"""
             materialized_address_override=BigQueryAddress.from_str(
                 "another_dataset.another_table"
             ),
+            clustering_fields=["state_code"],
         )
         self.assertEqual(
             builder.table_for_query,
@@ -172,6 +179,7 @@ SELECT a, b FROM `recidiviz-456.source_table_dataset2.table_2`"""
                 BigQueryAddress.from_str("source_table_dataset1.table_1"),
                 BigQueryAddress.from_str("source_table_dataset2.table_2"),
             ],
+            clustering_fields=["state_code"],
         )
         self.assertEqual(
             builder_no_override.table_for_query,
@@ -184,6 +192,7 @@ SELECT a, b FROM `recidiviz-456.source_table_dataset2.table_2`"""
             view_id="my_union_all_view",
             description="All data together",
             parents=self.view_builders[0:3],
+            clustering_fields=["state_code"],
         )
 
         with local_project_id_override("recidiviz-456"):
@@ -220,6 +229,7 @@ SELECT * FROM `recidiviz-789.parent_dataset_3.parent_table_3_materialized`"""
             view_id="my_union_all_view",
             description="All data together",
             parents=self.view_builders[0:2],
+            clustering_fields=["state_code"],
         )
 
         address_overrides = (
@@ -256,6 +266,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             view_id="my_union_all_view",
             description="All data together",
             parents=self.view_builders[0:2],
+            clustering_fields=["state_code"],
         )
 
         address_overrides = (
@@ -296,6 +307,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             view_id="my_union_all_view",
             description="All data together",
             parents=self.view_builders[0:2],
+            clustering_fields=["state_code"],
         )
 
         builder.set_parent_address_filter(
@@ -328,6 +340,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             view_id="my_union_all_view",
             description="All data together",
             parents=self.view_builders[0:2],
+            clustering_fields=["state_code"],
         )
 
         builder.set_parent_address_filter(
@@ -366,6 +379,7 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             view_id="my_union_all_view",
             description="All data together",
             parents=self.view_builders[0:2],
+            clustering_fields=["state_code"],
         )
 
         builder.set_parent_address_filter(
