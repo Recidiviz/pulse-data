@@ -38,3 +38,7 @@ columns:
   - name: Deleted_Flag
     description: |-
       Deleted flag for record.
+  - name: Creation_Date
+    description: |-
+      Creation date for record.
+    field_type: datetime
