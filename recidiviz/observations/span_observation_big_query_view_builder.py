@@ -82,9 +82,7 @@ class SpanObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                 span_end_date_col=span_end_date_col,
             ),
             should_materialize=True,
-            # TODO(#32921): See if clustering by primary key (or other?) columns
-            #  improves performance (start with clustering by state_code).
-            clustering_fields=None,
+            clustering_fields=["state_code"],
         )
 
     @property

@@ -38,7 +38,6 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
     EXTERNALLY_SHARED_VIEWS_DATASET,
 )
 from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     IMPACT_REPORTS_DATASET_ID,
     POPULATION_PROJECTION_DATASET,
@@ -194,14 +193,6 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     #  day_zero_overdue_supervision_discharge dashboard and can be deleted when that is
     #  deleted.
     PROJECTED_DISCHARGES_VIEW_BUILDER.address,
-    # TODO(#32921): These views are still referenced by Looker dashboards - we need to
-    #  wait for the replacement views to deploy to prod before we can remove the Looker
-    #  references and delete these views entirely.
-    BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="officer_spans"),
-    BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_events"),
-    BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_spans"),
-    BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="workflows_user_events"),
-    BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="workflows_user_spans"),
 }
 
 # List of views that are not referenced in Looker but should still be kept around,
