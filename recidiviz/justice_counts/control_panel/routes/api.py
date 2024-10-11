@@ -34,6 +34,10 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.wrappers import response
 
 from recidiviz.auth.auth0_client import Auth0Client
+from recidiviz.common.fips import (
+    get_county_code_to_county_fips,
+    get_county_code_to_county_name,
+)
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_jurisdictions import AgencyJurisdictionInterface
 from recidiviz.justice_counts.agency_setting import AgencySettingInterface
@@ -73,6 +77,7 @@ from recidiviz.justice_counts.utils.datapoint_utils import (
     get_dimension_id_and_member,
 )
 from recidiviz.justice_counts.utils.email import send_confirmation_email
+from recidiviz.justice_counts.utils.geoid import get_fips_code_to_geoid
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.sqlalchemy_flask_utils import current_session
 from recidiviz.utils.environment import (
@@ -2213,8 +2218,24 @@ def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
         )
         for metric in metrics
     ]
+    fips_code_to_geoid = get_fips_code_to_geoid()
+    county_code_to_county_name = get_county_code_to_county_name()
+    county_code_to_county_fips = get_county_code_to_county_fips()
 
+    agency_json = agency.to_public_json(
+        fips_code_to_geoid=fips_code_to_geoid,
+        county_code_to_county_name=county_code_to_county_name,
+        county_code_to_county_fips=county_code_to_county_fips,
+        v2=is_v2,
+    )
+    if is_v2 is True:
+        agency_json["jurisdictions"] = AgencyJurisdictionInterface.to_json(
+            session=current_session,
+            agency_id=agency_id,
+            is_v2=is_v2,
+            fips_code_to_geoid=fips_code_to_geoid,
+        )
     return {
-        "agency": agency.to_public_json(v2=is_v2),
+        "agency": agency_json,
         "metrics": metrics_json,
     }

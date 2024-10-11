@@ -31,12 +31,11 @@ python -m recidiviz.tools.justice_counts.add_child_agencies \
 
 import argparse
 import logging
-import os
 from typing import Dict, List
 
 import pandas as pd
 
-from recidiviz.common.fips import sanitize_county_name
+from recidiviz.common.fips import get_county_fips_to_county_code, sanitize_county_name
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
@@ -108,21 +107,6 @@ def add_child_agencies(
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
 
-    # Construct the path to the county codes CSV file
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    county_codes_path = os.path.join(
-        script_dir, "../../datasets/static_data/county_fips.csv"
-    )
-
-    # Load county code mappings
-    county_codes_df = pd.read_csv(county_codes_path)
-    county_fips_to_county_code = dict(
-        zip(
-            county_codes_df["fips"],
-            county_codes_df["county_code"],
-        )
-    )
-
     with cloudsql_proxy_control.connection(
         schema_type=schema_type, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
     ):
@@ -144,11 +128,12 @@ def add_child_agencies(
                 str(len(child_agency_data)),
                 super_agency.name,
             )
+            county_fips_to_county_code = get_county_fips_to_county_code()
+            county_codes = set(county_fips_to_county_code.values())
             for row in child_agency_data:
                 child_agency_name = row.get("name")
                 county_fips = row.get("county")
                 custom_child_agency_name = row.get("custom_name")
-                county_codes = set(county_fips_to_county_code.values())
                 child_agency_county_code = None
 
                 if county_fips is not None and county_fips in county_codes:

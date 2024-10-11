@@ -21,18 +21,20 @@ from unittest import TestCase
 import pandas as pd
 
 from recidiviz.tests.justice_counts.utils.utils import JusticeCountsSchemaTestObjects
-from recidiviz.tools.datasets.jurisdictions import get_all_jurisdictions
+from recidiviz.tools.datasets.jurisdictions import (
+    get_fips_code_to_jurisdiction_metadata,
+)
 
 
 class TestJurisdictions(TestCase):
-    """Test that get_all_jurisdictions() converts csv to json as expected"""
+    """Test that get_fips_code_to_jurisdiction_metadata() converts csv to json as expected"""
 
     def setUp(self) -> None:
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
         self.maxDiff = None
 
     def test_jurisdictions(self) -> None:
-        all_jurisdictions = get_all_jurisdictions()
+        all_jurisdictions = get_fips_code_to_jurisdiction_metadata()
         jurisdictions_csv = pd.read_csv(
             "./recidiviz/common/data_sets/fips_with_county_subdivisions.csv",
             dtype={
