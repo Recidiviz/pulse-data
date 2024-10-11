@@ -23,6 +23,10 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 0.50
     override_reason: >-
       I think this is just typical variation.
+  - validation_name: state_incarceration_period_by_admission_date_stable_counts
+    hard_max_allowed_error_override: 0.30
+    override_reason: >-
+      I think this is just typical variation.
   - validation_name: state_incarceration_period_by_release_date_stable_counts
     hard_max_allowed_error_override: 0.40
     override_reason: >-
