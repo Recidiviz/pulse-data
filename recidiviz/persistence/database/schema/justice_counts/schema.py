@@ -449,7 +449,22 @@ class Agency(Source):
             },
         }
 
-    def to_public_json(self, v2: bool = False) -> Dict[str, Any]:
+    def to_public_json(
+        self,
+        v2: bool = False,
+        fips_code_to_geoid: Optional[Dict[str, str]] = None,
+        county_code_to_county_fips: Optional[Dict[str, str]] = None,
+        county_code_to_county_name: Optional[Dict[str, str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Converts the agency instance to a public-facing JSON representation. This
+        includes a selection of the agency's fields, such as systems, dashboard status,
+        and specific whitelisted settings (e.g., homepage URL, purpose, and functions).
+
+        If the `v2` flag is set to True, additional details like the state's name,
+        abbreviation, and geographic ID (GEOID) will be included. For county information,
+        FIPS codes are mapped to the corresponding geographic IDs.
+        """
         whitelisted_agency_settings = list(
             filter(
                 lambda setting: setting.setting_type
@@ -466,16 +481,35 @@ class Agency(Source):
             "settings": [setting.to_json() for setting in whitelisted_agency_settings],
         }
 
-        response["sectors" if v2 else "systems"] = [
+        response["sectors" if v2 is True else "systems"] = [
             system_enum.value
             for system_enum in System.sort(
                 systems=[System(system_str) for system_str in (self.systems or [])]
             )
         ]
         response[
-            "is_v0_dashboard_enabled" if v2 else "is_dashboard_enabled"
+            "is_v0_dashboard_enabled" if v2 is True else "is_dashboard_enabled"
         ] = self.is_dashboard_enabled
 
+        if v2 is True:
+            state_code = StateCode(self.state_code.upper())
+            state = state_code.get_state()
+            response["state_name"] = state.name
+            response["state_abbreviation"] = state.abbr
+
+            if (
+                fips_code_to_geoid is not None
+                and county_code_to_county_fips is not None
+                and county_code_to_county_name is not None
+            ):
+                response["state_geoid"] = fips_code_to_geoid.get(str(state.fips))
+                fips_county_code = county_code_to_county_fips[
+                    self.fips_county_code.upper()
+                ]
+                response["county_geoid"] = fips_code_to_geoid.get(str(fips_county_code))
+                response["county_name"] = county_code_to_county_name[
+                    self.fips_county_code.upper()
+                ]
         return response
 
 

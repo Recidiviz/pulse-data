@@ -18,11 +18,13 @@
 to a json representation for the frontend."""
 import json
 
-from recidiviz.tools.datasets.jurisdictions import get_all_jurisdictions
+from recidiviz.tools.datasets.jurisdictions import (
+    get_fips_code_to_jurisdiction_metadata,
+)
 
 
 def main() -> None:
-    jurisdictions_json = get_all_jurisdictions()
+    jurisdictions_json = get_fips_code_to_jurisdiction_metadata()
     json_object = json.dumps(jurisdictions_json, indent=2)
     with open(
         "./recidiviz/common/data_sets/fips_with_county_subdivisions.json",

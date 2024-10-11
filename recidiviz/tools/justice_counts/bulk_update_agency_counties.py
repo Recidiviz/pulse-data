@@ -27,12 +27,11 @@ python -m recidiviz.tools.justice_counts.bulk_update_agency_counties \
 
 import argparse
 import logging
-import os
 from typing import Dict
 
 import pandas as pd
 
-from recidiviz.common.fips import sanitize_county_name
+from recidiviz.common.fips import get_county_fips_to_county_code, sanitize_county_name
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -81,21 +80,6 @@ def bulk_update_agency_county(
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
 
-    # Construct the path to the county codes CSV file
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    county_codes_path = os.path.join(
-        script_dir, "../../datasets/static_data/county_fips.csv"
-    )
-
-    # Load county code mappings
-    county_codes_df = pd.read_csv(county_codes_path)
-    county_fips_to_county_code = dict(
-        zip(
-            county_codes_df["fips"],
-            county_codes_df["county_code"],
-        )
-    )
-
     with cloudsql_proxy_control.connection(
         schema_type=schema_type, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
     ):
@@ -104,13 +88,12 @@ def bulk_update_agency_county(
             secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
             autocommit=False,
         ) as session:
-
+            county_fips_to_county_code = get_county_fips_to_county_code()
+            county_codes = set(county_fips_to_county_code.values())
             for agency_id, county_fips in agency_id_to_county_fips.items():
                 agency = AgencyInterface.get_agency_by_id(
                     session=session, agency_id=agency_id
                 )
-
-                county_codes = set(county_fips_to_county_code.values())
                 child_agency_county_code = None
 
                 if county_fips is not None and county_fips in county_codes:

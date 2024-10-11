@@ -29,6 +29,7 @@ share the same county names.
 
 More info: https://en.wikipedia.org/wiki/FIPS_county_code
 """
+import os
 import re
 from typing import Dict, Set, Tuple
 
@@ -163,3 +164,40 @@ def _get_valid_county_names() -> Set[str]:
             for _, row in _get_FIPS().iterrows()
         }
     return _SANITIZED_COUNTY_NAMES
+
+
+# Construct the path to the county codes CSV file
+current_dir = os.path.dirname(os.path.abspath(__file__))
+county_codes_path = os.path.join(current_dir, "../datasets/static_data/county_fips.csv")
+
+# Load county code mappings
+
+
+def get_county_fips_to_county_code() -> Dict[str, str]:
+    county_codes_df = pd.read_csv(county_codes_path)
+    return dict(
+        zip(
+            county_codes_df["fips"],
+            county_codes_df["county_code"],
+        )
+    )
+
+
+def get_county_code_to_county_fips() -> Dict[str, str]:
+    county_codes_df = pd.read_csv(county_codes_path)
+    return dict(
+        zip(
+            county_codes_df["county_code"],
+            county_codes_df["fips"],
+        )
+    )
+
+
+def get_county_code_to_county_name() -> Dict[str, str]:
+    county_codes_df = pd.read_csv(county_codes_path)
+    return dict(
+        zip(
+            county_codes_df["county_code"],
+            county_codes_df["county_name"],
+        )
+    )

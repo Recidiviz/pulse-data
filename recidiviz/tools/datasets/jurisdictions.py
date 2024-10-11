@@ -21,7 +21,7 @@ from typing import Any, Dict
 import pandas as pd
 
 
-def get_all_jurisdictions() -> Dict[str, Dict[str, Any]]:
+def get_fips_code_to_jurisdiction_metadata() -> Dict[str, Dict[str, Any]]:
     """Reads in fips_with_county_subdivisions.csv and converts to a dictionary of dictionaries
     of all 24,329 jurisdictions.
     """
@@ -38,17 +38,17 @@ def get_all_jurisdictions() -> Dict[str, Dict[str, Any]]:
         },
     )
     all_jurisdictions = {}
-    for _, jurisdiction in jurisdictions_df.iterrows():
+    for jurisdiction in jurisdictions_df.itertuples(index=False, name=None):
         all_jurisdictions[jurisdiction[6]] = {
             "id": jurisdiction[6],
             "state_abbrev": jurisdiction[1],
             "state_name": jurisdiction[0],
-            "county_name": jurisdiction[3]
-            if pd.isna(jurisdiction[3]) is False
-            else None,
-            "county_subdivision_name": jurisdiction[4]
-            if pd.isna(jurisdiction[4]) is False
-            else None,
+            "county_name": (
+                jurisdiction[3] if pd.isna(jurisdiction[3]) is False else None
+            ),
+            "county_subdivision_name": (
+                jurisdiction[4] if pd.isna(jurisdiction[4]) is False else None
+            ),
             "name": jurisdiction[2],
             "type": jurisdiction[5],
         }
