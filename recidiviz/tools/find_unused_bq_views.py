@@ -49,6 +49,9 @@ from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions_with_officer_and_supervisor import (
     EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.insights_primary_user_registration_sessions import (
+    INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
 )
@@ -384,6 +387,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_CASELOAD_SESSIONS_VIEW_BUILDER.address: (
         "Will be incorporated into observations (caseload spans) for Looker impact analysis: see #32152 (Mayuka Sarukkai 10/2/24)"
+    ),
+    INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER.address: (
+        "Will be incorporated into observations (insights user spans) for insights impact analysis: see #32152 (Mayuka Sarukkai 10/2/24)"
     ),
 }
 
