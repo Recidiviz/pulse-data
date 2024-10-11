@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSCustodialSanctionViolation
+file_description: |-
+  This file contains custodial sanction violation information
+data_classification: source
+primary_key_cols:
+  - pkPIMSCustodialSanctionViolationId
+columns:
+  - name: pkPIMSCustodialSanctionViolationId
+    description: |-
+      PK for the table
+  - name: fkPIMSCustodialSanctionId
+    description: |-
+      Foreign key id to PIMSCustodialSanction table
+  - name: fkPIMSCustodialSanctionViolationSpecialConditionId
+    description: |-
+      Foreign key id to PIMSCustodialSanctionViolationSpecialCondition table
+  - name: violationTypeCode
+    description: |-
+      Violation type code
+  - name: violationDate
+    field_type: datetime
+    description: |-
+      Date of violation
+  - name: createdDate
+    description: |-
+      Date created
+  - name: createdBy
+    description: |-
+      User created by
+    is_pii: true
+  - name: modifiedBy
+    description: |-
+      User modified by
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date modified
+  - name: version
+    description: |-
+      version

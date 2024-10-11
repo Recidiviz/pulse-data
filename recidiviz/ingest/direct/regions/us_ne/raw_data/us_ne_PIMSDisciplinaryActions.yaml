@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSDisciplinaryActions
+file_description: |-
+  This table contains disciplinary action information
+data_classification: source
+primary_key_cols:
+  - disciplinaryActionId
+columns:
+  - name: disciplinaryActionId
+    description: |-
+      Disciplinary action Id
+  - name: inmateId
+    description: |-
+      Nebraska ID number
+  - name: goodTimePossLoss
+    description: |-
+      Good time possible loss
+  - name: goodTimeActualLoss
+    description: |-
+      Good time actual loss
+  - name: custodyCode
+    description: |-
+      Custody code
+  - name: holdDate
+    field_type: datetime
+    description: |-
+      Hold date
+  - name: revocationDT
+    field_type: datetime
+    description: |-
+      Revocation date
+  - name: daterReturned
+    description: |-
+      Date returned
+  - name: hearingStatusCode
+    description: |-
+      Hearing status ode
+  - name: deadTimeMonth
+    description: |-
+      Dead time month
+  - name: deadTimeDays
+    description: |-
+      Dead time days
+  - name: deadTimeYears
+    description: |-
+      Dead time years
+  - name: waiveFee
+    description: |-
+      Waive fee
+  - name: waiveFromDT
+    field_type: datetime
+    description: |-
+      Waive from date
+  - name: waiveToDT
+    field_type: datetime
+    description: |-
+      Waive to date
+  - name: costToReturn
+    description: |-
+      Cost to return
+  - name: numberOfAlleged
+    description: |-
+      Number of alleged
+  - name: numberOfCause
+    description: |-
+      Number of cause
+  - name: comments
+    description: |-
+      Comments
+    is_pii: True
+  - name: createdBy
+    description: |-
+      User created by
+    is_pii: True
+  - name: createdOn
+    field_type: datetime
+    description: |-
+      Date created on
+  - name: lastUpdatedOn
+    field_type: datetime
+    description: |-
+      Last updated on
+  - name: lastUpdatedBy
+    description: |-
+      User last updated by
+    is_pii: True
+  - name: hearingOutcomeCode
+    description: |-
+      Hearing outcome code
+  - name: feeWaiverHearing
+    description: |-
+      Fee waiver hearing
+  - name: feeWaiverComments
+    description: |-
+      Fee waiver comments
+    is_pii: True
+  - name: feeWaiverStartDate
+    field_type: datetime
+    description: |-
+      Fee waiver start date
+  - name: caseDismissed
+    description: |-
+      Case dismissed
+  - name: caseDismissedDate
+    field_type: datetime
+    description: |-
+      Case dismissed date
+  - name: confirmationUA
+    description: |-
+      Confirmation UA
+  - name: pastDueProgrammingFees
+    description: |-
+      Past due programming fees

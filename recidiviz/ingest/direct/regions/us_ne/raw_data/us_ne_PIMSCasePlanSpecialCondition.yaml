@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSCasePlanSpecialCondition
+file_description: |-
+  This table contains case plan special conditions
+data_classification: source
+primary_key_cols:
+  - pkPIMSCasePlanSpecialConditionId
+columns:
+  - name: pkPIMSCasePlanSpecialConditionId
+    description: |-
+      PK for table
+  - name: fkPIMSCasePlanId
+    description: |-
+      Foregin key id to PIMSCasePlan table
+  - name: fkSpecialConditionId
+    description: |-
+      Foregin key id to SpecialCondition table
+  - name: complianceCode
+    description: |-
+      Compliance code
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date created
+  - name: createdBy
+    description: |-
+      User created by
+    is_pii: True
+  - name: modifiedBy
+    description: |-
+      User modified by
+    is_pii: True
+  - name: modifiedDate
+    description: |-
+      Date modified
+    is_pii: True
+  - name: version
+    description: |-
+      Version

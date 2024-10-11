@@ -1,0 +1,112 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSSanctions
+file_description: |-
+  This table contains sanction information
+data_classification: source
+primary_key_cols:
+  - id
+columns:
+  - name: id
+    description: |-
+      ID for sanctions
+  - name: EnteredBy
+    description: |-
+      User entered by
+    is_pii: True
+  - name: EnteredDate
+    field_type: datetime
+    description: |-
+      Date entered
+  - name: ProbationerID
+    description: |-
+      Probationer ID
+    is_pii: True
+  - name: inmateNumber
+    description: |-
+      Nebraska ID number
+    is_pii: True
+  - name: sysId
+    description: |-
+      Sys Id
+  - name: RiskLevel
+    description: |-
+      Risk level
+  - name: TermID
+    description: |-
+      Term ID
+  - name: PONotifiedDt
+    field_type: datetime
+    description: |-
+      PO Notified date
+  - name: ViolationDt
+    field_type: datetime
+    description: |-
+      Violation date
+  - name: Synopsis
+    description: |-
+      Synopsis
+    is_pii: True
+  - name: VioSeverity
+    description: |-
+      Violation severity
+  - name: ResponseDt
+    field_type: datetime
+    description: |-
+      Response date
+  - name: ResponseLevel
+    description: |-
+      Response level
+  - name: Presumptive
+    description: |-
+      Presumptive
+  - name: BehaviorType
+    description: |-
+      Behavior type
+  - name: numbeOfAttachments
+    description: |-
+      Number of attachments
+  - name: sanctionAcceptanceCode
+    description: |-
+      Sanction acceptance code
+  - name: sanctionDetails
+    description: |-
+      Sanction details
+    is_pii: True
+  - name: version
+  - name: sanctionDetailsId
+    description: |-
+      Sanction details id
+  - name: SanctionDetailsVersion
+    description: |-
+      Sanction details version
+  - name: sanctionDetailsCreatedBy
+    description: |-
+      Sanction details created by user
+    is_pii: True
+  - name: sanctionDetailsModifiedBy
+    description: |-
+      Sanction detaisl modified by
+  - name: sanctionDetailsCreatedDate
+    field_type: datetime
+    description: |-
+      Sanction details created date
+  - name: sanctionDetailsModifiedDate
+    field_type: datetime
+    description: |-
+      Sanction details modified date
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date record created
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Dare record modified
+  - name: createdBy
+    description: |-
+      User created by
+    is_pii: True
+  - name: modifiedBy
+    description: |-
+      User modified by
+    is_pii: True

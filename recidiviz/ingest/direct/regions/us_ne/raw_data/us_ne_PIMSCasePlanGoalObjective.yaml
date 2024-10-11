@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSCasePlanGoalObjective
+file_description: |-
+  This table contains case plan goal objectives
+data_classification: source
+primary_key_cols:
+  - pkPIMSCasePlanGoalObjectiveId
+columns:
+  - name: pkPIMSCasePlanGoalObjectiveId
+    description: |-
+      Primary key for table
+  - name: fkPIMSCasePlanObjectiveTypeCode
+    description: |-
+      Foreign key code to PIMSCasePlanObjectiveType
+  - name: startDate
+    field_type: datetime
+    description: |-
+      Start date
+  - name: frequencyCode
+    description: |-
+      frequency code
+  - name: otherFrequency
+    description: |-
+      Other frequency
+  - name: targetDate
+    field_type: datetime
+    description: |-
+      Target date
+  - name: dateCompleted
+    field_type: datetime
+    description: |-
+      Date completed
+  - name: statusCode
+    description: |-
+      Status code
+  - name: notes
+    description: |-
+      notes
+    is_pii: True
+  - name: createdBy
+    description: |-
+      Created by user
+    is_pii: True
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date created
+  - name: modifiedBy
+    description: |-
+      Modified by user
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date modified
+  - name: version
+    description: |-
+      version
+  - name: fkPIMSCasePlanGoalId
+    description: |-
+      Foreign key to PIMSCasePlanGoalId
+  - name: referred
+    description: |-
+      Referred
+  - name: fkProviderId
+    description: |-
+      Foregin key to provider id
+  - name: OtherProviderName
+    description: |-
+      Other provider name

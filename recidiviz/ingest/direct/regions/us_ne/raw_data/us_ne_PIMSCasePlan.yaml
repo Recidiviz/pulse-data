@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSCasePlan
+file_description: |-
+  This table contains client case plan information.
+data_classification: source
+primary_key_cols:
+  - pkPIMSCasePlanId
+columns:
+  - name: pkPIMSCasePlanId
+    description: |-
+      PK for the table
+  - name: inmateNumber
+    description: |-
+      Inmate number
+    is_pii: True
+  - name: gender
+    description: |-
+      Gender indicator
+  - name: casePlanDate
+    field_type: datetime
+    description: |-
+      Case plan date
+  - name: orasRiskLevel
+    description: |-
+      ORAS risk level
+  - name: supervisionLevelCode
+    description: |-
+      Supervision level code
+  - name: lastORASAssessmentDate
+    field_type: datetime
+    description: |-
+      Last ORAS Assessment date
+  - name: checkIn
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: criminalAttitudeNeedLevel
+    description: |-
+      Criminal attitude need level
+  - name: educationEmplFinNeedLevel
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: familySocialNeedLevel
+    description: |-
+      Family social need level
+  - name: peerAssocNeedLevel
+    description: |-
+      Peer association need level
+  - name: substanceUseNeedLevel
+    description: |-
+      Substance use need level
+  - name: interventionTypeCode
+    description: |-
+      Intervention type code
+  - name: fkPIMSCasePlanSkillCode
+    description: |-
+      Foreign key to PIMS Case plan Skill table code
+  - name: otherSkills
+    description: |-
+      Other skills
+  - name: homeWorkTypeCode
+    description: |-
+      home work type code
+  - name: homeWorkComments
+    description: |-
+      home work comments
+    is_pii: True
+  - name: status
+    description: |-
+      Status
+  - name: assessmentDueDate
+    field_type: datetime
+    description: |-
+      Assessment due date
+  - name: overrideRiskLevelCode
+    description: |-
+      Override risk level code
+  - name: assessmentTypeCode
+    description: |-
+      Assessment type code
+  - name: createdBy
+    description: |-
+      Created by user
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date created
+  - name: modifiedBy
+    description: |-
+      Modified by user
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date modified
+  - name: version
+  - name: currentAmountDue
+    description: |-
+      Current amount due
+  - name: lastPaymentDate
+    field_type: datetime
+    description: |-
+      Last payment date
+  - name: howAddressed
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: newRecord
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: newRecord2
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: SCComplianceNAProgrammingChangeOnly
+    description: |-
+      TODO(#31972): Fill in with answers from NE
