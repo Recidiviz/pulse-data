@@ -40,8 +40,8 @@ clean_name_cte AS
         END AS Suffix,
         Address,
         Phone_Number,
-        SID_Number,
-        TDCJ_Number
+        NULLIF(SID_Number, '00000000') AS SID_Number,
+        NULLIF(TDCJ_Number, '00000000') AS TDCJ_Number,
     FROM {ClientData}
 ),
 -- Aggregates all of the TDCJ_Number IDs
