@@ -1,7 +1,11 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: AZ_DOC_HOME_PLAN_DETAIL
 file_description: |-
-  TODO(#000): FILL IN
+  This table contains the details of each Home Plan submitted for approval. If a Home
+  Plan is returned to a COIII for correction from the community supervision office, there
+  will be a new HOME_PLAN_DETAIL_ID associated with the next version that is submitted. 
+  The most recent (or final) Home Plan for a person will have the highest HOME_PLAN_DETAIL_ID
+  value; that is the only Home Plan that is relevant in the end.
 data_classification: source
 primary_key_cols: [HOME_PLAN_DETAIL_ID]
 columns:
@@ -138,3 +142,7 @@ columns:
   - name: IS_RELEASE_UNIT_REQUEST
     description: |-
       Release unit Flag
+table_relationships:
+  - foreign_table: AZ_DOC_HOME_PLAN_APPROVAL
+    join_logic:
+      - AZ_DOC_HOME_PLAN_DETAIL.HOME_PLAN_DETAIL_ID = AZ_DOC_HOME_PLAN_APPROVAL.HOME_PLAN_DETAIL_ID

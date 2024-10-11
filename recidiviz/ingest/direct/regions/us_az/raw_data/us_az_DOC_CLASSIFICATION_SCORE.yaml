@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: DOC_CLASSIFICATION_SCORE
 file_description: |-
-  TODO(#25890): FILL IN
+  The specific components that make up an overall classification in facilities. To connect
+  this data to an individual, first join to DOC_CLASSIFICATION to find the results of the 
+  classification, and then join to DOC_EPISODE using the associated DOC_ID.
 data_classification: source
 primary_key_cols:
   - CLASS_SCORE_ID
