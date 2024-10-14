@@ -1837,10 +1837,10 @@
     "@react-spring/shared" "~9.7.2"
     "@react-spring/types" "~9.7.2"
 
-"@recidiviz/design-system@^5.7.0":
-  version "5.7.0"
-  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-5.7.0.tgz#e3d3f90bed91729fa233a78b6be50c407e111f03"
-  integrity sha512-cWpmNIospWyppl6B+cQ9UqkDOoXXS3vogV2B58gN9NLBvLdExMMbbq4kxXa325PHiKk7wYCA4tUCrC9y/KI0Tg==
+"@recidiviz/design-system@^5.8.0":
+  version "5.8.0"
+  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-5.8.0.tgz#95cc1b5fc02969de36d3fd8939cfe551fd9e2823"
+  integrity sha512-SwE98LL1EPyZ2rinYy8s/XlOJZybr9TDLiN56WTCKM9Bp+pmJ0kep+okYoB65fzi/dsCvLzIiKO+B1PxAcdkEw==
   dependencies:
     "@fontsource/libre-baskerville" "^4.1.0"
     "@fontsource/public-sans" "^4.5.3"
