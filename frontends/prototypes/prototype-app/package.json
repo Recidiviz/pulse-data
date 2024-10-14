@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@recidiviz/auth": "^1.0.1",
-    "@recidiviz/design-system": "^5.7.0",
+    "@recidiviz/design-system": "^5.8.0",
     "firebase": "^9.6.6",
     "mobx": "^6.3.13",
     "mobx-react-lite": "^3.2.3",
