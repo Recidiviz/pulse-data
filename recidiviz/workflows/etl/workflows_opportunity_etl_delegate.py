@@ -182,4 +182,10 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
         data = json.loads(row)
         if data.get("external_id", None) is None:
             return None, None
-        return data["external_id"], self.build_document(data)
+
+        doc_id = (
+            data["external_id"]
+            if data.get("opportunity_id", None) is None
+            else f"{data['external_id']}_{data['opportunity_id']}"
+        )
+        return doc_id, self.build_document(data)

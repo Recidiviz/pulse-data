@@ -79,6 +79,8 @@ TEST_DATA = {
     "metadata_multiple_sentences": True,
     "metadata_out_of_state": False,
     "random_field_with_metadata": False,
+    "opportunity_id": "id001",
+    "opportunity_pseudonymized_id": "anon001",
 }
 
 EXPECTED_DOCUMENT = {
@@ -110,6 +112,8 @@ EXPECTED_DOCUMENT = {
         ],
     },
     "randomFieldWithMetadata": False,
+    "opportunityId": "id001",
+    "opportunityPseudonymizedId": "anon001",
 }
 
 TEST_DATA_WITH_PREFIX_TO_STRIP = {
@@ -245,13 +249,13 @@ class TestWorkflowsETLDelegate(TestCase):
         """Test that transform_row returns a tuple with id and document."""
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
         result = delegate.transform_row(json.dumps(TEST_DATA))
-        self.assertEqual(("123", EXPECTED_DOCUMENT), result)
+        self.assertEqual(("123_id001", EXPECTED_DOCUMENT), result)
 
     def test_build_document(self) -> None:
         """Test that the build_document method renames the keys correctly."""
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
         new_document = delegate.build_document(TEST_DATA)
-        self.assertEqual(
+        self.assertDictEqual(
             EXPECTED_DOCUMENT,
             new_document,
         )
