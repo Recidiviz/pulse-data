@@ -26,7 +26,8 @@ columns:
       State code
   - name: courtPhone
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Court phone number
+    is_pii: True
   - name: startDate
     description: |-
       TODO(#31972): Fill in with answers from NE
