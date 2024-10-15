@@ -876,7 +876,6 @@ def get_api_blueprint(
             )
 
             raise_if_user_is_not_in_agency(user=user, agency_id=agency_id)
-            reports = []
 
             reports = ReportInterface.get_reports_by_agency_id(
                 session=current_session, agency_id=agency_id
