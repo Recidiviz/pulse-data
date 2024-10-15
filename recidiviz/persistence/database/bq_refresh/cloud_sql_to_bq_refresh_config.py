@@ -130,9 +130,6 @@ class CloudSqlToBQConfig:
     def get_table_federated_export_query(self, table_name: str) -> str:
         """Return a formatted SQL query for a given CloudSQL schema table that can be
         used to export data for a given state to BigQuery via a federated query.
-
-        For association tables, it adds a region code column to the select statement
-        through a join.
         """
         table = get_table_class_by_name(table_name, self.schema_type)
         columns = self._get_table_columns_to_export(table)

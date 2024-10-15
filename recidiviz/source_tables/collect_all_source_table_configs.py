@@ -22,6 +22,7 @@ from itertools import groupby
 from types import ModuleType
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_EVENTS,
     AUTH0_PROD_ACTION_LOGS,
@@ -44,9 +45,6 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import FILE_ID_COL_NAME
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
-    bq_schema_for_sqlalchemy_table,
-)
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
@@ -197,9 +195,7 @@ def _collect_cloudsql_mirror_source_table_collections() -> list[SourceTableColle
             collection.add_source_table(
                 table_id=table.name,
                 description=f"Exported table for {table.name}",
-                schema_fields=bq_schema_for_sqlalchemy_table(
-                    export_config.schema_type, table
-                ),
+                schema_fields=schema_for_sqlalchemy_table(table),
             )
 
     return results

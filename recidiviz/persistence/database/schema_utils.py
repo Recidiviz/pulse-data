@@ -21,10 +21,9 @@ import inspect
 import sys
 from functools import lru_cache
 from types import ModuleType
-from typing import Any, Iterator, List, Optional, Tuple, Type
+from typing import Any, Iterator, List, Optional, Type
 
-import sqlalchemy
-from sqlalchemy import ForeignKeyConstraint, Table
+from sqlalchemy import Table
 from sqlalchemy.ext.declarative import DeclarativeMeta
 from sqlalchemy.orm import RelationshipProperty
 
@@ -61,29 +60,10 @@ _SCHEMA_MODULES: List[ModuleType] = [
     insights_schema,
 ]
 
-BQ_TYPES = {
-    sqlalchemy.Boolean: "BOOL",
-    sqlalchemy.Date: "DATE",
-    sqlalchemy.DateTime: "DATETIME",
-    sqlalchemy.Enum: "STRING",
-    sqlalchemy.Integer: "INT64",
-    sqlalchemy.String: "STRING",
-    sqlalchemy.Text: "STRING",
-    sqlalchemy.ARRAY: "ARRAY",
-}
-
 
 def get_all_table_classes() -> Iterator[Table]:
     for schema_type in SchemaType:
         yield from get_all_table_classes_in_schema(schema_type)
-
-
-def get_foreign_key_constraints(table: Table) -> List[ForeignKeyConstraint]:
-    return [
-        constraint
-        for constraint in table.constraints
-        if isinstance(constraint, ForeignKeyConstraint)
-    ]
 
 
 def get_table_class_by_name(table_name: str, schema_type: SchemaType) -> Table:
@@ -97,24 +77,6 @@ def get_table_class_by_name(table_name: str, schema_type: SchemaType) -> Table:
         )
 
     return tables_by_name[table_name]
-
-
-def get_region_code_col(schema_type: SchemaType, table: Table) -> str:
-    if schema_type is SchemaType.STATE:
-        if hasattr(table.c, "state_code") or is_association_table(table.name):
-            return "state_code"
-    if schema_type is SchemaType.OPERATIONS:
-        if hasattr(table.c, "region_code"):
-            return "region_code"
-    raise ValueError(f"Unexpected table is missing a region code field: [{table.name}]")
-
-
-def schema_has_region_code_query_support(schema_type: SchemaType) -> bool:
-    """NOTE: The CloudSQL -> BQ refresh must run once without any filtered region codes for each newly added SchemaType.
-    This ensures the region_code column is added to tables that are missing it before a query tries to
-    filter for that column.
-    """
-    return schema_type in (SchemaType.STATE, SchemaType.OPERATIONS)
 
 
 def is_association_table(table_name: str) -> bool:
@@ -164,35 +126,6 @@ def get_database_entity_by_table_name(
             return member
 
     raise ValueError(f"Could not find model with table named {table_name}")
-
-
-def get_database_entities_by_association_table(
-    module: ModuleType, table_name: str
-) -> Tuple[Type[DeclarativeMeta], Type[DeclarativeMeta]]:
-    """Returns the database entities associated with the association table."""
-    parent_member = None
-    child_member = None
-    for name in dir(module):
-        member = getattr(module, name)
-        if not _is_database_entity_subclass(member):
-            continue
-
-        try:
-            for (
-                relationship
-            ) in member.get_relationship_property_names_and_properties().values():
-                if relationship.secondary.name == table_name:
-                    parent_member = member
-                    child_member = getattr(module, relationship.argument)
-        except AttributeError:
-            continue
-
-    if not child_member or not parent_member:
-        raise ValueError(
-            f"Could not find model with association table named {table_name}"
-        )
-
-    return child_member, parent_member
 
 
 def get_primary_key_column_name(
@@ -254,26 +187,6 @@ def get_state_database_association_with_names(
         f"Association table with {child_class_name} and {parent_class_name} does not in exist in "
         f"{state_schema.__name__}"
     )
-
-
-def schema_type_for_object(schema_object: DatabaseEntity) -> SchemaType:
-    match schema_object:
-        case JusticeCountsBase():
-            return SchemaType.JUSTICE_COUNTS
-        case StateBase():
-            return SchemaType.STATE
-        case OperationsBase():
-            return SchemaType.OPERATIONS
-        case CaseTriageBase():
-            return SchemaType.CASE_TRIAGE
-        case PathwaysBase():
-            return SchemaType.PATHWAYS
-        case WorkflowsBase():
-            return SchemaType.WORKFLOWS
-        case InsightsBase():
-            return SchemaType.INSIGHTS
-
-    raise ValueError(f"Object of type [{type(schema_object)}] has unknown schema base.")
 
 
 def schema_type_to_schema_base(schema_type: SchemaType) -> DeclarativeMeta:
