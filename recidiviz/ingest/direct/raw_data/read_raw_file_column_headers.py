@@ -99,9 +99,7 @@ class DirectIngestRawFileHeaderReader:
                     else f
                 )
                 reader = csv.reader(updated_f, **csv_reader_kwargs)
-                csv_first_row = next(reader)
-        except StopIteration:
-            csv_first_row = []
+                csv_first_row = next(reader, [])
         except UnicodeDecodeError as e:
             raise ValueError(
                 f"Unable to read path [{gcs_file_path.abs_path()}] for encoding {self.file_config.encoding}."
@@ -109,7 +107,7 @@ class DirectIngestRawFileHeaderReader:
 
         if not csv_first_row:
             raise ValueError(
-                f"File [{gcs_file_path.abs_path()}] is empty or does not contain valid rows."
+                f"File [{gcs_file_path.abs_path()}] is empty, contains an empty first line, or does not contain valid rows."
             )
 
         return csv_first_row

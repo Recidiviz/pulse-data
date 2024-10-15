@@ -110,8 +110,20 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(
-            ValueError, r"empty or does not contain valid rows"
+            ValueError,
+            r"empty, contains an empty first line, or does not contain valid rows",
         ):
+            header_reader.read_and_validate_column_headers(file_path)
+
+    def test_empty_first_line(self) -> None:
+        file_tag = "tagEmptyFirstLine"
+        file_path = self._get_and_register_csv_gcs_path(file_tag)
+        # Re-use basic data config
+        file_config = self.region_raw_file_config.raw_file_configs["tagBasicData"]
+
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
+
+        with self.assertRaisesRegex(ValueError, r"contains an empty first line"):
             header_reader.read_and_validate_column_headers(file_path)
 
     def test_multibyte_raw_file_alternate_separator_and_encoding(self) -> None:
