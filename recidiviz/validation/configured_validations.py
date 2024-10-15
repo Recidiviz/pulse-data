@@ -220,6 +220,9 @@ from recidiviz.validation.views.state.sentences.sessions_missing_closest_sentenc
 from recidiviz.validation.views.state.sessions_validation.person_caseload_location_sessions import (
     PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sessions_validation.session_location_names_no_duplicates import (
+    SESSION_LOCATION_NAMES_NO_DUPLICATES_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sessions_validation.sessions_persons_in_incarceration_or_supervision import (
     SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER,
 )
@@ -511,6 +514,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=PA_BADGE_NUMBER_CHANGES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SESSION_LOCATION_NAMES_NO_DUPLICATES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
