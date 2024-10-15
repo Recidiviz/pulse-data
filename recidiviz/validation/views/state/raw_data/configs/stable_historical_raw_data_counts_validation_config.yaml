@@ -20,6 +20,11 @@ PERMANENT:
         Small reference file that is updated infrequently -- small changes in file size
         cause large % changes. This file is also maintained manually, so changes are
         always monitored.
+    - file_tag: RECIDIVIZ_REFERENCE_release_to_crc_facility_mappings
+      exclusion_reason:
+        Small reference file that is updated infrequently -- small changes in file size
+        cause large % changes. This file is also maintained manually, so changes are
+        always monitored.
   US_TN:
     - file_tag: Chain
       exclusion_reason:
