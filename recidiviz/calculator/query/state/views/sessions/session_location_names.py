@@ -90,9 +90,9 @@ SESSION_LOCATION_NAMES_QUERY_TEMPLATE = """
         -- Deduplicate to one row per level 2 location for the few districts that are
         -- mapped to more than one region
         QUALIFY ROW_NUMBER() OVER (
-            PARTITION BY state_code, level_2_supervision_location_external_id,
+            PARTITION BY state_code, level_2_supervision_location_external_id
+            ORDER BY level_3_supervision_location_name,
                 level_2_supervision_location_name
-            ORDER BY level_3_supervision_location_name
         ) = 1
     ) supervision_level_2
         ON supervision_level_2.level_2_supervision_location_external_id = all_locations.supervision_district
