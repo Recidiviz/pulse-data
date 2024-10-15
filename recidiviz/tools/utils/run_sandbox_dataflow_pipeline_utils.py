@@ -31,6 +31,7 @@ from recidiviz.pipelines.flex_pipeline_runner import pipeline_cls_for_pipeline_n
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils.environment import get_environment_for_project
+from recidiviz.utils.types import assert_type
 
 
 def fetch_google_auth_token() -> str:
@@ -44,7 +45,7 @@ def fetch_google_auth_token() -> str:
     return creds.token  # type: ignore[attr-defined]
 
 
-def get_cloudbuild_path() -> str:
+def get_upload_pipeline_docker_image_cloud_build_config_path() -> str:
     pipeline_root_path = os.path.dirname(pipelines.__file__)
     cloudbuild_path = "cloudbuild.pipelines.dev.yaml"
 
@@ -83,6 +84,50 @@ def get_all_reference_query_input_datasets_for_pipeline(
     }
 
 
+def sandbox_dataflow_docker_image_path(project_id: str, sandbox_username: str) -> str:
+    """Returns the path to the Docker image for a sandbox Dataflow pipeline.
+
+    Args:
+        project_id: The project the pipeline is running in.
+        sandbox_username: The username of the person running the sandbox pipeline.
+    """
+    return (
+        f"us-docker.pkg.dev/{project_id}/dataflow-dev/{sandbox_username}/build:latest"
+    )
+
+
+def push_sandbox_dataflow_pipeline_docker_image(
+    project_id: str, sandbox_username: str
+) -> None:
+    """Runs a Cloud Build job that builds and pushes a Dataflow pipline Docker image
+    which incorporates local code changes.
+    """
+    cloud_build_config_path = get_upload_pipeline_docker_image_cloud_build_config_path()
+    artifact_reg_image_path = sandbox_dataflow_docker_image_path(
+        project_id=project_id, sandbox_username=sandbox_username
+    )
+
+    submit_build_start = time.time()
+    environment = get_environment_for_project(project_id)
+    # Build and submit the image to "us-docker.pkg.dev/recidiviz-staging/dataflow-dev/{username}-build:latest"
+    print(
+        "Submitting build (this takes a few minutes, or longer on the first run).....\n"
+    )
+    run_command(
+        f"""
+            gcloud builds submit \
+            --project={project_id} \
+            --config {cloud_build_config_path} \
+            --substitutions=_IMAGE_PATH={artifact_reg_image_path},_GOOGLE_CLOUD_PROJECT={project_id},_RECIDIVIZ_ENV={environment.value}
+        """,
+        timeout_sec=900,
+    )
+
+    submit_build_exec_seconds = time.time() - submit_build_start
+    build_minutes, build_seconds = divmod(submit_build_exec_seconds, 60)
+    print(f"Submitted build in {build_minutes} minutes and {build_seconds} seconds.\n")
+
+
 def run_sandbox_dataflow_pipeline(params: PipelineParameters, skip_build: bool) -> None:
     """Runs the pipeline designated by the given |params|."""
     pipeline_cls = pipeline_cls_for_pipeline_name(params.pipeline)
@@ -92,53 +137,34 @@ def run_sandbox_dataflow_pipeline(params: PipelineParameters, skip_build: bool) 
         )
     )
 
-    _, username = os.path.split(params.template_metadata_subdir)
-    launch_body = params.flex_template_launch_body()
-    template_gcs_path = params.template_gcs_path(params.project)
-    cloudbuild_absolute_path = get_cloudbuild_path()
-    template_absolute_path = get_template_path(params.flex_template_name)
-    artifact_reg_image_path = (
-        f"us-docker.pkg.dev/{params.project}/dataflow-dev/{username}/build:latest"
-    )
-
     if not skip_build:
-        submit_build_start = time.time()
-        environment = get_environment_for_project(params.project)
-        # Build and submit the image to "us-docker.pkg.dev/recidiviz-staging/dataflow-dev/{username}-build:latest"
-        print(
-            "Submitting build (this takes a few minutes, or longer on the first run).....\n"
-        )
-        run_command(
-            f"""
-                gcloud builds submit \
-                --project={params.project} \
-                --config {cloudbuild_absolute_path} \
-                --substitutions=_IMAGE_PATH={artifact_reg_image_path},_GOOGLE_CLOUD_PROJECT={params.project},_RECIDIVIZ_ENV={environment.value}
-            """,
-            timeout_sec=900,
-        )
-
-        submit_build_exec_seconds = time.time() - submit_build_start
-        build_minutes, build_seconds = divmod(submit_build_exec_seconds, 60)
-        print(
-            f"Submitted build in {build_minutes} minutes and {build_seconds} seconds.\n"
-        )
-
-        # Upload the flex template json, tagged with the image that should be used
-        # This step is only necessary when the template_metadata.json file or image path has been changed
-        print(f"Building flex template (uploading to {template_gcs_path}) .....\n")
-        run_command(
-            f"gcloud dataflow flex-template build \
-            {template_gcs_path} \
-            --image {artifact_reg_image_path} \
-            --sdk-language PYTHON \
-            --metadata-file {template_absolute_path}"
+        push_sandbox_dataflow_pipeline_docker_image(
+            project_id=params.project,
+            sandbox_username=assert_type(params.sandbox_username, str),
         )
     else:
         print("--skip_build is set... skipping build...")
 
+    template_gcs_path = params.template_gcs_path(params.project)
+    template_absolute_path = get_template_path(params.flex_template_name)
+    artifact_reg_image_path = sandbox_dataflow_docker_image_path(
+        project_id=params.project,
+        sandbox_username=assert_type(params.sandbox_username, str),
+    )
+
+    # Upload the flex template json, tagged with the image that should be used
+    # This step is only necessary when the template_metadata.json file or image path has been changed
+    print(f"Building flex template (uploading to {template_gcs_path}) .....\n")
+    run_command(
+        f"gcloud dataflow flex-template build \
+        {template_gcs_path} \
+        --image {artifact_reg_image_path} \
+        --sdk-language PYTHON \
+        --metadata-file {template_absolute_path}"
+    )
+
     # Run the dataflow job
-    pipeline_launch_body = json.dumps(launch_body, indent=2)
+    pipeline_launch_body = json.dumps(params.flex_template_launch_body(), indent=2)
     print("Starting flex template job with body:")
     print(pipeline_launch_body)
 

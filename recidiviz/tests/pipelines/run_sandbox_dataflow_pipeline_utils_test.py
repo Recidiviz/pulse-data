@@ -20,8 +20,8 @@ import os
 import unittest
 
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
-    get_cloudbuild_path,
     get_template_path,
+    get_upload_pipeline_docker_image_cloud_build_config_path,
 )
 
 
@@ -34,5 +34,5 @@ class FlexPipelineSandboxPathsTest(unittest.TestCase):
             self.assertEqual(os.path.isfile(template_path), True)
 
     def test_cloudbuild_files_exist(self) -> None:
-        cloudbuild_path = get_cloudbuild_path()
+        cloudbuild_path = get_upload_pipeline_docker_image_cloud_build_config_path()
         self.assertEqual(os.path.isfile(cloudbuild_path), True)

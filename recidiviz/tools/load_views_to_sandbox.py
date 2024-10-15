@@ -25,7 +25,8 @@ To load all views that have changed since the last view deploy, run:
 To load all views that have changed since the last view deploy but only load rows for a
 given state_code (much cheaper / faster!), run:
     python -m recidiviz.tools.load_views_to_sandbox \
-       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] --state_code [STATE_CODE] auto \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
+       --state_code_filter [STATE_CODE] auto \
        --load_changed_views_only
 
 To load all views that have changed since the last view deploy and views
