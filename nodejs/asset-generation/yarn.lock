@@ -4924,10 +4924,10 @@ expect@^29.0.0:
     jest-message-util "^29.5.0"
     jest-util "^29.5.0"
 
-express-rate-limit@^6.7.0:
-  version "6.7.0"
-  resolved "https://registry.yarnpkg.com/express-rate-limit/-/express-rate-limit-6.7.0.tgz#6aa8a1bd63dfe79702267b3af1161a93afc1d3c2"
-  integrity sha512-vhwIdRoqcYB/72TK3tRZI+0ttS8Ytrk24GfmsxDXK9o9IhHNO5bXRiXQSExPQ4GbaE5tvIS7j1SGrxsuWs+sGA==
+express-rate-limit@^6.11.2:
+  version "6.11.2"
+  resolved "https://registry.yarnpkg.com/express-rate-limit/-/express-rate-limit-6.11.2.tgz#6c42035603d3b52e4e2fb59f6ebaa89e628ef980"
+  integrity sha512-a7uwwfNTh1U60ssiIkuLFWHt4hAC5yxlLGU2VP0X4YNlyEDZAqF4tK3GD3NSitVBrCQmQ0++0uOyFOgC2y4DDw==
 
 express@^4.17.3, express@^4.21.0:
   version "4.21.0"
