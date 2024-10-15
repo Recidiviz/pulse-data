@@ -14,7 +14,7 @@ columns:
       description of code
   - name: sexualOffense
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Indicates if the offense arrested for is sex offense
   - name: dnaSampleRequired
     description: |-
       TODO(#31972): Fill in with answers from NE

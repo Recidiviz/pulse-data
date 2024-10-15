@@ -33,28 +33,30 @@ columns:
       TODO(#31972): Fill in with answers from NE
   - name: minimumYear
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Minimum year sentence for this offense
   - name: minimumMonth
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Minimum month sentence for this offense
   - name: minimumDay
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Minimum day sentence for this offense
   - name: minimumTerm
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Minimum term sentence for this offense - generally defer to min/max year/month/day 
+      for sentence length but Life (LFE) and Death (DTH) indicated here
   - name: maximumYear
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Maximum year sentence for this offense
   - name: maximumMonth
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Maximum month sentence for this offense
   - name: maximumDay
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Maximum day sentence for this offense
   - name: maximumTerm
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Maximum term sentence for this offense - generally defer to min/max year/month/day 
+      for sentence length but Life (LFE) and Death (DTH) indicated here
   - name: mandatoryYear
     description: |-
       TODO(#31972): Fill in with answers from NE
@@ -68,62 +70,69 @@ columns:
     description: |-
       TODO(#31972): Fill in with answers from NE
   - name: arrestDate
+    field_type: datetime
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Date arrested
   - name: fkFelonyMisdemeanorCode
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Foreign key to FelonyMisdemeanorCode
   - name: fkOffenseAttemptCode
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Foreign key to OffenseAttemptCode table
   - name: fkOffenseArrestCode
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Foreign key to OffenseArrestCode table
   - name: fkOffenseRunCode
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Foreign key to OffenseRunCode
   - name: fkCountyCode
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Foreign key to CountyCode table
   - name: convictedSexualOffense
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Indicates if this was a convicted sexual offense
   - name: beginDate
+    field_type: datetime
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Begin date of offense sentence
   - name: deadTimeDays
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Dead time days - these are like jail time days but do not count towards days off sentence
   - name: jailTimeDays
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Days served in jail
   - name: fkGoodTimeLawCode
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Foreign Key to GoodTimeLawCode table
   - name: convictedDescription
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Convicted description - describes the crime convicted for
   - name: barAssociationNumber
     description: |-
       TODO(#31972): Fill in with answers from NE
   - name: createdBy
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      User created by
+    is_pii: True
   - name: createdDate
+    field_type: datetime
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Date this record was created
   - name: modifiedBy
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      User who modified record
+    is_pii: True
   - name: modifiedDate
+    field_type: datetime
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Date modified
   - name: offenseBeginDate
+    field_type: datetime
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Offense begin date
   - name: offenseAttempt
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Indicates if the offense was an attempt
   - name: offenseAid
     description: |-
       TODO(#31972): Fill in with answers from NE
@@ -138,13 +147,14 @@ columns:
       TODO(#31972): Fill in with answers from NE
   - name: controlling
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Indicates if the offense sentence is the controllig one
   - name: offenseCommittedDate
+    field_type: datetime
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Date the offense was committed
   - name: statute
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      The statute violated by this offense
   - name: version
     description: |-
       TODO(#31972): Fill in with answers from NE
@@ -180,22 +190,29 @@ columns:
       TODO(#31972): Fill in with answers from NE
   - name: prsYear
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      PRS sentence years. Post Release Supervision (PRS) is managed by probation 
+      but technically a split sentence where a judge assigns some amount of prison time 
+      and some amount of PRS time at the offset
   - name: prsMonth
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      PRS sentence months. Post Release Supervision (PRS) is managed by probation 
+      but technically a split sentence where a judge assigns some amount of prison time 
+      and some amount of PRS time at the offset
   - name: prsDay
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      PRS sentence days. Post Release Supervision (PRS) is managed by probation 
+      but technically a split sentence where a judge assigns some amount of prison time 
+      and some amount of PRS time at the offset
   - name: prsSource
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      PRS source info
   - name: courtType
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Type of court - district or county only where sentencing occured. Defer to county as 
+      this field is not always filled in and doesn't indicate out of state, federal etc.
   - name: lsoOrdered
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Lifetime sex offense (LSO) ordered
   - name: validDocketNumberFormat
     description: |-
       TODO(#31972): Fill in with answers from NE
