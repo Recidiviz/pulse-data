@@ -57,10 +57,14 @@ columns:
   - name: BIRTH_DATE
     description: |-
       Duplicate of DATE_OF_BIRTH
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-12-05T00:00:00Z
   - name: CREATED_DATE
     description: |-
       Date that entry was created in system
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%y-%m-%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d', {col_name})"
 always_historical_export: True

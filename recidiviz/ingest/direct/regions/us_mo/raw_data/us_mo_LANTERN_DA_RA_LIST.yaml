@@ -34,3 +34,7 @@ columns:
       Row Modify Date
 always_historical_export: True
 update_cadence: IRREGULAR
+import_blocking_validation_exemptions:
+  - validation_type: STABLE_HISTORICAL_RAW_DATA_COUNTS
+    exemption_reason: |-
+      This file only has ~100-150 rows so small variations have large percent changes.
