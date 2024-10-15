@@ -177,10 +177,10 @@ class AgencyUserAccountAssociationInterface:
     @staticmethod
     def get_editor_id_to_json(
         session: Session, reports: List[schema.Report], user: schema.UserAccount
-    ) -> Dict[int, Dict[str, str]]:
+    ) -> Dict[int, Dict[str, str | None]]:
         """Returns a dictionary mapping an editor's user_account_id to a
         object with their name and role. All reports will be from the same agency."""
-        editor_json: Dict[int, Dict[str, str]] = {}
+        editor_json: Dict[int, Dict[str, str | None]] = {}
         if len(reports) == 0:
             return editor_json
 
@@ -246,12 +246,12 @@ class AgencyUserAccountAssociationInterface:
         session: Session,
         spreadsheets: List[schema.Spreadsheet],
         user: schema.UserAccount,
-    ) -> Dict[int, Dict[str, str]]:
+    ) -> Dict[int, Dict[str, str | None]]:
         """
         Returns a dictionary mapping an editor's user_account_id to a
         object with their name and role. All reports will be from the same agency.
         """
-        editor_json: Dict[int, Dict[str, str]] = {}
+        editor_json: Dict[int, Dict[str, str | None]] = {}
         if len(spreadsheets) == 0:
             return editor_json
 

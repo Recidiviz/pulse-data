@@ -127,7 +127,7 @@ def deliver(
     )
 
     for recipient_email_address in html_files:
-        additional_cc_addresses = []
+        additional_cc_addresses: list[str] = []
         html_path = utils.get_html_filepath(
             batch,
             recipient_email_address,

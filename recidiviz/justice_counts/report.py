@@ -357,7 +357,7 @@ class ReportInterface:
     @staticmethod
     def to_json_response(
         report: schema.Report,
-        editor_id_to_json: Dict[int, Dict[str, str]],
+        editor_id_to_json: Dict[int, Dict[str, str | None]],
         agency_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         # Editor names will be displayed in reverse chronological order in
