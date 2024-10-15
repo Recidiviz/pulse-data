@@ -153,10 +153,7 @@ def bq_schema_column_type_for_sqlalchemy_column(
     return _bq_schema_column_type_for_type(col_python_type)
 
 
-def schema_for_sqlalchemy_table(
-    table: sqlalchemy.Table,
-    add_state_code_field: bool = False,
-) -> List[bigquery.SchemaField]:
+def schema_for_sqlalchemy_table(table: sqlalchemy.Table) -> List[bigquery.SchemaField]:
     """Returns the necessary BigQuery schema for storing the contents of the
     table in BigQuery, which is a list of SchemaField objects containing the
     column name and value type for each column in the table."""
@@ -168,15 +165,6 @@ def schema_for_sqlalchemy_table(
         )
         for col in table.columns
     ]
-
-    if add_state_code_field:
-        columns_for_table.append(
-            bigquery.SchemaField(
-                "state_code",
-                bigquery.enums.SqlTypeNames.STRING.value,
-                mode="NULLABLE",
-            )
-        )
 
     return columns_for_table
 
