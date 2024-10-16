@@ -165,6 +165,17 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
     }
   }
 
+  rule {
+    description = "Allow all traffic to the outliers configuration endpoint, which keeps triggering false positives"
+    action      = "allow"
+    priority    = "900"
+    match {
+      expr {
+        expression = "request.path.matches(\"/admin/outliers/[a-zA-Z_]+/configurations\")"
+      }
+    }
+  }
+
   # ----------------------------------------------
   # Static hosts to block
   # ----------------------------------------------
@@ -180,4 +191,3 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
     description = "Deny access to specific IPs"
   }
 }
-
