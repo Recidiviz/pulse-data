@@ -53,6 +53,7 @@ from recidiviz.outliers.types import (
     SupervisionOfficerSupervisorEntity,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
+    ACTION_STRATEGIES_DEFAULT_COPY,
     ActionStrategySurfacedEvents,
     Configuration,
     SupervisionClientEvent,
@@ -244,6 +245,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     display_name="General + Other Caseloads",
                 ),
             ],
+            action_strategy_copy=ACTION_STRATEGIES_DEFAULT_COPY,
         )
 
         response = self.test_client.get(
