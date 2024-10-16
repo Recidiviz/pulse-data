@@ -20,7 +20,13 @@ from typing import Dict, List, Optional, Type
 
 import attr
 
-from recidiviz.ingest.direct.raw_data.raw_file_configs import ColumnEnumValueInfo
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    ColumnEnumValueInfo,
+    DirectIngestRawFileConfig,
+    RawDataClassification,
+    RawDataFileUpdateCadence,
+)
 from recidiviz.ingest.direct.raw_data.validations.known_values_column_validation import (
     KnownValuesColumnValidation,
 )
@@ -93,14 +99,34 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
     def test_known_values_column_validation_applies_to_column(self) -> None:
         known_values_column = self.happy_col
         non_known_values_column = attr.evolve(self.happy_col, known_values=None)
+        raw_file_config = DirectIngestRawFileConfig(
+            state_code=StateCode.US_XX,
+            file_tag="myFile",
+            file_path="/path/to/myFile.yaml",
+            file_description="This is a raw data file",
+            data_classification=RawDataClassification.SOURCE,
+            columns=[],
+            custom_line_terminator=None,
+            primary_key_cols=[],
+            supplemental_order_by_clause="",
+            encoding="UTF-8",
+            separator=",",
+            ignore_quotes=True,
+            always_historical_export=True,
+            no_valid_primary_keys=False,
+            import_chunk_size_rows=10,
+            infer_columns_from_config=False,
+            table_relationships=[],
+            update_cadence=RawDataFileUpdateCadence.WEEKLY,
+        )
 
         self.assertTrue(
             KnownValuesColumnValidation.validation_applies_to_column(
-                known_values_column
+                known_values_column, raw_file_config
             )
         )
         self.assertFalse(
             KnownValuesColumnValidation.validation_applies_to_column(
-                non_known_values_column
+                non_known_values_column, raw_file_config
             )
         )

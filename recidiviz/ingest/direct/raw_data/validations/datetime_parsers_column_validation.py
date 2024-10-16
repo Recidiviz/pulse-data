@@ -21,7 +21,10 @@ from typing import Any, Dict, List
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.ingest.direct.raw_data.raw_file_configs import RawTableColumnInfo
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
+    RawTableColumnInfo,
+)
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataColumnImportBlockingValidation,
     RawDataImportBlockingValidationFailure,
@@ -76,7 +79,10 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
         return RawDataImportBlockingValidationType.DATETIME_PARSERS
 
     @staticmethod
-    def validation_applies_to_column(column: RawTableColumnInfo) -> bool:
+    def validation_applies_to_column(
+        column: RawTableColumnInfo,
+        _raw_file_config: DirectIngestRawFileConfig,
+    ) -> bool:
         return column.datetime_sql_parsers is not None
 
     def build_query(self) -> str:

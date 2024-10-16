@@ -109,7 +109,10 @@ class RawDataColumnImportBlockingValidation(RawDataImportBlockingValidation):
 
     @staticmethod
     @abc.abstractmethod
-    def validation_applies_to_column(column: RawTableColumnInfo) -> bool:
+    def validation_applies_to_column(
+        column: RawTableColumnInfo,
+        raw_file_config: DirectIngestRawFileConfig,
+    ) -> bool:
         """Implemented by subclasses to determine if the validation applies to the given column"""
 
 

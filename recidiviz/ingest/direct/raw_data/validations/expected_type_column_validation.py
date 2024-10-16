@@ -23,6 +23,7 @@ from google.cloud.bigquery.enums import StandardSqlTypeNames as BigQueryFieldTyp
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
@@ -81,7 +82,10 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
         return RawDataImportBlockingValidationType.EXPECTED_TYPE
 
     @staticmethod
-    def validation_applies_to_column(column: RawTableColumnInfo) -> bool:
+    def validation_applies_to_column(
+        column: RawTableColumnInfo,
+        _raw_file_config: DirectIngestRawFileConfig,
+    ) -> bool:
         return (
             COLUMN_TYPE_TO_BIG_QUERY_TYPE.get(column.field_type)
             != BigQueryFieldType.STRING
