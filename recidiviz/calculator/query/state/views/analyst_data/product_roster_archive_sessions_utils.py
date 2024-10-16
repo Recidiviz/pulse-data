@@ -71,7 +71,7 @@ def get_primary_user_registration_sessions_view_builder(
 
     product_name_str = product_name.lower()
     first_validated_roster_date_str = first_validated_roster_date.strftime("%Y-%m-%d")
-    role_types = list(set().union(*role_types_by_system_type_dict.values()))
+    role_types = sorted(set().union(*role_types_by_system_type_dict.values()))
 
     view_name = f"{product_name.lower()}_primary_user_registration_sessions"
 
