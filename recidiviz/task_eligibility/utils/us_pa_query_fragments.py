@@ -116,3 +116,29 @@ def supervision_legal_authority_sessions_excluding_general_incarceration() -> st
                                                 session_id_output_name='super_session_id',
                                                 end_date_field_name='end_date_exclusive')})                                                                                    
     """
+
+
+def statute_is_conspiracy_or_attempt() -> str:
+    return """(statute LIKE '%C0901%' -- criminal attempt
+              OR statute LIKE '%C0903%' -- criminal conspiracy
+              OR statute LIKE '%18.901%'
+              OR statute LIKE '%18.903%'
+              OR statute LIKE '0901%' 
+              OR statute LIKE '0903%' 
+              OR statute LIKE '18901%' 
+              OR statute LIKE '18903%'               
+              OR statute LIKE '%CC901%' 
+              OR statute LIKE '%CC903%'    
+              OR statute LIKE '%CS0901%' 
+              OR statute LIKE '%CS0903%') 
+              """
+
+
+def description_refers_to_assault() -> str:
+    return """(description LIKE '%ASLT%'
+                OR description LIKE '%AS\\'LT%'
+                OR description LIKE '%ALST%'
+                OR description LIKE '%ASSAU%'
+                OR description LIKE '%ASSLT%'
+                OR description LIKE '%ASS\\'LT%'
+                OR description LIKE 'ASS%')"""

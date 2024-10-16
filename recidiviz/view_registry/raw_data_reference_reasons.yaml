@@ -1273,20 +1273,12 @@ US_PA:
   RECIDIVIZ_REFERENCE_locations_from_supervision_contacts:
     reference_views.us_pa_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  RECIDIVIZ_REFERENCE_pbpp_offense_code_descriptions:
-    task_eligibility_criteria_us_pa.not_serving_ineligible_offense_for_admin_supervision:
-      |-
-      We do not ingest transfer data historically.
   RECIDIVIZ_REFERENCE_supervision_location_ids:
     reference_views.us_pa_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   dbo_RelStatus:
     task_eligibility_criteria_us_pa.not_assigned_ineligible_stat_code: |-
       Some status codes do not fit within our existing mapping
-  dbo_ReleaseInfo:
-    task_eligibility_criteria_us_pa.not_serving_ineligible_offense_for_admin_supervision:
-      |-
-      We do not ingest transfer data historically.
   dbo_Senrec:
     analyst_data.projected_discharges: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

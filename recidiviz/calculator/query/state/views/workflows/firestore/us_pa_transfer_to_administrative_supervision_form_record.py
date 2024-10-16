@@ -51,17 +51,51 @@ WITH
   form_information AS (
     SELECT person_id,
         LOGICAL_OR(offense_type = 'DRUGS' 
-            OR (description LIKE '%DRUG%' AND offense_type IS NULL)
-            OR (description LIKE '%MARIJUANA%' AND offense_type IS NULL)
-            OR (description LIKE '%MARA%' AND offense_type IS NULL)
-            OR (description LIKE '%COCAINE%' AND offense_type IS NULL)
-            OR (description LIKE '%HALLUCINOGEN%' AND offense_type IS NULL)
-            ) AS form_information_drug_charge,
-        LOGICAL_OR(statute LIKE '%CS13A14%' 
-            OR description LIKE '%ADMINISTER/DISPENSE/DELIVERY BY PRACTITIONER%') AS form_information_statue_14,
-        LOGICAL_OR(statute LIKE '%CS13A30%' 
-            OR description LIKE '%MANUFACTURE/SALE/DELIVER OR POSSESS W/INTENT TO%') AS form_information_statue_30,
-        LOGICAL_OR(statute LIKE '%CS13A37%' 
+            OR(offense_type IS NULL
+                AND (description LIKE '%DRUG%'
+                    OR description LIKE '%DRG%'
+                    OR description LIKE '%MARIJUANA%'
+                    OR description LIKE '%MARA%'
+                    OR description LIKE '%METH%'
+                    OR description LIKE '%COCAINE%'
+                    OR description LIKE '%HALLUCINOGEN%'
+                    OR description LIKE '%NARC%'
+                    OR description LIKE '%VCS%' -- violation of controlled substances act 
+                    OR description LIKE '%CSA%'
+                    OR (description LIKE '%CONT%' AND description LIKE '%SUB%' AND description NOT LIKE '%ALC%') 
+                    OR ((description LIKE '%CS%' OR description LIKE '%C/S%') 
+                        AND (description LIKE '%DEL%' OR description LIKE '%POS%' OR description LIKE '%MNF%' 
+                            OR description LIKE '%MANU%' OR description like '%PWI%') -- deliver, possess, manufacture, possess with intent
+                        AND description NOT LIKE '%ALC%')))
+                        -- cs can mean criminal solicitation or controlled substances so trying to narrow it down a bit 
+            ) AS form_information_drug_charge_initial,
+            
+        -- 35 P.S. 780-113 (14) - administration/dispensary/delivery of drugs by practitioner
+        LOGICAL_OR((statute LIKE '%13A14%'
+                OR statute LIKE '%13.A14%')
+            OR (description LIKE '%DRUG%' 
+                AND description LIKE '%ADMIN%' 
+                AND description LIKE '%DISP%' 
+                AND description LIKE '%DEL%' 
+                AND description LIKE '%PRAC%')) AS form_information_statue_14,
+                
+        -- 35 P.S. 780-113 (30) - manufacture, sale, delivery, or possession with intent to deliver 
+        LOGICAL_OR((statute LIKE '%13A30%' 
+                OR statute LIKE '%13.A30%')
+            OR (((description LIKE '%POSS%' AND description LIKE '%INT%' AND description LIKE '%DEL%')
+                    OR description LIKE '%PWI%'
+                    OR description LIKE '%P/W/I%'
+                    OR REGEXP_REPLACE(description, r'[^a-zA-Z0-9]', '') like '%POSSWITHINT%'
+                    OR REGEXP_REPLACE(description, r'[^a-zA-Z0-9]', '') like '%POSSWINT%' 
+                    OR (description LIKE '%MAN%' AND description LIKE '%SAL%' AND description LIKE '%DEL%')
+                    OR description LIKE '%MSD%'
+                    OR description LIKE '%M/S/D%')
+                AND (description NOT LIKE '%PAR%' -- doesn't include paraphernalia 
+                    AND description NOT LIKE '%NON%'))) AS form_information_statue_30, -- doesn't include non-controlled substances
+        
+        -- 35 P.S. 780-113 (37) - possessing excessive amounts of steroids
+        LOGICAL_OR((statute LIKE '%13A37%'
+                OR statute LIKE '%13.A37%')
             OR description LIKE '%POSSESS EXCESSIVE AMOUNTS OF STERIODS%') AS form_information_statue_37, 
             -- steroids is misspelled in the data
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_charge`
@@ -70,7 +104,9 @@ WITH
   )
   SELECT
     eligible_and_almost_eligible.* EXCEPT(is_almost_eligible),
-    form_information.* EXCEPT(person_id),
+    form_information.* EXCEPT(person_id, form_information_drug_charge_initial),
+    (form_information_drug_charge_initial OR form_information_statue_14 OR form_information_statue_30 OR form_information_statue_37)
+        AS form_information_drug_charge, -- make sure that if sub-section is checked, drug charge box is checked 
   FROM eligible_and_almost_eligible
   LEFT JOIN form_information
     ON eligible_and_almost_eligible.person_id = form_information.person_id 
