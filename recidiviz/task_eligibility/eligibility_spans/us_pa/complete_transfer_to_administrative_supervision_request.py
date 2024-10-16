@@ -28,10 +28,12 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_pa import (
 from recidiviz.task_eligibility.criteria.general import (
     on_parole_at_least_one_year,
     supervision_level_is_not_limited,
+    supervision_past_full_term_completion_date_or_upcoming_90_days,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_pa import (
     fulfilled_requirements,
     no_high_sanctions_in_past_year,
+    not_assigned_ineligible_stat_code,
     not_on_sex_offense_protocol,
     not_serving_ineligible_offense_for_admin_supervision,
 )
@@ -39,12 +41,19 @@ from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaC
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """Shows the spans of time during which
 someone in PA is eligible for transfer to administrative supervision.
 """
+
+not_supervision_past_full_term_completion_date_or_upcoming_90_days_view_builder = InvertedTaskCriteriaBigQueryViewBuilder(
+    sub_criteria=supervision_past_full_term_completion_date_or_upcoming_90_days.VIEW_BUILDER,
+)
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_PA,
@@ -58,6 +67,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         fulfilled_requirements.VIEW_BUILDER,
         not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
         not_on_sex_offense_protocol.VIEW_BUILDER,
+        not_assigned_ineligible_stat_code.VIEW_BUILDER,
+        not_supervision_past_full_term_completion_date_or_upcoming_90_days_view_builder,
     ],
     completion_event_builder=transfer_to_administrative_supervision.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(

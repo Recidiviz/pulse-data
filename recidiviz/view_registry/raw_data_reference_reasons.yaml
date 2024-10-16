@@ -1280,6 +1280,9 @@ US_PA:
   RECIDIVIZ_REFERENCE_supervision_location_ids:
     reference_views.us_pa_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  dbo_RelStatus:
+    task_eligibility_criteria_us_pa.not_assigned_ineligible_stat_code: |-
+      Some status codes do not fit within our existing mapping
   dbo_ReleaseInfo:
     task_eligibility_criteria_us_pa.not_serving_ineligible_offense_for_admin_supervision:
       |-
