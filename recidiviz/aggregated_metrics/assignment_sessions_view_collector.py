@@ -195,6 +195,35 @@ def _get_supervision_officer_population_selector(
             return None
 
 
+def _get_workflows_surfaceable_caseload_population_selector(
+    population_type: MetricPopulationType,
+) -> SpanSelector | None:
+    """Returns the population SpanSelector for the
+    MetricUnitOfObservationType.SUPERVISION_OFFICER population of the given population
+    type.
+    """
+    match population_type:
+        case MetricPopulationType.CUSTOM:
+            raise ValueError(
+                "Cannot get standard population selector for CUSTOM population type."
+            )
+        case MetricPopulationType.INCARCERATION:
+            return SpanSelector(
+                span_type=SpanType.WORKFLOWS_SURFACEABLE_CASELOAD_SESSION,
+                span_conditions_dict={"system_type": ["INCARCERATION"]},
+            )
+        case MetricPopulationType.SUPERVISION:
+            return SpanSelector(
+                span_type=SpanType.WORKFLOWS_SURFACEABLE_CASELOAD_SESSION,
+                span_conditions_dict={"system_type": ["SUPERVISION"]},
+            )
+        case MetricPopulationType.JUSTICE_INVOLVED:
+            return SpanSelector(
+                span_type=SpanType.WORKFLOWS_SURFACEABLE_CASELOAD_SESSION,
+                span_conditions_dict={},
+            )
+
+
 def get_standard_population_selector_for_unit_of_observation(
     population_type: MetricPopulationType,
     unit_of_observation_type: MetricUnitOfObservationType,
@@ -209,6 +238,10 @@ def get_standard_population_selector_for_unit_of_observation(
             return _get_workflows_user_population_selector(population_type)
         case MetricUnitOfObservationType.SUPERVISION_OFFICER:
             return _get_supervision_officer_population_selector(population_type)
+        case MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD:
+            return _get_workflows_surfaceable_caseload_population_selector(
+                population_type
+            )
 
 
 def collect_assignment_sessions_view_builders() -> list[SimpleBigQueryViewBuilder]:

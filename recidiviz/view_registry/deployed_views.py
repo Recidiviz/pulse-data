@@ -134,6 +134,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "observations__officer_span",
     "observations__person_event",
     "observations__person_span",
+    "observations__workflows_surfaceable_caseload_span",
     "observations__workflows_user_event",
     "observations__workflows_user_span",
     "sessions",
