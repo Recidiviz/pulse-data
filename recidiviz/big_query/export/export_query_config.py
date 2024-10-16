@@ -140,6 +140,11 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
     # accepts the form of { "column": { "SEARCH_VALUE": "REPLACE_VALUE" } }
     remap_columns: Dict[str, Dict[Any, Any]] = attr.ib(factory=dict)
 
+    # If set to True, the wildcard character '*' will be included in the URI path,
+    # which will allow the exporter to split the export into multiple files if the
+    # total export size would exceed 1 GB
+    include_wildcard_in_uri: bool = attr.ib(default=False)
+
     @export_output_formats_and_validations.default
     def _default_export_output_formats_and_validations(
         self,
@@ -195,12 +200,20 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
         else:
             raise ValueError(f"Unexpected destination format: [{output_format}].")
 
+        output_path = self.output_path(extension=extension)
+
+        output_uri = (
+            output_path.uri_sharded()
+            if self.include_wildcard_in_uri
+            else output_path.uri()
+        )
+
         return ExportQueryConfig(
             query=self.query,
             query_parameters=[],
             intermediate_dataset_id=self.view.dataset_id,
             intermediate_table_name=self.intermediate_table_name,
-            output_uri=self.output_path(extension=extension).uri(),
+            output_uri=output_uri,
             output_format=output_format,
         )
 

@@ -66,7 +66,7 @@ class WithMetadataQueryBigQueryViewExporter(BigQueryViewExporter):
         export_configs: Sequence[
             ExportBigQueryViewConfig[WithMetadataQueryBigQueryView]
         ],
-    ) -> List[Tuple[ExportBigQueryViewConfig, GcsfsFilePath]]:
+    ) -> List[Tuple[ExportBigQueryViewConfig, List[GcsfsFilePath]]]:
         # TODO(#14474): allow delegates that aren't HEADERLESS_CSV
         csv_configs = [
             attr.evolve(
@@ -86,7 +86,7 @@ class WithMetadataQueryBigQueryViewExporter(BigQueryViewExporter):
         configs_and_destinations = csv_exporter.export(csv_configs)
 
         # Query for metadata
-        for config, destination in configs_and_destinations:
+        for config, destinations in configs_and_destinations:
             metadata_query = self._build_metadata_query(config)
             logging.info("Running metadata query for view %s:", config.view.view_id)
             query_job = self.bq_client.run_query_async(
@@ -100,7 +100,8 @@ class WithMetadataQueryBigQueryViewExporter(BigQueryViewExporter):
                 )
 
             if results:
-                gcsfs_client.update_metadata(destination, results[0])
+                for destination in destinations:
+                    gcsfs_client.update_metadata(destination, results[0])
 
         return configs_and_destinations
 

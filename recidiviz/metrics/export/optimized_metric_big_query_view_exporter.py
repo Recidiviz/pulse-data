@@ -88,7 +88,7 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
 
     def export(
         self, export_configs: Sequence[ExportBigQueryViewConfig[MetricBigQueryView]]
-    ) -> List[Tuple[ExportBigQueryViewConfig[MetricBigQueryView], GcsfsFilePath]]:
+    ) -> List[Tuple[ExportBigQueryViewConfig[MetricBigQueryView], List[GcsfsFilePath]]]:
         storage_client = storage.Client()
         output_paths = []
         with futures.ThreadPoolExecutor(
@@ -113,7 +113,8 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
                         config.view.view_id,
                     )
                     raise e
-                output_paths.append((config, output_path))
+                # We only support one output path per view, but the output type requires a list, so just wrap it one
+                output_paths.append((config, [output_path]))
 
         return output_paths
 

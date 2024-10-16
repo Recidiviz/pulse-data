@@ -527,11 +527,16 @@ class BigQueryClientImplTest(unittest.TestCase):
         bucket = self.mock_project_id + "-bucket"
         query_job: futures.Future = futures.Future()
         query_job.set_result([])
-        extract_job: futures.Future = futures.Future()
-        extract_job.set_result(None)
+        extract_job = mock.MagicMock(futures.Future)
+        extract_job.result.return_value = None
+        extract_job.destination_uris = [
+            "gs://bucket/export-uri",
+            "gs://bucket/export-uri-with-wildcard-*",
+        ]
+        extract_job.destination_uri_file_counts = [1, 5]
         self.mock_client.query.return_value = query_job
         self.mock_client.extract_table.return_value = extract_job
-        self.bq_client.export_query_results_to_cloud_storage(
+        results = self.bq_client.export_query_results_to_cloud_storage(
             export_configs=[
                 ExportQueryConfig.from_view_query(
                     view=self.mock_view,
@@ -546,6 +551,69 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
         self.mock_client.query.assert_called()
         self.mock_client.extract_table.assert_called()
+        self.mock_client.delete_table.assert_called_with(
+            bigquery.DatasetReference(
+                self.mock_project_id, self.mock_view.dataset_id
+            ).table(self.mock_table_id),
+            not_found_ok=True,
+        )
+
+        self.assertEqual(len(results), 1)
+
+        destinations = results[0][1]
+        self.assertEqual(len(destinations), 6)
+        outputted_uris = [destination.uri() for destination in destinations]
+        self.assertEqual(
+            outputted_uris,
+            [
+                "gs://bucket/export-uri",
+                "gs://bucket/export-uri-with-wildcard-000000000000",
+                "gs://bucket/export-uri-with-wildcard-000000000001",
+                "gs://bucket/export-uri-with-wildcard-000000000002",
+                "gs://bucket/export-uri-with-wildcard-000000000003",
+                "gs://bucket/export-uri-with-wildcard-000000000004",
+            ],
+        )
+
+    def test_export_query_results_to_cloud_storage_multiple_files_for_non_wildcard(
+        self,
+    ) -> None:
+        """export_query_results_to_cloud_storage creates the table from the view query and
+        exports the table."""
+        bucket = self.mock_project_id + "-bucket"
+        query_job: futures.Future = futures.Future()
+        query_job.set_result([])
+        extract_job = mock.MagicMock(futures.Future)
+        extract_job.result.return_value = None
+        extract_job.destination_uris = [
+            "gs://bucket/export-uri",
+        ]
+        # It shouldn't be possible to have multiple files for a non-wildcard uri, but we should handle it gracefully
+        extract_job.destination_uri_file_counts = [5]
+        self.mock_client.query.return_value = query_job
+        self.mock_client.extract_table.return_value = extract_job
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Expected a wildcard in the destination uri",
+        ):
+            self.bq_client.export_query_results_to_cloud_storage(
+                export_configs=[
+                    ExportQueryConfig.from_view_query(
+                        view=self.mock_view,
+                        view_filter_clause="WHERE x = y",
+                        intermediate_table_name=self.mock_table_id,
+                        output_uri=f"gs://{bucket}/view.json",
+                        output_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON,
+                    )
+                ],
+                print_header=True,
+                use_query_cache=False,
+            )
+        self.mock_client.query.assert_called()
+        self.mock_client.extract_table.assert_called()
+
+        # Tests that we still do cleanup even though the extract failed.
         self.mock_client.delete_table.assert_called_with(
             bigquery.DatasetReference(
                 self.mock_project_id, self.mock_view.dataset_id

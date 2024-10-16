@@ -18,6 +18,7 @@
 import unittest
 
 import mock
+from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -34,7 +35,7 @@ from recidiviz.big_query.export.export_query_config import (
     ExportOutputFormatType,
     ExportValidationType,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 
 
 class BigQueryViewExporterTest(unittest.TestCase):
@@ -100,6 +101,11 @@ class BigQueryViewExporterTest(unittest.TestCase):
         self.metadata_patcher.stop()
 
     def test_csv_export_format(self) -> None:
+        file_paths = [
+            [GcsfsFilePath.from_absolute_path("gs://bucket/export-1.csv")],
+            [GcsfsFilePath.from_absolute_path("gs://bucket/export-2.csv")],
+        ]
+
         exporter = CSVBigQueryViewExporter(self.mock_bq_client, self.mock_validator)
         view_export_configs = [
             ExportBigQueryViewConfig(
@@ -134,15 +140,24 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 },
             ),
         ]
+
+        export_query_configs = [
+            config.as_export_query_config(output_format=bigquery.DestinationFormat.CSV)
+            for config in view_export_configs
+        ]
+        self.mock_bq_client.export_query_results_to_cloud_storage.return_value = zip(
+            export_query_configs, file_paths
+        )
+
         export_config_and_paths = exporter.export(view_export_configs)
 
         self.assertEqual(len(export_config_and_paths), len(view_export_configs))
 
-        for _export_config, gcs_path in export_config_and_paths:
-            self.assertTrue(
-                gcs_path.file_name.endswith(".csv"),
-                msg=f"GCS output file {gcs_path.abs_path()} is not a CSV as expected.",
-            )
+        exported_paths = [
+            gcs_paths for _export_config, gcs_paths in export_config_and_paths
+        ]
+
+        self.assertEqual(exported_paths, file_paths)
 
     def test_csv_throws(self) -> None:
         exporter = CSVBigQueryViewExporter(self.mock_bq_client, self.mock_validator)
@@ -176,6 +191,19 @@ class BigQueryViewExporterTest(unittest.TestCase):
             exporter.export(view_export_configs)
 
     def test_headerless_csv_export_format(self) -> None:
+        file_paths = [
+            [GcsfsFilePath.from_absolute_path("gs://bucket/export-1.csv")],
+            [GcsfsFilePath.from_absolute_path("gs://bucket/export-2.csv")],
+        ]
+
+        export_query_configs = [
+            config.as_export_query_config(output_format=bigquery.DestinationFormat.CSV)
+            for config in self.view_export_configs
+        ]
+        self.mock_bq_client.export_query_results_to_cloud_storage.return_value = zip(
+            export_query_configs, file_paths
+        )
+
         exporter = HeaderlessCSVBigQueryViewExporter(
             self.mock_bq_client, self.mock_validator
         )
@@ -183,11 +211,11 @@ class BigQueryViewExporterTest(unittest.TestCase):
 
         self.assertEqual(len(export_config_and_paths), len(self.view_export_configs))
 
-        for _export_config, gcs_path in export_config_and_paths:
-            self.assertTrue(
-                gcs_path.file_name.endswith(".csv"),
-                msg=f"GCS output file {gcs_path.abs_path()} is not a CSV as expected.",
-            )
+        exported_paths = [
+            gcs_paths for _export_config, gcs_paths in export_config_and_paths
+        ]
+
+        self.assertEqual(exported_paths, file_paths)
 
     def test_headerless_csv_throws(self) -> None:
         exporter = HeaderlessCSVBigQueryViewExporter(
@@ -223,6 +251,21 @@ class BigQueryViewExporterTest(unittest.TestCase):
             exporter.export(view_export_configs)
 
     def test_json_export_format(self) -> None:
+        file_paths = [
+            [GcsfsFilePath.from_absolute_path("gs://bucket/export-1.json")],
+            [GcsfsFilePath.from_absolute_path("gs://bucket/export-2.json")],
+        ]
+
+        export_query_configs = [
+            config.as_export_query_config(
+                output_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
+            )
+            for config in self.view_export_configs
+        ]
+        self.mock_bq_client.export_query_results_to_cloud_storage.return_value = zip(
+            export_query_configs, file_paths
+        )
+
         exporter = JsonLinesBigQueryViewExporter(
             self.mock_bq_client, self.mock_validator
         )
@@ -230,11 +273,11 @@ class BigQueryViewExporterTest(unittest.TestCase):
 
         self.assertEqual(len(export_config_and_paths), len(self.view_export_configs))
 
-        for _export_config, gcs_path in export_config_and_paths:
-            self.assertTrue(
-                gcs_path.file_name.endswith(".json"),
-                msg=f"GCS output file {gcs_path.abs_path()} is not a .json file as expected.",
-            )
+        exported_paths = [
+            gcs_paths for _export_config, gcs_paths in export_config_and_paths
+        ]
+
+        self.assertEqual(exported_paths, file_paths)
 
     def test_json_throws(self) -> None:
         exporter = JsonLinesBigQueryViewExporter(

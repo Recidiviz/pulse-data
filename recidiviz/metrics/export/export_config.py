@@ -97,6 +97,11 @@ class ExportViewCollectionConfig:
 
     export_override_state_codes: Dict[str, str] = attr.ib(factory=dict)
 
+    # If set to True, the wildcard character '*' will be included in the URI path,
+    # which will allow the exporter to split the export into multiple files if the
+    # total export size would exceed 1 GB
+    include_wildcard_in_uri: bool = attr.ib(default=False)
+
     @property
     def output_directory(self) -> GcsfsDirectoryPath:
         output_directory_uri = StrictStringFormatter().format(
@@ -173,6 +178,7 @@ class ExportViewCollectionConfig:
                         view_id=view.view_id,
                     ),
                     output_directory=output_directory,
+                    include_wildcard_in_uri=self.include_wildcard_in_uri,
                     remap_columns=remap_columns,
                     allow_empty=self.allow_empty,
                     **optional_args,
