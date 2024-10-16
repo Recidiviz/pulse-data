@@ -18,6 +18,7 @@
 import datetime
 import enum
 import logging
+import os
 import string
 from enum import Enum
 from typing import Any, Dict, List, Optional, Type
@@ -29,6 +30,7 @@ from sqlalchemy import Column
 from sqlalchemy.dialects import postgresql
 
 from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.attr_utils import (
     is_bool,
     is_date,
@@ -50,6 +52,9 @@ from recidiviz.utils.encoding import to_python_standard
 
 # Maximum value of an integer stored in BigQuery
 MAX_BQ_INT = (2**63) - 1
+
+# When exporting files to GCS using a wildcard export, the number of digits appended to the filename is fixed
+WILDCARD_EXPORT_NUM_DIGITS = 12
 
 
 class BigQueryDateInterval(enum.Enum):
@@ -289,3 +294,31 @@ def bq_query_job_result_to_list_of_row_dicts(
     row_tuples: List[Dict[str, Any]] = [row.items() for row in rows]
 
     return [dict(item) for item in row_tuples]
+
+
+def get_file_destinations_for_bq_export(
+    destination_uri: str, file_count: int
+) -> List[GcsfsFilePath]:
+    """Given a destination uri and the number of files that were exported, returns a list of GcsfsFilePaths."""
+    # If there isn't a wildcard in the destination uri, then just return the uri
+    if "*" not in destination_uri:
+        if file_count > 1:
+            raise ValueError(
+                f"Expected a wildcard in the destination uri [{destination_uri}] "
+                f"since there are multiple files to export"
+            )
+
+        return [GcsfsFilePath.from_absolute_path(destination_uri)]
+
+    # If the file path contains a wildcard, get the exact filename
+    # for the file with the provided index
+    def get_file_name(i: int, file_name_no_ext: str, ext: str) -> str:
+        formatted_number = str(i).zfill(WILDCARD_EXPORT_NUM_DIGITS)
+        return f"{file_name_no_ext.replace('*', formatted_number)}{ext}"
+
+    file_name_no_ext, ext = os.path.splitext(destination_uri)
+
+    return [
+        GcsfsFilePath.from_absolute_path(get_file_name(i, file_name_no_ext, ext))
+        for i in range(file_count)
+    ]

@@ -23,7 +23,6 @@ This can be run on-demand whenever locally with the following command:
     python -m recidiviz.tools.export_metrics_from_dataset_to_gcs \
         --project_id [PROJECT_ID] \
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] (optional)\
-        --destination_bucket [GCS_BUCKET_PATH] \
         --export_name [LANTERN/CORE/etc], \
         --state_code [US_PA/US_MO/etc] (optional), \
 """

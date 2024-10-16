@@ -51,7 +51,7 @@ class BigQueryViewExporter:
     @abc.abstractmethod
     def export(
         self, export_configs: Sequence[ExportBigQueryViewConfig]
-    ) -> List[Tuple[ExportBigQueryViewConfig, GcsfsFilePath]]:
+    ) -> List[Tuple[ExportBigQueryViewConfig, List[GcsfsFilePath]]]:
         """Exports the results of each of the given query configurations.
 
         Returns a list of tuples containing the provided config and its final export path.
@@ -62,7 +62,6 @@ class BigQueryViewExporter:
     def export_and_validate(
         self,
         export_configs: Sequence[ExportBigQueryViewConfig],
-        assert_path_total: bool = False,
     ) -> List[GcsfsFilePath]:
         """Exports the results of each of the given query configurations.
 
@@ -73,25 +72,16 @@ class BigQueryViewExporter:
 
         exported_configs_and_paths = self.export(export_configs)
 
-        expected_num_output_paths = len(export_configs)
-        num_unique_output_paths = len(
-            set(path for _, path in exported_configs_and_paths)
-        )
-
-        if assert_path_total and num_unique_output_paths != expected_num_output_paths:
-            raise ValueError(
-                f"Expected [{expected_num_output_paths}] output paths, found [{num_unique_output_paths}]"
-            )
-
         exported_paths = []
-        for config, output_path in exported_configs_and_paths:
-            for validator in self.validators:
-                if not validator.validate(output_path, config.allow_empty):
-                    raise ViewExportValidationError(
-                        f"Validation on path {output_path.abs_path()} failed on validator {validator}. "
-                        f"Stopping execution here without completing the export."
-                    )
-            exported_paths.append(output_path)
+        for config, output_paths in exported_configs_and_paths:
+            for output_path in output_paths:
+                for validator in self.validators:
+                    if not validator.validate(output_path, config.allow_empty):
+                        raise ViewExportValidationError(
+                            f"Validation on path {output_path.abs_path()} failed on validator {validator}. "
+                            f"Stopping execution here without completing the export."
+                        )
+                exported_paths.append(output_path)
 
         return exported_paths
 
@@ -104,7 +94,7 @@ class JsonLinesBigQueryViewExporter(BigQueryViewExporter):
 
     def export(
         self, export_configs: Sequence[ExportBigQueryViewConfig]
-    ) -> List[Tuple[ExportBigQueryViewConfig, GcsfsFilePath]]:
+    ) -> List[Tuple[ExportBigQueryViewConfig, List[GcsfsFilePath]]]:
         for config in export_configs:
             if (
                 ExportOutputFormatType.JSON
@@ -114,24 +104,35 @@ class JsonLinesBigQueryViewExporter(BigQueryViewExporter):
                     "JsonLinesBigQueryViewExporter received config that does not export to JSON"
                 )
 
-        export_query_configs = [
-            c.as_export_query_config(bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON)
+        export_query_configs_and_export_configs = [
+            (
+                c.as_export_query_config(
+                    bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
+                ),
+                c,
+            )
             for c in export_configs
         ]
-        self.bq_client.export_query_results_to_cloud_storage(
-            export_configs=export_query_configs,
-            print_header=True,
-            use_query_cache=True,
+        export_query_configs = [
+            export_query_config
+            for export_query_config, _export_config in export_query_configs_and_export_configs
+        ]
+        exported_configs_and_paths = (
+            self.bq_client.export_query_results_to_cloud_storage(
+                export_configs=export_query_configs,
+                print_header=True,
+                use_query_cache=True,
+            )
         )
 
+        export_configs_by_query_config_query = {
+            export_query_config.query: export_config
+            for export_query_config, export_config in export_query_configs_and_export_configs
+        }
+
         return [
-            (
-                export_config,
-                GcsfsFilePath.from_absolute_path(export_query_config.output_uri),
-            )
-            for export_config, export_query_config in zip(
-                export_configs, export_query_configs
-            )
+            (export_configs_by_query_config_query[config.query], paths)
+            for config, paths in exported_configs_and_paths
         ]
 
 
@@ -143,7 +144,7 @@ class CSVBigQueryViewExporter(BigQueryViewExporter):
 
     def export(
         self, export_configs: Sequence[ExportBigQueryViewConfig]
-    ) -> List[Tuple[ExportBigQueryViewConfig, GcsfsFilePath]]:
+    ) -> List[Tuple[ExportBigQueryViewConfig, List[GcsfsFilePath]]]:
         for config in export_configs:
             export_output_formats = config.export_output_formats_and_validations.keys()
             if ExportOutputFormatType.CSV not in export_output_formats:
@@ -151,25 +152,35 @@ class CSVBigQueryViewExporter(BigQueryViewExporter):
                     "CSVBigQueryViewExporter received config that does not export to CSV"
                 )
 
-        export_query_configs = [
-            c.as_export_query_config(bigquery.DestinationFormat.CSV)
+        export_query_configs_and_export_configs = [
+            (
+                c.as_export_query_config(
+                    bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
+                ),
+                c,
+            )
             for c in export_configs
         ]
-
-        self.bq_client.export_query_results_to_cloud_storage(
-            export_configs=export_query_configs,
-            print_header=True,
-            use_query_cache=True,
+        export_query_configs = [
+            export_query_config
+            for export_query_config, _export_config in export_query_configs_and_export_configs
+        ]
+        exported_configs_and_paths = (
+            self.bq_client.export_query_results_to_cloud_storage(
+                export_configs=export_query_configs,
+                print_header=True,
+                use_query_cache=True,
+            )
         )
 
+        export_configs_by_query_config_query = {
+            export_query_config.query: export_config
+            for export_query_config, export_config in export_query_configs_and_export_configs
+        }
+
         return [
-            (
-                export_config,
-                GcsfsFilePath.from_absolute_path(export_query_config.output_uri),
-            )
-            for export_config, export_query_config in zip(
-                export_configs, export_query_configs
-            )
+            (export_configs_by_query_config_query[config.query], paths)
+            for config, paths in exported_configs_and_paths
         ]
 
 
@@ -181,7 +192,7 @@ class HeaderlessCSVBigQueryViewExporter(BigQueryViewExporter):
 
     def export(
         self, export_configs: Sequence[ExportBigQueryViewConfig]
-    ) -> List[Tuple[ExportBigQueryViewConfig, GcsfsFilePath]]:
+    ) -> List[Tuple[ExportBigQueryViewConfig, List[GcsfsFilePath]]]:
         for config in export_configs:
             export_output_formats = config.export_output_formats_and_validations.keys()
             if ExportOutputFormatType.HEADERLESS_CSV not in export_output_formats:
@@ -189,23 +200,33 @@ class HeaderlessCSVBigQueryViewExporter(BigQueryViewExporter):
                     "HeaderlessCSVBigQueryViewExporter received config that does not export to Headerless CSV"
                 )
 
-        export_query_configs = [
-            c.as_export_query_config(bigquery.DestinationFormat.CSV)
+        export_query_configs_and_export_configs = [
+            (
+                c.as_export_query_config(
+                    bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
+                ),
+                c,
+            )
             for c in export_configs
         ]
-
-        self.bq_client.export_query_results_to_cloud_storage(
-            export_configs=export_query_configs,
-            print_header=False,
-            use_query_cache=True,
+        export_query_configs = [
+            export_query_config
+            for export_query_config, _export_config in export_query_configs_and_export_configs
+        ]
+        exported_configs_and_paths = (
+            self.bq_client.export_query_results_to_cloud_storage(
+                export_configs=export_query_configs,
+                print_header=True,
+                use_query_cache=True,
+            )
         )
 
+        export_configs_by_query_config_query = {
+            export_query_config.query: export_config
+            for export_query_config, export_config in export_query_configs_and_export_configs
+        }
+
         return [
-            (
-                export_config,
-                GcsfsFilePath.from_absolute_path(export_query_config.output_uri),
-            )
-            for export_config, export_query_config in zip(
-                export_configs, export_query_configs
-            )
+            (export_configs_by_query_config_query[config.query], paths)
+            for config, paths in exported_configs_and_paths
         ]

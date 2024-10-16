@@ -61,9 +61,11 @@ from google.protobuf import timestamp_pb2
 from more_itertools import one, peekable
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_utils import get_file_destinations_for_bq_export
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.retry_predicate import ssl_error_retry_predicate
 from recidiviz.ingest.direct.dataset_config import (
@@ -448,7 +450,7 @@ class BigQueryClient:
         export_configs: List[ExportQueryConfig],
         print_header: bool,
         use_query_cache: bool,
-    ) -> None:
+    ) -> list[tuple[ExportQueryConfig, list[GcsfsFilePath]]]:
         """Exports the queries to cloud storage according to the given configs.
 
         This is a three-step process. First, each query is executed and the entire result is loaded into a temporary
@@ -1407,7 +1409,11 @@ class BigQueryClientImpl(BigQueryClient):
         export_configs: List[ExportQueryConfig],
         print_header: bool,
         use_query_cache: bool,
-    ) -> None:
+    ) -> list[tuple[ExportQueryConfig, list[GcsfsFilePath]]]:
+        exported_configs_and_paths: list[
+            tuple[ExportQueryConfig, list[GcsfsFilePath]]
+        ] = []
+
         try:
             query_jobs = []
             for export_config in export_configs:
@@ -1427,7 +1433,7 @@ class BigQueryClientImpl(BigQueryClient):
 
             logging.info("Completed [%d] query jobs.", len(query_jobs))
 
-            extract_jobs_to_config = {}
+            extract_jobs_to_config: Dict[bigquery.ExtractJob, ExportQueryConfig] = {}
             for export_config in export_configs:
                 extract_job = self.export_table_to_cloud_storage_async(
                     export_config.intermediate_table_address,
@@ -1443,14 +1449,36 @@ class BigQueryClientImpl(BigQueryClient):
             )
 
             for export_job, export_config in extract_jobs_to_config.items():
+                job_file_paths: List[GcsfsFilePath] = []
+
                 try:
+                    # Wait for the job to finish
                     export_job.result()
+                    destination_uris: List[str] = export_job.destination_uris
+                    file_counts = export_job.destination_uri_file_counts
+
+                    # For each destination uri and its corresponding file count, get
+                    # its file paths and append it to the list of exported file paths
+                    for destination_uri, file_count in zip(
+                        destination_uris, file_counts
+                    ):
+                        job_file_paths.extend(
+                            get_file_destinations_for_bq_export(
+                                destination_uri, file_count
+                            )
+                        )
+
+                        # TODO(#33882): Delete any stale files from a previous export
+
                 except Exception as e:
                     logging.exception(
                         "Extraction failed for table: %s",
                         export_config.intermediate_table_name,
                     )
                     raise e
+
+                exported_configs_and_paths.append((export_config, job_file_paths))
+
             logging.info("Completed [%d] extract jobs.", len(extract_jobs_to_config))
 
         finally:
@@ -1463,6 +1491,8 @@ class BigQueryClientImpl(BigQueryClient):
                     not_found_ok=True,
                 )
             logging.info("Done deleting temporary intermediate tables.")
+
+        return exported_configs_and_paths
 
     def delete_table(
         self, address: BigQueryAddress, not_found_ok: bool = False

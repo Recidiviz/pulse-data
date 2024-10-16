@@ -35,7 +35,7 @@ from recidiviz.big_query.with_metadata_query_big_query_view import (
     WithMetadataQueryBigQueryViewBuilder,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import (
     WithMetadataQueryBigQueryViewExporter,
@@ -117,11 +117,23 @@ class WithMetadataQueryBigQueryViewExporterTest(unittest.TestCase):
         self.fs_patcher.stop()
 
     def test_export_with_metadata(self) -> None:
+        file_paths = [
+            [GcsfsFilePath.from_absolute_path("gs://bucket/export-1.csv")],
+            [GcsfsFilePath.from_absolute_path("gs://bucket/export-2.csv")],
+        ]
+
         return_values = [
             [bigquery.Row(("test", "US_XX"), {"col": 0, "state_code": 1})],
             [bigquery.Row(("test2", "US_YY"), {"col_name": 0, "state_code": 1})],
         ]
         self.mock_bq_client.run_query_async.side_effect = return_values
+        export_query_configs = [
+            config.as_export_query_config(output_format=bigquery.DestinationFormat.CSV)
+            for config in self.view_export_configs
+        ]
+        self.mock_bq_client.export_query_results_to_cloud_storage.return_value = zip(
+            export_query_configs, file_paths
+        )
 
         exporter = WithMetadataQueryBigQueryViewExporter(
             self.mock_bq_client, self.mock_validator
@@ -133,15 +145,30 @@ class WithMetadataQueryBigQueryViewExporterTest(unittest.TestCase):
             {"col": "test", "state_code": "US_XX"},
             {"col_name": "test2", "state_code": "US_YY"},
         ]
-        for i, (_export_config, gcs_path) in enumerate(export_config_and_paths):
-            self.assertTrue(
-                gcs_path.file_name.endswith(".csv"),
-                msg=f"GCS output file {gcs_path.abs_path()} is not a CSV as expected.",
-            )
-            self.assertEqual(self.fs.get_metadata(gcs_path), expected_metadata[i])
+        for i, (_export_config, gcs_paths) in enumerate(export_config_and_paths):
+            for gcs_path in gcs_paths:
+                self.assertEqual(self.fs.get_metadata(gcs_path), expected_metadata[i])
+
+        exported_paths = [
+            gcs_paths for _export_config, gcs_paths in export_config_and_paths
+        ]
+
+        self.assertEqual(exported_paths, file_paths)
 
     def test_export_no_metadata_results(self) -> None:
+        file_paths = [
+            [GcsfsFilePath.from_absolute_path("gs://bucket/export-1.csv")],
+            [GcsfsFilePath.from_absolute_path("gs://bucket/export-2.csv")],
+        ]
+
         self.mock_bq_client.run_query_async.return_value = []
+        export_query_configs = [
+            config.as_export_query_config(output_format=bigquery.DestinationFormat.CSV)
+            for config in self.view_export_configs
+        ]
+        self.mock_bq_client.export_query_results_to_cloud_storage.return_value = zip(
+            export_query_configs, file_paths
+        )
 
         exporter = WithMetadataQueryBigQueryViewExporter(
             self.mock_bq_client, self.mock_validator
@@ -150,9 +177,12 @@ class WithMetadataQueryBigQueryViewExporterTest(unittest.TestCase):
 
         self.assertEqual(len(export_config_and_paths), len(self.view_export_configs))
 
-        for _export_config, gcs_path in export_config_and_paths:
-            self.assertTrue(
-                gcs_path.file_name.endswith(".csv"),
-                msg=f"GCS output file {gcs_path.abs_path()} is not a CSV as expected.",
-            )
-            self.assertFalse(self.fs.get_metadata(gcs_path))
+        for _export_config, gcs_paths in export_config_and_paths:
+            for gcs_path in gcs_paths:
+                self.assertFalse(self.fs.get_metadata(gcs_path))
+
+        exported_paths = [
+            gcs_paths for _export_config, gcs_paths in export_config_and_paths
+        ]
+
+        self.assertEqual(exported_paths, file_paths)
