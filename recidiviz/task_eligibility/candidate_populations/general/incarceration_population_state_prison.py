@@ -14,11 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines all spans of time in which a person is in INCARCERATION GENERAL
-as tracked by data in our `sessions` dataset, and uses state-specific filters for facilities.
-The only type of incarceration included is compartment_level_2='GENERAL'.
-"""
-from recidiviz.calculator.query.state import state_specific_query_strings
+"""Selects all spans of time in which a person is in INCARCERATION
+as tracked by data in our `sessions` dataset, as well as STATE_PRISON custodial authority"""
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
 )
@@ -28,23 +25,17 @@ from recidiviz.task_eligibility.utils.candidate_population_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "GENERAL_INCARCERATION_POPULATION_FACILITY_FILTER"
+_POPULATION_NAME = "INCARCERATION_POPULATION_STATE_PRISON"
 
-_DESCRIPTION = """Selects all spans of time in which a person is in INCARCERATION GENERAL
-as tracked by data in our `sessions` dataset, and uses state-specific filters for facilities. Specifically,
-this excludes facilities that should not be included in pathways metrics
-The only type of incarceration included is compartment_level_2='GENERAL'.
+_DESCRIPTION = """Selects all spans of time in which a person is in INCARCERATION
+as tracked by data in our `sessions` dataset, as well as STATE_PRISON custodial authority
 """
 
 VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
     state_agnostic_candidate_population_view_builder(
         population_name=_POPULATION_NAME,
         description=_DESCRIPTION,
-        additional_filters=[
-            'compartment_level_2 = "GENERAL" ',
-            "name_map_facility IS NOT NULL",
-            f"{state_specific_query_strings.pathways_state_specific_facility_filter()}",
-        ],
+        additional_filters=['custodial_authority = "STATE_PRISON" '],
         compartment_level_1=["INCARCERATION"],
     )
 )
