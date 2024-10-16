@@ -45,7 +45,7 @@ US_AZ_OVERDUE_FOR_ACIS_DTP_REQUEST_RECORD_QUERY_TEMPLATE = f"""
 WITH eligible AS (
 {join_current_task_eligibility_spans_with_external_id(state_code="'US_AZ'",
                                                       tes_task_query_view='overdue_for_acis_dtp_request_materialized',
-                                                      id_type="'US_AZ_ADC_NUMBER'",
+                                                      id_type="'US_AZ_PERSON_ID'",
                                                       eligible_only=True)}
 )
 
