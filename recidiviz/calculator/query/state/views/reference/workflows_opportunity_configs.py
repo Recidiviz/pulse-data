@@ -92,7 +92,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_record_view_name="us_az_overdue_for_acis_dtp_request_record_materialized",
         # TODO(#33655): Correct task completion event
         task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
-        source_filename="overdue_for_acis_dtp_request_record.json",
+        source_filename="us_az_overdue_for_acis_dtp_request_record.json",
         export_collection_name="US_AZ-OverdueForDTPReferrals",
         opportunity_type_path_str="OverdueForDTP",
         person_record_type=PersonRecordType.RESIDENT,
@@ -104,7 +104,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_record_view_name="us_az_overdue_for_acis_tpr_request_record_materialized",
         # TODO(#33655): Correct task completion event
         task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
-        source_filename="overdue_for_acis_tpr_request_record.json",
+        source_filename="us_az_overdue_for_acis_tpr_request_record.json",
         export_collection_name="US_AZ-OverdueForTPRReferrals",
         opportunity_type_path_str="OverdueForTPR",
         person_record_type=PersonRecordType.RESIDENT,
