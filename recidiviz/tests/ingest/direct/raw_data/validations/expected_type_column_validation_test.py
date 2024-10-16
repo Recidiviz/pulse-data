@@ -20,7 +20,13 @@ from typing import Dict, List, Optional, Type
 
 import attr
 
-from recidiviz.ingest.direct.raw_data.raw_file_configs import RawTableColumnFieldType
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
+    RawDataClassification,
+    RawDataFileUpdateCadence,
+    RawTableColumnFieldType,
+)
 from recidiviz.ingest.direct.raw_data.validations.expected_type_column_validation import (
     COLUMN_TYPE_TO_BIG_QUERY_TYPE,
     ExpectedTypeColumnValidation,
@@ -101,10 +107,34 @@ class TestExpectedTypeColumnValidation(ColumnValidationTestCase):
         string_column = attr.evolve(
             self.happy_col, field_type=RawTableColumnFieldType.STRING
         )
+        raw_file_config = DirectIngestRawFileConfig(
+            state_code=StateCode.US_XX,
+            file_tag="myFile",
+            file_path="/path/to/myFile.yaml",
+            file_description="This is a raw data file",
+            data_classification=RawDataClassification.SOURCE,
+            columns=[],
+            custom_line_terminator=None,
+            primary_key_cols=[],
+            supplemental_order_by_clause="",
+            encoding="UTF-8",
+            separator=",",
+            ignore_quotes=True,
+            always_historical_export=True,
+            no_valid_primary_keys=False,
+            import_chunk_size_rows=10,
+            infer_columns_from_config=False,
+            table_relationships=[],
+            update_cadence=RawDataFileUpdateCadence.WEEKLY,
+        )
 
         self.assertTrue(
-            ExpectedTypeColumnValidation.validation_applies_to_column(int_column)
+            ExpectedTypeColumnValidation.validation_applies_to_column(
+                int_column, raw_file_config
+            )
         )
         self.assertFalse(
-            ExpectedTypeColumnValidation.validation_applies_to_column(string_column)
+            ExpectedTypeColumnValidation.validation_applies_to_column(
+                string_column, raw_file_config
+            )
         )

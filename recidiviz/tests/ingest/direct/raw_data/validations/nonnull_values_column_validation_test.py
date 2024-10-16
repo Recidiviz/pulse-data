@@ -18,6 +18,16 @@
 
 from typing import Dict, List, Optional, Type
 
+import attr
+
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
+    RawDataClassification,
+    RawDataFileUpdateCadence,
+    RawTableColumnFieldType,
+    RawTableColumnInfo,
+)
 from recidiviz.ingest.direct.raw_data.validations.nonnull_values_column_validation import (
     NonNullValuesColumnValidation,
 )
@@ -56,7 +66,59 @@ class TestNonNullValuesColumnValidation(ColumnValidationTestCase):
         self.validation_failure_test(expected_error)
 
     def test_validation_applies_to_column(self) -> None:
-        # validation applies to all columns
+        col1 = RawTableColumnInfo(
+            name="Col1",
+            description="description",
+            is_pii=True,
+            field_type=RawTableColumnFieldType.STRING,
+        )
+        col2 = RawTableColumnInfo(
+            name="Col2",
+            description="description",
+            is_pii=True,
+            field_type=RawTableColumnFieldType.STRING,
+        )
+        always_historical_raw_file_config = DirectIngestRawFileConfig(
+            state_code=StateCode.US_XX,
+            file_tag=self.file_tag,
+            file_path="/path/to/myFile.yaml",
+            file_description="This is a raw data file",
+            data_classification=RawDataClassification.SOURCE,
+            columns=[col1, col2],
+            primary_key_cols=["Col1"],
+            supplemental_order_by_clause="",
+            separator=",",
+            ignore_quotes=False,
+            always_historical_export=True,
+            no_valid_primary_keys=False,
+            import_chunk_size_rows=10,
+            infer_columns_from_config=False,
+            table_relationships=[],
+            update_cadence=RawDataFileUpdateCadence.WEEKLY,
+            encoding="utf-8",
+            custom_line_terminator="\n",
+        )
         self.assertTrue(
-            NonNullValuesColumnValidation.validation_applies_to_column(self.happy_col)
+            NonNullValuesColumnValidation.validation_applies_to_column(
+                column=col1, raw_file_config=always_historical_raw_file_config
+            )
+        )
+        self.assertTrue(
+            NonNullValuesColumnValidation.validation_applies_to_column(
+                column=col2, raw_file_config=always_historical_raw_file_config
+            )
+        )
+
+        incremental_raw_file_config = attr.evolve(
+            always_historical_raw_file_config, always_historical_export=False
+        )
+        self.assertTrue(
+            NonNullValuesColumnValidation.validation_applies_to_column(
+                column=col1, raw_file_config=incremental_raw_file_config
+            )
+        )
+        self.assertFalse(
+            NonNullValuesColumnValidation.validation_applies_to_column(
+                column=col2, raw_file_config=incremental_raw_file_config
+            )
         )

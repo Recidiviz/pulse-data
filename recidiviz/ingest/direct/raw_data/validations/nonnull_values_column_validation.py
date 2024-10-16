@@ -19,7 +19,10 @@ from typing import Any, Dict, List
 
 import attr
 
-from recidiviz.ingest.direct.raw_data.raw_file_configs import RawTableColumnInfo
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
+    RawTableColumnInfo,
+)
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataColumnImportBlockingValidation,
     RawDataImportBlockingValidationFailure,
@@ -44,8 +47,13 @@ class NonNullValuesColumnValidation(RawDataColumnImportBlockingValidation):
         return RawDataImportBlockingValidationType.NONNULL_VALUES
 
     @staticmethod
-    def validation_applies_to_column(_column: RawTableColumnInfo) -> bool:
-        return True
+    def validation_applies_to_column(
+        column: RawTableColumnInfo, raw_file_config: DirectIngestRawFileConfig
+    ) -> bool:
+        return (
+            raw_file_config.always_historical_export
+            or column.name in raw_file_config.primary_key_cols
+        )
 
     def build_query(self) -> str:
         return StrictStringFormatter().format(

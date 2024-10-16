@@ -119,7 +119,9 @@ class DirectIngestRawTablePreImportValidator:
             for col_validation_cls in COLUMN_VALIDATION_CLASSES:
                 if not raw_file_config.column_is_exempt_from_validation(
                     column.name, col_validation_cls.validation_type()
-                ) and col_validation_cls.validation_applies_to_column(column):
+                ) and col_validation_cls.validation_applies_to_column(
+                    column, raw_file_config
+                ):
                     all_validations.append(
                         col_validation_cls.create_column_validation(
                             file_tag,

@@ -20,7 +20,13 @@ from typing import Dict, List, Optional, Type
 
 import attr
 
-from recidiviz.ingest.direct.raw_data.raw_file_configs import RawTableColumnFieldType
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
+    RawDataClassification,
+    RawDataFileUpdateCadence,
+    RawTableColumnFieldType,
+)
 from recidiviz.ingest.direct.raw_data.validations.datetime_parsers_column_validation import (
     DatetimeParsersColumnValidation,
 )
@@ -97,14 +103,34 @@ class TestDatetimeParsersColumnValidation(ColumnValidationTestCase):
     def test_validation_applies_to_column(self) -> None:
         datetime_column = self.happy_col
         non_datetime_column = attr.evolve(self.happy_col, datetime_sql_parsers=None)
+        raw_file_config = DirectIngestRawFileConfig(
+            state_code=StateCode.US_XX,
+            file_tag="myFile",
+            file_path="/path/to/myFile.yaml",
+            file_description="This is a raw data file",
+            data_classification=RawDataClassification.SOURCE,
+            columns=[],
+            custom_line_terminator=None,
+            primary_key_cols=[],
+            supplemental_order_by_clause="",
+            encoding="UTF-8",
+            separator=",",
+            ignore_quotes=True,
+            always_historical_export=True,
+            no_valid_primary_keys=False,
+            import_chunk_size_rows=10,
+            infer_columns_from_config=False,
+            table_relationships=[],
+            update_cadence=RawDataFileUpdateCadence.WEEKLY,
+        )
 
         self.assertTrue(
             DatetimeParsersColumnValidation.validation_applies_to_column(
-                datetime_column
+                datetime_column, raw_file_config
             )
         )
         self.assertFalse(
             DatetimeParsersColumnValidation.validation_applies_to_column(
-                non_datetime_column
+                non_datetime_column, raw_file_config
             )
         )
