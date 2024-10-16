@@ -29,6 +29,9 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_categ
     InsightsCaseloadCategoryType,
 )
 from recidiviz.common.str_field_utils import person_name_case
+from recidiviz.persistence.database.schema.insights.schema import (
+    ACTION_STRATEGIES_DEFAULT_COPY,
+)
 
 
 class MetricOutcome(Enum):
@@ -552,6 +555,8 @@ class OutliersProductConfiguration:
 
     # The string that represents what a state calls an absconder
     absconder_label: str = attr.ib(default="absconder")
+
+    action_strategy_copy: str = attr.ib(default=ACTION_STRATEGIES_DEFAULT_COPY)
 
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
