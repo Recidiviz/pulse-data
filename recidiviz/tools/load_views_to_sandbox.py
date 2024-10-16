@@ -94,10 +94,13 @@ To view more info on arguments that can be used with any particular sub-command,
 import argparse
 import logging
 import sys
+import textwrap
 from enum import Enum
 from typing import Dict, List, Optional, Set
 
+import attr
 from google.api_core import exceptions
+from tabulate import tabulate
 
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -169,9 +172,12 @@ def load_all_views_to_sandbox(
 
     logging.info("Gathering views to load to sandbox...")
     collected_builders = deployed_view_builders()
-    _load_collected_views_to_sandbox(
+    if prompt:
+        prompt_for_confirmation(
+            f"Continue with loading ALL {len(collected_builders)} views?"
+        )
+    load_collected_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
-        prompt=prompt,
         state_code_filter=state_code_filter,
         collected_builders=collected_builders,
         input_source_table_dataset_overrides_dict=(
@@ -265,9 +271,20 @@ Are you sure you still want to continue with `manual` mode?
 
     logging.info("Gathering views to load to sandbox...")
     collected_builders = collector.collect_view_builders()
-    _load_collected_views_to_sandbox(
+
+    logging.info(
+        "Will load the following views to the sandbox: \n%s",
+        BigQueryAddress.addresses_to_str(
+            {b.address for b in collected_builders}, indent_level=2
+        ),
+    )
+    if prompt:
+        prompt_for_confirmation(
+            f"Continue with loading {len(collected_builders)} views?"
+        )
+
+    load_collected_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
-        prompt=prompt,
         state_code_filter=state_code_filter,
         input_source_table_dataset_overrides_dict=(
             input_source_table_dataset_overrides_dict
@@ -367,7 +384,7 @@ def _get_changed_views_to_load_to_sandbox(
     return set(address_to_change_type) - ignored_changed_addresses
 
 
-def _confirm_rebased_on_latest_deploy() -> None:
+def confirm_rebased_on_latest_deploy() -> None:
     last_deployed_commit = get_hash_of_deployed_commit(project_id())
     logging.info("Last deployed commit: %s", last_deployed_commit)
 
@@ -440,21 +457,225 @@ def _check_for_invalid_ignores(
         sys.exit(1)
 
 
-def _load_views_changed_on_branch_to_sandbox(
-    *,
-    sandbox_dataset_prefix: str,
-    prompt: bool,
-    state_code_filter: StateCode | None,
+@attr.define(kw_only=True)
+class SandboxChangedAddresses:
+    """Tracks information about what views or source tables count as 'changed' during
+    a given `auto` mode sandbox views load.
+    """
+
+    # ALL view addresses that have changed as compared to deployed views, with the
+    # change type.
+    view_address_to_change_type: dict[BigQueryAddress, ViewChangeType]
+
+    changed_datasets_to_include: set[str] | None
+    changed_datasets_to_ignore: set[str] | None
+
+    changed_source_table_addresses: set[BigQueryAddress]
+
+    def __attrs_post_init__(self) -> None:
+        if self.changed_datasets_to_include and self.changed_datasets_to_ignore:
+            raise ValueError(
+                "Can only set changed_datasets_to_include or "
+                "changed_datasets_to_ignore, but not both."
+            )
+
+    @property
+    def changed_view_addresses_to_ignore(self) -> set[BigQueryAddress]:
+        """Returns all view addresses that have changed but which should be ignored when
+        collecting which views to load to the sandbox.
+        """
+        return {
+            address
+            for address in self.view_address_to_change_type
+            if (
+                self.changed_datasets_to_ignore
+                and address.dataset_id in self.changed_datasets_to_ignore
+            )
+            or (
+                self.changed_datasets_to_include
+                and address.dataset_id not in self.changed_datasets_to_include
+            )
+        }
+
+    @property
+    def has_changes_to_load(self) -> bool:
+        """Returns True if there are any views / source tables whose changes should be
+        picked up and loaded into the sandbox.
+        """
+        return bool(self.changed_view_addresses_to_load) or bool(
+            self.changed_source_table_addresses
+        )
+
+    @property
+    def changed_view_addresses_to_load(self) -> set[BigQueryAddress]:
+        return (
+            set(self.view_address_to_change_type.keys())
+            - self.changed_view_addresses_to_ignore
+        )
+
+    @property
+    def added_views_to_load(self) -> set[BigQueryAddress]:
+        return {
+            a
+            for a in self.changed_view_addresses_to_load
+            if self.view_address_to_change_type[a] == ViewChangeType.ADDED
+        }
+
+    @property
+    def updated_views_to_load(self) -> set[BigQueryAddress]:
+        return {
+            a
+            for a in self.changed_view_addresses_to_load
+            if self.view_address_to_change_type[a] == ViewChangeType.UPDATED
+        }
+
+
+def summary_for_auto_sandbox(
+    changed_addresses: SandboxChangedAddresses,
+    all_view_addresses_to_load: set[BigQueryAddress],
+) -> str:
+    """Builds a summary string that describes the views that will / won't be loaded into
+    the sandbox.
+    """
+    downstream_views_to_load = (
+        all_view_addresses_to_load - changed_addresses.changed_view_addresses_to_load
+    )
+
+    descriptions_char_width = 50
+    no_addresses_str = "<none>"
+    table_data = [
+        (
+            "IGNORED view changes",
+            BigQueryAddress.addresses_to_str(
+                changed_addresses.changed_view_addresses_to_ignore
+            )
+            or no_addresses_str,
+            textwrap.fill(
+                "This is the set of views on your branch that has changed as compared "
+                "to deployed views, but you've exempted via the "
+                "--changed_datasets_to_include and --changed_datasets_to_ignore flags. "
+                "These views will not be loaded unless they are also included in the "
+                "DOWNSTREAM section below (can happen if they are in the dependency "
+                "chain between other changed views and views you want to load).",
+                width=descriptions_char_width,
+            ),
+        ),
+        (
+            "UPDATED source tables\n to read from",
+            BigQueryAddress.addresses_to_str(
+                changed_addresses.changed_source_table_addresses
+            ),
+            textwrap.fill(
+                "This is the set of overridden source tables to read from as specified "
+                "by the --input_source_table_dataset_overrides_json flag. Views will "
+                "read from the overridden version of the table in place of these "
+                "tables.",
+                width=descriptions_char_width,
+            ),
+        )
+        if changed_addresses.changed_source_table_addresses
+        # Hide this row if there are no source table overrides
+        else None,
+        (
+            "ADDED views to load",
+            (
+                BigQueryAddress.addresses_to_str(changed_addresses.added_views_to_load)
+                or no_addresses_str
+            ),
+            textwrap.fill(
+                "These are the views on your branch that have been added as compared "
+                "to deployed views and will be treated as potential 'roots' of the "
+                "graph of views to load to your sandbox. If you don't care about some "
+                "of these changes, you can move them to the IGNORED section via the "
+                "--changed_datasets_to_include and --changed_datasets_to_ignore flags.",
+                width=descriptions_char_width,
+            ),
+        ),
+        (
+            "UPDATED views to load",
+            (
+                BigQueryAddress.addresses_to_str(
+                    changed_addresses.updated_views_to_load
+                )
+                or no_addresses_str
+            ),
+            textwrap.fill(
+                "These are the views on your branch that have been updated (i.e. view "
+                "query has changed) as compared to deployed views and will be treated "
+                "as potential 'roots' of the graph of views to load to your sandbox. "
+                "If you don't care about some of these changes, you can move them to "
+                "the IGNORED section via the --changed_datasets_to_include and "
+                "--changed_datasets_to_ignore flags.",
+                width=descriptions_char_width,
+            ),
+        ),
+        (
+            "DOWNSTREAM views to load",
+            (
+                BigQueryAddress.addresses_to_str(downstream_views_to_load)
+                or no_addresses_str
+            ),
+            textwrap.fill(
+                "These are the views that did not change themselves, but will still "
+                "be loaded as a downstream dependency of one of the ADDED/UPDATED "
+                "views / tables. This set of views is impacted by the "
+                "--load_changed_views_only, --load_up_to_addresses, and "
+                "--load_up_to_datasets flags.",
+                width=descriptions_char_width,
+            ),
+        ),
+    ]
+
+    summary_string = tabulate(
+        [row for row in table_data if row is not None],
+        headers=["Category", "BigQuery Addresses", "Hint"],
+        tablefmt="fancy_grid",
+    )
+    return summary_string
+
+
+def get_sandbox_changed_addresses(
+    full_dag_walker: BigQueryViewDagWalker,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
-    allow_slow_views: bool,
-    changed_datasets_to_include: Optional[List[str]],
-    changed_datasets_to_ignore: Optional[List[str]],
-    load_up_to_addresses: Optional[List[BigQueryAddress]],
-    load_up_to_datasets: Optional[List[str]],
+    changed_datasets_to_include: list[str] | None,
+    changed_datasets_to_ignore: list[str] | None,
+) -> SandboxChangedAddresses:
+    logging.info("Checking for changes against [%s] BigQuery...", project_id())
+    address_to_change_type = _get_all_views_changed_on_branch(full_dag_walker)
+
+    changed_source_table_addresses: set[BigQueryAddress] = (
+        {
+            a
+            for a in get_source_table_addresses(metadata.project_id())
+            if a.dataset_id in input_source_table_dataset_overrides_dict
+        }
+        if input_source_table_dataset_overrides_dict
+        else set()
+    )
+
+    return SandboxChangedAddresses(
+        view_address_to_change_type=address_to_change_type,
+        changed_datasets_to_include=(
+            set(changed_datasets_to_include) if changed_datasets_to_include else None
+        ),
+        changed_datasets_to_ignore=(
+            set(changed_datasets_to_ignore) if changed_datasets_to_ignore else None
+        ),
+        changed_source_table_addresses=changed_source_table_addresses,
+    )
+
+
+def collect_changed_views_and_descendants_to_load(
+    prompt: bool,
+    input_source_table_dataset_overrides_dict: dict[str, str] | None,
+    changed_datasets_to_include: list[str] | None,
+    changed_datasets_to_ignore: list[str] | None,
+    load_up_to_addresses: list[BigQueryAddress] | None,
+    load_up_to_datasets: list[str] | None,
     load_changed_views_only: bool,
-) -> None:
-    """Loads all views that have changed on this branch as compared to what is deployed
-    to the current project (usually staging).
+) -> list[BigQueryViewBuilder]:
+    """Returns the list of view builders for changed views (and their descendants,
+    where relevant) that should be loaded to the sandbox.
     """
     if (
         not load_changed_views_only
@@ -472,83 +693,107 @@ def _load_views_changed_on_branch_to_sandbox(
             "--load_up_to_addresses or --load_up_to_datasets."
         )
 
-    _confirm_rebased_on_latest_deploy()
+    confirm_rebased_on_latest_deploy()
 
+    logging.info("Constructing DAG with all known views...")
     view_builders_in_full_dag = deployed_view_builders()
-
     all_views = build_views_to_update(
         view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
         candidate_view_builders=view_builders_in_full_dag,
         sandbox_context=None,
     )
-    logging.info("Constructing DAG with all known views...")
+
     full_dag_walker = BigQueryViewDagWalker(all_views)
-
-    logging.info("Checking for changes against [%s] BigQuery...", project_id())
-    address_to_change_type = _get_all_views_changed_on_branch(full_dag_walker)
-
-    changed_view_addresses = _get_changed_views_to_load_to_sandbox(
-        address_to_change_type=address_to_change_type,
+    changed_addresses_info = get_sandbox_changed_addresses(
+        full_dag_walker=full_dag_walker,
+        input_source_table_dataset_overrides_dict=input_source_table_dataset_overrides_dict,
         changed_datasets_to_ignore=changed_datasets_to_ignore,
         changed_datasets_to_include=changed_datasets_to_include,
     )
 
-    changed_source_table_addresses: Set[BigQueryAddress] = (
-        {
-            a
-            for a in get_source_table_addresses(metadata.project_id())
-            if a.dataset_id in input_source_table_dataset_overrides_dict
-        }
-        if input_source_table_dataset_overrides_dict
-        else set()
-    )
+    if changed_addresses_info.has_changes_to_load:
+        logging.info("Gathering views to load to sandbox...")
+        if load_up_to_datasets or load_up_to_addresses:
+            end_addresses = set(load_up_to_addresses) if load_up_to_addresses else set()
+            end_addresses |= (
+                {
+                    vb.address
+                    for vb in view_builders_in_full_dag
+                    if vb.dataset_id in load_up_to_datasets
+                }
+                if load_up_to_datasets
+                else set()
+            )
+        elif load_changed_views_only:
+            end_addresses = changed_addresses_info.changed_view_addresses_to_load
+        else:
+            raise ValueError(
+                "Expected one of load_changed_views_only, load_up_to_datasets or "
+                "load_up_to_addresses to be set."
+            )
 
-    if not changed_view_addresses and not changed_source_table_addresses:
-        logging.warning(
-            "Did not find any changed views to load to the sandbox. Exiting."
-        )
-        sys.exit(1)
-
-    logging.info("Gathering views to load to sandbox...")
-    if load_up_to_datasets or load_up_to_addresses:
-        end_addresses = set(load_up_to_addresses) if load_up_to_addresses else set()
-        end_addresses |= (
-            {
-                vb.address
-                for vb in view_builders_in_full_dag
-                if vb.dataset_id in load_up_to_datasets
-            }
-            if load_up_to_datasets
-            else set()
-        )
-    elif load_changed_views_only:
-        end_addresses = changed_view_addresses
-    else:
-        raise ValueError(
-            "Expected one of load_changed_views_only, load_up_to_datasets or "
-            "load_up_to_addresses to be set."
-        )
-
-    addresses_to_load = (
-        full_dag_walker.get_all_node_addresses_between_start_and_end_collections(
-            start_source_addresses=changed_source_table_addresses,
-            start_node_addresses=changed_view_addresses,
+        addresses_to_load = full_dag_walker.get_all_node_addresses_between_start_and_end_collections(
+            start_source_addresses=changed_addresses_info.changed_source_table_addresses,
+            start_node_addresses=changed_addresses_info.changed_view_addresses_to_load,
             end_node_addresses=end_addresses,
         )
-    )
-    collected_builders = [
-        vb for vb in view_builders_in_full_dag if vb.address in addresses_to_load
-    ]
+        collected_builders = [
+            vb for vb in view_builders_in_full_dag if vb.address in addresses_to_load
+        ]
+    else:
+        collected_builders = []
 
     _check_for_invalid_ignores(
         full_dag_walker=full_dag_walker,
-        address_to_change_type=address_to_change_type,
+        address_to_change_type=changed_addresses_info.view_address_to_change_type,
         addresses_to_load={b.address for b in collected_builders},
     )
 
-    _load_collected_views_to_sandbox(
-        sandbox_dataset_prefix=sandbox_dataset_prefix,
+    print(
+        summary_for_auto_sandbox(
+            changed_addresses=changed_addresses_info,
+            all_view_addresses_to_load={vb.address for vb in collected_builders},
+        )
+    )
+
+    if prompt:
+        prompt_for_confirmation(
+            f"Continue with loading {len(collected_builders)} views?"
+        )
+
+    return collected_builders
+
+
+def load_views_changed_on_branch_to_sandbox(
+    *,
+    sandbox_dataset_prefix: str,
+    prompt: bool,
+    state_code_filter: StateCode | None,
+    input_source_table_dataset_overrides_dict: dict[str, str] | None,
+    allow_slow_views: bool,
+    changed_datasets_to_include: Optional[List[str]],
+    changed_datasets_to_ignore: Optional[List[str]],
+    load_up_to_addresses: Optional[List[BigQueryAddress]],
+    load_up_to_datasets: Optional[List[str]],
+    load_changed_views_only: bool,
+) -> None:
+    """Loads all views that have changed on this branch as compared to what is deployed
+    to the current project (usually staging).
+    """
+    collected_builders = collect_changed_views_and_descendants_to_load(
         prompt=prompt,
+        input_source_table_dataset_overrides_dict=(
+            input_source_table_dataset_overrides_dict
+        ),
+        changed_datasets_to_ignore=changed_datasets_to_ignore,
+        changed_datasets_to_include=changed_datasets_to_include,
+        load_changed_views_only=load_changed_views_only,
+        load_up_to_addresses=load_up_to_addresses,
+        load_up_to_datasets=load_up_to_datasets,
+    )
+
+    load_collected_views_to_sandbox(
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
         state_code_filter=state_code_filter,
         input_source_table_dataset_overrides_dict=(
             input_source_table_dataset_overrides_dict
@@ -601,26 +846,18 @@ def _warn_on_expensive_views(
         )
 
 
-def _load_collected_views_to_sandbox(
+def load_collected_views_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
-    prompt: bool,
     state_code_filter: StateCode | None,
     collected_builders: List[BigQueryViewBuilder],
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     allow_slow_views: bool,
 ) -> None:
     """Loads the provided list of builders to a sandbox dataset."""
-    logging.info(
-        "Will load the following views to the sandbox: \n%s",
-        BigQueryAddress.addresses_to_str(
-            {b.address for b in collected_builders}, indent_level=2
-        ),
-    )
-    if prompt:
-        prompt_for_confirmation(
-            f"Continue with loading {len(collected_builders)} views?"
-        )
+    if not collected_builders:
+        logging.warning("Did not find any views to load to the sandbox. Exiting.")
+        return
 
     input_source_table_overrides = (
         address_overrides_for_input_source_tables(
@@ -902,7 +1139,7 @@ if __name__ == "__main__":
                 update_descendants=args.update_descendants,
             )
         elif args.chosen_mode == "auto":
-            _load_views_changed_on_branch_to_sandbox(
+            load_views_changed_on_branch_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
                 prompt=args.prompt,
                 state_code_filter=args.state_code_filter,
