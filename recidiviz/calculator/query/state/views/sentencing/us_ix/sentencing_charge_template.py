@@ -18,26 +18,30 @@
 
 US_IX_SENTENCING_CHARGE_TEMPLATE = """
     SELECT
-      description AS charge,
-      "US_IX" AS state_code,
+    description AS charge,
+    "US_IX" AS state_code,
+    -- Only count the number of times a charge appears in the past two years to determine frequency
+    SUM(
+    IF
+        (DATE_DIFF(CURRENT_DATE("US/Eastern"), offense_date, YEAR) <= 2, 1, 0)) AS frequency,
+    IF
     -- Determine if a charge is violent based what percentage of the time it is tagged as such, rounded down or up
+    (ROUND(SUM(
+        IF
+            (is_violent, 1, 0)) / COUNT(*)) = 1,
+        TRUE,
+        FALSE) AS is_violent,
     IF
-      (ROUND(SUM(CASE
-              WHEN is_violent = TRUE THEN 1
-              ELSE 0
-          END
-            ) / COUNT(*)) = 1, TRUE, FALSE) AS is_violent,
     -- Determine if a charge is a sex offense based what percentage of the time it is tagged as such, rounded down or up
-    IF
-      (ROUND(SUM(CASE
-              WHEN is_sex_offense = TRUE THEN 1
-              ELSE 0
-          END
-            ) / COUNT(*)) = 1, TRUE, FALSE) AS is_sex_offense
+    (ROUND(SUM(
+        IF
+            (is_sex_offense, 1, 0)) / COUNT(*)) = 1,
+        TRUE,
+        FALSE) AS is_sex_offense
     FROM
       `{project_id}.normalized_state.state_charge`
     WHERE
-      state_code = "US_IX"
+    state_code = "US_IX"
     GROUP BY
-      description
+    description
 """
