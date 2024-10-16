@@ -18,19 +18,32 @@
 
 /**
  * Get MAU WAU By Location
- * 
-*/
-function getMauWauByLocation(stateCode, endDateString, completionEventType, system) {
+ * Given parameters provided by the user, constructs a query string and calls runQuery
+ * to query the BiqQuery database.
+ * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
+ * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
+ * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
+ * @param {string} system The system of the workflow (ex: 'SUPERVISION' or 'INCARCERATION')
+ * @returns {object} mauWauByLocationData An array or arrays containing data for each district/facility. Also returns the mauWauXAxisColumn, mau, and wau strings
+ */
+function getMauWauByLocation(
+  stateCode,
+  endDateString,
+  completionEventType,
+  system
+) {
   const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
-  const distinctRegisteredUsers = `distinct_registered_users_${system.toLowerCase()}`;
-  let xAxisColumn = "";
+  const mau = "monthly_active_users";
+  const wau = "weekly_active_users";
+
+  let mauWauXAxisColumn = "";
   let location = "";
-  
+
   if (system === "SUPERVISION") {
-    xAxisColumn = "district_name";
+    mauWauXAxisColumn = "district_name";
     location = "district";
   } else if (system === "INCARCERATION") {
-    xAxisColumn = "facility_name";
+    mauWauXAxisColumn = "facility_name";
     location = "facility";
   } else {
     throw new Error(
@@ -41,28 +54,25 @@ function getMauWauByLocation(stateCode, endDateString, completionEventType, syst
   const mauTable = `justice_involved_${location}_month_aggregated_metrics_materialized`;
   const wauTable = `justice_involved_${location}_week_aggregated_metrics_materialized`;
 
-  const queryStringMonthly = `
+  const queryString = `
     SELECT
       ${location},
-      ${distinctActiveUsers},
-      ${distinctRegisteredUsers}
-    FROM \`impact_reports.${mauTable}\`
-    WHERE state_code = '${stateCode}'
-    AND end_date = '${endDateString}'`;
+      ${mauTable}.${distinctActiveUsers} AS ${mau},
+      ${wauTable}.${distinctActiveUsers} AS ${wau}
+    FROM \`impact_reports.${mauTable}\` ${mauTable}
+    INNER JOIN \`impact_reports.${wauTable}\` ${wauTable}
+    USING (${location}, state_code, end_date)
+    WHERE ${mauTable}.state_code = '${stateCode}'
+    AND ${mauTable}.end_date = '${endDateString}'
+    AND NOT (${mauTable}.${distinctActiveUsers} IS NULL OR ${wauTable}.${distinctActiveUsers} IS NULL)`;
 
-  const queryStringWeekly = `
-    SELECT
-      ${location},
-      ${distinctActiveUsers},
-      ${distinctRegisteredUsers}
-    FROM \`impact_reports.${wauTable}\`
-    WHERE state_code = '${stateCode}'
-    AND end_date = '${endDateString}'`;
+  const mauWauByLocationData = runQuery(queryString);
 
   return {
-    mauLocationData: runQuery(queryStringMonthly),
-    wauLocationData: runQuery(queryStringWeekly),
-    mauWauXAxisColumn: xAxisColumn
+    mauWauByLocationData,
+    mauWauXAxisColumn,
+    mau,
+    wau,
   };
 }
 
@@ -447,7 +457,7 @@ function constructSupervisionDistrictColumnChart(
 
 /**
  * Construct usage and impact district column chart
- * Populates a new supervision column chart.
+ * Populates a new usage and impact column chart.
  * @param {string} xAxisColumn The name of the x-axis
  * @param {string} eligibleAndViewedColumn The name of the eligibleAndViewedColumn
  * @param {string} markedIneligibleColumn The name of the markedIneligibleColumn
@@ -482,9 +492,49 @@ function constructUsageAndImpactDistrictColumnChart(
     null, // title
     xAxisClean,
     null, // y-axis
-    true, // setColors
+    ["#3697FA", "#BABABA", "#CA2E17"], // this chart will have blue, gray, and red columns
     true // stacked
   );
 
   return usageAndImpactDistrictColumnChart;
+}
+
+/**
+ * Construct Mau Wau by location column chart
+ * Populates a new mau/wau by location column chart.
+ * @param {string} mauWauXAxisColumn The name of the x-axis
+ * @param {array} mauWauByLocationData An array of arrays containing data for each district/facility
+ * @param {string} mau The name of the mau column
+ * @param {string} wau The name of the wau column
+ * @returns {Chart} The built/populated column chart
+ */
+function constructMauWauByLocationColumnChart(
+  mauWauXAxisColumn,
+  mauWauByLocationData,
+  mau,
+  wau
+) {
+  const xAxisClean = cleanString(mauWauXAxisColumn);
+  const mauClean = cleanString(mau);
+  const wauClean = cleanString(wau);
+
+  const chartData = Charts.newDataTable()
+    .addColumn(Charts.ColumnType.STRING, xAxisClean)
+    .addColumn(Charts.ColumnType.NUMBER, mauClean)
+    .addColumn(Charts.ColumnType.NUMBER, wauClean);
+
+  mauWauByLocationColumnChart = createColumnChart(
+    mauWauByLocationData,
+    chartData,
+    "Region Variation in Usage",
+    xAxisClean,
+    "# of Users",
+    ["#48742C", "#F2BF40"], // this chart will have green and yellow columns
+    false, // we do not want to stack columns
+    1022, // this chart has a custom width
+    618, // this chart has a custom height
+    Charts.Position.BOTTOM // this chart has a legend
+  );
+
+  return mauWauByLocationColumnChart;
 }

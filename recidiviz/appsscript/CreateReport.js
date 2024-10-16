@@ -70,13 +70,24 @@ function main(e) {
     Logger.log("system: %s", system);
     workflowToSystem[workflow] = system;
 
-    const { mauLocationData, wauLocationData, mauWauXAxisColumn } =
+    const { mauWauByLocationData, mauWauXAxisColumn, mau, wau } =
       getMauWauByLocation(
         stateCode,
         endDateString,
         completionEventType,
         system
       );
+
+    // If the query in getMauWauByLocation() returns zero rows, we won't add this chart to the report
+    var mauWauByLocationChart = null;
+    if (mauWauByLocationData) {
+      mauWauByLocationChart = constructMauWauByLocationColumnChart(
+        mauWauXAxisColumn,
+        mauWauByLocationData,
+        mau,
+        wau
+      );
+    }
 
     const {
       almostEligible,
@@ -179,6 +190,7 @@ function main(e) {
       eligibleAndNotViewed,
     };
     workflowToUsageAndImpactChart[workflow] = usageAndImpactColumnChart;
+    workflowToMauWauByRegionChart[workflow] = mauWauByLocationChart;
   });
 
   copyAndPopulateTemplateDoc(
@@ -193,7 +205,8 @@ function main(e) {
     workflowToSystem,
     workflowToUsageAndImpactText,
     workflowToUsageAndImpactChart,
-    workflowToMaxMarkedIneligibleLocation
+    workflowToMaxMarkedIneligibleLocation,
+    workflowToMauWauByRegionChart
   );
 }
 
@@ -214,6 +227,7 @@ function main(e) {
  * @param {map} workflowToUsageAndImpactText An object that maps the workflow name to its number of people almost eligible, eligible, marked ineligible, eligible and viewed, and eligible and not viewed
  * @param {map} workflowToUsageAndImpactChart An object that maps the workflow name to its usageAndImpactColumnChart
  * @param {map} workflowToMaxMarkedIneligibleLocation An object that maps the workflow name to an object containing maxLocation (the location associated with the max number of people marked ineligible) and maxValue (the max number of people marked ineligible)
+ * @param {map} workflowToMauWauByRegionChart An object that maps the workflow name to its mauWauByLocationChart
  */
 function copyAndPopulateTemplateDoc(
   workflowToDistrictOrFacilitiesColumnChart,
@@ -227,7 +241,8 @@ function copyAndPopulateTemplateDoc(
   workflowToSystem,
   workflowToUsageAndImpactText,
   workflowToUsageAndImpactChart,
-  workflowToMaxMarkedIneligibleLocation
+  workflowToMaxMarkedIneligibleLocation,
+  workflowToMauWauByRegionChart
 ) {
   const template = DriveApp.getFileById(
     "1nsc_o2fTlldTQavxJveucWgDKkic_clKZjn0GuyF2N8"
@@ -275,7 +290,8 @@ function copyAndPopulateTemplateDoc(
     endDateClean,
     workflowToUsageAndImpactChart,
     workflowToMauWauNumAndPercent,
-    workflowToMaxMarkedIneligibleLocation
+    workflowToMaxMarkedIneligibleLocation,
+    workflowToMauWauByRegionChart
   );
 }
 
@@ -512,6 +528,7 @@ function copyAndPopulateOpportunityGrants(
  * @param {map} workflowToUsageAndImpactChart An object that maps the workflow name to its usageAndImpactColumnChart
  * @param {map} workflowToMauWauNumAndPercent An object that maps the workflow name to its distinctMonthlyRegisteredUsers, distinctMonthlyActiveUsers, distinctWeeklyActiveUsers, workflowPercentMAU, and workflowPercentWAU
  * @param {map} workflowToMaxMarkedIneligibleLocation An object that maps the workflow name to an object containing maxLocation (the location associated with the max number of people marked ineligible) and maxValue (the max number of people marked ineligible)
+ * @param {map} workflowToMauWauByRegionChart An object that maps the workflow name to its mauWauByLocationChart
  */
 function copyAndPopulateWorkflowSection(
   body,
@@ -524,7 +541,8 @@ function copyAndPopulateWorkflowSection(
   endDateClean,
   workflowToUsageAndImpactChart,
   workflowToMauWauNumAndPercent,
-  workflowToMaxMarkedIneligibleLocation
+  workflowToMaxMarkedIneligibleLocation,
+  workflowToMauWauByRegionChart
 ) {
   const childIdx = getIndexOfElementToReplace(
     body,
@@ -548,6 +566,26 @@ function copyAndPopulateWorkflowSection(
 
     elementsToCopy.forEach((element) => {
       const elementCopy = element.copy();
+
+      // Positioned Images are treated differently than Inline Images in Google Docs
+      // Rather than being a child element, Positioned Images are positioned in reference to a Paragraph element
+      if (
+        elementCopy.getNumChildren() === 0 &&
+        elementCopy.getType() === DocumentApp.ElementType.PARAGRAPH &&
+        elementCopy.getPositionedImages().length !== 0
+      ) {
+        // We found the only PositionedImage in the document
+        const imageToRemoveId = elementCopy.getPositionedImages()[0].getId();
+        // Add the newly generated PositionedImage
+        if (workflowToMauWauByRegionChart[workflow]) {
+          let img = elementCopy.addPositionedImage(
+            workflowToMauWauByRegionChart[workflow]
+          );
+          img.setWidth(511).setHeight(309);
+        }
+        // Remove the placeholder PositionedImage
+        elementCopy.removePositionedImage(imageToRemoveId);
+      }
 
       if (
         elementCopy.getNumChildren() > 0 &&

@@ -22,6 +22,7 @@ const REGIONS_AND_FACILITIES_TO_FILTER_OUT = [
   "UNKNOWN",
   "NULL",
   "UNKNOWN LOCATION",
+  "",
 ];
 
 /**
@@ -43,13 +44,13 @@ function runQuery(queryString) {
   while (!queryResults.jobComplete) {
     Utilities.sleep(sleepTimeMs);
     sleepTimeMs *= 2;
-    queryResults = BigQuery.Jobs.getQueryResults(projectId, jobId);
+    queryResults = BigQuery.Jobs.getQueryResults(projectId, queryResults.jobReference.jobId);
   }
 
   // Get all the rows of results.
   let rows = queryResults.rows;
   while (queryResults.pageToken) {
-    queryResults = BigQuery.Jobs.getQueryResults(projectId, jobId, {
+    queryResults = BigQuery.Jobs.getQueryResults(projectId, queryResults.jobReference.jobId, {
       pageToken: queryResults.pageToken,
     });
     rows = rows.concat(queryResults.rows);
@@ -89,8 +90,11 @@ function createColumnChart(
   title,
   xAxis,
   yAxis,
-  setColors = false,
-  stacked = false
+  setColors = ['#3697FA'], // default all charts to blue
+  stacked = false,
+  width = 1278,
+  height = 910,
+  legend = Charts.Position.NONE,
 ) {
   const enCollator = new Intl.Collator("en", { numeric: true });
   let buildChart = false;
@@ -114,26 +118,24 @@ function createColumnChart(
   let chart = Charts.newColumnChart()
     .setDataTable(chartData)
     .setXAxisTitle(xAxis)
-    .setLegendPosition(Charts.Position.NONE)
-    .setDimensions(1278, 910)
+    .setLegendPosition(legend)
+    .setDimensions(width, height)
     .setOption("fontSize", 40)
     .setTitleTextStyle(Charts.newTextStyle().setFontSize(28).build())
     .setXAxisTitleTextStyle(Charts.newTextStyle().setFontSize(20))
     .setYAxisTitleTextStyle(Charts.newTextStyle().setFontSize(20))
     .setXAxisTextStyle(Charts.newTextStyle().setFontSize(20))
     .setYAxisTextStyle(Charts.newTextStyle().setFontSize(20))
+    .setLegendTextStyle(Charts.newTextStyle().setFontSize(20))
     .setOption("chartArea.top", 50)
-    .setOption("chartArea.width", "80%");
+    .setOption("chartArea.width", "80%")
+    .setColors(setColors);
 
   if (title) {
     chart = chart.setTitle(title);
   }
   if (yAxis) {
     chart = chart.setYAxisTitle(yAxis);
-  }
-
-  if (setColors) {
-    chart = chart.setColors(["#3697FA", "#BABABA", "#CA2E17"]);
   }
 
   if (stacked) {
