@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Builder for a task eligiblity spans view that shows the spans of time during which
+"""Builder for a task eligibility spans view that shows the spans of time during which
 someone in TN is eligible to have supervision level downgrade.
 """
 from recidiviz.common.constants.states import StateCode
