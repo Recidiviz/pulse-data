@@ -30,6 +30,7 @@ class MetricUnitOfObservationType(Enum):
     SUPERVISION_OFFICER = "OFFICER"
     PERSON_ID = "PERSON"
     WORKFLOWS_USER = "WORKFLOWS_USER"
+    WORKFLOWS_SURFACEABLE_CASELOAD = "WORKFLOWS_SURFACEABLE_CASELOAD"
 
     @property
     def short_name(self) -> str:

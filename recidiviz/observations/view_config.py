@@ -122,7 +122,7 @@ def _get_unioned_observation_builders() -> list[UnionAllBigQueryViewBuilder]:
     builders = []
     span_builders_by_unit = collector.collect_span_builders_by_unit_of_observation()
     for unit_of_observation in MetricUnitOfObservationType:
-        parent_span_views = span_builders_by_unit[unit_of_observation]
+        parent_span_views = span_builders_by_unit.get(unit_of_observation, None)
         if not parent_span_views:
             continue
         builders.append(
@@ -134,7 +134,7 @@ def _get_unioned_observation_builders() -> list[UnionAllBigQueryViewBuilder]:
 
     event_builders_by_unit = collector.collect_event_builders_by_unit_of_observation()
     for unit_of_observation in MetricUnitOfObservationType:
-        parent_event_views = event_builders_by_unit[unit_of_observation]
+        parent_event_views = event_builders_by_unit.get(unit_of_observation, None)
         if not parent_event_views:
             continue
 

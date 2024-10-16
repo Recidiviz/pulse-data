@@ -56,6 +56,7 @@ class SpanType(Enum):
     TASK_CRITERIA_SPAN = "TASK_CRITERIA_SPAN"
     TASK_ELIGIBILITY_SESSION = "TASK_ELIGIBILITY_SESSION"
     US_AR_OVG_SESSIONS = "US_AR_OVG_SESSIONS"
+    WORKFLOWS_SURFACEABLE_CASELOAD_SESSION = "WORKFLOWS_SURFACEABLE_CASELOAD_SESSION"
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION = (
         "WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION"
     )
@@ -102,5 +103,9 @@ class SpanType(Enum):
             SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
         ]:
             return MetricUnitOfObservationType.WORKFLOWS_USER
+        if self in [
+            SpanType.WORKFLOWS_SURFACEABLE_CASELOAD_SESSION,
+        ]:
+            return MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD
 
         raise ValueError(f"No unit_of_observation_type found for SpanType {self.value}")

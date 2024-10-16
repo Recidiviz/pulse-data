@@ -210,6 +210,10 @@ FROM
     location_name,
 FROM
     `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`""",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ): "SELECT * FROM `{project_id}.analyst_data.workflows_record_archive_surfaceable_caseload_sessions_materialized`",
 }
 
 

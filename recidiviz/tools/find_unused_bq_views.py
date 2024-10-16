@@ -82,9 +82,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_sentencing_
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_lists import (
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.workflows_record_archive_surfaceable_caseload_sessions import (
-    WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_CASELOAD_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_outlier_officers import (
     SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER,
 )
@@ -385,11 +382,15 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     CASE_NOTES_VIEW_BUILDER.address: (
         "For use in Case Notes prototypes (see #32391) (Ben Packer 8/19/24)"
     ),
-    WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_CASELOAD_SESSIONS_VIEW_BUILDER.address: (
-        "Will be incorporated into observations (caseload spans) for Looker impact analysis: see #32152 (Mayuka Sarukkai 10/2/24)"
-    ),
     INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER.address: (
         "Will be incorporated into observations (insights user spans) for insights impact analysis: see #32152 (Mayuka Sarukkai 10/2/24)"
+    ),
+    BigQueryAddress(
+        dataset_id="observations__workflows_surfaceable_caseload_span",
+        table_id="all_workflows_surfaceable_caseload_spans",
+    ): (
+        "This view will eventually be referenced by impact metrics related to "
+        "surfaceable caseloads (see #32152) (Mayuka Sarukkai 10/11/2024)"
     ),
 }
 
