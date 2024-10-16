@@ -1926,6 +1926,27 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    @api_blueprint.route("/agencies/dashboard", methods=["GET"])
+    def get_dashboard_homepage_metadata() -> Response:
+        try:
+            agencies = AgencyInterface.get_agencies(session=current_session)
+            fips_code_to_geoid = get_fips_code_to_geoid()
+            county_code_to_county_name = get_county_code_to_county_name()
+            county_code_to_county_fips = get_county_code_to_county_fips()
+            agency_json = []
+            for agency in agencies:
+                agency_json.append(
+                    AgencyInterface.get_dashboard_homepage_json(
+                        fips_code_to_geoid=fips_code_to_geoid,
+                        county_code_to_county_name=county_code_to_county_name,
+                        county_code_to_county_fips=county_code_to_county_fips,
+                        agency=agency,
+                    )
+                )
+            return jsonify(agency_json)
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     @api_blueprint.route("/agencies", methods=["GET"])
     def get_agencies_metadata() -> Response:
         """Gets a list of all agencies and their metadata (agency ID, agency name and number of metrics published)
