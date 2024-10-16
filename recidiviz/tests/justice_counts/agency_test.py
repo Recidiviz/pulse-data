@@ -20,9 +20,14 @@ from datetime import datetime, timezone
 
 from freezegun import freeze_time
 
+from recidiviz.common.fips import (
+    get_county_code_to_county_fips,
+    get_county_code_to_county_name,
+)
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.justice_counts.utils.geoid import get_fips_code_to_geoid
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils.utils import JusticeCountsDatabaseTestCase
@@ -312,4 +317,44 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 list(ids_to_dropdown_names.values()),
                 ["Agency Alpha (CA)", "Beta Initiative (AK)", "GA County Court"],
+            )
+
+    def test_get_dashboard_homepage_json(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            # Adding an agency with the state code in the name. The dropdown display
+            # name should NOT append the state code if the state code is already in the
+            # name.
+            agency = AgencyInterface.create_or_update_agency(
+                session=session,
+                name="GA County Court",
+                systems=[schema.System.COURTS_AND_PRETRIAL],
+                state_code="us_ga",
+                fips_county_code="us_ga_fulton",
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=True,
+            )
+            fips_code_to_geoid = get_fips_code_to_geoid()
+            county_code_to_county_name = get_county_code_to_county_name()
+            county_code_to_county_fips = get_county_code_to_county_fips()
+            json = AgencyInterface.get_dashboard_homepage_json(
+                fips_code_to_geoid=fips_code_to_geoid,
+                county_code_to_county_name=county_code_to_county_name,
+                county_code_to_county_fips=county_code_to_county_fips,
+                agency=agency,
+            )
+            self.assertEqual(
+                json,
+                {
+                    "id": agency.id,
+                    "name": "GA County Court",
+                    "available_sectors": ["COURTS_AND_PRETRIAL"],
+                    "is_dashboard_enabled": True,
+                    "is_demo": False,
+                    "state_geoid": "0400000US13",
+                    "county_geoid": None,
+                    "state_name": "Georgia",
+                    "county_name": "Fulton County",
+                },
             )

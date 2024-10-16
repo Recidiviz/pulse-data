@@ -18,11 +18,13 @@
 
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.justice_counts.control_panel.utils import is_demo_agency
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -388,3 +390,47 @@ class AgencyInterface:
 
         agency.custom_child_agency_name = custom_name
         return agency
+
+    @staticmethod
+    def get_dashboard_homepage_json(
+        agency: schema.Agency,
+        fips_code_to_geoid: Dict[str, str],
+        county_code_to_county_fips: Dict[str, str],
+        county_code_to_county_name: Dict[str, str],
+    ) -> Dict[str, Any]:
+        """
+        Generate a JSON representation of the dashboard homepage for a given agency.
+
+        This method constructs a dictionary containing key information about the
+        specified agency, including its ID, name, available sectors, and geographic
+        identifiers based on its state and county codes.
+
+        Args:
+            agency (schema.Agency): The agency object containing relevant information
+            for the dashboard homepage.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the agency's metadata.
+        """
+        state_code = StateCode(agency.state_code.upper())
+        state = state_code.get_state()
+        fips_county_code = county_code_to_county_fips[agency.fips_county_code.upper()]
+        return {
+            "id": agency.id,
+            "name": agency.name,
+            "available_sectors": [
+                system_enum.value
+                for system_enum in schema.System.sort(
+                    systems=[
+                        schema.System(system_str)
+                        for system_str in (agency.systems or [])
+                    ]
+                )
+            ],
+            "is_dashboard_enabled": agency.is_dashboard_enabled,
+            "is_demo": is_demo_agency(agency.name),
+            "state_geoid": fips_code_to_geoid.get(str(state.fips)),
+            "county_geoid": fips_code_to_geoid.get(fips_county_code),
+            "state_name": state.name,
+            "county_name": county_code_to_county_name[agency.fips_county_code.upper()],
+        }
