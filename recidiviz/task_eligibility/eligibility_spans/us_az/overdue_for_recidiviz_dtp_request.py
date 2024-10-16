@@ -37,6 +37,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_domestic_violence_conviction,
     no_drug_offense_conviction,
     no_dtp_denial_in_current_incarceration,
+    no_dtp_removals_from_self_improvement_programs,
     no_major_violent_violation_during_incarceration,
     no_sexual_exploitation_of_children_conviction,
     no_sexual_offense_conviction,
@@ -78,6 +79,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_major_violent_violation_during_incarceration.VIEW_BUILDER,
         is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
         no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
+        no_dtp_removals_from_self_improvement_programs.VIEW_BUILDER,
         OrTaskCriteriaGroup(
             criteria_name="US_AZ_ENROLLED_IN_OR_MEETS_MANDATORY_LITERACY",
             sub_criteria_list=[
