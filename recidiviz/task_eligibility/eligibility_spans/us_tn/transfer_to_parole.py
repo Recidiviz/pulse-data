@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Builder for a task eligiblity spans view that shows the spans of time during which
-someone in TN is eligible parole.
+"""Builder for a task eligibility spans view that shows the spans of time during which
+someone in TN is eligible for parole.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -32,8 +32,8 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Builder for a task eligiblity spans view that shows the spans of time during which
-someone in TN is eligible parole.
+_DESCRIPTION = """Builder for a task eligibility spans view that shows the spans of time during which
+someone in TN is eligible for parole.
 """
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
