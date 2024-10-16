@@ -51,7 +51,7 @@ SENTENCING_CHARGE_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_query_template=SENTENCING_CHARGE_RECORD_QUERY_TEMPLATE,
     description=SENTENCING_CHARGE_RECORD_DESCRIPTION,
     should_materialize=True,
-    columns=["state_code", "charge", "is_sex_offense", "is_violent"],
+    columns=["state_code", "charge", "is_sex_offense", "is_violent", "frequency"],
 )
 
 if __name__ == "__main__":
