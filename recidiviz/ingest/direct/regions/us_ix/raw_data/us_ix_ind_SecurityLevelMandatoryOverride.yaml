@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ind_SecurityLevelMandatoryOverride
+file_description: Security level mandatory override table
+data_classification: source
+primary_key_cols:
+  - SecurityLevelMandatoryOverrideId
+columns:
+  - name: SecurityLevelMandatoryOverrideId
+    description: Security Level Mandatory Override Id
+  - name: SecurityLevelMandatoryOverrideName
+    description: Security Level Mandatory Override name
+  - name: SecurityLevelMandatoryOverrideDesc
+    description: Security Level Mandatory Override description
+  - name: MinimumSecurityLevelId
+    description: Minimum security level Id
+  - name: SystemRow
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Locking
+    description: Locking number for record
+  - name: InsertUserId
+    description: User ID of employee who entered record
+    is_pii: True
+  - name: InsertDate
+    description: Record insert date
+    field_type: datetime
+  - name: UpdateUserId
+    description: User ID of employee who updated record
+    is_pii: True
+  - name: UpdateDate
+    description: Record update date
+    field_type: datetime
+  - name: Inactive
+    description: Flag for whether record is inactive
+is_code_file: True
