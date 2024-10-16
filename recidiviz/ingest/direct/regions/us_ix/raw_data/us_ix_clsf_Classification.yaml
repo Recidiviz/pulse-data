@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: clsf_Classification
+file_description: Classification table
+data_classification: source
+primary_key_cols:
+  - ClassificationId
+columns:
+  - name: ClassificationId
+    description: Classification Id
+  - name: OffenderId
+    description: Offender Id
+    is_pii: True
+  - name: ClassificationDate
+    description: Classification date
+    field_type: datetime
+  - name: ClassificationTypeId
+    description: Classification type Id
+  - name: ScheduledHearingDate
+    description: Scheduled hearing date
+    field_type: datetime
+  - name: RequestingDOCLocationId
+    description: Location Id of requesting DOC facility
+  - name: AdministrativeDutyOfficerId
+    description: Administative duty officer Id
+    is_pii: True
+  - name: Questionnaire
+    description: Questionnaire
+  - name: Approved
+    description: Approved boolean
+  - name: ApprovedDateTime
+    description: Datetime of when classification was approved
+    field_type: datetime
+  - name: Comment
+    description: Comment
+    is_pii: True
+  - name: MedicalNotified
+    description: Medical notified boolean
+  - name: MedicalNotifiedDate
+    description: Medical notified date
+    field_type: datetime
+  - name: HearingDate
+    description: Hearing date
+    field_type: datetime
+  - name: MentalHealthNotified
+    description: Mental health notified boolean
+  - name: MentalHealthNotifiedDate
+    description: Mental health notified date
+    field_type: datetime
+  - name: ReportingStaffComment
+    description: Reporting staff comment
+    is_pii: True
+  - name: OffenderStatement
+    description: Offender statment
+    is_pii: True
+  - name: ClassificationNextReviewPeriodId
+    description: Classification next review period Id
+  - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Locking
+    description: Locking number for record
+  - name: InsertUserId
+    description: User ID of employee who entered record
+    is_pii: True
+  - name: InsertDate
+    description: Record insert date
+    field_type: datetime
+  - name: UpdateUserId
+    description: User ID of employee who updated record
+    is_pii: True
+  - name: AuthorizedById
+    description: User ID of employee who authorized the classification
+    is_pii: True
+  - name: UpdateDate
+    description: Record update date
+    field_type: datetime
+  - name: Inactive
+    description: Flag for whether record is inactive

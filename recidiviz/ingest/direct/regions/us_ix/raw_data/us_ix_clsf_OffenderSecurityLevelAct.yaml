@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: clsf_OffenderSecurityLevelAct
+file_description: Offender security level act table
+data_classification: source
+primary_key_cols:
+  - ClsfActionHistoryId
+columns:
+  - name: ClsfActionHistoryId
+    description: Action History Id
+  - name: OffenderSecurityLevelId
+    description: Offender security level Id
+  - name: Comment
+    description: Comment
+    is_pii: True
+  - name: Score
+    description: Score
+  - name: SecurityLevelSegregationId
+    description: Security level segregation Id
+  - name: SecurityLevelOverrideId
+    description: Security level override Id
+  - name: SecurityLevelMandatoryOverrideId
+    description: Security level mandatory override Id
+  - name: AdjustedSecurityLevelId
+    description: Adjusted security level Id
+  - name: CalculatedSecurityLevelId
+    description: Calculated security level Id
+  - name: SecurityLevelId
+    description: Security level Id
+  - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Locking
+    description: Locking number for record
+  - name: InsertUserId
+    description: User ID of employee who entered record
+    is_pii: True
+  - name: InsertDate
+    description: Record insert date
+    field_type: datetime
+  - name: UpdateUserId
+    description: User ID of employee who updated record
+    is_pii: True
+  - name: UpdateDate
+    description: Record update date
+    field_type: datetime
+  - name: Inactive
+    description: Flag for whether record is inactive
