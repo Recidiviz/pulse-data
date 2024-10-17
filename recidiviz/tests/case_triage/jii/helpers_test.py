@@ -24,10 +24,12 @@ from recidiviz.case_triage.jii.helpers import (
     ALL_CLOSER,
     FULLY_ELIGIBLE_TEXT,
     INITIAL_TEXT,
-    MISSING_INCOME_BULLET,
-    MISSING_NEGATIVE_DA_BULLET,
-    MISSING_NEGATIVE_DA_OR_INCOME_CLOSER,
-    MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
+    FULLY_ELIGIBLE_EXCEPT_FFR,
+    MISSING_NEGATIVE_DA_OR_INCOME,
+    MISSING_NEGATIVE_DA_DOCUMENTATION,
+    MISSING_INCOME_DOCUMENTATION,
+    MISSING_NEGATIVE_DA_AND_INCOME,
+    LEARN_MORE,
     generate_eligibility_text_messages_dict,
     generate_initial_text_messages_dict,
 )
@@ -147,6 +149,11 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     field_type=bigquery.enums.SqlTypeNames.STRING.value,
                     mode="NULLABLE",
                 ),
+                bigquery.SchemaField(
+                    "fines_n_fees_denials",
+                    field_type=bigquery.enums.SqlTypeNames.BOOLEAN.value,
+                    mode="NULLABLE",
+                ),
             ],
         )
         self.load_rows_into_table(
@@ -172,6 +179,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     "ineligible_criteria_list": "US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
                     "ineligible_criteria": ["US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS"],
                     "district": "District 2",
+                    "fines_n_fees_denials": "false",
                 },
                 {
                     "state_code": "US_IX",
@@ -193,6 +201,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     "ineligible_criteria_list": "NEGATIVE_DA_WITHIN_90_DAYS",
                     "ineligible_criteria": ["NEGATIVE_DA_WITHIN_90_DAYS"],
                     "district": "District 4",
+                    "fines_n_fees_denials": "false",
                 },
                 {
                     "state_code": "US_IX",
@@ -214,6 +223,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     "ineligible_criteria_list": None,
                     "ineligible_criteria": [],
                     "district": "District 6",
+                    "fines_n_fees_denials": "false",
                 },
                 {
                     "state_code": "US_IX",
@@ -238,6 +248,51 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                         "US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS",
                     ],
                     "district": "District 3",
+                    "fines_n_fees_denials": "false",
+                },
+                {
+                    "state_code": "US_IX",
+                    "external_id": "4",
+                    "person_name": '{"given_names": "REBECCA", "middle_names": "", "name_suffix": "", "surname": "WELTON"}',
+                    "supervision_type": "PAROLE",
+                    "supervision_level": "MINIMUM",
+                    "po_name": "TEST PO 1",
+                    "phone_number": "4444444444",
+                    "email_address": None,
+                    "address": None,
+                    "supervision_start_date": "2023-12-19",
+                    "expiration_date": "2030-03-28",
+                    "is_eligible": "true",
+                    "array_reasons": "[]",
+                    "status": None,
+                    "denied_reasons": "[]",
+                    "lsir_level": "LOW",
+                    "ineligible_criteria_list": None,
+                    "ineligible_criteria": [],
+                    "district": "District 1",
+                    "fines_n_fees_denials": "true",
+                },
+                {
+                    "state_code": "US_IX",
+                    "external_id": "5",
+                    "person_name": '{"given_names": "JAMIE", "middle_names": "", "name_suffix": "", "surname": "TARTT"}',
+                    "supervision_type": "PAROLE",
+                    "supervision_level": "MINIMUM",
+                    "po_name": "TEST PO 1",
+                    "phone_number": "5555555555",
+                    "email_address": None,
+                    "address": None,
+                    "supervision_start_date": "2023-12-19",
+                    "expiration_date": "2030-03-28",
+                    "is_eligible": "false",
+                    "array_reasons": "[]",
+                    "status": None,
+                    "denied_reasons": "[]",
+                    "lsir_level": "LOW",
+                    "ineligible_criteria_list": None,
+                    "ineligible_criteria": [],
+                    "district": "District 7",
+                    "fines_n_fees_denials": "true",
                 },
             ],
         )
@@ -255,6 +310,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
             bq_output=query_job
         )
 
+        self.assertEqual(len(external_id_to_phone_num_to_text_dict), 5)
         self.assertEqual(
             external_id_to_phone_num_to_text_dict["0"],
             {
@@ -291,6 +347,15 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                 + ALL_CLOSER
             },
         )
+        self.assertEqual(
+            external_id_to_phone_num_to_text_dict["4"],
+            {
+                "4444444444": StrictStringFormatter().format(
+                    INITIAL_TEXT, given_name="Rebecca", po_name="Test Po 1"
+                )
+                + ALL_CLOSER
+            },
+        )
 
     def test_generate_eligibility_text_messages_dict(self) -> None:
         query_job = BigQueryClientImpl.run_query_async(
@@ -301,19 +366,19 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
         external_id_to_phone_num_to_text_dict = generate_eligibility_text_messages_dict(
             bq_output=query_job
         )
+        self.assertEqual(len(external_id_to_phone_num_to_text_dict), 5)
 
         self.assertEqual(
             external_id_to_phone_num_to_text_dict["0"],
             {
                 "1234567890": StrictStringFormatter().format(
-                    MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
+                    MISSING_NEGATIVE_DA_OR_INCOME,
                     given_name="Ted",
+                    missing_documentation=MISSING_INCOME_DOCUMENTATION,
                     po_name="Test Po 1",
                     additional_contact=" or contact a specialist at district2Admin@idoc.idaho.gov",
                 )
-                + "\n1. "
-                + MISSING_INCOME_BULLET
-                + MISSING_NEGATIVE_DA_OR_INCOME_CLOSER
+                + LEARN_MORE
                 + ALL_CLOSER
             },
         )
@@ -321,14 +386,13 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
             external_id_to_phone_num_to_text_dict["1"],
             {
                 "1111111111": StrictStringFormatter().format(
-                    MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
+                    MISSING_NEGATIVE_DA_OR_INCOME,
                     given_name="Roy",
+                    missing_documentation=MISSING_NEGATIVE_DA_DOCUMENTATION,
                     po_name="Test Po 1",
                     additional_contact=" or a specialist at d4ppspecialists@idoc.idaho.gov or 208-327-7008",
                 )
-                + "\n1. "
-                + MISSING_NEGATIVE_DA_BULLET
-                + MISSING_NEGATIVE_DA_OR_INCOME_CLOSER
+                + LEARN_MORE
                 + ALL_CLOSER
             },
         )
@@ -341,6 +405,7 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     po_name="Test Po 2",
                     additional_contact="",
                 )
+                + LEARN_MORE
                 + ALL_CLOSER
             },
         )
@@ -348,16 +413,25 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
             external_id_to_phone_num_to_text_dict["3"],
             {
                 "3333333333": StrictStringFormatter().format(
-                    MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
+                    MISSING_NEGATIVE_DA_AND_INCOME,
                     given_name="Coach",
                     po_name="Test Po 2",
                     additional_contact=" or a specialist at specialistsd3@idoc.idaho.gov or (208) 454-7601",
                 )
-                + "\n1. "
-                + MISSING_INCOME_BULLET
-                + "\n2. "
-                + MISSING_NEGATIVE_DA_BULLET
-                + MISSING_NEGATIVE_DA_OR_INCOME_CLOSER
+                + LEARN_MORE
+                + ALL_CLOSER
+            },
+        )
+        self.assertEqual(
+            external_id_to_phone_num_to_text_dict["4"],
+            {
+                "4444444444": StrictStringFormatter().format(
+                    FULLY_ELIGIBLE_EXCEPT_FFR,
+                    given_name="Rebecca",
+                    po_name="Test Po 1",
+                    additional_contact=" or email D1Connect@idoc.idaho.gov",
+                )
+                + LEARN_MORE
                 + ALL_CLOSER
             },
         )
