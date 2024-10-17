@@ -23,3 +23,11 @@ POST_PROCESSED_FILE_PATH = "post_processed_file_path"
 POST_PROCESSED_NORMALIZED_FILE_PATH = "post_processed_normalized_file_path"
 INGEST_READY_FILE_PATH = "ingest_ready_file_path"
 UPLOADED_FILE_PATH = "uploaded_file_path"
+
+# task names
+START_SFTP = "start_sftp"
+END_SFTP = "end_sftp"
+
+# SFTP / SSH errors tend to be transient, so we sometimes need to retry tasks in order
+# to get them to succeed. this should ONLY be applied to fully idempotent tasks.
+TASK_RETRIES = 3

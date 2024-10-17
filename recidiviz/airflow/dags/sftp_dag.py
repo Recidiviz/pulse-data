@@ -79,6 +79,7 @@ from recidiviz.airflow.dags.sftp.mark_remote_files_discovered_sql_query_generato
 from recidiviz.airflow.dags.sftp.mark_remote_files_downloaded_sql_query_generator import (
     MarkRemoteFilesDownloadedSqlQueryGenerator,
 )
+from recidiviz.airflow.dags.sftp.metadata import END_SFTP, START_SFTP, TASK_RETRIES
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
@@ -180,11 +181,7 @@ def remove_queued_up_dags(dag_run: Optional[DagRun] = None) -> None:
 
 @dag(
     dag_id=get_sftp_dag_id(project=get_project_id()),
-    # TODO(apache/airflow#29903) Remove this override and only override mapped task-level retries.
-    default_args={
-        **DEFAULT_ARGS,  # type: ignore
-        "retries": 3,
-    },
+    default_args=DEFAULT_ARGS,
     schedule=None,
     catchup=False,
     max_active_runs=1,
@@ -197,10 +194,10 @@ def sftp_dag() -> None:
 
     # TODO(#9641): We should add a task that handles locking of the operations database
     # when we move to a resource-based locking model.
-    start_sftp = EmptyOperator(task_id="start_sftp")
+    start_sftp = EmptyOperator(task_id=START_SFTP)
     rm_dags = remove_queued_up_dags()
     start_sftp >> rm_dags
-    end_sftp = EmptyOperator(task_id="end_sftp", trigger_rule=TriggerRule.ALL_DONE)
+    end_sftp = EmptyOperator(task_id=END_SFTP, trigger_rule=TriggerRule.ALL_DONE)
     for state_code in sftp_enabled_states(project_id):
         with TaskGroup(group_id=state_code) as state_specific_task_group:
             # We want to make sure that SFTP is enabled for the state, otherwise we skip
@@ -271,6 +268,7 @@ def sftp_dag() -> None:
                     region_code=state_code,
                     max_active_tis_per_dag=MAX_TASKS_TO_RUN_IN_PARALLEL,
                     execution_timeout=timedelta(hours=8),
+                    retries=TASK_RETRIES,
                 ).expand_kwargs(gather_discovered_remote_files.output)
                 post_process_downloaded_files = RecidivizGcsFileTransformOperator.partial(
                     task_id="post_process_downloaded_files",
@@ -281,6 +279,7 @@ def sftp_dag() -> None:
                     # tasks. We need to wait until downloads are finished in order
                     # to decide what to post process.
                     trigger_rule=TriggerRule.ALL_DONE,
+                    retries=TASK_RETRIES,
                 ).expand_kwargs(
                     download_sftp_files.output
                 )
@@ -416,6 +415,7 @@ def sftp_dag() -> None:
                     project_id=project_id,
                     region_code=state_code,
                     max_active_tis_per_dag=MAX_TASKS_TO_RUN_IN_PARALLEL,
+                    retries=TASK_RETRIES,
                 ).expand_kwargs(gather_discovered_ingest_ready_files.output)
                 mark_ingest_ready_files_uploaded = CloudSqlQueryOperator(
                     task_id="mark_ingest_ready_files_uploaded",
