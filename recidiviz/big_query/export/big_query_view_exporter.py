@@ -154,9 +154,7 @@ class CSVBigQueryViewExporter(BigQueryViewExporter):
 
         export_query_configs_and_export_configs = [
             (
-                c.as_export_query_config(
-                    bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
-                ),
+                c.as_export_query_config(bigquery.DestinationFormat.CSV),
                 c,
             )
             for c in export_configs
@@ -202,9 +200,7 @@ class HeaderlessCSVBigQueryViewExporter(BigQueryViewExporter):
 
         export_query_configs_and_export_configs = [
             (
-                c.as_export_query_config(
-                    bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
-                ),
+                c.as_export_query_config(bigquery.DestinationFormat.CSV),
                 c,
             )
             for c in export_configs
@@ -216,7 +212,7 @@ class HeaderlessCSVBigQueryViewExporter(BigQueryViewExporter):
         exported_configs_and_paths = (
             self.bq_client.export_query_results_to_cloud_storage(
                 export_configs=export_query_configs,
-                print_header=True,
+                print_header=False,
                 use_query_cache=True,
             )
         )
