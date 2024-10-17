@@ -130,6 +130,12 @@ def push_sandbox_dataflow_pipeline_docker_image(
 
 def run_sandbox_dataflow_pipeline(params: PipelineParameters, skip_build: bool) -> None:
     """Runs the pipeline designated by the given |params|."""
+    if not params.is_sandbox_pipeline:
+        raise ValueError(
+            f"Parameters should only be for a sandbox pipeline (e.g. an "
+            f"output_sandbox_prefix must be supplied). Found parameters: {params}."
+        )
+
     pipeline_cls = pipeline_cls_for_pipeline_name(params.pipeline)
     params.check_for_valid_input_dataset_overrides(
         get_all_reference_query_input_datasets_for_pipeline(

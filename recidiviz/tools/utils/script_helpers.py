@@ -56,6 +56,27 @@ def prompt_for_confirmation(
     return confirm
 
 
+def prompt_for_step(step_description: str) -> bool:
+    """Helper that prompts the user to ask whether they want to continue with a script
+    step, skip the step, or exit the script entirely.
+
+    If the user chooses exit, we exit with exit code 1. Otherwise, returns True if we
+    should proceed with the step, False if we should skip.
+    """
+    print(step_description)
+    while True:
+        check = input("Continue? [(P)roceed, (S)kip, or (E)xit] ")
+        if check.upper() == "E":
+            logging.warning("\nResponded with [%s]. Exiting.", check)
+            sys.exit(1)
+
+        if check.upper() == "P":
+            return True
+        if check.upper() == "S":
+            return False
+        print(f"Invalid choice [{check}]")
+
+
 def interactive_prompt_retry_on_exception(
     fn: Callable,
     input_text: str,
