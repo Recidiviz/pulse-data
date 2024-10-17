@@ -33,6 +33,7 @@ from recidiviz.big_query.export.big_query_view_exporter import (
 from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
     ExportOutputFormatType,
+    ExportQueryConfig,
     ExportValidationType,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
@@ -141,6 +142,10 @@ class BigQueryViewExporterTest(unittest.TestCase):
             ),
         ]
 
+        first_output_path = view_export_configs[0].output_path("csv")
+        second_output_path = view_export_configs[1].output_path("csv")
+        file_paths = [[first_output_path], [second_output_path]]
+
         export_query_configs = [
             config.as_export_query_config(output_format=bigquery.DestinationFormat.CSV)
             for config in view_export_configs
@@ -149,15 +154,32 @@ class BigQueryViewExporterTest(unittest.TestCase):
             export_query_configs, file_paths
         )
 
-        export_config_and_paths = exporter.export(view_export_configs)
+        # Act
+        exporter.export(view_export_configs)
 
-        self.assertEqual(len(export_config_and_paths), len(view_export_configs))
-
-        exported_paths = [
-            gcs_paths for _export_config, gcs_paths in export_config_and_paths
-        ]
-
-        self.assertEqual(exported_paths, file_paths)
+        # Assert export was called for both export configs with the correct CSV format
+        self.mock_bq_client.export_query_results_to_cloud_storage.assert_called_with(
+            export_configs=[
+                ExportQueryConfig(
+                    query="SELECT * FROM `fake-project.test_dataset.test_view`  WHERE state_code = 'US_XX'",
+                    query_parameters=[],
+                    intermediate_dataset_id="test_dataset",
+                    intermediate_table_name="test_view_table_US_XX",
+                    output_uri=first_output_path.uri(),
+                    output_format="CSV",
+                ),
+                ExportQueryConfig(
+                    query="SELECT * FROM `fake-project.test_dataset.test_view_2`  WHERE state_code = 'US_XX'",
+                    query_parameters=[],
+                    intermediate_dataset_id="test_dataset",
+                    intermediate_table_name="test_view_2_table_US_XX",
+                    output_uri=second_output_path.uri(),
+                    output_format="CSV",
+                ),
+            ],
+            print_header=True,
+            use_query_cache=True,
+        )
 
     def test_csv_throws(self) -> None:
         exporter = CSVBigQueryViewExporter(self.mock_bq_client, self.mock_validator)
@@ -191,10 +213,9 @@ class BigQueryViewExporterTest(unittest.TestCase):
             exporter.export(view_export_configs)
 
     def test_headerless_csv_export_format(self) -> None:
-        file_paths = [
-            [GcsfsFilePath.from_absolute_path("gs://bucket/export-1.csv")],
-            [GcsfsFilePath.from_absolute_path("gs://bucket/export-2.csv")],
-        ]
+        first_output_path = self.view_export_configs[0].output_path("csv")
+        second_output_path = self.view_export_configs[1].output_path("csv")
+        file_paths = [[first_output_path], [second_output_path]]
 
         export_query_configs = [
             config.as_export_query_config(output_format=bigquery.DestinationFormat.CSV)
@@ -207,15 +228,33 @@ class BigQueryViewExporterTest(unittest.TestCase):
         exporter = HeaderlessCSVBigQueryViewExporter(
             self.mock_bq_client, self.mock_validator
         )
-        export_config_and_paths = exporter.export(self.view_export_configs)
 
-        self.assertEqual(len(export_config_and_paths), len(self.view_export_configs))
+        # Act
+        exporter.export(self.view_export_configs)
 
-        exported_paths = [
-            gcs_paths for _export_config, gcs_paths in export_config_and_paths
-        ]
-
-        self.assertEqual(exported_paths, file_paths)
+        # Assert exports occurred to out first / second output paths in CSV format with no header
+        self.mock_bq_client.export_query_results_to_cloud_storage.assert_called_with(
+            export_configs=[
+                ExportQueryConfig(
+                    query="SELECT * FROM `fake-project.test_dataset.test_view`  WHERE state_code = 'US_XX'",
+                    query_parameters=[],
+                    intermediate_dataset_id="test_dataset",
+                    intermediate_table_name="test_view_table_US_XX",
+                    output_uri=first_output_path.uri(),
+                    output_format="CSV",
+                ),
+                ExportQueryConfig(
+                    query="SELECT * FROM `fake-project.test_dataset.test_view_2`  WHERE state_code = 'US_XX'",
+                    query_parameters=[],
+                    intermediate_dataset_id="test_dataset",
+                    intermediate_table_name="test_view_2_table_US_XX",
+                    output_uri=second_output_path.uri(),
+                    output_format="CSV",
+                ),
+            ],
+            print_header=False,
+            use_query_cache=True,
+        )
 
     def test_headerless_csv_throws(self) -> None:
         exporter = HeaderlessCSVBigQueryViewExporter(
