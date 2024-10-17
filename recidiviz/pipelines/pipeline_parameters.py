@@ -307,6 +307,22 @@ class PipelineParameters:
             kwargs[field_name] = getattr(self, field_name)
         return params_cls(**kwargs)
 
+    def get_standard_input_datasets(
+        self, reference_query_input_datasets: Set[str]
+    ) -> set[str]:
+        """Returns the set of datasets that are inputs to this pipeline when there are
+        no sandbox overrides applied.
+
+        Must provide a set of |reference_query_input_datasets| which
+        contains all datasets that any reference queries run by pipeline read from.
+        """
+        without_overrides = self._without_overrides()
+        all_standard_input_datasets = {
+            getattr(without_overrides, input_property)
+            for input_property in self.get_input_dataset_property_names()
+        } | reference_query_input_datasets
+        return all_standard_input_datasets
+
     def check_for_valid_input_dataset_overrides(
         self, reference_query_input_datasets: Set[str]
     ) -> None:
@@ -318,11 +334,9 @@ class PipelineParameters:
         if not self.input_dataset_overrides_json:
             return
 
-        without_overrides = self._without_overrides()
-        all_standard_input_datasets = {
-            getattr(without_overrides, input_property)
-            for input_property in self.get_input_dataset_property_names()
-        } | reference_query_input_datasets
+        all_standard_input_datasets = self.get_standard_input_datasets(
+            reference_query_input_datasets
+        )
 
         for original_dataset in self.input_dataset_overrides_json:
             if original_dataset not in all_standard_input_datasets:

@@ -129,13 +129,15 @@ def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
     return parser.parse_known_args()
 
 
-def get_extra_pipeline_parameter_args(
-    project: str,
+def get_raw_data_upper_bound_dates_json_for_sandbox_pipeline(
+    project_id: str,
     state_code: StateCode,
     raw_data_source_instance: DirectIngestInstance,
-) -> List[str]:
-    """Returns additional pipeline command-line args that can be inferred from the
-    state code, instance and sandbox prefix.
+) -> str:
+    """Builds JSON describing the raw data upper bound dates that should be used for a
+    sandbox ingest pipeline.
+
+    Will crash if a local_project_id_override is set already.
     """
     right_now = datetime.now()
 
@@ -150,7 +152,7 @@ def get_extra_pipeline_parameter_args(
         # Use the context for the project we will be running against, not the one that
         # corresponds to the local environment so that we don't identify local-only
         # views as launchable here.
-        IngestViewContentsContextImpl.build_for_project(project_id=project),
+        IngestViewContentsContextImpl.build_for_project(project_id=project_id),
     )
     view_collector = DirectIngestViewQueryBuilderCollector(
         region,
@@ -165,7 +167,7 @@ def get_extra_pipeline_parameter_args(
         ).raw_table_dependency_configs
     }
 
-    with local_project_id_override(project), cloudsql_proxy_control.connection(
+    with local_project_id_override(project_id), cloudsql_proxy_control.connection(
         schema_type=SchemaType.OPERATIONS
     ), SessionFactory.for_proxy(
         SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
@@ -188,6 +190,24 @@ def get_extra_pipeline_parameter_args(
             )
             for file_tag in raw_table_dependencies
         }
+    )
+    return raw_data_upper_bound_dates_json
+
+
+def get_extra_pipeline_parameter_args(
+    project: str,
+    state_code: StateCode,
+    raw_data_source_instance: DirectIngestInstance,
+) -> List[str]:
+    """Returns additional pipeline command-line args that can be inferred from the
+    state code, instance and sandbox prefix.
+    """
+    raw_data_upper_bound_dates_json = (
+        get_raw_data_upper_bound_dates_json_for_sandbox_pipeline(
+            project,
+            state_code,
+            raw_data_source_instance,
+        )
     )
 
     return [
