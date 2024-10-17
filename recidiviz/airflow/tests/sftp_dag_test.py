@@ -22,6 +22,7 @@ from unittest.mock import patch
 from airflow.models import DagBag
 
 import recidiviz
+from recidiviz.airflow.dags.sftp.metadata import START_SFTP, TASK_RETRIES
 from recidiviz.airflow.tests.test_utils import (
     AIRFLOW_WORKING_DIRECTORY,
     DAG_FOLDER,
@@ -36,9 +37,6 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
     ),
     "pipelines/calculation_pipeline_templates.yaml",
 )
-
-_START_SFTP_TASK_ID = "start_sftp"
-_END_SFTP_TASK_ID = "end_sftp"
 
 
 @patch(
@@ -80,7 +78,7 @@ class TestSftpPipelineDag(AirflowIntegrationTest):
         for task in state_specific_tasks_dag.tasks:
             upstream_tasks.update(task.upstream_task_ids)
 
-        self.assertIn(_START_SFTP_TASK_ID, upstream_tasks)
+        self.assertIn(START_SFTP, upstream_tasks)
 
     def test_check_config_upstream_of_remote_file_discovery_tasks(self) -> None:
         """Tests that the `check_config` check happens before we discover remote file
@@ -151,4 +149,4 @@ class TestSftpPipelineDag(AirflowIntegrationTest):
         for task in dag.tasks:
             for task_type in task_types_with_retries:
                 if task_type in task.task_id:
-                    self.assertEqual(3, task.retries)
+                    self.assertEqual(TASK_RETRIES, task.retries)
