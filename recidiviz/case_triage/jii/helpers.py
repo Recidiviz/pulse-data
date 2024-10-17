@@ -37,13 +37,13 @@ from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.string import StrictStringFormatter
 
 INITIAL_TEXT = "Hi {given_name}, we’re reaching out on behalf of the Idaho Department of Correction (IDOC). We will send information about your eligibility for opportunities such as the Limited Supervision Unit (LSU), which offers a lower level of supervision.\n\nIf you have questions, reach out to {po_name}."
-FULLY_ELIGIBLE_TEXT = "Hi {given_name}, IDOC records show that you’ve met some requirements for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins.\n\nTo be considered, you must meet several requirements including:\n\n1. Be paying fines / fees regularly (small payments are okay)\n2. Have no current no-contact orders\n\nIf you meet these requirements or have questions, reach out to {po_name}{additional_contact}. They will check if you qualify for LSU. Approval for LSU is not guaranteed.\n\nLearn more at rviz.co/id_lsu."
-MISSING_NEGATIVE_DA_OR_INCOME_OPENER = "Hi {given_name}, IDOC records show that you’ve met some requirements for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins.\n\nLSU is optional, and to be considered you must be paying fines/fees regularly (small payments are okay) and have no current no-contact orders.\n\nIf you’re interested, you can reach out to {po_name}{additional_contact} to complete the following items:\n"
-MISSING_INCOME_BULLET = "You may share documents showing that you have a job, are a full-time student, or have other income such as a pension or disability benefits.\n"
-MISSING_NEGATIVE_DA_BULLET = "You may provide a urine analysis test at the parole and probation office. You must test negative to be eligible for LSU.\n"
-MISSING_NEGATIVE_DA_OR_INCOME_CLOSER = (
-    "\nApproval for LSU is not guaranteed. Learn more at rviz.co/id_lsu."
-)
+FULLY_ELIGIBLE_TEXT = "Hi {given_name}, IDOC records show that you have met most of the requirements to be considered for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins for those in good standing (for example, no new misdemeanors).\n\nThis message does not mean that you are already on LSU. To fully qualify, your PO will need to check that:\n1. You have no active no-contact orders.\n2. You have made payments towards your fines/fees at least 3 months in a row (even small payments count).\n\nIf you believe you meet these conditions or have questions, please contact {po_name}{additional_contact}; they can confirm your eligibility and help you apply. Approval for LSU is not guaranteed."
+FULLY_ELIGIBLE_EXCEPT_FFR = "Hi {given_name}, IDOC records show that you have met most of the requirements to be considered for the Limited Supervision Unit (LSU). To qualify, you need to have made fine/fee payments at least 3 months in a row (even small payments count).\n\nLSU is a lower level of supervision with monthly online check-ins for those in good standing (for example, no active no-contact orders, and no new misdemeanors). It also reduces your monthly supervision fee from $60 to $30.\n\nYou can reach out to {po_name}{additional_contact} to make payments or with questions about LSU. If you meet all the criteria, they can help you apply."
+MISSING_NEGATIVE_DA_OR_INCOME = "Hi {given_name}, IDOC records show you may soon be eligible to apply for the Limited Supervision Unit (LSU), a lower level of supervision for those meeting all their required conditions (for example, no active no-contact orders and no new misdemeanors).\n\nLSU is optional but offers benefits like monthly online check-ins and reduced supervision fees ($30 instead of $60/month).\n\nTo qualify, you’ll need to provide your PO with {missing_documentation}.\n\nAdditionally, you must have paid towards your fines/fees at least 3 months in a row (even small payments count).\n\nIf interested, contact {po_name}{additional_contact} to verify your eligibility and apply."
+MISSING_NEGATIVE_DA_DOCUMENTATION = "a negative urine analysis test"
+MISSING_INCOME_DOCUMENTATION = "documents like pay-stubs proving you have full-time employment, are a student, or other income sources like a pension"
+MISSING_NEGATIVE_DA_AND_INCOME = "Hi {given_name}, IDOC records show you may soon be eligible to apply for the Limited Supervision Unit (LSU), a lower level of supervision for those meeting all their required conditions.\n\nLSU is optional but offers benefits like monthly online check-ins and reduced supervision fees ($30 instead of $60/month).\n\nTo qualify, you’ll need to provide your PO with:\n1. Documents like pay-stubs proving you have full-time employment, are a student, or other income sources like a pension, and\n2. A negative urine analysis test.\n\nAdditionally, you must have paid towards your fines/fees at least 3 months in a row (even small payments count).\n\nIf interested, contact {po_name}{additional_contact} to verify your eligibility and apply."
+LEARN_MORE = "\n\nLearn more at rviz.co/id_lsu."
 ALL_CLOSER = "\n\nReply STOP to stop receiving these messages at any time. We’re unable to respond to messages sent to this number."
 
 D1_ADDITIONAL_CONTACT = " or email D1Connect@idoc.idaho.gov"
@@ -77,6 +77,17 @@ def generate_initial_text_messages_dict(
         phone_num = str(individual["phone_number"])
         given_name = literal_eval(individual["person_name"])["given_names"].title()
         po_name = individual["po_name"].title()
+
+        fully_eligible = individual["is_eligible"]
+        fines_n_fees_denials = individual["fines_n_fees_denials"]
+        # We do not expect jii with fully_eligible=False and fines_n_fees_denials=True to be included in the BigQuery table as we do not want to text these individuals
+        if fully_eligible is False and fines_n_fees_denials is True:
+            logging.info(
+                "JII with external_id %s has fully_eligible=False and fines_n_fees_denials=True. We do not want to text this individual.",
+                external_id,
+            )
+            continue
+
         text_body = """"""
         text_body += StrictStringFormatter().format(
             INITIAL_TEXT, given_name=given_name, po_name=po_name
@@ -104,6 +115,8 @@ def generate_eligibility_text_messages_dict(
         fully_eligible = False
         missing_negative_da_within_90_days = False
         missing_income_verified_within_3_months = False
+        fines_n_fees_denials = individual["fines_n_fees_denials"]
+
         if individual["is_eligible"] is True:
             fully_eligible = True
         elif set(individual["ineligible_criteria"]) == {
@@ -123,15 +136,26 @@ def generate_eligibility_text_messages_dict(
 
         external_id = str(individual["external_id"])
         phone_num = str(individual["phone_number"])
+
+        # We do not expect jii with fully_eligible=False and fines_n_fees_denials=True to be included in the BigQuery table as we do not want to text these individuals
+        if fully_eligible is False and fines_n_fees_denials is True:
+            logging.info(
+                "JII with external_id %s has fully_eligible=False and fines_n_fees_denials=True. We do not want to text this individual.",
+                external_id,
+            )
+            continue
+
         text_body = construct_text_body(
             individual=individual,
             fully_eligible=fully_eligible,
             missing_negative_da_within_90_days=missing_negative_da_within_90_days,
             missing_income_verified_within_3_months=missing_income_verified_within_3_months,
+            fines_n_fees_denials=fines_n_fees_denials,
         )
         external_id_to_phone_num_to_text_dict[external_id] = {phone_num: text_body}
         logging.info("Eligibility text constructed for external_id: %s", external_id)
         logging.info("fully_eligible: %s", fully_eligible)
+        logging.info("fines_n_fees_denials: %s", fines_n_fees_denials)
         logging.info(
             "missing_negative_da_within_90_days: %s", missing_negative_da_within_90_days
         )
@@ -148,6 +172,7 @@ def construct_text_body(
     fully_eligible: bool,
     missing_negative_da_within_90_days: bool,
     missing_income_verified_within_3_months: bool,
+    fines_n_fees_denials: bool,
 ) -> str:
     """Constructs a text message (string) to be sent to a given individual based on their
     eligibility criteria.
@@ -176,45 +201,54 @@ def construct_text_body(
             f"Unexpected district. We expected {individual} to belong to districts 1, 2, 3, 4, 5, 6 or 7. They belong to: {district}."
         )
 
-    if fully_eligible is True:
+    if fully_eligible is True and fines_n_fees_denials is False:
         text_body += StrictStringFormatter().format(
             FULLY_ELIGIBLE_TEXT,
             given_name=given_name,
             po_name=po_name,
             additional_contact=additional_contact,
         )
+    elif fully_eligible is True and fines_n_fees_denials is True:
+        text_body += StrictStringFormatter().format(
+            FULLY_ELIGIBLE_EXCEPT_FFR,
+            given_name=given_name,
+            po_name=po_name,
+            additional_contact=additional_contact,
+        )
     elif (
         missing_negative_da_within_90_days is True
-        or missing_income_verified_within_3_months is True
+        and missing_income_verified_within_3_months is False
     ):
         text_body += StrictStringFormatter().format(
-            MISSING_NEGATIVE_DA_OR_INCOME_OPENER,
+            MISSING_NEGATIVE_DA_OR_INCOME,
+            given_name=given_name,
+            missing_documentation=MISSING_NEGATIVE_DA_DOCUMENTATION,
+            po_name=po_name,
+            additional_contact=additional_contact,
+        )
+    elif (
+        missing_negative_da_within_90_days is False
+        and missing_income_verified_within_3_months is True
+    ):
+        text_body += StrictStringFormatter().format(
+            MISSING_NEGATIVE_DA_OR_INCOME,
+            given_name=given_name,
+            missing_documentation=MISSING_INCOME_DOCUMENTATION,
+            po_name=po_name,
+            additional_contact=additional_contact,
+        )
+    elif (
+        missing_negative_da_within_90_days is True
+        and missing_income_verified_within_3_months is True
+    ):
+        text_body += StrictStringFormatter().format(
+            MISSING_NEGATIVE_DA_AND_INCOME,
             given_name=given_name,
             po_name=po_name,
             additional_contact=additional_contact,
         )
 
-    if (
-        missing_negative_da_within_90_days is True
-        and missing_income_verified_within_3_months is True
-    ):
-        text_body += "\n1. "
-        text_body += MISSING_INCOME_BULLET
-        text_body += "\n2. "
-        text_body += MISSING_NEGATIVE_DA_BULLET
-    elif missing_negative_da_within_90_days is True:
-        text_body += "\n1. "
-        text_body += MISSING_NEGATIVE_DA_BULLET
-    elif missing_income_verified_within_3_months is True:
-        text_body += "\n1. "
-        text_body += MISSING_INCOME_BULLET
-
-    if (
-        missing_negative_da_within_90_days is True
-        or missing_income_verified_within_3_months is True
-    ):
-        text_body += MISSING_NEGATIVE_DA_OR_INCOME_CLOSER
-
+    text_body += LEARN_MORE
     text_body += ALL_CLOSER
     return text_body
 
