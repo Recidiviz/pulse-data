@@ -126,6 +126,7 @@ def _get_person_population_selector(
                 span_type=SpanType.COMPARTMENT_SESSION,
                 span_conditions_dict={
                     # every compartment in the union of incarceration and supervision
+                    # with the addition of INFORMAL_PROBATION
                     "compartment_level_1": ["INCARCERATION", "SUPERVISION"],
                     "compartment_level_2": [
                         StateSpecializedPurposeForIncarceration.GENERAL.value,
@@ -139,6 +140,7 @@ def _get_person_population_selector(
                         StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION.value,
                         StateSupervisionPeriodSupervisionType.PAROLE.value,
                         StateSupervisionPeriodSupervisionType.PROBATION.value,
+                        StateSupervisionPeriodSupervisionType.WARRANT_STATUS.value,
                     ],
                 },
             )
