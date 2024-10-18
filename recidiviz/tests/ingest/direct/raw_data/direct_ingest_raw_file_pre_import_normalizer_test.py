@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for direct_ingest_raw_file_normalization_pass.py"""
+import os
 import unittest
 from unittest.mock import Mock, patch
 
@@ -37,13 +38,18 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
     RequiresPreImportNormalizationFileChunk,
 )
-from recidiviz.tests.cloud_storage.gcsfs_csv_chunk_boundary_finder_test import (
-    WINDOWS_FILE,
-    WINDOWS_FILE_CUSTOM_NEWLINES,
-    WINDOWS_FILE_CUSTOM_NEWLINES_CUSTOM_DELIM,
-    WINDOWS_FILE_MULIBYTE_NEWLINES,
-)
+from recidiviz.tests.cloud_storage import fixtures
 from recidiviz.tests.ingest.direct import fake_regions
+
+WINDOWS_FILE = "windows_file.csv"
+
+WINDOWS_FILE_CUSTOM_NEWLINES = "windows_file_with_custom_newlines.csv"
+
+WINDOWS_FILE_CUSTOM_NEWLINES_CUSTOM_DELIM = (
+    "windows_file_with_custom_newlines_custom_delim.csv"
+)
+
+WINDOWS_FILE_MULIBYTE_NEWLINES = "windows_file_with_multibyte_newlines.csv"
 
 
 class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
@@ -92,11 +98,14 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
 
     def run_local_test(
         self,
-        local_path: str,
+        fixture_name: str,
         chunk: RequiresPreImportNormalizationFileChunk,
         expected_output: str,
     ) -> None:
-        self.fs.test_add_path(path=chunk.path, local_path=local_path)
+        fixture_path = os.path.abspath(
+            os.path.join(os.path.dirname(fixtures.__file__), fixture_name)
+        )
+        self.fs.test_add_path(path=chunk.path, local_path=fixture_path)
 
         normalizer = DirectIngestRawFilePreImportNormalizer(self.fs, StateCode.US_XX)
 

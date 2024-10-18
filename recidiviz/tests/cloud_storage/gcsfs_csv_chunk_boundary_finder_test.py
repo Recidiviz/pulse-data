@@ -14,71 +14,127 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the accounting pass file"""
+"""Tests for the boundary finder file"""
+import csv
 import unittest
-from typing import List
+from typing import List, Optional
 
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import (
-    DEFAULT_CSV_ENCODING,
-    DEFAULT_CSV_LINE_TERMINATOR,
     CsvChunkBoundary,
     GcsfsCsvChunkBoundaryFinder,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.csv import (
+    CARRIAGE_RETURN,
+    DEFAULT_CSV_ENCODING,
+    DEFAULT_CSV_LINE_TERMINATOR,
+    DEFAULT_CSV_QUOTE_CHAR,
+    DEFAULT_CSV_SEPARATOR,
+)
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 
-NORMALIZED_FILE = fixtures.as_filepath("normalized_file.csv")
+NORMALIZED_FILE = "normalized_file.csv"
 
-NORMALIZED_FILE_NO_ENDING_NEWLINE = fixtures.as_filepath(
-    "normalized_file_no_ending_newline.csv"
-)
+NORMALIZED_FILE_NO_ENDING_NEWLINE = "normalized_file_no_ending_newline.csv"
 
-WINDOWS_FILE = fixtures.as_filepath("windows_file.csv")
+WINDOWS_FILE = "windows_file.csv"
 
-WINDOWS_FILE_CUSTOM_NEWLINES = fixtures.as_filepath(
-    "windows_file_with_custom_newlines.csv"
-)
+WINDOWS_FILE_CUSTOM_NEWLINES = "windows_file_with_custom_newlines.csv"
 
-WINDOWS_FILE_MULIBYTE_NEWLINES = fixtures.as_filepath(
-    "windows_file_with_multibyte_newlines.csv"
-)
+WINDOWS_FILE_MULIBYTE_NEWLINES = "windows_file_with_multibyte_newlines.csv"
 
-WINDOWS_FILE_CUSTOM_NEWLINES_CUSTOM_DELIM = fixtures.as_filepath(
+WINDOWS_FILE_CUSTOM_NEWLINES_CUSTOM_DELIM = (
     "windows_file_with_custom_newlines_custom_delim.csv"
 )
 
-EMPTY_FILE = fixtures.as_filepath("empty_file.csv")
+QUOTED_NEWLINE = "example_file_structure_commas.csv"
+
+QUOTED_CARRIAGE_NEWLINE = "example_file_structure_commas_carriage_return.csv"
+
+QUOTED_NEWLINE_NO_ENDING_NEWLINE = (
+    "example_file_structure_commas_no_trailing_newline.csv"
+)
+
+NOT_QUOTED = "encoded_utf_8.csv"
+
+EMPTY_FILE = "empty_file.csv"
 
 
-class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
-    """Tests for the DirectIngestRawFileAccountingPass class."""
+class GcsfsCsvChunkBoundaryFinderChunksForPathTests(unittest.TestCase):
+    """Tests for the GcsfsCsvChunkBoundaryFinder class that check the correctness of
+    GcsfsCsvChunkBoundaryFinder.get_chunks_for_gcs_path
+    """
+
+    @staticmethod
+    def _get_finder(
+        *,
+        fs: Optional[GCSFileSystem] = None,
+        chunk_size: int = 20,
+        peek_size: int = 5,
+        encoding: str = DEFAULT_CSV_ENCODING,
+        line_terminator: str = DEFAULT_CSV_LINE_TERMINATOR,
+        separator: str = DEFAULT_CSV_SEPARATOR,
+        quoting_mode: int = csv.QUOTE_NONE,
+        quote_char: str = DEFAULT_CSV_QUOTE_CHAR,
+        max_cell_size: Optional[int] = None,
+    ) -> GcsfsCsvChunkBoundaryFinder:
+        fs = fs if fs is not None else FakeGCSFileSystem()
+        return GcsfsCsvChunkBoundaryFinder(
+            fs=fs,
+            chunk_size=chunk_size,
+            peek_size=peek_size,
+            encoding=encoding,
+            separator=separator,
+            line_terminator=line_terminator,
+            quoting_mode=quoting_mode,
+            max_cell_size=max_cell_size,
+            quote_char=quote_char,
+        )
 
     def run_local_test(
         self,
         path: str,
         expected_boundaries: List[CsvChunkBoundary],
-        expected_chunks: List[str],
+        expected_chunks: List[str] | List[bytes],
+        *,
         chunk_size: int = 20,
         peek_size: int = 5,
         encoding: str = DEFAULT_CSV_ENCODING,
         line_terminator: str = DEFAULT_CSV_LINE_TERMINATOR,
+        separator: str = DEFAULT_CSV_SEPARATOR,
+        quoting_mode: int = csv.QUOTE_NONE,
+        max_cell_size: Optional[int] = None,
     ) -> None:
+        """Executes a test for GcsfsCsvChunkBoundaryFinder against a local file"""
         fs = FakeGCSFileSystem()
         input_gcs_path = GcsfsFilePath.from_absolute_path("gs://my-bucket/input.csv")
-        fs.test_add_path(path=input_gcs_path, local_path=path)
+        fs.test_add_path(path=input_gcs_path, local_path=fixtures.as_filepath(path))
 
-        finder = GcsfsCsvChunkBoundaryFinder(
+        finder = self._get_finder(
             fs=fs,
             chunk_size=chunk_size,
             peek_size=peek_size,
             encoding=encoding,
+            separator=separator,
             line_terminator=line_terminator,
+            quoting_mode=quoting_mode,
+            max_cell_size=max_cell_size,
         )
         actual_boundaries = finder.get_chunks_for_gcs_path(input_gcs_path)
+
         assert actual_boundaries == expected_boundaries
 
-        with fs.open(input_gcs_path, "r", encoding=encoding) as f:
+        check_output_in_bytes = len(expected_chunks) > 0 and isinstance(
+            expected_chunks[0], bytes
+        )
+        if check_output_in_bytes:
+            mode, open_encoding = "rb", None
+        else:
+            mode, open_encoding = "r", encoding
+
+        with fs.open(input_gcs_path, mode=mode, encoding=open_encoding) as f:
             actual_chunks = [
                 f.read(b.end_exclusive - b.start_inclusive) for b in actual_boundaries
             ]
@@ -211,16 +267,34 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
             chunk_size=100000000000,
         )
 
-    def test_invalid_sizes(self) -> None:
+    def test_invalid_params(self) -> None:
         invalid_sizes = [0, -1, -100]
-        fs = FakeGCSFileSystem()
         for invalid_size in invalid_sizes:
-            with self.assertRaises(ValueError):
-                _ = GcsfsCsvChunkBoundaryFinder(fs=fs, chunk_size=invalid_size)
+            with self.assertRaisesRegex(
+                ValueError, "chunk_size must be at least 1 byte"
+            ):
+                self._get_finder(chunk_size=invalid_size)
 
         for invalid_size in invalid_sizes:
+            with self.assertRaisesRegex(
+                ValueError, "peek_size must be at least 1 byte"
+            ):
+                self._get_finder(peek_size=invalid_size)
+
+        for invalid_size in invalid_sizes:
+            with self.assertRaisesRegex(
+                ValueError, "max_cell_size must be at least 1 byte"
+            ):
+                self._get_finder(max_cell_size=invalid_size)
+
+        with self.assertRaisesRegex(
+            ValueError, "chunk_size should never be smaller than peek_size"
+        ):
+            self._get_finder(peek_size=10, chunk_size=5)
+
+        for invalid_quote_char in ["/", "''", "‘"]:
             with self.assertRaises(ValueError):
-                _ = GcsfsCsvChunkBoundaryFinder(fs=fs, peek_size=invalid_size)
+                self._get_finder(quote_char=invalid_quote_char)
 
     def test_chunk_size_one(self) -> None:
         expected_boundaries = [
@@ -244,13 +318,182 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
             expected_boundaries,
             expected_chunks,
             chunk_size=1,
+            peek_size=1,
             encoding="WINDOWS-1252",
             line_terminator="‡\n",
         )
 
+    def test_quoted_newlines_simple(self) -> None:
+        expected_boundaries = [
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=79, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=79, end_exclusive=169, chunk_num=1),
+        ]
+        expected_chunks = [
+            '"numerical_col","string_col_1","string_col_2"\n"1234","Hello, world","I\'m Anna"\n',
+            '"4567","This line\nis split in two","This word is ""quoted"""\n"7890","""quoted value""",""\n',
+        ]
+        self.run_local_test(
+            QUOTED_NEWLINE,
+            expected_boundaries,
+            expected_chunks,
+            chunk_size=75,
+            peek_size=40,
+            encoding="UTF-8",
+            quoting_mode=csv.QUOTE_MINIMAL,
+        )
+
+    def test_quoted_newlines_on_border(self) -> None:
+        expected_boundaries = [
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=140, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=140, end_exclusive=169, chunk_num=1),
+        ]
+        expected_chunks = [
+            '"numerical_col","string_col_1","string_col_2"\n"1234","Hello, world","I\'m Anna"\n"4567","This line\nis split in two","This word is ""quoted"""\n',
+            '"7890","""quoted value""",""\n',
+        ]
+        self.run_local_test(
+            QUOTED_NEWLINE,
+            expected_boundaries,
+            expected_chunks,
+            chunk_size=79,
+            peek_size=40,
+            encoding="UTF-8",
+            quoting_mode=csv.QUOTE_MINIMAL,
+        )
+
+    def test_quoted_newlines_one_line_each(self) -> None:
+        expected_boundaries = [
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=46, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=46, end_exclusive=79, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=79, end_exclusive=140, chunk_num=2),
+            CsvChunkBoundary(start_inclusive=140, end_exclusive=169, chunk_num=3),
+        ]
+        expected_chunks = [
+            '"numerical_col","string_col_1","string_col_2"\n',
+            '"1234","Hello, world","I\'m Anna"\n',
+            '"4567","This line\nis split in two","This word is ""quoted"""\n',
+            '"7890","""quoted value""",""\n',
+        ]
+        self.run_local_test(
+            QUOTED_NEWLINE,
+            expected_boundaries,
+            expected_chunks,
+            chunk_size=1,
+            peek_size=1,
+            encoding="UTF-8",
+            quoting_mode=csv.QUOTE_MINIMAL,
+        )
+
+    def test_quoted_newlines_one_line_each_carriage(self) -> None:
+        expected_boundaries = [
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=71, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=71, end_exclusive=158, chunk_num=1),
+        ]
+        expected_chunks = [
+            b'numerical_col,string_col_1,string_col_2\r\n1234,"Hello, world",I\'m Anna\r\n',
+            b'4567,"This line\r\nis split in two","This word is ""quoted"""\r\n7890,"""quoted value""",\r\n',
+        ]
+        self.run_local_test(
+            QUOTED_CARRIAGE_NEWLINE,
+            expected_boundaries,
+            expected_chunks,
+            chunk_size=50,
+            peek_size=10,
+            encoding="UTF-8",
+            quoting_mode=csv.QUOTE_MINIMAL,
+            line_terminator=CARRIAGE_RETURN,
+        )
+
+    def test_quoted_newlines_no_ending_newline_one_line_each(self) -> None:
+        expected_boundaries = [
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=46, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=46, end_exclusive=79, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=79, end_exclusive=139, chunk_num=2),
+        ]
+        expected_chunks = [
+            '"numerical_col","string_col_1","string_col_2"\n',
+            '"1234","Hello, world","I\'m Anna"\n',
+            '"4567","This line\nis split in two","This word is ""quoted"""',
+        ]
+        self.run_local_test(
+            QUOTED_NEWLINE_NO_ENDING_NEWLINE,
+            expected_boundaries,
+            expected_chunks,
+            chunk_size=1,
+            peek_size=1,
+            encoding="UTF-8",
+            quoting_mode=csv.QUOTE_MINIMAL,
+        )
+
+    def test_quoted_mode_on_no_quotes_so_we_guess(self) -> None:
+        expected_boundaries = [
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=52, chunk_num=0)
+        ]
+        expected_chunks = ["symbol,name\n?,question mark\n+,plus\n\x80,euro\n£,pound\n"]
+        self.run_local_test(
+            NOT_QUOTED,
+            expected_boundaries,
+            expected_chunks,
+            chunk_size=10,
+            peek_size=10,
+            encoding="UTF-8",
+            quoting_mode=csv.QUOTE_MINIMAL,
+            max_cell_size=500,
+        )
+
+        expected_boundaries = [
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=12, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=12, end_exclusive=28, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=28, end_exclusive=43, chunk_num=2),
+            CsvChunkBoundary(start_inclusive=43, end_exclusive=52, chunk_num=3),
+        ]
+        new_expected_chunks = [
+            b"symbol,name\n",
+            b"?,question mark\n",
+            b"+,plus\n\xc2\x80,euro\n",
+            b"\xc2\xa3,pound\n",
+        ]
+        self.run_local_test(
+            NOT_QUOTED,
+            expected_boundaries,
+            new_expected_chunks,
+            chunk_size=10,
+            peek_size=10,
+            encoding="UTF-8",
+            quoting_mode=csv.QUOTE_MINIMAL,
+            max_cell_size=5,
+        )
+
+    def test_quoted_newlines_cell_size_too_small_so_we_make_a_mistake(self) -> None:
+        expected_boundaries = [
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=46, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=46, end_exclusive=79, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=79, end_exclusive=97, chunk_num=2),
+            CsvChunkBoundary(start_inclusive=97, end_exclusive=139, chunk_num=3),
+        ]
+        # this is a case where max_cell_size is not actually accurate
+        # "4567","This line\nis split in two","This word is ""quoted"""', is longer than
+        # 20 chars so we fail to split it.
+        expected_chunks = [
+            '"numerical_col","string_col_1","string_col_2"\n',
+            '"1234","Hello, world","I\'m Anna"\n',
+            '"4567","This line\n',
+            'is split in two","This word is ""quoted"""',
+        ]
+        self.run_local_test(
+            QUOTED_NEWLINE_NO_ENDING_NEWLINE,
+            expected_boundaries,
+            expected_chunks,
+            chunk_size=10,
+            peek_size=10,
+            encoding="UTF-8",
+            quoting_mode=csv.QUOTE_MINIMAL,
+            max_cell_size=20,
+        )
+
     def test_simple_no_newlines_at_all_no_not_at_all(self) -> None:
         expected_boundaries = [
-            CsvChunkBoundary(start_inclusive=0, end_exclusive=90, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=90, chunk_num=0)
         ]
         expected_chunks = [
             '"col_1","col2","col3"\n'

@@ -116,7 +116,13 @@ def _extract_file_chunks(
         region_raw_file_config, requires_pre_import_normalization_file_path
     )
 
-    chunker = GcsfsCsvChunkBoundaryFinder(fs)
+    chunker = GcsfsCsvChunkBoundaryFinder(
+        fs=fs,
+        line_terminator=raw_file_config.line_terminator,
+        separator=raw_file_config.separator,
+        encoding=raw_file_config.encoding,
+        quoting_mode=raw_file_config.quoting_mode,
+    )
     chunks = chunker.get_chunks_for_gcs_path(
         requires_pre_import_normalization_file_path,
     )

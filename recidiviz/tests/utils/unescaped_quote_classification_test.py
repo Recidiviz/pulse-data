@@ -269,10 +269,7 @@ class TestFindUnescapedQuote(unittest.TestCase):
             b'heheonlytriplequotes""nosingles',
         ]
         for buffer in buffers:
-            assert (
-                find_single_first_unescaped_quote(buffer, self.quote_char, 2)
-                == SingleUnescapedQuote.none()
-            )
+            assert find_single_first_unescaped_quote(buffer, self.quote_char, 2) is None
 
     def test_finds_simple(self) -> None:
         buffers = [
