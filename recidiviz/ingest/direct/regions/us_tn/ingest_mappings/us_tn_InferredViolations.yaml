@@ -35,6 +35,10 @@ output:
                     $mappings:
                       StateSupervisionViolationType.INTERNAL_UNKNOWN:
                         - INFERRED # These are inferred violations and as such, we do not know the type. However, we will use VIOLT admission reasons to assign a violation type of TECHNICAL in normalization
+                      StateSupervisionViolationType.FELONY:
+                        - SORV # SEX OFFENDER REGISTRY: VIOLATION SUBMITTED
+                      StateSupervisionViolationType.MISDEMEANOR:
+                        - CSLR # CSL VIOLATION SUBMITTED
           supervision_violation_responses:
             - $foreach:
                 $iterable:
@@ -64,6 +68,8 @@ output:
                           StateSupervisionViolationResponseType.VIOLATION_REPORT:
                             - VWAR # VIOLATION WARRANT AND REPORT ISSUED
                             - VRPT # VIOLATION REPORT SUBMITTED
+                            - CSLR # CSL VIOLATION SUBMITTED
+                            - SORV # SEX OFFENDER REGISTRY: VIOLATION SUBMITTED
                     response_date:
                       $json_extract:
                         $key: ContactNoteDateTime
@@ -80,4 +86,8 @@ output:
                                 StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
                                   - VWAR # VIOLATION WARRANT AND REPORT ISSUED
                                 StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                  # These are mapped to internal unknown becuase we are not yet sure
+                                  # what decision could come from these
                                   - VRPT # VIOLATION REPORT SUBMITTED
+                                  - CSLR # CSL VIOLATION SUBMITTED
+                                  - SORV # SEX OFFENDER REGISTRY: VIOLATION SUBMITTED
