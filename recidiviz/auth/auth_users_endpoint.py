@@ -325,6 +325,24 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
             dict_reader = csv.DictReader(
                 files["file"].read().decode("utf-8-sig").splitlines()
             )
+
+            # Make sure the columns are what we expect
+            expected_columns = [
+                "email_address",
+                "roles",
+                "district",
+                "external_id",
+                "first_name",
+                "last_name",
+            ]
+            if not dict_reader.fieldnames or sorted(dict_reader.fieldnames) != sorted(
+                expected_columns
+            ):
+                abort(
+                    HTTPStatus.BAD_REQUEST,
+                    message=f"CSV columns must be exactly {','.join(expected_columns)}",
+                )
+
             rows = list(dict_reader)
             # Convert "" to None for all values so missing values can still be filled in by data in Roster
             for row in rows:

@@ -18,6 +18,7 @@
 """Tests for auth/auth_users_endpoint.py."""
 import json
 import os
+import tempfile
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 from unittest import TestCase, mock
@@ -29,9 +30,7 @@ from flask import Flask
 from flask_smorest import Api
 from werkzeug.datastructures import FileStorage
 
-from recidiviz.auth.auth_endpoint import (
-    get_auth_endpoint_blueprint,
-)
+from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import get_users_blueprint
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -825,6 +824,23 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
             )
             self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster")  # type: ignore[attr-defined]
+
+    def test_upload_roster_incorrect_columns(self) -> None:
+        with tempfile.NamedTemporaryFile() as fixture, self.app.test_request_context():
+            fixture.write(b"email_address,roles,district")
+            fixture.seek(0)
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+            response = self.client.put(
+                self.users("us_xx"),
+                headers=self.headers,
+                data=data,
+                follow_redirects=True,
+                content_type="multipart/form-data",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            error_message = "CSV columns must be exactly email_address,roles,district,external_id,first_name,last_name"
+            self.assertEqual(error_message, json.loads(response.data)["message"])
 
     def test_upload_roster_with_missing_email_address(self) -> None:
         roster_leadership_user = generate_fake_rosters(
