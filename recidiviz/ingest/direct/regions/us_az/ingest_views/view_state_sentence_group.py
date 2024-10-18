@@ -56,6 +56,7 @@ cleaned_AZ_DOC_SC_OFFENSE_ALL AS (
     SELECT 
         OFFENSE_ID, 
         UPDT_DTM,
+        OFFENSE_CHANGE_ID,
         IF(COMMUNITY_SUPV_BEGIN_DTM_ML BETWEEN '1900-01-01' AND '2100-01-01', COMMUNITY_SUPV_BEGIN_DTM_ML, NULL) AS COMMUNITY_SUPV_BEGIN_DTM_ML,
         IF(COMMUNITY_SUPV_BEGIN_DTM_ARD BETWEEN '1900-01-01' AND '2100-01-01', COMMUNITY_SUPV_BEGIN_DTM_ARD, NULL) AS COMMUNITY_SUPV_BEGIN_DTM_ARD,
         IF(COMMUNITY_SUPV_BEGIN_DTM BETWEEN '1900-01-01' AND '2100-01-01', COMMUNITY_SUPV_BEGIN_DTM, NULL) AS COMMUNITY_SUPV_BEGIN_DTM,
@@ -67,11 +68,14 @@ cleaned_AZ_DOC_SC_OFFENSE_ALL AS (
         IF(TR_TO_ABSOLUTE_DSCHRG_DTM BETWEEN '1900-01-01' AND '2100-01-01', TR_TO_ABSOLUTE_DSCHRG_DTM, NULL) AS TR_TO_ABSOLUTE_DSCHRG_DTM,
         IF(ABSOLUTE_DISCHARGE_DTM_ML BETWEEN '1900-01-01' AND '2100-01-01', ABSOLUTE_DISCHARGE_DTM_ML, NULL) AS ABSOLUTE_DISCHARGE_DTM_ML,
         IF(ABSOLUTE_DISCHARGE_DTM_ARD BETWEEN '1900-01-01' AND '2100-01-01', ABSOLUTE_DISCHARGE_DTM_ARD, NULL) AS ABSOLUTE_DISCHARGE_DTM_ARD,
-        IF(ABSOLUTE_DISCHARGE_DTM BETWEEN '1900-01-01' AND '2100-01-01', ABSOLUTE_DISCHARGE_DTM, NULL) AS ABSOLUTE_DISCHARGE_DTM
+        IF(ABSOLUTE_DISCHARGE_DTM BETWEEN '1900-01-01' AND '2100-01-01', ABSOLUTE_DISCHARGE_DTM, NULL) AS ABSOLUTE_DISCHARGE_DTM,
+        IF(SENTENCE_END_DTM_ML BETWEEN '1900-01-01' AND '2100-01-01', SENTENCE_END_DTM_ML, NULL) AS SENTENCE_END_DTM_ML,
+        IF(SENTENCE_END_DTM BETWEEN '1900-01-01' AND '2100-01-01', SENTENCE_END_DTM, NULL) AS SENTENCE_END_DTM
     FROM (
         SELECT
             OFFENSE_ID, 
             NULLIF(UPDT_DTM, 'NULL') AS UPDT_DTM,
+            CHANGE_ID AS OFFENSE_CHANGE_ID,
             NULLIF(COMMUNITY_SUPV_BEGIN_DTM_ML, 'NULL') AS COMMUNITY_SUPV_BEGIN_DTM_ML,
             NULLIF(COMMUNITY_SUPV_BEGIN_DTM_ARD, 'NULL') AS COMMUNITY_SUPV_BEGIN_DTM_ARD, 
             NULLIF(COMMUNITY_SUPV_BEGIN_DTM, 'NULL') AS COMMUNITY_SUPV_BEGIN_DTM,
@@ -83,37 +87,30 @@ cleaned_AZ_DOC_SC_OFFENSE_ALL AS (
             NULLIF(TR_TO_ABSOLUTE_DSCHRG_DTM, 'NULL') AS TR_TO_ABSOLUTE_DSCHRG_DTM,
             NULLIF(ABSOLUTE_DISCHARGE_DTM_ML, 'NULL') AS ABSOLUTE_DISCHARGE_DTM_ML, 
             NULLIF(ABSOLUTE_DISCHARGE_DTM_ARD, 'NULL') AS ABSOLUTE_DISCHARGE_DTM_ARD,
-            NULLIF(ABSOLUTE_DISCHARGE_DTM, 'NULL') AS ABSOLUTE_DISCHARGE_DTM
+            NULLIF(ABSOLUTE_DISCHARGE_DTM, 'NULL') AS ABSOLUTE_DISCHARGE_DTM,
+            NULLIF(SENTENCE_END_DTM_ML, 'NULL') AS SENTENCE_END_DTM_ML,
+            NULLIF(SENTENCE_END_DTM, 'NULL') AS SENTENCE_END_DTM
         FROM {{AZ_DOC_SC_OFFENSE@ALL}}
     )
     ),
--- Cleans AZ_DOC_SC_EPISODE raw data to null out fields that contain the string 'NULL'
--- and fields that contain dates outside of a reasonable date range.
-cleaned_AZ_DOC_SC_EPISODE_ALL AS (
-    SELECT 
+-- Creates a sub-table that connects sentence groups to their ruling sentences, so that
+-- the AZ_DOC_SC_OFFENSE table can be filtered to only include information that pertains
+-- to the offenses that control a given commitment.
+cleaned_AZ_DOC_SC_EPISODE AS (
+    SELECT DISTINCT
         SC_EPISODE_ID,
         FINAL_OFFENSE_ID, 
-        UPDT_DTM,
-        IF(EXPIRATION_DTM_ML BETWEEN '1900-01-01' AND '2100-01-01', EXPIRATION_DTM_ML, NULL) AS EXPIRATION_DTM_ML,
-        IF(EXPIRATION_DTM BETWEEN '1900-01-01' AND '2100-01-01', EXPIRATION_DTM, NULL) AS EXPIRATION_DTM,
-    FROM (
-        SELECT
-            SC_EPISODE_ID,
-            FINAL_OFFENSE_ID, 
-            NULLIF(UPDT_DTM, 'NULL') AS UPDT_DTM,
-            NULLIF(EXPIRATION_DTM_ML, 'NULL') AS EXPIRATION_DTM_ML,
-            NULLIF(EXPIRATION_DTM, 'NULL') AS EXPIRATION_DTM, 
-        FROM {{AZ_DOC_SC_EPISODE@ALL}}
-        )
+    FROM {{AZ_DOC_SC_EPISODE}}
 ),
--- There are confilicting values for some episodes
--- with the same update datetime. This CTE parses them
--- and we take the minimum value in the output
+-- There are two to three values for each date provided in the raw data to account for
+-- various adjustments that may be made. See the ingest view description for prioritization
+-- logic. 
 parsed_dates AS (
     SELECT DISTINCT
         PERSON_ID,
         SC_EPISODE_ID,  -- StateSentenceGroup.external_id
-        COALESCE(ruling_offense.UPDT_DTM, episode.UPDT_DTM) AS UPDT_DTM,    -- StateSentenceGroupLength.group_update_datetime
+        ruling_offense.UPDT_DTM, -- StateSentenceGroupLength.group_update_datetime
+        OFFENSE_CHANGE_ID,
     COALESCE(
         COMMUNITY_SUPV_BEGIN_DTM_ML,
         COMMUNITY_SUPV_BEGIN_DTM_ARD,
@@ -131,37 +128,41 @@ parsed_dates AS (
         ABSOLUTE_DISCHARGE_DTM_ARD,
         ABSOLUTE_DISCHARGE_DTM) AS AbsoluteDischargeDate, -- Absolute Discharge Date (ADD)
     COALESCE(
-        EXPIRATION_DTM_ML, 
-        EXPIRATION_DTM) AS SentenceExpirationDate -- SED
+        SENTENCE_END_DTM_ML, 
+        SENTENCE_END_DTM) AS SentenceExpirationDate -- SED
     FROM 
-        cleaned_AZ_DOC_SC_EPISODE_ALL AS episode 
-    JOIN 
-        valid_people
-    USING
-        (SC_EPISODE_ID)
+        cleaned_AZ_DOC_SC_OFFENSE_ALL AS ruling_offense
     -- The dates associated with the Final Ruling Offense are the ones that dictate
     -- the time a person actually spends in prison for a given group of sentences
     -- imposed together.
     JOIN 
-        cleaned_AZ_DOC_SC_OFFENSE_ALL AS ruling_offense
+        cleaned_AZ_DOC_SC_EPISODE AS episode 
     ON
         (episode.FINAL_OFFENSE_ID = ruling_offense.OFFENSE_ID)
+    JOIN 
+        valid_people
+    USING
+        (SC_EPISODE_ID)
 )
 SELECT
     PERSON_ID,
     SC_EPISODE_ID,
     UPDT_DTM,
-    MIN(SentenceExpirationDate) AS SentenceExpirationDate,
-    MIN(CommunitySupervisionBeginDate) AS CommunitySupervisionBeginDate,
-    MIN(EarnedReleaseCreditDate) AS EarnedReleaseCreditDate,
-    MIN(TransitionToAbsoluteDischargeDate) AS TransitionToAbsoluteDischargeDate,
-    MIN(AbsoluteDischargeDate) AS AbsoluteDischargeDate
+    OFFENSE_CHANGE_ID,
+    SentenceExpirationDate,
+    CommunitySupervisionBeginDate,
+    EarnedReleaseCreditDate,
+    TransitionToAbsoluteDischargeDate,
+    AbsoluteDischargeDate
 FROM
     parsed_dates
 WHERE 
     UPDT_DTM IS NOT NULL
-GROUP BY 
-    PERSON_ID, SC_EPISODE_ID, UPDT_DTM
+-- For changes to any of these dates that happened on the same day and/or have the same UPDT_DTM, choose the set that has the highest CHANGE_ID value (in the case of AZ_DOC_SC_OFFENSE raw data)
+-- If there was only one set of dates associated with a given UPDT_DTM, this will still return that set of dates.
+-- If there are more than one set of dates associated with the same UPDT_DTM, this will preserve the dates that were entered the most recently into ACIS. 
+-- This assumes that CHANGE_ID exclusively increments over time.
+QUALIFY ROW_NUMBER() OVER (PARTITION BY PERSON_ID, SC_EPISODE_ID, UPDT_DTM ORDER BY OFFENSE_CHANGE_ID DESC) = 1
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
