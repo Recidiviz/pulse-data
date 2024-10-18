@@ -273,6 +273,7 @@ class TestGetViewUpdateInputDatasetOverridesDict(unittest.TestCase):
 
         with local_project_id_override("recidiviz-456"):
             overrides_dict = get_view_update_input_dataset_overrides_dict(
+                state_code=StateCode.US_CA,
                 ingest_pipeline_params=ingest_pipeline_params,
                 post_ingest_pipeline_params=[],
             )
@@ -334,6 +335,7 @@ class TestGetViewUpdateInputDatasetOverridesDict(unittest.TestCase):
 
         with local_project_id_override("recidiviz-456"):
             overrides_dict = get_view_update_input_dataset_overrides_dict(
+                state_code=StateCode.US_CA,
                 ingest_pipeline_params=ingest_pipeline_params,
                 post_ingest_pipeline_params=post_ingest_pipeline_params,
             )
