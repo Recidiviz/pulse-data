@@ -55,8 +55,6 @@ columns:
   - name: ClassificationNextReviewPeriodId
     description: Classification next review period Id
   - name: IsCustom
-    description: |-
-      TODO(#15329): Fill in column description
   - name: Locking
     description: Locking number for record
   - name: InsertUserId
@@ -76,3 +74,5 @@ columns:
     field_type: datetime
   - name: Inactive
     description: Flag for whether record is inactive
+  - name: NextReviewDate
+    description: Next review date
