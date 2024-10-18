@@ -440,6 +440,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         person_record_type=PersonRecordType.CLIENT,
     ),
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_OR,
+        opportunity_type="usOrEarnedDischargeSentence",
+        experiment_id="US_OR_EARNED_DISCHARGE_WORKFLOWS",
+        opportunity_record_view_name="us_or_earned_discharge_sentence_record_materialized",
+        task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
+        source_filename="us_or_earned_discharge_sentence_record.json",
+        export_collection_name="US_OR-earnedDischargeSentence",
+        opportunity_type_path_str="earnedDischargeSentence",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_PA,
         opportunity_type="usPaAdminSupervision",
         experiment_id="US_PA_ADMIN_SUPERVISION_WORKFLOWS",
