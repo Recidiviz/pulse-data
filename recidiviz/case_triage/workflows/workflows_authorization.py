@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements user validations for workflows APIs. """
-import datetime
-import logging
 import os
 from typing import Any, Dict, List
 
@@ -26,6 +24,7 @@ from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states im
     get_workflows_enabled_states,
 )
 from recidiviz.case_triage.authorization_utils import (
+    get_active_feature_variants,
     on_successful_authorization_requested_state,
 )
 from recidiviz.common.constants.states import StateCode
@@ -66,26 +65,10 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
     g.is_recidiviz_user = app_metadata["stateCode"].upper() == "RECIDIVIZ"
 
-    g.feature_variants = {}
-    for fv, params in app_metadata.get("featureVariants", {}).items():
-        if isinstance(params, dict):
-            # Only include FVs with no date, or with a date that parses correctly & is in the past
-            if "activeDate" not in params or datetime.datetime.fromisoformat(
-                params["activeDate"]
-            ) < datetime.datetime.now(
-                tz=datetime.datetime.fromisoformat(params["activeDate"]).tzinfo
-            ):
-                g.feature_variants[fv] = params
-        elif params is True:
-            g.feature_variants[fv] = {}
-        elif params is not False and params is not None:
-            id_for_error = app_metadata.get("pseudonymizedId", "unknown")
-            logging.error(
-                "User with id %s has feature value %s with non-dict/bool value %s",
-                id_for_error,
-                fv,
-                params,
-            )
+    g.feature_variants = get_active_feature_variants(
+        app_metadata.get("featureVariants", {}),
+        app_metadata.get("pseudonymizedId", None),
+    )
 
 
 def get_workflows_external_request_enabled_states() -> List[str]:
