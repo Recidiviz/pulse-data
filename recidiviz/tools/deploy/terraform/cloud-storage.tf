@@ -536,3 +536,21 @@ module "override-districts-archive" {
   project_id  = var.project_id
   name_suffix = "override-districts-archive"
 }
+
+module "airflow-kubernetes-pod-operator-outputs" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "airflow-kubernetes-pod-operator-outputs"
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        age = 7
+      }
+    },
+  ]
+}
