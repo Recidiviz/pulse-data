@@ -317,15 +317,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "ungrouped_supervision_level_sessions",
         ],
         "CAFScoreAssessment": ["CAF_base", "latest_Classification"],
-        "InferredViolations": [
-            "abs_contact_notes",
-            "all_inferred_violations",
-            "cleaned_contact_note_type",
-            "documented_violations",
-            "grouping_likely_related_events",
-            "identifying_likely_related_events",
-            "ordered_vwars_vrpts",
-        ],
         "OffenderName": ["filtered_out_nicknames", "normalized_rows"],
         "SentencesChargesAndCourtCases_v4": [
             "all_latest_sentences_joined",
