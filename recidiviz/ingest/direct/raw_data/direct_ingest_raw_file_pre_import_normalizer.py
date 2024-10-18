@@ -17,12 +17,13 @@
 """Code for normalizing any csv file into a BigQuery-readable file."""
 import csv
 import io
+import logging
 from types import ModuleType
 from typing import IO, Optional, Union
 
 from recidiviz.cloud_storage.bytes_chunk_reader import BytesChunkReader
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.cloud_storage.read_only_csv_normalizing_stream import (
     ReadOnlyCsvNormalizingStream,
 )
@@ -56,11 +57,13 @@ class DirectIngestRawFilePreImportNormalizer:
         state_code: StateCode,
         region_module_override: Optional[ModuleType] = None,
         read_chunk_size: int = DEFAULT_READ_CHUNK_SIZE,
+        temp_output_dir: Optional[GcsfsDirectoryPath] = None,
     ) -> None:
         self._fs = fs
         self._state_code = state_code
-        # TODO(#29013) allow for sandbox name here
-        self._temp_output_dir = gcsfs_direct_ingest_temporary_output_directory_path()
+        self._temp_output_dir = (
+            temp_output_dir or gcsfs_direct_ingest_temporary_output_directory_path()
+        )
         self._region_config = get_region_raw_file_config(
             self._state_code.value.lower(), region_module_override
         )
@@ -111,6 +114,14 @@ class DirectIngestRawFilePreImportNormalizer:
         path_parts = filename_parts_from_path(chunk.path)
         config = self._region_config.raw_file_configs[path_parts.file_tag]
         output_path = self.output_path_for_chunk(chunk)
+
+        logging.info(
+            "normalizing [%s]: chunk [%s] (%s -> %s)",
+            chunk.path.file_name,
+            chunk.chunk_boundary.chunk_num,
+            chunk.chunk_boundary.start_inclusive,
+            chunk.chunk_boundary.end_exclusive,
+        )
 
         # then, execute the actual normalization step
         with self._fs.open(

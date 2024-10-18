@@ -154,15 +154,10 @@ class SingleUnescapedQuote:
             "of where out quote sits within the characters around it"
         )
 
-    @classmethod
-    def none(cls) -> "SingleUnescapedQuote":
-        """Returns an SingleUnescapedQuote object for when not quote is found"""
-        return cls(index=-1, prev_chars=b"", next_chars=b"", quote_char=b"")
-
 
 def find_single_first_unescaped_quote(
     buffer: bytes, quote_char: bytes, min_buffer_peek: int
-) -> SingleUnescapedQuote:
+) -> SingleUnescapedQuote | None:
     '''Searches |buffer| to find the first single, "unescaped" |quote_char| we can find.
     n.b. we will skip all non-single quotes, which means we are skipping:
         - double quotes ("") -- we are skipping these as they are either (a) an escaped
@@ -213,4 +208,4 @@ def find_single_first_unescaped_quote(
         cursor += relative_quote_index + quote_count
         quote_count = 0
 
-    return SingleUnescapedQuote.none()
+    return None

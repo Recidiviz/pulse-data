@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Contains all classes related to raw file configs."""
+import csv
 import os
 import re
 from collections import defaultdict
@@ -667,6 +668,10 @@ class DirectIngestRawFileConfig:
     def primary_key_str(self) -> str:
         """A comma-separated string representation of the primary keys"""
         return ", ".join(self.primary_key_cols)
+
+    @property
+    def quoting_mode(self) -> int:
+        return csv.QUOTE_NONE if self.ignore_quotes else csv.QUOTE_MINIMAL
 
     # TODO(#28239) remove this once raw data import dag is fully rolled out
     def encodings_to_try(self) -> List[str]:
