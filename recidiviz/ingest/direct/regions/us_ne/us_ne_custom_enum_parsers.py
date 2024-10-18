@@ -22,3 +22,23 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_ne_custom_enum_parsers.<function name>
 """
+from typing import Optional
+
+from recidiviz.common.constants.state.state_sentence import StateSentencingAuthority
+
+
+def parse_sentencing_authority(
+    raw_text: str,
+) -> Optional[StateSentencingAuthority]:
+    """
+    Determine sentencing authority from county
+    """
+    COUNTY = raw_text
+
+    if COUNTY == "US MARSHAL/ATTORNEY":
+        return StateSentencingAuthority.FEDERAL
+
+    if COUNTY == "OUT OF STATE":
+        return StateSentencingAuthority.OTHER_STATE
+
+    return StateSentencingAuthority.COUNTY
