@@ -18,6 +18,8 @@ columns:
     description: Score
   - name: AssessmentDate
     description: Assessment date
+  - name: SecurityLevelId
+    description: Security level Id
     field_type: datetime
   - name: Comment
     description: Coment

@@ -27,4 +27,5 @@ columns:
     field_type: datetime
   - name: Inactive
     description: Flag for whether record is inactive
+  - name: IsCustom
 is_code_file: True
