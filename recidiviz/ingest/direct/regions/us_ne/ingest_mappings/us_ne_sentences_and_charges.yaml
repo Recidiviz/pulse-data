@@ -1,0 +1,160 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentences_and_charges` to
+#  corresponding Ingest Object fields.
+# launch_env:
+#   $env: is_local
+manifest_language: 1.0.0
+input_columns:
+  - pkOffenseId
+  - inmateNumber
+  - fkOffenseTypeCode
+  - offenseCount
+  - fkFelonyMisdemeanorCode
+  - fkOffenseAttemptCode
+  - arrest_code
+  - county_name
+  - convictedSexualOffense
+  - convictedDescription
+  - controlling
+  - offenseCommittedDate
+  - statute
+  - pkAggregateSentenceId
+  - beginDate
+  - jailTimeDays
+  - parole_possible
+  - sentence_admission
+  - degree
+  - minimumTerm
+unused_columns: []
+variables:
+  - sentence_external_id:
+      $concat:
+        $values:
+          - inmateNumber
+          - pkAggregateSentenceId
+          - pkOffenseId
+  - sentence_group_external_id:
+      $concat:
+        $values:
+          - inmateNumber
+          - pkAggregateSentenceId
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    sentence_groups:
+      # there is only 1 sentence for X number of charges in NE because they only have
+      # an aggregated sentence table but because COUNTY information comes from their charges
+      # but is used for sentencing authority raw text we have to include the offenseID in the
+      # sentence id to not cause entity merging errors with sentences
+      - StateSentenceGroup:
+          external_id: $variable(sentence_group_external_id)
+    sentences:
+      - StateSentence:
+          external_id: $variable(sentence_external_id)
+          sentence_group_external_id: $variable(sentence_group_external_id)
+          sentence_type:
+            $enum_mapping:
+              $raw_text: sentence_admission
+              $mappings:
+                StateSentenceType.INTERNAL_UNKNOWN:
+                  - NINETY DAY EVALUATOR # DCS not responsible for sentence, held for 90 days
+                  - WORK ETHIC CAMP ADMISSION # DCS not responsible for sentence
+                  - INS DETAINEE # DCS not responsible for sentence
+                  - KANSAS JUVENILES # DCS not responsible for sentence
+                  - SARPY COUNTY WORK RELEASE # DCS not responsible for sentence
+                StateSentenceType.STATE_PRISON:
+                  - REGULAR ADMISSION
+                  - MULTIPLE OFFENDER
+                  - INTERSTATE TRANSER
+                StateSentenceType.COUNTY_JAIL:
+                  - COURT ORDERED SAFEKEEPER # held briefly in prison, but DCS not responsible for sentence
+                  - COUNTY SAFEKEEPER # held briefly in prison, but DCS not responsible for sentence
+                StateSentenceType.FEDERAL_PRISON:
+                  - FEDERAL SAFEKEEPER # held briefly in prison, but DCS not responsible for sentence
+          # there is no tracking of imposed date in NE so we use the sentence begin date primarily
+          imposed_date: beginDate
+          county_code: county_name
+          is_life:
+            $equal:
+              - minimumTerm
+              - $literal("LFE") # Life sentence
+          is_capital_punishment:
+            $equal:
+              - minimumTerm
+              - $literal("DTH") # Death
+          parole_possible:
+            $equal:
+              - parole_possible
+              - $literal("Y")
+          sentencing_authority:
+            $conditional:
+              - $if:
+                  $not_null: county_name
+                $then:
+                  $enum_mapping:
+                    $raw_text: county_name
+                    $custom_parser: us_ne_custom_enum_parsers.parse_sentencing_authority
+              - $else: $literal_enum(StateSentencingAuthority.PRESENT_WITHOUT_INFO)
+          initial_time_served_days: jailTimeDays
+          sentence_metadata:
+            $json_dict:
+              offensetype_num: fkOffenseTypeCode
+          charges:
+            - StateChargeV2:
+                external_id:
+                  $concat:
+                    $values:
+                      - inmateNumber
+                      - pkOffenseId
+                status: $literal_enum(StateChargeV2Status.CONVICTED) # only have data for convictions
+                offense_date: offenseCommittedDate
+                county_code: county_name
+                statute: statute
+                description: convictedDescription
+                offense_type: arrest_code
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: fkFelonyMisdemeanorCode
+                    $mappings:
+                      StateChargeV2ClassificationType.FELONY:
+                        - 3F
+                        - 2AF
+                        - 1CF
+                        - 1F
+                        - 3AF
+                        - 1AF
+                        - 2F
+                        - 1BF
+                        - 1DF
+                        - 4F
+                        - F
+                      StateChargeV2ClassificationType.MISDEMEANOR:
+                        - M
+                        - 1M
+                        - 5M
+                        - 2M
+                        - 3M
+                        - 3AM
+                        - 4M
+                        - WM
+                      StateChargeV2ClassificationType.EXTERNAL_UNKNOWN:
+                        - UNK
+                      StateChargeV2ClassificationType.INTERNAL_UNKNOWN:
+                        - SK # SAFEKEEPER
+                classification_subtype: degree
+                is_sex_offense:
+                  $equal:
+                    - convictedSexualOffense
+                    - $literal("Y") # YES
+                is_controlling:
+                  $equal:
+                    - controlling
+                    - $literal("1")
+                attempted:
+                  $equal:
+                    - fkOffenseAttemptCode
+                    - $literal("A")
+                counts: offenseCount
