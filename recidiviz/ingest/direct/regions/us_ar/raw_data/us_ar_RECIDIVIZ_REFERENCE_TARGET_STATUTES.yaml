@@ -25,4 +25,12 @@ columns:
       for statute codes that don't show up in the external spreadsheet at all, or for statutes
       that match multiple codes in the external spreadsheet and would thus have multiple values
       for is_target.
+  - name: is_violent
+    description: |-
+      Whether or not the statute code is considered a violent offense. Includes statutes that are
+      classified as both violent and sex offenses.
+  - name: is_sex
+    description: |-
+      Whether or not the statute code is considered a sex offense. Includes statutes that are
+      classified as both violent and sex offenses.
 update_cadence: IRREGULAR
