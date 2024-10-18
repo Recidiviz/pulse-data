@@ -1,0 +1,148 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_contacts` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - SID_Number
+  - Verified_Employment
+  - Contact_Date
+  - Contact_ID
+  - Face_to_Face_Flag
+  - Unsuccessful_Contact_Flag
+  - Reason_Description
+  - Location_Description
+  - Type_Description
+unused_columns: [Face_to_Face_Flag]
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID_Number
+          id_type: $literal("US_TX_SID")
+    supervision_contacts:
+      - StateSupervisionContact:
+          external_id: Contact_ID
+          verified_employment:
+            $equal:
+              - Verified_Employment
+              - Contact_Date
+          contact_date: Contact_Date
+          contact_method:
+            $enum_mapping:
+              $raw_text: Type_Description
+              $mappings:
+                StateSupervisionContactMethod.INTERNAL_UNKNOWN:
+                  - "Collateral W/ Treatment Provider"
+                  - "Home Deferal"
+                  - "Any Contact Type"
+                  - "Surveillance"
+                  - "Unit"
+                StateSupervisionContactMethod.IN_PERSON:
+                  - "Employer/Sponsor F2F"
+                  - "Home"
+                  - "Residence Verification"
+                  - "Any Parolee F2F"
+                  - "Employment"
+                  - "Office"
+                  - "Office or Field"
+                  - "Field"
+                StateSupervisionContactMethod.TELEPHONE:
+                  - "Telephonic"
+                StateSupervisionContactMethod.VIRTUAL:
+                  - "Virtual"
+                  - "Electronic"
+                StateSupervisionContactMethod.WRITTEN_MESSAGE:
+                  - "Written"
+          location:
+            $enum_mapping:
+              $raw_text: Location_Description
+              $mappings:
+                StateSupervisionContactLocation.COURT:
+                  - "Court"
+                StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY:
+                  - "Police Department"
+                  - "Sheriff Department"
+                StateSupervisionContactLocation.JAIL:
+                  - "Jail"
+                StateSupervisionContactLocation.RESIDENCE:
+                  - "Contact's Home"
+                StateSupervisionContactLocation.TREATMENT_PROVIDER:
+                  - "Hospital/Nursing home"
+                  - "Treatment Facility"
+                StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
+                  - "Workplace"
+                StateSupervisionContactLocation.SUPERVISION_OFFICE:
+                  - "Parole Office"
+                StateSupervisionContactLocation.INTERNAL_UNKNOWN:
+                  - "Unit"
+                  - "DPS Website"
+                  - "Program/HwH"
+                  - "Other"
+          contact_type:
+            $enum_mapping:
+              $raw_text: Type_Description
+              $mappings:
+                StateSupervisionContactType.COLLATERAL:
+                  - "Collateral W/ Treatment Provider"
+                  - "Employer/Sponsor F2F"
+                StateSupervisionContactType.DIRECT:
+                  - "Home"
+                  - "Residence Verification"
+                  - "Electronic"
+                  - "Telephonic"
+                  - "Virtual"
+                  - "Any Parolee F2F"
+                  - "Employment"
+                  - "Office"
+                  - "Office or Field"
+                  - "Written"
+                  - "Field"
+                StateSupervisionContactType.INTERNAL_UNKNOWN:
+                  - "Home Deferal"
+                  - "Any Contact Type"
+                  - "Surveillance"
+                  - "Unit"
+          contact_reason:
+            $enum_mapping:
+              $raw_text: Reason_Description
+              $mappings:
+                StateSupervisionContactReason.INITIAL_CONTACT:
+                  - "New Arrival"
+                StateSupervisionContactReason.EMERGENCY_CONTACT:
+                  - "Alert Notification - Equipment"
+                  - "Rapid Response"
+                StateSupervisionContactReason.GENERAL_CONTACT:
+                  - "EM Verification" #Electric monitoring
+                  - "Employment Verification"
+                  - "Residence Validation"
+                  - "Investigative"
+                  - "Random"
+                  - "Regular Visit"
+                  - "Unscheduled"
+                  - "Annual"
+                  - "Unscheduled Home Optional"
+                  - "Unscheduled Field Optional"
+                  - "Unscheduled Office Optional"
+                  - "Unscheduled Field/Home Optional"
+                  - "Unscheduled Home/Office Optional"
+                  - "Unscheduled - Weekend Only"
+                  - "Face to Face - RRC"
+                StateSupervisionContactReason.INTERNAL_UNKNOWN:
+                  - "Inmate Request"
+                  - "Other"
+                  - "PPI"
+                  - "Surveillance"
+                  - "Transfer Investigation"
+                  - "Public Inquiry"
+                  - "Management Oversight"
+                  - "Child Safety Zone Check"
+                  - "Intervention"
+                  - "Plain View"
+          status:
+            $enum_mapping:
+              $raw_text: Unsuccessful_Contact_Flag
+              $mappings:
+                StateSupervisionContactStatus.COMPLETED:
+                  - "0"
+                StateSupervisionContactStatus.ATTEMPTED:
+                  - "1"
