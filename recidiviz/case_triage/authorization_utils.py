@@ -18,7 +18,9 @@
 This module contains a helper for authenticating users accessing product APIs hosted on the Case Triage
 backend.
 """
+import datetime
 import json
+import logging
 import os
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Optional
@@ -139,3 +141,45 @@ def on_successful_authorization_requested_state(
         return
 
     raise AuthorizationError(code="not_authorized", description="Access denied")
+
+
+def get_active_feature_variants(
+    feature_variants: dict, pseudonymized_id: Optional[str]
+) -> dict:
+    """Get active feature variants for a user, logging an error if any
+    feature variant is invalid (i.e., not a dict or bool).
+
+    Args:
+        feature_variants (Dict[str, Any]): Raw dictionary of possible feature variants.
+        pseudonymized_id (Optional[str]): ID of the user for logging purposes.
+
+    Returns:
+        Dict[str, Any]: Active feature variants.
+    """
+
+    active_feature_variants, failure_feature_variants = {}, {}
+
+    for fv, params in feature_variants.items():
+        if isinstance(params, dict):
+            active_date: datetime.datetime | None = (
+                datetime.datetime.fromisoformat(params["activeDate"])
+                if "activeDate" in params
+                else None
+            )
+            if active_date is None or active_date < datetime.datetime.now(
+                tz=active_date.tzinfo
+            ):
+                active_feature_variants[fv] = params
+        elif params is True:
+            active_feature_variants[fv] = {}
+        elif params not in {False, None}:
+            failure_feature_variants[fv] = params
+
+    if failure_feature_variants:
+        logging.error(
+            "User with id %s has invalid feature variants: %s",
+            pseudonymized_id if pseudonymized_id else "unknown",
+            failure_feature_variants,
+        )
+
+    return active_feature_variants

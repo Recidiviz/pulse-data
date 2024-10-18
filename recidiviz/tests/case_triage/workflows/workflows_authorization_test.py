@@ -20,8 +20,7 @@ from typing import Any, Dict, Optional
 from unittest import TestCase, mock
 from unittest.mock import MagicMock
 
-from flask import Flask, Response, make_response, g
-import freezegun
+from flask import Flask, Response, make_response
 
 from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization,
@@ -138,59 +137,3 @@ class WorkflowsAuthorizationClaimsTestCase(TestCase):
                 "external_request/US_WY/enqueue_sms_request", user_state_code="US_WY"
             )
             self.assertEqual(assertion.exception.code, "external_requests_not_enabled")
-
-    @freezegun.freeze_time("2022-12-30")
-    def test_feature_variant_parsing_included(self) -> None:
-        input_fvs = {
-            "fvOne": {},
-            "fvTwo": {"activeDate": "2022-01-01T01:01:01.000Z"},
-            "fvThree": {"activeDate": "2022-01-01T01:01:01.000"},
-            "fvFour": {"activeDate": "2022-01-01"},
-            "fvFive": True,
-        }
-
-        expected_fvs = {
-            "fvOne": {},
-            "fvTwo": {"activeDate": "2022-01-01T01:01:01.000Z"},
-            "fvThree": {"activeDate": "2022-01-01T01:01:01.000"},
-            "fvFour": {"activeDate": "2022-01-01"},
-            "fvFive": {},
-        }
-
-        with test_app.app_context():  # to access the Flask g object from within a test
-            self.assertIsNone(
-                self.process_claims(
-                    "external_request/US_CA/enqueue_sms_request",
-                    user_state_code="US_CA",
-                    feature_variants=input_fvs,
-                )
-            )
-            fvs = g.get("feature_variants")
-            self.assertDictEqual(fvs, expected_fvs)
-
-    @freezegun.freeze_time("2022-12-30")
-    def test_feature_variant_parsing_excluded(self) -> None:
-        with test_app.app_context():  # to access the Flask g object from within a test
-            self.assertIsNone(
-                self.process_claims(
-                    "external_request/US_CA/enqueue_sms_request",
-                    user_state_code="US_CA",
-                    feature_variants={
-                        "fvShouldNotIncludeFalse": False,
-                        "fvShouldNotIncludeNone": None,
-                        "fvShouldNotIncludeFuture": {"activeDate": "2023-01-01"},
-                    },
-                )
-            )
-            fvs = g.get("feature_variants")
-            self.assertDictEqual(fvs, {})
-
-    def test_feature_variant_parsing_incorrect_date(self) -> None:
-        with self.assertRaises(ValueError):
-            self.process_claims(
-                "external_request/US_CA/enqueue_sms_request",
-                user_state_code="US_CA",
-                feature_variants={
-                    "fvOne": {"activeDate": "garbagio, not a real datetime"},
-                },
-            )

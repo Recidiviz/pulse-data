@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements authorization for Outliers routes"""
-import datetime
 import os
 from http import HTTPStatus
 from typing import Any, Dict, Optional
@@ -26,6 +25,7 @@ from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states imp
     get_outliers_enabled_states,
 )
 from recidiviz.case_triage.authorization_utils import (
+    get_active_feature_variants,
     on_successful_authorization_requested_state,
 )
 from recidiviz.case_triage.outliers.user_context import UserContext
@@ -63,16 +63,7 @@ def on_successful_authorization(
     )
     user_pseudonymized_id = app_metadata.get("pseudonymizedId", None)
     routes = app_metadata.get("routes", {})
-    feature_variants = {
-        fv: params
-        for fv, params in app_metadata.get("featureVariants", {}).items()
-        if "activeDate" not in params
-        or datetime.datetime.fromisoformat(params["activeDate"])
-        # Handle both naive and UTC activeDates
-        < datetime.datetime.now(
-            tz=datetime.datetime.fromisoformat(params["activeDate"]).tzinfo
-        )
-    }
+    feature_variants = app_metadata.get("featureVariants", {})
     if user_state_code == "RECIDIVIZ":
         feature_variants["supervisorHomepageWorkflows"] = {}
 
@@ -83,7 +74,9 @@ def on_successful_authorization(
         can_access_all_supervisors=is_recidiviz_or_csg
         # TODO(Recidiviz/recidiviz-dashboards#4520): don't hard-code this string
         or routes.get("insights_supervision_supervisors-list", False),
-        feature_variants=feature_variants,
+        feature_variants=get_active_feature_variants(
+            feature_variants, user_pseudonymized_id
+        ),
     )
 
     # If the user is a recidiviz user, skip endpoint checks
