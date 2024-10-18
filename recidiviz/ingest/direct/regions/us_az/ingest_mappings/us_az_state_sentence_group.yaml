@@ -9,7 +9,8 @@ input_columns:
   - TransitionToAbsoluteDischargeDate
   - EarnedReleaseCreditDate
   - AbsoluteDischargeDate
-unused_columns: []
+  - OFFENSE_CHANGE_ID
+unused_columns: [OFFENSE_CHANGE_ID]
 output:
   StatePerson:
     external_ids:
