@@ -54,6 +54,11 @@ RECIDIVIZ_ENV = "RECIDIVIZ_ENV"
 GOOGLE_CLOUD_PROJECT = "GOOGLE_CLOUD_PROJECT"
 DATA_PLATFORM_VERSION = "DATA_PLATFORM_VERSION"
 
+DAG_ID = "DAG_ID"
+RUN_ID = "RUN_ID"
+TASK_ID = "TASK_ID"
+MAP_INDEX = "MAP_INDEX"
+
 
 # TODO(#21450) Rename to in_app_engine_env
 def in_gcp() -> bool:
@@ -90,6 +95,14 @@ def in_dataflow_worker() -> bool:
         return False
 
 
+def in_airflow_kubernetes_pod() -> bool:
+    try:
+        AirflowKubernetesPodEnvironment.get_dag_id()
+        return True
+    except NotInAirflowKubernetesPodError:
+        return False
+
+
 class NotInCloudRunError(KeyError):
     pass
 
@@ -116,6 +129,46 @@ class CloudRunEnvironment:
     @staticmethod
     def get_service_name() -> str:
         return CloudRunEnvironment.get_cloud_run_environment_variable("K_SERVICE")
+
+
+class NotInAirflowKubernetesPodError(KeyError):
+    pass
+
+
+class AirflowKubernetesPodEnvironment:
+    """These environment variables are set when creating a RecidivizKubernetesPodOperator in Airflow"""
+
+    @staticmethod
+    def get_airflow_kubernetes_pod_environment_variable(environment_key: str) -> str:
+        try:
+            return os.environ[environment_key]
+        except KeyError as e:
+            raise NotInAirflowKubernetesPodError() from e
+
+    @staticmethod
+    def get_dag_id() -> str:
+        return AirflowKubernetesPodEnvironment.get_airflow_kubernetes_pod_environment_variable(
+            DAG_ID
+        )
+
+    @staticmethod
+    def get_run_id() -> str:
+        return AirflowKubernetesPodEnvironment.get_airflow_kubernetes_pod_environment_variable(
+            RUN_ID
+        )
+
+    @staticmethod
+    def get_task_id() -> str:
+        return AirflowKubernetesPodEnvironment.get_airflow_kubernetes_pod_environment_variable(
+            TASK_ID
+        )
+
+    @staticmethod
+    def get_map_index() -> Optional[str]:
+        index = AirflowKubernetesPodEnvironment.get_airflow_kubernetes_pod_environment_variable(
+            MAP_INDEX
+        )
+        return index if index != "-1" else None
 
 
 def get_gcp_environment() -> Optional[str]:

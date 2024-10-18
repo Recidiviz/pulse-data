@@ -42,8 +42,12 @@ from recidiviz.airflow.dags.utils.environment import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.environment import (
+    DAG_ID,
     DATA_PLATFORM_VERSION,
+    MAP_INDEX,
     RECIDIVIZ_ENV,
+    RUN_ID,
+    TASK_ID,
     get_data_platform_version,
     get_environment_for_project,
 )
@@ -162,12 +166,23 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
             argument for argument in self.arguments if argument
         ]
 
+    def _get_ti_metadata(self, context: Context) -> List[k8s.V1EnvVar]:
+        ti = context["ti"]
+        return [
+            k8s.V1EnvVar(name=DAG_ID, value=ti.dag_id),
+            k8s.V1EnvVar(name=TASK_ID, value=ti.task_id),
+            k8s.V1EnvVar(name=RUN_ID, value=context["run_id"]),
+            k8s.V1EnvVar(name=MAP_INDEX, value=str(ti.map_index)),
+        ]
+
     # The execute method is called after templated arguments have been rendered
     def execute(self, context: Context) -> Any:
         # Assign resources based on the entrypoint that we are running
         self.container_resources = (
             KubernetesEntrypointResourceAllocator().get_resources(self.arguments)
         )
+        # Make task instance metadata accessible from the pod
+        self.env_vars.extend(self._get_ti_metadata(context))
 
         return super().execute(context)
 
