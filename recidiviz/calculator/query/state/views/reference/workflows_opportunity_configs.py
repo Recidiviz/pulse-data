@@ -78,8 +78,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_type="usAzReleaseToTPR",
         experiment_id="US_AZ_RELEASE_TO_TPR_WORKFLOWS",
         opportunity_record_view_name="us_az_approaching_acis_or_recidiviz_tpr_request_record_materialized",
-        # TODO(#33655): Update this to the correct task completion event
-        task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
+        task_completion_event=TaskCompletionEventType.TRANSITIONAL_EARLY_RELEASE_DATE_SET,
         source_filename="us_az_approaching_acis_or_recidiviz_tpr_request_record.json",
         export_collection_name="US_AZ-TPRReferrals",
         opportunity_type_path_str="TPR",
@@ -90,8 +89,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_type="usAzOverdueForACISDTP",
         experiment_id="OVERDUE_FOR_ACIS_DTP_WORKFLOWS",
         opportunity_record_view_name="us_az_overdue_for_acis_dtp_request_record_materialized",
-        # TODO(#33655): Correct task completion event
-        task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
+        task_completion_event=TaskCompletionEventType.EARLY_RELEASE_TO_DRUG_PROGRAM,
         source_filename="us_az_overdue_for_acis_dtp_request_record.json",
         export_collection_name="US_AZ-OverdueForDTPReferrals",
         opportunity_type_path_str="OverdueForDTP",
@@ -102,8 +100,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_type="usAzOverdueForACISTPR",
         experiment_id="OVERDUE_FOR_ACIS_TPR_WORKFLOWS",
         opportunity_record_view_name="us_az_overdue_for_acis_tpr_request_record_materialized",
-        # TODO(#33655): Correct task completion event
-        task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
+        task_completion_event=TaskCompletionEventType.EARLY_RELEASE,
         source_filename="us_az_overdue_for_acis_tpr_request_record.json",
         export_collection_name="US_AZ-OverdueForTPRReferrals",
         opportunity_type_path_str="OverdueForTPR",

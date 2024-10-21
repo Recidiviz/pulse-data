@@ -22,7 +22,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.general import early_discharge
+from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
+    transitional_early_release_date_set,
+)
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum_or_medium,
     no_nonviolent_incarceration_violation_within_6_months,
@@ -74,8 +76,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_tpr_denial_in_current_incarceration.VIEW_BUILDER,
         no_tpr_removals_from_self_improvement_programs.VIEW_BUILDER,
     ],
-    # TODO(#33655): Update this to the correct task completion event
-    completion_event_builder=early_discharge.VIEW_BUILDER,
+    completion_event_builder=transitional_early_release_date_set.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
