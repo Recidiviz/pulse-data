@@ -2142,15 +2142,17 @@ def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
         JusticeCountsServerError: If the agency with the given `agency_id` does not exist.
         ValueError: If an unexpected datapoint is encountered.
     """
-    agency = AgencyInterface.get_agency_by_id(
-        session=current_session, agency_id=agency_id, with_settings=True
+    agencies = AgencyInterface.get_agencies_by_id(
+        session=current_session, agency_ids=[agency_id]
     )
-    if not agency:
+
+    if len(agencies) == 0:
         raise JusticeCountsServerError(
             code="agency_not_found",
             description=f"No agency exists with the id {agency_id}",
         )
 
+    agency = agencies[0]
     agency_id = agency.id
     reports = ReportInterface.get_reports_for_agency_dashboard(
         session=current_session,
