@@ -97,6 +97,7 @@ state_assessment_type_tx_csst = "TX_CSST"
 state_assessment_type_tx_cst = "TX_CST"
 state_assessment_type_tx_srt = "TX_SRT"
 state_assessment_type_tx_rt = "TX_RT"
+state_assessment_type_accat = "ACCAT"
 
 state_assessment_level_minimum = "MINIMUM"
 state_assessment_level_low = "LOW"
@@ -108,6 +109,7 @@ state_assessment_level_moderate = "MODERATE"
 state_assessment_level_high = "HIGH"
 state_assessment_level_very_high = "VERY_HIGH"
 state_assessment_level_maximum = "MAXIMUM"
+state_assessment_level_intense = "INTENSE"
 
 # state_charge.py
 state_charge_classification_type_civil = "CIVIL"

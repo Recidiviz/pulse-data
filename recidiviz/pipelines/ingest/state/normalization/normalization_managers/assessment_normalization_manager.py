@@ -219,6 +219,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.TX_CST,
                 StateAssessmentType.TX_RT,
                 StateAssessmentType.TX_SRT,
+                StateAssessmentType.ACCAT,
             ]:
                 logging.warning(
                     "Cannot determine assessment score bucket - assessment type %s is unsupported.",
