@@ -54,7 +54,7 @@ D3_ADDITIONAL_CONTACT = (
 D4_ADDITIONAL_CONTACT = (
     " or a specialist at d4ppspecialists@idoc.idaho.gov or 208-327-7008"
 )
-D5_ADDITIONAL_CONTACT = ""
+D5_ADDITIONAL_CONTACT = " or a specialist at D5general@idoc.idaho.gov or 208-644-7268"
 D6_ADDITIONAL_CONTACT = ""
 D7_ADDITIONAL_CONTACT = (
     " or a specialist at d7.pp.specialist@idoc.idaho.gov or (208) 701-7130"
