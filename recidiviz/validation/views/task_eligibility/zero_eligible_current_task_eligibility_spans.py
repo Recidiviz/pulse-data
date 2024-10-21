@@ -49,6 +49,8 @@ SELECT
     *
 FROM zero_current_spans
 WHERE total_eligible = 0
+    -- OVERDUE_FOR_DISCHARGE in ME can have 0 eligible clients and that's ok
+    AND NOT (state_code = 'US_ME' AND task_name = 'OVERDUE_FOR_DISCHARGE_REQUEST')
 """
 
 ZERO_ELIGIBLE_CURRENT_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
