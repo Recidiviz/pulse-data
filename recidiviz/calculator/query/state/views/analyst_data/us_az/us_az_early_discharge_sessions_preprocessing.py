@@ -55,7 +55,7 @@ WITH state_sentence_with_raw_data AS (
     END AS CURR_RELEASE_TYPE_ID
   FROM `{{project_id}}.{{normalized_state_dataset}}.state_sentence` sent
   LEFT JOIN `{{project_id}}.{{us_az_raw_data_up_to_date_dataset}}.AZ_DOC_SC_OFFENSE_latest` off
-  ON(sent.external_id = off.OFFENSE_ID)
+  ON(SPLIT(sent.external_id, '-')[SAFE_OFFSET(0)] = off.OFFENSE_ID)
   LEFT JOIN `{{project_id}}.{{us_az_raw_data_up_to_date_dataset}}.AZ_DOC_SC_COMMITMENT_latest` commit ON (off.COMMITMENT_ID = commit.COMMITMENT_ID)
   LEFT JOIN `{{project_id}}.{{us_az_raw_data_up_to_date_dataset}}.AZ_DOC_SC_EPISODE_latest` sc_episode ON (commit.SC_EPISODE_ID = sc_episode.SC_EPISODE_ID)
   WHERE sent.state_code = 'US_AZ'

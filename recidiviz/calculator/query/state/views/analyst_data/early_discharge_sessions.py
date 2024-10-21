@@ -60,6 +60,7 @@ EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE = """
         sessions.person_id,
         sessions.state_code,
         sessions.session_id,
+        sessions.compartment_level_1,
         sessions.end_date_exclusive AS discharge_date,
         IF(ed.state_code IS NOT NULL,1,0) AS early_discharge,
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions

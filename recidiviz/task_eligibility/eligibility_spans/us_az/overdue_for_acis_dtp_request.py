@@ -22,7 +22,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.general import early_discharge
+from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
+    early_release_to_drug_program,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     incarceration_past_acis_dtp_date,
 )
@@ -45,8 +47,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         incarceration_past_acis_dtp_date.VIEW_BUILDER,
     ],
-    # TODO(#33655): Correct task completion event
-    completion_event_builder=early_discharge.VIEW_BUILDER,
+    completion_event_builder=early_release_to_drug_program.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
         criteria=incarceration_past_acis_dtp_date.VIEW_BUILDER,
         reasons_date_field="acis_dtp_date",

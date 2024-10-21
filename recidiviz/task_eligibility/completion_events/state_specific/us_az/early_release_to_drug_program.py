@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,37 +14,33 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all early discharge events for any person, across all
-states.
-"""
-
-from recidiviz.calculator.query.state import dataset_config
+"""Identify early releases from incarceration to DTP (Drug Transition Program)."""
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
-    StateAgnosticTaskCompletionEventBigQueryViewBuilder,
+    StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows all early discharge events for any person,
-across all states."""
-
 _QUERY_TEMPLATE = """
 SELECT
     state_code,
     person_id,
-    discharge_date AS completion_event_date,
-FROM `{project_id}.{analyst_data_dataset}.early_discharge_sessions_materialized`
-WHERE early_discharge = 1
-    AND compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
+    sessions.end_date_exclusive AS completion_event_date,
+FROM `{project_id}.sessions.compartment_sessions_materialized` sessions
+INNER JOIN `{project_id}.sessions.compartment_session_end_reasons_materialized` session_ends
+    USING (state_code, person_id, compartment_level_1, end_date, end_reason)
+WHERE
+    session_ends.end_reason_raw_text = "DRUG TRANSITION RELEASE"
 """
 
-VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
-    StateAgnosticTaskCompletionEventBigQueryViewBuilder(
-        completion_event_type=TaskCompletionEventType.EARLY_DISCHARGE,
-        description=_DESCRIPTION,
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
+    StateSpecificTaskCompletionEventBigQueryViewBuilder(
+        state_code=StateCode.US_AZ,
+        completion_event_type=TaskCompletionEventType.EARLY_RELEASE_TO_DRUG_PROGRAM,
+        description=__doc__,
         completion_event_query_template=_QUERY_TEMPLATE,
-        analyst_data_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     )
 )
 
