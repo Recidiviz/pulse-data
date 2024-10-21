@@ -110,6 +110,7 @@ class StateAssessmentType(StateEntityEnum):
     TX_CSST = state_enum_strings.state_assessment_type_tx_csst
     TX_SRT = state_enum_strings.state_assessment_type_tx_srt
     TX_RT = state_enum_strings.state_assessment_type_tx_rt
+    ACCAT = state_enum_strings.state_assessment_type_accat
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -170,6 +171,7 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.TX_CSST: "Community SUpervision Screening Tool (CSST)",
     StateAssessmentType.TX_SRT: "Supplementary Reentry Tool (SRT)",
     StateAssessmentType.TX_RT: "Reentry Tool (RT)",
+    StateAssessmentType.ACCAT: "Arizona Community Corrections Assessment Tool",
 }
 
 
@@ -185,6 +187,7 @@ class StateAssessmentLevel(StateEntityEnum):
     VERY_HIGH = state_enum_strings.state_assessment_level_very_high
     MAXIMUM = state_enum_strings.state_assessment_level_maximum
     LOW_MODERATE = state_enum_strings.state_assessment_level_low_moderate
+    INTENSE = state_enum_strings.state_assessment_level_intense
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -218,4 +221,6 @@ _STATE_ASSESSMENT_LEVEL_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "assessment.",
     StateAssessmentLevel.VERY_HIGH: "Category of “Very High”, as defined by the "
     "assessment.",
+    StateAssessmentLevel.INTENSE: "Category of “Intense”, as defined by the assessment."
+    " This is considered higher than the `MAXIMUM` category.",
 }

@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `state_assessment`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ACCAT_ID
+  - DATE_ASSESSMENT
+  - PERSON_ID
+  - TOTAL_SCORE
+  - FINAL_LEVEL
+  - CONDUCTING_STAFF_EXTERNAL_ID
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    assessments:
+      - StateAssessment:
+          external_id: ACCAT_ID
+          assessment_date: DATE_ASSESSMENT
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type: $literal_enum(StateAssessmentType.ACCAT)
+          conducting_staff_external_id: CONDUCTING_STAFF_EXTERNAL_ID
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: CONDUCTING_STAFF_EXTERNAL_ID
+                $then: $literal("US_AZ_PERSON_ID")
+          assessment_score: TOTAL_SCORE
+          assessment_level:
+            $enum_mapping:
+              $raw_text: FINAL_LEVEL
+              $mappings:
+                StateAssessmentLevel.MINIMUM:
+                  - "Low(Minimum)"
+                StateAssessmentLevel.MODERATE:
+                  - "Medium(Moderate)"
+                StateAssessmentLevel.MAXIMUM:
+                  - "Moderate/ High(Maximum)"
+                StateAssessmentLevel.INTENSE:
+                  - "High (Intense)"
