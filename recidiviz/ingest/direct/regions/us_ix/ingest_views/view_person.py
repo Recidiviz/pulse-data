@@ -142,6 +142,7 @@ VIEW_QUERY_TEMPLATE = """
         on o.OffenderId = oe.OffenderId AND oe.PrimaryEmailAddress = '1'
     LEFT JOIN {ref_EmailAddress} em
         USING(EmailAddressId)
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY o.OffenderId ORDER BY oe.UpdateDate desc) = 1
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
