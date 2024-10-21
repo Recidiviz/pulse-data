@@ -16,9 +16,6 @@
 # =============================================================================
 """View with events where the workflows user logged into the dashboard
 """
-from recidiviz.calculator.query.state.views.analyst_data.workflows_user_logins import (
-    WORKFLOWS_USER_LOGINS_VIEW_BUILDER,
-)
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
@@ -30,10 +27,21 @@ _VIEW_DESCRIPTION = (
     "View with events where the workflows user logged into the dashboard"
 )
 
+_QUERY_TEMPLATE = """
+SELECT
+    state_code,
+    email_address,
+    login_date,
+FROM
+    `{project_id}.analyst_data.all_auth0_login_events_materialized`
+WHERE
+    has_workflows_access
+"""
+
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
     event_type=EventType.WORKFLOWS_USER_LOGIN,
     description=_VIEW_DESCRIPTION,
-    sql_source=WORKFLOWS_USER_LOGINS_VIEW_BUILDER.table_for_query,
+    sql_source=_QUERY_TEMPLATE,
     attribute_cols=[],
     event_date_col="login_date",
 )

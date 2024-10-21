@@ -15,85 +15,60 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-View that represents the date on which every workflows user (identified via email
-address) first logged in to a Recidiviz tool while having access to Workflows.
+View that contains all auth0 signup events, formatted with flags indicating
+which tools a user had access to at time of signup.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_NAME = "workflows_user_signups"
+_VIEW_NAME = "all_auth0_signup_events"
 
 _VIEW_DESCRIPTION = """
-View that represents the date on which every workflows user (identified via email
-address) first logged in to a Recidiviz tool while having access to Workflows."""
+View that contains all auth0 signup events, formatted with flags indicating
+which tools a user had access to at time of signup."""
 
 _QUERY_TEMPLATE = """
-WITH all_auth_events AS (
+
+WITH all_signups AS (
     SELECT
         UPPER(state_code) AS state_code,
-        LOWER(email) AS workflows_user_email_address,
+        LOWER(email) AS email_address,
         timestamp,
+        -- Note: legacy signup view does not contain flags for for routes_insights or 
+        -- routes_workflows_facilities.
+        (routes_workflows OR routes_workflows_supervision) AS has_workflows_access,
+        FALSE AS has_insights_access,
     FROM
         `{project_id}.auth0_events.success_signup`
-    WHERE
-        routes_workflows
-        OR routes_workflows_supervision
     
     UNION ALL
     
     SELECT
         UPPER(state_code) AS state_code,
-        LOWER(email) AS workflows_user_email_address,
+        LOWER(email) AS email_address,
         timestamp,
+        (routes_workflows OR routes_workflows_supervision OR routes_workflows_facilities) AS has_workflows_access,
+        routes_insights AS has_insights_access,
     FROM
         `{project_id}.auth0_prod_action_logs.success_signup`
-    WHERE
-        routes_workflows
-        OR routes_workflows_supervision
-        OR routes_workflows_facilities
-        
-    UNION ALL
-    
-    SELECT
-        UPPER(state_code) AS state_code,
-        LOWER(email) AS workflows_user_email_address,
-        timestamp,
-    FROM
-        `{project_id}.auth0_events.success_login`
-    WHERE
-        routes_workflows
-        OR routes_workflows_supervision
-        OR routes_workflows_facilities
-    
-    UNION ALL
-    
-    SELECT
-        UPPER(state_code) AS state_code,
-        LOWER(email) AS workflows_user_email_address,
-        timestamp,
-    FROM
-        `{project_id}.auth0_prod_action_logs.success_login`
-    WHERE
-        routes_workflows
-        OR routes_workflows_supervision
-        OR routes_workflows_facilities
 )
 SELECT
     CASE state_code WHEN "US_ID" THEN "US_IX" ELSE state_code END AS state_code,
-    workflows_user_email_address,
-    CAST(MIN(timestamp) AS DATETIME) AS workflows_signup_date,
+    email_address,
+    CAST(timestamp AS DATETIME) AS signup_date,
+    has_workflows_access,
+    has_insights_access,
 FROM
-    all_auth_events
+    all_signups
 WHERE
     state_code IS NOT NULL
+    AND state_code != "RECIDIVIZ"
     AND timestamp IS NOT NULL
-GROUP BY
-    1, 2
 """
 
-WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+ALL_AUTH0_SIGNUP_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     view_id=_VIEW_NAME,
     description=_VIEW_DESCRIPTION,
@@ -105,4 +80,4 @@ WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER.build_and_print()
+        ALL_AUTH0_SIGNUP_EVENTS_VIEW_BUILDER.build_and_print()

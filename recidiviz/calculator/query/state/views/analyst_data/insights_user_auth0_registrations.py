@@ -15,57 +15,50 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-View with events where the workflows user logged into the dashboard
+View that represents the date on which every Insights user (identified via email
+address) first logged in to a Recidiviz tool while having access to Insights.
 """
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_NAME = "workflows_user_logins"
+_VIEW_NAME = "insights_user_auth0_registrations"
 
 _VIEW_DESCRIPTION = """
-View with events where the workflows user logged into the dashboard"""
+View that represents the date on which every Insights user (identified via email
+address) first logged in to a Recidiviz tool while having access to Insights."""
 
 _QUERY_TEMPLATE = """
-WITH all_logins AS (
+WITH all_auth_events AS (
     SELECT
-        UPPER(state_code) AS state_code,
-        LOWER(email) AS email_address,
-        timestamp,
-    FROM
-        `{project_id}.auth0_events.success_login`
-    WHERE
-        routes_workflows
-        OR routes_workflows_supervision
-        OR routes_workflows_facilities
-    
+        state_code,
+        email_address,
+        signup_date AS event_date,
+    FROM `{project_id}.analyst_data.all_auth0_signup_events_materialized`
+    WHERE has_insights_access
+
     UNION ALL
-    
-    SELECT
-        UPPER(state_code) AS state_code,
-        LOWER(email) AS email_address,
-        timestamp,
-    FROM
-        `{project_id}.auth0_prod_action_logs.success_login`
-    WHERE
-        routes_workflows
-        OR routes_workflows_supervision
-        OR routes_workflows_facilities
+
+    SELECT 
+        state_code,
+        email_address,
+        login_date AS event_date,
+    FROM `{project_id}.analyst_data.all_auth0_login_events_materialized`
+    WHERE has_insights_access
 )
 SELECT
-    CASE state_code WHEN "US_ID" THEN "US_IX" ELSE state_code END AS state_code,
-    email_address,
-    CAST(timestamp AS DATETIME) AS login_date,
+    state_code,
+    email_address AS insights_user_email_address,
+    MIN(event_date) AS insights_registration_date,
 FROM
-    all_logins
-WHERE
-    state_code IS NOT NULL
-    AND state_code != "RECIDIVIZ"
-    AND timestamp IS NOT NULL
+    all_auth_events
+GROUP BY
+    1, 2
 """
 
-WORKFLOWS_USER_LOGINS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+INSIGHTS_USER_AUTH0_REGISTRATIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     view_id=_VIEW_NAME,
     description=_VIEW_DESCRIPTION,
@@ -77,4 +70,4 @@ WORKFLOWS_USER_LOGINS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        WORKFLOWS_USER_LOGINS_VIEW_BUILDER.build_and_print()
+        INSIGHTS_USER_AUTH0_REGISTRATIONS_VIEW_BUILDER.build_and_print()
