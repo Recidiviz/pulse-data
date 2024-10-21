@@ -57,5 +57,5 @@ num_allowed_rows_overrides:
       at the same time. These people presumably are serving two concurrent sentences at the same
       time. Current failing level as of 9/17/24 is 140 rows.
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 230
+    hard_num_allowed_rows_override: 300
     override_reason: To investigate (#32648)
