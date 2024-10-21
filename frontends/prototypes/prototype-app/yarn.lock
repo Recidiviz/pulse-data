@@ -2104,10 +2104,10 @@
     "@react-spring/shared" "~9.6.1"
     "@react-spring/types" "~9.6.1"
 
-"@recidiviz/auth@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@recidiviz/auth/-/auth-1.0.1.tgz#89119502de53998248b082a9bdcb6d0cd381e0d0"
-  integrity sha512-MrxKW1MwBF94olkPSc2cWoWP0nfqltr9ajMpTG5orvJYpxL2ZYAO2PeUgaGgw/IUY8Tvnr0IvmXWx6hwoanX5g==
+"@recidiviz/auth@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@recidiviz/auth/-/auth-1.1.0.tgz#139ecd4f284d1344cfb9dc53ee8039f068692da2"
+  integrity sha512-WHwPQcw9VZkIIblrR2GFhEjqISD7Rg6juGIUVxySOiftR2LN7QHFqHNlYxvK9TZn5ZZEHyo+tg8QqIFJbZasyA==
   dependencies:
     "@auth0/auth0-spa-js" "^1.22.1"
     mobx "^6.6.1"
