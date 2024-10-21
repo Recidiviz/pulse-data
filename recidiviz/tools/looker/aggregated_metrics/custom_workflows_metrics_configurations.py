@@ -119,7 +119,7 @@ DISTINCT_ACTIVE_USERS_LOOKER = EventDistinctUnitCountMetric(
         ),
     ],
 )
-DISTINCT_REGISTERED_USERS = SpanDistinctUnitCountMetric(
+DISTINCT_REGISTERED_USERS_LOOKER = SpanDistinctUnitCountMetric(
     name="distinct_registered_users",
     display_name="Distinct Total Registered Primary Users",
     description="Number of distinct primary (line staff) Workflows users who have signed up/logged into Workflows at least once",
@@ -127,6 +127,28 @@ DISTINCT_REGISTERED_USERS = SpanDistinctUnitCountMetric(
         SpanSelector(
             span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
             span_conditions_dict={},
+        ),
+    ],
+)
+DISTINCT_LOGGED_IN_USERS_LOOKER = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_users",
+    display_name="Distinct Primary Users Logging In",
+    description="Number of distinct primary (line staff) Workflows users who logged into Workflows",
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.WORKFLOWS_USER_LOGIN,
+            event_conditions_dict={},
+        ),
+    ],
+)
+LOGINS_LOOKER = EventCountMetric(
+    name="logins",
+    display_name="Logins",
+    description="Number of logins performed by primary Workflows users",
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.WORKFLOWS_USER_LOGIN,
+            event_conditions_dict={},
         ),
     ],
 )
