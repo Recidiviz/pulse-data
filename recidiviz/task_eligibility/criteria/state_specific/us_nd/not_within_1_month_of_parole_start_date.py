@@ -77,7 +77,7 @@ SELECT
         MAX(parole_start_date) AS parole_start_date
     )) AS reason,
     MAX(parole_start_date) AS parole_start_date,
-FROM parole_date_spans
+FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4,5
 """
 
