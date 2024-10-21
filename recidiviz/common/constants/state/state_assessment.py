@@ -106,6 +106,10 @@ class StateAssessmentType(StateEntityEnum):
     STATIC_99 = state_enum_strings.state_assessment_type_static_99
     STRONG_R = state_enum_strings.state_assessment_type_strong_r
     TCU_DRUG_SCREEN = state_enum_strings.state_assessment_type_tcu_drug_screen
+    TX_CST = state_enum_strings.state_assessment_type_tx_cst
+    TX_CSST = state_enum_strings.state_assessment_type_tx_csst
+    TX_SRT = state_enum_strings.state_assessment_type_tx_srt
+    TX_RT = state_enum_strings.state_assessment_type_tx_rt
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -162,6 +166,10 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "(STRONG-R)",
     StateAssessmentType.TCU_DRUG_SCREEN: "Texas Christian University (TCU) Drug "
     "Screen (TCU)",
+    StateAssessmentType.TX_CST: "Community Supervision Tool (CST)",
+    StateAssessmentType.TX_CSST: "Community SUpervision Screening Tool (CSST)",
+    StateAssessmentType.TX_SRT: "Supplementary Reentry Tool (SRT)",
+    StateAssessmentType.TX_RT: "Reentry Tool (RT)",
 }
 
 
@@ -176,6 +184,7 @@ class StateAssessmentLevel(StateEntityEnum):
     HIGH = state_enum_strings.state_assessment_level_high
     VERY_HIGH = state_enum_strings.state_assessment_level_very_high
     MAXIMUM = state_enum_strings.state_assessment_level_maximum
+    LOW_MODERATE = state_enum_strings.state_assessment_level_low_moderate
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -204,6 +213,8 @@ _STATE_ASSESSMENT_LEVEL_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentLevel.MINIMUM: "Category of “Minimum”, as defined by the "
     "assessment. This is considered lower than the `LOW` category.",
     StateAssessmentLevel.MODERATE: "Category of “Moderate”, as defined by the "
+    "assessment.",
+    StateAssessmentLevel.LOW_MODERATE: "Category of “Low-Moderate”, as defined by the "
     "assessment.",
     StateAssessmentLevel.VERY_HIGH: "Category of “Very High”, as defined by the "
     "assessment.",

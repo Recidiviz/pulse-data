@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_oras_assessment_weekly_v2` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - SID_Number
+  - Assessment_Type
+  - Assessment_Level
+  - Assessment_Class
+  - Assessment_Approved_Date
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID_Number
+          id_type: $literal("US_TX_SID")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - SID_Number
+                - Assessment_Type
+                - Assessment_Approved_Date
+          assessment_date: Assessment_Approved_Date
+          assessment_class:
+            $enum_mapping:
+              $raw_text: Assessment_Class
+              $mappings:
+                StateAssessmentClass.RISK:
+                  - "PAROLE"
+                StateAssessmentClass.INTERNAL_UNKNOWN:
+                  - "RID"
+          assessment_type:
+            $enum_mapping:
+              $raw_text: Assessment_Type
+              $mappings:
+                StateAssessmentType.TX_CSST:
+                  - "CSST"
+                StateAssessmentType.TX_CST:
+                  - "CST"
+                StateAssessmentType.TX_RT:
+                  - "RT"
+                StateAssessmentType.TX_SRT:
+                  - "SRT"
+          assessment_level:
+            $conditional:
+              - $if:
+                  $not_null: Assessment_Level
+                $then:
+                  $enum_mapping:
+                    $raw_text: Assessment_Level
+                    $mappings:
+                      StateAssessmentLevel.LOW:
+                        - "Low"
+                      StateAssessmentLevel.LOW_MODERATE:
+                        - "Low-Moderate"
+                      StateAssessmentLevel.MODERATE:
+                        - "Moderate"
+                      StateAssessmentLevel.HIGH:
+                        - "High"
