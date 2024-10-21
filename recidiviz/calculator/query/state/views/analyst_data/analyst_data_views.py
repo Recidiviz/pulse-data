@@ -18,6 +18,12 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.analyst_data.all_auth0_login_events import (
+    ALL_AUTH0_LOGIN_EVENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.all_auth0_signup_events import (
+    ALL_AUTH0_SIGNUP_EVENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.all_task_eligibility_spans import (
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
 )
@@ -60,8 +66,8 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_primary_user_r
 from recidiviz.calculator.query.state.views.analyst_data.insights_supervision_officer_caseload_category_sessions import (
     INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.insights_user_signups import (
-    INSIGHTS_USER_SIGNUPS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.analyst_data.insights_user_auth0_registrations import (
+    INSIGHTS_USER_AUTH0_REGISTRATIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.invoices_preprocessed import (
     INVOICES_PREPROCESSED_VIEW_BUILDER,
@@ -285,14 +291,11 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_record_archiv
 from recidiviz.calculator.query.state.views.analyst_data.workflows_record_archive_surfaceable_person_sessions import (
     WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_PERSON_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_user_auth0_registrations import (
+    WORKFLOWS_USER_AUTH0_REGISTRATIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_user_caseload_access_sessions import (
     WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.workflows_user_logins import (
-    WORKFLOWS_USER_LOGINS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.workflows_user_signups import (
-    WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER,
 )
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
@@ -377,15 +380,16 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
     US_AR_OVG_TIMELINE_VIEW_BUILDER,
     US_AR_OVG_EVENTS_PREPROCESSED_VIEW_BUILDER,
-    WORKFLOWS_USER_SIGNUPS_VIEW_BUILDER,
     INSIGHTS_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
     INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_LIVE_COMPLETION_EVENT_TYPES_BY_STATE_VIEW_BUILDER,
     WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
-    WORKFLOWS_USER_LOGINS_VIEW_BUILDER,
     WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_PERSON_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_CASELOAD_SESSIONS_VIEW_BUILDER,
     PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER,
-    INSIGHTS_USER_SIGNUPS_VIEW_BUILDER,
     INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
+    ALL_AUTH0_SIGNUP_EVENTS_VIEW_BUILDER,
+    ALL_AUTH0_LOGIN_EVENTS_VIEW_BUILDER,
+    INSIGHTS_USER_AUTH0_REGISTRATIONS_VIEW_BUILDER,
+    WORKFLOWS_USER_AUTH0_REGISTRATIONS_VIEW_BUILDER,
 ]

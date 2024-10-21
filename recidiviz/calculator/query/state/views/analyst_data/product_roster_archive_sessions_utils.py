@@ -165,20 +165,20 @@ registration_sessions AS (
     SELECT
         a.state_code,
         a.{product_name_str}_user_email_address,
-        GREATEST(a.start_date, b.{product_name_str}_signup_date) AS start_date,
+        GREATEST(a.start_date, b.{product_name_str}_registration_date) AS start_date,
         a.end_date_exclusive,
         a.registration_session_id,
         a.system_type,
         a.location_id,
     FROM
         aggregated_roster_sessions a
-    # Only include roster sessions that overlap with the period following first signup
+    # Only include roster sessions that overlap with the period following auth0 registration
     INNER JOIN
-        `{{project_id}}.analyst_data.{product_name_str}_user_signups_materialized` b
+        `{{project_id}}.analyst_data.{product_name_str}_user_auth0_registrations_materialized` b
     ON
         a.state_code = b.state_code
         AND a.{product_name_str}_user_email_address = b.{product_name_str}_user_email_address
-        AND b.{product_name_str}_signup_date < {nonnull_end_date_clause("a.end_date_exclusive")}
+        AND b.{product_name_str}_registration_date < {nonnull_end_date_clause("a.end_date_exclusive")}
 )
 SELECT
     registration_sessions.*,
