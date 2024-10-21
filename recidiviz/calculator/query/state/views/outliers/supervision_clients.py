@@ -27,7 +27,7 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
     state_specific_external_id_type,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
-    get_outliers_enabled_states,
+    get_outliers_enabled_states_for_bigquery,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -55,7 +55,7 @@ WITH supervision_clients AS (
     INNER JOIN `{{project_id}}.outliers_views.supervision_client_events_materialized` events
         ON events.state_code = id.state_code AND events.client_id = id.external_id
     WHERE
-        person.state_code IN ({list_to_query_string(get_outliers_enabled_states(), quoted=True)})
+        person.state_code IN ({list_to_query_string(get_outliers_enabled_states_for_bigquery(), quoted=True)})
         AND id.id_type = {{state_id_type}}
 )
 
