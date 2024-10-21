@@ -414,7 +414,11 @@ class AgencyInterface:
         """
         state_code = StateCode(agency.state_code.upper())
         state = state_code.get_state()
-        fips_county_code = county_code_to_county_fips[agency.fips_county_code.upper()]
+        fips_county_code = (
+            county_code_to_county_fips[agency.fips_county_code.upper()]
+            if agency.fips_county_code is not None
+            else None
+        )
         return {
             "id": agency.id,
             "name": agency.name,
@@ -430,7 +434,15 @@ class AgencyInterface:
             "is_dashboard_enabled": agency.is_dashboard_enabled,
             "is_demo": is_demo_agency(agency.name),
             "state_geoid": fips_code_to_geoid.get(str(state.fips)),
-            "county_geoid": fips_code_to_geoid.get(fips_county_code),
+            "county_geoid": (
+                fips_code_to_geoid.get(fips_county_code)
+                if fips_county_code is not None
+                else None
+            ),
             "state_name": state.name,
-            "county_name": county_code_to_county_name[agency.fips_county_code.upper()],
+            "county_name": (
+                county_code_to_county_name[agency.fips_county_code.upper()]
+                if fips_county_code is not None
+                else None
+            ),
         }

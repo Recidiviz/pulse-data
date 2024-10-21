@@ -503,13 +503,22 @@ class Agency(Source):
                 and county_code_to_county_name is not None
             ):
                 response["state_geoid"] = fips_code_to_geoid.get(str(state.fips))
-                fips_county_code = county_code_to_county_fips[
-                    self.fips_county_code.upper()
-                ]
-                response["county_geoid"] = fips_code_to_geoid.get(str(fips_county_code))
-                response["county_name"] = county_code_to_county_name[
-                    self.fips_county_code.upper()
-                ]
+
+                fips_county_code = (
+                    county_code_to_county_fips[self.fips_county_code.upper()]
+                    if self.fips_county_code is not None
+                    else None
+                )
+                response["county_geoid"] = (
+                    fips_code_to_geoid.get(str(fips_county_code))
+                    if fips_county_code is not None
+                    else None
+                )
+                response["county_name"] = (
+                    county_code_to_county_name[self.fips_county_code.upper()]
+                    if self.fips_county_code is not None
+                    else None
+                )
         return response
 
 
