@@ -26,6 +26,9 @@ if [[ ! ${GIT_VERSION_TAG} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     run_cmd exit 1
 fi
 
+echo "Fetching all tags"
+run_cmd git fetch --all --tags --prune --prune-tags --force
+
 echo "Performing pre-deploy verification"
 COMMIT_HASH=$(git rev-list -n 1 "${GIT_VERSION_TAG}") || exit_on_fail
 run_cmd verify_can_deploy recidiviz-123 "${COMMIT_HASH}"
@@ -33,7 +36,7 @@ run_cmd verify_can_deploy recidiviz-123 "${COMMIT_HASH}"
 read -r -a VERSION_PARTS < <(parse_version "${GIT_VERSION_TAG}")
 MAJOR_VERSION="${VERSION_PARTS[1]}"
 MINOR_VERSION="${VERSION_PARTS[2]}"
-CHANGES_SINCE_TAG=$(git log "tags/${GIT_VERSION_TAG}..releases/v${MAJOR_VERSION}.${MINOR_VERSION}-rc" --oneline)
+CHANGES_SINCE_TAG=$(git log "tags/${GIT_VERSION_TAG}..releases/v${MAJOR_VERSION}.${MINOR_VERSION}-rc" --oneline) || exit_on_fail
 if [ -n "${CHANGES_SINCE_TAG}" ]; then
   echo "There are newly-added commits in the release branch that will not be deployed in ${GIT_VERSION_TAG}:"
   echo "${CHANGES_SINCE_TAG}" | indent_output
@@ -55,9 +58,6 @@ echo "Commits since last deploy:"
 run_cmd git log --oneline "tags/${LAST_DEPLOYED_GIT_VERSION_TAG}..tags/${GIT_VERSION_TAG}"
 
 script_prompt "Have you completed all Pre-Deploy tasks listed at http://go/deploy-checklist/ ?"
-
-echo "Fetching all tags"
-run_cmd git fetch --all --tags --prune --prune-tags --force
 
 echo "Checking for clean git status"
 if [[ -n "$(git status --porcelain)" ]]; then
