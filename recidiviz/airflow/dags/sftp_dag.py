@@ -113,13 +113,16 @@ def get_configs_bucket(project_id: str) -> GcsfsBucketPath:
     return GcsfsBucketPath(f"{project_id}-configs")
 
 
-def sftp_enabled_states(project_id: str) -> List[str]:
-    enabled_states = []
+def sftp_enabled_states(project_id: str) -> List[StateCode]:
+    """Returns a list of state codes that have the necessary SFTP infrastructure in
+    pulse-data enabled for |project_id|.
+    """
+    enabled_states: List[StateCode] = []
     for state_code in StateCode:
         try:
             delegate = SftpDownloadDelegateFactory.build(region_code=state_code.value)
             if project_id in delegate.supported_environments():
-                enabled_states.append(state_code.value)
+                enabled_states.append(state_code)
         except ValueError:
             logging.info(
                 "%s does not have a configured SFTP delegate.", state_code.value
@@ -128,14 +131,23 @@ def sftp_enabled_states(project_id: str) -> List[str]:
     return enabled_states
 
 
-def is_enabled_in_config(state_code: str) -> bool:
+def is_enabled_in_config(state_code_str: str) -> bool:
+    """Validates with our external config file that we should run SFTP for the provided
+    |state_code_str|.
+    """
+    state_code = StateCode(state_code_str.upper())
     config = read_yaml_config(
         GcsfsFilePath.from_directory_and_file_name(
             dir_path=get_configs_bucket(get_project_id()),
             file_name="sftp_enabled_in_airflow_config.yaml",
         )
     )
-    return state_code in config.pop_list("states", str)
+    enabled_states = {
+        StateCode(enabled_state_code_str.upper())
+        for enabled_state_code_str in config.pop_list("states", str)
+    }
+
+    return state_code in enabled_states
 
 
 def xcom_output_is_non_empty_list(
@@ -199,13 +211,13 @@ def sftp_dag() -> None:
     start_sftp >> rm_dags
     end_sftp = EmptyOperator(task_id=END_SFTP, trigger_rule=TriggerRule.ALL_DONE)
     for state_code in sftp_enabled_states(project_id):
-        with TaskGroup(group_id=state_code) as state_specific_task_group:
+        with TaskGroup(group_id=state_code.value) as state_specific_task_group:
             # We want to make sure that SFTP is enabled for the state, otherwise we skip
             # everything for the state.
             check_config = ShortCircuitOperator(
                 task_id="check_config",
                 python_callable=is_enabled_in_config,
-                op_kwargs={"state_code": state_code},
+                op_kwargs={"state_code": state_code.value},
                 ignore_downstream_trigger_rules=True,
             )
 
@@ -217,7 +229,7 @@ def sftp_dag() -> None:
             with TaskGroup("remote_file_discovery") as remote_file_discovery:
                 find_sftp_files_from_server = FindSftpFilesOperator(
                     task_id="find_sftp_files_to_download",
-                    state_code=state_code,
+                    state_code=state_code.value,
                     excluded_remote_files_config_path=(
                         GcsfsFilePath.from_directory_and_file_name(
                             dir_path=get_configs_bucket(project_id),
@@ -229,7 +241,7 @@ def sftp_dag() -> None:
                     task_id="filter_downloaded_files",
                     cloud_sql_conn_id=operations_cloud_sql_conn_id,
                     query_generator=FilterDownloadedFilesSqlQueryGenerator(
-                        region_code=state_code,
+                        region_code=state_code.value,
                         find_sftp_files_task_id=find_sftp_files_from_server.task_id,
                     ),
                 )
@@ -237,7 +249,7 @@ def sftp_dag() -> None:
                     task_id="mark_remote_files_discovered",
                     cloud_sql_conn_id=operations_cloud_sql_conn_id,
                     query_generator=MarkRemoteFilesDiscoveredSqlQueryGenerator(
-                        region_code=state_code,
+                        region_code=state_code.value,
                         filter_downloaded_files_task_id=filter_downloaded_files.task_id,
                     ),
                 )
@@ -245,7 +257,7 @@ def sftp_dag() -> None:
                     task_id="gather_discovered_remote_files",
                     cloud_sql_conn_id=operations_cloud_sql_conn_id,
                     query_generator=GatherDiscoveredRemoteFilesSqlQueryGenerator(
-                        region_code=state_code
+                        region_code=state_code.value
                     ),
                     # This step will always execute regardless of success of the previous
                     # steps. This is to ensure that prior failed to download files are
@@ -287,7 +299,7 @@ def sftp_dag() -> None:
                     task_id="mark_remote_files_downloaded",
                     cloud_sql_conn_id=operations_cloud_sql_conn_id,
                     query_generator=MarkRemoteFilesDownloadedSqlQueryGenerator(
-                        region_code=state_code,
+                        region_code=state_code.value,
                         post_process_sftp_files_task_id=post_process_downloaded_files.task_id,
                     ),
                 )
@@ -325,7 +337,7 @@ def sftp_dag() -> None:
                 task_id="gather_prior_discovered_ingest_ready_files",
                 cloud_sql_conn_id=operations_cloud_sql_conn_id,
                 query_generator=GatherDiscoveredIngestReadyFilesSqlQueryGenerator(
-                    region_code=state_code
+                    region_code=state_code.value
                 ),
                 # This step will always execute regardless of success of the previous
                 # steps.
@@ -350,7 +362,7 @@ def sftp_dag() -> None:
                     task_id="mark_ingest_ready_files_discovered",
                     cloud_sql_conn_id=operations_cloud_sql_conn_id,
                     query_generator=MarkIngestReadyFilesDiscoveredSqlQueryGenerator(
-                        region_code=state_code,
+                        region_code=state_code.value,
                         filter_invalid_gcs_files_task_id=filter_invalid_files_downloaded.task_id,
                     ),
                 )
@@ -358,7 +370,7 @@ def sftp_dag() -> None:
                     task_id="gather_discovered_ingest_ready_files",
                     cloud_sql_conn_id=operations_cloud_sql_conn_id,
                     query_generator=GatherDiscoveredIngestReadyFilesSqlQueryGenerator(
-                        region_code=state_code
+                        region_code=state_code.value
                     ),
                     # This step will always execute regardless of success of the previous
                     # steps.
@@ -371,9 +383,7 @@ def sftp_dag() -> None:
                 )
 
             # TODO(#29058): add gated check for raw data resource locks here
-            scheduler_queue_name = (
-                f"direct-ingest-state-{state_code.lower().replace('_', '-')}-scheduler"
-            )
+            scheduler_queue_name = f"direct-ingest-state-{state_code.value.lower().replace('_', '-')}-scheduler"
             scheduler_queues: Dict[DirectIngestInstance, str] = {
                 DirectIngestInstance.PRIMARY: scheduler_queue_name,
                 DirectIngestInstance.SECONDARY: f"{scheduler_queue_name}-secondary",
@@ -421,7 +431,7 @@ def sftp_dag() -> None:
                     task_id="mark_ingest_ready_files_uploaded",
                     cloud_sql_conn_id=operations_cloud_sql_conn_id,
                     query_generator=MarkIngestReadyFilesUploadedSqlQueryGenerator(
-                        region_code=state_code,
+                        region_code=state_code.value,
                         upload_files_to_ingest_bucket_task_id=upload_files_to_ingest_bucket.task_id,
                     ),
                 )
