@@ -189,7 +189,7 @@ class TestDetermineQuotingStateForBuffer(unittest.TestCase):
     def test_determine_quoting_state_for_buffer_tricky(self) -> None:
         tests = [
             # START_QUOTED_CELL
-            (b'unquoted field,"""this is a quoted field\n","csv"\nfun,', True, 44),
+            (b'unquoted field,""",this is a quoted field\n","csv"\nfun,', True, 45),
             # END_QUOTED_CELL
             (b'unquoted,"\n""\n""\n""this is a quoted field",fun,f', False, 42),
             # END_OF_QUOTED_LINE

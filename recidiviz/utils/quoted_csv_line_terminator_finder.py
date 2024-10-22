@@ -18,8 +18,8 @@
 from typing import Tuple
 
 from recidiviz.utils.unescaped_quote_classification import (
-    SingleUnescapedQuoteState,
-    find_single_first_unescaped_quote,
+    UnescapedQuoteState,
+    find_first_unescaped_quote,
 )
 
 
@@ -45,7 +45,7 @@ def determine_quoting_state_for_buffer(
     while (
         in_quoted_cell is None
         and (
-            next_unescaped_quote := find_single_first_unescaped_quote(
+            next_unescaped_quote := find_first_unescaped_quote(
                 buffer[cursor:], quote_char, peek_into_buffer_size
             )
         )
@@ -60,13 +60,13 @@ def determine_quoting_state_for_buffer(
         # then: we determine if that state deterministically tells us if we are in
         # a quoted block or not
         match quote_state:
-            case SingleUnescapedQuoteState.START_QUOTED_CELL:
+            case UnescapedQuoteState.START_QUOTED_CELL:
                 in_quoted_cell = True
-            case SingleUnescapedQuoteState.END_QUOTED_CELL:
+            case UnescapedQuoteState.END_QUOTED_CELL:
                 in_quoted_cell = False
-            case SingleUnescapedQuoteState.END_OF_QUOTED_LINE:
+            case UnescapedQuoteState.END_OF_QUOTED_LINE:
                 in_quoted_cell = False
-            case SingleUnescapedQuoteState.START_OF_QUOTED_LINE:
+            case UnescapedQuoteState.START_OF_QUOTED_LINE:
                 # we move backwards to as to locate the newline behind the quote
                 return (
                     cursor + next_unescaped_quote.index - len(line_terminator),
@@ -74,15 +74,15 @@ def determine_quoting_state_for_buffer(
                 )
             # with the other cases, we cannot be confident of whether we are in a
             # quoted cell or not, so we must keep looking
-            case SingleUnescapedQuoteState.START_OF_QUOTED_CELL_OR_END_OF_QUOTED_LINE:
+            case UnescapedQuoteState.START_OF_QUOTED_CELL_OR_END_OF_QUOTED_LINE:
                 pass
-            case SingleUnescapedQuoteState.START_OR_END_OF_QUOTED_CELL:
+            case UnescapedQuoteState.START_OR_END_OF_QUOTED_CELL:
                 pass
-            case SingleUnescapedQuoteState.END_OF_QUOTED_CELL_OR_START_OF_QUOTED_LINE:
+            case UnescapedQuoteState.END_OF_QUOTED_CELL_OR_START_OF_QUOTED_LINE:
                 pass
-            case SingleUnescapedQuoteState.INDETERMINATE:
+            case UnescapedQuoteState.INDETERMINATE:
                 pass
-            case SingleUnescapedQuoteState.INVALID:
+            case UnescapedQuoteState.INVALID:
                 raise ValueError(
                     f"Found invalid quote "
                     f"[{buffer[next_unescaped_quote.index - peek_into_buffer_size:next_unescaped_quote.next_non_quote_char_position + peek_into_buffer_size]!r}]"
