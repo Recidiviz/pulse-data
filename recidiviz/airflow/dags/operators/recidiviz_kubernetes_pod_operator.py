@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional
 
 import jinja2
 import yaml
-from airflow.models import Connection
+from airflow.models import Connection, MappedOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.context import Context
 from airflow.utils.trigger_rule import TriggerRule
@@ -224,16 +224,23 @@ def build_kubernetes_pod_task(
     cloud_sql_connections: Optional[List[SchemaType]] = None,
 ) -> RecidivizKubernetesPodOperator:
     """
-    Builds an operator that launches a container using the appengine image in the user workloads Kubernetes namespace
-    This is useful for launching arbitrary tools from within our pipenv environment.
+    Builds an operator that launches a container using the appengine image in the user workloads Kubernetes namespace.
+    This is useful for running arbitrary code in the Recidiviz pipenv environment rather than the Airflow environment.
+    It also allows for dedicated resource allocation to a task, ensuring better isolation and performance for
+    resource-intensive operations.
 
     For information regarding the KuberenetesPodOperator:
     https://airflow.apache.org/docs/apache-airflow-providers-cncf-kubernetes/stable/operators.html
 
-    group_id: name of the airflow task group
-    argv: List of commands to run in the pipenv shell
-    container_name: Name to group Kubernetes pod metrics
+    task_id: Name of the airflow task
+    arguments: List of commands to pass to recidiviz.entrypoints.entrypoint_executor
+    container_name: Container name used to group Kubernetes pod metrics
+    trigger_rule: TriggerRule for the task
+    retries: Number of retries for the task
+    do_xcom_push: Whether to push the output of the task to XCom
+    cloud_sql_connections: List of SchemaType objects specifying which Cloud SQL DBs to connect to
     """
+    # TODO(#31148) Remove do_xcom_push option and force all KPO tasks to push ouptut to GCS
 
     return RecidivizKubernetesPodOperator(
         arguments=[
@@ -249,6 +256,35 @@ def build_kubernetes_pod_task(
             cloud_sql_connections,
         ),
     )
+
+
+def build_mapped_kubernetes_pod_task(
+    task_id: str,
+    expand_arguments: List[List[str]],
+    container_name: Optional[str] = None,
+    trigger_rule: Optional[TriggerRule] = TriggerRule.ALL_SUCCESS,
+    retries: int = 0,
+    cloud_sql_connections: Optional[List[SchemaType]] = None,
+) -> MappedOperator:
+    """Builds a MappedOperator that launches len(expand_arguments) RecidivizKubernetesPodOperator pods.
+    This is useful for running a dynamic number of tasks in parallel.
+
+    task_id: Name of the airflow task
+    expand_arguments: List where each entry contains a list of commands to pass to recidiviz.entrypoints.entrypoint_executor
+    container_name: Container name used to group Kubernetes pod metrics
+    trigger_rule: TriggerRule for the task
+    retries: Number of retries for the task
+    cloud_sql_connections: List of SchemaType objects specifying which Cloud SQL DBs to connect to
+    """
+    return RecidivizKubernetesPodOperator.partial(
+        **get_kubernetes_pod_kwargs(
+            task_id=task_id,
+            container_name=container_name,
+            trigger_rule=trigger_rule,
+            retries=retries,
+            cloud_sql_connections=cloud_sql_connections,
+        )
+    ).expand(arguments=expand_arguments)
 
 
 def get_kubernetes_pod_kwargs(

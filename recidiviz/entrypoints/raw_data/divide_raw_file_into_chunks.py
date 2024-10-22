@@ -29,7 +29,7 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.entrypoints.entrypoint_utils import save_to_xcom
+from recidiviz.entrypoints.entrypoint_utils import save_to_gcs_xcom
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -49,11 +49,11 @@ FILE_LIST_DELIMITER = "^"
 
 
 def extract_file_chunks_concurrently(
+    fs: GCSFileSystem,
     serialized_requires_pre_import_normalization_file_paths: List[str],
     state_code: StateCode,
     region_module_override: Optional[ModuleType] = None,
 ) -> str:
-    fs = GcsfsFactory.build()
     region_raw_file_config = get_region_raw_file_config(
         state_code.value, region_module=region_module_override
     )
@@ -176,6 +176,8 @@ class RawDataFileChunkingEntrypoint(EntrypointInterface):
         file_paths = args.requires_normalization_files
         state_code = args.state_code
 
-        results = extract_file_chunks_concurrently(file_paths, state_code)
+        fs = GcsfsFactory.build()
 
-        save_to_xcom(results)
+        results = extract_file_chunks_concurrently(fs, file_paths, state_code)
+
+        save_to_gcs_xcom(fs=fs, output_str=results)

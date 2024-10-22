@@ -15,12 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Classes for reading/writing KubernetesPodOperator task outputs from/to GCS."""
+import logging
 from typing import Any, List, Optional
 
 import attr
 
-from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
-from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
+from recidiviz.cloud_storage.gcs_file_system import (
+    GCSBlobDoesNotExistError,
+    GCSFileSystem,
+)
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
     GcsfsDirectoryPath,
@@ -81,18 +84,16 @@ class KubernetesPodOperatorTaskOutputFilePathBuilder:
         return self._build_subdirectory_path(task_id) + OUTPUT_BASE_FILE_NAME
 
 
-@attr.define
 class KubernetesPodOperatorTaskOutputHandler:
     """Writes/reads KubernetesPodOperator task outputs to/from GCS."""
 
-    fs: GCSFileSystem = attr.ib(
-        validator=attr.validators.instance_of(GCSFileSystemImpl)
-    )
-    file_path_handler: KubernetesPodOperatorTaskOutputFilePathBuilder = attr.ib(
-        validator=attr.validators.instance_of(
-            KubernetesPodOperatorTaskOutputFilePathBuilder
-        )
-    )
+    def __init__(
+        self,
+        fs: GCSFileSystem,
+        file_path_handler: KubernetesPodOperatorTaskOutputFilePathBuilder,
+    ):
+        self.fs = fs
+        self.file_path_handler = file_path_handler
 
     @classmethod
     def create_kubernetes_pod_operator_task_output_handler_from_pod_env(
@@ -153,9 +154,42 @@ class KubernetesPodOperatorTaskOutputHandler:
             )
             if isinstance(path, GcsfsFilePath)
         ]
+        if not file_paths:
+            raise ValueError(
+                f"No mapped task output found for task_id [{task_id}] in GCS bucket [{self.file_path_handler.bucket_name}] "
+                f"with path prefix [{self.file_path_handler.output_file_subdirectory_path_prefix(task_id)}]."
+            )
 
         return_data: List[str] = []
         for file_path in file_paths:
             with self.fs.open(file_path, "r") as f:
                 return_data.append(f.read())
         return return_data
+
+    def delete_task_output(self, task_id: str) -> None:
+        """Deletes task output from GCS."""
+        file_path = self.file_path_handler.output_file_path(task_id)
+        try:
+            self.fs.delete(file_path)
+        except GCSBlobDoesNotExistError:
+            logging.info(
+                "Attempted to delete file [%s] but it does not exist.", file_path
+            )
+
+    def delete_mapped_task_output(self, task_id: str) -> None:
+        """Deletes mapped task output from GCS."""
+        file_paths = [
+            path
+            for path in self.fs.ls_with_blob_prefix(
+                self.file_path_handler.bucket_name,
+                self.file_path_handler.output_file_subdirectory_path_prefix(task_id),
+            )
+            if isinstance(path, GcsfsFilePath)
+        ]
+        for file_path in file_paths:
+            try:
+                self.fs.delete(file_path)
+            except GCSBlobDoesNotExistError:
+                logging.info(
+                    "Attempted to delete file [%s] but it does not exist.", file_path
+                )

@@ -17,14 +17,21 @@
 """Utils for interacting with GCS from Airflow."""
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
+def get_gcsfs_from_hook() -> GCSFileSystem:
+    """Returns a GCSFileSystem using the default Google Cloud connection from Airflow.
+    This is useful for reusing the same connection across multiple tasks."""
+    gcs_hook = GCSHook()
+    return GCSFileSystemImpl(gcs_hook.get_conn())
+
+
 def read_yaml_config(path: GcsfsFilePath) -> YAMLDict:
     """Reads a YAML file from GCS into a YAMLDict object."""
-    gcs_hook = GCSHook()
-    gcsfs = GCSFileSystemImpl(gcs_hook.get_conn())
+    gcsfs = get_gcsfs_from_hook()
     with gcsfs.open(path) as f:
         return YAMLDict.from_io(f)

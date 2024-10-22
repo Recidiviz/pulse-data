@@ -29,10 +29,6 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 from recidiviz.airflow.dags.operators.raw_data.direct_ingest_list_files_operator import (
     DirectIngestListNormalizedUnprocessedFilesOperator,
 )
-from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
-    RecidivizKubernetesPodOperator,
-    get_kubernetes_pod_kwargs,
-)
 from recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator import (
     AcquireRawDataResourceLockSqlQueryGenerator,
 )
@@ -117,6 +113,9 @@ from recidiviz.airflow.dags.utils.branching_by_key import (
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
+from recidiviz.airflow.dags.utils.kubernetes_pod_operator_task_groups import (
+    kubernetes_pod_operator_mapped_task_with_output,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
@@ -285,40 +284,30 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # outputs: [ ImportReadyFile ]
 
         with TaskGroup("pre_import_normalization") as pre_import_normalization:
-            divide_files_into_chunks = RecidivizKubernetesPodOperator.partial(
-                **get_kubernetes_pod_kwargs(
-                    task_id="raw_data_file_chunking",
-                    do_xcom_push=True,
-                )
-            ).expand(
-                arguments=generate_file_chunking_pod_arguments(
+            chunking_output = kubernetes_pod_operator_mapped_task_with_output(
+                task_id="raw_data_file_chunking",
+                expand_arguments=generate_file_chunking_pod_arguments(
                     state_code.value,
                     files_to_process[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES],
                     num_batches=NUM_BATCHES,
-                )
+                ),
             )
 
-            filtered_chunks = filter_chunking_results_by_errors(
-                divide_files_into_chunks.output
-            )
+            filtered_chunks = filter_chunking_results_by_errors(chunking_output)
 
             raise_file_chunking_errors(filtered_chunks[CHUNKING_ERRORS])
 
-            normalized_chunks = RecidivizKubernetesPodOperator.partial(
-                **get_kubernetes_pod_kwargs(
-                    task_id="raw_data_chunk_normalization",
-                    do_xcom_push=True,
-                )
-            ).expand(
-                arguments=generate_chunk_processing_pod_arguments(
+            normalization_output = kubernetes_pod_operator_mapped_task_with_output(
+                task_id="raw_data_chunk_normalization",
+                expand_arguments=generate_chunk_processing_pod_arguments(
                     state_code.value,
                     file_chunks=filtered_chunks[CHUNKING_RESULTS],
                     num_batches=NUM_BATCHES,
-                )
+                ),
             )
 
             pre_import_normalization_result = regroup_and_verify_file_chunks(
-                normalized_chunks.output,
+                normalization_output,
                 files_to_process[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA],
                 files_to_process[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA],
             )

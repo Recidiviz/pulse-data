@@ -16,14 +16,15 @@
 # =============================================================================
 """Tests for kubernetes_pod_operator_task_output_writer.py"""
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
-from recidiviz.airflow.dags.utils.kubernetes_pod_operator_task_output_handler import (
+from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
+from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.utils.kubernetes_pod_operator_task_output_handler import (
     KubernetesPodOperatorTaskOutputFilePathBuilder,
     KubernetesPodOperatorTaskOutputHandler,
 )
-from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 
 class TestTaskOutputFilePathHandler(unittest.TestCase):
@@ -92,15 +93,15 @@ class TestKubernetesPodOperatorTaskOutputHandler(unittest.TestCase):
         return mock_open
 
     @patch(
-        "recidiviz.airflow.dags.utils.kubernetes_pod_operator_task_output_handler.in_airflow_kubernetes_pod",
+        "recidiviz.utils.kubernetes_pod_operator_task_output_handler.in_airflow_kubernetes_pod",
         return_value=True,
     )
     @patch(
-        "recidiviz.airflow.dags.utils.kubernetes_pod_operator_task_output_handler.AirflowKubernetesPodEnvironment.get_task_id",
+        "recidiviz.utils.kubernetes_pod_operator_task_output_handler.AirflowKubernetesPodEnvironment.get_task_id",
         return_value="task",
     )
     @patch(
-        "recidiviz.airflow.dags.utils.kubernetes_pod_operator_task_output_handler.AirflowKubernetesPodEnvironment.get_map_index",
+        "recidiviz.utils.kubernetes_pod_operator_task_output_handler.AirflowKubernetesPodEnvironment.get_map_index",
         return_value=None,
     )
     def test_write_task_output(
@@ -126,6 +127,14 @@ class TestKubernetesPodOperatorTaskOutputHandler(unittest.TestCase):
 
         self.assertEqual(result, ["task-output-0", "task-output-1"])
 
+    def test_read_mapped_task_output_no_files(self) -> None:
+        self.mock_fs.ls_with_blob_prefix.return_value = []
+
+        with self.assertRaisesRegex(
+            ValueError, "No mapped task output found for task_id"
+        ):
+            self.handler.read_serialized_mapped_task_output("task")
+
     def test_read_task_output(self) -> None:
         self.mock_fs.open.return_value = self._mock_open(["task-output"])
 
@@ -138,3 +147,48 @@ class TestKubernetesPodOperatorTaskOutputHandler(unittest.TestCase):
             KubernetesPodOperatorTaskOutputHandler.create_kubernetes_pod_operator_task_output_handler_from_pod_env(
                 self.mock_fs
             )
+
+    def test_delete_task_output(self) -> None:
+        self.handler.delete_task_output("task")
+
+        self.mock_fs.delete.assert_called_once()
+
+    def test_delete_mapped_task_output(self) -> None:
+        self.mock_fs.ls_with_blob_prefix.return_value = [
+            GcsfsFilePath("test-bucket", "output_0.json"),
+            GcsfsFilePath("test-bucket", "output_1.json"),
+        ]
+
+        self.handler.delete_mapped_task_output("task")
+
+        self.mock_fs.delete.assert_has_calls(
+            [
+                call(GcsfsFilePath("test-bucket", "output_0.json")),
+                call(GcsfsFilePath("test-bucket", "output_1.json")),
+            ]
+        )
+
+        self.assertEqual(self.mock_fs.delete.call_count, 2)
+
+    def test_delete_file_doesnt_exist(self) -> None:
+        self.mock_fs.delete.side_effect = GCSBlobDoesNotExistError("test-path")
+
+        self.handler.delete_task_output("task")
+
+        self.mock_fs.delete.assert_called_once()
+
+    def test_delete_mapped_file_doesnt_exist(self) -> None:
+        self.mock_fs.ls_with_blob_prefix.return_value = [
+            GcsfsFilePath("test-bucket", "output_0.json"),
+            GcsfsFilePath("test-bucket", "output_1.json"),
+        ]
+
+        def mock_delete(file_path: GcsfsFilePath) -> None:
+            if file_path.abs_path() == "test-path/output_0.json":
+                raise GCSBlobDoesNotExistError(file_path.abs_path())
+
+        self.mock_fs.delete.side_effect = mock_delete
+
+        self.handler.delete_mapped_task_output("task")
+
+        self.assertEqual(self.mock_fs.delete.call_count, 2)

@@ -59,25 +59,36 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
             self._formatted_raw_file_path("tagDoubleDaggerWINDOWS1252"),
         ]
 
-        self.fs = MagicMock()
-        patch_gcsfs_build = patch(
+        self.mock_fs = MagicMock()
+        self.patch_gcsfs_build = patch(
             "recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks.GcsfsFactory.build",
-            return_value=self.fs,
-        ).start()
-        self.addCleanup(patch_gcsfs_build.stop)
+            return_value=self.mock_fs,
+        )
+        self.patch_gcsfs_build.start()
 
         mock_chunker = MagicMock()
         mock_chunker.get_chunks_for_gcs_path.return_value = [
             CsvChunkBoundary(start_inclusive=0, end_exclusive=100, chunk_num=0)
         ]
-        patch_chunker = patch(
+        self.patch_chunker = patch(
             "recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks.GcsfsCsvChunkBoundaryFinder",
             return_value=mock_chunker,
-        ).start()
-        self.addCleanup(patch_chunker.stop)
+        )
+        self.patch_chunker.start()
+
+        self.save_to_gcs_patcher = patch(
+            "recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks.save_to_gcs_xcom",
+        )
+        self.mock_save_to_gcs = self.save_to_gcs_patcher.start()
+
+    def tearDown(self) -> None:
+        self.patch_gcsfs_build.stop()
+        self.patch_chunker.stop()
+        self.save_to_gcs_patcher.stop()
 
     def test_successful_processing(self) -> None:
         serialized_result = extract_file_chunks_concurrently(
+            self.mock_fs,
             self.requires_normalization_files,
             self.state_code,
             region_module_override=fake_regions,
@@ -113,6 +124,7 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
             side_effect=side_effect,
         ):
             serialized_result = extract_file_chunks_concurrently(
+                self.mock_fs,
                 self.requires_normalization_files,
                 self.state_code,
                 region_module_override=fake_regions,
@@ -125,14 +137,12 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
         self.assertEqual(len(result.results), 1)
         self.assertEqual(len(result.errors), 1)
 
-    @patch("recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks.save_to_xcom")
     @patch(
         "recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks.extract_file_chunks_concurrently"
     )
     def test_run_entrypoint(
         self,
         mock_extract_file_chunks_concurrently: MagicMock,
-        mock_save_to_xcom: MagicMock,
     ) -> None:
         parser = RawDataFileChunkingEntrypoint.get_parser()
         args = parser.parse_args(
@@ -152,11 +162,12 @@ class TestExtractFileChunksConcurrently(unittest.TestCase):
         RawDataFileChunkingEntrypoint.run_entrypoint(args)
 
         mock_extract_file_chunks_concurrently.assert_called_once_with(
-            ["serialized_file1", "serialized_file2"], self.state_code
+            self.mock_fs, ["serialized_file1", "serialized_file2"], self.state_code
         )
-        mock_save_to_xcom.assert_called_once_with(
-            {
+        self.mock_save_to_gcs.assert_called_once_with(
+            fs=self.mock_fs,
+            output_str={
                 "results": ["chunked_file1", "chunked_file2"],
                 "errors": [],
-            }
+            },
         )
