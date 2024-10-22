@@ -12,6 +12,18 @@ schema:
   - name: email_address
     type: STRING
     mode: NULLABLE
+  - name: user_hash
+    type: STRING
+    mode: NULLABLE
+  - name: external_id
+    type: STRING
+    mode: NULLABLE
+  - name: first_name
+    type: STRING
+    mode: NULLABLE
+  - name: last_name
+    type: STRING
+    mode: NULLABLE
   - name: role
     type: STRING
     mode: NULLABLE
