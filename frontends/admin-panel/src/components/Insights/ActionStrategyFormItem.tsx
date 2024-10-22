@@ -18,20 +18,40 @@
 import { Form, Input } from "antd";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
+import Markdown from "react-markdown";
 import styled from "styled-components/macro";
+
+const Wrapper = styled.div`
+  padding-top: 1.5rem;
+`;
+
+const Title = styled.h4``;
 
 const MarkdownContainer = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: stretch;
+  gap: 1rem;
 `;
 
 const MarkdownInput = styled.div`
-  width: 48%;
+  flex: 1;
+  display: flex;
+  align-items: stretch;
 `;
 
-const Title = styled.h4`
-  padding-top: 10px;
+const TextArea = styled(Input.TextArea)`
+  flex: 1;
+  resize: none;
+`;
+
+const MarkdownPreview = styled.div`
+  padding: 5px 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  flex: 1;
+  overflow: auto;
 `;
 
 type ActionStrategyCopy = [string, { prompt: string; body: string }];
@@ -55,7 +75,7 @@ const ActionStrategyFormItem = ({
   };
 
   return (
-    <>
+    <Wrapper>
       <Title>{field}</Title>
       <Form.Item
         name={["actionStrategyCopy", field, "prompt"]}
@@ -67,18 +87,20 @@ const ActionStrategyFormItem = ({
           },
         ]}
         labelCol={{ span: 24 }}
+        style={{ marginBottom: "0.5rem" }}
       >
         <MarkdownContainer>
           <MarkdownInput>
-            <Input.TextArea
-              autoSize={{ minRows: 1, maxRows: 5 }}
+            <TextArea
               name="prompt"
               value={prompt}
               onChange={onInputChange}
-              // so that user can select text within the input, otherwise it drags the modal
               style={{ userSelect: "text" }}
             />
           </MarkdownInput>
+          <MarkdownPreview>
+            <Markdown>{prompt}</Markdown>
+          </MarkdownPreview>
         </MarkdownContainer>
       </Form.Item>
       <Form.Item
@@ -94,18 +116,19 @@ const ActionStrategyFormItem = ({
       >
         <MarkdownContainer>
           <MarkdownInput>
-            <Input.TextArea
-              autoSize={{ minRows: 10, maxRows: 30 }}
+            <TextArea
               name="body"
               value={body}
               onChange={onInputChange}
-              // so that user can select text within the input, otherwise it drags the modal
               style={{ userSelect: "text" }}
             />
           </MarkdownInput>
+          <MarkdownPreview>
+            <Markdown>{body}</Markdown>
+          </MarkdownPreview>
         </MarkdownContainer>
       </Form.Item>
-    </>
+    </Wrapper>
   );
 };
 

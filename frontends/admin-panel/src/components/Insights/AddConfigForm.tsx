@@ -17,11 +17,16 @@
 
 import { Form, Input, Select } from "antd";
 import { observer } from "mobx-react-lite";
+import styled from "styled-components/macro";
 
 import { InsightsConfiguration } from "../../InsightsStore/models/InsightsConfiguration";
 import ConfigurationPresenter from "../../InsightsStore/presenters/ConfigurationPresenter";
 import { DraggableModal } from "../Utilities/DraggableModal";
 import ActionStrategyFormItem from "./ActionStrategyFormItem";
+
+const Heading = styled.h3`
+  margin-top: 1rem;
+`;
 
 const AddConfigForm = ({
   visible,
@@ -121,6 +126,7 @@ const AddConfigForm = ({
             <Input placeholder="Enter new feature variant" />
           </Form.Item>
         </Form.Item>
+        <Heading>Labels</Heading>
         <Form.Item
           name="supervisionOfficerLabel"
           label="Supervision Officer Label"
@@ -361,10 +367,14 @@ const AddConfigForm = ({
         >
           <Input />
         </Form.Item>
-        <h4>Action Strategy Copy</h4>
+        <Heading>Action Strategy Copy</Heading>
         <div>
           Both the prompt and body copy are in{" "}
-          <a href="https://www.markdownguide.org/cheat-sheet/">
+          <a
+            href="https://www.markdownguide.org/cheat-sheet/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Markdown format
           </a>
           . You can edit the Markdown text on the left and see a live preview of
