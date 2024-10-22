@@ -214,6 +214,16 @@ FROM
         MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD,
         MetricUnitOfAnalysisType.STATE_CODE,
     ): "SELECT * FROM `{project_id}.analyst_data.workflows_record_archive_surfaceable_caseload_sessions_materialized`",
+    (
+        MetricUnitOfObservationType.INSIGHTS_USER,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ): """SELECT
+    state_code,
+    insights_user_email_address AS email_address,
+    start_date,
+    end_date_exclusive, 
+FROM
+    `{project_id}.analyst_data.insights_primary_user_registration_sessions_materialized`""",
 }
 
 

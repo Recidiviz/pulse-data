@@ -56,6 +56,8 @@ class MetricUnitOfObservation:
                 return frozenset(["state_code", "email_address"])
             case MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD:
                 return frozenset(["state_code", "caseload_id"])
+            case MetricUnitOfObservationType.INSIGHTS_USER:
+                return frozenset(["state_code", "email_address"])
 
     @property
     def primary_key_columns_ordered(self) -> list[str]:

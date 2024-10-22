@@ -27,6 +27,7 @@ class MetricUnitOfObservationType(Enum):
     person, so the MetricUnitOfObservationType is PERSON.
     """
 
+    INSIGHTS_USER = "INSIGHTS_USER"
     SUPERVISION_OFFICER = "OFFICER"
     PERSON_ID = "PERSON"
     WORKFLOWS_USER = "WORKFLOWS_USER"

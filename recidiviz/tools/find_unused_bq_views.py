@@ -49,9 +49,6 @@ from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions_with_officer_and_supervisor import (
     EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.insights_primary_user_registration_sessions import (
-    INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
 )
@@ -382,15 +379,26 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     CASE_NOTES_VIEW_BUILDER.address: (
         "For use in Case Notes prototypes (see #32391) (Ben Packer 8/19/24)"
     ),
-    INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER.address: (
-        "Will be incorporated into observations (insights user spans) for insights impact analysis: see #32152 (Mayuka Sarukkai 10/2/24)"
-    ),
     BigQueryAddress(
         dataset_id="observations__workflows_surfaceable_caseload_span",
         table_id="all_workflows_surfaceable_caseload_spans",
     ): (
         "This view will eventually be referenced by impact metrics related to "
         "surfaceable caseloads (see #32152) (Mayuka Sarukkai 10/11/2024)"
+    ),
+    BigQueryAddress(
+        dataset_id="observations__insights_user_span",
+        table_id="all_insights_user_spans",
+    ): (
+        "This view will eventually be referenced by impact metrics related to "
+        "insights usage (see #34100) (Mayuka Sarukkai 10/11/2024)"
+    ),
+    BigQueryAddress(
+        dataset_id="observations__insights_user_event",
+        table_id="all_insights_user_events",
+    ): (
+        "This view will eventually be referenced by impact metrics related to "
+        "insights usage (see #34100) (Mayuka Sarukkai 10/11/2024)"
     ),
 }
 

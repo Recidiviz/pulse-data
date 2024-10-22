@@ -39,6 +39,7 @@ class EventType(Enum):
     INCARCERATION_START_TEMPORARY = "INCARCERATION_START_TEMPORARY"
     INCARCERATION_START = "INCARCERATION_START"
     INCARCERATION_RELEASE = "INCARCERATION_RELEASE"
+    INSIGHTS_USER_LOGIN = "INSIGHTS_USER_LOGIN"
     LIBERTY_START = "LIBERTY_START"
     PAROLE_HEARING = "PAROLE_HEARING"
     PENDING_CUSTODY_START = "PENDING_CUSTODY_START"
@@ -134,6 +135,8 @@ class EventType(Enum):
             EventType.WORKFLOWS_USER_PAGE,
         ]:
             return MetricUnitOfObservationType.WORKFLOWS_USER
+        if self in [EventType.INSIGHTS_USER_LOGIN]:
+            return MetricUnitOfObservationType.INSIGHTS_USER
 
         raise ValueError(
             f"No unit_of_observation_type found for EventType {self.value}"

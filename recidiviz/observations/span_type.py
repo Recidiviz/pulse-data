@@ -43,6 +43,7 @@ class SpanType(Enum):
     INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSION = (
         "INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSION"
     )
+    INSIGHTS_USER_REGISTRATION_SESSION = "INSIGHTS_USER_REGISTRATION_SESSION"
     JUSTICE_IMPACT_SESSION = "JUSTICE_IMPACT_SESSION"
     LOCATION_TYPE_SESSION = "LOCATION_TYPE_SESSION"
     PERSON_DEMOGRAPHICS = "PERSON_DEMOGRAPHICS"
@@ -107,5 +108,9 @@ class SpanType(Enum):
             SpanType.WORKFLOWS_SURFACEABLE_CASELOAD_SESSION,
         ]:
             return MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD
+        if self in [
+            SpanType.INSIGHTS_USER_REGISTRATION_SESSION,
+        ]:
+            return MetricUnitOfObservationType.INSIGHTS_USER
 
         raise ValueError(f"No unit_of_observation_type found for SpanType {self.value}")
