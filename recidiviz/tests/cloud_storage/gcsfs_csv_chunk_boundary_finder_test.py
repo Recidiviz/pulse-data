@@ -387,11 +387,13 @@ class GcsfsCsvChunkBoundaryFinderChunksForPathTests(unittest.TestCase):
     def test_quoted_newlines_one_line_each_carriage(self) -> None:
         expected_boundaries = [
             CsvChunkBoundary(start_inclusive=0, end_exclusive=71, chunk_num=0),
-            CsvChunkBoundary(start_inclusive=71, end_exclusive=158, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=71, end_exclusive=132, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=132, end_exclusive=158, chunk_num=2),
         ]
         expected_chunks = [
             b'numerical_col,string_col_1,string_col_2\r\n1234,"Hello, world",I\'m Anna\r\n',
-            b'4567,"This line\r\nis split in two","This word is ""quoted"""\r\n7890,"""quoted value""",\r\n',
+            b'4567,"This line\r\nis split in two","This word is ""quoted"""\r\n',
+            b'7890,"""quoted value""",\r\n',
         ]
         self.run_local_test(
             QUOTED_CARRIAGE_NEWLINE,
