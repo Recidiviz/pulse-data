@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     parole_dual_active_supervision_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_pa import (
-    transfer_to_administrative_supervision,
+    transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (
     on_parole_at_least_one_year,
@@ -70,7 +70,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_assigned_ineligible_stat_code.VIEW_BUILDER,
         not_supervision_past_full_term_completion_date_or_upcoming_90_days_view_builder,
     ],
-    completion_event_builder=transfer_to_administrative_supervision.VIEW_BUILDER,
+    completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
         criteria=on_parole_at_least_one_year.VIEW_BUILDER,
         reasons_date_field="minimum_time_served_date",
