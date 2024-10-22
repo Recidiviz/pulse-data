@@ -19,10 +19,11 @@ import argparse
 import traceback
 from typing import List
 
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.entrypoints.entrypoint_utils import save_to_xcom
+from recidiviz.entrypoints.entrypoint_utils import save_to_gcs_xcom
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normalizer import (
     DirectIngestRawFilePreImportNormalizer,
 )
@@ -36,20 +37,6 @@ from recidiviz.utils.airflow_types import BatchedTaskInstanceOutput
 # Delimit the list of file chunks with a caret
 # to avoid parsing issues with serialized chunk objects
 FILE_CHUNK_LIST_DELIMITER = "^"
-
-
-def normalize_raw_file_chunks(
-    serialized_chunks: List[str], state_code: StateCode
-) -> str:
-    fs = GcsfsFactory.build()
-    normalizer = DirectIngestRawFilePreImportNormalizer(fs, state_code)
-    deserialized_chunks = [
-        RequiresPreImportNormalizationFileChunk.deserialize(chunk)
-        for chunk in serialized_chunks
-    ]
-
-    normalized_chunks_result = _normalize_chunks(normalizer, deserialized_chunks)
-    return normalized_chunks_result.serialize()
 
 
 def _normalize_chunks(
@@ -81,6 +68,19 @@ def _normalize_chunks(
     ](results=results, errors=errors)
 
 
+def normalize_raw_file_chunks(
+    fs: GCSFileSystem, serialized_chunks: List[str], state_code: StateCode
+) -> str:
+    normalizer = DirectIngestRawFilePreImportNormalizer(fs, state_code)
+    deserialized_chunks = [
+        RequiresPreImportNormalizationFileChunk.deserialize(chunk)
+        for chunk in serialized_chunks
+    ]
+
+    normalized_chunks_result = _normalize_chunks(normalizer, deserialized_chunks)
+    return normalized_chunks_result.serialize()
+
+
 class RawDataChunkNormalizationEntrypoint(EntrypointInterface):
     """Entrypoint for normalizing raw data file chunks for import"""
 
@@ -109,6 +109,8 @@ class RawDataChunkNormalizationEntrypoint(EntrypointInterface):
         chunks = args.file_chunks
         state_code = args.state_code
 
-        results = normalize_raw_file_chunks(chunks, state_code)
+        fs = GcsfsFactory.build()
 
-        save_to_xcom(results)
+        results = normalize_raw_file_chunks(fs, chunks, state_code)
+
+        save_to_gcs_xcom(fs=fs, output_str=results)

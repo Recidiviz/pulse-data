@@ -79,7 +79,7 @@ class BatchedTaskInstanceOutput(Generic[T, E]):
     ) -> "BatchedTaskInstanceOutput":
         data = json.loads(json_str)
         return BatchedTaskInstanceOutput(
-            results=[result_cls.deserialize(chunk) for chunk in data["results"]],
+            results=[result_cls.deserialize(result) for result in data["results"]],
             errors=[error_cls.deserialize(error) for error in data["errors"]],
         )
 

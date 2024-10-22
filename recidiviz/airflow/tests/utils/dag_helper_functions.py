@@ -17,9 +17,8 @@
 """
 Helper functions for testing Airflow DAGs.
 """
-from contextlib import nullcontext
+import os
 from typing import Any, Callable, Dict, List, Optional, Type
-from unittest.mock import patch
 
 from airflow.decorators import task
 from airflow.models import BaseOperator
@@ -28,8 +27,11 @@ from airflow.operators.python import PythonOperator
 from airflow.utils.context import Context
 from airflow.utils.trigger_rule import TriggerRule
 
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
+from recidiviz.entrypoints.entrypoint_utils import save_to_gcs_xcom
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.utils.environment import DAG_ID, MAP_INDEX, RUN_ID, TASK_ID
 from recidiviz.utils.types import assert_type
 
 
@@ -147,8 +149,16 @@ def fake_task_function_with_return_value(return_value: Any) -> Callable:
     return fake_func
 
 
+def set_k8s_operator_env_vars(context: Context) -> None:
+    ti = context["ti"]
+    os.environ[DAG_ID] = ti.dag_id
+    os.environ[TASK_ID] = ti.task_id
+    os.environ[RUN_ID] = context["run_id"]
+    os.environ[MAP_INDEX] = str(ti.map_index)
+
+
 def fake_k8s_operator_with_return_value(
-    return_value: Any, is_mapped: bool
+    fs: GCSFileSystem, return_value: Any, is_mapped: bool
 ) -> type[BaseOperator]:
     """Returns a fake k8s operator that returns the specified values
 
@@ -160,6 +170,8 @@ def fake_k8s_operator_with_return_value(
     call_count: int = 0
 
     class FakeK8sOperator(BaseOperator):
+        """Fake k8s operator that returns the specified values"""
+
         # pylint: disable=unused-argument
         def __init__(
             self,
@@ -180,17 +192,20 @@ def fake_k8s_operator_with_return_value(
                 ),
             )
 
-        def execute(self, context: Context) -> Any:  # pylint: disable=unused-argument
+        def execute(self, context: Context) -> None:  # pylint: disable=unused-argument
             nonlocal call_count
             val = return_value[call_count] if is_mapped else return_value
             call_count += 1
-            return val
+
+            set_k8s_operator_env_vars(context)
+
+            save_to_gcs_xcom(fs, val)
 
     return FakeK8sOperator
 
 
 def fake_k8s_operator_for_entrypoint(
-    entrypoint_cls: type[EntrypointInterface], mock_xcom: bool = True
+    entrypoint_cls: type[EntrypointInterface],
 ) -> type[BaseOperator]:
     """Uses an entrypoint class to simulate the behavior of a k8s pod in a testing
     environment, mocking save_to_xcom within the entrypoint_cls module. This is needed
@@ -231,23 +246,13 @@ def fake_k8s_operator_for_entrypoint(
             )
 
         # pylint: disable=unused-argument
-        def execute(self, context: Context) -> Optional[str]:
-            with (
-                patch(f"{entrypoint_cls.__module__}.save_to_xcom")  # type: ignore
-                if mock_xcom
-                else nullcontext()
-            ) as xcom_mock:
+        def execute(self, context: Context) -> None:
+            set_k8s_operator_env_vars(context)
 
-                unknown_args = self.arguments[5:]
-                entrypoint_parser = entrypoint_cls.get_parser()
-                entrypoint_args = entrypoint_parser.parse_args(unknown_args)
+            unknown_args = self.arguments[5:]
+            entrypoint_parser = entrypoint_cls.get_parser()
+            entrypoint_args = entrypoint_parser.parse_args(unknown_args)
 
-                entrypoint_cls.run_entrypoint(entrypoint_args)
-
-                if xcom_mock and xcom_mock.call_count:
-                    xcom_mock.assert_called_once()
-                    return xcom_mock.call_args_list[0][0][0]
-
-                return None
+            entrypoint_cls.run_entrypoint(entrypoint_args)
 
     return FakeK8sEntrypointOperator

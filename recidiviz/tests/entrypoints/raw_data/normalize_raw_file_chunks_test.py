@@ -66,18 +66,21 @@ class TestRawDataChunkNormalization(unittest.TestCase):
 
         self.state_code = StateCode("US_XX")
 
-    @patch(
-        "recidiviz.entrypoints.raw_data.normalize_raw_file_chunks.GcsfsFactory.build"
-    )
+        self.save_to_gcs_patcher = patch(
+            "recidiviz.entrypoints.raw_data.normalize_raw_file_chunks.save_to_gcs_xcom",
+        )
+        self.mock_save_to_gcs = self.save_to_gcs_patcher.start()
+
+    def tearDown(self) -> None:
+        self.save_to_gcs_patcher.stop()
+
     @patch(
         "recidiviz.entrypoints.raw_data.normalize_raw_file_chunks.DirectIngestRawFilePreImportNormalizer"
     )
     def test_normalize_raw_file_chunks_success(
         self,
         mock_normalizer: MagicMock,
-        mock_gcsfs_factory: MagicMock,
     ) -> None:
-        mock_gcsfs_factory.return_value = self.mock_fs
         mock_normalizer.return_value = self.mock_normalizer_instance
 
         self.mock_normalizer_instance.normalize_chunk_for_import.return_value = (
@@ -86,7 +89,9 @@ class TestRawDataChunkNormalization(unittest.TestCase):
 
         result = BatchedTaskInstanceOutput.deserialize(
             json_str=normalize_raw_file_chunks(
-                self.serialized_requires_normalization_chunks, self.state_code
+                self.mock_fs,
+                self.serialized_requires_normalization_chunks,
+                self.state_code,
             ),
             result_cls=PreImportNormalizedCsvChunkResult,
             error_cls=RawFileProcessingError,
@@ -99,17 +104,12 @@ class TestRawDataChunkNormalization(unittest.TestCase):
         )
 
     @patch(
-        "recidiviz.entrypoints.raw_data.normalize_raw_file_chunks.GcsfsFactory.build"
-    )
-    @patch(
         "recidiviz.entrypoints.raw_data.normalize_raw_file_chunks.DirectIngestRawFilePreImportNormalizer"
     )
     def test_normalize_raw_file_chunks_error(
         self,
         mock_normalizer: MagicMock,
-        mock_gcsfs_factory: MagicMock,
     ) -> None:
-        mock_gcsfs_factory.return_value = self.mock_fs
         mock_normalizer.return_value = self.mock_normalizer_instance
 
         self.mock_normalizer_instance.normalize_chunk_for_import.side_effect = (
@@ -121,7 +121,9 @@ class TestRawDataChunkNormalization(unittest.TestCase):
 
         result = BatchedTaskInstanceOutput.deserialize(
             json_str=normalize_raw_file_chunks(
-                self.serialized_requires_normalization_chunks, self.state_code
+                self.mock_fs,
+                self.serialized_requires_normalization_chunks,
+                self.state_code,
             ),
             result_cls=RequiresPreImportNormalizationFile,
             error_cls=RawFileProcessingError,
@@ -135,13 +137,18 @@ class TestRawDataChunkNormalization(unittest.TestCase):
             self.requires_normalization_chunk
         )
 
-    @patch("recidiviz.entrypoints.raw_data.normalize_raw_file_chunks.save_to_xcom")
     @patch(
         "recidiviz.entrypoints.raw_data.normalize_raw_file_chunks.normalize_raw_file_chunks"
     )
+    @patch(
+        "recidiviz.entrypoints.raw_data.normalize_raw_file_chunks.GcsfsFactory.build"
+    )
     def test_run_entrypoint(
-        self, mock_normalize_raw_file_chunks: MagicMock, mock_save_to_xcom: MagicMock
+        self,
+        mock_fs_factory: MagicMock,
+        mock_normalize_raw_file_chunks: MagicMock,
     ) -> None:
+        mock_fs_factory.return_value = self.mock_fs
         parser = RawDataChunkNormalizationEntrypoint.get_parser()
         args = parser.parse_args(
             [
@@ -160,8 +167,12 @@ class TestRawDataChunkNormalization(unittest.TestCase):
         RawDataChunkNormalizationEntrypoint.run_entrypoint(args)
 
         mock_normalize_raw_file_chunks.assert_called_once_with(
-            ["serialized_chunk1", "serialized_chunk2"], self.state_code
+            self.mock_fs, ["serialized_chunk1", "serialized_chunk2"], self.state_code
         )
-        mock_save_to_xcom.assert_called_once_with(
-            {"results": ["normalized_chunk1", "normalized_chunk2"], "errors": []}
+        self.mock_save_to_gcs.assert_called_once_with(
+            fs=self.mock_fs,
+            output_str={
+                "results": ["normalized_chunk1", "normalized_chunk2"],
+                "errors": [],
+            },
         )

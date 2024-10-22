@@ -300,12 +300,14 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow.tests",
+                "recidiviz.cloud_storage.gcs_file_system",
+                "recidiviz.entrypoints.entrypoint_interface",
+                "recidiviz.entrypoints.entrypoint_utils",
                 "recidiviz.tests.metrics.export.fixtures",
                 "recidiviz.tests.pipelines",
                 "recidiviz.tests.test_setup_utils",
                 "recidiviz.tools.postgres.local_postgres_helpers",
                 "recidiviz.tools.utils.script_helpers",
-                "recidiviz.entrypoints.entrypoint_interface",
                 *valid_calculation_dag_prefixes,
             }
         ),

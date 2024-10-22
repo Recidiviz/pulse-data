@@ -225,6 +225,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 "generate_file_chunking_pod_arguments",
             ],
             "raw_data_file_chunking",
+            "push_kpo_mapped_task_output_from_gcs_to_xcom",
             "filter_chunking_results_by_errors",
             [
                 "raise_file_chunking_errors",
@@ -232,6 +233,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 "generate_chunk_processing_pod_arguments",
             ],
             "raw_data_chunk_normalization",
+            "push_kpo_mapped_task_output_from_gcs_to_xcom",
             "regroup_and_verify_file_chunks",
             [
                 "coalesce_results_and_errors",
@@ -815,11 +817,13 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
 
     step_3_tasks: List[str] = [
         "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_file_chunking_pod_arguments",
-        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking",
+        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking_group.raw_data_file_chunking",
+        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking_group.push_kpo_mapped_task_output_from_gcs_to_xcom",
         "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.filter_chunking_results_by_errors",
         "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors",
         "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_chunk_processing_pod_arguments",
-        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization",
+        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization_group.raw_data_chunk_normalization",
+        "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization_group.push_kpo_mapped_task_output_from_gcs_to_xcom",
         "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.regroup_and_verify_file_chunks",
         "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors",
     ]
@@ -830,6 +834,10 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         # env mocks ---
 
         self.dag_id = get_raw_data_import_dag_id(_PROJECT_ID)
+        self.project_patcher = patch(
+            "recidiviz.utils.metadata.project_id", return_value=_PROJECT_ID
+        )
+        self.project_patcher.start()
         self.environment_patcher = patch(
             "os.environ",
             {
@@ -860,10 +868,30 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         )
         self.raw_data_dag_enabled_patcher.start()
 
+        # instance vars for mocked return vals ---
+
+        self.input_requires_normalization: List[str] = []
+        self.input_bq_metadata: List[str] = []
+        self.chunking_return_value: List[str] = []
+        self.normalization_return_value: List[str] = []
+        self.input_bq_load_config: Dict[str, str] = {}
+
         # operator mocks ---
+        self.fs = FakeGCSFileSystem()
+
+        self.gcs_patchers = [
+            patch(target, return_value=self.fs)
+            for target in [
+                "recidiviz.airflow.dags.utils.kubernetes_pod_operator_task_groups.get_gcsfs_from_hook",
+                "recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks.GcsfsFactory.build",
+                "recidiviz.entrypoints.raw_data.normalize_raw_file_chunks.GcsfsFactory.build",
+            ]
+        ]
+        for patcher in self.gcs_patchers:  # type: ignore
+            patcher.start()
 
         self.kpo_operator_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.RecidivizKubernetesPodOperator.partial",
+            "recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator.RecidivizKubernetesPodOperator.partial",
             side_effect=self._fake_k8s_operator_wrapper,
         )
         self.kpo_operator_mock = self.kpo_operator_patcher.start()
@@ -891,14 +919,6 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         self.fake_gcs_mock().get_file_size.return_value = 10000
         self.fake_gcs_mock().get_crc32c.return_value = "E6KYdQ=="
 
-        # instance vars for mocked return vals ---
-
-        self.input_requires_normalization: List[str] = []
-        self.input_bq_metadata: List[str] = []
-        self.chunking_return_value: List[str] = []
-        self.normalization_return_value: List[str] = []
-        self.input_bq_load_config: Dict[str, str] = {}
-
     def tearDown(self) -> None:
         self.environment_patcher.stop()
         self.raw_data_enabled_pairs.stop()
@@ -908,6 +928,8 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         self.file_chunking_args_patcher.stop()
         self.verify_file_chunks_patcher.stop()
         self.fake_gcs_patch.stop()
+        for patcher in self.gcs_patchers:  # type: ignore
+            patcher.stop()
         super().tearDown()
 
     def _fake_k8s_operator_wrapper(self, *args: Any, **kwargs: Any) -> OperatorPartial:
@@ -924,6 +946,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
 
         return partial(
             fake_k8s_operator_with_return_value(
+                self.fs,
                 return_value,
                 is_mapped=True,
             ),
@@ -990,12 +1013,14 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                 expected_failure_task_id_regexes=[],
                 expected_skipped_task_id_regexes=[
                     # we expect this since airflow will skipped mapped tasks w/ an empty input
-                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking",
+                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking_group.raw_data_file_chunking",
                     # these all have ALL_SUCCESS so ^^ being skipped will cause these to be skipped
+                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking_group.push_kpo_mapped_task_output_from_gcs_to_xcom",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.filter_chunking_results_by_errors",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.generate_chunk_processing_pod_arguments",
-                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization",
+                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization_group.raw_data_chunk_normalization",
+                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization_group.push_kpo_mapped_task_output_from_gcs_to_xcom",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.regroup_and_verify_file_chunks",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors",
                 ],
@@ -2001,10 +2026,9 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
             )
 
             raw_data_file_chunking_jsonb = self.get_xcom_for_task_id(
-                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking",
+                "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_file_chunking_group.push_kpo_mapped_task_output_from_gcs_to_xcom",
                 session=session,
                 key="return_value",
-                is_mapped=True,
             )
 
             chunking_errors_jsonb = self.get_xcom_for_task_id(
@@ -2013,13 +2037,10 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                 key=CHUNKING_ERRORS,
             )
 
-            assert isinstance(raw_data_file_chunking_jsonb, list)
+            assert isinstance(raw_data_file_chunking_jsonb, bytes)
 
             chunking_output = MappedBatchedTaskOutput.deserialize(
-                [
-                    json.loads(raw_data_file_chunking_jsonb_result)
-                    for raw_data_file_chunking_jsonb_result in raw_data_file_chunking_jsonb
-                ],
+                list(json.loads(raw_data_file_chunking_jsonb)),
                 result_cls=RequiresPreImportNormalizationFile,
                 error_cls=RawFileProcessingError,
             )
@@ -2436,7 +2457,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         self.list_normalized_unprocessed_files_mock = self.gcs_operator_patcher.start()
 
         self.kpo_operator_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.RecidivizKubernetesPodOperator.partial",
+            "recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator.RecidivizKubernetesPodOperator.partial",
             side_effect=self._fake_k8s_operator_wrapper,
         )
         self.kpo_operator_mock = self.kpo_operator_patcher.start()
@@ -2451,6 +2472,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build",
                 "recidiviz.airflow.dags.raw_data.bq_load_tasks.GcsfsFactory.build",
                 "recidiviz.airflow.dags.raw_data.clean_up_tasks.GcsfsFactory.build",
+                "recidiviz.airflow.dags.utils.kubernetes_pod_operator_task_groups.get_gcsfs_from_hook",
                 "recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks.GcsfsFactory.build",
                 "recidiviz.entrypoints.raw_data.normalize_raw_file_chunks.GcsfsFactory.build",
             ]
@@ -3477,7 +3499,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_secondary_import_branch\..*",
                     r".us_ll_primary_import_branch\..*",
                     # skipped since no files to import after failed chunking step!
-                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization",
+                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization_group.raw_data_chunk_normalization",
+                    "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raw_data_chunk_normalization_group.push_kpo_mapped_task_output_from_gcs_to_xcom",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.regroup_and_verify_file_chunks",
                     "raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors",
                     r"raw_data_branching\.us_xx_primary_import_branch.big_query_load\..*",
