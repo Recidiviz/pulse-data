@@ -95,6 +95,10 @@ class BulkUploadMetadata:
             )
         )
 
+        self.child_agencies_query = AgencyInterface.get_child_agencies_for_agency_query(
+            session=self.session, agency=self.agency
+        )
+
     @cached_property
     def child_agency_name_to_agency(self) -> Dict[str, schema.Agency]:
         """
@@ -105,11 +109,11 @@ class BulkUploadMetadata:
             A dictionary mapping normalized (lowercase, stripped) child agency names to
             their corresponding `schema.Agency` objects.
         """
-        child_agencies = AgencyInterface.get_child_agencies_for_agency(
-            session=self.session, agency=self.agency
-        )
-        child_agency_name_to_agency = {}
-        for child_agency in child_agencies:
+        child_agency_name_to_agency: Dict[str, schema.Agency] = {}
+        if self.child_agencies_query is None:
+            return child_agency_name_to_agency
+
+        for child_agency in self.child_agencies_query:
             child_agency_name_to_agency[
                 child_agency.name.strip().lower()
             ] = child_agency
@@ -153,7 +157,10 @@ class BulkUploadMetadata:
             child agency IDs and the values are dictionaries mapping metric keys to
             `MetricInterface` objects for those child agencies.
         """
+        if self.child_agencies_query is None:
+            return {}
+
         return MetricSettingInterface.get_agency_id_to_metric_key_to_metric_interface(
             session=self.session,
-            agencies=list(self.child_agency_name_to_agency.values()),
+            agency_query=self.child_agencies_query,
         )

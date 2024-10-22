@@ -17,15 +17,21 @@
 """Interface for working with the Agency model."""
 
 import logging
+from collections import defaultdict
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.justice_counts.control_panel.utils import is_demo_agency
+from recidiviz.justice_counts.dimensions.dimension_registry import (
+    DIMENSION_IDENTIFIER_TO_DIMENSION,
+)
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
+from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 
@@ -310,8 +316,22 @@ class AgencyInterface:
     def get_child_agencies_for_agency(
         session: Session, agency: schema.Agency, with_users: bool = False
     ) -> List[schema.Agency]:
-        if agency.is_superagency is False:
+
+        query = AgencyInterface.get_child_agencies_for_agency_query(
+            session=session, agency=agency, with_users=with_users
+        )
+
+        if query is None:
             return []
+
+        return query.all()
+
+    @staticmethod
+    def get_child_agencies_for_agency_query(
+        session: Session, agency: schema.Agency, with_users: bool = False
+    ) -> Optional[Query]:
+        if agency.is_superagency is False:
+            return None
 
         q = session.query(schema.Agency).filter(
             schema.Agency.super_agency_id == agency.id
@@ -324,7 +344,7 @@ class AgencyInterface:
                 )
             )
 
-        return q.all()
+        return q
 
     @staticmethod
     def get_child_agency_ids_for_agency(
@@ -392,11 +412,34 @@ class AgencyInterface:
         return agency
 
     @staticmethod
+    def get_agencies_with_enabled_dashboard(session: Session) -> Query:
+        """
+        Retrieve a list of agencies that have the dashboard enabled.
+
+        This static method queries the database for agencies where the
+        'is_dashboard_enabled' attribute is set to True.
+
+        Args:
+            session (Session): The SQLAlchemy session to use for the query.
+
+        Returns:
+            List[schema.Agency]: A list of agencies with the dashboard enabled.
+        """
+
+        return session.query(schema.Agency).filter(
+            schema.Agency.is_dashboard_enabled.is_(True)
+        )
+
+    @staticmethod
     def get_dashboard_homepage_json(
         agency: schema.Agency,
         fips_code_to_geoid: Dict[str, str],
         county_code_to_county_fips: Dict[str, str],
         county_code_to_county_name: Dict[str, str],
+        metric_key_to_metric_interface: Dict[str, MetricInterface],
+        metric_key_dim_id_to_available_members: Dict[
+            str, Dict[Optional[str], Set[Optional[str]]]
+        ],
     ) -> Dict[str, Any]:
         """
         Generate a JSON representation of the dashboard homepage for a given agency.
@@ -419,19 +462,56 @@ class AgencyInterface:
             if agency.fips_county_code is not None
             else None
         )
+
+        # Get all enabled metrics
+        enabled_metrics = {
+            metric_key
+            for metric_key, metric_interface in metric_key_to_metric_interface.items()
+            if metric_interface.is_metric_enabled
+        }
+
+        # Filter available metric keys that are enabled
+        available_metric_keys = [
+            metric_key
+            for metric_key in metric_key_dim_id_to_available_members.keys()
+            if metric_key in enabled_metrics
+        ]
+        # Prepare available disaggregations: remove None keys and convert sets to lists
+        available_disaggregations: Dict[str, Dict[str, List[str]]] = defaultdict(dict)
+        for (
+            metric_key,
+            dim_id_to_available_members,
+        ) in metric_key_dim_id_to_available_members.items():
+            for dim_id, available_members in dim_id_to_available_members.items():
+                if dim_id is None:
+                    continue
+
+                # Get the enum associated with the dimension identifier
+                dim_enum = DIMENSION_IDENTIFIER_TO_DIMENSION[dim_id]
+
+                # Sort available members based on their order in the dim_enum
+                dim_enum_ordered = [enum.name for enum in dim_enum]  # type: ignore[attr-defined]
+                available_members_list: List[str] = sorted(
+                    [member for member in available_members if member is not None],
+                    key=dim_enum_ordered.index,
+                )
+
+                # Add the sorted members to the available disaggregations
+                available_disaggregations[metric_key][dim_id] = available_members_list
+
+        available_sectors = {
+            METRIC_KEY_TO_METRIC[metric_key].system
+            for metric_key in available_metric_keys
+        }
         return {
             "id": agency.id,
             "name": agency.name,
             "available_sectors": [
-                system_enum.value
-                for system_enum in schema.System.sort(
-                    systems=[
-                        schema.System(system_str)
-                        for system_str in (agency.systems or [])
-                    ]
-                )
+                s.name for s in schema.System.sort(systems=list(available_sectors))
             ],
-            "is_dashboard_enabled": agency.is_dashboard_enabled,
+            "available_metric_keys": available_metric_keys,
+            "available_disaggregations": dict(available_disaggregations),
+            "is_dashboard_enabled": agency.is_dashboard_enabled is True,
             "is_demo": is_demo_agency(agency.name),
             "state_geoid": fips_code_to_geoid.get(str(state.fips)),
             "county_geoid": (

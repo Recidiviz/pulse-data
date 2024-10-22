@@ -1929,18 +1929,36 @@ def get_api_blueprint(
     @api_blueprint.route("/agencies/dashboard", methods=["GET"])
     def get_dashboard_homepage_metadata() -> Response:
         try:
-            agencies = AgencyInterface.get_agencies(session=current_session)
+            agency_query = AgencyInterface.get_agencies_with_enabled_dashboard(
+                session=current_session
+            )
+            agency_id_to_metric_key_to_metric_interface = (
+                MetricSettingInterface.get_agency_id_to_metric_key_to_metric_interface(
+                    session=current_session, agency_query=agency_query
+                )
+            )
+            agency_id_to_metric_key_dim_id_to_available_members = (
+                ReportInterface.get_agency_id_to_metric_key_dim_id_to_available_members(
+                    session=current_session
+                )
+            )
             fips_code_to_geoid = get_fips_code_to_geoid()
             county_code_to_county_name = get_county_code_to_county_name()
             county_code_to_county_fips = get_county_code_to_county_fips()
             agency_json = []
-            for agency in agencies:
+            for agency in agency_query:
                 agency_json.append(
                     AgencyInterface.get_dashboard_homepage_json(
                         fips_code_to_geoid=fips_code_to_geoid,
                         county_code_to_county_name=county_code_to_county_name,
                         county_code_to_county_fips=county_code_to_county_fips,
                         agency=agency,
+                        metric_key_to_metric_interface=agency_id_to_metric_key_to_metric_interface[
+                            agency.id
+                        ],
+                        metric_key_dim_id_to_available_members=agency_id_to_metric_key_dim_id_to_available_members[
+                            agency.id
+                        ],
                     )
                 )
             return jsonify(agency_json)
