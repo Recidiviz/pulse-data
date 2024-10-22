@@ -63,7 +63,7 @@ WITH state_assessment AS (
         OR (
             state_code != "US_MI"
             AND (
-                assessment_type IN ("LSIR", "STRONG_R", "CAF", "CSRA")
+                assessment_type IN ("LSIR", "STRONG_R", "CAF", "CSRA", "ACCAT")
                 OR assessment_type LIKE "ORAS%"
             )
         )
