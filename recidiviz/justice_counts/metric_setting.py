@@ -20,7 +20,7 @@ import datetime
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 
 from recidiviz.justice_counts.metrics.metric_interface import (
     MetricDefinition,
@@ -197,10 +197,12 @@ class MetricSettingInterface:
                     agency_metric_updates=MetricInterface(
                         key=metric_definition_key,
                         disaggregated_by_supervision_subsystems=agency_metric_updates.disaggregated_by_supervision_subsystems,
-                        is_metric_enabled=agency_metric_updates.disaggregated_by_supervision_subsystems
-                        if schema.System[system]
-                        in schema.System.supervision_subsystems()
-                        else not agency_metric_updates.disaggregated_by_supervision_subsystems,
+                        is_metric_enabled=(
+                            agency_metric_updates.disaggregated_by_supervision_subsystems
+                            if schema.System[system]
+                            in schema.System.supervision_subsystems()
+                            else not agency_metric_updates.disaggregated_by_supervision_subsystems
+                        ),
                     ),
                     user_account=user_account,
                 )
@@ -294,12 +296,12 @@ class MetricSettingInterface:
     @staticmethod
     def get_agency_id_to_metric_key_to_metric_interface(
         session: Session,
-        agencies: List[schema.Agency],
+        agency_query: Query,
     ) -> Dict[int, Dict[str, MetricInterface]]:
         agency_id_to_metric_key_to_metric_interface: Dict[
             int, Dict[str, MetricInterface]
         ] = {}
-        for agency in agencies:
+        for agency in agency_query:
             agency_id_to_metric_key_to_metric_interface[
                 agency.id
             ] = MetricSettingInterface.get_metric_key_to_metric_interface(
@@ -359,13 +361,17 @@ class MetricSettingInterface:
             if MetricSettingInterface.should_add_metric_definition_to_report(
                 report_starting_month=starting_month,
                 report_frequency=report_frequency,
-                metric_starting_month=metric_interface.custom_reporting_frequency.starting_month
-                if metric_interface.custom_reporting_frequency.starting_month
-                is not None
-                else 1,
-                metric_frequency=metric_interface.custom_reporting_frequency.frequency.value
-                if metric_interface.custom_reporting_frequency.frequency is not None
-                else metric.reporting_frequency.value,
+                metric_starting_month=(
+                    metric_interface.custom_reporting_frequency.starting_month
+                    if metric_interface.custom_reporting_frequency.starting_month
+                    is not None
+                    else 1
+                ),
+                metric_frequency=(
+                    metric_interface.custom_reporting_frequency.frequency.value
+                    if metric_interface.custom_reporting_frequency.frequency is not None
+                    else metric.reporting_frequency.value
+                ),
             ):
                 metric_definitions.append(metric)
 

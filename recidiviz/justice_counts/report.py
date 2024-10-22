@@ -17,6 +17,7 @@
 """Interface for working with the Reports model."""
 import datetime
 import json
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from dateutil.relativedelta import relativedelta
@@ -39,6 +40,7 @@ from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import UploadMethod
+from recidiviz.justice_counts.utils.datapoint_utils import get_dimension_id_and_member
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 from .utils.date_utils import convert_date_range_to_year_month
@@ -863,3 +865,45 @@ class ReportInterface:
             return reports[:1]
 
         return reports
+
+    @staticmethod
+    def get_agency_id_to_metric_key_dim_id_to_available_members(
+        session: Session,
+    ) -> Dict[int, Dict[str, Dict[Optional[str], Set[Optional[str]]]]]:
+        """
+        Retrieves reports with a publish date and organizes their datapoints into
+        a nested dictionary, mapping agency IDs to metric keys and their unique
+        disaggregation IDs and available members.
+
+        The returned structure is:
+        {agency_id: {metric_key: {dim_id: {available_members}}}}.
+
+        Args:
+            session (Session): SQLAlchemy session used to query the database.
+
+        Returns:
+            Dict[int, Dict[str, Dict[Optional[str], Set[Optional[str]]]]]: A nested
+            dictionary where:
+                - The first key is the `source_id` (agency_id) from each report.
+                - The second key is the `metric_definition_key` from each datapoint.
+                - The third key is the disaggregation dimension ID (or `None` if absent).
+                - The value is a set of available members for each disaggregation ID.
+        """
+        # Query reports that have been published (publish_date is not None)
+        q = session.query(schema.Report).filter(schema.Report.publish_date.is_not(None))
+
+        # Load associated datapoints efficiently
+        q = q.options(joinedload(schema.Report.datapoints))
+
+        agency_id_to_metric_key_dim_id_to_available_members: Dict[
+            int, Dict[str, Dict[Optional[str], Set[Optional[str]]]]
+        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(set)))
+
+        for report in q:
+            for datapoint in report.datapoints:
+                dim_id, dim_member = get_dimension_id_and_member(datapoint=datapoint)
+                agency_id_to_metric_key_dim_id_to_available_members[report.source_id][
+                    datapoint.metric_definition_key
+                ][dim_id].add(dim_member)
+
+        return agency_id_to_metric_key_dim_id_to_available_members

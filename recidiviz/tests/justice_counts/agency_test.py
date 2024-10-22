@@ -26,6 +26,7 @@ from recidiviz.common.fips import (
 )
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.geoid import get_fips_code_to_geoid
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -338,18 +339,103 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
             fips_code_to_geoid = get_fips_code_to_geoid()
             county_code_to_county_name = get_county_code_to_county_name()
             county_code_to_county_fips = get_county_code_to_county_fips()
+
             json = AgencyInterface.get_dashboard_homepage_json(
                 fips_code_to_geoid=fips_code_to_geoid,
                 county_code_to_county_name=county_code_to_county_name,
                 county_code_to_county_fips=county_code_to_county_fips,
                 agency=agency,
+                metric_key_to_metric_interface={},
+                metric_key_dim_id_to_available_members={},
             )
+
+            self.assertEqual(
+                json,
+                {
+                    "id": agency.id,
+                    "name": "GA County Court",
+                    "available_sectors": [],
+                    "available_metric_keys": [],
+                    "available_disaggregations": {},
+                    "is_dashboard_enabled": True,
+                    "is_demo": False,
+                    "state_geoid": "0400000US13",
+                    "county_geoid": None,
+                    "state_name": "Georgia",
+                    "county_name": "Fulton County",
+                },
+            )
+
+            session.commit()
+            json = AgencyInterface.get_dashboard_homepage_json(
+                fips_code_to_geoid=fips_code_to_geoid,
+                county_code_to_county_name=county_code_to_county_name,
+                county_code_to_county_fips=county_code_to_county_fips,
+                agency=agency,
+                metric_key_to_metric_interface={
+                    "COURTS_AND_PRETRIAL_FUNDING": MetricInterface(
+                        key="COURTS_AND_PRETRIAL_FUNDING", is_metric_enabled=True
+                    ),
+                    "COURTS_AND_PRETRIAL_TOTAL_STAFF": MetricInterface(
+                        key="COURTS_AND_PRETRIAL_TOTAL_STAFF", is_metric_enabled=True
+                    ),
+                    "COURTS_AND_PRETRIAL_PRETRIAL_RELEASES": MetricInterface(
+                        key="COURTS_AND_PRETRIAL_PRETRIAL_RELEASES",
+                        is_metric_enabled=False,
+                    ),
+                    "COURTS_AND_PRETRIAL_SENTENCES": MetricInterface(
+                        key="COURTS_AND_PRETRIAL_SENTENCES",
+                        is_metric_enabled=True,
+                    ),
+                },
+                metric_key_dim_id_to_available_members={
+                    "COURTS_AND_PRETRIAL_FUNDING": {
+                        "metric/courts/funding/type": {
+                            "GRANTS",
+                            "UNKNOWN",
+                            "STATE_APPROPRIATION",
+                        }
+                    },
+                    "COURTS_AND_PRETRIAL_TOTAL_STAFF": {None: {None}},
+                    "COURTS_AND_PRETRIAL_PRETRIAL_RELEASES": {None: {None}},
+                    "COURTS_AND_PRETRIAL_SENTENCES": {
+                        "global/biological_sex": {"MALE", "FEMALE"},
+                        "metric/courts/sentence/type": {"PRISON", "SPLIT"},
+                        None: {None},
+                    },
+                },
+            )
+
             self.assertEqual(
                 json,
                 {
                     "id": agency.id,
                     "name": "GA County Court",
                     "available_sectors": ["COURTS_AND_PRETRIAL"],
+                    "available_metric_keys": [
+                        "COURTS_AND_PRETRIAL_FUNDING",
+                        "COURTS_AND_PRETRIAL_TOTAL_STAFF",
+                        "COURTS_AND_PRETRIAL_SENTENCES",
+                    ],
+                    "available_disaggregations": {
+                        "COURTS_AND_PRETRIAL_FUNDING": {
+                            "metric/courts/funding/type": [
+                                "STATE_APPROPRIATION",
+                                "GRANTS",
+                                "UNKNOWN",
+                            ]
+                        },
+                        "COURTS_AND_PRETRIAL_SENTENCES": {
+                            "global/biological_sex": [
+                                "MALE",
+                                "FEMALE",
+                            ],
+                            "metric/courts/sentence/type": [
+                                "PRISON",
+                                "SPLIT",
+                            ],
+                        },
+                    },
                     "is_dashboard_enabled": True,
                     "is_demo": False,
                     "state_geoid": "0400000US13",
