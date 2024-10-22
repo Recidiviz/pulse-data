@@ -21,10 +21,10 @@ from typing import List, Optional
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import (
-    CsvChunkBoundary,
     GcsfsCsvChunkBoundaryFinder,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.types import CsvChunkBoundary
 from recidiviz.common.constants.csv import (
     CARRIAGE_RETURN,
     DEFAULT_CSV_ENCODING,
