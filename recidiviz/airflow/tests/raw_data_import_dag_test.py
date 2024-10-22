@@ -53,8 +53,8 @@ from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_task_function_with_return_value,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.types import CsvChunkBoundary
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataResourceLockResource,
 )

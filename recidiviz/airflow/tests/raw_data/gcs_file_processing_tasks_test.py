@@ -32,8 +32,8 @@ from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
     regroup_normalized_file_chunks,
     verify_file_checksums,
 )
-from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.types import CsvChunkBoundary
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     PreImportNormalizationType,

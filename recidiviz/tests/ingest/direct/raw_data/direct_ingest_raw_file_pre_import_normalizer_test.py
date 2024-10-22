@@ -21,8 +21,8 @@ from unittest.mock import Mock, patch
 
 import attr
 
-from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.types import CsvChunkBoundary
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_pre_import_normalizer import (

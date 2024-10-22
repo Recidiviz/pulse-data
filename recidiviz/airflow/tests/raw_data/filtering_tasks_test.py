@@ -25,8 +25,8 @@ from recidiviz.airflow.dags.raw_data.filtering_tasks import (
     filter_header_results_by_processing_errors,
 )
 from recidiviz.airflow.dags.raw_data.metadata import CHUNKING_ERRORS, CHUNKING_RESULTS
-from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.types import CsvChunkBoundary
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
     RawBigQueryFileMetadata,

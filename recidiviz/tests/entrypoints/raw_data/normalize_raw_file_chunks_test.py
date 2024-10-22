@@ -18,8 +18,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.types import CsvChunkBoundary
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.raw_data.normalize_raw_file_chunks import (
     FILE_CHUNK_LIST_DELIMITER,

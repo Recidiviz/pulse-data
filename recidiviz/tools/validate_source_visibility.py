@@ -326,9 +326,9 @@ def main() -> int:
         "recidiviz.big_query.export.export_query_config",
         "recidiviz.cloud_storage.gcs_file_system",
         "recidiviz.cloud_storage.gcs_file_system_impl",
-        "recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder",
         "recidiviz.cloud_storage.gcsfs_factory",
         "recidiviz.cloud_storage.gcsfs_path",
+        "recidiviz.cloud_storage.types",
         "recidiviz.cloud_storage.verifiable_bytes_reader",
         "recidiviz.common",
         "recidiviz.ingest.direct.dataset_config",
@@ -392,6 +392,7 @@ def main() -> int:
                 "recidiviz.ingest.direct.raw_data.read_raw_file_column_headers",
                 "recidiviz.cloud_storage.bytes_chunk_reader",
                 "recidiviz.cloud_storage.read_only_csv_normalizing_stream",
+                "recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder",
                 *valid_raw_data_import_dag_prefixes,
             }
         ),

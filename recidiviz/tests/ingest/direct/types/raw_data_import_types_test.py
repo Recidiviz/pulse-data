@@ -24,8 +24,8 @@ import attr
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.types import CsvChunkBoundary
 from recidiviz.common.constants.csv import (
     DEFAULT_CSV_ENCODING,
     DEFAULT_CSV_LINE_TERMINATOR,

@@ -17,15 +17,14 @@
 """Code for finding byte offsets for row-safe chunk boundaries for Google Cloud Storage CSV files. """
 import csv
 import io
-import json
 import logging
 from typing import Annotated, List, Optional
 
-import attr
 from annotated_types import Gt
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.types import CsvChunkBoundary
 from recidiviz.common.constants.csv import DEFAULT_CSV_QUOTE_CHAR, VALID_QUOTE_CHARS
 from recidiviz.utils.quoted_csv_line_terminator_finder import (
     find_line_terminator_for_quoted_csv,
@@ -35,34 +34,6 @@ DEFAULT_CHUNK_SIZE = 100 * 1024 * 1024  # TODO(#28653) configure a sensible defa
 DEFAULT_PEEK_SIZE_NO_QUOTES = 600
 DEFAULT_PEEK_SIZE_QUOTES = 1024 * 512
 DEFAULT_MAX_CELL_SIZE = 1024 * 1024
-
-
-@attr.define
-class CsvChunkBoundary:
-    """Information about a given csv chunk boundary, where:
-    - start_inclusive is the first byte of the row-safe csv chunk (0 indexed)
-    - end_exclusive is the last byte (exclusive) of the row-safe csv chunk
-    - chunk_num is the 0-indexed chunk sequence number
-    """
-
-    start_inclusive: int
-    end_exclusive: int
-    chunk_num: int
-
-    def get_chunk_size(self) -> int:
-        """Return the size of the chunk in bytes."""
-        return self.end_exclusive - self.start_inclusive
-
-    def serialize(self) -> str:
-        data = [self.start_inclusive, self.end_exclusive, self.chunk_num]
-        return json.dumps(data)
-
-    @staticmethod
-    def deserialize(json_str: str) -> "CsvChunkBoundary":
-        data = json.loads(json_str)
-        return CsvChunkBoundary(
-            start_inclusive=data[0], end_exclusive=data[1], chunk_num=data[2]
-        )
 
 
 class GcsfsCsvChunkBoundaryFinder:
