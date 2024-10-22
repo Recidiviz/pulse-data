@@ -31,15 +31,33 @@ REIDENTIFIED_DASHBOARD_USERS_VIEW_DESCRIPTION = (
 )
 
 REIDENTIFIED_DASHBOARD_USERS_QUERY_TEMPLATE = """
+-- Dedup product roster archive
+WITH roster_archive_hashes AS (
+    SELECT
+        IF(state_code = "US_ID", "US_IX", state_code) as state_code,
+        user_hash,
+        external_id,
+        district,
+        email_address,
+        first_name,
+        last_name,
+    FROM
+        `{project_id}.export_archives.product_roster_archive`
+    -- Filter to at most one row per user, getting the most recent district
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY state_code, email_address
+        ORDER BY export_date DESC
+    ) = 1
+)
 SELECT
-    IF(users.state_code = "US_ID", "US_IX", users.state_code) as state_code,
+    users.state_code,
     users.user_hash AS user_id,
     -- Not all users have entries in *_staff_record so fill in information from the roster for them
     COALESCE(supervision_staff.id, incarceration_staff.id, users.external_id) AS user_external_id,
     COALESCE(supervision_staff.district, incarceration_staff.district, users.district) AS district,
     COALESCE(supervision_staff.email, incarceration_staff.email, users.email_address) AS email,
     COALESCE(staff.full_name_clean, CONCAT(INITCAP(SPLIT(users.first_name, " ")[OFFSET(0)]), " ", INITCAP(users.last_name))) AS user_full_name_clean,
-FROM `{project_id}.{reference_views_dataset}.product_roster_materialized` users
+FROM roster_archive_hashes users
 -- TODO(#27254) Get this data from somewhere that's not *_staff_record
 LEFT JOIN `{project_id}.{workflows_views_dataset}.supervision_staff_record_materialized` supervision_staff
     -- The roster only has US_ID and the staff record only has US_IX
@@ -63,6 +81,7 @@ REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=REIDENTIFIED_DASHBOARD_USERS_QUERY_TEMPLATE,
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
     workflows_views_dataset=WORKFLOWS_VIEWS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

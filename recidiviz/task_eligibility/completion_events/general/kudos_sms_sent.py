@@ -18,7 +18,6 @@
 """
 from recidiviz.calculator.query.state.dataset_config import (
     PULSE_DASHBOARD_SEGMENT_DATASET,
-    REFERENCE_VIEWS_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
 from recidiviz.calculator.query.state.views.workflows.user_event_template import (
@@ -58,7 +57,6 @@ VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
         completion_event_query_template=_QUERY_TEMPLATE,
         workflows_views_dataset=WORKFLOWS_VIEWS_DATASET,
         segment_dataset=PULSE_DASHBOARD_SEGMENT_DATASET,
-        reference_views_dataset=REFERENCE_VIEWS_DATASET,
     )
 )
 

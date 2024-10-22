@@ -58,7 +58,7 @@ SELECT
     MAX(DATE(event_ts)) OVER () AS max_event_date,
     ROW_NUMBER() OVER (PARTITION BY state_code, email, opportunity_type, event_type, person_external_id ORDER BY event_ts DESC) = 1 AS latest_within_event_type
 FROM `{project_id}.{analyst_views_dataset}.workflows_officer_events_materialized`
-LEFT JOIN `{project_id}.{workflows_views_dataset}.reidentified_dashboard_users` 
+LEFT JOIN `{project_id}.{workflows_views_dataset}.reidentified_dashboard_users_materialized` 
     USING (state_code, email)
 """
 

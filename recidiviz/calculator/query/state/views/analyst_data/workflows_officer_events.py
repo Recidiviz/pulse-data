@@ -218,7 +218,7 @@ def workflows_officer_event_template(config: WorkflowsOfficerEventQueryConfig) -
         # the event is not from a workflows_views.clients_ table, so get the raw event
         # and join on reidentified_dashboard_users to get user_external_id.
         table_source = f"""`{{project_id}}.{{workflows_segment_dataset}}.{config.table_name}`
-INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.reidentified_dashboard_users` 
+INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.reidentified_dashboard_users_materialized` 
     USING (user_id)
 WHERE context_page_path LIKE '%workflows%' AND context_page_url LIKE '%://dashboard.recidiviz.org/%'"""
     else:

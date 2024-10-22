@@ -32,10 +32,10 @@ def user_event_template(
         add_columns = []
 
     # If should_lookup_user_from_staff_record is false, then users will only be loaded from the
-    # product roster. The external_ids and districts may not be as complete, but dropping the staff_record
+    # product roster archive. The external_ids and districts may not be as complete, but dropping the staff_record
     # dependency means that this query can be used in views that staff_record depends on (many of them)
     rdu = (
-        "`{project_id}.{workflows_views_dataset}.reidentified_dashboard_users`"
+        "`{project_id}.{workflows_views_dataset}.reidentified_dashboard_users_materialized`"
         if should_lookup_user_from_staff_record
         else """(  SELECT
                         IF(state_code = "US_ID", "US_IX", state_code) as state_code,
@@ -43,7 +43,12 @@ def user_event_template(
                         external_id AS user_external_id,
                         district,
                         email_address AS email
-                    FROM `{project_id}.{reference_views_dataset}.product_roster_materialized`)"""
+                    FROM `{project_id}.export_archives.product_roster_archive`
+                    -- Filter to at most one row per user, getting the most recent district
+                    QUALIFY ROW_NUMBER() OVER (
+                        PARTITION BY state_code, email_address
+                        ORDER BY export_date DESC
+                    ) = 1)"""
     )
 
     return f"""
