@@ -69,6 +69,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
         )
         mock_result = MockResult(document=mock_document)
         mock_pager.results = [mock_result]
+        mock_pager.next_page_token = "next-page-token"
 
         mock_gcs_reader_instance = mock_gcs_bucket_reader.return_value
         mock_gcs_reader_instance.download_blob.return_value = "Full case note content."
@@ -108,6 +109,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
 
         # Set up the mock for the DiscoveryEngineInterface instance
         mock_search_pager = MagicMock(spec=SearchPager)
+        mock_search_pager.next_page_token = "next-page-token"
         mock_discovery_interface_instance = mock_discovery_engine_interface.return_value
         mock_discovery_interface_instance.search = AsyncMock(
             return_value=mock_search_pager
@@ -130,8 +132,17 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
         # Mock exact_match_search to return an empty dictionary
         mock_exact_match_search.return_value = {}
 
-        results = await case_note_search(query, page_size, filter_conditions)
-        self.assertEqual(results, {"results": [case_note_data], "error": None})
+        results = await case_note_search(
+            query, "page-token", page_size, filter_conditions
+        )
+        self.assertEqual(
+            results,
+            {
+                "results": [case_note_data],
+                "next_page_token": "next-page-token",
+                "error": None,
+            },
+        )
 
         mock_discovery_engine_interface.assert_called_once_with(
             project_id=GCP_PROJECT_STAGING, engine_id=CASE_NOTE_SEARCH_ENGINE_ID
@@ -145,6 +156,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
         }
         mock_discovery_interface_instance.search.assert_called_once_with(
             query=query,
+            page_token="page-token",
             page_size=page_size,
             include_filter_conditions=filter_conditions,
             exclude_filter_conditions=exclude_filter_conditions,
@@ -179,6 +191,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
 
         # Set up the mock for the DiscoveryEngineInterface instance
         mock_search_pager = MagicMock(spec=SearchPager)
+        mock_search_pager.next_page_token = "next-page-token"
         mock_discovery_interface_instance = mock_discovery_engine_interface.return_value
         mock_discovery_interface_instance.search = AsyncMock(
             return_value=mock_search_pager
@@ -261,7 +274,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
         case_note_data_extracted2["relevance_ordering"] = 1
         case_note_data_extracted1["relevance_ordering"] = 2
 
-        results = await case_note_search(query, page_size, filter_conditions)
+        results = await case_note_search(query, None, page_size, filter_conditions)
         # Returned results should be in reverse chronological order
         self.assertEqual(
             results,
@@ -271,6 +284,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
                     case_note_data_extracted2,
                     case_note_data_extracted1,
                 ],
+                "next_page_token": "next-page-token",
                 "error": None,
             },
         )
@@ -294,6 +308,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
 
         # Set up the mock for the DiscoveryEngineInterface instance
         mock_search_pager = MagicMock(spec=SearchPager)
+        mock_search_pager.next_page_token = "next-page-token"
         mock_discovery_interface_instance = mock_discovery_engine_interface.return_value
         mock_discovery_interface_instance.search = AsyncMock(
             return_value=mock_search_pager
@@ -420,7 +435,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
             "US_ME_1234_129": exact_match4,
         }
 
-        results = await case_note_search(query, page_size, filter_conditions)
+        results = await case_note_search(query, None, page_size, filter_conditions)
         # Result order should be:
         # * exact matches returned by regular search, in relevance order
         # * exact matches returned only by exact search, in reverse chronological order
@@ -448,6 +463,7 @@ class TestCaseNoteFunctions(IsolatedAsyncioTestCase):
                     non_exact_match1,
                     non_exact_match2,
                 ],
+                "next_page_token": "next-page-token",
                 "error": None,
             },
         )

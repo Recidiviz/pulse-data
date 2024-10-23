@@ -161,6 +161,7 @@ async def search_case_notes() -> Response:
         "with_snippet", default=True, type=lambda v: v.lower() == "true"
     )
     external_id = request.args.get("external_id", default=None, type=str)
+    page_token = request.args.get("page_token", default=None, type=str)
 
     def get_state_code_for_filter(state_code: str) -> str:
         """Some state codes used for filtering are different than standard state codes.
@@ -175,6 +176,7 @@ async def search_case_notes() -> Response:
         filter_conditions["state_code"] = [get_state_code_for_filter(state_code)]
     case_note_response = await case_note_search(
         query=query,
+        page_token=page_token,
         page_size=page_size,
         with_snippet=with_snippet,
         filter_conditions=filter_conditions,

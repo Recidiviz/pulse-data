@@ -90,6 +90,7 @@ class DiscoveryEngineInterface:
     async def search(
         self,
         query: str,
+        page_token: Optional[str] = None,
         page_size: int = 10,
         include_filter_conditions: Optional[Dict[str, List[str]]] = None,
         exclude_filter_conditions: Optional[Dict[str, List[str]]] = None,
@@ -101,6 +102,7 @@ class DiscoveryEngineInterface:
 
         Args:
             query: The search query string.
+            page_token: Optional. The token for the page of search results to fetch. If not defined, then the first page is returned.
             page_size: Optional. The number of search results to return per page. Defaults to 10.
             filter_conditions: Optional. A dictionary of filter conditions where keys are
                 field names and values are lists of acceptable values for those fields.
@@ -133,6 +135,7 @@ class DiscoveryEngineInterface:
             request = discoveryengine.SearchRequest(
                 serving_config=self.serving_config,
                 query=query,
+                page_token=page_token,
                 page_size=page_size,
                 filter=DiscoveryEngineInterface._format_filter_condition(
                     include_filter_conditions=include_filter_conditions,
