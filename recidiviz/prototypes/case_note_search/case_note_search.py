@@ -236,6 +236,7 @@ def extract_case_notes_results_structured_data(
 
 async def case_note_search(
     query: str,
+    page_token: Optional[str] = None,
     page_size: int = 10,
     filter_conditions: Optional[Dict[str, List[str]]] = None,
     with_snippet: bool = False,
@@ -250,6 +251,7 @@ async def case_note_search(
 
     Args:
         query: The search query string.
+        page_token: the page token to use for pagination.
         page_size: The number of search results to return per page. Defaults to 10.
         filter_conditions: Optional. A dictionary of filter conditions where keys are
             field names and values are lists of acceptable values for those fields.
@@ -290,6 +292,7 @@ async def case_note_search(
         )
         search_pager = await discovery_interface.search(
             query=query,
+            page_token=page_token,
             page_size=page_size,
             include_filter_conditions=filter_conditions,
             exclude_filter_conditions=set_hardcoded_excludes(),
@@ -358,6 +361,7 @@ async def case_note_search(
 
         return {
             "results": results,
+            "next_page_token": search_pager.next_page_token,
             "error": None,
         }
     except Exception as e:
