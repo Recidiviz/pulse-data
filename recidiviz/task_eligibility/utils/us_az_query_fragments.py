@@ -18,6 +18,7 @@
 """
 from typing import Optional
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -98,3 +99,29 @@ def no_current_or_prior_convictions(
         FROM sub_sessions_with_attributes
         GROUP BY 1,2,3,4,5
     """
+
+
+def early_release_completion_event_query_template(
+    release_type: str, release_is_overdue: bool
+) -> str:
+    """Return the query template used for AZ early release completion events"""
+    if release_type not in ("TPR", "DTP"):
+        raise NotImplementedError(
+            f"Unsupported release_type |{release_type}|, expecting TPR or DTP"
+        )
+    if release_is_overdue:
+        release_date_condition = "eligible_release_date < release_date"
+    else:
+        release_date_condition = (
+            f"release_date <= {nonnull_end_date_clause('eligible_release_date')}"
+        )
+    return f"""
+SELECT
+    state_code,
+    person_id,
+    release_date AS completion_event_date,
+FROM
+    `{{project_id}}.analyst_data.us_az_early_releases_from_incarceration_materialized`
+WHERE release_type = "{release_type}"
+    AND {release_date_condition}
+"""

@@ -14,38 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identify when the DTP (Drug Transition Program) early release date is initially set for an AZ resident."""
+"""Early release events from incarceration that are considered overdue (released after eligible date)"""
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
+from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    early_release_completion_event_query_template,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_QUERY_TEMPLATE = """
-SELECT
-    state_code,
-    person_id,
-    CAST(update_datetime AS DATE) AS completion_event_date,
-FROM `{project_id}.normalized_state.state_task_deadline`
-WHERE
-    state_code = "US_AZ"
-    AND task_type = "DISCHARGE_FROM_INCARCERATION"
-    AND task_subtype = "DRUG TRANSITION RELEASE"
-    AND eligible_date IS NOT NULL
-    AND eligible_date > "1900-01-01"
-QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY state_code, person_id, task_metadata
-    ORDER BY update_datetime
-) = 1
-"""
-
-VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
-    state_code=StateCode.US_AZ,
-    completion_event_type=TaskCompletionEventType.DRUG_PROGRAM_EARLY_RELEASE_DATE_SET,
-    description=__doc__,
-    completion_event_query_template=_QUERY_TEMPLATE,
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
+    StateSpecificTaskCompletionEventBigQueryViewBuilder(
+        state_code=StateCode.US_AZ,
+        completion_event_type=TaskCompletionEventType.EARLY_RELEASE_OVERDUE,
+        description=__doc__,
+        completion_event_query_template=early_release_completion_event_query_template(
+            release_type="TPR",
+            release_is_overdue=True,
+        ),
+    )
 )
 
 if __name__ == "__main__":
