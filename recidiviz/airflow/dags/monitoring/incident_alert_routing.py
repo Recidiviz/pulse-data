@@ -28,7 +28,7 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
 from recidiviz.airflow.dags.monitoring.dag_registry import get_sftp_dag_id
-from recidiviz.airflow.dags.utils.branching_by_key import (
+from recidiviz.airflow.dags.utils.branch_utils import (
     BRANCH_END_TASK_NAME,
     BRANCH_START_TASK_NAME,
 )

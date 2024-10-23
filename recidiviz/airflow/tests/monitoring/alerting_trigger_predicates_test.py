@@ -28,7 +28,7 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
 from recidiviz.airflow.dags.monitoring.incident_trigger_gating import (
     should_trigger_airflow_alerting_incident,
 )
-from recidiviz.airflow.dags.utils.branching_by_key import BRANCH_END_TASK_NAME
+from recidiviz.airflow.dags.utils.branch_utils import BRANCH_END_TASK_NAME
 
 
 @patch.dict(os.environ, {"GCP_PROJECT": "test_project"})

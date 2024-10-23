@@ -28,8 +28,11 @@ from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from sqlalchemy.orm import Session
 
-from recidiviz.airflow.dags.utils.branching_by_key import (
+from recidiviz.airflow.dags.utils.branch_utils import (
     BRANCH_END_TASK_NAME,
+    BRANCH_START_TASK_NAME,
+)
+from recidiviz.airflow.dags.utils.branching_by_key import (
     TaskGroupOrOperator,
     create_branching_by_key,
     select_state_code_parameter_branch,
@@ -69,8 +72,8 @@ class TestBranchingByKey(AirflowIntegrationTest):
             create_branching_by_key(state_codes, select_state_code_parameter_branch)
 
         test_dag = create_test_dag()
-        branching_start = test_dag.get_task("branch_start")
-        branching_end = test_dag.get_task("branch_end")
+        branching_start = test_dag.get_task(BRANCH_START_TASK_NAME)
+        branching_end = test_dag.get_task(BRANCH_END_TASK_NAME)
 
         self.assertEqual(len(test_dag.tasks), 6)
         self.assertEqual(branching_end.trigger_rule, TriggerRule.ALL_DONE)
@@ -254,8 +257,8 @@ class TestBranchingByKey(AirflowIntegrationTest):
                 expected_failure_task_id_regexes=["US_WW_group.US_WW_1"],
                 expected_skipped_task_id_regexes=["US_ZZ", "US_XX"],
                 expected_success_task_id_regexes=[
-                    "branch_start",
-                    "branch_end",
+                    BRANCH_START_TASK_NAME,
+                    BRANCH_END_TASK_NAME,
                     "US_YY",
                     "US_WW_group.US_WW_2",
                 ],

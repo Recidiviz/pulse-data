@@ -28,7 +28,7 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_raw_data_import_dag_id,
     get_sftp_dag_id,
 )
-from recidiviz.airflow.dags.utils.branching_by_key import BRANCH_END_TASK_NAME
+from recidiviz.airflow.dags.utils.branch_utils import BRANCH_END_TASK_NAME
 from recidiviz.airflow.dags.utils.environment import get_project_id
 
 
