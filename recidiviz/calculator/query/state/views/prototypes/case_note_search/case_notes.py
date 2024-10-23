@@ -32,7 +32,7 @@ CASE_NOTES_VIEW_DESCRIPTION = """All case notes formatted as JSON. This allows f
     """
 
 CASE_NOTES_QUERY_TEMPLATE = """
-    SELECT id, jsonData
+    SELECT id, jsonData, all_notes.state_code as state_code
     FROM
         (
         SELECT

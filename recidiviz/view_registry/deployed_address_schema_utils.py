@@ -69,9 +69,6 @@ from recidiviz.calculator.query.state.views.population_projection.spark.life_yea
 from recidiviz.calculator.query.state.views.population_projection.spark.population_estimate_most_recent import (
     SPARK_POPULATION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes import (
-    CASE_NOTES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.cleaned_offense_description_to_labels import (
     CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_BUILDER,
 )
@@ -225,9 +222,6 @@ def state_agnostic_deployed_views_without_state_code_column(
         # TODO(#21702): Deprecate this view when legacy supervision officer external ids
         #  have been deprecated.
         STATE_STAFF_ID_TO_LEGACY_SUPERVISING_OFFICER_EXTERNAL_ID_VIEW_BUILDER.address,
-        # This view can only have columns (id, jsonData) because that's what Google
-        # Vertex enforces when you want to import from BigQuery to GCS.
-        CASE_NOTES_VIEW_BUILDER.address,
         # These views produce inputs to Spark population projection modeling, which
         # expects a certain input schema
         *{vb.address for vb in POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS},
