@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
-    transitional_early_release_date_set,
+    early_release_not_overdue,
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum_or_medium,
@@ -76,7 +76,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_tpr_denial_in_current_incarceration.VIEW_BUILDER,
         no_tpr_removals_from_self_improvement_programs.VIEW_BUILDER,
     ],
-    completion_event_builder=transitional_early_release_date_set.VIEW_BUILDER,
+    completion_event_builder=early_release_not_overdue.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

@@ -30,11 +30,10 @@ from recidiviz.utils.metadata import local_project_id_override
 # in order for the discharge to be considered a valid early discharge
 
 
-# Supported states for early discharges from supervision or incarceration
+# Supported states for early discharges from supervision
 SUPERVISION_SUPPORTED_STATES = "', '".join(
     ["US_ID", "US_ND", "US_TN", "US_ME", "US_MI", "US_IX"]
 )
-INCARCERATION_SUPPORTED_STATES = "', '".join(["US_AZ"])
 
 EARLY_DISCHARGE_SESSIONS_VIEW_NAME = "early_discharge_sessions"
 
@@ -53,8 +52,6 @@ EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE = """
         SELECT * FROM `{project_id}.{analyst_dataset}.us_mi_early_discharge_sessions_preprocessing`
         UNION ALL 
         SELECT * FROM `{project_id}.{analyst_dataset}.us_ix_early_discharge_sessions_preprocessing`
-        UNION ALL 
-        SELECT * FROM `{project_id}.{analyst_dataset}.us_az_early_discharge_sessions_preprocessing`
     )
     SELECT
         sessions.person_id,
@@ -67,13 +64,9 @@ EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE = """
     LEFT JOIN all_ed_sessions ed
         USING (state_code, person_id, session_id)
     WHERE 
-        ((sessions.state_code IN ('{supervision_supported_states}')
-            AND sessions.compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
-            AND sessions.outflow_to_level_1 = 'LIBERTY')
-        OR
-        ((sessions.state_code IN ('{incarceration_supported_states}') AND
-            sessions.compartment_level_1 IN ('INCARCERATION', 'INCARCERATION_OUT_OF_STATE')))
-            AND sessions.end_date_exclusive IS NOT NULL)
+        sessions.state_code IN ('{supervision_supported_states}')
+        AND sessions.compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
+        AND sessions.outflow_to_level_1 = 'LIBERTY'
 """
 
 EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -84,7 +77,6 @@ EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     analyst_dataset=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     supervision_supported_states=SUPERVISION_SUPPORTED_STATES,
-    incarceration_supported_states=INCARCERATION_SUPPORTED_STATES,
     should_materialize=True,
 )
 

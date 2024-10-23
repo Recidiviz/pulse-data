@@ -14,33 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identify early releases from incarceration to DTP (Drug Transition Program)."""
+"""Early release events from incarceration that are not considered overdue (released on or before eligible date)"""
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
+from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    early_release_completion_event_query_template,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-_QUERY_TEMPLATE = """
-SELECT
-    state_code,
-    person_id,
-    sessions.end_date_exclusive AS completion_event_date,
-FROM `{project_id}.sessions.compartment_sessions_materialized` sessions
-INNER JOIN `{project_id}.sessions.compartment_session_end_reasons_materialized` session_ends
-    USING (state_code, person_id, compartment_level_1, end_date, end_reason)
-WHERE
-    session_ends.end_reason_raw_text = "DRUG TRANSITION RELEASE"
-"""
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
     StateSpecificTaskCompletionEventBigQueryViewBuilder(
         state_code=StateCode.US_AZ,
-        completion_event_type=TaskCompletionEventType.EARLY_RELEASE_TO_DRUG_PROGRAM,
+        completion_event_type=TaskCompletionEventType.EARLY_RELEASE_NOT_OVERDUE,
         description=__doc__,
-        completion_event_query_template=_QUERY_TEMPLATE,
+        completion_event_query_template=early_release_completion_event_query_template(
+            release_type="TPR",
+            release_is_overdue=False,
+        ),
     )
 )
 

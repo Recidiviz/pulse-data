@@ -111,8 +111,8 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_ovg_timelin
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_early_discharge_sessions_preprocessing import (
-    US_AZ_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_early_releases_from_incarceration import (
+    US_AZ_EARLY_RELEASES_FROM_INCARCERATION_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_home_plan_preprocessed import (
     US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER,
@@ -313,7 +313,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     PSA_RISK_SCORES_VIEW_BUILDER,
     SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
     SUPERVISION_CLIENTS_TO_OFFICERS_RATIO_QUARTERLY_VIEW_BUILDER,
-    US_AZ_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
+    US_AZ_EARLY_RELEASES_FROM_INCARCERATION_VIEW_BUILDER,
     US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_IX_PAROLE_DATES_SPANS_PREPROCESSING_VIEW_BUILDER,

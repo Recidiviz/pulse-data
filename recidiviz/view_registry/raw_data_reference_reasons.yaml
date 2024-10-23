@@ -91,15 +91,6 @@ US_AZ:
   AZ_DOC_PRISON:
     reference_views.us_az_location_metadata: |-
       We pull all prison facility locations from this raw data into the location metadata view.
-  AZ_DOC_SC_COMMITMENT:
-    analyst_data.us_az_early_discharge_sessions_preprocessing: |-
-      We don't ingest early discharge data.
-  AZ_DOC_SC_EPISODE:
-    analyst_data.us_az_early_discharge_sessions_preprocessing: |-
-      We don't ingest early discharge data.
-  AZ_DOC_SC_OFFENSE:
-    analyst_data.us_az_early_discharge_sessions_preprocessing: |-
-      We don't ingest early discharge data.
   AZ_DOC_TRANSITION_PRG_ELIG:
     task_eligibility_criteria_us_az.no_tpr_denial_in_current_incarceration: |-
       Needed TPR denial reasons in a criteria.
@@ -137,8 +128,6 @@ US_AZ:
     analyst_data.us_az_action_queue: |-
       Needed a way to cleanly view raw data from a specific screen in ACIS. No place
       for this exists in our schema, and there isn't a good reason to make one.
-    analyst_data.us_az_early_discharge_sessions_preprocessing: |-
-      We don't ingest early discharge data.
     analyst_data.us_az_home_plan_preprocessed: |-
       There is no place to store "Home Plan" reentry planning information in our schema,
       and this info is relevant to a reentry analysis in AZ.
