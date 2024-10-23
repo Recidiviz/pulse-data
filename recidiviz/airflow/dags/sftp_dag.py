@@ -217,7 +217,7 @@ def sftp_dag() -> None:
             check_config = ShortCircuitOperator(
                 task_id="check_config",
                 python_callable=is_enabled_in_config,
-                op_kwargs={"state_code": state_code.value},
+                op_kwargs={"state_code_str": state_code.value},
                 ignore_downstream_trigger_rules=True,
             )
 
@@ -423,7 +423,7 @@ def sftp_dag() -> None:
                 upload_files_to_ingest_bucket = SFTPGcsToGcsOperator.partial(
                     task_id="upload_files_to_ingest_bucket",
                     project_id=project_id,
-                    region_code=state_code,
+                    region_code=state_code.value,
                     max_active_tis_per_dag=MAX_TASKS_TO_RUN_IN_PARALLEL,
                     retries=TASK_RETRIES,
                 ).expand_kwargs(gather_discovered_ingest_ready_files.output)
