@@ -33,13 +33,16 @@
 """Describes spans of time when it has been 24 months since a resident's previous CSED"""
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -56,12 +59,65 @@ _REASONS_FIELDS = [
     ),
 ]
 
+_QUERY_TEMPLATE = f"""
+WITH distinct_cseds AS (
+    SELECT
+        DISTINCT
+        sent.state_code,
+        sent.person_id,
+        COALESCE(
+            SAFE_CAST(SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', 
+                COALESCE(off.COMMUNITY_SUPV_END_DTM_ML, off.COMMUNITY_SUPV_END_DTM_ARD, off.COMMUNITY_SUPV_END_DTM)) AS DATE),
+            SAFE_CAST(LEFT(
+                COALESCE(off.COMMUNITY_SUPV_END_DTM_ML, off.COMMUNITY_SUPV_END_DTM_ARD, off.COMMUNITY_SUPV_END_DTM), 10) AS DATE),
+            SAFE.PARSE_DATE('%m/%d/%Y', 
+                COALESCE(off.COMMUNITY_SUPV_END_DTM_ML, off.COMMUNITY_SUPV_END_DTM_ARD, off.COMMUNITY_SUPV_END_DTM))
+        )
+        AS start_date,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_sentence` sent
+    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_dataset}}.AZ_DOC_SC_OFFENSE_latest` off
+        ON(sent.external_id = off.OFFENSE_ID)
+    WHERE sent.state_code = 'US_AZ'
+),
+
+distinct_cseds_spans AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        DATE_ADD(start_date, INTERVAL 24 MONTH) AS end_date,
+        start_date AS csed,
+    FROM distinct_cseds
+    WHERE start_date IS NOT NULL
+),
+{create_sub_sessions_with_attributes('distinct_cseds_spans')}
+ 
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    False AS meets_criteria,
+    TO_JSON(STRUCT(
+        MAX(csed) AS most_recent_csed
+    )) AS reason,
+    MAX(csed) AS most_recent_csed
+FROM sub_sessions_with_attributes
+GROUP BY 1,2,3,4
+"""
+
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_AZ,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_AZ, instance=DirectIngestInstance.PRIMARY
+        ),
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        meets_criteria_default=False,
+        reasons_fields=_REASONS_FIELDS,
     )
 )
 
