@@ -50,7 +50,7 @@ WITH all_live_workflows AS (
 -- have been fully launched in a given state.
 SELECT
     a.*,
-    b.completion_event_type IS NOT NULL AS is_fully_launched,
+    b.is_fully_launched,
 FROM
     all_live_workflows a
 LEFT JOIN
