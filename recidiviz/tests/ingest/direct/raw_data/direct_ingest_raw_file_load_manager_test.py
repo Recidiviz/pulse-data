@@ -53,6 +53,7 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
 from recidiviz.tests.ingest.direct.raw_data import load_manager_fixtures
+from recidiviz.utils.encoding import to_python_standard
 
 
 class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
@@ -114,6 +115,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         *,
         job_config: LoadJobConfig,
     ) -> None:
+        """Mocks loading to Big Query by loading data into a DataFrame
+        and then loading that DataFrame into a BQ emulator table"""
         address = BigQueryAddress(
             dataset_id=destination_table.dataset_id,
             table_id=destination_table.table_id,
@@ -129,6 +132,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                     GcsfsFilePath.from_absolute_path(uri)
                 ),
                 fixture_columns=None,
+                encoding=to_python_standard(job_config.encoding),
+                separator=job_config.field_delimiter,
             )
             total_rows += data.shape[0]
 
@@ -761,3 +766,76 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 )
             )
         )
+
+    def test_iso_8859_file_no_migrations_single_file_starts_empty(
+        self,
+    ) -> None:
+        """Tests loading a single ISO-8859-1 file with no migrations.
+        The file contains NBSP characters that should be stripped during
+        the transform."""
+        (
+            file_tag,
+            input_paths,
+            prep_output,
+            append_output,
+            raw_data_table,
+        ) = self._prep_test("no_migrations_single_iso_8859_file")
+        irf = ImportReadyFile(
+            file_id=1,
+            file_tag=file_tag,
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            original_file_paths=input_paths,
+            pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
+            ),
+        )
+        append_ready_file = self.manager.load_and_prep_paths(irf)
+
+        assert append_ready_file.import_ready_file == irf
+        assert append_ready_file.raw_rows_count == 2
+        assert (
+            append_ready_file.append_ready_table_address.to_str()
+            == "us_xx_primary_raw_data_temp_load.tagPipeSeparatedNonUTF8__1__transformed"
+        )
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                BigQueryAddress(
+                    dataset_id="us_xx_primary_raw_data_temp_load",
+                    table_id="tagPipeSeparatedNonUTF8__1",
+                )
+            )
+        )
+
+        self.assertTrue(len(self.fs.all_paths) == 1)
+
+        self.compare_output_against_expected(
+            append_ready_file.append_ready_table_address, prep_output
+        )
+
+        _ = self.manager.append_to_raw_data_table(append_ready_file)
+
+        self.compare_output_against_expected(raw_data_table, append_output)
+
+        # make sure we cleaned up properly
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                BigQueryAddress(
+                    dataset_id="us_xx_primary_raw_data_temp_load",
+                    table_id="tagPipeSeparatedNonUTF8__1__transformed",
+                )
+            )
+        )
+
+        self.assertFalse(
+            self.bq_client.dataset_exists("pruning_us_xx_raw_data_diff_results_primary")
+        )
+
+        self.assertFalse(
+            self.bq_client.dataset_exists("pruning_us_xx_new_raw_data_primary")
+        )
+
+        assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
+        assert len(list(self.bq_client.list_tables("us_xx_raw_data"))) == 1

@@ -162,6 +162,8 @@ def load_dataframe_from_path(
     raw_fixture_path: str,
     fixture_columns: Optional[List[str]],
     allow_comments: bool = True,
+    encoding: Optional[str] = "utf-8",
+    separator: str = ",",
 ) -> pd.DataFrame:
     """Given a raw fixture path and a list of fixture columns, load the raw data into a dataframe."""
     df = pd.read_csv(
@@ -177,6 +179,8 @@ def load_dataframe_from_path(
         # engine instead.
         engine="python",
         comment="💬" if allow_comments else None,
+        encoding=encoding,
+        sep=separator,
     )
     df.replace([np.nan], [None], inplace=True)
     return df

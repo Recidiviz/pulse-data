@@ -17,15 +17,17 @@
 """Class responsible for loading raw files into BigQuery"""
 import datetime
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from google.cloud import bigquery
 from google.cloud.bigquery.job import LoadJob
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.big_query.big_query_utils import to_big_query_valid_encoding
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.csv import DEFAULT_CSV_ENCODING, DEFAULT_CSV_SEPARATOR
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_raw_data_diff_results_dataset,
@@ -45,6 +47,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_transformation_que
     DirectIngestTempRawTablePreMigrationTransformationQueryBuilder,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -106,9 +109,11 @@ class DirectIngestRawFileLoadManager:
         should_delete_temp_files: bool,
         table_schema: List[bigquery.SchemaField],
         skip_leading_rows: int,
+        encoding: str,
+        separator: str,
     ) -> int:
-        """Loads the raw data in the list of files at the provided |paths| into
-        |destination_address|, not including recidiviz-managed fields.
+        """Loads the raw data in the list of files at the provided |paths| into |destination_address|,
+        not including recidiviz-managed fields, using the encoding and delimiter provided.
         We preserve ascii control characters on load else the import into BQ will fail if ascii 0
         or any other ascii control character are present. Since ascii is a subset of utf-8, we want to
         be able to load ascii into BQ without doing any normalization of the csv data, and we can translate
@@ -123,6 +128,8 @@ class DirectIngestRawFileLoadManager:
                     write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
                     skip_leading_rows=skip_leading_rows,
                     preserve_ascii_control_characters=True,
+                    encoding=encoding,
+                    field_delimiter=separator,
                 )
             )
         except Exception as e:
@@ -236,6 +243,22 @@ class DirectIngestRawFileLoadManager:
                 )
                 raise e
 
+    @staticmethod
+    def _get_encoding_and_separator(
+        raw_file_config: DirectIngestRawFileConfig, file_was_normalized: bool
+    ) -> Tuple[str, str]:
+        """Returns the encoding and separator to use for loading a raw file into BigQuery."""
+        if file_was_normalized:
+            return (
+                DEFAULT_CSV_ENCODING,
+                DEFAULT_CSV_SEPARATOR,
+            )
+
+        return (
+            to_big_query_valid_encoding(raw_file_config.encoding),
+            raw_file_config.separator,
+        )
+
     def load_and_prep_paths(self, file: ImportReadyFile) -> AppendReadyFile:
         """Loads and transforms a raw data file into a temp table, in the order of:
             (1) load raw data directly into a temp table
@@ -270,12 +293,19 @@ class DirectIngestRawFileLoadManager:
             table_id=f"{file.file_tag}__{file.file_id}__transformed",
         )
 
+        encoding, separator = self._get_encoding_and_separator(
+            self.region_raw_file_config.raw_file_configs[file.file_tag],
+            bool(file.pre_import_normalized_file_paths),
+        )
+
         raw_rows_count = self._load_paths_to_temp_table(
             file.paths_to_load,
             temp_raw_file_address,
             bool(file.pre_import_normalized_file_paths),
             file.bq_load_config.schema_fields,
             file.bq_load_config.skip_leading_rows,
+            encoding,
+            separator,
         )
 
         self._apply_pre_migration_transformations(
