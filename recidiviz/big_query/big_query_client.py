@@ -66,6 +66,7 @@ from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.encoding import BIG_QUERY_UTF_8
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.retry_predicate import ssl_error_retry_predicate
 from recidiviz.ingest.direct.dataset_config import (
@@ -329,6 +330,8 @@ class BigQueryClient:
         write_disposition: str,
         skip_leading_rows: int = 0,
         preserve_ascii_control_characters: bool = False,
+        encoding: str = BIG_QUERY_UTF_8,
+        field_delimiter: str = ",",
     ) -> bigquery.job.LoadJob:
         """Loads a table from CSV data in GCS to BigQuery.
 
@@ -1286,6 +1289,8 @@ class BigQueryClientImpl(BigQueryClient):
         write_disposition: str,
         skip_leading_rows: int = 0,
         preserve_ascii_control_characters: bool = False,
+        encoding: str = BIG_QUERY_UTF_8,
+        field_delimiter: str = ",",
     ) -> bigquery.job.LoadJob:
         """Triggers a load job, i.e. a job that will copy all of the data from the given
         Cloud Storage source into the given BigQuery destination. Returns once the job
@@ -1303,6 +1308,8 @@ class BigQueryClientImpl(BigQueryClient):
         job_config.write_disposition = write_disposition
         job_config.skip_leading_rows = skip_leading_rows
         job_config.preserve_ascii_control_characters = preserve_ascii_control_characters
+        job_config.encoding = encoding
+        job_config.field_delimiter = field_delimiter
 
         load_job = self.client.load_table_from_uri(
             source_uris, destination_table_ref, job_config=job_config
