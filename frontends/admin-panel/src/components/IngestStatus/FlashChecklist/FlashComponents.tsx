@@ -280,7 +280,8 @@ const NewStyledStepContent = ({
   actionButtonEnabled,
   returnButton,
 }: NewStyledStepContentProps): JSX.Element => {
-  const [loading, setLoading] = React.useState(false);
+  const [actionLoading, setActionLoading] = React.useState(false);
+  const [markDoneLoading, setMarkDoneLoading] = React.useState(false);
   const {
     fetchIsFlashInProgress,
     fetchResourceLockStatus,
@@ -297,7 +298,7 @@ const NewStyledStepContent = ({
           type="primary"
           disabled={!actionButtonEnabled}
           onClick={async () => {
-            setLoading(true);
+            setActionLoading(true);
             const succeeded = await runAndCheckStatus(onActionButtonClick);
             if (succeeded) {
               await fetchIsFlashInProgress();
@@ -307,9 +308,9 @@ const NewStyledStepContent = ({
                 await moveToNextChecklistSection(nextSection);
               }
             }
-            setLoading(false);
+            setActionLoading(false);
           }}
-          loading={loading}
+          loading={actionLoading}
           style={{ marginRight: 5 }}
         >
           {actionButtonTitle}
@@ -320,16 +321,16 @@ const NewStyledStepContent = ({
           type={onActionButtonClick ? undefined : "primary"}
           disabled={false}
           onClick={async () => {
-            setLoading(true);
+            setMarkDoneLoading(true);
             await fetchIsFlashInProgress();
             await fetchResourceLockStatus();
             await incrementCurrentStep();
-            setLoading(false);
+            setMarkDoneLoading(false);
             if (nextSection !== undefined) {
               await moveToNextChecklistSection(nextSection);
             }
           }}
-          loading={loading}
+          loading={markDoneLoading}
         >
           Mark Done
         </Button>
@@ -338,9 +339,7 @@ const NewStyledStepContent = ({
         <Button
           type="primary"
           onClick={async () => {
-            setLoading(true);
             await resetChecklist();
-            setLoading(false);
           }}
         >
           Return to decision page
