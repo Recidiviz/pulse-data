@@ -74,6 +74,7 @@ def generate_workflows_person_impact_funnel_status_sessions(
         "is_justice_involved",
         "is_eligible",
         "is_almost_eligible",
+        "is_surfaceable",
         "task_completed",
         "denial_reasons",
     ] + [k.lower() for k in usage_event_names]
@@ -210,6 +211,21 @@ marked_ineligible_sessions AS (
     ) = 1
 )
 ,
+surfaceable_sessions AS (
+    SELECT
+        state_code,
+        person_id,
+        b.completion_event_type AS task_type,
+        start_date,
+        end_date_exclusive,
+    FROM
+        `{{project_id}}.analyst_data.workflows_record_archive_surfaceable_person_sessions_materialized` a
+    INNER JOIN
+        `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` b
+    USING
+        (state_code, opportunity_type)
+)
+,
 all_sessions AS (
     SELECT
         state_code,
@@ -220,6 +236,7 @@ all_sessions AS (
         TRUE AS is_justice_involved,
         NULL AS is_eligible,
         NULL AS is_almost_eligible,
+        NULL AS is_surfaceable,
         CAST(NULL AS STRING) AS usage_event_type,
         NULL AS task_completed,
         NULL AS denial_reasons,
@@ -235,6 +252,7 @@ all_sessions AS (
         NULL AS is_justice_involved,
         is_eligible,
         is_almost_eligible,
+        NULL AS is_surfaceable,
         CAST(NULL AS STRING) AS usage_event_type,
         NULL AS task_completed,
         NULL AS denial_reasons,
@@ -250,6 +268,7 @@ all_sessions AS (
         NULL AS is_justice_involved,
         NULL AS is_eligible,
         NULL AS is_almost_eligible,
+        NULL AS is_surfaceable,
         usage_event_type,
         NULL AS task_completed,
         NULL AS denial_reasons,
@@ -264,6 +283,7 @@ all_sessions AS (
         NULL AS is_justice_involved,
         NULL AS is_eligible,
         NULL AS is_almost_eligible,
+        NULL AS is_surfaceable,
         "MARKED_INELIGIBLE" AS usage_event_type,
         NULL AS task_completed,
         denial_reasons,
@@ -278,10 +298,26 @@ all_sessions AS (
         NULL AS is_justice_involved,
         NULL AS is_eligible,
         NULL AS is_almost_eligible,
+        NULL AS is_surfaceable,
         CAST(NULL AS STRING) AS usage_event_type,
         TRUE AS task_completed,
         NULL AS denial_reasons,
     FROM task_completion_sessions
+    UNION ALL
+    SELECT
+        state_code,
+        person_id,
+        task_type,
+        start_date,
+        end_date_exclusive AS end_date,
+        NULL AS is_justice_involved,
+        NULL AS is_eligible,
+        NULL AS is_almost_eligible,
+        TRUE AS is_surfaceable,
+        CAST(NULL AS STRING) AS usage_event_type,
+        NULL AS task_completed,
+        NULL AS denial_reasons,
+    FROM surfaceable_sessions
 )
 ,
 {create_sub_sessions_with_attributes("all_sessions", index_columns=["state_code", "person_id", "task_type"])}
@@ -305,6 +341,7 @@ sub_sessions_dedup AS (
         LOGICAL_OR(COALESCE(is_justice_involved, FALSE)) AS is_justice_involved,
         LOGICAL_OR(COALESCE(is_eligible, FALSE)) AS is_eligible,
         LOGICAL_OR(COALESCE(is_almost_eligible, FALSE)) AS is_almost_eligible,
+        LOGICAL_OR(COALESCE(is_surfaceable, FALSE)) AS is_surfaceable,
         {usage_status_dedup_query_fragment},
         LOGICAL_OR(COALESCE(task_completed, FALSE)) AS task_completed,
         CASE WHEN COUNTIF(usage_event_type = "MARKED_INELIGIBLE") > 0 THEN MAX(denial_reasons) END AS denial_reasons,
