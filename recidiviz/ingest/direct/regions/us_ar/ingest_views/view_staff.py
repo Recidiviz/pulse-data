@@ -23,21 +23,45 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT 
+SELECT DISTINCT 
   PARTYID,
   PERSONLASTNAME,
   PERSONFIRSTNAME,
   PERSONMIDDLENAME,
   PERSONSUFFIX,
   PARTYEMAILADDR
-FROM (
-  SELECT * 
-  FROM {PERSONPROFILE} 
-  WHERE REGEXP_CONTAINS(PARTYID, r'^[[:alnum:]]+$')  
-) pp_all
+FROM {PERSONPROFILE}
+INNER JOIN {RELATEDPARTY}
+USING(PARTYID)
 LEFT JOIN {PARTYPROFILE}
 USING(PARTYID)
-WHERE PARTYTYPE = '1'
+WHERE 
+  REGEXP_CONTAINS(PARTYID, r'^[[:alnum:]]+$') AND
+  /*
+  Only ingest data from PERSONPROFILE if the person has had a role within ADC/ACC, since 
+  PERSONPROFILE includes many people in external positions who don't need to be ingested. 
+  We use SELECT DISTINCT in this view because people could have multiple rows of staff-type 
+  relationships in RELATEDPARTY, resulting in data getting duplicated in the join.
+
+  This set of allowed relationships may need to be expanded over time if we end up wanting
+  data for people in other roles (such as court figures or external programming providers).
+  */
+  PARTYRELTYPE IN (
+    '1AA', -- ADC Employee
+    '1AB', -- ADC Employee/Extra Help
+    '1AC', -- ACSD CTE
+    '1AE', -- DOC Employee
+    '1AI', -- IFI
+    '1AP', -- PIE
+    '1BB', -- Board of Corrections
+    '1CA', -- Private Prison Staff	
+    '2AA', -- ACC Employee
+    '2BB', -- Parole Board
+    '3BO', -- City Jail Employee
+    '3BP', -- Police Department Employee
+    '3BS', -- Sheriff Department Employee
+    '3BT' -- County Jail Employee
+  )
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
