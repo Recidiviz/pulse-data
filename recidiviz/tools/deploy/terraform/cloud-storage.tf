@@ -509,6 +509,13 @@ module "insights-etl-data-archive" {
   ]
 }
 
+module "case-notes-vertex-search-data" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "case-notes-vertex-search-data"
+}
+
 module "generated-assets" {
   source = "./modules/cloud-storage-bucket"
 
