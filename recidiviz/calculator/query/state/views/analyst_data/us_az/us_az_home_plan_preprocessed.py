@@ -18,6 +18,7 @@
 in Arizona and attaches it to the relevant incarceration period."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
@@ -34,79 +35,84 @@ US_AZ_HOME_PLAN_PREPROCESSED_VIEW_NAME = "us_az_home_plan_preprocessed"
 US_AZ_HOME_PLAN_PREPROCESSED_VIEW_DESCRIPTION = """A view that gathers information about home plan preparedness for people incarcerated
 in Arizona and attaches it to the relevant incarceration period."""
 
-US_AZ_HOME_PLAN_PREPROCESSED_QUERY_TEMPLATE = """
+US_AZ_HOME_PLAN_PREPROCESSED_QUERY_TEMPLATE = f"""
 WITH base AS (
-SELECT * FROM (
-    SELECT DISTINCT
-        DOC_ID,
-        HOME_PLAN_ID, 
-        HOME_PLAN_DETAIL_ID,
-        MAX(HOME_PLAN_DETAIL_ID) OVER (PARTITION BY DOC_ID) AS MAX_HOME_PLAN_DETAIL_ID,
-        IS_HOMELESS_REQUEST, 
-        lookups.DESCRIPTION AS APPROVAL_STATUS, 
-        det.CREATE_DTM,
-    FROM `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_latest` hp
-    LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_DETAIL_latest` det
-    USING(HOME_PLAN_ID)
-    LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.LOOKUPS_latest` lookups
-    ON(det.APPROVAL_STATUS_ID = lookups.LOOKUP_ID)
-    AND hp.active_flag = 'Y'
-    )
-WHERE HOME_PLAN_DETAIL_ID = MAX_HOME_PLAN_DETAIL_ID
-), 
-base_with_dates AS (
 SELECT DISTINCT
-  base.* EXCEPT (CREATE_DTM),
-  CASE WHEN 
-    APPROVAL_STATUS = 'Address Approved'
-        THEN MAX(app.CREATE_DTM) OVER (PARTITION BY HOME_PLAN_DETAIL_ID) 
-    ELSE base.CREATE_DTM
-  END AS UPDATE_DATE
-FROM base 
-LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_APPROVAL_latest` app
-USING(HOME_PLAN_DETAIL_ID)
-),
-dates_with_status AS (
-SELECT 
-    DOC_ID, 
-    HOME_PLAN_DETAIL_ID,
-    IS_HOMELESS_REQUEST,
+    DOC_ID,
+    hp.HOME_PLAN_ID, 
+    CAST(det.HOME_PLAN_DETAIL_ID AS INT64) AS HOME_PLAN_DETAIL_ID,
+    MAX(CAST(det.HOME_PLAN_DETAIL_ID AS INT64)) OVER (PARTITION BY DOC_ID) AS MAX_HOME_PLAN_DETAIL_ID,
+    IS_HOMELESS_REQUEST, 
     CASE WHEN 
-        APPROVAL_STATUS IN ('CCO SUP', 'COIII', 'CCO', 'COIV', 'Release Unit', 'CCL') THEN 'HOME PLAN IN PROGRESS'
-        WHEN APPROVAL_STATUS IS NULL THEN 'HOME PLAN NOT STARTED'
-        WHEN APPROVAL_STATUS = 'Address Approved' THEN 'HOME PLAN APPROVED'
-        WHEN APPROVAL_STATUS = 'Address Denied' THEN 'HOME PLAN DENIED'
-        WHEN APPROVAL_STATUS = 'Cancelled' THEN 'HOME PLAN CANCELLED'
+        status.DESCRIPTION IN ('Address Denied', 'CCO SUP', 'COIII', 'CCO', 'COIV', 'Release Unit', 'CCL') THEN 'HOME PLAN IN PROGRESS'
+        WHEN status.DESCRIPTION IS NULL THEN 'HOME PLAN NOT STARTED'
+        WHEN status.DESCRIPTION = 'Address Approved' THEN 'HOME PLAN APPROVED'
+        WHEN status.DESCRIPTION = 'Cancelled' THEN 'HOME PLAN CANCELLED'
     END AS PLAN_STATUS,
-    UPDATE_DATE
-FROM base_with_dates
-), 
-status_joined_to_IP AS (
-SELECT 
-    dates_with_status.*, 
-    ip.admission_date AS ip_adm_date, 
-    ip.person_id
-FROM dates_with_status
-LEFT JOIN `{project_id}.{normalized_state_dataset}.state_incarceration_period` ip
-ON(SPLIT(ip.external_id, '-')[SAFE_OFFSET(1)] = dates_with_status.DOC_ID)
+    CASE WHEN 
+    -- AZ told us to use the date value from the APPROVAL table if and only if the plan was approved. 
+    -- Otherwise, we get the date from the DETAIL table that signifies a plan was submitted.
+        status.DESCRIPTION = 'Address Approved' THEN COALESCE(app.UPDT_DTM, app.CREATE_DTM) 
+        ELSE COALESCE(det.UPDT_DTM, det.CREATE_DTM) 
+    END AS UPDATE_DATE
+FROM 
+-- Base home plan table
+    `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_HOME_PLAN_latest` hp
+JOIN 
+-- There will be a new row in this table each time an individual home plan is resubmitted
+-- for consideration after correction. 
+    `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_HOME_PLAN_DETAIL_latest` det
+ON
+    (hp.HOME_PLAN_ID = det.HOME_PLAN_ID 
+    AND hp.ACTIVE_FLAG = 'Y' 
+    AND det.ACTIVE_FLAG = 'Y')
+JOIN 
+-- Rows in this table are relevant if and only if a plan is approved. 
+    `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_HOME_PLAN_APPROVAL_latest` app
+ON
+    (det.HOME_PLAN_DETAIL_ID = app.HOME_PLAN_DETAIL_ID
+    AND app.ACTIVE_FLAG = 'Y'
+    AND det.ACTIVE_FLAG = 'Y')
+JOIN 
+    `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LOOKUPS_latest` status
+ON
+    (det.APPROVAL_STATUS_ID = status.LOOKUP_ID)
+QUALIFY 
+-- This is the most recent set of details for this person's home plan
+    CAST(det.HOME_PLAN_DETAIL_ID AS INT64) = MAX(CAST(det.HOME_PLAN_DETAIL_ID AS INT64)) OVER (PARTITION BY DOC_ID) 
+-- Limits to the most recent set of dates associated with a plan's approval, where applicable.
+-- This is necessary because there can be many rows in the APPROVAL table for each HOME_PLAN_DETAIL_ID entry. 
+    AND COALESCE(app.UPDT_DTM, app.CREATE_DTM) = MAX(COALESCE(app.UPDT_DTM, app.CREATE_DTM)) OVER (PARTITION BY det.HOME_PLAN_DETAIL_ID) 
 ),
 status_joined_to_sessions AS (
 SELECT 
     sjip.person_id, 
-    sjip.doc_id,
+    base.doc_id,
     cs.session_id,
-    sjip.is_homeless_request,
-    sjip.plan_status,
-    sjip.update_date,
+    base.is_homeless_request,
+    base.plan_status,
+    base.update_date,
     cs.start_date, 
     cs.end_date_exclusive
-FROM status_joined_to_IP sjip
-INNER JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` cs
-ON (cs.person_id = sjip.person_id 
-AND cs.start_date = sjip.ip_adm_date)
+FROM 
+    base
+JOIN 
+    `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_period` sjip
+ON
+    (SPLIT(sjip.external_id, '-')[SAFE_OFFSET(1)] = base.DOC_ID)
+JOIN 
+    `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` cs
+ON 
+    (cs.person_id = sjip.person_id 
+    AND cs.start_date = sjip.admission_date)
+-- Remove 0-day periods
+WHERE 
+   sjip.admission_date != {nonnull_end_date_clause("sjip.release_date")}
 )
-SELECT DISTINCT * 
-FROM status_joined_to_sessions
+SELECT DISTINCT
+    * 
+FROM
+    status_joined_to_sessions
 """
 
 US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
