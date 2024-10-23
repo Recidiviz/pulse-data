@@ -14,14 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Builder for a task eligibility spans view that shows the spans of time when
-someone in TN is eligible for Suspension of Direct Supervision (SDS).
+"""Builder for a task eligibility spans view that shows the spans of time when someone
+in TN is eligible for Suspension of Direct Supervision (SDS). NB: this is for SDS
+specifically (the parole version of release from active supervision in TN) and not for
+the parallel probation version, Judicial Suspension of Direct Supervision (JSS).
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     parole_active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events.general import early_discharge
+from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
+    transfer_to_no_contact_parole,
+)
 from recidiviz.task_eligibility.criteria.general import (
     at_least_12_months_since_most_recent_positive_drug_test,
     latest_drug_test_is_negative,
@@ -40,7 +44,10 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """Shows the spans of time when someone in TN is eligible for Suspension
-of Direct Supervision (SDS)."""
+of Direct Supervision (SDS). NB: this is for SDS specifically (the parole version of
+release from active supervision in TN) and not for the parallel probation version,
+Judicial Suspension of Direct Supervision (JSS).
+"""
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
@@ -84,9 +91,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # and/or complied with all special conditions.
         special_conditions_are_current.VIEW_BUILDER,
     ],
-    # TODO(#33626): Update this to be the correct completion event (either general or
-    # state-specific) for this opportunity.
-    completion_event_builder=early_discharge.VIEW_BUILDER,
+    completion_event_builder=transfer_to_no_contact_parole.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

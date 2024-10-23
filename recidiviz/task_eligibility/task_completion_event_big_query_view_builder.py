@@ -86,6 +86,7 @@ class TaskCompletionEventType(Enum):
         "TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION"
     )
     ADMINISTRATIVE_TRANSFER = "ADMINISTRATIVE_TRANSFER"
+    TRANSFER_TO_NO_CONTACT_PAROLE = "TRANSFER_TO_NO_CONTACT_PAROLE"
 
     @property
     def system_type(self) -> WorkflowsSystemType:
@@ -125,6 +126,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_AFTER_INITIAL_CLASSIFICATION_REVIEW_DATE,
             TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE_BEFORE_INITIAL_CLASSIFICATION_REVIEW_DATE,
             TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
+            TaskCompletionEventType.TRANSFER_TO_NO_CONTACT_PAROLE,
             TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
         ]:
             return WorkflowsSystemType.SUPERVISION
