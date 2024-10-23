@@ -116,7 +116,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             state_code=StateCode.US_AZ, instance=DirectIngestInstance.PRIMARY
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        meets_criteria_default=False,
+        meets_criteria_default=True,
         reasons_fields=_REASONS_FIELDS,
     )
 )
