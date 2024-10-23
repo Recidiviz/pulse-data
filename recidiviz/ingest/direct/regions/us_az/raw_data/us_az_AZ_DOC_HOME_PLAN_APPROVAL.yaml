@@ -4,6 +4,12 @@ file_description: |-
   This table contains the the approval status of each Home Plan submitted to community
   supervision for review. The APPROVAL_STATUS_ID field, when joined to the LOOKUPS table,
   indicates whether the plan was approved.
+
+  There can be many entries in this record for each HOME_PLAN_DETAIL_ID. The APPROVAL_ID does
+  not necessarily increment the same way the HOME_PLAN_DETAIL_ID does, so it cannot be 
+  used as a reliable proxy to find the most recent record. The UPDT_DTM and CREATE_DTM
+  fields must be used to find the most recent record in this table that is associated 
+  with a given HOME_PLAN_DETAIL_ID.
 data_classification: source
 primary_key_cols: [APPROVAL_ID]
 columns:
