@@ -38,7 +38,14 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
     )
     SELECT DISTINCT
         psi.OffenderId AS external_id,
-        person.full_name,
+        COALESCE(
+            person.full_name,
+            TO_JSON_STRING(STRUCT(
+                "UNKNOWN" AS given_names,
+                "" AS middle_names,
+                "" AS name_suffix,
+                "UNKNOWN" AS surname))
+        ) AS full_name,
         person.birthdate AS birth_date,
         person.gender,
         UPPER(loc.LocationName) AS county,
