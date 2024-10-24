@@ -187,7 +187,9 @@ columns:
       - value: P
         description: Paroled
       - value: PC
-        description: Program Completed (Seems to be used instead of SC for some State Drug Treatment Program sentences)
+        description:
+          Program Completed (Seems to be used instead of SC for some State Drug
+          Treatment Program sentences)
       - value: PD
         description: Pardoned
       - value: RD
@@ -278,11 +280,17 @@ columns:
     description: |-
       Replacement for Judge field after update to PA system on 9/22/23 that moved this
       field to be joined from dbo_Senrec_Extended.
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2023-09-22T00:00:00Z
   - name: Crime_Code
     is_pii: False
     description: |-
       Replacement for offense_code field after update to PA system on 9/22/23 that moved this
       field to be joined from dbo_Senrec_Extended.
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2023-09-22T00:00:00Z
 separator: ‡
 custom_line_terminator: †
 ignore_quotes: True
