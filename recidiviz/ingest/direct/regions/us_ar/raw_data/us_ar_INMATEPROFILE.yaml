@@ -147,7 +147,7 @@ columns:
       Current total custody score
   - name: CURRENTGTEARNINGCLASS
     description: |-
-      Current GT (?) earning class
+      Current GT (good time) earning class
   - name: JOBPGMCATEGORYAM
     description: |-
       Job program category AM

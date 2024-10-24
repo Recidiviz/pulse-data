@@ -85,15 +85,15 @@ class TaskCompletionEventType(Enum):
     TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION = (
         "TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION"
     )
-    ADMINISTRATIVE_TRANSFER = "ADMINISTRATIVE_TRANSFER"
     TRANSFER_TO_NO_CONTACT_PAROLE = "TRANSFER_TO_NO_CONTACT_PAROLE"
+    GRANTED_INSTITUTIONAL_WORKER_STATUS = "GRANTED_INSTITUTIONAL_WORKER_STATUS"
+    TRANSFER_TO_SUPERVISION_RUN_FACILITY = "TRANSFER_TO_SUPERVISION_RUN_FACILITY"
 
     @property
     def system_type(self) -> WorkflowsSystemType:
         """The system type (e.g., FACILITIES vs. SUPERVISION) associated with a completion event type"""
         if self in [
             TaskCompletionEventType.ADD_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
-            TaskCompletionEventType.ADMINISTRATIVE_TRANSFER,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
             TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE,
             TaskCompletionEventType.EARLY_RELEASE,
@@ -102,6 +102,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.EARLY_RELEASE_TO_DRUG_PROGRAM_NOT_OVERDUE,
             TaskCompletionEventType.EARLY_RELEASE_TO_DRUG_PROGRAM_OVERDUE,
             TaskCompletionEventType.GRANTED_FURLOUGH,
+            TaskCompletionEventType.GRANTED_INSTITUTIONAL_WORKER_STATUS,
             TaskCompletionEventType.GRANTED_WORK_RELEASE,
             TaskCompletionEventType.HEARING_OCCURRED,
             TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
@@ -114,6 +115,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_OUT_OF_DISCIPLINARY_OR_TEMPORARY_SOLITARY_CONFINEMENT,
             TaskCompletionEventType.TRANSFER_OUT_OF_SOLITARY_CONFINEMENT,
             TaskCompletionEventType.TRANSFER_TO_MINIMUM_FACILITY,
+            TaskCompletionEventType.TRANSFER_TO_SUPERVISION_RUN_FACILITY,
             TaskCompletionEventType.TRANSFER_TO_TREATMENT_IN_PRISON,
             TaskCompletionEventType.WARDEN_IN_PERSON_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW,
         ]:

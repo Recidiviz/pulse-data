@@ -14,3 +14,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Defines a criteria span view that shows spans of time during which someone is
+age 25 or older. Spans start on each client's 25th birthday and have no end date.
+"""
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    get_minimum_age_criteria,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = get_minimum_age_criteria(
+    minimum_age=25
+)
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        VIEW_BUILDER.build_and_print()

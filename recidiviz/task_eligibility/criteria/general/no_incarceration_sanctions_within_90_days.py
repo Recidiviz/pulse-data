@@ -14,36 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Spans of time when someone is eligible for Minimum Custody status, 1A or 1B, in Arkansas.
+"""Spans of time when someone hasn't had an incarceration sanction in the past 90 days
 """
-from google.cloud import bigquery
-
-from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.reasons_field import ReasonsField
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    incarceration_sanctions_within_time_interval_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_AR_ELIGIBLE_FOR_MINIMUM_CUSTODY_STATUS"
+_CRITERIA_NAME = "NO_INCARCERATION_SANCTIONS_WITHIN_90_DAYS"
 
-_DESCRIPTION = """Spans of time when someone is eligible for Minimum Custody status, 1A or 1B, in Arkansas."""
+_DESCRIPTION = """Spans of time when someone hasn't had an incarceration sanction in the past 90 days"""
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = state_specific_placeholder_criteria_view_builder(
+VIEW_BUILDER = incarceration_sanctions_within_time_interval_criteria_builder(
     criteria_name=_CRITERIA_NAME,
     description=_DESCRIPTION,
-    reasons_fields=[
-        ReasonsField(
-            name="eligible_for_minimum_custody",
-            type=bigquery.enums.StandardSqlTypeNames.BOOL,
-            description="Whether someone is eligible for Minimum Custody status (1A or 1B), in Arkansas.",
-        )
-    ],
-    state_code=StateCode.US_AR,
+    date_interval=90,
+    date_part="DAY",
 )
 
 if __name__ == "__main__":

@@ -15,27 +15,26 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Shows the spans of time during which someone in AR is eligible
-for work release.
+for the [Act] "309" program for institutional worker status in city and county jails.
 """
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.general import granted_work_release
+from recidiviz.task_eligibility.completion_events.general import (
+    granted_institutional_worker_status,
+)
 from recidiviz.task_eligibility.criteria.general import (
-    age_21_years_or_older,
     age_25_years_or_older,
-    incarcerated_at_least_60_days,
-    incarceration_within_42_months_of_parole_eligibility_date,
-    no_escape_violations,
-    no_felony_fleeing_in_last_10_years,
-    no_highest_severity_incarceration_sanctions_within_90_days,
+    incarcerated_at_least_6_months,
+    incarceration_within_45_months_of_parole_eligibility_date,
+    no_incarceration_sanctions_within_90_days,
     not_serving_a_life_sentence,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ar import (
     class_i,
-    eligible_criminal_history_work_release,
+    eligible_criminal_history_309,
     no_filed_but_undisposed_detainers,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -47,20 +46,16 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in AR is eligible
-for work release.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AR,
-    task_name="WORK_RELEASE",
-    description=_DESCRIPTION,
+    task_name="institutional_worker_status",
+    description=__doc__,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         # TODO(#34322): Clarify Class I eligibility criteria
         OrTaskCriteriaGroup(
-            criteria_name="US_AR_CLASS_I_OR_ELIGIBLE_FOR_CLASS_I_WORK_RELEASE",
-            # Someone is eligible for Work Release if they are in the Class I good time earning
+            criteria_name="US_AR_CLASS_I_OR_ELIGIBLE_FOR_CLASS_I_309",
+            # Someone is eligible for the 309 program if they are in the Class I good time earning
             # class, *or* they are eligible for Class I -- the only criterion that applies to
             # Class I eligibility that doesn't also apply independently to 309 eligibility is that
             # someone must be at least 25 years old. This criteria group exists in case someone
@@ -73,17 +68,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             ],
             allowed_duplicate_reasons_keys=[],
         ),
-        age_21_years_or_older.VIEW_BUILDER,
-        eligible_criminal_history_work_release.VIEW_BUILDER,
-        incarcerated_at_least_60_days.VIEW_BUILDER,
-        incarceration_within_42_months_of_parole_eligibility_date.VIEW_BUILDER,
+        eligible_criminal_history_309.VIEW_BUILDER,
+        incarcerated_at_least_6_months.VIEW_BUILDER,
+        no_incarceration_sanctions_within_90_days.VIEW_BUILDER,
         not_serving_a_life_sentence.VIEW_BUILDER,
-        no_escape_violations.VIEW_BUILDER,
-        no_highest_severity_incarceration_sanctions_within_90_days.VIEW_BUILDER,
-        no_felony_fleeing_in_last_10_years.VIEW_BUILDER,
+        incarceration_within_45_months_of_parole_eligibility_date.VIEW_BUILDER,
         no_filed_but_undisposed_detainers.VIEW_BUILDER,
     ],
-    completion_event_builder=granted_work_release.VIEW_BUILDER,
+    completion_event_builder=granted_institutional_worker_status.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

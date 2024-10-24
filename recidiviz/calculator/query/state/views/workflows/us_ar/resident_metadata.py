@@ -104,12 +104,13 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
     ,
     violations_milestones_6_months AS (
         SELECT
+            state_code,
             person_id,
             meets_criteria,
             start_date,
             end_date,
             reason,
-        FROM `{{project_id}}.task_eligibility_criteria_us_ar.no_incarceration_sanctions_within_6_months_materialized`
+        FROM `{{project_id}}.task_eligibility_criteria_general.no_incarceration_sanctions_within_6_months_materialized`
         WHERE {today_between_start_date_and_nullable_end_date_clause(
             start_date_column="start_date",
             end_date_column="end_date"
@@ -118,12 +119,13 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
     ,
     violations_milestones_12_months AS (
         SELECT
+            state_code,
             person_id,
             meets_criteria,
             start_date,
             end_date,
             reason,
-        FROM `{{project_id}}.task_eligibility_criteria_us_ar.no_incarceration_sanctions_within_12_months_materialized`
+        FROM `{{project_id}}.task_eligibility_criteria_general.no_incarceration_sanctions_within_12_months_materialized`
         WHERE {today_between_start_date_and_nullable_end_date_clause(
             start_date_column="start_date",
             end_date_column="end_date"
@@ -155,9 +157,9 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
     LEFT JOIN current_sentences
     USING(person_id)
     LEFT JOIN violations_milestones_6_months vm6
-    USING(person_id)
+    USING(person_id, state_code)
     LEFT JOIN violations_milestones_12_months vm12
-    USING(person_id)
+    USING(person_id, state_code)
     ORDER BY ip.OFFENDERID
 
 """
