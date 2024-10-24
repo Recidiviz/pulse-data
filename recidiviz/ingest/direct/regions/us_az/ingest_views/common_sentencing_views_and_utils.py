@@ -86,6 +86,8 @@ ON
 WHERE 
     -- These are often vacated sentences.
     -- recall this is not imposed_date
+    sentence.SENTENCE_BEGIN_DTM != 'NULL'
+AND
     sentence.SENTENCE_BEGIN_DTM IS NOT NULL
 AND
     UPPER(status_lookup.description) NOT LIKE "%VACATE%"

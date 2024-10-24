@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - PERSON_ID
+  - OFFENSE_ID
+  - status_update_datetime
+  - status_raw_text
+  - sequence_num
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - OFFENSE_ID
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                sequence_num: sequence_num
+                status_update_datetime: status_update_datetime
+                status:
+                  $enum_mapping:
+                    $raw_text: status_raw_text
+                    $mappings:
+                      StateSentenceStatus.SERVING:
+                        - Imposed
+                        - Paroled to Consecutive
+                        - Paroled
+                        - Recidiviz Marked Started
+                      StateSentenceStatus.COMMUTED:
+                        - Commuted
+                      StateSentenceStatus.AMENDED:
+                        - Modification Sent
+                      StateSentenceStatus.COMPLETED:
+                        - Completed
+                        - Recidiviz Marked Completed
+                        - Early Termination
+                      StateSentenceStatus.INTERNAL_UNKNOWN:
+                        - Set-Aside
+                        - Expungement
