@@ -50,5 +50,6 @@ def on_successful_authorization(
         user_external_id=user_external_id,
         pseudonymized_id=user_pseudonymized_id,
         can_access_all_supervisors=False,
+        can_access_supervision_workflows=False,
         feature_variants=feature_variants,
     )

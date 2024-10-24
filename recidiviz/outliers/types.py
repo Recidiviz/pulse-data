@@ -415,6 +415,8 @@ class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
     caseload_category: str = attr.ib()
     # earliest date that this officer was assigned a caseload
     earliest_person_assignment_date: Optional[date] = attr.ib(default=None)
+    # A list of zero grant opportunity types for this officer.
+    zero_grant_opportunities: Optional[List[str]] = attr.ib(default=None)
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)

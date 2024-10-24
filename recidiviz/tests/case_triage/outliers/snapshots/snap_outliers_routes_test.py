@@ -286,6 +286,10 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] 
         "supervisorExternalId": "102",
         "supervisorExternalIds": ["102"],
         "topXPctMetrics": [],
+        "zeroGrantOpportunities": [
+            "usPaSpecialCircumstancesSupervision",
+            "usPaAdminSupervision",
+        ],
     }
 }
 
@@ -314,6 +318,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
         "supervisorExternalId": "102",
         "supervisorExternalIds": ["102"],
         "topXPctMetrics": [],
+        "zeroGrantOpportunities": None,
     }
 }
 
@@ -346,6 +351,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             "topXPctMetrics": [
                 {"metricId": "incarceration_starts_and_inferred", "topXPct": 10}
             ],
+            "zeroGrantOpportunities": ["usPaAdminSupervision"],
         },
         {
             "avgDailyPopulation": 10.0,
@@ -364,6 +370,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             "supervisorExternalId": "102",
             "supervisorExternalIds": ["102"],
             "topXPctMetrics": [],
+            "zeroGrantOpportunities": [],
         },
     ]
 }
@@ -397,6 +404,7 @@ snapshots[
             "supervisorExternalId": "102",
             "supervisorExternalIds": ["102"],
             "topXPctMetrics": [],
+            "zeroGrantOpportunities": None,
         },
         {
             "avgDailyPopulation": 10.0,
@@ -415,6 +423,7 @@ snapshots[
             "supervisorExternalId": "102",
             "supervisorExternalIds": ["102"],
             "topXPctMetrics": [],
+            "zeroGrantOpportunities": None,
         },
     ]
 }

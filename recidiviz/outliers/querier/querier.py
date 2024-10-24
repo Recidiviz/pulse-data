@@ -515,6 +515,7 @@ class OutliersQuerier:
         self,
         supervisor_external_id: str,
         category_type_to_compare: InsightsCaseloadCategoryType,
+        include_workflows_info: bool,
         num_lookback_periods: Optional[int] = None,
         period_end_date: Optional[date] = None,
     ) -> List[SupervisionOfficerEntity]:
@@ -533,6 +534,7 @@ class OutliersQuerier:
             num_lookback_periods=num_lookback_periods,
             period_end_date=period_end_date,
             supervisor_external_id=supervisor_external_id,
+            include_workflows_info=include_workflows_info,
         )
         return list(id_to_entities.values())
 
@@ -846,6 +848,7 @@ class OutliersQuerier:
         self,
         pseudonymized_officer_id: str,
         category_type_to_compare: InsightsCaseloadCategoryType,
+        include_workflows_info: bool,
         num_lookback_periods: Optional[int],
         period_end_date: Optional[date] = None,
     ) -> Optional[SupervisionOfficerEntity]:
@@ -878,6 +881,7 @@ class OutliersQuerier:
                 num_lookback_periods=num_lookback_periods,
                 period_end_date=period_end_date,
                 officer_external_id=officer_external_id,
+                include_workflows_info=include_workflows_info,
             )
 
             if officer_external_id not in id_to_entities:
@@ -962,6 +966,7 @@ class OutliersQuerier:
     def get_id_to_supervision_officer_entities(
         self,
         category_type_to_compare: InsightsCaseloadCategoryType,
+        include_workflows_info: bool,
         num_lookback_periods: Optional[int],
         period_end_date: Optional[date] = None,
         officer_external_id: Optional[str] = None,
@@ -1017,6 +1022,49 @@ class OutliersQuerier:
                 .subquery()
             )
 
+            # The entities we'll be selecting from our query
+            query_entities = [
+                SupervisionOfficer.external_id,
+                SupervisionOfficer.full_name,
+                SupervisionOfficer.pseudonymized_id,
+                SupervisionOfficer.supervisor_external_id,
+                SupervisionOfficer.supervisor_external_ids,
+                SupervisionOfficer.supervision_district,
+                SupervisionOfficerOutlierStatus.metric_id,
+                SupervisionOfficer.earliest_person_assignment_date,
+                # Get an array of JSON objects for the officer's rates and statuses in the selected periods
+                func.array_agg(
+                    aggregate_order_by(
+                        func.jsonb_build_object(
+                            "end_date",
+                            SupervisionOfficerOutlierStatus.end_date,
+                            "metric_rate",
+                            SupervisionOfficerOutlierStatus.metric_rate,
+                            "status",
+                            SupervisionOfficerOutlierStatus.status,
+                            "caseload_category",
+                            SupervisionOfficerOutlierStatus.caseload_type,
+                        ),
+                        SupervisionOfficerOutlierStatus.end_date.desc(),
+                    )
+                ).label("statuses_over_time"),
+                # Get an array of JSON objects for the officer's rates and statuses in the selected periods
+                func.array_agg(
+                    aggregate_order_by(
+                        func.jsonb_build_object(
+                            "is_top_x_pct",
+                            SupervisionOfficerOutlierStatus.is_top_x_pct,
+                            "top_x_pct",
+                            SupervisionOfficerOutlierStatus.top_x_pct,
+                            "end_date",
+                            SupervisionOfficerOutlierStatus.end_date,
+                        ),
+                        SupervisionOfficerOutlierStatus.end_date.desc(),
+                    )
+                ).label("is_top_x_pct_over_time"),
+                avgs_subquery.c.avg_daily_population,
+            ]
+
             officer_status_query = (
                 session.query(SupervisionOfficer)
                 .join(
@@ -1047,48 +1095,72 @@ class OutliersQuerier:
                     SupervisionOfficer.earliest_person_assignment_date,
                     avgs_subquery.c.avg_daily_population,
                 )
-                .with_entities(
-                    SupervisionOfficer.external_id,
-                    SupervisionOfficer.full_name,
-                    SupervisionOfficer.pseudonymized_id,
-                    SupervisionOfficer.supervisor_external_id,
-                    SupervisionOfficer.supervisor_external_ids,
-                    SupervisionOfficer.supervision_district,
-                    SupervisionOfficerOutlierStatus.metric_id,
-                    SupervisionOfficer.earliest_person_assignment_date,
-                    # Get an array of JSON objects for the officer's rates and statuses in the selected periods
-                    func.array_agg(
-                        aggregate_order_by(
-                            func.jsonb_build_object(
-                                "end_date",
-                                SupervisionOfficerOutlierStatus.end_date,
-                                "metric_rate",
-                                SupervisionOfficerOutlierStatus.metric_rate,
-                                "status",
-                                SupervisionOfficerOutlierStatus.status,
-                                "caseload_category",
-                                SupervisionOfficerOutlierStatus.caseload_type,
-                            ),
-                            SupervisionOfficerOutlierStatus.end_date.desc(),
-                        )
-                    ).label("statuses_over_time"),
-                    # Get an array of JSON objects for the officer's rates and statuses in the selected periods
-                    func.array_agg(
-                        aggregate_order_by(
-                            func.jsonb_build_object(
-                                "is_top_x_pct",
-                                SupervisionOfficerOutlierStatus.is_top_x_pct,
-                                "top_x_pct",
-                                SupervisionOfficerOutlierStatus.top_x_pct,
-                                "end_date",
-                                SupervisionOfficerOutlierStatus.end_date,
-                            ),
-                            SupervisionOfficerOutlierStatus.end_date.desc(),
-                        )
-                    ).label("is_top_x_pct_over_time"),
-                    avgs_subquery.c.avg_daily_population,
-                )
+                .with_entities(*query_entities)
             )
+
+            # We only query workflows_info for authorized users
+            if include_workflows_info:
+
+                # Get officers who've been active all year
+                active_officers_subquery = (
+                    session.query(
+                        SupervisionOfficerMetric.officer_id,
+                    )
+                    .filter(
+                        # filter for officers who have had a caseload the whole year
+                        SupervisionOfficerMetric.metric_id
+                        == "prop_period_with_critical_caseload",
+                        SupervisionOfficerMetric.metric_value == 1.0,
+                        SupervisionOfficerMetric.category_type == "ALL",
+                        # Look at relevant end_date
+                        SupervisionOfficerMetric.end_date == end_date,
+                    )
+                    .subquery()
+                )
+
+                # Get zero grant opportunities list for active officers
+                task_completions_subquery = (
+                    session.query(
+                        SupervisionOfficerMetric.officer_id,
+                        func.array_agg(SupervisionOfficerMetric.metric_id).label(
+                            "zero_grant_opportunities"
+                        ),
+                    )
+                    .join(
+                        active_officers_subquery,
+                        active_officers_subquery.c.officer_id
+                        == SupervisionOfficerMetric.officer_id,
+                    )
+                    .filter(
+                        # Filter for completion metrics
+                        SupervisionOfficerMetric.metric_id.like("task_completions%"),
+                        # Filter for zero grants
+                        SupervisionOfficerMetric.metric_value == 0,
+                        SupervisionOfficerMetric.category_type == "ALL",
+                        SupervisionOfficerMetric.end_date == end_date,
+                    )
+                    .group_by(SupervisionOfficerMetric.officer_id)
+                    .subquery()
+                )
+
+                query_entities.append(
+                    task_completions_subquery.c.zero_grant_opportunities,
+                )
+
+                # Update the officer status query to include workflows info
+                officer_status_query = (
+                    officer_status_query.join(
+                        task_completions_subquery,
+                        SupervisionOfficer.external_id
+                        == task_completions_subquery.c.officer_id,
+                        # use a LEFT OUTER JOIN
+                        isouter=True,
+                    )
+                    .group_by(
+                        task_completions_subquery.c.zero_grant_opportunities,
+                    )
+                    .with_entities(*query_entities)
+                )
 
             if officer_external_id:
                 # If the officer external id is specified, filter by the officer external id.
@@ -1184,6 +1256,12 @@ class OutliersQuerier:
                         earliest_person_assignment_date=record.earliest_person_assignment_date,
                         caseload_category=latest_period_caseload_category,
                         avg_daily_population=record.avg_daily_population,
+                        zero_grant_opportunities=[
+                            x.replace("task_completions_", "")
+                            for x in record.zero_grant_opportunities or []
+                        ]
+                        if include_workflows_info
+                        else None,
                         outlier_metrics=(
                             [
                                 {

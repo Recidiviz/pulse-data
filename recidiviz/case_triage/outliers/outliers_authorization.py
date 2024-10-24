@@ -74,6 +74,8 @@ def on_successful_authorization(
         can_access_all_supervisors=is_recidiviz_or_csg
         # TODO(Recidiviz/recidiviz-dashboards#4520): don't hard-code this string
         or routes.get("insights_supervision_supervisors-list", False),
+        can_access_supervision_workflows=is_recidiviz_or_csg
+        or routes.get("workflowsSupervision", False),
         feature_variants=get_active_feature_variants(
             feature_variants, user_pseudonymized_id
         ),
