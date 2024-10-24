@@ -277,7 +277,7 @@ def sftp_dag() -> None:
                 download_sftp_files = RecidivizSftpToGcsOperator.partial(
                     task_id="download_sftp_files",
                     project_id=project_id,
-                    region_code=state_code,
+                    region_code=state_code.value,
                     max_active_tis_per_dag=MAX_TASKS_TO_RUN_IN_PARALLEL,
                     execution_timeout=timedelta(hours=8),
                     retries=TASK_RETRIES,
@@ -285,7 +285,7 @@ def sftp_dag() -> None:
                 post_process_downloaded_files = RecidivizGcsFileTransformOperator.partial(
                     task_id="post_process_downloaded_files",
                     project_id=project_id,
-                    region_code=state_code,
+                    region_code=state_code.value,
                     max_active_tis_per_dag=MAX_TASKS_TO_RUN_IN_PARALLEL,
                     # These tasks will always trigger no matter the status of the prior
                     # tasks. We need to wait until downloads are finished in order
