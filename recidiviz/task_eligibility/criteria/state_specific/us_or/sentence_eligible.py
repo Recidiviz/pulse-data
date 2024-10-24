@@ -130,7 +130,6 @@ _QUERY_TEMPLATE = f"""
             ssa.is_eligible,
             ssa.sentence_eligibility_date,
             TO_JSON(STRUCT(
-                sentences.date_imposed AS sentence_imposed_date,
                 sentences.sentence_start_date AS supervision_sentence_start_date,
                 /* This is the date of the most recent OFFENSE prior to the start of the
                 given span, not the most recent new CONVICTION (which aligns with OR
@@ -151,11 +150,12 @@ _QUERY_TEMPLATE = f"""
                 mainly used for internal/debugging purposes and is not surfaced in the
                 tool currently. */
                 COALESCE(days_absconded_by_span.days_absconded, 0) AS num_days_absconsion,
-                sentences.statute AS sentence_statute,
-                sentence_id AS sentence_id,
+                sentence_id,
                 ssa.sentence_eligibility_date,
                 ssa.is_eligible,
-                ssa.is_almost_eligible
+                ssa.is_almost_eligible,
+                ssa.meets_criteria_served_6_months,
+                ssa.meets_criteria_served_half_of_sentence
             )) AS reason,
         FROM sub_sessions_with_attributes ssa
         LEFT JOIN sentences
