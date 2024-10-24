@@ -24,6 +24,7 @@ input_columns:
   - SEX_OFFENSE_FLAG
   - TPR_ELIGIBILITY_NOTE
   - is_controlling
+  - FLAT_SENT_FLAG
 unused_columns:
   - parole_possible
 output:
@@ -103,3 +104,6 @@ output:
                     - $literal("True")
                 judge_external_id: JUDGE_ID
                 status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
+          sentence_metadata:
+            $json_dict:
+              flat_sentence: FLAT_SENT_FLAG
