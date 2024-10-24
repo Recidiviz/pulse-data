@@ -5,3 +5,4 @@ newline character here but dont worry it wont get trimmed since its not on the e
 none               here,there's literally   a tab there,1,2024-01-01 01:01:01,False
 ,,1,2024-01-01 01:01:01,False
 ,,1,2024-01-01 01:01:01,False
+trim,,1,2024-01-01 01:01:01,False

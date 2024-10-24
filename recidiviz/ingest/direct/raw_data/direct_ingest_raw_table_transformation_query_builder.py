@@ -23,6 +23,10 @@ import datetime
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
+from recidiviz.common.constants.non_standard_characters import (
+    NON_STANDARD_ASCII_CONTROL_CHARS_HEX_CODES,
+    NON_STANDARD_UNICODE_SPACE_CHARACTERS,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
@@ -51,6 +55,19 @@ class DirectIngestTempRawTablePreMigrationTransformationQueryBuilder:
             parent_address_overrides=None, parent_address_formatter_provider=None
         )
 
+    @staticmethod
+    def _build_replace_non_standard_characters_query_str(col_name: str) -> str:
+        """Builds a SQL query str that replaces any non-standard ascii control characters (ASCII control characters sans
+        horizontal tab, line feed, and carriage return) and unicode non-standard space characters with a standard space character.
+        """
+        non_standard_ascii_control_chars_str = "".join(
+            NON_STANDARD_ASCII_CONTROL_CHARS_HEX_CODES
+        )
+        non_standard_unicode_space_chars_str = "".join(
+            NON_STANDARD_UNICODE_SPACE_CHARACTERS
+        )
+        return rf"REGEXP_REPLACE({col_name}, r'[{non_standard_ascii_control_chars_str}{non_standard_unicode_space_chars_str}]', ' ')"
+
     def build_pre_migration_transformations_query(
         self,
         *,
@@ -61,8 +78,8 @@ class DirectIngestTempRawTablePreMigrationTransformationQueryBuilder:
         update_datetime: datetime.datetime,
         is_deleted: bool,
     ) -> str:
-        """Builds a SQL query that trims whitespace from all columns, converts any value containing only
-        whitespace and/or ascii control characters (0x00-0x1F and 0x7F) to null, removes all NULL rows,
+        """Builds a SQL query that converts non-standard whitespace and ascii control characters to a space character, trims
+        whitespace from all columns, converts any value containing only whitespace to null, removes all NULL rows,
         and adds file_id, update_datetime, and is_deleted metadata columns to a raw data
         table that has been newly loaded from a CSV.
         """
@@ -70,8 +87,7 @@ class DirectIngestTempRawTablePreMigrationTransformationQueryBuilder:
         raw_table_config = self._region_raw_file_config.raw_file_configs[file_tag]
 
         trimmed_cols = ", ".join(
-            rf"CASE WHEN REGEXP_CONTAINS({col_name}, r'^[\s\x00-\x1F\x7F]*$') "
-            f"THEN NULL ELSE TRIM({col_name}) END as {col_name}"
+            rf"NULLIF(TRIM({self._build_replace_non_standard_characters_query_str(col_name)}), '')  as {col_name}"
             for col_name in raw_table_config.column_names_at_datetime(update_datetime)
         )
 
