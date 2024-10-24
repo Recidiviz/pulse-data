@@ -171,12 +171,16 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.NOT_FOUND,
             )
 
+        user_context: UserContext = g.user_context
+
         primary_category_type = querier.get_product_configuration(
-            g.user_context
+            user_context
         ).primary_category_type
+
         officer_entities = querier.get_officers_for_supervisor(
             supervisor.external_id,
             primary_category_type,
+            user_context.can_access_supervision_workflows,
             num_lookback_periods,
             period_end_date,
         )
@@ -317,6 +321,7 @@ def create_outliers_api_blueprint() -> Blueprint:
         officer_entity = querier.get_supervision_officer_entity(
             category_type_to_compare=category_type_to_compare,
             pseudonymized_officer_id=pseudonymized_officer_id,
+            include_workflows_info=user_context.can_access_supervision_workflows,
             num_lookback_periods=0,
             period_end_date=period_end_date,
         )
@@ -454,6 +459,7 @@ def create_outliers_api_blueprint() -> Blueprint:
         officer_entity = querier.get_supervision_officer_entity(
             pseudonymized_officer_id,
             category_type_to_compare,
+            user_context.can_access_supervision_workflows,
             num_lookback_periods,
             period_end_date,
         )
@@ -761,7 +767,9 @@ def create_outliers_api_blueprint() -> Blueprint:
             user_context
         ).primary_category_type
         officer_entities = querier.get_officers_for_supervisor(
-            supervisor.external_id, category_type_to_compare
+            supervisor.external_id,
+            category_type_to_compare,
+            user_context.can_access_supervision_workflows,
         )
 
         action_strategies_json = {}

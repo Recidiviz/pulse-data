@@ -144,7 +144,12 @@ class TestOutliersQuerier(InsightsDbTestCase):
                 session.add(ActionStrategySurfacedEvents(**as_event))
 
         self.test_user_context = UserContext(
-            "US_PA", "12345", "hash-12345", True, {"supervisorHomepageWorkflows": {}}
+            state_code_str="US_PA",
+            user_external_id="12345",
+            pseudonymized_id="hash-12345",
+            can_access_all_supervisors=True,
+            can_access_supervision_workflows=True,
+            feature_variants={"supervisorHomepageWorkflows": {}},
         )
 
     def tearDown(self) -> None:
@@ -187,6 +192,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
         actual = OutliersQuerier(StateCode.US_PA).get_officers_for_supervisor(
             supervisor_external_id="102",
             category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
             num_lookback_periods=5,
         )
         self.snapshot.assert_match(actual, name="test_get_officers_for_supervisor")  # type: ignore[attr-defined]
@@ -195,9 +201,19 @@ class TestOutliersQuerier(InsightsDbTestCase):
         actual = OutliersQuerier(StateCode.US_PA).get_officers_for_supervisor(
             supervisor_external_id="102",
             category_type_to_compare=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
+            include_workflows_info=True,
             num_lookback_periods=5,
         )
         self.snapshot.assert_match(actual, name="test_get_officers_for_supervisor_non_all_category")  # type: ignore[attr-defined]
+
+    def test_get_officers_for_supervisor_without_workflows_info(self) -> None:
+        actual = OutliersQuerier(StateCode.US_PA).get_officers_for_supervisor(
+            supervisor_external_id="102",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=False,
+            num_lookback_periods=5,
+        )
+        self.snapshot.assert_match(actual, name="test_get_officers_for_supervisor_without_workflows_info")  # type: ignore[attr-defined]
 
     def test_get_excluded_officers_for_supervisor(self) -> None:
         actual = OutliersQuerier(StateCode.US_PA).get_excluded_officers_for_supervisor(
@@ -272,15 +288,45 @@ class TestOutliersQuerier(InsightsDbTestCase):
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             pseudonymized_officer_id="officerhash3",
             category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
             num_lookback_periods=0,
         )
         self.snapshot.assert_match(actual, name="test_get_supervision_officer_entity_found_match")  # type: ignore[attr-defined]
+
+    def test_get_supervision_officer_entity_found_match_without_workflows_info(
+        self,
+    ) -> None:
+        # Return matching supervision officer entity
+        entity = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
+            pseudonymized_officer_id="officerhash3",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=False,
+            num_lookback_periods=0,
+        )
+        self.assertIsNotNone(entity)
+        if entity:
+            self.assertIsNone(entity.zero_grant_opportunities)
+
+    def test_get_supervision_officer_entity_found_match_for_officer_with_low_activity(
+        self,
+    ) -> None:
+        # Return matching supervision officer entity
+        entity = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
+            pseudonymized_officer_id="officerhash9",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
+            num_lookback_periods=0,
+        )
+        self.assertIsNotNone(entity)
+        if entity:
+            self.assertEqual(entity.zero_grant_opportunities, [])
 
     def test_get_supervision_officer_entity_found_match_with_highlights(self) -> None:
         # Return matching supervision officer entity where officer should be highlighted for a metric in the latest period
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             pseudonymized_officer_id="officerhash3",
             category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
             num_lookback_periods=0,
         )
         self.snapshot.assert_match(actual, name="test_get_supervision_officer_entity_found_match_with_highlights")  # type: ignore[attr-defined]
@@ -290,6 +336,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             pseudonymized_officer_id="officerhash9",
             category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
             num_lookback_periods=0,
         )
         self.snapshot.assert_match(actual, name="test_get_supervision_officer_entity_found_match_not_top_x_pct")  # type: ignore[attr-defined]
@@ -301,6 +348,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             pseudonymized_officer_id="officerhash3",
             category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
             num_lookback_periods=0,
             period_end_date=TEST_PREV_END_DATE,
         )
@@ -313,6 +361,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             pseudonymized_officer_id="officerhash3",
             category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
             num_lookback_periods=4,
             period_end_date=TEST_END_DATE,
         )
@@ -332,6 +381,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             pseudonymized_officer_id="officerhash7",
             category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
             num_lookback_periods=1,
         )
         self.snapshot.assert_match(actual, name="test_get_supervision_officer_entity_highlight_in_prev_period_only")  # type: ignore[attr-defined]
@@ -341,6 +391,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             pseudonymized_officer_id="officerhash1",
             category_type_to_compare=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
+            include_workflows_info=True,
             num_lookback_periods=1,
         )
         self.snapshot.assert_match(actual, name="test_get_supervision_officer_entity_changing_caseload_categories")  # type: ignore[attr-defined]
@@ -377,6 +428,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
                 pseudonymized_officer_id="officerhash9",
                 category_type_to_compare=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
+                include_workflows_info=True,
                 num_lookback_periods=1,
             )
 
@@ -385,6 +437,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             pseudonymized_officer_id="invalidhash",
             category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
             num_lookback_periods=0,
         )
 
@@ -402,6 +455,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             pseudonymized_officer_id="officerhash9",
             category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
             num_lookback_periods=0,
             period_end_date=TEST_PREV_END_DATE,
         )
@@ -652,6 +706,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             user_external_id="id",
             pseudonymized_id="hash",
             can_access_all_supervisors=True,
+            can_access_supervision_workflows=True,
             feature_variants={"fv1": {}, "random": {}},
         )
         result = querier.get_configuration_for_user(user_context)
@@ -665,6 +720,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             user_external_id="id",
             pseudonymized_id="hash",
             can_access_all_supervisors=True,
+            can_access_supervision_workflows=True,
             feature_variants={"randomfv": {}},
         )
         result = querier.get_configuration_for_user(user_context)
@@ -678,6 +734,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             user_external_id="id",
             pseudonymized_id="hash",
             can_access_all_supervisors=True,
+            can_access_supervision_workflows=True,
             feature_variants={"fv1": {}, "fv2": {}},
         )
 
