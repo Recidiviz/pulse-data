@@ -202,6 +202,9 @@ from recidiviz.validation.views.state.sentences.normalized_state_charge_missing_
 from recidiviz.validation.views.state.sentences.normalized_state_charge_missing_uniform_offense_labels import (
     NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sentences.sentence_inferred_group_projected_dates_mismatch import (
+    SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VALIDATION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sentences.sentences_missing_date_imposed import (
     SENTENCES_MISSING_DATE_IMPOSED_VIEW_BUILDER,
 )
@@ -966,6 +969,10 @@ def get_all_validations() -> List[DataValidationCheck]:
             ],
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VALIDATION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
         ),
     ]
 

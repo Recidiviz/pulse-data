@@ -24,8 +24,7 @@ and does not include any NormalizedStateSentenceGroupLength data.
 Related views are:
 - inferred_sentence_group_aggregated_sentence_projected_dates
 - sentence_inferred_group_projected_dates
-- TODO(#33498) Create validation for aggregated_sentence_projected_dates 
-               and aggregated_sentence_group_projected_dates
+- inferred_group_aggregated_projected_dates_validation
 
 Rows can have null projected dates if the inferred sentence group consists
 of only SUSPENDED sentences at the given inferred_group_update_datetime.
