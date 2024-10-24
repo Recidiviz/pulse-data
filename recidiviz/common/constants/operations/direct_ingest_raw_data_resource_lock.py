@@ -63,8 +63,8 @@ class DirectIngestRawDataLockActor(OperationsEnum):
 
 _DIRECT_INGEST_LOCK_RESOURCE_VALUE_DESCRIPTIONS: Dict[OperationsEnum, str] = {
     DirectIngestRawDataResourceLockResource.BUCKET: (
-        "The BUCKET resource refers to the raw data GCS bucket associated with the "
-        "region_code and ingest_instance of the lock."
+        "The BUCKET resource refers to the ingest GCS bucket associated with the "
+        "region_code and raw_data_instance of the lock."
         "n.b.: while data platform infrastructure should acquire this "
         "resource lock before accessing it, states will transfer data directly to this "
         "bucket without acquiring the lock so this lock does not necessarily guarantee "
@@ -72,13 +72,15 @@ _DIRECT_INGEST_LOCK_RESOURCE_VALUE_DESCRIPTIONS: Dict[OperationsEnum, str] = {
     ),
     DirectIngestRawDataResourceLockResource.OPERATIONS_DATABASE: (
         "The OPERATIONS_DATABASE resource refers to the CloudSQL operations database "
-        "rows associated with a particular region_code and ingest_instance of the "
-        "lock, most notably in the DirectIngestRawFileMetadataV2 table."
+        "rows associated with a particular region_code and raw_data_instance "
+        "in the following tables: direct_ingest_raw_big_query_file_metadata, "
+        "direct_ingest_raw_gcs_file_metadata, direct_ingest_raw_file_import_run, "
+        "direct_ingest_raw_file_import and direct_ingest_raw_data_flash_status."
     ),
     DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET: (
         "The BIG_QUERY_RAW_DATA_DATASET resource refers to all tables in the BigQuery "
-        "dataset associated with the region_code and ingest_instance of the lock, "
-        "usually in the form of us_xx_raw_data (with an optional _secondary suffix)."
+        "dataset associated with the region_code and raw_data_instance of the lock, "
+        "usually in the form of us_xx_raw_data (or us_xx_raw_data_secondary suffix)."
     ),
 }
 
