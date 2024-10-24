@@ -1,0 +1,156 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: AZ_DOC_SC_EXCEPTION
+file_description: |-
+  Contains information about exceptions that relate to some sentences.
+data_classification: source
+encoding: UTF-8
+primary_key_cols: [EXCEPTION_ID]
+columns:
+  - name: EXCEPTION_ID
+    description: System-generated primary key
+  - name: CHANGE_ID
+    description: Change_id links to change_history for audit purposes
+  - name: OFFENSE_ID
+    description: |-
+      The external ID of the sentence. FK to AZ_DOC_SC_OFFENSE. Joining to 
+      AZ_DOC_SC_EPISODE.FINAL_OFFENSE_ID provides exceptions relating to a sentence group.
+  - name: ARS_TITLE_TEXT_APPEND_TEXT
+    description: Unknown
+  - name: DISPLAY_MSGS_TEXT
+    description: A summary of these exceptions and exclusions, in plain English.
+    is_pii: True
+  - name: INELIG_RLS_ANY_BASIS_FLAG
+    description: Y/N flag for whether the person on this sentence is eligible for release of any kind.
+  - name: MIN_DAYS_B4_ANY_RLS
+    description: Unknown
+  - name: FLAT_SENT_FLAG
+    description: Y/N flag for whether this is a flat sentence.
+  - name: MIN_DAYS_FLAT_SENT
+    description: Minimum number of days required to be served on a flat sentence.
+  - name: INELIG_TEMP_RLS_FLAG
+    description: Y/N flag for whether the person on this sentence is eligible for temporary release.
+  - name: TEMP_RLS_POLICY_FLAG
+    description: Unknown
+  - name: DAYS_B4_TEMP_RLS_ELIG
+    description: The number of days the person must serve before they are eligible for temporary release.
+  - name: PCT_B4_TEMP_RLS_ELIG
+    description: The percentage of this sentence the person must serve before they are eligible for temporary release.
+  - name: MIN_DAYS_B4_RLS
+    description: Minimum number of days required to be served before release.
+  - name: INELIG_COMMUTATION_FLAG
+    description: Y/N flag for whether this sentence is eligible for commutation.
+  - name: DAYS_B4_COMMUTATION_ELIG
+    description: The number of days the person must serve before they are eligible for commutation
+  - name: SERVE_B4_COMMUTATION_FLAG
+    description: Unknown
+  - name: PCT_B4_COMMUTATION_ELIG
+    description: The percentage of this sentence the person must serve before they are eligible for commutation
+  - name: PLUS_PCT_B4_COMMUTATION_ELIG
+    description: Unknown
+  - name: INELIG_ERC_FLAG
+    description: Y/N flag for whether the person on this sentence is eligible to earn release credits.
+  - name: ERC_POLICY_FLAG
+    description: Unknown
+  - name: ERC_WAIT_PCT
+    description: Unknown
+  - name: ERC_WAIT_DAYS
+    description: Unknown
+  - name: PLUS_PCT_B4_ERC_ELIG
+    description: Unknown
+  - name: COPPER_CRDTS_WAIT_DAYS
+    description: Unknown
+  - name: INELIG_PARDON_FLAG
+    description: Y/N flag for whether the person on this sentence is eligible for pardon.
+  - name: DAYS_B4_PARDON_ELIG
+    description: The number of days the person must serve before they are eligible for pardon
+  - name: MIN_B4_PARDON_FLAG
+    description: The minimum number of days the person must serve before they are eligible for pardon
+  - name: PCT_B4_PARDON_ELIG
+    description: The percentage of this sentence the person must serve before they are eligible for pardon
+  - name: PLUS_PCT_B4_PARDON_ELIG
+    description: Unknown
+  - name: INELIG_PAROLE_FLAG
+    description: Y/N flag for whether the person on this sentence is eligible for parole
+  - name: PAROLE_POLICY_FLAG
+    description: Unknown
+  - name: DAYS_B4_PAROLE_ELIG
+    description: The number of days the person must serve before they are eligible for parole
+  - name: MIN_B4_PAROLE_FLAG
+    description: The minimum number of days the person must serve before they are eligible for parole
+  - name: PCT_B4_PAROLE_ELIG
+    description: The percentage of this sentence the person must serve before they are eligible for parole
+  - name: PLUS_PCT_B4_PAROLE_ELIG
+    description: Unknown
+  - name: INELIG_BOEC_HEARING_FLAG
+    description: |-
+      Y/N flag for whether the person on this sentence is eligible for a hearing
+      with the board of executive clemency.
+  - name: INELIG_COMMUNITY_SUPV_FLAG
+    description: Y/N flag for whether the person on this sentence is eligible for community supervision.
+  - name: EIGHTY_FIVE_PCT_FLAG
+    description: |-
+      Y/N flag for whether the person on this sentence is eligible for release after 
+      serving 85% of this sentence
+  - name: RUN_CONSEC_TO_ANY_SENT_FLAG
+    description: Y/N flag for whether this sentence runs consecutively to any other sentence
+  - name: RUN_CONSEC_TO_SERVE_SENT_FLAG
+    description: |-
+      Y/N flag for whether this sentence runs consecutively to another defined
+      sentence term (not a life or death sentence)
+  - name: RUN_CONSEC_TO_LIFE_SENT_FLAG
+    description: Y/N flag for whether this sentence runs consecutively to a life sentence.
+  - name: RLS_ANY_BASIS_NAT_LIFE_FLAG
+    description: Unknown
+  - name: INCRCRTD_TERM_OF_PRBTN_FLAG
+    description: Unknown
+  - name: MIN_PCT_TO_SERVE
+    description: The minimum percentage of this sentence the person is required to serve
+  - name: INELIG_PRVSNL_RLS_FLAG
+    description: Y/N flag for whether the person on this sentence is eligible for provisional release
+  - name: PRVSNL_RLS_POLICY_FLAG
+    description: Unknown
+  - name: PRVSNL_RLS_DAYS
+    description: Unknown
+  - name: INELIG_MANDATORY_RLS_FLAG
+    description: Y/N flag for whether the person on this sentence is eligible for mandatory release
+  - name: MR_DAYS_ELIG_B4_FLAT_SED
+    description: Unknown
+  - name: INELIG_ERCD_FLAG
+    description: Y/N flag for whether the person on this sentence is eligible for an Earned Credit release.
+  - name: MIN_B4_ERCD_FLAG
+    description: The minimum number of days the person must serve before they are eligible for Earned Credit release
+  - name: DAYS_B4_ERCD_ELIG
+    description: The number of days the person must serve before they are eligible for Earned Credit release
+  - name: PCT_B4_ERCD_ELIG
+    description: The percentage of this sentence the person must serve before they are eligible for Earned Credit release
+  - name: ACTIVE_FLAG
+    description: |-
+      Identifies if record is active
+  - name: CREATE_DTM
+    description: |-
+      Date record was created
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: CREATE_USERID
+    description: |-
+      User_id of person who created the record
+    is_pii: True
+  - name: UPDT_DTM
+    description: |-
+      Date record was last updated
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: UPDT_USERID
+    description: |-
+      User_id of person who last updated the record
+    is_pii: True
