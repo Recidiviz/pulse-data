@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes spans of time that residents are not in OTHER_SOLITARY_CONFINEMENT"""
+"""Describes spans of time that residents are not in DISCIPLINARY_SOLITARY_CONFINEMENT"""
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -25,11 +25,9 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "HOUSING_UNIT_TYPE_IS_NOT_OTHER_SOLITARY_CONFINEMENT"
+_CRITERIA_NAME = "HOUSING_UNIT_TYPE_IS_NOT_DISCIPLINARY_SOLITARY_CONFINEMENT"
 
-_DESCRIPTION = (
-    """Describes spans of time that residents are not in OTHER_SOLITARY_CONFINEMENT"""
-)
+_DESCRIPTION = """Describes spans of time that residents are not in DISCIPLINARY_SOLITARY_CONFINEMENT"""
 
 _QUERY_TEMPLATE = """
        SELECT
@@ -41,26 +39,24 @@ _QUERY_TEMPLATE = """
             TO_JSON(STRUCT(
                 start_date AS START_start_date
             )) AS reason,
-            start_date AS other_solitary_start_date
+            start_date AS disciplinary_solitary_start_date
         FROM `{project_id}.{sessions_dataset}.housing_unit_type_sessions_materialized` hu
-        WHERE hu.housing_unit_type = 'OTHER_SOLITARY_CONFINEMENT'
+        WHERE hu.housing_unit_type = 'DISCIPLINARY_SOLITARY_CONFINEMENT'
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="other_solitary_start_date",
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date that a resident began other_solitary_confinement",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
+    sessions_dataset=SESSIONS_DATASET,
+    meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="disciplinary_solitary_start_date",
+            type=bigquery.enums.StandardSqlTypeNames.DATE,
+            description="Date that a resident began disciplinary_solitary_confinement",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

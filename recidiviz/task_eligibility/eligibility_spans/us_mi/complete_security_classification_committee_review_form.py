@@ -26,6 +26,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
     security_classification_committee_review,
 )
 from recidiviz.task_eligibility.criteria.general import (
+    housing_unit_type_is_not_disciplinary_solitary_confinement,
     housing_unit_type_is_not_other_solitary_confinement,
     housing_unit_type_is_solitary_confinement,
 )
@@ -65,6 +66,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         _PAST_REVIEW_DATE_CRITERIA_VIEW_BUILDER,
         housing_unit_type_is_solitary_confinement.VIEW_BUILDER,
         housing_unit_type_is_not_other_solitary_confinement.VIEW_BUILDER,
+        housing_unit_type_is_not_disciplinary_solitary_confinement.VIEW_BUILDER,
     ],
     completion_event_builder=security_classification_committee_review.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
