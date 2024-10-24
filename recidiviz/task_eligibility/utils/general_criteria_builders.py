@@ -17,11 +17,14 @@
 """Helper methods that return criteria view builders with similar logic that
 can be parameterized.
 """
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
+    revert_nonnull_end_date_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -448,24 +451,31 @@ VIOLATIONS_FOUND_WHERE_CLAUSE = """
 
 def num_events_within_time_interval_spans(
     events_cte: str,
-    date_interval: int,
-    date_part: str,
+    date_interval: Optional[int] = None,
+    date_part: Optional[str] = None,
 ) -> str:
     """
     Creates a CTE with spans of time for the number of events within a given time interval.
     Args:
         events_cte (str): Specifies the events that should be counted towards
             the spans.
-        date_interval (int): Number of <date_part> over which the events will be counted.
-        date_part (str): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK","MONTH","QUARTER","YEAR".
+        date_interval (int, optional): Number of <date_part> over which the events will be counted.
+            If not provided, the events will be counted into the indefinite future.
+        date_part (str, optional): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK", "MONTH", "QUARTER", "YEAR".
+            Must be provided if date_interval is provided.
     """
+    if date_interval:
+        end_date_clause = f"DATE_ADD(event_date, INTERVAL {date_interval} {date_part})"
+    else:
+        end_date_clause = "CAST(NULL AS DATE)"
+
     return f"""event_spans AS (
         SELECT
             state_code,
             person_id,
             event_date AS start_date,
-            DATE_ADD(event_date, INTERVAL {date_interval} {date_part}) AS end_date,
+            {end_date_clause} AS end_date,
             event_date,
         FROM {events_cte}
         WHERE event_date IS NOT NULL
@@ -518,7 +528,7 @@ def violations_within_time_interval_criteria_builder(
         date_interval (int, optional): Number of <date_part> when the violation
             will be counted as valid. Defaults to 12 (e.g. it could be 12 months).
         date_part (str, optional): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+            "DAY", "WEEK", "MONTH", "QUARTER", "YEAR". Defaults to "MONTH".
         violation_date_name_in_reason_blob (str, optional): Name of the violation_date
             field in the reason blob. Defaults to "latest_convictions".
         display_single_violation_date (bool, optional): Show only the latest violation in
@@ -653,7 +663,7 @@ def incarceration_violations_within_time_interval_criteria_builder(
         date_interval (int, optional): Number of <date_part> when the violation
             will be counted as valid. Defaults to 12 (e.g. it could be 12 months).
         date_part (str, optional): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+            "DAY", "WEEK", "MONTH", "QUARTER", "YEAR". Defaults to "MONTH".
         violation_date_name_in_reason_blob (str, optional): Name of the violation_date
             field in the reason blob. Defaults to "latest_convictions".
         display_single_violation_date (bool, optional): Show only the latest violation in
@@ -733,6 +743,101 @@ def incarceration_violations_within_time_interval_criteria_builder(
     )
 
 
+def incarceration_sanctions_within_time_interval_criteria_builder(
+    criteria_name: str,
+    description: str,
+    date_interval: int,
+    date_part: str,
+    additional_excluded_outcome_types: Optional[Union[str, List[str]]] = None,
+    incident_severity: Optional[Union[str, List[str]]] = None,
+) -> TaskCriteriaBigQueryViewBuilder:
+    """
+    Returns a criteria query with spans of time when someone has not recently had an
+    incarceration sanction.
+    Args:
+        criteria_name (str): Name of the criterion
+        description (str): Description of the criterion
+        date_interval (int): Number of <date_part> representing the amount of time
+            the sanction will be disqualifying for the criterion.
+        date_part (str): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK", "MONTH", "QUARTER", "YEAR". Defaults to "MONTH".
+        additional_excluded_outcome_types (str or List[str], optional): Specifies any additional outcome types
+            that should be excluded when considering someone's eligibility, in addition
+            to the default list of excluded types: ["DISMISSED", "NOT_GUILTY"].
+        incident_severity (str or List[str], optional): Specifies the incident severity types that should be
+            counted.
+    Returns:
+        TaskCriteriaBigQueryViewBuilder: View builder for spans of time when someone has
+            not recently had an incarceration sanction.
+    """
+    if incident_severity:
+        if isinstance(incident_severity, str):
+            incident_severity = [incident_severity]
+
+        incident_severity_bq_list = list_to_query_string(incident_severity, quoted=True)
+        incident_severity_filter = (
+            f"AND incident.incident_severity IN ({incident_severity_bq_list})"
+        )
+    else:
+        incident_severity_filter = ""
+
+    excluded_outcome_types = ["DISMISSED", "NOT_GUILTY"]
+    if additional_excluded_outcome_types:
+        if isinstance(additional_excluded_outcome_types, str):
+            additional_excluded_outcome_types = [additional_excluded_outcome_types]
+        excluded_outcome_types.extend(additional_excluded_outcome_types)
+
+    excluded_outcome_types_bq_list = list_to_query_string(
+        excluded_outcome_types, quoted=True
+    )
+
+    criteria_query = f"""
+        WITH incarceration_sanction_dates AS (
+            SELECT
+                outcome.person_id,
+                outcome.state_code,
+                outcome.date_effective AS event_date
+            FROM
+                `{{project_id}}.normalized_state.state_incarceration_incident_outcome` outcome
+            LEFT JOIN `{{project_id}}.normalized_state.state_incarceration_incident` incident
+            USING(state_code, person_id, incarceration_incident_id)
+            WHERE
+                -- We only want to count sanctions with an actual effective date
+                outcome.date_effective <= '3000-01-01'
+                AND outcome.outcome_type NOT IN ({excluded_outcome_types_bq_list})
+                {incident_severity_filter}
+        ),
+        {num_events_within_time_interval_spans(
+            events_cte="incarceration_sanction_dates",
+            date_interval=date_interval,
+            date_part=date_part,
+        )}
+        SELECT
+            person_id,
+            state_code,
+            start_date,
+            end_date,
+            event_count = 0 as meets_criteria,
+            TO_JSON(STRUCT(event_dates)) AS reason,
+            event_dates,
+        FROM event_count_spans
+    """
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=criteria_query,
+        meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="event_dates",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date(s) when the sanction occurred",
+            ),
+        ],
+    )
+
+
 def is_past_completion_date_criteria_builder(
     criteria_name: str,
     description: str,
@@ -757,7 +862,7 @@ def is_past_completion_date_criteria_builder(
         compartment_level_1_filter (str, optional): Either 'SUPERVISION' OR
             'INCARCERATION'. Defaults to "SUPERVISION".
         date_part (str, optional): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+            "DAY", "WEEK", "MONTH", "QUARTER", "YEAR". Defaults to "MONTH".
         critical_date_name_in_reason (str, optional): The name of the critical date in
             the reason column. Defaults to "eligible_date".
         critical_date_column (str, optional): The name of the column that contains the

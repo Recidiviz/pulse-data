@@ -14,35 +14,33 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows admissions to work release in AR.
-"""
-from recidiviz.common.constants.states import StateCode
+"""Defines a view that shows all transfers from general incarceration to a facility run by the supervision department."""
+
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
-    StateSpecificTaskCompletionEventBigQueryViewBuilder,
+    StateAgnosticTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows admissions to work release in AR."""
-
-# TODO(#32294): Update with an actual completion event.
+# TODO(#34425): Implement completion event
 _QUERY_TEMPLATE = """
 SELECT
-  state_code,
-  person_id,
-  start_date AS completion_event_date,
-FROM `{project_id}.sessions.compartment_sessions_materialized`
-LIMIT 1
+    state_code,
+    person_id,
+    start_date AS completion_event_date,
+FROM
+    `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+LIMIT 0
 """
 
-VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
-    StateSpecificTaskCompletionEventBigQueryViewBuilder(
-        state_code=StateCode.US_AR,
-        completion_event_type=TaskCompletionEventType.GRANTED_WORK_RELEASE,
-        description=_DESCRIPTION,
-        completion_event_query_template=_QUERY_TEMPLATE,
-    )
+
+VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = StateAgnosticTaskCompletionEventBigQueryViewBuilder(
+    completion_event_type=TaskCompletionEventType.TRANSFER_TO_SUPERVISION_RUN_FACILITY,
+    description=__doc__,
+    completion_event_query_template=_QUERY_TEMPLATE,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
 )
 
 if __name__ == "__main__":

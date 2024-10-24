@@ -13,36 +13,36 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# ============================================================================
-"""Spans of time when someone has never had any felony escapes.
+# =============================================================================
 """
-from google.cloud import bigquery
-
-from recidiviz.task_eligibility.reasons_field import ReasonsField
+Defines a criteria span view that shows spans of time during which
+someone is incarcerated within 45 months of their parole eligibility date.
+"""
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    is_past_completion_date_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NO_FELONY_ESCAPES"
+_CRITERIA_NAME = "INCARCERATION_WITHIN_45_MONTHS_OF_PAROLE_ELIGIBILITY_DATE"
 
-_DESCRIPTION = """Spans of time when someone has never had any felony escapes."""
+_DESCRIPTION = """
+Defines a criteria span view that shows spans of time during which
+someone is incarcerated within 45 months of their parole eligibility date.
+"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+    is_past_completion_date_criteria_builder(
+        compartment_level_1_filter="INCARCERATION",
+        meets_criteria_leading_window_time=45,
+        date_part="MONTH",
+        critical_date_column="parole_eligibility_date",
+        critical_date_name_in_reason="parole_eligibility_date",
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reasons_fields=[
-            ReasonsField(
-                name="felony_escapes",
-                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-                description="List of felony escapes for this person.",
-            )
-        ],
     )
 )
 

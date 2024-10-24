@@ -15,15 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Shows the spans of time during which someone in AR is eligible
-for administrative transfer.
+for administrative transfer to a Community Corrections Center.
 """
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.state_specific.us_ar import (
-    administrative_transfer,
+from recidiviz.task_eligibility.completion_events.general import (
+    transfer_to_supervision_run_facility,
 )
 from recidiviz.task_eligibility.criteria.general import (
     serving_incarceration_sentence_of_less_than_6_years,
@@ -39,14 +39,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the spans of time during which someone in AR is eligible
-for administrative transfer.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AR,
     task_name="ADMINISTRATIVE_TRANSFER",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         in_county_jail_backup.VIEW_BUILDER,
@@ -54,7 +50,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         sentence_statute_eligible_for_admin_transfer.VIEW_BUILDER,
         serving_incarceration_sentence_of_less_than_6_years.VIEW_BUILDER,
     ],
-    completion_event_builder=administrative_transfer.VIEW_BUILDER,
+    completion_event_builder=transfer_to_supervision_run_facility.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

@@ -16,36 +16,21 @@
 # ============================================================================
 """Spans of time when someone hasn't had an incarceration sanction in the past 12 months
 """
-from google.cloud import bigquery
-
-from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.reasons_field import ReasonsField
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.us_ar_query_fragments import (
-    no_incarceration_sanctions_within_n_months,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    incarceration_sanctions_within_time_interval_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_AR_NO_INCARCERATION_SANCTIONS_WITHIN_12_MONTHS"
+_CRITERIA_NAME = "NO_INCARCERATION_SANCTIONS_WITHIN_12_MONTHS"
 
 _DESCRIPTION = """Spans of time when someone hasn't had an incarceration sanction in the past 12 months"""
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+VIEW_BUILDER = incarceration_sanctions_within_time_interval_criteria_builder(
     criteria_name=_CRITERIA_NAME,
     description=_DESCRIPTION,
-    state_code=StateCode.US_AR,
-    criteria_spans_query_template=no_incarceration_sanctions_within_n_months(12),
-    meets_criteria_default=True,
-    reasons_fields=[
-        ReasonsField(
-            name="event_dates",
-            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-            description="List of dates in the past 12 months when the person incurred an incarceration sanction.",
-        ),
-    ],
+    date_interval=12,
+    date_part="MONTH",
 )
 
 if __name__ == "__main__":
