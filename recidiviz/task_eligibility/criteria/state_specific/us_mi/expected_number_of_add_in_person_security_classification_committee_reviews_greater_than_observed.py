@@ -60,9 +60,9 @@ _QUERY_TEMPLATE = f"""
         --calculate recurring scc reviews until the solitary session ends or for 100 years
           DATE_TRUNC(DATE_ADD(h.start_date, INTERVAL offset MONTH), WEEK(MONDAY)) <= {nonnull_end_date_exclusive_clause('end_date_exclusive')}
           --because the case note for tracking add reviews was introduced in 04/2024, we only start counting up
-          --expected reviews at most one year prior to this date. Therefore, everyone in ad seg for > 1 year should 
-          --be due for one (and not more) review
-          AND DATE_ADD(start_date, INTERVAL offset MONTH) >= '2023-04-01' 
+          --expected reviews at most one year prior to the launch date of the tool. Therefore, everyone in ad seg for
+           --> 1 year should be due for one (and not more) review
+          AND DATE_ADD(start_date, INTERVAL offset MONTH) >= '2023-10-01' 
           AND h.housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
           AND h.state_code = 'US_MI'
     ),
