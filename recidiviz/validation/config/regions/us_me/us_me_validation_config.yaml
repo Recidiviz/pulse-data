@@ -75,11 +75,6 @@ num_allowed_rows_overrides:
       P1 Not relevant to any of our products currently as we mostly care about just
       having an accurate population count (which we can see from
       supervision_population_person_level_external_comparison we do), though concerning.
-  - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 50
-    override_reason: >-
-      P2 we currently use raw data for SCCP, so while relevant, it isn't used.
-      TODO(#19371)
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 5
     override_reason: >-
@@ -92,21 +87,10 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 2100
     override_reason: >-
       P2 Not relevant to currently launched products
-  - validation_name: incarceration_release_prior_to_admission
-    hard_num_allowed_rows_override: 5
-    override_reason: >-
-      P2 Not relevant to currently launched products
-  - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 30
-    override_reason: >-
-      P2 Not relevant to currently launched products TODO(#19370)
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 75
     override_reason: >-
       P2 Not relevant to currently launched products
-  - validation_name: normalized_state_charge_missing_descriptions
-    hard_num_allowed_rows_override: 50
-    override_reason: Current failing level as of 4/5/23 is 0 rows
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
     hard_num_allowed_rows_override: 200
     override_reason: Current level as of 3/11/2024 is 108 rows TODO(#26948)
