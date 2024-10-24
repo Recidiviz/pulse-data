@@ -32,10 +32,16 @@ variable "description" {
   type = string
 }
 
+variable default_table_expiration_ms {
+  type = number
+  default = null
+}
+
 resource "google_bigquery_dataset" "dataset" {
   dataset_id            = var.dataset_id
   location              = var.location
   labels                = merge(var.labels, { managed_by_terraform = "true" })
   description           = var.description
   max_time_travel_hours = "168"
+  default_table_expiration_ms = var.default_table_expiration_ms
 }
