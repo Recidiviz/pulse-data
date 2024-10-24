@@ -119,6 +119,14 @@ commitments AS ({COMMITMENT_LEVEL_DATA}),
 -- Has charge detail information like NCIC code
 ars_data_for_charges AS ({ARS_DATA_FOR_CHARGES}),
 
+-- Has a flag denoting whether a sentence is a flat sentence.
+flat_sentence_flags AS (
+    SELECT DISTINCT 
+        OFFENSE_ID,
+        FLAT_SENT_FLAG
+    FROM {{AZ_DOC_SC_EXCEPTION}}
+),
+
 -- Maps any sentence to its parent sentences if it is to be served
 -- consecutively. Note that a consecutive sentence may be in a
 -- separate 'commitment'
@@ -164,7 +172,8 @@ SELECT
     VIOLENCE_FLAG,
     SEX_OFFENSE_FLAG,
     TPR_ELIGIBILITY_NOTE,
-    OFFENSE_ID = FINAL_OFFENSE_ID AS is_controlling
+    OFFENSE_ID = FINAL_OFFENSE_ID AS is_controlling,
+    FLAT_SENT_FLAG
 FROM 
     valid_sentences
 JOIN
@@ -183,6 +192,10 @@ LEFT JOIN
     ars_data_for_charges
 USING
     (ARS_ID)
+LEFT JOIN 
+    flat_sentence_flags
+USING  
+    (OFFENSE_ID)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
