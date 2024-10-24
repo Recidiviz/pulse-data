@@ -58,14 +58,28 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
         eligible_and_almost_eligible_only=True,
     )})
     ,
-    -- Create 1 row for each active sentence parsed from the eligibility spans reasons blob
-    active_sentences AS (
+    -- Create 1 row per person and eligibility criteria
+    unnested_criteria_reasons AS (
         SELECT
             state_code,
             person_id,
-            external_id,
-            reasons,
-            ineligible_criteria,
+            criteria_reason,
+            {extract_object_from_json(
+                json_column="criteria_reason",
+                object_column="criteria_name",
+                object_type="STRING",
+            )} AS criteria_name,
+        FROM
+            eligible_and_almost_eligible_population,
+        UNNEST
+            (JSON_QUERY_ARRAY(reasons)) AS criteria_reason
+    ),
+    -- Create 1 row for each active sentence parsed from the earned sentence criteria reasons reasons blob
+    sentence_level_reasons AS (
+        SELECT
+            state_code,
+            person_id,
+            -- Pull out the sentence identifiers
             {extract_object_from_json(
                 json_column="sentence",
                 object_column="sentence_id",
@@ -86,14 +100,60 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
                 object_column="sentence_eligibility_date",
                 object_type="DATE",
             )} AS sentence_eligibility_date,
-        FROM eligible_and_almost_eligible_population,
-            UNNEST(JSON_QUERY_ARRAY(reasons)) AS criteria_reason,
-            UNNEST(JSON_QUERY_ARRAY(criteria_reason, "$.reason.active_sentences")) AS sentence
-        WHERE {extract_object_from_json(
-                 json_column="criteria_reason",
-                 object_column="criteria_name",
-                 object_type="STRING",
-              )} = "{US_OR_EARNED_DISCHARGE_SENTENCE_CRITERIA}"
+            -- Replace the eligible sentence array with the sentence-level
+            -- eligibility reason
+            TO_JSON(STRUCT(
+                criteria_name AS criteria_name,
+                sentence AS reason
+            )) AS sentence_criteria_reason,
+        FROM
+            unnested_criteria_reasons,
+        UNNEST
+            -- Unnest the full `active_sentence` array
+            (JSON_QUERY_ARRAY(criteria_reason, "$.reason.active_sentences")) AS sentence
+        WHERE
+            criteria_name = "{US_OR_EARNED_DISCHARGE_SENTENCE_CRITERIA}"
+    )
+    ,
+    -- Aggregate the reasons fields that are already at the person-level
+    person_level_reasons AS (
+        SELECT
+            state_code,
+            person_id,
+            ARRAY_AGG(criteria_reason) AS person_criteria_reason,
+        FROM
+            unnested_criteria_reasons
+        WHERE
+            -- Do not include the earned discharge criteria row from the unnested_criteria_reasons CTE
+            criteria_name != "{US_OR_EARNED_DISCHARGE_SENTENCE_CRITERIA}"
+        GROUP BY 1, 2
+    )
+    ,
+    -- Re-aggregate the reasons blob on the sentence-level (instead of person-level)
+    sentences_with_reaggregated_reasons AS (
+        SELECT
+            state_code,
+            person_id,
+            external_id,
+            sentence_id,
+            sentence_is_eligible,
+            sentence_is_almost_eligible,
+            sentence_eligibility_date,
+            ineligible_criteria,
+            TO_JSON(ARRAY_CONCAT(
+                person_criteria_reason,
+                [sentence_criteria_reason]
+            )) AS reasons,
+        FROM
+            eligible_and_almost_eligible_population
+        INNER JOIN
+            person_level_reasons
+        USING
+            (state_code, person_id)
+        INNER JOIN
+            sentence_level_reasons
+        USING
+            (state_code, person_id)
     )
     ,
     -- TODO(#24479): Query sentence conditions from preprocessed view
@@ -153,7 +213,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
                     THEN FALSE
                 ELSE sentence_is_eligible
             END AS is_eligible,
-        FROM active_sentences
+        FROM sentences_with_reaggregated_reasons active_sentences
         INNER JOIN `{{project_id}}.sessions.sentences_preprocessed_materialized` sp
             USING (state_code, person_id, sentence_id)
         LEFT JOIN `{{project_id}}.normalized_state.state_charge` sc
