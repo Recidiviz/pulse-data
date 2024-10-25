@@ -93,7 +93,7 @@ initial_serving_statuses AS (
     ON
         SENTENCE_STATUS_ID = LOOKUP_ID
     WHERE
-        CAST(SENTENCE_BEGIN_DTM AS DATETIME) < CURRENT_DATE
+        CAST(COALESCE(SENTENCE_BEGIN_DTM_ML, SENTENCE_BEGIN_DTM) AS DATETIME) < CURRENT_DATE
 ),
 -- This CTE creates statuses for sentences that have terminated.
 -- We preserve the completion reason if it was provided, but most
@@ -131,9 +131,11 @@ completion_statuses AS (
     ON
         SENTENCE_STATUS_ID = LOOKUP_ID
     WHERE
-        SENTENCE_END_DTM IS NOT NULL
+        COALESCE(SENTENCE_END_DTM_ML, SENTENCE_END_DTM) IS NOT NULL
     AND
-        CAST(SENTENCE_END_DTM AS DATETIME) < CURRENT_DATE
+        CAST(COALESCE(SENTENCE_END_DTM_ML, SENTENCE_END_DTM) AS DATETIME) < CURRENT_DATE
+    AND 
+        CAST(COALESCE(SENTENCE_BEGIN_DTM_ML, SENTENCE_BEGIN_DTM) AS DATETIME) < CURRENT_DATE
 )
 SELECT * FROM initial_serving_statuses
 UNION ALL

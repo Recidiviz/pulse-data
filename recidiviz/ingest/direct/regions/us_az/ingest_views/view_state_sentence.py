@@ -125,6 +125,8 @@ flat_sentence_flags AS (
         OFFENSE_ID,
         FLAT_SENT_FLAG
     FROM {{AZ_DOC_SC_EXCEPTION}}
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY OFFENSE_ID 
+    ORDER BY CAST(COALESCE(NULLIF(UPDT_DTM,'NULL'), NULLIF(CREATE_DTM,'NULL')) AS DATETIME) DESC) = 1
 ),
 
 -- Maps any sentence to its parent sentences if it is to be served
