@@ -64,9 +64,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queu
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_home_plan_preprocessed import (
     US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_projected_dates import (
-    US_AZ_PROJECTED_DATES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_groups import (
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER,
 )
@@ -275,9 +272,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     US_AZ_ACTION_QUEUE_VIEW_BUILDER.address: (
         "Used in ongoing AZ reentry planning analysis. (EG)"
-    ),
-    US_AZ_PROJECTED_DATES_VIEW_BUILDER.address: (
-        "Will be used in the AZ Reentry Planning Workflows" "(shalindb, 10/03/2024)"
     ),
     BigQueryAddress(
         dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
