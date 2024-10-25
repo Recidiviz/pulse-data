@@ -49,7 +49,7 @@ class KubernetesPodOperatorTaskOutputFilePathBuilder:
 
     @property
     def bucket_name(self) -> str:
-        return f"{self.project_id}-airflow-kubernetes-pod-operator-output"
+        return f"{self.project_id}-airflow-kubernetes-pod-operator-outputs"
 
     @property
     def bucket(self) -> GcsfsBucketPath:
