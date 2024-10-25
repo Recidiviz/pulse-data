@@ -48,7 +48,7 @@ _QUERY_TEMPLATE = f"""
     )
     , 
     escape_violations AS (
-        SELECT 
+        SELECT DISTINCT
             incident.state_code,
             incident.person_id,
             FIRST_VALUE(incident.incident_date) OVER (PARTITION BY incident.state_code, incident.person_id ORDER BY incident.incident_date ASC) AS first_escape_violation_date,
