@@ -44,7 +44,7 @@ _QUERY_TEMPLATE = """
         -- TODO(#34317): Use spans based on update_datetime in `INMATEPROFILE`, or find
         -- another way to identify historical classification changes.
         FROM `{project_id}.us_ar_raw_data_up_to_date_views.INMATEPROFILE_latest` ip
-        LEFT JOIN `{project_id}.normalized_state.state_person_external_id` pei
+        INNER JOIN `{project_id}.normalized_state.state_person_external_id` pei
         ON
             pei.state_code = 'US_AR'
             AND pei.id_type = 'US_AR_OFFENDERID'
