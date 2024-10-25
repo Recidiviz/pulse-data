@@ -23,6 +23,10 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH 
+-- First take the role and location periods for each staff; in the next step, we'll filter
+-- these periods to only keep periods for staff with known staff IDs or staff-type roles.
+role_loc_pds AS (
 SELECT DISTINCT
   PARTYID,
   PARTYRELSTART,
@@ -30,6 +34,7 @@ SELECT DISTINCT
   WORKASSIGNMENT,
   PRIMARYSITEIND,
   RELATEDPARTYID,
+  PARTYRELTYPE,
   RANK() OVER (
     PARTITION BY 
       PARTYID,
@@ -54,7 +59,8 @@ FROM (
     rp.PRIMARYSITEIND,
     pp.PARTYTYPE,
     pp2.PARTYTYPE AS RELATEDPARTYTYPE,
-    rp.RELATEDPARTYID
+    rp.RELATEDPARTYID,
+    rp.PARTYRELTYPE
   FROM {RELATEDPARTY} rp 
   LEFT JOIN {PARTYPROFILE} pp USING(PARTYID)
   LEFT JOIN {PARTYPROFILE} pp2 ON rp.RELATEDPARTYID = pp2.PARTYID
@@ -68,6 +74,37 @@ WHERE PARTYRELSTART != '1000-01-01 00:00:00'
     SELECT DISTINCT PARTYID
     FROM {PERSONPROFILE}
   )
+)
+SELECT * EXCEPT(PARTYRELTYPE)
+FROM role_loc_pds
+QUALIFY LOGICAL_OR(
+  PARTYRELTYPE IN (
+      '1AA', -- ADC Employee
+      '1AB', -- ADC Employee/Extra Help
+      '1AC', -- ACSD CTE
+      '1AE', -- DOC Employee
+      '1AI', -- IFI
+      '1AP', -- PIE
+      '1BB', -- Board of Corrections
+      '1CA', -- Private Prison Staff	
+      '2AA', -- ACC Employee
+      '2BB', -- Parole Board
+      '3BO', -- City Jail Employee
+      '3BP', -- Police Department Employee
+      '3BS', -- Sheriff Department Employee
+      '3BT' -- County Jail Employee
+    ) OR
+    PARTYID IN (
+      SELECT DISTINCT PPOFFICERID
+      FROM {SUPERVISIONEVENT}
+      UNION DISTINCT
+      SELECT WORKASSIGNMENTAUTHBY
+      FROM {JOBPROGRAMASGMT}
+      UNION DISTINCT
+      SELECT STAFFIDPERFASSESS
+      FROM {RISKNEEDCLASS}
+    )
+  ) OVER (PARTITION BY PARTYID)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
