@@ -14,18 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View of all US_IX case notes"""
+"""View logic to prepare US_IX case notes for search"""
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import CASE_NOTES_PROTOTYPE_DATASET
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
-
-US_IX_CASE_NOTES_VIEW_NAME = "us_ix_case_notes"
-
-US_IX_CASE_NOTES_VIEW_DESCRIPTION = """All US_IX case notes"""
-
-US_IX_CASE_NOTES_QUERY_TEMPLATE = """
+US_IX_CASE_NOTES_TEMPLATE = """
     SELECT
         'US_IX' as state_code,
         OffenderId as external_id,
@@ -48,14 +39,3 @@ US_IX_CASE_NOTES_QUERY_TEMPLATE = """
      USING(NoteTypeId)
     GROUP BY 1, 2, 3
 """
-
-US_IX_CASE_NOTES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=CASE_NOTES_PROTOTYPE_DATASET,
-    view_id=US_IX_CASE_NOTES_VIEW_NAME,
-    view_query_template=US_IX_CASE_NOTES_QUERY_TEMPLATE,
-    description=US_IX_CASE_NOTES_VIEW_DESCRIPTION,
-)
-
-if __name__ == "__main__":
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        US_IX_CASE_NOTES_VIEW_BUILDER.build_and_print()

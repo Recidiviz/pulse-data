@@ -29,7 +29,7 @@ import pandas as pd
 from google.cloud import bigquery
 
 CASE_NOTES_BQ_TABLE_NAME = (
-    "recidiviz-staging.case_notes_prototype_views.case_notes_materialized"
+    "recidiviz-staging.case_notes_prototype_views.case_notes_data_store_materialized"
 )
 
 ID_COLUMN_NAME = "id"
