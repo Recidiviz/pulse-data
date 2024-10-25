@@ -31,7 +31,7 @@ SELECT DISTINCT
   PERSONSUFFIX,
   PARTYEMAILADDR
 FROM {PERSONPROFILE}
-INNER JOIN {RELATEDPARTY}
+LEFT JOIN {RELATEDPARTY}
 USING(PARTYID)
 LEFT JOIN {PARTYPROFILE}
 USING(PARTYID)
@@ -46,21 +46,36 @@ WHERE
   This set of allowed relationships may need to be expanded over time if we end up wanting
   data for people in other roles (such as court figures or external programming providers).
   */
-  PARTYRELTYPE IN (
-    '1AA', -- ADC Employee
-    '1AB', -- ADC Employee/Extra Help
-    '1AC', -- ACSD CTE
-    '1AE', -- DOC Employee
-    '1AI', -- IFI
-    '1AP', -- PIE
-    '1BB', -- Board of Corrections
-    '1CA', -- Private Prison Staff	
-    '2AA', -- ACC Employee
-    '2BB', -- Parole Board
-    '3BO', -- City Jail Employee
-    '3BP', -- Police Department Employee
-    '3BS', -- Sheriff Department Employee
-    '3BT' -- County Jail Employee
+  (
+    PARTYRELTYPE IN (
+      '1AA', -- ADC Employee
+      '1AB', -- ADC Employee/Extra Help
+      '1AC', -- ACSD CTE
+      '1AE', -- DOC Employee
+      '1AI', -- IFI
+      '1AP', -- PIE
+      '1BB', -- Board of Corrections
+      '1CA', -- Private Prison Staff	
+      '2AA', -- ACC Employee
+      '2BB', -- Parole Board
+      '3BO', -- City Jail Employee
+      '3BP', -- Police Department Employee
+      '3BS', -- Sheriff Department Employee
+      '3BT' -- County Jail Employee
+    )
+  ) OR 
+  -- Some staff IDs are specified in other tables, and even if people with these IDs don't
+  -- have valid staff-type roles in RELATEDPARTY, we want to make sure they still get ingested
+  -- as staff.
+  PARTYID IN (
+    SELECT DISTINCT PPOFFICERID
+    FROM {SUPERVISIONEVENT}
+    UNION DISTINCT
+    SELECT WORKASSIGNMENTAUTHBY
+    FROM {JOBPROGRAMASGMT}
+    UNION DISTINCT
+    SELECT STAFFIDPERFASSESS
+    FROM {RISKNEEDCLASS}
   )
 """
 
