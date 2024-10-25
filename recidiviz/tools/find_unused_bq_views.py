@@ -94,6 +94,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officers_archiv
 from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics import (
     SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
+    CASE_NOTES_DATA_STORE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_inferred_group_projected_dates import (
     SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VIEW_BUILDER,
 )
@@ -375,6 +378,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ): (
         "This view will eventually be referenced by impact metrics related to "
         "insights usage (see #34100) (Mayuka Sarukkai 10/11/2024)"
+    ),
+    CASE_NOTES_DATA_STORE_VIEW_BUILDER.address: (
+        "This view backs the datastore for Vertex AI search (Roshan Agrawal 10/24/2024)"
     ),
 }
 

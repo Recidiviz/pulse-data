@@ -14,18 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Reference views used by other views."""
-from typing import List
+"""View logic to prepare US_IX case notes for search"""
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes import (
-    CASE_NOTES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
-    CASE_NOTES_DATA_STORE_VIEW_BUILDER,
-)
-
-CASE_NOTE_SEARCH_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
-    CASE_NOTES_VIEW_BUILDER,
-    CASE_NOTES_DATA_STORE_VIEW_BUILDER,
-]
+US_ME_CASE_NOTES_TEMPLATE = """
+    SELECT
+        'US_ME' as state_code,
+        Cis_100_Client_Id as external_id,
+        Note_Id as note_id,
+        Note_Tx as note_body,
+        Short_Note_Tx as note_title,
+        Note_Date as note_date,
+        E_Note_Type_Desc as note_type,
+        E_Mode_Desc as note_mode
+    FROM `{project_id}.us_me_raw_data_up_to_date_views.CIS_204_GEN_NOTE_latest` n
+    INNER JOIN `{project_id}.us_me_raw_data_up_to_date_views.CIS_2041_NOTE_TYPE_latest` ncd
+        ON ncd.Note_Type_Cd = n.Cis_2041_Note_Type_Cd
+    INNER JOIN `{project_id}.us_me_raw_data_up_to_date_views.CIS_2040_CONTACT_MODE_latest` cncd
+        ON n.Cis_2040_Contact_Mode_Cd = cncd.Contact_Mode_Cd
+"""

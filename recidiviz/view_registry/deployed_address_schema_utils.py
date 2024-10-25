@@ -69,6 +69,9 @@ from recidiviz.calculator.query.state.views.population_projection.spark.life_yea
 from recidiviz.calculator.query.state.views.population_projection.spark.population_estimate_most_recent import (
     SPARK_POPULATION_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
+    CASE_NOTES_DATA_STORE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.cleaned_offense_description_to_labels import (
     CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_BUILDER,
 )
@@ -231,6 +234,8 @@ def state_agnostic_deployed_views_without_state_code_column(
         SPARK_COST_AVOIDANCE_NON_CUMULATIVE_VIEW_BUILDER.address,
         SPARK_POPULATION_VIEW_BUILDER.address,
         SPARK_LIFE_YEARS_VIEW_BUILDER.address,
+        # This view backs the Vertex AI for case note search and is not allowed to have a state_code column (only allowed to have id and jsonData columns)
+        CASE_NOTES_DATA_STORE_VIEW_BUILDER.address,
     }
 
     return {

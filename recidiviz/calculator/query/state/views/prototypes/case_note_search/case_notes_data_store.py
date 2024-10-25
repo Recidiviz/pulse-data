@@ -14,41 +14,39 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View of all US_ME case notes"""
+"""View of all US_ME case notes to be imported to cloud storage."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import CASE_NOTES_PROTOTYPE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ME_CASE_NOTES_VIEW_NAME = "us_me_case_notes"
+CASE_NOTES_DATA_STORE_VIEW_NAME = "case_notes_data_store"
 
-US_ME_CASE_NOTES_VIEW_DESCRIPTION = """All US_ME case notes"""
+CASE_NOTES_DATA_STORE_VIEW_DESCRIPTION = """All case notes formatted as JSON. This allows for structured import to cloud storage per
+    https://cloud.google.com/generative-ai-app-builder/docs/prepare-data#bigquery-structured.
+    The jsonData field is a JSON string with the following fields:
+        state_code, external_id, note_id, note_body, note_title, note_date, note_type, note_mode
+    """
 
-US_ME_CASE_NOTES_QUERY_TEMPLATE = """
+CASE_NOTES_DATA_STORE_QUERY_TEMPLATE = """
     SELECT
-        'US_ME' as state_code,
-        Cis_100_Client_Id as external_id,
-        Note_Id as note_id,
-        Note_Tx as note_body,
-        Short_Note_Tx as note_title,
-        Note_Date as note_date,
-        E_Note_Type_Desc as note_type,
-        E_Mode_Desc as note_mode
-    FROM `{project_id}.us_me_raw_data_up_to_date_views.CIS_204_GEN_NOTE_latest` n
-    INNER JOIN `{project_id}.us_me_raw_data_up_to_date_views.CIS_2041_NOTE_TYPE_latest` ncd
-        ON ncd.Note_Type_Cd = n.Cis_2041_Note_Type_Cd
-    INNER JOIN `{project_id}.us_me_raw_data_up_to_date_views.CIS_2040_CONTACT_MODE_latest` cncd
-        ON n.Cis_2040_Contact_Mode_Cd = cncd.Contact_Mode_Cd
+        id,
+        TO_JSON_STRING(STRUCT(state_code, external_id, note_id, note_body, note_title, note_date, note_type, note_mode))
+            as jsonData,
+        FROM `{project_id}.{case_notes_prototype_dataset}.case_notes_materialized`
 """
 
-US_ME_CASE_NOTES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+CASE_NOTES_DATA_STORE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=CASE_NOTES_PROTOTYPE_DATASET,
-    view_id=US_ME_CASE_NOTES_VIEW_NAME,
-    view_query_template=US_ME_CASE_NOTES_QUERY_TEMPLATE,
-    description=US_ME_CASE_NOTES_VIEW_DESCRIPTION,
+    view_id=CASE_NOTES_DATA_STORE_VIEW_NAME,
+    view_query_template=CASE_NOTES_DATA_STORE_QUERY_TEMPLATE,
+    description=CASE_NOTES_DATA_STORE_VIEW_DESCRIPTION,
+    case_notes_prototype_dataset=CASE_NOTES_PROTOTYPE_DATASET,
+    should_materialize=True,
+    clustering_fields=["id"],
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_ME_CASE_NOTES_VIEW_BUILDER.build_and_print()
+        CASE_NOTES_DATA_STORE_VIEW_BUILDER.build_and_print()
