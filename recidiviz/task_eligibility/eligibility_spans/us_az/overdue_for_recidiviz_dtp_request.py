@@ -64,7 +64,7 @@ Program (DTP) release according to our (Recidiviz) calculations.
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
     task_name="OVERDUE_FOR_RECIDIVIZ_DTP_REQUEST",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         time_90_days_before_release.VIEW_BUILDER,

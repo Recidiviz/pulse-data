@@ -38,15 +38,15 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
           SELECT
             state_code,
             person_id,
-            CAST(FORMAT_DATETIME('%Y-%m-%d', length_update_datetime) AS DATE) AS start_date,
-            CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(length_update_datetime) OVER (PARTITION BY state_code, person_id ORDER BY length_update_datetime)) AS DATE) AS end_date,
+            CAST(FORMAT_DATETIME('%Y-%m-%d', group_update_datetime) AS DATE) AS start_date,
+            CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(group_update_datetime) OVER (PARTITION BY state_code, person_id, sentence_group_id ORDER BY group_update_datetime)) AS DATE) AS end_date,
             parole_eligibility_date_external AS csbd_date,
-            projected_completion_date_min_external AS ercd_date,
+            projected_full_term_release_date_min_external AS ercd_date,
             CAST(NULL AS DATE) AS acis_tpr_date,
             CAST(NULL AS DATE) AS acis_dtp_date,
-            length_update_datetime AS update_datetime,
+            group_update_datetime AS update_datetime,
           FROM
-            `{{project_id}}.{{normalized_state_dataset}}.state_sentence_length`
+            `{{project_id}}.{{normalized_state_dataset}}.state_sentence_group_length`
           WHERE
             state_code = 'US_AZ'
           ),
@@ -55,7 +55,7 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             CAST(FORMAT_DATETIME('%Y-%m-%d', update_datetime) AS DATE) AS start_date,
-            CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(update_datetime) OVER (PARTITION BY state_code, person_id ORDER BY update_datetime)) AS DATE) AS end_date,
+            CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(update_datetime) OVER (PARTITION BY state_code, person_id, JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') ORDER BY update_datetime)) AS DATE) AS end_date,
             CAST(NULL AS DATE) AS csbd_date,
             CAST(NULL AS DATE) AS ercd_date,
             eligible_date AS acis_tpr_date,
@@ -72,7 +72,7 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             CAST(FORMAT_DATETIME('%Y-%m-%d', update_datetime) AS DATE) AS start_date,
-            CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(update_datetime) OVER (PARTITION BY state_code, person_id ORDER BY update_datetime)) AS DATE) AS end_date,
+            CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(update_datetime) OVER (PARTITION BY state_code, person_id, JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') ORDER BY update_datetime)) AS DATE) AS end_date,
             CAST(NULL AS DATE) AS csbd_date,
             CAST(NULL AS DATE) AS ercd_date,
             CAST(NULL AS DATE) AS acis_tpr_date,
@@ -158,7 +158,7 @@ US_AZ_PROJECTED_DATES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_AZ_PROJECTED_DATES_VIEW_DESCRIPTION,
     view_query_template=US_AZ_PROJECTED_DATES_QUERY_TEMPLATE,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    should_materialize=False,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

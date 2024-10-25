@@ -18,13 +18,12 @@
 Program Release (TPR) release according to our (Recidiviz) calculations. 
 """
 
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
-    early_release_not_overdue,
-)
+from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum_or_medium,
     no_nonviolent_incarceration_violation_within_6_months,
@@ -43,6 +42,13 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_unsatisfactory_program_ratings_within_3_months,
     no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction,
     time_90_days_before_release,
+    within_6_months_of_recidiviz_tpr_date,
+)
+from recidiviz.task_eligibility.criteria_condition import (
+    EligibleCriteriaCondition,
+    NotEligibleCriteriaCondition,
+    PickNCompositeCriteriaCondition,
+    TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -75,8 +81,74 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         meets_functional_literacy.VIEW_BUILDER,
         no_tpr_denial_in_current_incarceration.VIEW_BUILDER,
         no_tpr_removals_from_self_improvement_programs.VIEW_BUILDER,
+        within_6_months_of_recidiviz_tpr_date.VIEW_BUILDER,
     ],
-    completion_event_builder=early_release_not_overdue.VIEW_BUILDER,
+    # TODO(#33655): Update this to the correct task completion event
+    completion_event_builder=early_discharge.VIEW_BUILDER,
+    almost_eligible_condition=PickNCompositeCriteriaCondition(
+        sub_conditions_list=[
+            # Only missing mandatory literacy
+            PickNCompositeCriteriaCondition(
+                sub_conditions_list=[
+                    NotEligibleCriteriaCondition(
+                        criteria=meets_functional_literacy.VIEW_BUILDER,
+                        description="Missing Mandatory Literacy criteria",
+                    ),
+                    EligibleCriteriaCondition(
+                        criteria=within_6_months_of_recidiviz_tpr_date.VIEW_BUILDER,
+                        description="Within 6 months of projected TPR eligibility date",
+                    ),
+                    EligibleCriteriaCondition(
+                        criteria=no_active_felony_detainers.VIEW_BUILDER,
+                        description="No active felony detainers",
+                    ),
+                ],
+                at_least_n_conditions_true=3,
+            ),
+            # Projected TPR Date Between 6 - 12 Months AND (missing mandatory literacy XOR felony detainers)
+            PickNCompositeCriteriaCondition(
+                sub_conditions_list=[
+                    TimeDependentCriteriaCondition(
+                        criteria=within_6_months_of_recidiviz_tpr_date.VIEW_BUILDER,
+                        reasons_date_field="recidiviz_tpr_date",
+                        interval_length=12,
+                        interval_date_part=BigQueryDateInterval.MONTH,
+                        description="Within 6-12 months from Recidiviz projected TPR date",
+                    ),
+                    # Felony Detainer XOR Mandatory Literacy (only 1 met)
+                    PickNCompositeCriteriaCondition(
+                        sub_conditions_list=[
+                            NotEligibleCriteriaCondition(
+                                criteria=no_active_felony_detainers.VIEW_BUILDER,
+                                description="Missing Felony Detainer criteria",
+                            ),
+                            NotEligibleCriteriaCondition(
+                                criteria=meets_functional_literacy.VIEW_BUILDER,
+                                description="Missing Mandatory Literacy criteria",
+                            ),
+                        ],
+                        at_most_n_conditions_true=1,
+                    ),
+                    # Felony Detainer AND Mandatory Literacy are both met
+                    PickNCompositeCriteriaCondition(
+                        sub_conditions_list=[
+                            EligibleCriteriaCondition(
+                                criteria=no_active_felony_detainers.VIEW_BUILDER,
+                                description="Missing Felony Detainer criteria",
+                            ),
+                            EligibleCriteriaCondition(
+                                criteria=meets_functional_literacy.VIEW_BUILDER,
+                                description="Missing Mandatory Literacy criteria",
+                            ),
+                        ],
+                        at_least_n_conditions_true=2,
+                    ),
+                ],
+                at_least_n_conditions_true=2,
+            ),
+        ],
+        at_least_n_conditions_true=1,
+    ),
 )
 
 if __name__ == "__main__":

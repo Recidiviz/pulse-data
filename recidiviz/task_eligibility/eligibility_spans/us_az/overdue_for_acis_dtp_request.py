@@ -35,14 +35,10 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the eligibility spans for residents in AZ who are overdue for a
-Drug Transition Program (DTP) release.
-"""
-
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
     task_name="OVERDUE_FOR_ACIS_DTP_REQUEST",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         incarceration_past_acis_dtp_date.VIEW_BUILDER,
