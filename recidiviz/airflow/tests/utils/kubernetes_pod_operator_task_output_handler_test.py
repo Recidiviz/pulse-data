@@ -31,7 +31,7 @@ class TestTaskOutputFilePathHandler(unittest.TestCase):
     """Tests for TaskOutputFilePathHandler"""
 
     def test_output_file_path_no_task_map_index(self) -> None:
-        expected_path = "test-project-airflow-kubernetes-pod-operator-output/test-dag/test-branch/test-task/test-run/output.json"
+        expected_path = "test-project-airflow-kubernetes-pod-operator-outputs/test-dag/test-branch/test-task/test-run/output.json"
 
         handler = KubernetesPodOperatorTaskOutputFilePathBuilder(
             project_id="test-project",
@@ -43,7 +43,7 @@ class TestTaskOutputFilePathHandler(unittest.TestCase):
         self.assertEqual(expected_path, actual_path.abs_path())
 
     def test_output_file_path_with_task_map_index(self) -> None:
-        expected_path = "test-project-airflow-kubernetes-pod-operator-output/test-dag/test-branch/test-task/test-run/output_0.json"
+        expected_path = "test-project-airflow-kubernetes-pod-operator-outputs/test-dag/test-branch/test-task/test-run/output_0.json"
 
         handler = KubernetesPodOperatorTaskOutputFilePathBuilder(
             project_id="test-project",
