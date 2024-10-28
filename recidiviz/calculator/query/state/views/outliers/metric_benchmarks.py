@@ -88,6 +88,8 @@ statewide_iqrs AS (
         m.metric_id,
         m.period,
         m.end_date,
+        caseload_category,
+        -- TODO(#31634): Remove caseload_type
         caseload_category AS caseload_type,
         category_type,
         m.metric_value AS target,
@@ -131,6 +133,7 @@ METRIC_BENCHMARKS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "metric_id",
         "period",
         "end_date",
+        "caseload_category",
         "caseload_type",
         "category_type",
         "target",

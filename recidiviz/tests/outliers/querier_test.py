@@ -411,6 +411,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
                 "threshold": "0.21",
                 "status": "FAR",
                 "category_type": "SEX_OFFENSE_BINARY",
+                "caseload_category": "SEX_OFFENSE",
                 "caseload_type": "SEX_OFFENSE",
             }
             new_outlier_status_dict_conflicting_category = new_outlier_status_dict | {
