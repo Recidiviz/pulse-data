@@ -660,7 +660,7 @@ cases_disposed = MetricDefinition(
             dimension=DispositionType,
             required=False,
             dimension_to_description={
-                DispositionType.DISMISSAL: "he number of criminal cases dismissed after filing and closed by the office.",
+                DispositionType.DISMISSAL: "The number of criminal cases dismissed after filing and closed by the office.",
                 DispositionType.PLEA: "The number of criminal cases resulting in conviction by guilty plea and closed by the office.",
                 DispositionType.TRIAL: "The number of criminal cases resolved at trial and closed by the office.",
                 DispositionType.OTHER: "The number of criminal cases disposed by the office that were not dismissed, resolved by plea, or resolved at trial but disposed by another means.",
