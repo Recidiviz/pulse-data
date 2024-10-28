@@ -85,7 +85,7 @@ class TestDirectIngestTempRawTablePreMigrationTransformation(BigQueryEmulatorTes
     ) -> None:
         self.create_mock_table(
             address=address,
-            schema=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
+            schema=RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
                 raw_file_config=raw_file_config, include_recidiviz_managed_fields=False
             ),
         )

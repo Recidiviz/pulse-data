@@ -34,7 +34,9 @@ python -m recidiviz.tools.ingest.operations.import_raw_files_to_sandbox \
 """
 
 import argparse
+import datetime
 import logging
+import os
 import re
 from typing import List, Optional, Tuple
 
@@ -42,6 +44,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -51,9 +54,21 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import impo
     SandboxRawFileImportResult,
     legacy_import_raw_files_to_bq_sandbox,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
+    RawDataTableBigQuerySchemaBuilder,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.ingest.direct.types.direct_ingest_constants import FILE_ID_COL_NAME
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.source_tables.source_table_config import (
+    RawDataSourceTableLabel,
+    SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
+    StateSpecificSourceTableLabel,
+)
+from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -97,6 +112,56 @@ def get_unprocessed_raw_files_in_bucket(
     return unprocessed_raw_files, skipped_files
 
 
+def source_table_collection_for_paths(
+    state_code: StateCode,
+    files_to_import: List[GcsfsFilePath],
+    allow_incomplete_configs: bool,
+    sandbox_dataset_prefix: str,
+    region_config: DirectIngestRegionRawFileConfig,
+) -> List[SourceTableCollection]:
+    """Builds a SourceTableCollection object that contains sandbox raw data tables we
+    can create ahead of time.
+    """
+    sandbox_raw_data_collection = SourceTableCollection(
+        dataset_id=raw_tables_dataset_for_region(
+            state_code=state_code,
+            instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=sandbox_dataset_prefix,
+        ),
+        # update config is regenerable if you want to be able to update the schema in
+        # the same sandbox prefix between
+        update_config=SourceTableCollectionUpdateConfig.regenerable(),
+        labels=[
+            RawDataSourceTableLabel(
+                state_code=state_code, ingest_instance=DirectIngestInstance.PRIMARY
+            ),
+            StateSpecificSourceTableLabel(state_code=state_code),
+        ],
+        description=f"Sandbox raw data tables from {StateCode.get_state(state_code)} with dataset prefix: {sandbox_dataset_prefix}",
+    )
+
+    # If we are allowing incomplete configs, we cannot build the raw data table ahead
+    # of time as we do not know before reading the actual file what the schema will be.
+    # If allow_incomplete_configs is True, BQ will create the table automatically
+    # during the load job using the provided schema.
+    if not allow_incomplete_configs:
+        file_tags = {
+            filename_parts_from_path(file).file_tag for file in files_to_import
+        }
+
+        for file_tag in file_tags:
+            sandbox_raw_data_collection.add_source_table(
+                file_tag,
+                description=f"Sandbox raw data file for {file_tag}",
+                schema_fields=RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
+                    raw_file_config=region_config.raw_file_configs[file_tag],
+                ),
+                clustering_fields=[FILE_ID_COL_NAME],
+            )
+
+    return [sandbox_raw_data_collection]
+
+
 def do_sandbox_raw_file_import(
     state_code: StateCode,
     sandbox_dataset_prefix: str,
@@ -119,6 +184,7 @@ def do_sandbox_raw_file_import(
                 file_tag_filters.append(raw_file_tag)
 
     fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
+    bq_client = BigQueryClientImpl()
 
     files_to_import, skipped_files = get_unprocessed_raw_files_in_bucket(
         fs,
@@ -145,22 +211,39 @@ def do_sandbox_raw_file_import(
         f"Proceed with sandbox import of [{len(files_to_import)}] files?"
     )
 
+    source_table_collections_for_sandbox = source_table_collection_for_paths(
+        state_code=state_code,
+        files_to_import=files_to_import,
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
+        allow_incomplete_configs=allow_incomplete_configs,
+        region_config=region_raw_file_config,
+    )
+
+    update_manager = SourceTableUpdateManager()
+    update_manager.update_async(
+        source_table_collections=source_table_collections_for_sandbox,
+        log_file=os.path.join(
+            os.path.dirname(__file__),
+            f"logs/{sandbox_dataset_prefix}_import_raw_files_to_sandbox_{datetime.datetime.now().isoformat()}.log",
+        ),
+        log_output=True,
+    )
+
+    # TODO(#34523): add gated update to use new import code here
     sandbox_import_result = legacy_import_raw_files_to_bq_sandbox(
         state_code=state_code,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
         files_to_import=files_to_import,
         allow_incomplete_configs=allow_incomplete_configs,
-        big_query_client=BigQueryClientImpl(),
+        big_query_client=bq_client,
         fs=fs,
     )
 
-    # TODO(#34523): add gated update to use new import code
-
-    logging.info("****************** RESULTS ***********************")
+    logging.info("************************** RESULTS **************************")
     for status in list(SandboxImportStatus):
         for file_result in sandbox_import_result.status_to_imports.get(status, []):
             logging.info("\t-%s", file_result.format_for_print())
-    logging.info("***********************************************************")
+    logging.info("*************************************************************")
 
 
 def parse_arguments() -> argparse.Namespace:

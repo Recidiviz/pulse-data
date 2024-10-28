@@ -177,7 +177,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         )
         self.create_mock_table(
             mock_raw_table,
-            schema=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
+            schema=RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
                 raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag]
             ),
         )

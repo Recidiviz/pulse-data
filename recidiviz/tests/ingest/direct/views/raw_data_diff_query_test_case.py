@@ -145,16 +145,18 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
 
         address = BigQueryAddress(
             dataset_id=dataset_id,
-            table_id=file_tag
-            if fixture_type == RawDataDiffFixtureType.EXISTING
-            else file_tag + f"__{new_file_id}",
+            table_id=(
+                file_tag
+                if fixture_type == RawDataDiffFixtureType.EXISTING
+                else file_tag + f"__{new_file_id}"
+            ),
         )
         region_config = get_region_raw_file_config(
             region_code=self.state_code.value, region_module=fake_regions
         )
         self.create_mock_table(
             address=address,
-            schema=RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
+            schema=RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
                 raw_file_config=region_config.raw_file_configs[file_tag],
                 include_recidiviz_managed_fields=include_recidiviz_managed_fields,
             ),

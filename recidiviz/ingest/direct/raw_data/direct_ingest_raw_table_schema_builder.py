@@ -146,7 +146,7 @@ class RawDataTableBigQuerySchemaBuilder:
         return schema_columns
 
     @classmethod
-    def build_bq_schmea_for_config(
+    def build_bq_schema_for_config(
         cls,
         *,
         raw_file_config: DirectIngestRawFileConfig,
