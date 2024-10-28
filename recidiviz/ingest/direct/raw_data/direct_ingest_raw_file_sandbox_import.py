@@ -25,7 +25,6 @@ import attr
 import google_crc32c
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -39,9 +38,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.legacy_direct_ingest_raw_file_import_manager import (
     LegacyDirectIngestRawFileImportManager,
-)
-from recidiviz.ingest.direct.raw_data_table_schema_utils import (
-    update_raw_data_table_schema,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
@@ -118,18 +114,11 @@ def legacy_import_raw_files_to_bq_sandbox(
             instance=DirectIngestInstance.PRIMARY,
         )
 
-        # Create the dataset up front with table expiration
-        big_query_client.create_dataset_if_necessary(
-            dataset_id=import_manager.raw_tables_dataset,
-            default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-        )
-
     except ValueError as error:
         raise ValueError(
             "Something went wrong trying to get unprocessed raw files to import"
         ) from error
 
-    seen_tags = set()
     status_to_imports = defaultdict(list)
 
     for file_path in files_to_import:
@@ -140,20 +129,6 @@ def legacy_import_raw_files_to_bq_sandbox(
             parts.file_tag,
             parts.utc_upload_datetime_str,
         )
-
-        # Update the schema if this is the first file with this tag.
-        # if we are allowing incomplete configs, we cannot update the raw data table
-        # schema as we do not know before reading the raw data file what the rows
-        # will be
-        if parts.file_tag not in seen_tags and not allow_incomplete_configs:
-            update_raw_data_table_schema(
-                state_code=state_code,
-                instance=DirectIngestInstance.PRIMARY,
-                raw_file_tag=parts.file_tag,
-                big_query_client=big_query_client,
-                sandbox_dataset_prefix=sandbox_dataset_prefix,
-            )
-            seen_tags.add(parts.file_tag)
 
         try:
             import_manager.import_raw_file_to_big_query(

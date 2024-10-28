@@ -77,7 +77,7 @@ class RawDataFixture:
 
     @property
     def schema(self) -> List[SchemaField]:
-        return RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
+        return RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
             raw_file_config=self.config.raw_file_config
         )
 

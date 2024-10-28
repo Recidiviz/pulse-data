@@ -61,7 +61,7 @@ class TestRawDataTableBigQuerySchemaBuilder(TestCase):
             col.name: col.description or "" for col in config.columns
         }
         actual_fields_no_managed = (
-            RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
+            RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
                 raw_file_config=config, include_recidiviz_managed_fields=False
             )
         )
@@ -73,7 +73,7 @@ class TestRawDataTableBigQuerySchemaBuilder(TestCase):
             assert field.field_type == bigquery.enums.SqlTypeNames.STRING.value
 
         actual_fields_with_managed = (
-            RawDataTableBigQuerySchemaBuilder.build_bq_schmea_for_config(
+            RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
                 raw_file_config=config
             )
         )

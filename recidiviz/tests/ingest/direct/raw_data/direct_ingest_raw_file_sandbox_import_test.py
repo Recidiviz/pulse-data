@@ -26,7 +26,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import import (
     legacy_import_raw_files_to_bq_sandbox,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fakes.fake_ingest_raw_file_import_controller import (
     FakeDirectIngestRegionRawFileConfig,
@@ -58,18 +57,12 @@ class ImportRawFilesToBQSandboxTest(TestCase):
         self.file_manager_mock.region_raw_file_config = (
             FakeDirectIngestRegionRawFileConfig("US_XX")
         )
-
-        self.update_table_patch = patch(
-            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import.update_raw_data_table_schema"
-        )
-        self.update_table_mock = self.update_table_patch.start()
         self.mock_big_query_client = create_autospec(BigQueryClient)
         self.mock_gcsfs = create_autospec(GCSFileSystem)
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
         self.region_patcher.stop()
-        self.update_table_patch.stop()
         self.file_manager_patch.stop()
 
     def test_import_raw_files_to_bq_sandbox_plain(
@@ -97,25 +90,6 @@ class ImportRawFilesToBQSandboxTest(TestCase):
         )
 
         # Assert
-        self.mock_big_query_client.create_dataset_if_necessary.assert_called()
-        self.update_table_mock.assert_has_calls(
-            [
-                call(
-                    state_code=StateCode.US_XX,
-                    instance=DirectIngestInstance.PRIMARY,
-                    raw_file_tag="tagBasicData",
-                    big_query_client=self.mock_big_query_client,
-                    sandbox_dataset_prefix="foo",
-                ),
-                call(
-                    state_code=StateCode.US_XX,
-                    instance=DirectIngestInstance.PRIMARY,
-                    raw_file_tag="tagMoreBasicData",
-                    big_query_client=self.mock_big_query_client,
-                    sandbox_dataset_prefix="foo",
-                ),
-            ]
-        )
         self.file_manager_mock.import_raw_file_to_big_query.assert_has_calls(
             [call(path1, ANY), call(path2, ANY)]
         )
@@ -145,18 +119,6 @@ class ImportRawFilesToBQSandboxTest(TestCase):
         )
 
         # Assert
-        self.mock_big_query_client.create_dataset_if_necessary.assert_called()
-        self.update_table_mock.assert_has_calls(
-            [
-                call(
-                    state_code=StateCode.US_XX,
-                    instance=DirectIngestInstance.PRIMARY,
-                    raw_file_tag="tagMoreBasicData",
-                    big_query_client=self.mock_big_query_client,
-                    sandbox_dataset_prefix="foo",
-                ),
-            ]
-        )
         self.file_manager_mock.import_raw_file_to_big_query.assert_has_calls(
             [call(path2, ANY)]
         )
