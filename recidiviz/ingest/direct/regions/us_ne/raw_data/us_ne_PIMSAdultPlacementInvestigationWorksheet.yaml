@@ -1,0 +1,341 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSAdultPlacementInvestigationWorksheet
+file_description: |-
+  This table is information about pre parole adult placement investigation
+data_classification: source
+primary_key_cols:
+  - pkPIMSAdultPlacementInvestigationWorkSheetId
+columns:
+  - name: pkPIMSAdultPlacementInvestigationWorkSheetId
+    description: |-
+      Primary key for table
+  - name: inmateNumber
+    description: |-
+      NE ID number
+    is_pii: True
+  - name: nextHearingDate
+    field_type: datetime
+    description: |-
+      Next parole hearing date
+  - name: registerableOffensesOnCurrentId
+    description: |-
+      Registerable offense on current id
+  - name: activeSTG
+    description: |-
+      Active in Security Threat Group (STG)
+  - name: strongRScore
+    description: |-
+      Strong R Score
+  - name: typeCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: name
+    description: |-
+      Name
+    is_pii: True
+  - name: relationshipCode
+    description: |-
+      Relationship code
+  - name: otherRelationshipText
+    description: |-
+      Other relationship text
+    is_pii: True
+  - name: addressLine1
+    description: |-
+      Address line 1
+    is_pii: True
+  - name: addressLine2
+    description: |-
+      Address line 2
+    is_pii: True
+  - name: city
+    description: |-
+      City
+    is_pii: True
+  - name: stateCode
+    description: |-
+      State code
+  - name: paroleToCountyCode
+    description: |-
+      Parole to county code
+  - name: zipCode5
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: zipCode4
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: primaryPhoneNumber
+    description: |-
+      Primary phone number
+    is_pii: True
+  - name: primaryPhoneTypeCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: otherPrimaryPhoneText
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: secondaryPhoneNumber
+    description: |-
+      Secondary phone
+    is_pii: True
+  - name: secondaryPhoneTypeCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: otherSecondaryPhoneText
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: primaryLanguageSpokenAtResidenceCode
+    description: |-
+      Primary language spoken at residence
+  - name: transitionalFacilityContact
+    description: |-
+      Transitional facility contact
+    is_pii: True
+  - name: residencePlacementComments
+    description: |-
+      Residence placement comments
+    is_pii: True
+  - name: medicalAndMentalHealthIssuesSelfReported
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: prescriptionMedicationsExcludingOTC
+    description: |-
+      Prescription medication
+  - name: birthCountryCode
+    description: |-
+      Birth country code
+  - name: citizenshipCode
+    description: |-
+      Citizenship code
+  - name: workVisaCode
+    description: |-
+      Work visa code
+  - name: hearingImpaired
+    description: |-
+      Hearing impaired indicator
+  - name: visuallyImpaired
+    description: |-
+      Visually impaired indicator
+  - name: otherInformation
+    description: |-
+      Additional information
+    is_pii: True
+  - name: apiwStatusCode
+    description: |-
+      Status code of adult placement invesigation worksheet
+  - name: comments
+    description: |-
+      Comments
+    is_pii: True
+  - name: fkReentrySpecialistId
+    description: |-
+      Foreign key id to ReentrySpecialist
+    is_pii: True
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Created date
+  - name: createdBy
+    description: |-
+      User created by
+    is_pii: True
+  - name: modifiedBy
+    description: |-
+      User modified by
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date modified
+  - name: version
+  - name: residenceInvestigationComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: investigationCommentsMMHAndPrescriptions
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: otherPlacementInvestigationInfo
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fOQ1Restitution
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fOQ1RestitutionComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: fOQ2ChildSupport
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fOQ2ChildSupportComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: fOQ3Other
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: fOQ3OtherComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE\
+    is_pii: True
+  - name: pQ1NoAlcohol
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: pQ1NoAlcoholComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: pQ2NoDrugs
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: pQ2NoDrugsComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: pQ3NoWeapons
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: pQ3NoWeaponsComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: pQ4NoSearch
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: pQ4NoSearchComments
+    description: |-
+      No search comments
+    is_pii: True
+  - name: determinedSexOffenderCode
+    description: |-
+      Determined sex offender code
+  - name: victimUnderAgeOf18Code
+    description: |-
+      Indicates if victim under age 18
+  - name: pSOQ1PROnSexOffenderWebsite
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: pSOQ1PROnSexOffenderWebsiteComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: pSOQ2ParoleSearchAndSeizeItems
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: pSOQ2ParoleSearchAndSeizeItemsComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: pSOQ3NoMinorsWillBeAllowed
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: pSOQ3NoMinorsWillBeAllowedComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: pSOQ4NoUnsupervisedContactWithMinors
+    description: |-
+      Indicates no unsupervised contact with minord
+  - name: pSOQ4NoUnsupervisedContactWithMinorsComments
+    description: |-
+      No unsupervised contact with minors comments
+    is_pii: True
+  - name: pSOQ5ResidenceCannotWithIn500ftFromSDP
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: pSOQ5ResidenceCannotWithIn500ftFromSDPComments
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: finalDispositionCode
+    description: |-
+      Final disposition code
+  - name: bedAvailabilityCode
+    description: |-
+      Bed availability code
+  - name: dispositionComments
+    description: |-
+      Disposition comments
+    is_pii: True
+  - name: fkReportToPOId
+    description: |-
+      Foreign key id ReportToPO
+  - name: reportingInstructions
+    description: |-
+      Reporting instructions
+  - name: active
+    description: |-
+      Is active
+  - name: fkInvestigationOfficerId
+    description: |-
+      Foreign key id to InvestigationOfficer
+    is_pii: True
+  - name: dueDate
+    field_type: datetime
+    description: |-
+      Due date
+  - name: assignedDate
+    field_type: datetime
+    description: |-
+      Date assigned
+  - name: assignedBy
+    description: |-
+      User assigned by
+    is_pii: True
+  - name: employmentComments
+    description: |-
+      Employment comments
+    is_pii: True
+  - name: othFundingType
+    description: |-
+      Other funding type
+  - name: fundingTypeCode
+    description: |-
+      Funding type code
+  - name: finalDispositionDate
+    field_type: datetime
+    description: |-
+      Final disposition date
+  - name: currentDiagnosisMedicationsInfo
+    description: |-
+      Diagnosis medications info
+    is_pii: True
+  - name: parolingToDifferentStateDetails
+    description: |-
+      Paroling to different state information
+  - name: domesticViolenceQ1AnyClinicalRecommendations
+    description: |-
+      Domestic violence clinical recommendations
+  - name: domesticViolenceQ2AnyPossibleVictim
+    description: |-
+      Domestic violence possible victim flag
+  - name: domesticViolenceQ3CompletedAnyViolenceProgramming
+    description: |-
+      Domestic violence programming completion
+  - name: domesticViolenceQ1AnyClinicalRecommendationsComments
+    description: |-
+      Comments on domestic violence clinical recommendations
+    is_pii: True
+  - name: domesticViolenceQ2AnyPossibleVictimComments
+    description: |-
+      Comments on domestic violence possible victims
+    is_pii: True
+  - name: domesticViolenceQ3CompletedAnyViolenceProgrammingComments
+    description: |-
+      Comments on domestic violence programming
+    is_pii: True
+  - name: priorSexOffense
+    description: |-
+      Prior sex offense
+  - name: priorDomesticViolenceoffense
+    description: |-
+      Prior domestic violence offense
+  - name: newRecord
+    description: |-
+      New record
