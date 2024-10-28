@@ -161,9 +161,8 @@ class SupervisionOfficerMetric(MetricBase, InsightsBase):
     # Category this caseload type is part of, e.g. SEX_OFFENSE_BINARY. 'ALL' indicates the metric
     # benchmark is statewide.
     category_type = Column(String, primary_key=True)
-    # Caseload type of the officer within category_type during the period during which this metric was measured
-    # TODO(#31634): Rename to caseload_category.
-    caseload_type = Column(String)
+    # Caseload category of the officer within category_type during the period during which this metric was measured
+    caseload_category = Column(String)
 
     __tableargs__ = (
         ForeignKeyConstraint(
@@ -196,9 +195,10 @@ class MetricBenchmark(InsightsBase):
     target = Column(Float, nullable=False)
     # The threshold for the given metric, specifically the IQR
     threshold = Column(Float, nullable=False)
-    # Caseload type, if applicable. 'ALL' indicates the metric benchmark is statewide.
+    # Caseload category, if applicable. 'ALL' indicates the metric benchmark is statewide.
     # TODO(#31634): Rename to caseload_category.
     caseload_type = Column(String, primary_key=True)
+    caseload_category = Column(String, primary_key=True)
     # Category this caseload type is part of, e.g. SEX_OFFENSE_BINARY. 'ALL' indicates the metric
     # benchmark is statewide.
     category_type = Column(String, primary_key=True)
@@ -216,9 +216,10 @@ class SupervisionOfficerOutlierStatus(InsightsBase):
     state_code = Column(String, primary_key=True)
     # The id of the officer the metric is measured for
     officer_id = Column(String, primary_key=True)
-    # Caseload type within the category_type. 'ALL' value indicates the status is compared to a statewide metric.
+    # Caseload category within the category_type. 'ALL' value indicates the status is compared to a statewide metric.
     # TODO(#31634): Rename to caseload_category.
     caseload_type = Column(String, primary_key=True)
+    caseload_category = Column(String, primary_key=True)
     # Category this caseload type is part of, e.g. SEX_OFFENSE_BINARY. 'ALL' indicates the status
     # is compared to a statewide metric.
     category_type = Column(String, primary_key=True)

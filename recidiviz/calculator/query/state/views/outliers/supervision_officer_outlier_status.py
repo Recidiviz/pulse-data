@@ -47,6 +47,8 @@ officer_metrics_with_caseload_type AS (
     m.end_date,
     m.metric_value AS metric_rate,
     category_type,
+    caseload_category,
+    -- TODO(#31634): Remove caseload_type
     caseload_category AS caseload_type
   FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_officer_metrics_materialized` m 
   WHERE
@@ -114,6 +116,7 @@ SUPERVISION_OFFICER_OUTLIER_STATUS_VIEW_BUILDER = SelectedColumnsBigQueryViewBui
         "metric_rate",
         "category_type",
         "caseload_type",
+        "caseload_category",
         "target",
         "threshold",
         "status",
