@@ -47,7 +47,7 @@ REQUIRED_PACKAGES = [
     "google-cloud-logging",
     "google-cloud-bigquery-datatransfer",
     # Must stay up-to-date with latest google-cloud-tasks version in the Pipfile
-    "google-cloud-tasks==2.16.5",
+    "google-cloud-tasks==2.17.0",
     "html5lib",
     "lxml",
     "iteration-utilities",
@@ -67,7 +67,7 @@ REQUIRED_PACKAGES = [
     "opentelemetry-instrumentation-sqlalchemy==0.43b0",
     "opentelemetry-semantic-conventions==0.43b0",
     # Must stay up-to-date with latest protobuf version in the Pipfile
-    "protobuf==5.28.2",
+    "protobuf==5.28.3",
     # Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning
     "python-Levenshtein",
     "pyjwt",
