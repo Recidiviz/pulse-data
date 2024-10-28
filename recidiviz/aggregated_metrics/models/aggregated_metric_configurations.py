@@ -2474,27 +2474,6 @@ TREATMENT_STARTS = EventCountMetric(
     event_segmentation_columns=["program_id"],
 )
 
-UNSUCCESSFUL_SUPERVISION_TERMINATIONS = EventCountMetric(
-    name="unsuccessful_supervision_terminations",
-    display_name="Unsuccessful Supervision Terminations",
-    description="Number of unsuccessful supervision terminations (incarceration "
-    "starts, absconsion/bench warrants, pending custody starts)",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.ABSCONSION_BENCH_WARRANT,
-            event_conditions_dict={},
-        ),
-        EventSelector(
-            event_type=EventType.INCARCERATION_START,
-            event_conditions_dict={},
-        ),
-        EventSelector(
-            event_type=EventType.PENDING_CUSTODY_START,
-            event_conditions_dict={},
-        ),
-    ],
-)
-
 WORKFLOWS_CLIENT_STATUS_UPDATE = EventCountMetric(
     name="workflows_client_status_update",
     display_name="Workflows App Client Status Updates",
