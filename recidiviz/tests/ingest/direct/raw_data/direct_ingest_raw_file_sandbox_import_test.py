@@ -14,19 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""Tests for admin panel ingest utilities"""
+"""Tests for utilities for raw file sandbox imports."""
 
 from unittest import TestCase
 from unittest.mock import ANY, MagicMock, call, create_autospec, patch
 
-from recidiviz.admin_panel.ingest_operations.ingest_utils import (
-    import_raw_files_to_bq_sandbox,
-)
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import import (
+    legacy_import_raw_files_to_bq_sandbox,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fakes.fake_ingest_raw_file_import_controller import (
@@ -42,7 +41,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.metadata_patcher.start().return_value = "test-project"
         self.region_patcher = patch(
-            "recidiviz.admin_panel.ingest_operations.ingest_utils.get_direct_ingest_region",
+            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import.get_direct_ingest_region",
             MagicMock(
                 return_value=fake_region(
                     region_code=StateCode.US_XX.value.lower(),
@@ -53,7 +52,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
         )
         self.region_patcher.start()
         self.file_manager_patch = patch(
-            "recidiviz.admin_panel.ingest_operations.ingest_utils.LegacyDirectIngestRawFileImportManager"
+            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import.LegacyDirectIngestRawFileImportManager"
         )
         self.file_manager_mock = self.file_manager_patch.start().return_value
         self.file_manager_mock.region_raw_file_config = (
@@ -61,7 +60,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
         )
 
         self.update_table_patch = patch(
-            "recidiviz.admin_panel.ingest_operations.ingest_utils.update_raw_data_table_schema"
+            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import.update_raw_data_table_schema"
         )
         self.update_table_mock = self.update_table_patch.start()
         self.mock_big_query_client = create_autospec(BigQueryClient)
@@ -85,17 +84,16 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             "bar-bucket",
             "unprocessed_2019-08-12T00:00:00:000000_raw_tagMoreBasicData.csv",
         )
-        self.mock_gcsfs.ls_with_blob_prefix.return_value = [path1, path2]
+        files_to_import = [path1, path2]
 
         # Act
-        import_raw_files_to_bq_sandbox(
+        legacy_import_raw_files_to_bq_sandbox(
             state_code=StateCode.US_XX,
             sandbox_dataset_prefix="foo",
-            source_bucket=GcsfsBucketPath("bar-bucket"),
-            file_tag_filters=None,
             allow_incomplete_configs=False,
+            files_to_import=files_to_import,
             big_query_client=self.mock_big_query_client,
-            gcsfs=self.mock_gcsfs,
+            fs=self.mock_gcsfs,
         )
 
         # Assert
@@ -134,17 +132,16 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             "bar-bucket",
             "unprocessed_2019-08-12T00:00:00:000000_raw_tagMoreBasicData.csv",
         )
-        self.mock_gcsfs.ls_with_blob_prefix.return_value = [path1, path2]
+        files_to_import = [path1, path2]
 
         # Act
-        import_raw_files_to_bq_sandbox(
+        legacy_import_raw_files_to_bq_sandbox(
             state_code=StateCode.US_XX,
             sandbox_dataset_prefix="foo",
-            source_bucket=GcsfsBucketPath("bar-bucket"),
-            file_tag_filters=["tagMoreBasicData"],
             allow_incomplete_configs=False,
+            files_to_import=files_to_import,
             big_query_client=self.mock_big_query_client,
-            gcsfs=self.mock_gcsfs,
+            fs=self.mock_gcsfs,
         )
 
         # Assert
