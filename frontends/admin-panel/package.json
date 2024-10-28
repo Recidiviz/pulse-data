@@ -50,7 +50,7 @@
     "@recidiviz/tsconfig": "^2.0.0",
     "@types/d3-scale": "^4.0.1",
     "@types/jest": "^29.5.3",
-    "@types/lodash": "^4.14.202",
+    "@types/lodash": "^4.17.10",
     "@types/querystringify": "^2.0.0",
     "@types/react": "^17.0.0",
     "@types/react-dom": "16.9.8",
