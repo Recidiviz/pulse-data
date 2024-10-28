@@ -25,7 +25,7 @@ resource "google_discovery_engine_search_engine" "case_notes_search" {
   location       = google_discovery_engine_data_store.case_notes.location
   display_name   = "Case Notes Search"
   collection_id  = "default_collection"
-  data_store_ids = [google_discovery_engine_data_store.case_notes.id]
+  data_store_ids = [google_discovery_engine_data_store.case_notes.data_store_id]
   search_engine_config {
     search_tier = "SEARCH_TIER_ENTERPRISE"
   }
