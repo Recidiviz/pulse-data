@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: CodeValue
+file_description: |-
+  This is a look up table for codes in Nebraska
+data_classification: source
+primary_key_cols:
+  - codeId
+columns:
+  - name: codeId
+    description: |-
+      ID for each code
+  - name: codeType
+    description: |-
+      Type of code
+  - name: codeValue
+    description: |-
+      Code value to look up
+  - name: codeDesc
+    description: |-
+      Description of code value
+  - name: codeStartDate
+    field_type: datetime
+    description: |-
+      Code start date
+  - name: codeEndDate
+    field_type: datetime
+    description: |-
+      Code end date
+  - name: sortOrder
+    description: |-
+      Order to sort by
+  - name: codeVersion
+    description: |-
+      Code version
+  - name: originalCodeValue
+    description: |-
+      Original code value
+  - name: createdBy
+    is_pii: True
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date code was created
+  - name: modifiedBy
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date code was modified
+  - name: version
