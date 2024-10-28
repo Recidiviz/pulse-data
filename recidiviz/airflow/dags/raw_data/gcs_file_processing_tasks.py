@@ -302,7 +302,7 @@ def filter_normalization_results_based_on_errors(
                     # TODO(#33551) create a skipped file error that encapsulates multiple original file paths
                     original_file_path=import_ready_file.original_file_paths[0],
                     temporary_file_paths=import_ready_file.pre_import_normalized_file_paths,
-                    error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_path} \n\n: {blocking_error.error_msg}",
+                    error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_path}",
                 )
             )
             continue

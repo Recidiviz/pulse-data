@@ -273,7 +273,7 @@ def _filter_load_results_based_on_errors(
                     pre_import_normalized_file_paths=successful_load.import_ready_file.pre_import_normalized_file_paths,
                     update_datetime=successful_load.import_ready_file.update_datetime,
                     file_tag=successful_load.import_ready_file.file_tag,
-                    error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_paths} \n\n: {blocking_error.error_msg}",
+                    error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_paths}",
                 )
             )
         else:
@@ -363,7 +363,6 @@ def _append_to_raw_data_table_for_file_tag(
         append_ready_files_for_tag, key=lambda x: x.import_ready_file.update_datetime
     ):
         if failures:
-            # TODO(#30169) add clean up temp resources for skipped tables
             logging.error(
                 "Skipping import of [%s] due to import-blocking failure",
                 append_ready_file.append_ready_table_address.to_str(),

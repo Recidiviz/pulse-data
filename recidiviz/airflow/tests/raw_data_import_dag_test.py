@@ -1756,7 +1756,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                     ],
                 ),
                 RawFileProcessingError(
-                    error_msg="Blocked Import: failed due to import-blocking failure from GcsfsFilePath(bucket_name='testing', blob_name='unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv') \n\n: Oops!",
+                    error_msg="Blocked Import: failed due to import-blocking failure from GcsfsFilePath(bucket_name='testing', blob_name='unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv')",
                     original_file_path=GcsfsFilePath(
                         bucket_name="testing",
                         blob_name="unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey.csv",

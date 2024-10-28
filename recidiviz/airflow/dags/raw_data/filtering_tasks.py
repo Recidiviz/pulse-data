@@ -91,7 +91,7 @@ def filter_chunking_results_by_processing_errors(
                 RawFileProcessingError(
                     original_file_path=result.path,
                     temporary_file_paths=None,
-                    error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_path} \n\n: {blocking_error.error_msg}",
+                    error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_path}",
                 )
             )
             continue
@@ -135,7 +135,7 @@ def filter_header_results_by_processing_errors(
                     RawFileProcessingError(
                         original_file_path=gcs_file.path,
                         temporary_file_paths=None,
-                        error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_path} \n\n: {blocking_error.error_msg}",
+                        error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_path}",
                     )
                 )
             continue
