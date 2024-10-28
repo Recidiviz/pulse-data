@@ -62,5 +62,5 @@ columns:
   - name: FkShSyCodeChangeType
   - name: FkShRfCodeRace
   - name: FkShRfCodeGender
-  - name: unknown1
-  - name: unknown2
+  - name: FkShRfCodeGenderIdentity
+  - name: FkShRfCodePronouns
