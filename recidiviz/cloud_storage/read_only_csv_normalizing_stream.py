@@ -96,18 +96,26 @@ class ReadOnlyCsvNormalizingStream:
         if not full_lines and not self._eof:
             raise ValueError("Expect to have lines if not EOF, found None.")
 
-        for full_line in full_lines:
-            if self._num_lines_processed > 0:
-                self._normalized_buffer += NEWLINE
-            if full_line:
-                self._normalized_buffer += (
-                    DOUBLE_QUOTE
-                    + full_line.replace(DOUBLE_QUOTE, ESCAPED_DOUBLE_QUOTE)
-                    .replace(self.delimiter, COMMA_SURROUNDED_BY_DOUBLE_QUOTES)
-                    .replace(NULL_BYTE, "")
-                    + DOUBLE_QUOTE
-                )
-            self._num_lines_processed += 1
+        # Favor list comprehension + join over string concatenation for performance
+        normalized_lines = [
+            (
+                DOUBLE_QUOTE
+                + full_line.replace(DOUBLE_QUOTE, ESCAPED_DOUBLE_QUOTE)
+                .replace(self.delimiter, COMMA_SURROUNDED_BY_DOUBLE_QUOTES)
+                .replace(NULL_BYTE, "")
+                + DOUBLE_QUOTE
+                if full_line
+                else ""
+            )
+            for full_line in full_lines
+        ]
+
+        self._normalized_buffer += (
+            NEWLINE + NEWLINE.join(normalized_lines)
+            if self._num_lines_processed > 0
+            else NEWLINE.join(normalized_lines)
+        )
+        self._num_lines_processed += len(full_lines)
 
     def read(self, __size: Optional[int] = None) -> str:
         if __size is not None and __size < 1:
