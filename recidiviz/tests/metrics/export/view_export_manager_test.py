@@ -268,7 +268,11 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     ) -> None:
         """Tests the table is created from the view and then extracted."""
         view_export_manager.export_view_data_to_cloud_storage(
-            self.mock_export_name, self.mock_state_code, mock_view_exporter
+            export_job_name=self.mock_export_name,
+            state_code=self.mock_state_code,
+            override_view_exporter=mock_view_exporter,
+            gcs_output_sandbox_subdir=None,
+            view_sandbox_context=None,
         )
 
         view = self.mock_view_builder.build()
@@ -337,7 +341,11 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ValueError, r"^No export configs matching export name: \[JOBZZZ\]$"
         ):
             view_export_manager.export_view_data_to_cloud_storage(
-                export_job_name="JOBZZZ", override_view_exporter=mock_view_exporter
+                export_job_name="JOBZZZ",
+                override_view_exporter=mock_view_exporter,
+                state_code=None,
+                gcs_output_sandbox_subdir=None,
+                view_sandbox_context=None,
             )
 
     @mock.patch(
@@ -362,6 +370,9 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         view_export_manager.export_view_data_to_cloud_storage(
             export_job_name=self.mock_export_name,
             override_view_exporter=mock_view_exporter,
+            state_code=None,
+            gcs_output_sandbox_subdir=None,
+            view_sandbox_context=None,
         )
 
         view = self.mock_view_builder.build()
@@ -420,7 +431,11 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         mock_view_exporter.export_and_validate.side_effect = ValueError
         with self.assertRaises(ValueError):
             view_export_manager.export_view_data_to_cloud_storage(
-                self.mock_export_name, override_view_exporter=mock_view_exporter
+                export_job_name=self.mock_export_name,
+                override_view_exporter=mock_view_exporter,
+                state_code=None,
+                gcs_output_sandbox_subdir=None,
+                view_sandbox_context=None,
             )
 
     @mock.patch(
@@ -435,7 +450,11 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         with self.assertRaises(ViewExportValidationError):
             view_export_manager.export_view_data_to_cloud_storage(
-                self.mock_export_name, override_view_exporter=mock_view_exporter
+                export_job_name=self.mock_export_name,
+                override_view_exporter=mock_view_exporter,
+                state_code=None,
+                gcs_output_sandbox_subdir=None,
+                view_sandbox_context=None,
             )
 
     @mock.patch(
@@ -447,7 +466,11 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     ) -> None:
         """Tests that only materialized views are updated before the export."""
         view_export_manager.export_view_data_to_cloud_storage(
-            self.mock_export_name, override_view_exporter=mock_view_exporter
+            export_job_name=self.mock_export_name,
+            override_view_exporter=mock_view_exporter,
+            state_code=None,
+            gcs_output_sandbox_subdir=None,
+            view_sandbox_context=None,
         )
 
     def test_invalid_export_configuration(self) -> None:

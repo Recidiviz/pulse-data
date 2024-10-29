@@ -63,7 +63,8 @@ from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import
 )
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
-from recidiviz.utils.environment import gcp_only
+from recidiviz.utils import metadata
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, gcp_only
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
@@ -147,11 +148,16 @@ def get_configs_for_export_name(
     """Checks the export index for a matching export and if one exists, returns the
     export name paired with a sequence of export view configs."""
 
-    if view_sandbox_context and not gcs_output_sandbox_subdir:
+    if (
+        view_sandbox_context
+        and not gcs_output_sandbox_subdir
+        and metadata.project_id() != GCP_PROJECT_STAGING
+    ):
         raise ValueError(
-            "Cannot set view_sandbox_context without gcs_output_sandbox_subdir. If "
-            "we're reading from views that are part of a sandbox, we must also "
-            "output to a sandbox location."
+            f"Cannot set view_sandbox_context without gcs_output_sandbox_subdir "
+            f"when exporting to [{metadata.project_id()}]. If we're reading from "
+            f"views that are part of a sandbox, we must also output to a sandbox "
+            f"location."
         )
 
     relevant_export_collection = export_config.VIEW_COLLECTION_EXPORT_INDEX.get(
@@ -171,11 +177,13 @@ def get_configs_for_export_name(
 
 
 def export_view_data_to_cloud_storage(
+    *,
     export_job_name: str,
-    state_code: Optional[str] = None,
+    state_code: Optional[str],
+    gcs_output_sandbox_subdir: Optional[str],
+    view_sandbox_context: BigQueryViewSandboxContext | None,
+    # Used to mock exporters in tests
     override_view_exporter: Optional[BigQueryViewExporter] = None,
-    gcs_output_sandbox_subdir: Optional[str] = None,
-    view_sandbox_context: BigQueryViewSandboxContext | None = None,
 ) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
@@ -183,12 +191,16 @@ def export_view_data_to_cloud_storage(
     to using a CompositeBigQueryViewExporter with delegates of JsonLinesBigQueryViewExporter and
     OptimizedMetricBigQueryViewExporter.
     """
-
-    if view_sandbox_context and not gcs_output_sandbox_subdir:
+    if (
+        view_sandbox_context
+        and not gcs_output_sandbox_subdir
+        and metadata.project_id() != GCP_PROJECT_STAGING
+    ):
         raise ValueError(
-            "Cannot set view_sandbox_context without gcs_output_sandbox_subdir. If "
-            "we're reading from views that are part of a sandbox, we must also "
-            "output to a sandbox location."
+            f"Cannot set view_sandbox_context without gcs_output_sandbox_subdir "
+            f"when exporting to [{metadata.project_id()}]. If we're reading from "
+            f"views that are part of a sandbox, we must also output to a sandbox "
+            f"location."
         )
 
     export_configs_for_filter = get_configs_for_export_name(
@@ -207,6 +219,7 @@ def export_view_data_to_cloud_storage(
 
 
 def do_metric_export_for_configs(
+    *,
     export_name: str,
     view_export_configs: Sequence[ExportBigQueryViewConfig],
     state_code_filter: Optional[str],
@@ -224,7 +237,10 @@ def do_metric_export_for_configs(
     logging.info(export_log_message)
 
     delegate_export_map = get_delegate_export_map(
-        gcsfs_client, export_name, view_export_configs, override_view_exporter
+        gcsfs_client=gcsfs_client,
+        export_name=export_name,
+        export_configs=view_export_configs,
+        override_view_exporter=override_view_exporter,
     )
 
     monitoring_attributes = {
@@ -263,6 +279,7 @@ def do_metric_export_for_configs(
 
 
 def get_delegate_export_map(
+    *,
     gcsfs_client: GCSFileSystem,
     export_name: str,
     export_configs: Sequence[ExportBigQueryViewConfig],

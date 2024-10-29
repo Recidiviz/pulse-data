@@ -83,6 +83,23 @@ class _SharedStateCode(enum.Enum):
         except ValueError as _:
             return False
 
+    def slack_channel_name(self) -> str:
+        """Returns the name of the primary Slack channel name for this state - e.g.
+        '#us-north-dakota' or '#us-tennessee'.
+        """
+        # TODO(#16661): Remove this custom logic for US_IX once we migrate back to US_ID
+        if self.value == "US_IX":
+            lower_hyphenated_name = "idaho"
+        else:
+            lower_hyphenated_name = "-".join(self.get_state().name.lower().split())
+
+        channel_name = f"#us-{lower_hyphenated_name}"
+        if self.value in {"US_MO", "US_PA"}:
+            # For legacy reasons, the MO and PA channels still have an -internal suffix.
+            channel_name += "-internal"
+
+        return channel_name
+
 
 PLAYGROUND_STATE_CODE = "US_OZ"
 PLAYGROUND_STATE_INFO = {

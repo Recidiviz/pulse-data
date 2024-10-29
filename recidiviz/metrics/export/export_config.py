@@ -69,6 +69,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.view_config import collect_ingest_metadata_view_builders
 from recidiviz.utils import metadata
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.validation.views.view_config import VALIDATION_METADATA_BUILDERS
 
@@ -121,11 +122,16 @@ class ExportViewCollectionConfig:
         """Builds a list of ExportBigQueryViewConfig that define how all views in
         view_builders_to_export should be exported to Google Cloud Storage."""
 
-        if view_sandbox_context and not gcs_output_sandbox_subdir:
+        if (
+            view_sandbox_context
+            and not gcs_output_sandbox_subdir
+            and metadata.project_id() != GCP_PROJECT_STAGING
+        ):
             raise ValueError(
-                "Cannot set view_sandbox_context without gcs_output_sandbox_subdir. "
-                "If we're reading from views that are part of a sandbox, we must also "
-                "output to a sandbox location."
+                f"Cannot set view_sandbox_context without gcs_output_sandbox_subdir "
+                f"when exporting to [{metadata.project_id()}]. If we're reading from "
+                f"views that are part of a sandbox, we must also output to a sandbox "
+                f"location."
             )
 
         view_filter_clause = (
