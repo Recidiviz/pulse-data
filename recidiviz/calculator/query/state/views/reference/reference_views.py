@@ -66,6 +66,9 @@ from recidiviz.calculator.query.state.views.reference.product_failed_logins_mont
 from recidiviz.calculator.query.state.views.reference.product_roster import (
     PRODUCT_ROSTER_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.product_staff import (
+    PRODUCT_STAFF_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.state_staff_with_names import (
     STATE_STAFF_WITH_NAMES_VIEW_BUILDER,
 )
@@ -100,4 +103,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_AR_LOCATION_METADATA_VIEW_BUILDER,
     US_AZ_LOCATION_METADATA_VIEW_BUILDER,
     get_completion_event_metadata_view_builder(),
+    PRODUCT_STAFF_VIEW_BUILDER,
 ]
