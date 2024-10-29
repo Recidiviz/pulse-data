@@ -19,6 +19,7 @@ from datetime import date, datetime
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+from dateutil.relativedelta import relativedelta
 from sqlalchemy.exc import IntegrityError, NoResultFound
 
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
@@ -501,6 +502,25 @@ class TestOutliersQuerier(InsightsDbTestCase):
 
             actual = OutliersQuerier(StateCode.US_PA).get_events_by_client(
                 "clienthash1", [metric_id], TEST_END_DATE
+            )
+            self.assertEqual(len(actual), 1)
+            self.assertEqual(expected.event_date, actual[0].event_date)
+            self.assertEqual(expected.client_id, actual[0].client_id)
+            self.assertEqual(metric_id, actual[0].metric_id)
+
+    def test_get_events_by_client_within_lookforward(self) -> None:
+        # Return matching event
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            metric_id = TEST_METRIC_3.name
+            expected = (
+                session.query(SupervisionClientEvent)
+                .filter(SupervisionClientEvent.event_date == "2023-05-01")
+                .first()
+            )
+
+            earlier_end_date = TEST_END_DATE - relativedelta(months=2)
+            actual = OutliersQuerier(StateCode.US_PA).get_events_by_client(
+                "clienthash1", [metric_id], earlier_end_date
             )
             self.assertEqual(len(actual), 1)
             self.assertEqual(expected.event_date, actual[0].event_date)
