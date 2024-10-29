@@ -235,28 +235,18 @@ treatment_referrals AS (
         AND (spa.person_id IS NULL OR spa.start_date NOT BETWEEN population_start_date AND population_end_date)
         -- Find officer periods that fall within the current time period
         AND a.assignment_date <= population_end_date AND IFNULL(a.end_date, population_end_date) >= population_start_date
-),
-all_events AS (
+)
+, metric_events AS (
     SELECT * FROM events_with_metric_id
         UNION ALL
-    SELECT * FROM violations
-        UNION ALL
-    SELECT * FROM sanctions
-        UNION ALL
-    SELECT * FROM treatment_referrals
-        UNION ALL
     SELECT * FROM treatment_starts
-),
-supervision_client_events AS (
+)
+, metric_events_with_supervision_info AS (
     SELECT DISTINCT
         e.state_code, 
+        e.person_id,
         e.metric_id,
         e.event_date,
-        pid.external_id AS client_id,
-        p.full_name AS client_name,
-        a.officer_id,
-        a.assignment_date AS officer_assignment_date,
-        a.end_date AS officer_assignment_end_date,
         -- TODO(#26843): Revisit these calculations / column names
         COALESCE(s.start_date, ss.start_date) AS supervision_start_date,
         ss.end_date AS supervision_end_date,
@@ -267,42 +257,109 @@ supervision_client_events AS (
              ELSE "SUPERVISION"
              END AS supervision_type,
         e.attributes,
-        {get_pseudonymized_id_query_str("IF(e.state_code = 'US_IX', 'US_ID', e.state_code) || pid.external_id")} AS pseudonymized_client_id,
-        -- This pseudonymized_id will match the one for the user in the auth0 roster. Hashed
-        -- attributes must be kept in sync with recidiviz.auth.helpers.generate_pseudonymized_id.
-        {get_pseudonymized_id_query_str("IF(e.state_code = 'US_IX', 'US_ID', e.state_code) || a.officer_id")} AS pseudonymized_officer_id,
-    FROM 
-        `{{project_id}}.aggregated_metrics.supervision_officer_metrics_person_assignment_sessions_materialized` a
-    CROSS JOIN
-        latest_year_time_period period
-    INNER JOIN `{{project_id}}.normalized_state.state_person` p 
-        USING (person_id)
-    INNER JOIN all_events e
-        ON p.person_id = e.person_id
-        -- Get the officer assignment information for the session leading up to the event
-        AND event_date BETWEEN a.assignment_date AND {nonnull_end_date_clause('a.end_date')}
-    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pid
-        ON p.person_id = pid.person_id
+    FROM metric_events e 
     INNER JOIN `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` ss  
-        ON a.person_id = ss.person_id
+        ON e.person_id = ss.person_id
         -- Get the supervision period information for the session leading up to the event
         -- Note: the event_date occurs in the INCARCERATION session after the SUPERVISION session we want
         -- details about, so we use nonnull_end_date_clause here instead of nonnull_end_date_exclusive_clause to
         -- ensure the SUPERVISION session is returned in this join 
         AND event_date BETWEEN ss.start_date AND {nonnull_end_date_clause('ss.end_date_exclusive')}
+        -- We always want the SUPERVISION session for these metric events to get the correct
+        -- supervision_type, supervision_start_date, and supervision_end_date
+        -- The VIOLATION and VIOLATION_RESPONSE events below are sometimes within TEMPORARY_CUSTODY spans so we remove
+        -- this filter for those events
         AND ss.compartment_level_1 = "SUPERVISION"
     LEFT JOIN `{{project_id}}.sessions.compartment_sessions_materialized` s
         ON ss.person_id = s.person_id
         AND s.session_id BETWEEN ss.session_id_start AND ss.session_id_end
-        AND s.compartment_level_2 IN ("PAROLE", "PROBATION", "INFORMAL_PROBATION", "DUAL", "COMMUNITY_CONFINEMENT")
+        AND s.compartment_level_2 IN ("PAROLE", "PROBATION", "INFORMAL_PROBATION", "DUAL", "COMMUNITY_CONFINEMENT", "TEMPORARY_CUSTODY")
         -- we want to show the supervision start date as being before the event. we don't need the
-        -- end date to be before the compartment end, because if we have:
+        -- event date to be before the compartment end, because if we have:
         --   date 1 - date 2: PAROLE
         --   date 2 - date 3: WARRANT_STATUS
         --   date 3: ABSCONSION
         -- then we want to show the supervision start date as date 1, despite the event date being
         -- after the compartment end.
         AND event_date >= s.start_date
+)
+, non_metric_events AS (
+    SELECT * FROM violations
+        UNION ALL
+    SELECT * FROM sanctions
+        UNION ALL
+    SELECT * FROM treatment_referrals
+)
+, non_metric_events_with_supervision_info AS (
+    SELECT DISTINCT
+        e.state_code,
+        e.person_id,
+        e.metric_id,
+        e.event_date,
+        -- TODO(#26843): Revisit these calculations / column names
+        COALESCE(s.start_date, ss.start_date) AS supervision_start_date,
+        ss.end_date AS supervision_end_date,
+        CASE WHEN s.compartment_level_2 IN ("PROBATION", "INFORMAL_PROBATION") THEN "PROBATION"
+            WHEN s.compartment_level_2 IN ("PAROLE", "DUAL", "COMMUNITY_CONFINEMENT") THEN s.compartment_level_2
+            -- Since this is on VIOLATION/VIOLATION_RESPONSE events this supervision_type does not show up in the FE
+            WHEN s.compartment_level_1 IN ("INCARCERATION") THEN s.compartment_level_2
+            ELSE "SUPERVISION"
+            END AS supervision_type,
+        e.attributes,
+        s.compartment_level_1
+    FROM non_metric_events e 
+    INNER JOIN `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` ss  
+        ON e.person_id = ss.person_id
+        AND event_date BETWEEN ss.start_date AND {nonnull_end_date_clause('ss.end_date_exclusive')}
+        AND ss.compartment_level_1 in ("SUPERVISION", "INCARCERATION")
+    LEFT JOIN `{{project_id}}.sessions.compartment_sessions_materialized` s
+        ON ss.person_id = s.person_id
+        AND s.session_id BETWEEN ss.session_id_start AND ss.session_id_end
+        AND s.compartment_level_2 IN ("PAROLE", "PROBATION", "INFORMAL_PROBATION", "DUAL", "COMMUNITY_CONFINEMENT", "TEMPORARY_CUSTODY")
+        -- we want to show the supervision start date as being before the event. we don't need the
+        -- event date to be before the compartment end, because if we have:
+        --   date 1 - date 2: PAROLE
+        --   date 2 - date 3: WARRANT_STATUS
+        --   date 3: ABSCONSION
+        -- then we want to show the supervision start date as date 1, despite the event date being
+        -- after the compartment end.
+        AND event_date >= s.start_date
+)
+, all_events AS (
+    SELECT * FROM metric_events_with_supervision_info
+        UNION ALL
+    SELECT * EXCEPT(compartment_level_1) FROM non_metric_events_with_supervision_info
+    QUALIFY RANK() OVER(PARTITION BY person_id, metric_id, event_date ORDER BY CASE WHEN compartment_level_1 != 'INCARCERATION' THEN 0 ELSE 1 END) = 1
+)
+, supervision_client_events AS (
+    SELECT DISTINCT
+        e.state_code, 
+        e.metric_id,
+        e.event_date,
+        pid.external_id AS client_id,
+        p.full_name AS client_name,
+        a.officer_id,
+        a.assignment_date AS officer_assignment_date,
+        a.end_date AS officer_assignment_end_date,
+        e.supervision_start_date,
+        e.supervision_end_date,
+        e.supervision_type,
+        e.attributes,
+        {get_pseudonymized_id_query_str("IF(e.state_code = 'US_IX', 'US_ID', e.state_code) || pid.external_id")} AS pseudonymized_client_id,
+        -- This pseudonymized_id will match the one for the user in the auth0 roster. Hashed
+        -- attributes must be kept in sync with recidiviz.auth.helpers.generate_pseudonymized_id.
+        {get_pseudonymized_id_query_str("IF(e.state_code = 'US_IX', 'US_ID', e.state_code) || a.officer_id")} AS pseudonymized_officer_id,
+    FROM all_events e 
+    CROSS JOIN
+        latest_year_time_period period
+    INNER JOIN `{{project_id}}.normalized_state.state_person` p 
+        USING (person_id)
+    LEFT JOIN `{{project_id}}.aggregated_metrics.supervision_officer_metrics_person_assignment_sessions_materialized` a
+        ON a.person_id = e.person_id
+        -- Get the officer assignment information for the session leading up to the event
+        AND event_date BETWEEN a.assignment_date AND {nonnull_end_date_clause('a.end_date')}
+    INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pid
+        ON p.person_id = pid.person_id
     WHERE
         -- Get events for the latest year period only
         event_date >= population_start_date

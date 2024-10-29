@@ -829,6 +829,7 @@ class OutliersQuerier:
         with self.insights_database_session() as session:
             # The earliest event date is the start of the year time period.
             earliest_event_date = period_end_date - relativedelta(years=1)
+            latest_event_date = period_end_date + relativedelta(months=2)
 
             events = (
                 session.query(SupervisionClientEvent)
@@ -836,7 +837,7 @@ class OutliersQuerier:
                     SupervisionClientEvent.pseudonymized_client_id
                     == pseudonymized_client_id,
                     SupervisionClientEvent.metric_id.in_(metric_ids),
-                    SupervisionClientEvent.event_date <= period_end_date,
+                    SupervisionClientEvent.event_date <= latest_event_date,
                     SupervisionClientEvent.event_date >= earliest_event_date,
                 )
                 .all()
