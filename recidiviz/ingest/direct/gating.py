@@ -43,6 +43,7 @@ STAGING_SECONDARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_IA,
     StateCode.US_MO,
     StateCode.US_PA,
+    StateCode.US_TN,
     *STAGING_PRIMARY_ENABLED_STATES,
 }
 
