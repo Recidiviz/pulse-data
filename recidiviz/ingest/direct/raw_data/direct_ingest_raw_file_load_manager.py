@@ -322,11 +322,18 @@ class DirectIngestRawFileLoadManager:
             temp_raw_file_with_transformations_address,
         )
 
-        self.validator.run_raw_data_temp_table_validations(
-            file.file_tag,
-            file.update_datetime,
-            temp_raw_file_with_transformations_address,
-        )
+        # TODO(#34610) Skip import entirely if there are no rows in an incremental file
+        if (
+            raw_rows_count != 0
+            or self.region_raw_file_config.raw_file_configs[
+                file.file_tag
+            ].always_historical_export
+        ):
+            self.validator.run_raw_data_temp_table_validations(
+                file.file_tag,
+                file.update_datetime,
+                temp_raw_file_with_transformations_address,
+            )
 
         self._clean_up_temp_tables(temp_raw_file_address)
 
