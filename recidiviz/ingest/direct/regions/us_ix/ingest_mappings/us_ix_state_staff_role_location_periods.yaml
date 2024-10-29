@@ -39,6 +39,7 @@ output:
                   - "P&P OFFICER, SR"
                 StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER:
                   - "P&P DISTRICT MANAGER"
+                  - "P&P DEPUTY DISTRICT MANAGER"
                 StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
                   - "P&P SECTION SUPERVISOR"
                 StateStaffRoleSubtype.INTERNAL_UNKNOWN:
