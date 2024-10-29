@@ -112,3 +112,12 @@ class TestStates(unittest.TestCase):
             f"Found maximum fips value of {max_fips_value}. "
             f"Must update MAX_FIPS_CODE to match.",
         )
+
+    def test_slack_channel(self) -> None:
+        self.assertEqual("#us-tennessee", StateCode.US_TN.slack_channel_name())
+        self.assertEqual("#us-missouri-internal", StateCode.US_MO.slack_channel_name())
+        self.assertEqual("#us-north-dakota", StateCode.US_ND.slack_channel_name())
+        self.assertEqual("#us-idaho", StateCode.US_ID.slack_channel_name())
+        self.assertEqual("#us-idaho", StateCode.US_IX.slack_channel_name())
+        self.assertEqual("#us-oz", StateCode.US_OZ.slack_channel_name())
+        self.assertEqual("#us-test-state", StateCode.US_XX.slack_channel_name())

@@ -31,6 +31,13 @@ python -m recidiviz.tools.load_end_to_end_data_sandbox \
     --sandbox_prefix my_prefix \
     --load_up_to_addresses aggregated_metrics.incarceration_state_aggregated_metrics,aggregated_metrics.supervision_state_aggregated_metrics
 
+# Run all dataflow pipelines, load impacted views and run the staging
+#  WORKFLOWS_FIRESTORE product export.
+python -m recidiviz.tools.load_end_to_end_data_sandbox \
+    --state_code US_XX \
+    --sandbox_prefix my_prefix \
+    --exports WORKFLOWS_FIRESTORE
+
 # Read only from raw data in `us_xx_raw_data_secondary` (e.g. to test a raw data
 # reimport in SECONDARY).
 python -m recidiviz.tools.load_end_to_end_data_sandbox \
@@ -47,10 +54,19 @@ from tabulate import tabulate
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view_sandbox_context import (
+    BigQueryViewSandboxContext,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
+from recidiviz.metrics.export.export_config import (
+    VIEW_COLLECTION_EXPORT_INDEX,
+    ExportViewCollectionConfig,
+)
+from recidiviz.metrics.export.view_export_manager import (
+    export_view_data_to_cloud_storage,
+)
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.flex_pipeline_runner import pipeline_cls_for_pipeline_name
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
@@ -99,6 +115,9 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_list
 from recidiviz.utils.types import assert_type
 from recidiviz.utils.yaml_dict import YAMLDict
+from recidiviz.view_registry.address_overrides_factory import (
+    address_overrides_for_view_builders,
+)
 
 
 def get_ingest_pipeline_params(
@@ -269,10 +288,21 @@ def get_view_update_input_dataset_overrides_dict(
     }
 
 
-def get_exports_to_run() -> list[ExportViewCollectionConfig]:
-    # TODO(#26138): Implement - return the set of metric exports that should be run as
-    #  part of this sandbox run (e.g. based on some new script argument)
-    return []
+def _get_exports_to_run(export_names: set[str]) -> list[ExportViewCollectionConfig]:
+    return [
+        VIEW_COLLECTION_EXPORT_INDEX[export_name]
+        for export_name in sorted(export_names)
+    ]
+
+
+def _get_view_addresses_for_exports(
+    export_configs: list[ExportViewCollectionConfig],
+) -> set[BigQueryAddress]:
+    return {
+        vb.address
+        for export_config in export_configs
+        for vb in export_config.view_builders_to_export
+    }
 
 
 def _get_params_summary(params_list: list[PipelineParameters]) -> str:
@@ -316,6 +346,7 @@ def load_end_to_end_sandbox(
     raw_data_source_instance: DirectIngestInstance,
     load_up_to_addresses: list[BigQueryAddress] | None,
     load_up_to_datasets: list[str] | None,
+    export_names: set[str],
     changed_datasets_to_include: list[str] | None,
     changed_datasets_to_ignore: list[str] | None,
 ) -> None:
@@ -352,6 +383,14 @@ def load_end_to_end_sandbox(
                 state_code, ingest_pipeline_params, post_ingest_pipeline_params
             )
         )
+
+        export_configs = _get_exports_to_run(export_names)
+
+        load_up_to_addresses = load_up_to_addresses or []
+        export_addresses = _get_view_addresses_for_exports(export_configs)
+        # Deduplicate in case there was overlap with input load_up_to_addresses
+        load_up_to_addresses = list(set(load_up_to_addresses) | export_addresses)
+
         view_builders_to_load = collect_changed_views_and_descendants_to_load(
             prompt=True,
             input_source_table_dataset_overrides_dict=(
@@ -364,9 +403,31 @@ def load_end_to_end_sandbox(
             load_up_to_datasets=load_up_to_datasets,
         )
 
-        print("\nCollecting views to load after pipelines run...\n")
-        exports_for_views = get_exports_to_run()
-        # TODO(#26138): Print out which exports will run when we hydrate that
+        if export_configs:
+            print("Will run the following view exports to GCS:")
+            print(
+                tabulate(
+                    [
+                        (
+                            export_config.export_name,
+                            export_config.output_directory.uri(),
+                            BigQueryAddress.addresses_to_str(
+                                {
+                                    vb.address
+                                    for vb in export_config.view_builders_to_export
+                                },
+                            ),
+                        )
+                        for export_config in export_configs
+                    ],
+                    headers=["Export name", "Destination", "Views to export"],
+                    tablefmt="fancy_grid",
+                )
+            )
+            prompt_for_confirmation(
+                "This will OVERWRITE which data is displayed in the relevant products "
+                "until our standard Airflow orchestration resets the files. Continue? "
+            )
 
         print(
             "\n~~~~~~~~~~~~~~~~~~~~~~ [STARTING SANDBOX LOAD] ~~~~~~~~~~~~~~~~~~~~~~\n"
@@ -430,11 +491,44 @@ def load_end_to_end_sandbox(
                 collected_builders=view_builders_to_load,
             )
 
-        # TODO(#26138): Add a prompt when we're ready to hydrate these
-        for _export_config in exports_for_views:
-            raise NotImplementedError(
-                "#26138: No support yet for running metric exports"
-            )
+        if export_names:
+            if prompt_for_step(
+                f"Will run the following metric exports: {sorted(export_names)}"
+            ):
+                prompt_for_confirmation(
+                    "This will OVERWRITE which data is displayed in the relevant "
+                    "products in staging until our standard Airflow orchestration "
+                    f"resets the files. You should message in "
+                    f"{state_code.slack_channel_name()} to notify everyone that "
+                    f"you're updating the data displayed in the staging frontend. "
+                    f"Have you notified {state_code.slack_channel_name()}?",
+                    accepted_response_override="I MESSAGED THE STATE-SPECIFIC CHANNEL",
+                )
+                prompt_for_confirmation(
+                    "You should also notify the Polaris team on-call (see the #polaris "
+                    "channel to see who is currently on-call). Have you notified the "
+                    "Polaris on-call?",
+                    accepted_response_override="I NOTIFIED THE POLARIS ON-CALL",
+                )
+
+                sandbox_address_overrides = address_overrides_for_view_builders(
+                    view_dataset_override_prefix=output_sandbox_prefix,
+                    view_builders=view_builders_to_load,
+                )
+
+                view_sandbox_context = BigQueryViewSandboxContext(
+                    parent_address_overrides=sandbox_address_overrides,
+                    parent_address_formatter_provider=None,
+                    output_sandbox_dataset_prefix=output_sandbox_prefix,
+                )
+                for export_name in export_names:
+                    export_view_data_to_cloud_storage(
+                        export_job_name=export_name,
+                        state_code=state_code.value,
+                        gcs_output_sandbox_subdir=None,
+                        view_sandbox_context=view_sandbox_context,
+                    )
+
         print("\n~~~~~~~~~~~~~~~~~~~~~~ [COMPLETE!] ~~~~~~~~~~~~~~~~~~~~~~\n")
 
 
@@ -471,25 +565,40 @@ def parse_arguments() -> argparse.Namespace:
         required=False,
         default=DirectIngestInstance.PRIMARY,
     )
-    view_load_type_group = parser.add_mutually_exclusive_group(required=True)
-    view_load_type_group.add_argument(
+    parser.add_argument(
         "--load_up_to_addresses",
         dest="load_up_to_addresses",
         help=(
-            "If provided, the sandbox load will stop after all of these views have "
-            "been loaded. Views that are only descendants of these views will not be "
-            "loaded."
+            "If provided, the sandbox BQ view load will stop after all of these views "
+            "have been loaded. Views that are only descendants of these views will not "
+            "be loaded. Can be used in combination with --exports (or if --exports is "
+            "not set) to load additional views that aren't a dependency of a specified "
+            "product export. This or --load_up_to_datasets must be set if --exports is "
+            "not set."
         ),
         type=str_to_address_list,
     )
 
-    view_load_type_group.add_argument(
+    parser.add_argument(
         "--load_up_to_datasets",
         dest="load_up_to_datasets",
         help=(
-            "If provided, the sandbox load will stop after all of these views in these "
-            "datasets have been loaded. Views that are only descendants of the views "
-            "in these datasets will not be loaded."
+            "If provided, the sandbox BQ view load will stop after all of these views "
+            "in these datasets have been loaded. Views that are only descendants of "
+            "the views in these datasets will not be loaded. Can be used in "
+            "combination with --exports (or if --exports is not set) to load "
+            "additional views that aren't a dependency of a specified product export. "
+            "This or --load_up_to_addresses must be set of --exports is not set."
+        ),
+        type=str_to_list,
+    )
+    parser.add_argument(
+        "--exports",
+        dest="exports",
+        help=(
+            "If provided, the script will load load all sandbox views included in the "
+            "provided exports, then export them to the appropriate GCS bucket so that "
+            "they are picked up by the staging dashboard."
         ),
         type=str_to_list,
     )
@@ -517,7 +626,33 @@ def parse_arguments() -> argparse.Namespace:
         type=str_to_list,
         required=False,
     )
-    return parser.parse_args()
+    parsed_args = parser.parse_args()
+
+    valid_exports = set(VIEW_COLLECTION_EXPORT_INDEX.keys())
+    if parsed_args.exports:
+        exports = set(parsed_args.exports)
+        if invalid_exports := exports - valid_exports:
+            raise argparse.ArgumentTypeError(
+                f"Invalid export name(s) found in --exports input: "
+                f"{sorted(invalid_exports)} "
+            )
+
+    if (
+        not parsed_args.exports
+        and not parsed_args.load_up_to_addresses
+        and not parsed_args.load_up_to_datasets
+    ):
+        raise argparse.ArgumentTypeError(
+            "Must specify one of --exports, --load_up_to_addresses, and "
+            "--load_up_to_datasets so we can determine which views to load."
+        )
+
+    if parsed_args.exports and parsed_args.project_id != GCP_PROJECT_STAGING:
+        raise argparse.ArgumentTypeError(
+            "Can only specify --exports for --project_id=recidiviz-staging. "
+            "Overwriting buckets with sandbox data in prod is disallowed."
+        )
+    return parsed_args
 
 
 if __name__ == "__main__":
@@ -529,6 +664,7 @@ if __name__ == "__main__":
         output_sandbox_prefix=args.sandbox_prefix,
         raw_data_source_instance=args.raw_data_source_instance,
         load_up_to_addresses=args.load_up_to_addresses,
+        export_names=set(args.exports) if args.exports else set(),
         load_up_to_datasets=args.load_up_to_datasets,
         changed_datasets_to_include=args.changed_datasets_to_include,
         changed_datasets_to_ignore=args.changed_datasets_to_ignore,
