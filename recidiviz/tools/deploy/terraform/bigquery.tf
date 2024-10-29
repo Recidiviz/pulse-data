@@ -202,6 +202,20 @@ resource "google_bigquery_table" "insights_supervision_officers_archive" {
   schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/insights_supervision_officers_archive.yaml"))["schema"])
 }
 
+resource "google_bigquery_table" "insights_supervision_officer_metrics_archive" {
+  dataset_id          = module.export_archives_dataset.dataset_id
+  table_id            = "insights_supervision_officer_metrics_archive"
+  description         = "This table contains daily archives of the insights_supervision_officer_metrics export for Insights, which are read directly from Cloud Storage."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = true
+    max_bad_records       = 0
+    source_format         = "NEWLINE_DELIMITED_JSON"
+    source_uris           = ["gs://${var.project_id}-insights-etl-data-archive/*/supervision_officer_metrics.json"]
+  }
+  schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/insights_supervision_officer_metrics_archive.yaml"))["schema"])
+}
 
 
 resource "google_bigquery_table" "workflows_launch_metadata" {

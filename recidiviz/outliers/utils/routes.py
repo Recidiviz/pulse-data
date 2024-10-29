@@ -30,7 +30,7 @@ def get_outliers_utils_blueprint() -> Blueprint:
     """Creates a Flask Blueprint for Outliers Utils routes."""
     outliers_utils_blueprint = Blueprint("outliers-utils", __name__)
 
-    # This endpoint is triggered by a pub/sub subscription on the insights-etl-data-archive GCS bucket.
+    # This endpoint is triggered by a pub/sub subscription on the insights-etl-data GCS bucket.
     # To trigger it manually, run (substituting PROJECT_ID and FILENAME):
     # `gcloud pubsub topics publish storage-notification-$PROJECT_ID-insights-etl-data --attribute=objectId=$FILENAME`
     @outliers_utils_blueprint.route("/archive-file", methods=["POST"])
