@@ -1,0 +1,41 @@
+address:
+  dataset_id: export_archives
+  table_id: insights_supervision_officer_metrics_archive
+description:
+  This table contains daily archives of the insights_supervision_officer_metrics
+  export for Insights, which are read directly from Cloud Storage.
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: metric_id
+    type: STRING
+    mode: NULLABLE
+  - name: metric_value
+    type: FLOAT
+    mode: NULLABLE
+  - name: period
+    type: STRING
+    mode: NULLABLE
+  - name: end_date
+    type: DATE
+    mode: NULLABLE
+  - name: officer_id
+    type: STRING
+    mode: NULLABLE
+  - name: value_type
+    type: STRING
+    mode: NULLABLE
+  - name: category_type
+    type: STRING
+    mode: NULLABLE
+  - name: caseload_type
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://recidiviz-123-insights-etl-data-archive/*/supervision_officer_metrics.json
+  sourceFormat: NEWLINE_DELIMITED_JSON
+  ignoreUnknownValues: true
+  compression: NONE
