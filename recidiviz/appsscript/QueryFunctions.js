@@ -349,22 +349,27 @@ function constructOpportunitiesGrantedText(
 }
 
 /**
- * Get max location
- * Given an array of arrays that contain a datapoint/value for each location, return the location name associated with the max value as well as the max value.
+ * Get max locations
+ * Given an array of arrays that contain a datapoint/value for each location, return an array containing the location names associated with the max value as well as the max value.
  * @param {array} locationData An array of arrays containing locations and values (ex: [["Region 1", 90], ["Region 5", 25]])
- * @returns {map} the location name with max value and the max value itself
+ * @returns {map} an array of the location names with max value and the max value itself
  **/
-function getMaxLocation(locationData) {
-  var maxLocation = null;
+function getMaxLocations(locationData) {
+  var maxLocations = [];
   var maxValue = 0;
   locationData.forEach((arr) => {
-    if (parseFloat(arr[1]) > maxValue) {
+    if (parseFloat(arr[1]) > parseFloat(maxValue)) {
+      // We have a new max value and location
       maxValue = arr[1];
-      maxLocation = arr[0];
+      maxLocations = [arr[0]];
+    } else if ((parseFloat(arr[1]) === parseFloat(maxValue)) && (maxValue !== 0)) {
+      // We have a tied max value and location
+      maxLocations.push(arr[0]);
     }
   });
 
-  return { maxLocation, maxValue };
+  Logger.log("{ maxLocations, maxValue }: %s", { maxLocations, maxValue });
+  return { maxLocations, maxValue };
 }
 
 /**
