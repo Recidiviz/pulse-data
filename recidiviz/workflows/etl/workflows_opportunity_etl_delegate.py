@@ -175,6 +175,22 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
         else:
             new_document["eligibleCriteria"] = processed_criteria
 
+        # infer eligibility flags if they were not set in data;
+        # the default assumption is that every record is eligible
+        # unless it has any number of ineligible_criteria, in which case it is almost eligible
+        # NOTE that we are not validating existing flags here, just passing them through
+        if "is_almost_eligible" not in new_document:
+            if ineligible_criteria:
+                new_document["is_almost_eligible"] = True
+                # we might be overriding an existing value here but that's fine,
+                # it cannot sensibly have any value besides False in this case anyway
+                new_document["is_eligible"] = False
+            else:
+                new_document["is_almost_eligible"] = False
+        # checking this one second because we might have set it as part of the almost_eligible inference
+        if "is_eligible" not in new_document:
+            new_document["is_eligible"] = True
+
         # Convert all keys to camelcase and return
         return convert_nested_dictionary_keys(new_document, snake_to_camel)
 

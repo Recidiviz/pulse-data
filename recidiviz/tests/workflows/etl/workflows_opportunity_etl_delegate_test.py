@@ -114,6 +114,8 @@ EXPECTED_DOCUMENT = {
     "randomFieldWithMetadata": False,
     "opportunityId": "id001",
     "opportunityPseudonymizedId": "anon001",
+    "isEligible": False,
+    "isAlmostEligible": True,
 }
 
 TEST_DATA_WITH_PREFIX_TO_STRIP = {
@@ -145,6 +147,8 @@ EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED = {
     "ineligibleCriteria": {},
     "metadata": {},
     "caseNotes": {},
+    "isEligible": True,
+    "isAlmostEligible": False,
 }
 
 # Test data specific to IX for the ATLAS migration
@@ -174,6 +178,8 @@ EXPECTED_IX_DOCUMENT_WITHOUT_PREFIX_STRIPPED = {
     },
     "metadata": {},
     "caseNotes": {},
+    "isEligible": False,
+    "isAlmostEligible": True,
 }
 
 TEST_DATA_WITH_NESTED_CRITERIA = {
@@ -210,6 +216,8 @@ EXPECTED_DOCUMENT_WITH_NESTED_CRITERIA = {
     "ineligibleCriteria": {},
     "metadata": {},
     "caseNotes": {},
+    "isEligible": True,
+    "isAlmostEligible": False,
 }
 
 TEST_DATA_WITH_NO_EXTERNAL_ID = {
@@ -290,6 +298,8 @@ class TestWorkflowsETLDelegate(TestCase):
         expected: dict[str, Any] = deepcopy(EXPECTED_DOCUMENT)
         expected["eligibleCriteria"].update(expected["ineligibleCriteria"])
         expected["ineligibleCriteria"] = {}  # type: ignore
+        expected["isEligible"] = True
+        expected["isAlmostEligible"] = False
         new_document = delegate.build_document(data)
         self.assertEqual(
             expected,
@@ -304,6 +314,8 @@ class TestWorkflowsETLDelegate(TestCase):
         expected: dict[str, Any] = deepcopy(EXPECTED_DOCUMENT)
         expected["eligibleCriteria"].update(expected["ineligibleCriteria"])
         expected["ineligibleCriteria"] = {}  # type: ignore
+        expected["isEligible"] = True
+        expected["isAlmostEligible"] = False
         new_document = delegate.build_document(data)
         self.assertEqual(
             expected,
@@ -340,6 +352,22 @@ class TestWorkflowsETLDelegate(TestCase):
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_TN)
         result = delegate.transform_row(json.dumps(TEST_DATA_WITH_NULL_EXTERNAL_ID))
         self.assertEqual((None, None), result)
+
+    def test_transform_with_eligibility_flags_already_set(self) -> None:
+        """Tests that the delegate does not override eligibility flags in input data."""
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
+        data = deepcopy(TEST_DATA)
+        data["is_eligible"] = False
+        data["is_almost_eligible"] = False
+
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        # this would have been inferred true if not for the fields we just added to data
+        expected["isAlmostEligible"] = False
+        new_document = delegate.build_document(data)
+        self.assertEqual(
+            expected,
+            new_document,
+        )
 
 
 class TestWorkflowsETLConfig(TestCase):
