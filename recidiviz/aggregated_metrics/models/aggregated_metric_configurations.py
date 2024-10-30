@@ -1203,7 +1203,7 @@ DAYS_TO_FIRST_LIBERTY_365 = AssignmentDaysToFirstEventMetric(
     "year following assignment, for all assignments during the analysis period",
     event_selectors=[
         EventSelector(
-            event_type=EventType.LIBERTY_START,
+            event_type=EventType.TRANSITIONS_TO_LIBERTY_ALL,
             event_conditions_dict={},
         )
     ],
@@ -1771,7 +1771,7 @@ LIBERTY_STARTS = EventCountMetric(
     description="Number of transitions to liberty",
     event_selectors=[
         EventSelector(
-            event_type=EventType.LIBERTY_START,
+            event_type=EventType.TRANSITIONS_TO_LIBERTY_ALL,
             event_conditions_dict={},
         ),
     ],
@@ -1783,12 +1783,8 @@ DAYS_SENTENCED_AT_LIBERTY_START = EventValueMetric(
     description="Days sentenced as of the start of liberty",
     event_selectors=[
         EventSelector(
-            event_type=EventType.INCARCERATION_RELEASE,
-            event_conditions_dict={"outflow_to_level_1": ["LIBERTY"]},
-        ),
-        EventSelector(
-            event_type=EventType.SUPERVISION_RELEASE,
-            event_conditions_dict={"outflow_to_level_1": ["LIBERTY"]},
+            event_type=EventType.TRANSITIONS_TO_LIBERTY_FROM_IN_STATE,
+            event_conditions_dict={},
         ),
     ],
     event_value_numeric="days_sentenced",
@@ -1801,12 +1797,8 @@ DAYS_SERVED_AT_LIBERTY_START = EventValueMetric(
     description="Days served as of the start of liberty",
     event_selectors=[
         EventSelector(
-            event_type=EventType.INCARCERATION_RELEASE,
-            event_conditions_dict={"outflow_to_level_1": ["LIBERTY"]},
-        ),
-        EventSelector(
-            event_type=EventType.SUPERVISION_RELEASE,
-            event_conditions_dict={"outflow_to_level_1": ["LIBERTY"]},
+            event_type=EventType.TRANSITIONS_TO_LIBERTY_FROM_IN_STATE,
+            event_conditions_dict={},
         ),
     ],
     event_value_numeric="days_served",
@@ -2157,12 +2149,8 @@ PROP_SENTENCE_SERVED_AT_LIBERTY_START = EventValueMetric(
     description="Average proportion of sentence served as of the release event",
     event_selectors=[
         EventSelector(
-            event_type=EventType.INCARCERATION_RELEASE,
-            event_conditions_dict={"outflow_to_level_1": ["LIBERTY"]},
-        ),
-        EventSelector(
-            event_type=EventType.SUPERVISION_RELEASE,
-            event_conditions_dict={"outflow_to_level_1": ["LIBERTY"]},
+            event_type=EventType.TRANSITIONS_TO_LIBERTY_FROM_IN_STATE,
+            event_conditions_dict={},
         ),
     ],
     event_value_numeric="prop_sentence_served",

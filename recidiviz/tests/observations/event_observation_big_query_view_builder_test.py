@@ -35,7 +35,7 @@ class EventObservationBigQueryViewBuilderTest(unittest.TestCase):
 
     def test_build_view_direct_address_sql_source(self) -> None:
         view_builder = EventObservationBigQueryViewBuilder(
-            event_type=EventType.LIBERTY_START,
+            event_type=EventType.TRANSITIONS_TO_LIBERTY_ALL,
             description="My description",
             sql_source=BigQueryAddress.from_str("dataset.source_table"),
             attribute_cols=[
@@ -47,7 +47,9 @@ class EventObservationBigQueryViewBuilderTest(unittest.TestCase):
 
         view = view_builder.build(sandbox_context=None)
         self.assertEqual(
-            BigQueryAddress.from_str("observations__person_event.liberty_start"),
+            BigQueryAddress.from_str(
+                "observations__person_event.transitions_to_liberty_all"
+            ),
             view.address,
         )
 
