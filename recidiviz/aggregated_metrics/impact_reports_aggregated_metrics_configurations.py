@@ -203,14 +203,12 @@ DISTINCT_ACTIVE_USERS_INCARCERATION = [
         display_name="Distinct Active Users",
         description="Number of distinct Workflows users having at least one usage event for the "
         f"task of type {b.task_title.lower()} during the time period",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
-                event_conditions_dict={
-                    "task_type": [b.task_type_name],
-                },
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+            event_conditions_dict={
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
@@ -222,14 +220,12 @@ DISTINCT_ACTIVE_USERS_SUPERVISION = [
         display_name="Distinct Active Users",
         description="Number of distinct Workflows users having at least one usage event for the "
         f"task of type {b.task_title.lower()} during the time period",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
-                event_conditions_dict={
-                    "task_type": [b.task_type_name],
-                },
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+            event_conditions_dict={
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION

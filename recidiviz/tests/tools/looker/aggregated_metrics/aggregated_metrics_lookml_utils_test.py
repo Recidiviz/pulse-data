@@ -59,12 +59,10 @@ TEST_ASSIGNMENT_METRIC = AssignmentDaysToFirstEventMetric(
     name="test_assignment_metric",
     display_name="Test Assignment Metric",
     description="Description of Test Assignment Metric",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.VIOLATION_RESPONSE,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.VIOLATION_RESPONSE,
+        event_conditions_dict={},
+    ),
     window_length_days=365,
 )
 
@@ -72,12 +70,10 @@ TEST_EVENT_METRIC = EventCountMetric(
     name="test_event_metric",
     display_name="Test Event Metric",
     description="Description of test event metric",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
-            event_conditions_dict={"outflow_to_incarceration": ["false"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
+        event_conditions_dict={"outflow_to_incarceration": ["false"]},
+    ),
 )
 
 TEST_POPULATION_METRIC = DailyAvgSpanCountMetric(
