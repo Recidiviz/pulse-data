@@ -77,7 +77,9 @@ columns:
       - value: 4
         description: "Individual Client Request"
       - value: 5
-        description: "Other Jurisdiction (This could refer to transfers In or Out of other jurisdictions.)"
+        description: |-
+          Other Jurisdiction (This could refer to transfers In or Out of other
+          jurisdictions.)
       - value: 6
         description: "Pending Adult Charges (Juvenile Populations Only)"
       - value: 7
@@ -121,13 +123,16 @@ columns:
       - value: 26
         description: "Informal Resolution (Juvenile Populations Only)"
       - value: 27
-        description: "Violation of Probation - Prob. to Terminate(J) (Juvenile Populations Only)"
+        description: |-
+          Violation of Probation - Prob. to Terminate(J) (Juvenile Populations Only)
       - value: 28
         description: "Interstate Active Detainer"
       - value: 29
-        description: "Discharge (Discharge from incarceration or supervision to society)"
+        description: Discharge (Discharge from incarceration or supervision to society)
       - value: 30
-        description: "Interstate Compact (This could refer to transfers In or Out of out of state or federal jurisdictions.)"
+        description: |-
+          "Interstate Compact (This could refer to transfers In or Out of out of state
+          or federal jurisdictions.)"
       - value: 31
         description: "Safe Keepers"
       - value: 32
@@ -159,12 +164,16 @@ columns:
   - name: Created_By_Tx
     is_pii: True
   - name: Created_On_Date
+    description: When this record was created
+    field_type: datetime
   - name: Hearing_Date
   - name: Keep_Separate_Tx
   - name: Location_Tx
   - name: Modified_By_Tx
     is_pii: True
   - name: Modified_On_Date
+    description: When this record was last modfified
+    field_type: datetime
   - name: Notes_Tx
     is_pii: True
   - name: Officer_Name
