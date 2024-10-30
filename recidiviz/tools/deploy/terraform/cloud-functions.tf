@@ -38,6 +38,7 @@ resource "google_cloudfunctions_function" "trigger_calculation_dag" {
     event_type = "google.pubsub.topic.publish"
     resource   = "projects/${var.project_id}/topics/v1.calculator.trigger_calculation_pipelines"
   }
+  ingress_settings = "ALLOW_INTERNAL_ONLY"
 
   entry_point = "trigger_calculation_dag"
   environment_variables = {
@@ -67,6 +68,7 @@ resource "google_cloudfunctions_function" "trigger_hourly_monitoring_dag" {
     event_type = "google.pubsub.topic.publish"
     resource   = "projects/${var.project_id}/topics/v1.airflow_monitoring.trigger_hourly_monitoring_dag"
   }
+  ingress_settings = "ALLOW_INTERNAL_ONLY"
 
   entry_point = "trigger_hourly_monitoring_dag"
   environment_variables = {
@@ -96,6 +98,7 @@ resource "google_cloudfunctions_function" "trigger_sftp_dag" {
     event_type = "google.pubsub.topic.publish"
     resource   = google_pubsub_topic.sftp_pubsub_topic.id
   }
+  ingress_settings = "ALLOW_INTERNAL_ONLY"
 
   entry_point = "trigger_sftp_dag"
   environment_variables = {
@@ -125,6 +128,7 @@ resource "google_cloudfunctions_function" "trigger_raw_data_import_dag" {
     event_type = "google.pubsub.topic.publish"
     resource   = google_pubsub_topic.raw_data_import_dag_pubsub_topic.id
   }
+  ingress_settings = "ALLOW_INTERNAL_ONLY"
 
   entry_point = "trigger_raw_data_import_dag"
   environment_variables = {
@@ -170,6 +174,7 @@ resource "google_cloudfunctions2_function" "handle_zipfile" {
       PYTHONPATH = "/workspace"
       PROJECT_ID = var.project_id
     }
+    # TODO(#34174) add internal vpc to connect this cf to filename_normalization
   }
 }
 
@@ -216,5 +221,7 @@ resource "google_cloudfunctions2_function" "filename_normalization" {
       ZIPFILE_HANDLER_FUNCTION_URL = google_cloudfunctions2_function.handle_zipfile.url
       PROJECT_ID                   = var.project_id
     }
+    ingress_settings = "ALLOW_INTERNAL_ONLY"
+    # TODO(#34174) add internal vpc to connect this cf to handle_zipfile
   }
 }
