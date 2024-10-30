@@ -30,8 +30,8 @@ def digest_ordered_checksum_and_size_pairs(
     """THIS FUNCTION WAS COPY-PASTED FROM:
     google.cloud.storage.transfer_manager._digest_ordered_checksum_and_size_pairs
     see https://github.com/googleapis/python-storage/blob/6ed22ee91d4596dd27338ff8b35076d1238a603c/google/cloud/storage/transfer_manager.py#L1337
-    for originial implementation. function was moved here so as not to call private function
-    that might change in any version update w/o backwards compatability.
+    for original implementation. function was moved here so as not to call private function
+    that might change in any version update w/o backwards compatibility.
 
     Takes in an ordered list of (checksum, size of checksumed bytes) and generates a
     single checksum. Is useful for generating a single checksum for a full file based on

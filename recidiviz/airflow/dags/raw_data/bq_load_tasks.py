@@ -313,9 +313,9 @@ def append_to_raw_data_table_for_batch(
     bq_client = BigQueryClientImpl()
 
     manager = DirectIngestRawFileLoadManager(
-        raw_data_instance,
-        get_direct_ingest_region_raw_config(region_code),
-        fs,
+        raw_data_instance=raw_data_instance,
+        region_raw_file_config=get_direct_ingest_region_raw_config(region_code),
+        fs=fs,
         big_query_client=bq_client,
     )
 
