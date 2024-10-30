@@ -95,13 +95,14 @@ function createColumnChart(
   width = 1278,
   height = 910,
   legend = Charts.Position.NONE,
+  filterOutZero = true,
 ) {
   const enCollator = new Intl.Collator("en", { numeric: true });
   let buildChart = false;
   data.sort(enCollator.compare).forEach((newRow) => {
     if (
       REGIONS_AND_FACILITIES_TO_FILTER_OUT.includes(newRow[0]) ||
-      parseInt(newRow[1]) === 0
+      (filterOutZero && parseInt(newRow[1]) === 0)
     ) {
       return;
     }
