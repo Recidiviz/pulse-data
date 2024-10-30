@@ -204,23 +204,8 @@ DISTINCT_ACTIVE_USERS_INCARCERATION = [
         description="Number of distinct Workflows users having at least one usage event for the "
         f"task of type {b.task_title.lower()} during the time period",
         event_selectors=[
-            # Event where the user updated a person's status (eligible, ineligible, etc.) in Workflows
             EventSelector(
-                event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
-                event_conditions_dict={
-                    "task_type": [b.task_type_name],
-                },
-            ),
-            # Event where the user took an action in Workflows not covered by the above
-            EventSelector(
-                event_type=EventType.WORKFLOWS_USER_ACTION,
-                event_conditions_dict={
-                    "task_type": [b.task_type_name],
-                },
-            ),
-            # Event where the user visited a workflows page
-            EventSelector(
-                event_type=EventType.WORKFLOWS_USER_PAGE,
+                event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
                 event_conditions_dict={
                     "task_type": [b.task_type_name],
                 },
@@ -238,23 +223,8 @@ DISTINCT_ACTIVE_USERS_SUPERVISION = [
         description="Number of distinct Workflows users having at least one usage event for the "
         f"task of type {b.task_title.lower()} during the time period",
         event_selectors=[
-            # Event where the user updated a person's status (eligible, ineligible, etc.) in Workflows
             EventSelector(
-                event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
-                event_conditions_dict={
-                    "task_type": [b.task_type_name],
-                },
-            ),
-            # Event where the user took an action in Workflows not covered by the above
-            EventSelector(
-                event_type=EventType.WORKFLOWS_USER_ACTION,
-                event_conditions_dict={
-                    "task_type": [b.task_type_name],
-                },
-            ),
-            # Event where the user visited a workflows page
-            EventSelector(
-                event_type=EventType.WORKFLOWS_USER_PAGE,
+                event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
                 event_conditions_dict={
                     "task_type": [b.task_type_name],
                 },
