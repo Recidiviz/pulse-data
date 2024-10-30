@@ -41,14 +41,12 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER = DailyAvgSpanCountMetric(
     name="avg_population_task_almost_eligible",
     display_name="Average Population: Task Almost Eligible",
     description="Average daily count of clients almost eligible for selected task type",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-            span_conditions_dict={
-                "is_almost_eligible": ["true"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_almost_eligible": ["true"],
+        },
+    ),
 )
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER_FUNNEL_METRICS = [
     DailyAvgSpanCountMetric(
@@ -56,15 +54,13 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER_FUNNEL_METRICS = [
         display_name=f"Average Population: Task Almost Eligible And {snake_to_title(k)}",
         description=f"Average daily count of clients almost eligible for selected task type with funnel status "
         f"{snake_to_title(k).lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-                span_conditions_dict={
-                    "is_almost_eligible": ["true"],
-                    k.lower(): ["true"],
-                },
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_almost_eligible": ["true"],
+                k.lower(): ["true"],
+            },
+        ),
     )
     for k in USAGE_EVENTS_DICT
 ]
@@ -72,14 +68,12 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER = DailyAvgSpanCountMetric(
     name="avg_population_task_eligible",
     display_name="Average Population: Task Eligible",
     description="Average daily count of clients eligible for selected task type",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-            span_conditions_dict={
-                "is_eligible": ["true"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+        },
+    ),
 )
 AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER_FUNNEL_METRICS = [
     DailyAvgSpanCountMetric(
@@ -87,15 +81,13 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER_FUNNEL_METRICS = [
         display_name=f"Average Population: Task Eligible And {snake_to_title(k)}",
         description=f"Average daily count of clients eligible for selected task type with funnel status "
         f"{snake_to_title(k).lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-                span_conditions_dict={
-                    "is_eligible": ["true"],
-                    k.lower(): ["true"],
-                },
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                k.lower(): ["true"],
+            },
+        ),
     )
     for k in USAGE_EVENTS_DICT
 ]
@@ -113,12 +105,10 @@ DISTINCT_REGISTERED_USERS_LOOKER = SpanDistinctUnitCountMetric(
     name="distinct_registered_users",
     display_name="Distinct Total Registered Primary Users",
     description="Number of distinct primary (line staff) Workflows users who have signed up/logged into Workflows at least once",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
-            span_conditions_dict={},
-        ),
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+        span_conditions_dict={},
+    ),
 )
 DISTINCT_LOGGED_IN_USERS_LOOKER = EventDistinctUnitCountMetric(
     name="distinct_logged_in_users",
@@ -142,14 +132,12 @@ PERSON_DAYS_TASK_ELIGIBLE_LOOKER = SumSpanDaysMetric(
     name="person_days_task_eligible",
     display_name="Person-Days Eligible for Opportunity",
     description="Total number of person-days spent eligible for opportunities of selected task type",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.TASK_ELIGIBILITY_SESSION,
-            span_conditions_dict={
-                "is_eligible": ["true"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.TASK_ELIGIBILITY_SESSION,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+        },
+    ),
 )
 TASK_COMPLETIONS_LOOKER = EventCountMetric(
     name="task_completions",

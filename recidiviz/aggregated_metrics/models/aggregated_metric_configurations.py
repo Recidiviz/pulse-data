@@ -117,12 +117,10 @@ ASSIGNMENTS = AssignmentCountMetric(
     name="assignments",
     display_name="Assignments",
     description="Number of client assignments",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.PERSON_DEMOGRAPHICS,
-            span_conditions_dict={},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.PERSON_DEMOGRAPHICS,
+        span_conditions_dict={},
+    ),
 )
 
 AVG_ASSIGNMENTS_OFFICER = MiscAggregatedMetric(
@@ -142,12 +140,10 @@ AVG_AGE = DailyAvgTimeSinceSpanStartMetric(
     name="avg_age",
     display_name="Average Age",
     description="Average daily age of the population",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.PERSON_DEMOGRAPHICS,
-            span_conditions_dict={},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.PERSON_DEMOGRAPHICS,
+        span_conditions_dict={},
+    ),
     scale_to_year=True,
 )
 
@@ -191,63 +187,53 @@ AVG_DAILY_POPULATION = DailyAvgSpanCountMetric(
     name="avg_daily_population",
     display_name="Average Population",
     description="Average daily count of clients in the population",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={},
+    ),
 )
 
 AVG_DAILY_POPULATION_COMMUNITY_CONFINEMENT = DailyAvgSpanCountMetric(
     name="avg_population_community_confinement",
     display_name="Average Population: Community Confinement",
     description="Average daily count of clients in community confinement",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["INCARCERATION", "SUPERVISION"],
-                "compartment_level_2": ["COMMUNITY_CONFINEMENT"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["INCARCERATION", "SUPERVISION"],
+            "compartment_level_2": ["COMMUNITY_CONFINEMENT"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_CRIME_AGAINST_PERSON = DailyAvgSpanCountMetric(
     name="avg_population_crime_against_person",
     display_name="Average Population: Crime Against Person",
     description="Average daily count of clients sentenced for a crime against person",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.SENTENCE_SPAN,
-            span_conditions_dict={"any_is_crime_against_person": ["true"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.SENTENCE_SPAN,
+        span_conditions_dict={"any_is_crime_against_person": ["true"]},
+    ),
 )
 
 AVG_DAILY_POPULATION_CRIME_AGAINST_PROPERTY = DailyAvgSpanCountMetric(
     name="avg_population_crime_against_property",
     display_name="Average Population: Crime Against Property",
     description="Average daily count of clients sentenced for crime against property",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.SENTENCE_SPAN,
-            span_conditions_dict={"any_is_crime_against_property": ["true"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.SENTENCE_SPAN,
+        span_conditions_dict={"any_is_crime_against_property": ["true"]},
+    ),
 )
 
 AVG_DAILY_POPULATION_CRIME_AGAINST_SOCIETY = DailyAvgSpanCountMetric(
     name="avg_population_crime_against_society",
     display_name="Average Population: Crime Against Society",
     description="Average daily count of clients sentenced for crime against society",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.SENTENCE_SPAN,
-            span_conditions_dict={"any_is_crime_against_society": ["true"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.SENTENCE_SPAN,
+        span_conditions_dict={"any_is_crime_against_society": ["true"]},
+    ),
 )
 
 AVG_DAILY_POPULATION_DOMESTIC_VIOLENCE_CASE_TYPE = DailyAvgSpanCountMetric(
@@ -255,30 +241,26 @@ AVG_DAILY_POPULATION_DOMESTIC_VIOLENCE_CASE_TYPE = DailyAvgSpanCountMetric(
     display_name="Average Population: Domestic Violence Case Type",
     description="Average daily count of clients on supervision with a domestic "
     "violence case type",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["SUPERVISION"],
-                "case_type_start": ["DOMESTIC_VIOLENCE"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["SUPERVISION"],
+            "case_type_start": ["DOMESTIC_VIOLENCE"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_DRUG_CASE_TYPE = DailyAvgSpanCountMetric(
     name="avg_population_drug_case_type",
     display_name="Average Population: Drug Case Type",
     description="Average daily count of clients on supervision with a drug case type",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["SUPERVISION"],
-                "case_type_start": ["DRUG_COURT"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["SUPERVISION"],
+            "case_type_start": ["DRUG_COURT"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_EMPLOYED = DailyAvgSpanCountMetric(
@@ -286,68 +268,58 @@ AVG_DAILY_POPULATION_EMPLOYED = DailyAvgSpanCountMetric(
     display_name="Average Population With Employment",
     description="Average daily count of clients with some form of employment or "
     "alternate occupation/status",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.EMPLOYMENT_STATUS_SESSION,
-            span_conditions_dict={"is_employed": ["true"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.EMPLOYMENT_STATUS_SESSION,
+        span_conditions_dict={"is_employed": ["true"]},
+    ),
 )
 
 AVG_DAILY_POPULATION_FEMALE = DailyAvgSpanCountMetric(
     name="avg_population_female",
     display_name="Average Population: Female",
     description="Average daily count of female clients in the population",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.PERSON_DEMOGRAPHICS,
-            span_conditions_dict={"gender": ["FEMALE"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.PERSON_DEMOGRAPHICS,
+        span_conditions_dict={"gender": ["FEMALE"]},
+    ),
 )
 
 AVG_DAILY_POPULATION_GENERAL_CASE_TYPE = DailyAvgSpanCountMetric(
     name="avg_population_general_case_type",
     display_name="Average Population: General Case Type",
     description="Average daily count of clients on supervision with a general case type",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["SUPERVISION"],
-                "case_type_start": ["GENERAL"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["SUPERVISION"],
+            "case_type_start": ["GENERAL"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_GENERAL_INCARCERATION = DailyAvgSpanCountMetric(
     name="avg_population_general_incarceration",
     display_name="Average Population: General Incarceration",
     description="Average daily count of clients in general incarceration",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["INCARCERATION"],
-                "compartment_level_2": ["GENERAL"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["INCARCERATION"],
+            "compartment_level_2": ["GENERAL"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_HIGH_RISK_LEVEL = DailyAvgSpanCountMetric(
     name="avg_population_high_risk_level",
     display_name="Average Population: High Risk Level",
     description="Average daily count of clients with a high assessed risk level",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.ASSESSMENT_SCORE_SESSION,
-            span_conditions_dict={
-                "assessment_level": ["HIGH", "MEDIUM_HIGH", "MAXIMUM", "VERY_HIGH"]
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.ASSESSMENT_SCORE_SESSION,
+        span_conditions_dict={
+            "assessment_level": ["HIGH", "MEDIUM_HIGH", "MAXIMUM", "VERY_HIGH"]
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_LIMITED_SUPERVISION_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
@@ -355,26 +327,22 @@ AVG_DAILY_POPULATION_LIMITED_SUPERVISION_JUSTICE_IMPACT = DailyAvgSpanCountMetri
     display_name="Average Population: Limited Supervision (Justice Impact Type)",
     description="Average daily count of clients on limited supervision, "
     "mutually exclusive from other justice impact types",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.JUSTICE_IMPACT_SESSION,
-            span_conditions_dict={
-                "justice_impact_type": [JusticeImpactType.LIMITED_SUPERVISION.value],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.JUSTICE_IMPACT_SESSION,
+        span_conditions_dict={
+            "justice_impact_type": [JusticeImpactType.LIMITED_SUPERVISION.value],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_LOW_RISK_LEVEL = DailyAvgSpanCountMetric(
     name="avg_population_low_risk_level",
     display_name="Average Population: Low Risk Level",
     description="Average daily count of clients with a low assessed risk level",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.ASSESSMENT_SCORE_SESSION,
-            span_conditions_dict={"assessment_level": ["LOW", "LOW_MEDIUM", "MINIMUM"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.ASSESSMENT_SCORE_SESSION,
+        span_conditions_dict={"assessment_level": ["LOW", "LOW_MEDIUM", "MINIMUM"]},
+    ),
 )
 
 AVG_DAILY_POPULATION_MENTAL_HEALTH_CASE_TYPE = DailyAvgSpanCountMetric(
@@ -382,42 +350,36 @@ AVG_DAILY_POPULATION_MENTAL_HEALTH_CASE_TYPE = DailyAvgSpanCountMetric(
     display_name="Average Population: Mental Health Case Type",
     description="Average daily count of clients on supervision with a mental health "
     "case type",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["SUPERVISION"],
-                "case_type_start": [
-                    "SERIOUS_MENTAL_ILLNESS",
-                    "MENTAL_HEALTH_COURT",
-                ],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["SUPERVISION"],
+            "case_type_start": [
+                "SERIOUS_MENTAL_ILLNESS",
+                "MENTAL_HEALTH_COURT",
+            ],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_NONWHITE = DailyAvgSpanCountMetric(
     name="avg_population_nonwhite",
     display_name="Average Population: Non-White",
     description="Average daily count of non-white clients",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.PERSON_DEMOGRAPHICS,
-            span_conditions_dict={"prioritized_race_or_ethnicity": '!= "WHITE"'},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.PERSON_DEMOGRAPHICS,
+        span_conditions_dict={"prioritized_race_or_ethnicity": '!= "WHITE"'},
+    ),
 )
 
 AVG_DAILY_POPULATION_NONLIMITED_SUPERVISION = DailyAvgSpanCountMetric(
     name="avg_population_nonlimited_supervision",
     display_name="Average Population: Non-limited Supervision",
     description="Average daily population of individuals with non-limited supervision",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.SUPERVISION_LEVEL_SESSION,
-            span_conditions_dict={"supervision_level": '!= "LIMITED"'},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_LEVEL_SESSION,
+        span_conditions_dict={"supervision_level": '!= "LIMITED"'},
+    ),
 )
 
 AVG_DAILY_POPULATION_NONLIMITED_SUPERVISION_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
@@ -425,110 +387,96 @@ AVG_DAILY_POPULATION_NONLIMITED_SUPERVISION_JUSTICE_IMPACT = DailyAvgSpanCountMe
     display_name="Average Population: Non-limited Supervision (Justice Impact Type)",
     description="Average daily population of individuals on non-limited supervision, "
     "mutually exclusive from other justice impact types",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.JUSTICE_IMPACT_SESSION,
-            span_conditions_dict={
-                "justice_impact_type": [JusticeImpactType.NONLIMITED_SUPERVISION.value]
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.JUSTICE_IMPACT_SESSION,
+        span_conditions_dict={
+            "justice_impact_type": [JusticeImpactType.NONLIMITED_SUPERVISION.value]
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_OTHER_CASE_TYPE = DailyAvgSpanCountMetric(
     name="avg_population_other_case_type",
     display_name="Average Population: Other Case Type",
     description="Average daily count of clients on supervision with other case type",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["SUPERVISION"],
-                "case_type_start": """NOT IN (
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["SUPERVISION"],
+            "case_type_start": """NOT IN (
     "GENERAL", "DOMESTIC_VIOLENCE", "SEX_OFFENSE", "DRUG_COURT",
     "SERIOUS_MENTAL_ILLNESS", "MENTAL_HEALTH_COURT"
 )""",
-            },
-        )
-    ],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_PAROLE = DailyAvgSpanCountMetric(
     name="avg_population_parole",
     display_name="Average Population: Parole",
     description="Average daily count of clients on parole",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["SUPERVISION"],
-                "compartment_level_2": ["PAROLE", "DUAL"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["SUPERVISION"],
+            "compartment_level_2": ["PAROLE", "DUAL"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_PAROLE_BOARD_HOLD = DailyAvgSpanCountMetric(
     name="avg_population_parole_board_hold",
     display_name="Average Population: Parole Board Hold",
     description="Average daily count of clients in a parole board hold",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["INCARCERATION"],
-                "compartment_level_2": ["PAROLE_BOARD_HOLD"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["INCARCERATION"],
+            "compartment_level_2": ["PAROLE_BOARD_HOLD"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE = DailyAvgSpanCountMetric(
     name="avg_population_past_full_term_release_date",
     display_name="Average Population: Past Full Term Release Date",
     description="Average daily count of clients beyond their full term release date",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.TASK_CRITERIA_SPAN,
-            span_conditions_dict={
-                "criteria": [
-                    "INCARCERATION_PAST_FULL_TERM_RELEASE_DATE",
-                    "SUPERVISION_PAST_FULL_TERM_RELEASE_DATE",
-                ],
-                "meets_criteria": ["true"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.TASK_CRITERIA_SPAN,
+        span_conditions_dict={
+            "criteria": [
+                "INCARCERATION_PAST_FULL_TERM_RELEASE_DATE",
+                "SUPERVISION_PAST_FULL_TERM_RELEASE_DATE",
+            ],
+            "meets_criteria": ["true"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_PAST_PAROLE_ELIGIBILITY_DATE = DailyAvgSpanCountMetric(
     name="avg_population_past_parole_eligibility_date",
     display_name="Average Population: Past Parole Eligibility Date",
     description="Average daily count of clients beyond their parole eligibility date",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.TASK_CRITERIA_SPAN,
-            span_conditions_dict={
-                "criteria": ["INCARCERATION_PAST_PAROLE_ELIGIBILITY_DATE"],
-                "meets_criteria": ["true"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.TASK_CRITERIA_SPAN,
+        span_conditions_dict={
+            "criteria": ["INCARCERATION_PAST_PAROLE_ELIGIBILITY_DATE"],
+            "meets_criteria": ["true"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_PROBATION = DailyAvgSpanCountMetric(
     name="avg_population_probation",
     display_name="Average Population: Probation",
     description="Average daily count of clients on probation",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["SUPERVISION"],
-                "compartment_level_2": ["PROBATION"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["SUPERVISION"],
+            "compartment_level_2": ["PROBATION"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_SEX_OFFENSE_CASE_TYPE = DailyAvgSpanCountMetric(
@@ -536,44 +484,38 @@ AVG_DAILY_POPULATION_SEX_OFFENSE_CASE_TYPE = DailyAvgSpanCountMetric(
     display_name="Average Population: Sex Offense Case Type",
     description="Average daily count of clients on supervision with a sex offense case "
     "type",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["SUPERVISION"],
-                "case_type_start": ["SEX_OFFENSE"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["SUPERVISION"],
+            "case_type_start": ["SEX_OFFENSE"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_SHOCK_INCARCERATION = DailyAvgSpanCountMetric(
     name="avg_population_shock_incarceration",
     display_name="Average Population: Shock Incarceration",
     description="Average daily count of clients in shock incarceration",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["INCARCERATION"],
-                "compartment_level_2": ["SHOCK_INCARCERATION"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["INCARCERATION"],
+            "compartment_level_2": ["SHOCK_INCARCERATION"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT = DailyAvgSpanCountMetric(
     name="avg_population_solitary_confinement",
     display_name="Average Population: Solitary Confinement",
     description="Average daily population of individuals in solitary confinement",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSION,
-            span_conditions_dict={
-                "housing_unit_type_collapsed_solitary": ["SOLITARY_CONFINEMENT"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSION,
+        span_conditions_dict={
+            "housing_unit_type_collapsed_solitary": ["SOLITARY_CONFINEMENT"],
+        },
+    ),
 )
 
 
@@ -581,12 +523,10 @@ AVG_DAILY_POPULATION_STATE_PRISON = DailyAvgSpanCountMetric(
     name="avg_population_state_prison",
     display_name="Average Population: State Prison location type",
     description="Average daily count of people in state prison",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.LOCATION_TYPE_SESSION,
-            span_conditions_dict={"location_type": ["STATE_PRISON"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.LOCATION_TYPE_SESSION,
+        span_conditions_dict={"location_type": ["STATE_PRISON"]},
+    ),
 )
 
 AVG_DAILY_POPULATION_HOUSING_TYPE_METRICS = [
@@ -594,12 +534,10 @@ AVG_DAILY_POPULATION_HOUSING_TYPE_METRICS = [
         name=f"avg_population_{housing_type.lower()}",
         display_name=f"Average Population: {snake_to_title(housing_type)}",
         description=f"Average daily count of residents in {snake_to_title(housing_type)}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.HOUSING_TYPE_SESSION,
-                span_conditions_dict={"housing_unit_type": [housing_type]},
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.HOUSING_TYPE_SESSION,
+            span_conditions_dict={"housing_unit_type": [housing_type]},
+        ),
     )
     for housing_type in _HOUSING_UNIT_TYPES
 ]
@@ -608,14 +546,12 @@ AVG_ACTIVE_LENGTH_OF_STAY_SOLITARY_CONFINEMENT = DailyAvgTimeSinceSpanStartMetri
     name="avg_active_length_of_stay_solitary_confinement",
     display_name="Average Active Length of Stay: Solitary Confinement",
     description="Average daily active length of stay in solitary confinement",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSION,
-            span_conditions_dict={
-                "housing_unit_type_collapsed_solitary": ["SOLITARY_CONFINEMENT"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSION,
+        span_conditions_dict={
+            "housing_unit_type_collapsed_solitary": ["SOLITARY_CONFINEMENT"],
+        },
+    ),
 )
 
 AVG_ACTIVE_LENGTH_OF_STAY_HOUSING_UNIT_TYPE_METRICS = [
@@ -623,12 +559,10 @@ AVG_ACTIVE_LENGTH_OF_STAY_HOUSING_UNIT_TYPE_METRICS = [
         name=f"avg_active_length_of_stay_{housing_type.lower()}",
         display_name=f"Average Active Length of Stay: {snake_to_title(housing_type)}",
         description=f"Average daily active length of stay in {snake_to_title(housing_type)}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.HOUSING_TYPE_SESSION,
-                span_conditions_dict={"housing_unit_type": [housing_type]},
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.HOUSING_TYPE_SESSION,
+            span_conditions_dict={"housing_unit_type": [housing_type]},
+        ),
     )
     for housing_type in _HOUSING_UNIT_TYPES
 ]
@@ -638,14 +572,12 @@ AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT_JUSTICE_IMPACT = DailyAvgSpanCountMetr
     display_name="Average Population: Solitary Confinement (Justice Impact Type)",
     description="Average daily population of individuals in solitary confinement, "
     "mutually exclusive from other justice impact types",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.JUSTICE_IMPACT_SESSION,
-            span_conditions_dict={
-                "justice_impact_type": [JusticeImpactType.SOLITARY_CONFINEMENT.value]
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.JUSTICE_IMPACT_SESSION,
+        span_conditions_dict={
+            "justice_impact_type": [JusticeImpactType.SOLITARY_CONFINEMENT.value]
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_DRUG_OFFENSE_SENTENCE = DailyAvgSpanCountMetric(
@@ -653,12 +585,10 @@ AVG_DAILY_POPULATION_DRUG_OFFENSE_SENTENCE = DailyAvgSpanCountMetric(
     display_name="Average Population: Drug Offense",
     description="Average daily population of clients sentenced for at least one drug "
     "offense",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.SENTENCE_SPAN,
-            span_conditions_dict={"any_is_drug_uniform": ["true"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.SENTENCE_SPAN,
+        span_conditions_dict={"any_is_drug_uniform": ["true"]},
+    ),
 )
 
 AVG_DAILY_POPULATION_VIOLENT_OFFENSE_SENTENCE = DailyAvgSpanCountMetric(
@@ -666,12 +596,10 @@ AVG_DAILY_POPULATION_VIOLENT_OFFENSE_SENTENCE = DailyAvgSpanCountMetric(
     display_name="Average Population: Violent Offense",
     description="Average daily population of clients sentenced for at least one violent"
     " offense",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.SENTENCE_SPAN,
-            span_conditions_dict={"any_is_violent_uniform": ["true"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.SENTENCE_SPAN,
+        span_conditions_dict={"any_is_violent_uniform": ["true"]},
+    ),
 )
 
 _SUPERVISION_LEVEL_SPAN_ATTRIBUTE_DICT: Dict[str, Union[str, List[str]]] = {
@@ -691,12 +619,10 @@ AVG_DAILY_POPULATION_SUPERVISION_LEVEL_METRICS = [
         display_name=f"Average Population: {level.capitalize()} Supervision Level",
         description=f"Average daily count of clients with "
         f"{'an' if level[0] in 'aeiou' else 'a'} {level} supervision level",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.SUPERVISION_LEVEL_SESSION,
-                span_conditions_dict={"supervision_level": conditions},
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.SUPERVISION_LEVEL_SESSION,
+            span_conditions_dict={"supervision_level": conditions},
+        ),
     )
     for level, conditions in _SUPERVISION_LEVEL_SPAN_ATTRIBUTE_DICT.items()
 ]
@@ -714,15 +640,13 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION = [
         display_name=f"Average Population: Task Eligible, {b.task_title}",
         description="Average daily count of clients eligible for task of "
         f"type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.TASK_ELIGIBILITY_SESSION,
-                span_conditions_dict={
-                    "is_eligible": ["true"],
-                    "task_type": [b.task_type_name],
-                },
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.TASK_ELIGIBILITY_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
@@ -734,15 +658,13 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION = [
         display_name=f"Average Population: Task Eligible, {b.task_title}",
         description="Average daily count of clients eligible for task of "
         f"type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.TASK_ELIGIBILITY_SESSION,
-                span_conditions_dict={
-                    "is_eligible": ["true"],
-                    "task_type": [b.task_type_name],
-                },
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.TASK_ELIGIBILITY_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
@@ -752,42 +674,36 @@ AVG_DAILY_POPULATION_TREATMENT_IN_PRISON = DailyAvgSpanCountMetric(
     name="avg_population_treatment_in_prison",
     display_name="Average Population: Treatment In Prison",
     description="Average daily count of clients in treatment-in-prison incarceration",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["INCARCERATION"],
-                "compartment_level_2": ["TREATMENT_IN_PRISON"],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["INCARCERATION"],
+            "compartment_level_2": ["TREATMENT_IN_PRISON"],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_UNKNOWN_CASE_TYPE = DailyAvgSpanCountMetric(
     name="avg_population_unknown_case_type",
     display_name="Average Population: Unknown Case Type",
     description="Average daily count of clients on supervision with unknown case type",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": ["SUPERVISION"],
-                "case_type_start": "IS NULL",
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": ["SUPERVISION"],
+            "case_type_start": "IS NULL",
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_MAXIMUM_CUSTODY = DailyAvgSpanCountMetric(
     name="avg_population_max_custody",
     display_name="Average Population: Maximum Custody",
     description="Average daily population of individuals in maximum custody",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.CUSTODY_LEVEL_SESSION,
-            span_conditions_dict={"custody_level": ["MAXIMUM"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.CUSTODY_LEVEL_SESSION,
+        span_conditions_dict={"custody_level": ["MAXIMUM"]},
+    ),
 )
 
 AVG_DAILY_POPULATION_MAXIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
@@ -795,26 +711,22 @@ AVG_DAILY_POPULATION_MAXIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     display_name="Average Population: Maximum Custody (Justice Impact Type)",
     description="Average daily population of individuals in maximum custody, mutually "
     "exclusive from other justice impact types",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.JUSTICE_IMPACT_SESSION,
-            span_conditions_dict={
-                "justice_impact_type": [JusticeImpactType.MAXIMUM_CUSTODY.value]
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.JUSTICE_IMPACT_SESSION,
+        span_conditions_dict={
+            "justice_impact_type": [JusticeImpactType.MAXIMUM_CUSTODY.value]
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_MEDIUM_CUSTODY = DailyAvgSpanCountMetric(
     name="avg_population_medium_custody",
     display_name="Average Population: Medium Custody",
     description="Average daily population of individuals in medium custody",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.CUSTODY_LEVEL_SESSION,
-            span_conditions_dict={"custody_level": ["MEDIUM", "CLOSE"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.CUSTODY_LEVEL_SESSION,
+        span_conditions_dict={"custody_level": ["MEDIUM", "CLOSE"]},
+    ),
 )
 
 AVG_DAILY_POPULATION_MEDIUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
@@ -822,32 +734,28 @@ AVG_DAILY_POPULATION_MEDIUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     display_name="Average Population: Medium Custody (Justice Impact Type)",
     description="Average daily population of individuals in medium custody, mutually "
     "exclusive from other justice impact types",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.JUSTICE_IMPACT_SESSION,
-            span_conditions_dict={
-                "justice_impact_type": [JusticeImpactType.MEDIUM_CUSTODY.value],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.JUSTICE_IMPACT_SESSION,
+        span_conditions_dict={
+            "justice_impact_type": [JusticeImpactType.MEDIUM_CUSTODY.value],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_MINIMUM_CUSTODY = DailyAvgSpanCountMetric(
     name="avg_population_min_custody",
     display_name="Average Population: Minimum Custody",
     description="Average daily population of individuals in minimum custody",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.CUSTODY_LEVEL_SESSION,
-            span_conditions_dict={
-                "custody_level": [
-                    "MINIMUM",
-                    "RESTRICTIVE_MINIMUM",
-                    "INTERNAL_UNKNOWN",
-                ],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.CUSTODY_LEVEL_SESSION,
+        span_conditions_dict={
+            "custody_level": [
+                "MINIMUM",
+                "RESTRICTIVE_MINIMUM",
+                "INTERNAL_UNKNOWN",
+            ],
+        },
+    ),
 )
 
 AVG_DAILY_POPULATION_MINIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
@@ -855,26 +763,22 @@ AVG_DAILY_POPULATION_MINIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     display_name="Average Population: Minimum Custody (Justice Impact Type)",
     description="Average daily population of individuals in minimum custody, mutually "
     "exclusive from other justice impact types",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.JUSTICE_IMPACT_SESSION,
-            span_conditions_dict={
-                "justice_impact_type": [JusticeImpactType.MINIMUM_CUSTODY.value],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.JUSTICE_IMPACT_SESSION,
+        span_conditions_dict={
+            "justice_impact_type": [JusticeImpactType.MINIMUM_CUSTODY.value],
+        },
+    ),
 )
 
 AVG_LSIR_SCORE = DailyAvgSpanValueMetric(
     name="avg_lsir_score",
     display_name="Average LSI-R Score",
     description="Average daily LSI-R score of the population",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.ASSESSMENT_SCORE_SESSION,
-            span_conditions_dict={"assessment_type": ["LSIR"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.ASSESSMENT_SCORE_SESSION,
+        span_conditions_dict={"assessment_type": ["LSIR"]},
+    ),
     span_value_numeric="assessment_score",
 )
 
@@ -887,15 +791,13 @@ AVG_NUM_SUPERVISION_OFFICERS_INSIGHTS_CASELOAD_CATEGORY_METRICS = [
         analysis is OFFICER, this counts the fraction of an officer that spent that time period
         with the given category for that category type, which is equivalent to the proportion of time
         in the analysis period they spent with that type.""",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSION,
-                span_conditions_dict={
-                    "category_type": [category_type.value],
-                    "caseload_category": [category],
-                },
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSION,
+            span_conditions_dict={
+                "category_type": [category_type.value],
+                "caseload_category": [category],
+            },
+        ),
     )
     for [category_type, categories] in CASELOAD_CATEGORIES_BY_CATEGORY_TYPE.items()
     for category in categories
@@ -1004,14 +906,10 @@ DAYS_ABSCONDED_365 = AssignmentSpanDaysMetric(
     description="Sum of the number of days with absconsion or bench warrant status "
     "within 1 year following assignment, for all assignments during the analysis "
     "period",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_2": ["ABSCONSION", "BENCH_WARRANT"]
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={"compartment_level_2": ["ABSCONSION", "BENCH_WARRANT"]},
+    ),
     window_length_days=365,
 )
 
@@ -1020,12 +918,10 @@ DAYS_AT_LIBERTY_365 = AssignmentSpanDaysMetric(
     display_name="Days At Liberty Within 1 Year Of Assignment",
     description="Sum of the number of days spent at liberty within 1 year following "
     "assignment, for all assignments during the analysis period",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={"compartment_level_1": ["LIBERTY"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={"compartment_level_1": ["LIBERTY"]},
+    ),
     window_length_days=365,
 )
 
@@ -1034,12 +930,10 @@ DAYS_EMPLOYED_365 = AssignmentSpanDaysMetric(
     display_name="Days Employed Within 1 Year Of Assignment",
     description="Sum of the number of days clients had valid employment status within "
     "1 year following assignment, for all assignments during the analysis period",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.EMPLOYMENT_STATUS_SESSION,
-            span_conditions_dict={"is_employed": ["true"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.EMPLOYMENT_STATUS_SESSION,
+        span_conditions_dict={"is_employed": ["true"]},
+    ),
     window_length_days=365,
 )
 
@@ -1049,12 +943,10 @@ DAYS_IN_COMMUNITY_365 = AssignmentSpanDaysMetric(
     description="Sum of the number of days spent in community (supervision or at "
     "liberty) within 1 year following assignment, for all assignments during the "
     "analysis period",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={"compartment_level_1": ["SUPERVISION", "LIBERTY"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={"compartment_level_1": ["SUPERVISION", "LIBERTY"]},
+    ),
     window_length_days=365,
 )
 
@@ -1063,12 +955,10 @@ DAYS_INCARCERATED_365 = AssignmentSpanDaysMetric(
     display_name="Days Incarcerated Within 1 Year Of Assignment",
     description="Sum of the number of incarcerated days within 1 year following "
     "assignment, for all assignments during the analysis period",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={"compartment_level_1": ["INCARCERATION"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={"compartment_level_1": ["INCARCERATION"]},
+    ),
     window_length_days=365,
 )
 
@@ -1078,17 +968,15 @@ DAYS_OUT_OF_STATE_365 = AssignmentSpanDaysMetric(
     description="Sum of the number of days incarcerated or supervised out of state "
     "within 1 year following assignment, for all assignments during the analysis "
     "period",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={
-                "compartment_level_1": [
-                    "INCARCERATION_OUT_OF_STATE",
-                    "SUPERVISION_OUT_OF_STATE",
-                ],
-            },
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={
+            "compartment_level_1": [
+                "INCARCERATION_OUT_OF_STATE",
+                "SUPERVISION_OUT_OF_STATE",
+            ],
+        },
+    ),
     window_length_days=365,
 )
 
@@ -1097,12 +985,10 @@ DAYS_PENDING_CUSTODY_365 = AssignmentSpanDaysMetric(
     display_name="Days Pending Custody Within 1 Year Of Assignment",
     description="Sum of the number of days pending custody within 1 year following "
     "assignment, for all assignments during the analysis period",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={"compartment_level_1": ["PENDING_CUSTODY"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={"compartment_level_1": ["PENDING_CUSTODY"]},
+    ),
     window_length_days=365,
 )
 
@@ -1111,12 +997,10 @@ DAYS_SINCE_MOST_RECENT_COMPLETED_CONTACT = DailyAvgTimeSinceSpanStartMetric(
     display_name="Days Since Most Recent Completed Contact",
     description="Average number of days since a client's most recent completed "
     "contact, across all days on which client is in population",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPLETED_CONTACT_SESSION,
-            span_conditions_dict={},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPLETED_CONTACT_SESSION,
+        span_conditions_dict={},
+    ),
 )
 
 DAYS_SINCE_MOST_RECENT_LSIR = DailyAvgTimeSinceSpanStartMetric(
@@ -1124,12 +1008,10 @@ DAYS_SINCE_MOST_RECENT_LSIR = DailyAvgTimeSinceSpanStartMetric(
     display_name="Days Since Most Recent LSI-R",
     description="Average number of days since a client's most recent LSI-R assessment, "
     "across all days on which client is in population",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.ASSESSMENT_SCORE_SESSION,
-            span_conditions_dict={"assessment_type": ["LSIR"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.ASSESSMENT_SCORE_SESSION,
+        span_conditions_dict={"assessment_type": ["LSIR"]},
+    ),
 )
 
 DAYS_SUPERVISED_365 = AssignmentSpanDaysMetric(
@@ -1137,12 +1019,10 @@ DAYS_SUPERVISED_365 = AssignmentSpanDaysMetric(
     display_name="Days Supervised Within 1 Year Of Assignment",
     description="Sum of the number of supervised days within 1 year following "
     "assignment, for all assignments during the analysis period",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={"compartment_level_1": ["SUPERVISION"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={"compartment_level_1": ["SUPERVISION"]},
+    ),
     window_length_days=365,
 )
 
@@ -1748,12 +1628,10 @@ LSIR_SCORE_PRESENT_AT_ASSIGNMENT = AssignmentSpanDaysMetric(
     name="lsir_score_present_at_assignment",
     display_name="Assignments with an active LSI-R score",
     description="Number of assignments during which client has an LSI-R score",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.ASSESSMENT_SCORE_SESSION,
-            span_conditions_dict={"assessment_type": ["LSIR"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.ASSESSMENT_SCORE_SESSION,
+        span_conditions_dict={"assessment_type": ["LSIR"]},
+    ),
     window_length_days=1,
 )
 
@@ -1761,12 +1639,10 @@ AVG_LSIR_SCORE_AT_ASSIGNMENT = AssignmentSpanValueAtStartMetric(
     name="avg_lsir_score_at_assignment",
     display_name="Average LSI-R Score At Assignment",
     description="Average LSI-R score of clients on date of assignment",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.ASSESSMENT_SCORE_SESSION,
-            span_conditions_dict={"assessment_type": ["LSIR"]},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.ASSESSMENT_SCORE_SESSION,
+        span_conditions_dict={"assessment_type": ["LSIR"]},
+    ),
     span_value_numeric="assessment_score",
     span_count_metric=LSIR_SCORE_PRESENT_AT_ASSIGNMENT,
     window_length_days=1,
@@ -1777,12 +1653,10 @@ MAX_DAYS_STABLE_EMPLOYMENT_365 = AssignmentSpanMaxDaysMetric(
     display_name="Maximum Days Stable Employment Within 1 Year of Assignment",
     description="Number of days in the longest stretch of continuous stable employment "
     "(same employer and job) within 1 year of assignment",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.EMPLOYMENT_PERIOD,
-            span_conditions_dict={},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.EMPLOYMENT_PERIOD,
+        span_conditions_dict={},
+    ),
 )
 
 NUMBER_MONTHS_BETWEEN_DOWNGRADE_AND_ASSESSMENT_DUE = EventValueMetric(
@@ -1884,12 +1758,10 @@ PERSON_DAYS_WEIGHTED_JUSTICE_IMPACT = SumSpanDaysMetric(
     display_name="Person-Days: Weighted Justice Impact",
     description="Total number of person-days impacted by the justice system, weighted "
     "by compartment type",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.JUSTICE_IMPACT_SESSION,
-            span_conditions_dict={},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.JUSTICE_IMPACT_SESSION,
+        span_conditions_dict={},
+    ),
     weight_col="justice_impact_weight",
 )
 
@@ -1900,15 +1772,13 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_INCARCERATION = [
         display_name=f"Person-Days Eligible: {b.task_title}",
         description="Total number of person-days spent eligible for opportunities of "
         f"type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.TASK_ELIGIBILITY_SESSION,
-                span_conditions_dict={
-                    "is_eligible": ["true"],
-                    "task_type": [b.task_type_name],
-                },
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.TASK_ELIGIBILITY_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
@@ -1920,15 +1790,13 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION = [
         display_name=f"Person-Days Eligible: {b.task_title}",
         description="Total number of person-days spent eligible for opportunities of "
         f"type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.TASK_ELIGIBILITY_SESSION,
-                span_conditions_dict={
-                    "is_eligible": ["true"],
-                    "task_type": [b.task_type_name],
-                },
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.TASK_ELIGIBILITY_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
