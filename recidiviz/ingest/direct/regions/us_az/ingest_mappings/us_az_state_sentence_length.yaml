@@ -1,5 +1,8 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
+# TODO(#34648) Understand and update community supervision dates.
+launch_env:
+  $env: is_local
 input_columns:
   - OFFENSE_ID
   - PERSON_ID
