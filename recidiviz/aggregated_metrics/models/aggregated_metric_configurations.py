@@ -1590,11 +1590,7 @@ INCARCERATION_STARTS_AND_INFERRED = EventCountMetric(
     "incarcerations",
     event_selectors=[
         EventSelector(
-            event_type=EventType.INCARCERATION_START,
-            event_conditions_dict={"is_discretionary": ["true"]},
-        ),
-        EventSelector(
-            event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
+            event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
             event_conditions_dict={"is_discretionary": ["true"]},
         ),
     ],
@@ -1610,14 +1606,7 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
         f"{category.replace('_', ' ').lower()}",
         event_selectors=[
             EventSelector(
-                event_type=EventType.INCARCERATION_START,
-                event_conditions_dict={
-                    "most_severe_violation_type": types,
-                    "is_discretionary": ["true"],
-                },
-            ),
-            EventSelector(
-                event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
+                event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
                 event_conditions_dict={
                     "most_severe_violation_type": types,
                     "is_discretionary": ["true"],
@@ -1638,15 +1627,7 @@ PAROLE_INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
         f"{category.replace('_', ' ').lower()}",
         event_selectors=[
             EventSelector(
-                event_type=EventType.INCARCERATION_START,
-                event_conditions_dict={
-                    "most_severe_violation_type": types,
-                    "is_discretionary": ["true"],
-                    "latest_active_supervision_type": ["PAROLE"],
-                },
-            ),
-            EventSelector(
-                event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
+                event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
                 event_conditions_dict={
                     "most_severe_violation_type": types,
                     "is_discretionary": ["true"],
@@ -1669,15 +1650,7 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_INFERRED_VIOLATION_TYPE_METRICS = [
         f"{category.replace('_', ' ').lower()}, based on an inferred violation type",
         event_selectors=[
             EventSelector(
-                event_type=EventType.INCARCERATION_START,
-                event_conditions_dict={
-                    "most_severe_violation_type": types,
-                    "violation_is_inferred": ["true"],
-                    "is_discretionary": ["true"],
-                },
-            ),
-            EventSelector(
-                event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
+                event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
                 event_conditions_dict={
                     "most_severe_violation_type": types,
                     "violation_is_inferred": ["true"],
@@ -1699,15 +1672,7 @@ INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRA
     "preceding treatment referrals during the past 1 year",
     event_selectors=[
         EventSelector(
-            event_type=EventType.INCARCERATION_START,
-            event_conditions_dict={
-                "most_severe_violation_type": ["TECHNICAL"],
-                "prior_treatment_referrals_1y": ["0"],
-                "is_discretionary": ["true"],
-            },
-        ),
-        EventSelector(
-            event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
+            event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
             event_conditions_dict={
                 "most_severe_violation_type": ["TECHNICAL"],
                 "prior_treatment_referrals_1y": ["0"],
