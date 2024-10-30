@@ -42,7 +42,11 @@ function main(e) {
   Logger.log("endDateString: %s", endDateString);
   Logger.log("workflowsToInclude: %s", workflowsToInclude);
 
-  const startDate = getStartDate(stateCode, timePeriod, endDateString);
+  const { startDate, startDateString } = getStartDate(
+    stateCode,
+    timePeriod,
+    endDateString
+  );
 
   const workflowToDistrictOrFacilitiesColumnChart = {};
   const workflowToOpportunityGrantedAndMauAndWau = {};
@@ -53,6 +57,7 @@ function main(e) {
   const workflowToMaxMarkedIneligibleLocation = {};
   const workflowToMauWauByRegionChart = {};
   const workflowToMaxMauWauLocation = {};
+  const workflowToWauByWeekChart = {};
 
   const stateCodeToRows = getSheetValues();
   const stateRows = stateCodeToRows[stateCode];
@@ -90,9 +95,15 @@ function main(e) {
         mau,
         wau
       );
-      
-      const mauByLocationData = mauWauByLocationData.map((row) => [row[0], row[1]]);
-      const wauByLocationData = mauWauByLocationData.map((row) => [row[0], row[2]]);
+
+      const mauByLocationData = mauWauByLocationData.map((row) => [
+        row[0],
+        row[1],
+      ]);
+      const wauByLocationData = mauWauByLocationData.map((row) => [
+        row[0],
+        row[2],
+      ]);
       var { maxLocations, maxValue } = getMaxLocations(mauByLocationData);
       highestMAULocations = maxLocations;
       var { maxLocations, maxValue } = getMaxLocations(wauByLocationData);
@@ -141,7 +152,10 @@ function main(e) {
     var { maxLocations, maxValue } = getMaxLocations(
       usageAndImpactDistrictDataMarkedIneligible
     );
-    workflowToMaxMarkedIneligibleLocation[workflow] = { maxLocations, maxValue };
+    workflowToMaxMarkedIneligibleLocation[workflow] = {
+      maxLocations,
+      maxValue,
+    };
 
     var opportunityGranted = constructOpportunitiesGrantedText(
       stateCode,
@@ -161,7 +175,10 @@ function main(e) {
       );
 
     var { maxLocations, maxValue } = getMaxLocations(supervisionDistrictData);
-    workflowToMaxOpportunityGrantedLocation[workflow] = {maxLocations, maxValue};
+    workflowToMaxOpportunityGrantedLocation[workflow] = {
+      maxLocations,
+      maxValue,
+    };
 
     var districtOrFacilitiesColumnChart =
       constructSupervisionDistrictColumnChart(
@@ -170,6 +187,22 @@ function main(e) {
         yAxisColumn,
         supervisionDistrictData
       );
+
+    const { wauByWeekData, weeklyActiveUsers } = getWauByWeekData(
+      stateCode,
+      startDateString,
+      endDateString,
+      completionEventType
+    );
+
+    let wauByWeekColumnChart = null;
+    if (wauByWeekData) {
+      wauByWeekColumnChart = constructWauByWeekColumnChart(
+        weeklyActiveUsers,
+        wauByWeekData
+      );
+    }
+    workflowToWauByWeekChart[workflow] = wauByWeekColumnChart;
 
     const {
       distinctMonthlyActiveUsers,
@@ -201,7 +234,10 @@ function main(e) {
     };
     workflowToUsageAndImpactChart[workflow] = usageAndImpactColumnChart;
     workflowToMauWauByRegionChart[workflow] = mauWauByLocationChart;
-    workflowToMaxMauWauLocation[workflow] = {highestMAULocations, highestWAULocations};
+    workflowToMaxMauWauLocation[workflow] = {
+      highestMAULocations,
+      highestWAULocations,
+    };
   });
 
   copyAndPopulateTemplateDoc(
@@ -218,7 +254,8 @@ function main(e) {
     workflowToUsageAndImpactChart,
     workflowToMaxMarkedIneligibleLocation,
     workflowToMauWauByRegionChart,
-    workflowToMaxMauWauLocation
+    workflowToMaxMauWauLocation,
+    workflowToWauByWeekChart
   );
 }
 
@@ -241,6 +278,7 @@ function main(e) {
  * @param {map} workflowToMaxMarkedIneligibleLocation An object that maps the workflow name to an object containing maxLocation (the location associated with the max number of people marked ineligible) and maxValue (the max number of people marked ineligible)
  * @param {map} workflowToMauWauByRegionChart An object that maps the workflow name to its mauWauByLocationChart
  * @param {map} workflowToMaxMauWauLocation An object that maps the worfklow name to highestMAULocations and highestWAULocations
+ * @param {map} workflowToWauByWeekChart An object that maps the workflow name to its wauByWeekColumnChart
  */
 function copyAndPopulateTemplateDoc(
   workflowToDistrictOrFacilitiesColumnChart,
@@ -256,7 +294,8 @@ function copyAndPopulateTemplateDoc(
   workflowToUsageAndImpactChart,
   workflowToMaxMarkedIneligibleLocation,
   workflowToMauWauByRegionChart,
-  workflowToMaxMauWauLocation
+  workflowToMaxMauWauLocation,
+  workflowToWauByWeekChart
 ) {
   const template = DriveApp.getFileById(
     "1nsc_o2fTlldTQavxJveucWgDKkic_clKZjn0GuyF2N8"
@@ -306,7 +345,8 @@ function copyAndPopulateTemplateDoc(
     workflowToMauWauNumAndPercent,
     workflowToMaxMarkedIneligibleLocation,
     workflowToMauWauByRegionChart,
-    workflowToMaxMauWauLocation
+    workflowToMaxMauWauLocation,
+    workflowToWauByWeekChart
   );
 }
 
@@ -545,6 +585,7 @@ function copyAndPopulateOpportunityGrants(
  * @param {map} workflowToMaxMarkedIneligibleLocation An object that maps the workflow name to an object containing maxLocation (the location associated with the max number of people marked ineligible) and maxValue (the max number of people marked ineligible)
  * @param {map} workflowToMauWauByRegionChart An object that maps the workflow name to its mauWauByLocationChart
  * @param {map} workflowToMaxMauWauLocation An object that maps the worfklow name to highestMAULocations and highestWAULocations
+ * @param {map} workflowToWauByWeekChart An object that maps the workflow name to its wauByWeekColumnChart
  */
 function copyAndPopulateWorkflowSection(
   body,
@@ -559,7 +600,8 @@ function copyAndPopulateWorkflowSection(
   workflowToMauWauNumAndPercent,
   workflowToMaxMarkedIneligibleLocation,
   workflowToMauWauByRegionChart,
-  workflowToMaxMauWauLocation
+  workflowToMaxMauWauLocation,
+  workflowToWauByWeekChart
 ) {
   const childIdx = getIndexOfElementToReplace(
     body,
@@ -625,6 +667,12 @@ function copyAndPopulateWorkflowSection(
             let img = body.appendImage(workflowToUsageAndImpactChart[workflow]);
             img.setWidth(639).setHeight(455);
           }
+        } else if (altTitle === "WAU Chart by Week") {
+          // Replace with generated chart
+          if (workflowToWauByWeekChart[workflow]) {
+            let img = body.appendImage(workflowToWauByWeekChart[workflow]);
+            img.setWidth(639).setHeight(455);
+          }
         } else {
           // Put back original image
           body.appendImage(elementCopyChild);
@@ -659,21 +707,39 @@ function copyAndPopulateWorkflowSection(
         let highestMAULocationsText = "";
         let highestWAULocationsText = "";
         if (workflowToMaxMauWauLocation[workflow].highestMAULocations) {
-          highestMAULocationsText = workflowToMaxMauWauLocation[workflow].highestMAULocations.join(" and ");
-        };
+          highestMAULocationsText =
+            workflowToMaxMauWauLocation[workflow].highestMAULocations.join(
+              " and "
+            );
+        }
         if (workflowToMaxMauWauLocation[workflow].highestWAULocations) {
-          highestWAULocationsText = workflowToMaxMauWauLocation[workflow].highestWAULocations.join(" and ");
-        };
-        
-        if (workflowToMaxMauWauLocation[workflow].highestMAULocations && workflowToMaxMauWauLocation[workflow].highestWAULocations) {
-          elementCopy.replaceText("{{highest_usage_text}}", `Usage is highest in ${highestMAULocationsText} for MAU and ${highestWAULocationsText} for WAU`);
+          highestWAULocationsText =
+            workflowToMaxMauWauLocation[workflow].highestWAULocations.join(
+              " and "
+            );
+        }
+
+        if (
+          workflowToMaxMauWauLocation[workflow].highestMAULocations &&
+          workflowToMaxMauWauLocation[workflow].highestWAULocations
+        ) {
+          elementCopy.replaceText(
+            "{{highest_usage_text}}",
+            `Usage is highest in ${highestMAULocationsText} for MAU and ${highestWAULocationsText} for WAU`
+          );
         } else if (workflowToMaxMauWauLocation[workflow].highestMAULocations) {
-          elementCopy.replaceText("{{highest_usage_text}}", `Usage is highest in ${highestMAULocationsText} for MAU`);
+          elementCopy.replaceText(
+            "{{highest_usage_text}}",
+            `Usage is highest in ${highestMAULocationsText} for MAU`
+          );
         } else if (workflowToMaxMauWauLocation[workflow].highestWAULocations) {
-          elementCopy.replaceText("{{highest_usage_text}}", `Usage is highest in ${highestWAULocationsText} for WAU`);
+          elementCopy.replaceText(
+            "{{highest_usage_text}}",
+            `Usage is highest in ${highestWAULocationsText} for WAU`
+          );
         } else {
           elementCopy.replaceText("{{highest_usage_text}}", "");
-        };
+        }
 
         elementCopy.replaceText(
           "{{num_ineligible}}",
@@ -695,11 +761,15 @@ function copyAndPopulateWorkflowSection(
         const largestLocationTextToReplace =
           "{{, with the largest number of people marked ineligible in {{region_ineligible}} [[:graph:]]with {{region_ineligible_num}}[[:graph:]]}}";
 
-        if (workflowToMaxMarkedIneligibleLocation[workflow]["maxLocations"] && workflowToMaxMarkedIneligibleLocation[workflow]["maxValue"] !== 0) {
-          const highestMarkedIneligibleText = workflowToMaxMarkedIneligibleLocation[workflow]["maxLocations"].join(" and ");
-          const largestLocationReplacement = `, with the largest number of people marked ineligible in ${
-            highestMarkedIneligibleText
-          } (with ${parseFloat(
+        if (
+          workflowToMaxMarkedIneligibleLocation[workflow]["maxLocations"] &&
+          workflowToMaxMarkedIneligibleLocation[workflow]["maxValue"] !== 0
+        ) {
+          const highestMarkedIneligibleText =
+            workflowToMaxMarkedIneligibleLocation[workflow][
+              "maxLocations"
+            ].join(" and ");
+          const largestLocationReplacement = `, with the largest number of people marked ineligible in ${highestMarkedIneligibleText} (with ${parseFloat(
             workflowToMaxMarkedIneligibleLocation[workflow].maxValue
           )})`;
           elementCopy.replaceText(
@@ -710,8 +780,14 @@ function copyAndPopulateWorkflowSection(
           elementCopy.replaceText(largestLocationTextToReplace, "");
         }
 
-        if (workflowToMaxOpportunityGrantedLocation[workflow].maxLocations && workflowToMaxOpportunityGrantedLocation[workflow].maxValue !== 0) {
-          const maxOpportunityGrantedLocation = workflowToMaxOpportunityGrantedLocation[workflow].maxLocations.join(" and ");
+        if (
+          workflowToMaxOpportunityGrantedLocation[workflow].maxLocations &&
+          workflowToMaxOpportunityGrantedLocation[workflow].maxValue !== 0
+        ) {
+          const maxOpportunityGrantedLocation =
+            workflowToMaxOpportunityGrantedLocation[workflow].maxLocations.join(
+              " and "
+            );
           let largestNumberString =
             ", with the largest number of opportunities granted in ";
           let currentElement = elementCopy.replaceText(

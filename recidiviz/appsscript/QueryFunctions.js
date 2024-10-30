@@ -17,6 +17,48 @@
 /* File containing functions that construct SQL Queries used in CreateReport.gs. */
 
 /**
+ * Get WAU By Week Data
+ * Given parameters provided by the user, constructs a query string and calls runQuery
+ * to query the BiqQuery database.
+ * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
+ * @param {string} startDateString The start date of the report (ex: '2023-02-01')
+ * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
+ * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
+ * @returns {object} wauByWeekData An array or arrays containing data for each week. Also returns the weeklyActiveUsers string
+ */
+function getWauByWeekData(
+  stateCode,
+  startDateString,
+  endDateString,
+  completionEventType,
+) {
+  const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
+  const endDate = "end_date";
+  const weeklyActiveUsers = "weekly_active_users";
+
+  const wauTable = "justice_involved_state_week_start_on_first_aggregated_metrics_materialized";
+
+  const queryString = `
+    SELECT
+      FORMAT_DATE('%m/%d/%y', ${endDate}),
+      ${distinctActiveUsers} AS ${weeklyActiveUsers}
+    FROM
+    \`impact_reports.${wauTable}\`
+    WHERE state_code = '${stateCode}'
+    AND start_date >= '${startDateString}'
+    AND start_date < '${endDateString}'
+    ORDER BY start_date ASC;
+  `;
+  
+  const wauByWeekData = runQuery(queryString);
+
+  return {
+    wauByWeekData,
+    weeklyActiveUsers,
+  };
+}
+
+/**
  * Get MAU WAU By Location
  * Given parameters provided by the user, constructs a query string and calls runQuery
  * to query the BiqQuery database.
@@ -52,7 +94,7 @@ function getMauWauByLocation(
   }
 
   const mauTable = `justice_involved_${location}_month_aggregated_metrics_materialized`;
-  const wauTable = `justice_involved_${location}_week_aggregated_metrics_materialized`;
+  const wauTable = `justice_involved_${location}_week_end_on_first_aggregated_metrics_materialized`;
 
   const queryString = `
     SELECT
@@ -153,7 +195,7 @@ function constructMauAndWauText(
   const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
   const distinctRegisteredUsers = `distinct_registered_users_${system.toLowerCase()}`;
   const mauTable = `justice_involved_state_month_aggregated_metrics_materialized`;
-  const wauTable = `justice_involved_state_week_aggregated_metrics_materialized`;
+  const wauTable = `justice_involved_state_week_end_on_first_aggregated_metrics_materialized`;
 
   const queryStringMonthly = `
     SELECT
@@ -234,11 +276,12 @@ function getStartDate(stateCode, timePeriod, endDateString) {
     );
   }
 
-  const splitStartDate = queryOutput[0].split("-");
+  const startDateString = queryOutput[0];
+  const splitStartDate = startDateString.split("-");
   const startDate = `${splitStartDate[1]}/${splitStartDate[2]}/${splitStartDate[0]}`;
   Logger.log("startDate: %s", startDate);
 
-  return startDate;
+  return {startDate, startDateString};
 }
 
 /**
@@ -542,4 +585,40 @@ function constructMauWauByLocationColumnChart(
   );
 
   return mauWauByLocationColumnChart;
+}
+
+
+/**
+ * Construct WAU by week column chart
+ * Populates a new wau by week column chart.
+ * @param {string} weeklyActiveUsers The name of the weeklyActiveUsers column
+ * @param {array} wauByWeekData An array of arrays containing data for each week
+ * @returns {Chart} The built/populated column chart
+ */
+function constructWauByWeekColumnChart(
+  weeklyActiveUsers,
+  wauByWeekData
+) {
+  const xAxisClean = "End Date";
+  const wauClean = cleanString(weeklyActiveUsers);
+
+  const chartData = Charts.newDataTable()
+    .addColumn(Charts.ColumnType.STRING, xAxisClean)
+    .addColumn(Charts.ColumnType.NUMBER, wauClean);
+
+  wauByWeekColumnChart = createColumnChart(
+    wauByWeekData,
+    chartData,
+    "Weekly Active Users",
+    xAxisClean,
+    "# of Users",
+    ["#CA2E17"], // this chart will have red columns
+    false, // we do not want to stack columns
+    1278, // chart width
+    910, // chart height
+    Charts.Position.BOTTOM, // this chart has a legend
+    false // for this chart, we do not want to filter out zero values
+  );
+
+  return wauByWeekColumnChart;
 }
