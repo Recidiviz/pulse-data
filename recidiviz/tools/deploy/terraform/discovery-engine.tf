@@ -13,6 +13,7 @@ resource "google_discovery_engine_data_store" "case_notes" {
   industry_vertical = "GENERIC"
   display_name      = "Case Notes Data Store"
   content_config    = "CONTENT_REQUIRED"
+  solution_types    = ["SOLUTION_TYPE_SEARCH"]
 
   depends_on = [
     google_project_service.discovery_engine_api
