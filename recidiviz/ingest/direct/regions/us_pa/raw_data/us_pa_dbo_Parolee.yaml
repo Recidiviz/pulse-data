@@ -84,8 +84,14 @@ columns:
       Drivers License Number
   - name: SID
     is_pii: True
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-04-08T05:46:00Z
   - name: FBINo
     is_pii: True
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-04-08T05:46:00Z
   - name: PictureId
     is_pii: True
   - name: CensusTract
