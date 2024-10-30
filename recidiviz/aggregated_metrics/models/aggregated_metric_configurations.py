@@ -96,12 +96,10 @@ ABSCONSIONS_BENCH_WARRANTS = EventCountMetric(
     name="absconsions_bench_warrants",
     display_name="Absconsions/Bench Warrants",
     description="Number of absconsions or bench warrants",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.ABSCONSION_BENCH_WARRANT,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.ABSCONSION_BENCH_WARRANT,
+        event_conditions_dict={},
+    ),
 )
 
 ANY_INCARCERATION_365 = AssignmentEventBinaryMetric(
@@ -109,12 +107,10 @@ ANY_INCARCERATION_365 = AssignmentEventBinaryMetric(
     display_name="Any Incarceration Start Within 1 Year of Assignment",
     description="Number of client assignments followed by an incarceration start "
     "within 1 year",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_START,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_START,
+        event_conditions_dict={},
+    ),
 )
 
 ASSIGNMENTS = AssignmentCountMetric(
@@ -910,112 +906,96 @@ COMMUNITY_CONFINEMENT_SUPERVISION_STARTS = EventCountMetric(
     display_name="Community Confinement Supervision Starts",
     description="Number of transitions to community confinement (supervision) from "
     "general incarceration",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.COMPARTMENT_LEVEL_2_START,
-            event_conditions_dict={
-                "compartment_level_1": ["SUPERVISION"],
-                "compartment_level_2": ["COMMUNITY_CONFINEMENT"],
-                # filters below prevent counting CC (re)starts from temporary incarceration
-                "inflow_from_level_1": ["INCARCERATION"],
-                "inflow_from_level_2": ["GENERAL"],
-            },
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.COMPARTMENT_LEVEL_2_START,
+        event_conditions_dict={
+            "compartment_level_1": ["SUPERVISION"],
+            "compartment_level_2": ["COMMUNITY_CONFINEMENT"],
+            # filters below prevent counting CC (re)starts from temporary incarceration
+            "inflow_from_level_1": ["INCARCERATION"],
+            "inflow_from_level_2": ["GENERAL"],
+        },
+    ),
 )
 
 CONTACTS_ATTEMPTED = EventCountMetric(
     name="contacts_attempted",
     display_name="Contacts: Attempted",
     description="Number of attempted contacts",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_CONTACT,
-            event_conditions_dict={"status": ["ATTEMPTED"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT,
+        event_conditions_dict={"status": ["ATTEMPTED"]},
+    ),
 )
 
 CONTACTS_COMPLETED = EventCountMetric(
     name="contacts_completed",
     display_name="Contacts: Completed",
     description="Number of completed contacts",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_CONTACT,
-            event_conditions_dict={"status": ["COMPLETED"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT,
+        event_conditions_dict={"status": ["COMPLETED"]},
+    ),
 )
 
 CONTACTS_FACE_TO_FACE = EventCountMetric(
     name="contacts_face_to_face",
     display_name="Contacts: Face-To-Face",
     description="Number of completed face-to-face contacts",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_CONTACT,
-            event_conditions_dict={
-                "status": ["COMPLETED"],
-                "contact_type": ["DIRECT", "BOTH_COLLATERAL_AND_DIRECT"],
-            },
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT,
+        event_conditions_dict={
+            "status": ["COMPLETED"],
+            "contact_type": ["DIRECT", "BOTH_COLLATERAL_AND_DIRECT"],
+        },
+    ),
 )
 
 CONTACTS_HOME_VISIT = EventCountMetric(
     name="contacts_home_visit",
     display_name="Contacts: Home Visit",
     description="Number of completed home visit contacts",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_CONTACT,
-            event_conditions_dict={
-                "status": ["COMPLETED"],
-                "location": ["RESIDENCE"],
-                "contact_type": ["DIRECT", "BOTH_COLLATERAL_AND_DIRECT"],
-            },
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_CONTACT,
+        event_conditions_dict={
+            "status": ["COMPLETED"],
+            "location": ["RESIDENCE"],
+            "contact_type": ["DIRECT", "BOTH_COLLATERAL_AND_DIRECT"],
+        },
+    ),
 )
 
 CUSTODY_LEVEL_DOWNGRADES = EventCountMetric(
     name="custody_level_downgrades",
     display_name="Custody Level Downgrades",
     description="Number of changes to a lower custody level",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.CUSTODY_LEVEL_CHANGE,
-            event_conditions_dict={"change_type": ["DOWNGRADE"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.CUSTODY_LEVEL_CHANGE,
+        event_conditions_dict={"change_type": ["DOWNGRADE"]},
+    ),
 )
 
 CUSTODY_LEVEL_DOWNGRADES_TO_MINIMUM = EventCountMetric(
     name="custody_level_downgrades_to_minimum",
     display_name="Custody Level Downgrades to Minimum Custody",
     description="Number of changes to minimum custody level",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.CUSTODY_LEVEL_CHANGE,
-            event_conditions_dict={
-                "change_type": ["DOWNGRADE"],
-                "new_custody_level": ["MINIMUM"],
-            },
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.CUSTODY_LEVEL_CHANGE,
+        event_conditions_dict={
+            "change_type": ["DOWNGRADE"],
+            "new_custody_level": ["MINIMUM"],
+        },
+    ),
 )
 
 CUSTODY_LEVEL_UPGRADES = EventCountMetric(
     name="custody_level_upgrades",
     display_name="Custody Level Upgrades",
     description="Number of changes to a higher custody level",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.CUSTODY_LEVEL_CHANGE,
-            event_conditions_dict={"change_type": ["UPGRADE"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.CUSTODY_LEVEL_CHANGE,
+        event_conditions_dict={"change_type": ["UPGRADE"]},
+    ),
 )
 
 DAYS_ABSCONDED_365 = AssignmentSpanDaysMetric(
@@ -1173,12 +1153,10 @@ DAYS_TO_FIRST_ABSCONSION_BENCH_WARRANT_365 = AssignmentDaysToFirstEventMetric(
     description="Sum of the number of days prior to first absconsion/bench warrant "
     "legal status within 1 year following assignment, for all assignments during the "
     "analysis period",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.ABSCONSION_BENCH_WARRANT,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.ABSCONSION_BENCH_WARRANT,
+        event_conditions_dict={},
+    ),
     window_length_days=365,
 )
 
@@ -1187,12 +1165,10 @@ DAYS_TO_FIRST_INCARCERATION_365 = AssignmentDaysToFirstEventMetric(
     display_name="Days To First Incarceration Within 1 Year After Assignment",
     description="Sum of the number of days prior to first incarceration within 1 year "
     "following assignment, for all assignments during the analysis period",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_START,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_START,
+        event_conditions_dict={},
+    ),
     window_length_days=365,
 )
 
@@ -1201,12 +1177,10 @@ DAYS_TO_FIRST_LIBERTY_365 = AssignmentDaysToFirstEventMetric(
     display_name="Days To First Liberty Within 1 Year After Assignment",
     description="Sum of the number of days prior to first liberty transition within 1 "
     "year following assignment, for all assignments during the analysis period",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TRANSITIONS_TO_LIBERTY_ALL,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TRANSITIONS_TO_LIBERTY_ALL,
+        event_conditions_dict={},
+    ),
     window_length_days=365,
 )
 
@@ -1215,12 +1189,10 @@ DAYS_TO_FIRST_SUPERVISION_START_365 = AssignmentDaysToFirstEventMetric(
     display_name="Days To First Supervision Start Within 1 Year After Assignment",
     description="Sum of the number of days prior to first supervision start within 1 "
     "year following assignment, for all assignments during the analysis period",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_START,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_START,
+        event_conditions_dict={},
+    ),
     window_length_days=365,
 )
 
@@ -1229,12 +1201,10 @@ DAYS_TO_FIRST_VIOLATION_365 = AssignmentDaysToFirstEventMetric(
     display_name="Days To First Violation Within 1 Year After Assignment",
     description="Sum of the number of days prior to first violation within 1 year "
     "following assignment, for all assignments during the analysis period",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.VIOLATION,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.VIOLATION,
+        event_conditions_dict={},
+    ),
     window_length_days=365,
 )
 
@@ -1246,12 +1216,10 @@ DAYS_TO_FIRST_VIOLATION_365_BY_TYPE_METRICS = [
         description="Sum of the number of days prior to first "
         f"{category.replace('_', ' ').lower()} violation within 1 year following "
         "assignment, for all assignments during the analysis period",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.VIOLATION,
-                event_conditions_dict={"violation_type": types},
-            )
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.VIOLATION,
+            event_conditions_dict={"violation_type": types},
+        ),
         window_length_days=365,
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
@@ -1262,12 +1230,10 @@ DAYS_TO_FIRST_VIOLATION_RESPONSE_365 = AssignmentDaysToFirstEventMetric(
     display_name="Days To First Violation Response Within 1 Year After Assignment",
     description="Sum of the number of days prior to first violation response within 1 "
     "year following assignment, for all assignments during the analysis period",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.VIOLATION_RESPONSE,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.VIOLATION_RESPONSE,
+        event_conditions_dict={},
+    ),
     window_length_days=365,
 )
 
@@ -1279,12 +1245,10 @@ DAYS_TO_FIRST_VIOLATION_RESPONSE_365_BY_TYPE_METRICS = [
         description="Sum of the number of days prior to first "
         f"{category.replace('_', ' ').lower()} violation response within 1 year "
         "following assignment, for all assignments during the analysis period",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.VIOLATION_RESPONSE,
-                event_conditions_dict={"most_serious_violation_type": types},
-            )
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.VIOLATION_RESPONSE,
+            event_conditions_dict={"most_serious_violation_type": types},
+        ),
         window_length_days=365,
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
@@ -1294,60 +1258,50 @@ DRUG_SCREENS = EventCountMetric(
     name="drug_screens",
     display_name="Drug Screens",
     description="Number of drug screens",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.DRUG_SCREEN,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.DRUG_SCREEN,
+        event_conditions_dict={},
+    ),
 )
 
 DRUG_SCREENS_POSITIVE = EventCountMetric(
     name="drug_screens_positive",
     display_name="Drug Screens: Positive Result",
     description="Number of drug screens with a positive result",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.DRUG_SCREEN,
-            event_conditions_dict={"is_positive_result": ["true"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.DRUG_SCREEN,
+        event_conditions_dict={"is_positive_result": ["true"]},
+    ),
 )
 
 EARLY_DISCHARGE_REQUESTS = EventCountMetric(
     name="early_discharge_requests",
     display_name="Early Discharge Requests",
     description="Number of early discharge requests",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.EARLY_DISCHARGE_REQUEST,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.EARLY_DISCHARGE_REQUEST,
+        event_conditions_dict={},
+    ),
 )
 
 EMPLOYED_STATUS_ENDS = EventCountMetric(
     name="employed_status_ends",
     display_name="Employment Lost",
     description="Number of transitions to unemployment",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.EMPLOYMENT_STATUS_CHANGE,
-            event_conditions_dict={"is_employed": ["false"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.EMPLOYMENT_STATUS_CHANGE,
+        event_conditions_dict={"is_employed": ["false"]},
+    ),
 )
 
 EMPLOYED_STATUS_STARTS = EventCountMetric(
     name="employed_status_starts",
     display_name="Employment Gained",
     description="Number of new employment starts following unemployment",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.EMPLOYMENT_STATUS_CHANGE,
-            event_conditions_dict={"is_employed": ["true"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.EMPLOYMENT_STATUS_CHANGE,
+        event_conditions_dict={"is_employed": ["true"]},
+    ),
 )
 
 EMPLOYER_CHANGES_365 = AssignmentEventCountMetric(
@@ -1355,12 +1309,10 @@ EMPLOYER_CHANGES_365 = AssignmentEventCountMetric(
     display_name="Employer Changes Within 1 Year Of Assignment",
     description="Number of times client starts employment with a new employer within 1 "
     "year of assignment",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.EMPLOYMENT_PERIOD_START,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.EMPLOYMENT_PERIOD_START,
+        event_conditions_dict={},
+    ),
 )
 
 HOUSING_UNIT_TYPE_ENDS = [
@@ -1368,12 +1320,10 @@ HOUSING_UNIT_TYPE_ENDS = [
         name=f"housing_unit_type_end_{housing_unit_type.lower()}",
         display_name=f"Housing Unit Type Ends: {snake_to_title(housing_unit_type)}",
         description=f"Number of transfers to {snake_to_title(housing_unit_type)}",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.HOUSING_UNIT_TYPE_END,
-                event_conditions_dict={"housing_unit_type": [housing_unit_type]},
-            )
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.HOUSING_UNIT_TYPE_END,
+            event_conditions_dict={"housing_unit_type": [housing_unit_type]},
+        ),
     )
     for housing_unit_type in _HOUSING_UNIT_TYPES
 ]
@@ -1383,12 +1333,10 @@ HOUSING_UNIT_TYPE_STARTS = [
         name=f"housing_unit_type_start_{housing_unit_type.lower()}",
         display_name=f"Housing Unit Type Starts: {snake_to_title(housing_unit_type)}",
         description=f"Number of transfers to {snake_to_title(housing_unit_type)}",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.HOUSING_UNIT_TYPE_START,
-                event_conditions_dict={"housing_unit_type": [housing_unit_type]},
-            )
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.HOUSING_UNIT_TYPE_START,
+            event_conditions_dict={"housing_unit_type": [housing_unit_type]},
+        ),
     )
     for housing_unit_type in _HOUSING_UNIT_TYPES
 ]
@@ -1398,12 +1346,10 @@ HOUSING_UNIT_TYPE_LENGTH_OF_STAY_BY_END = [
         name=f"housing_unit_type_length_of_stay_end_{housing_unit_type.lower()}",
         display_name=f"Housing Unit Type Length of Stay by end date: {snake_to_title(housing_unit_type)}",
         description=f"Length of stay in {snake_to_title(housing_unit_type)} in days, by end date",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.HOUSING_UNIT_TYPE_END,
-                event_conditions_dict={"housing_unit_type": [housing_unit_type]},
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.HOUSING_UNIT_TYPE_END,
+            event_conditions_dict={"housing_unit_type": [housing_unit_type]},
+        ),
         event_value_numeric="length_of_stay",
         event_count_metric=next(
             metric
@@ -1419,15 +1365,13 @@ HOUSING_UNIT_TYPE_LENGTH_OF_STAY_BY_START = [
         name=f"housing_unit_type_length_of_stay_start_{housing_unit_type.lower()}",
         display_name=f"Housing Unit Type Length of Stay, by start date: {snake_to_title(housing_unit_type)}",
         description=f"Length of stay in {snake_to_title(housing_unit_type)} in days, aggregated by start date, for periods that have ended",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.HOUSING_UNIT_TYPE_START,
-                event_conditions_dict={
-                    "housing_unit_type": [housing_unit_type],
-                    "is_active": ["false"],
-                },
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.HOUSING_UNIT_TYPE_START,
+            event_conditions_dict={
+                "housing_unit_type": [housing_unit_type],
+                "is_active": ["false"],
+            },
+        ),
         event_value_numeric="length_of_stay",
         event_count_metric=next(
             metric
@@ -1443,12 +1387,10 @@ INCARCERATIONS_INFERRED = EventCountMetric(
     display_name="Inferred Incarcerations",
     description="Number of inferred incarceration events that do not align with an "
     "observed discretionary incarceration session start",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
+        event_conditions_dict={},
+    ),
 )
 
 INCARCERATIONS_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
@@ -1459,12 +1401,10 @@ INCARCERATIONS_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
         description="Number of inferred incarceration events that do not align with an "
         "observed discretionary incarceration session start, for which the most severe violation "
         f"type was {category.replace('_', ' ').lower()}",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
-                event_conditions_dict={"most_severe_violation_type": types},
-            )
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
+            event_conditions_dict={"most_severe_violation_type": types},
+        ),
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
@@ -1474,35 +1414,29 @@ INCARCERATION_INCIDENTS = EventCountMetric(
     name="incarceration_incidents",
     display_name="Incarceration Incidents",
     description="Number of incarceration incidents",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_INCIDENT,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_INCIDENT,
+        event_conditions_dict={},
+    ),
 )
 INCARCERATION_RELEASES_1_MONTH_AFTER_PAROLE_ELIGIBILITY_DATE = EventCountMetric(
     name="incarceration_releases_1_month_after_parole_eligibility_date",
     display_name="Incarceration Releases 1 Month After Parole Eligibility Date",
     description="Number of releases occurring at least 1 month after one's parole eligibility date",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_RELEASE,
-            event_conditions_dict={"parole_release_1_month_flag": ["true"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_RELEASE,
+        event_conditions_dict={"parole_release_1_month_flag": ["true"]},
+    ),
 )
 
 INCARCERATION_STARTS = EventCountMetric(
     name="incarceration_starts",
     display_name="Incarceration Starts",
     description="Number of observed discretionary incarceration starts",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_START,
-            event_conditions_dict={"is_discretionary": ["true"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_START,
+        event_conditions_dict={"is_discretionary": ["true"]},
+    ),
 )
 
 INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION = EventCountMetric(
@@ -1510,15 +1444,13 @@ INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION = EventCountMetri
     display_name="Incarceration Starts, Most Severe Violation Type Is Not Absconsion",
     description="Number of observed discretionary incarceration starts where the most severe violation type"
     "is not absconsion",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_START,
-            event_conditions_dict={
-                "is_discretionary": ["true"],
-                "most_severe_violation_type": _NON_ABSCONSION_VIOLATION_TYPES,
-            },
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_START,
+        event_conditions_dict={
+            "is_discretionary": ["true"],
+            "most_severe_violation_type": _NON_ABSCONSION_VIOLATION_TYPES,
+        },
+    ),
 )
 
 INCARCERATION_STARTS_WITH_VIOLATION_TYPE_METRICS = [
@@ -1528,15 +1460,13 @@ INCARCERATION_STARTS_WITH_VIOLATION_TYPE_METRICS = [
         "Violation",
         description="Number of observed discretionary incarceration starts for which the most severe "
         f"violation type was {category.replace('_', ' ').lower()}",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.INCARCERATION_START,
-                event_conditions_dict={
-                    "most_severe_violation_type": types,
-                    "is_discretionary": ["true"],
-                },
-            )
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.INCARCERATION_START,
+            event_conditions_dict={
+                "most_severe_violation_type": types,
+                "is_discretionary": ["true"],
+            },
+        ),
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
@@ -1549,16 +1479,14 @@ INCARCERATION_STARTS_WITH_INFERRED_VIOLATION_TYPE_METRICS = [
         "Violation",
         description="Number of observed discretionary incarceration starts for which the most severe "
         f"violation type was {category.replace('_', ' ').lower()}, based on an inferred violation type",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.INCARCERATION_START,
-                event_conditions_dict={
-                    "most_severe_violation_type": types,
-                    "violation_is_inferred": ["true"],
-                    "is_discretionary": ["true"],
-                },
-            )
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.INCARCERATION_START,
+            event_conditions_dict={
+                "most_severe_violation_type": types,
+                "violation_is_inferred": ["true"],
+                "is_discretionary": ["true"],
+            },
+        ),
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
     if category in ["TECHNICAL", "UNKNOWN"]
@@ -1571,16 +1499,14 @@ INCARCERATION_STARTS_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRAL = EventCoun
     description="Number of observed discretionary incarceration starts for which the most severe "
     "violation type was technical, and where there were no preceding treatment"
     "referrals during the past 1 year",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_START,
-            event_conditions_dict={
-                "most_severe_violation_type": ["TECHNICAL"],
-                "prior_treatment_referrals_1y": ["0"],
-                "is_discretionary": ["true"],
-            },
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_START,
+        event_conditions_dict={
+            "most_severe_violation_type": ["TECHNICAL"],
+            "prior_treatment_referrals_1y": ["0"],
+            "is_discretionary": ["true"],
+        },
+    ),
 )
 
 INCARCERATION_STARTS_AND_INFERRED = EventCountMetric(
@@ -1588,12 +1514,10 @@ INCARCERATION_STARTS_AND_INFERRED = EventCountMetric(
     display_name="Incarceration Starts And Inferred Incarcerations",
     description="Number of total observed discretionary incarceration starts or inferred "
     "incarcerations",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
-            event_conditions_dict={"is_discretionary": ["true"]},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
+        event_conditions_dict={"is_discretionary": ["true"]},
+    ),
 )
 
 INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
@@ -1604,15 +1528,13 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
         description="Number of total observed discretionary incarceration starts or inferred "
         f"incarcerations for which the most severe violation type was "
         f"{category.replace('_', ' ').lower()}",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
-                event_conditions_dict={
-                    "most_severe_violation_type": types,
-                    "is_discretionary": ["true"],
-                },
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
+            event_conditions_dict={
+                "most_severe_violation_type": types,
+                "is_discretionary": ["true"],
+            },
+        ),
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
@@ -1625,16 +1547,14 @@ PAROLE_INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
         description="Number of total observed discretionary incarceration starts or inferred "
         f"incarcerations from parole for which the most severe violation type was "
         f"{category.replace('_', ' ').lower()}",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
-                event_conditions_dict={
-                    "most_severe_violation_type": types,
-                    "is_discretionary": ["true"],
-                    "latest_active_supervision_type": ["PAROLE"],
-                },
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
+            event_conditions_dict={
+                "most_severe_violation_type": types,
+                "is_discretionary": ["true"],
+                "latest_active_supervision_type": ["PAROLE"],
+            },
+        ),
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
@@ -1648,16 +1568,14 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_INFERRED_VIOLATION_TYPE_METRICS = [
         description="Number of total observed discretionary incarceration starts or inferred "
         f"incarcerations for which the most severe violation type was "
         f"{category.replace('_', ' ').lower()}, based on an inferred violation type",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
-                event_conditions_dict={
-                    "most_severe_violation_type": types,
-                    "violation_is_inferred": ["true"],
-                    "is_discretionary": ["true"],
-                },
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
+            event_conditions_dict={
+                "most_severe_violation_type": types,
+                "violation_is_inferred": ["true"],
+                "is_discretionary": ["true"],
+            },
+        ),
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
     if category in ["TECHNICAL", "UNKNOWN"]
@@ -1670,28 +1588,24 @@ INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRA
     description="Number of observed discretionary incarceration starts or inferred incarcerations "
     "for which the most severe violation type was technical, and where there were no "
     "preceding treatment referrals during the past 1 year",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
-            event_conditions_dict={
-                "most_severe_violation_type": ["TECHNICAL"],
-                "prior_treatment_referrals_1y": ["0"],
-                "is_discretionary": ["true"],
-            },
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_START_AND_INFERRED_START,
+        event_conditions_dict={
+            "most_severe_violation_type": ["TECHNICAL"],
+            "prior_treatment_referrals_1y": ["0"],
+            "is_discretionary": ["true"],
+        },
+    ),
 )
 
 INCARCERATIONS_TEMPORARY = EventCountMetric(
     name="incarceration_starts_temporary",
     display_name="Incarceration Starts, Temporary",
     description="Number of observed temporary incarceration starts",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_START_TEMPORARY,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_START_TEMPORARY,
+        event_conditions_dict={},
+    ),
 )
 
 LATE_OPPORTUNITY_METRICS_INCARCERATION = [
@@ -1700,12 +1614,10 @@ LATE_OPPORTUNITY_METRICS_INCARCERATION = [
         display_name=f"{num_days} Days Late: {b.task_title}",
         description=f"Number of times clients surpass {num_days} days of being "
         f"eligible for opportunities of type: {b.task_title.lower()}",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType[f"TASK_ELIGIBLE_{num_days}_DAYS"],
-                event_conditions_dict={"task_type": [b.task_type_name]},
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType[f"TASK_ELIGIBLE_{num_days}_DAYS"],
+            event_conditions_dict={"task_type": [b.task_type_name]},
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
@@ -1718,12 +1630,10 @@ LATE_OPPORTUNITY_METRICS_SUPERVISION = [
         display_name=f"{num_days} Days Late: {b.task_title}",
         description=f"Number of times clients surpass {num_days} days of being "
         f"eligible for opportunities of type: {b.task_title.lower()}",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType[f"TASK_ELIGIBLE_{num_days}_DAYS"],
-                event_conditions_dict={"task_type": [b.task_type_name]},
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType[f"TASK_ELIGIBLE_{num_days}_DAYS"],
+            event_conditions_dict={"task_type": [b.task_type_name]},
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
@@ -1734,24 +1644,20 @@ LIBERTY_STARTS = EventCountMetric(
     name="transitions_to_liberty",
     display_name="Transitions To Liberty",
     description="Number of transitions to liberty",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TRANSITIONS_TO_LIBERTY_ALL,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TRANSITIONS_TO_LIBERTY_ALL,
+        event_conditions_dict={},
+    ),
 )
 
 DAYS_SENTENCED_AT_LIBERTY_START = EventValueMetric(
     name="days_sentenced_at_liberty_start",
     display_name="Days Sentenced At Liberty Start",
     description="Days sentenced as of the start of liberty",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TRANSITIONS_TO_LIBERTY_FROM_IN_STATE,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TRANSITIONS_TO_LIBERTY_FROM_IN_STATE,
+        event_conditions_dict={},
+    ),
     event_value_numeric="days_sentenced",
     event_count_metric=LIBERTY_STARTS,
 )
@@ -1760,12 +1666,10 @@ DAYS_SERVED_AT_LIBERTY_START = EventValueMetric(
     name="days_served_at_liberty_start",
     display_name="Days Served At Liberty Start",
     description="Days served as of the start of liberty",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TRANSITIONS_TO_LIBERTY_FROM_IN_STATE,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TRANSITIONS_TO_LIBERTY_FROM_IN_STATE,
+        event_conditions_dict={},
+    ),
     event_value_numeric="days_served",
     event_count_metric=LIBERTY_STARTS,
 )
@@ -1774,36 +1678,30 @@ LSIR_ASSESSMENTS = EventCountMetric(
     name="lsir_assessments",
     display_name="LSI-R Assessments",
     description="Number of LSI-R assessments administered",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.RISK_SCORE_ASSESSMENT,
-            event_conditions_dict={"assessment_type": ["LSIR"]},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.RISK_SCORE_ASSESSMENT,
+        event_conditions_dict={"assessment_type": ["LSIR"]},
+    ),
 )
 
 LSIR_ASSESSMENTS_365 = AssignmentEventCountMetric(
     name="lsir_assessments_365",
     display_name="LSI-R Assessments Within 1 Year Of Assignment",
     description="Number of LSI-R assessments administered within 1 year of assignment",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.RISK_SCORE_ASSESSMENT,
-            event_conditions_dict={"assessment_type": ["LSIR"]},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.RISK_SCORE_ASSESSMENT,
+        event_conditions_dict={"assessment_type": ["LSIR"]},
+    ),
 )
 
 LSIR_ASSESSMENTS_AVG_SCORE = EventValueMetric(
     name="lsir_assessments_avg_score",
     display_name="Average LSI-R Score Of Assessments",
     description="Average LSI-R score across all completed assessments",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.RISK_SCORE_ASSESSMENT,
-            event_conditions_dict={"assessment_type": ["LSIR"]},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.RISK_SCORE_ASSESSMENT,
+        event_conditions_dict={"assessment_type": ["LSIR"]},
+    ),
     event_value_numeric="assessment_score",
     event_count_metric=LSIR_ASSESSMENTS,
 )
@@ -1812,12 +1710,10 @@ LSIR_ASSESSMENTS_AVG_SCORE_CHANGE = EventValueMetric(
     name="lsir_assessments_avg_score_change",
     display_name="Average LSI-R Score Change Of Assessments",
     description="Average change in LSI-R score across all completed assessments",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.RISK_SCORE_ASSESSMENT,
-            event_conditions_dict={"assessment_type": ["LSIR"]},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.RISK_SCORE_ASSESSMENT,
+        event_conditions_dict={"assessment_type": ["LSIR"]},
+    ),
     event_value_numeric="assessment_score_change",
     event_count_metric=LSIR_ASSESSMENTS,
 )
@@ -1826,30 +1722,26 @@ LSIR_ASSESSMENTS_RISK_DECREASE = EventCountMetric(
     name="lsir_assessments_risk_decrease",
     display_name="LSI-R Assessments Yielding Lower Risk Score",
     description="Number of LSI-R assessments resulting in a decrease in risk score",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.RISK_SCORE_ASSESSMENT,
-            event_conditions_dict={
-                "assessment_type": ["LSIR"],
-                "assessment_score_decrease": ["true"],
-            },
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.RISK_SCORE_ASSESSMENT,
+        event_conditions_dict={
+            "assessment_type": ["LSIR"],
+            "assessment_score_decrease": ["true"],
+        },
+    ),
 )
 
 LSIR_ASSESSMENTS_RISK_INCREASE = EventCountMetric(
     name="lsir_assessments_risk_increase",
     display_name="LSI-R Assessments Yielding Higher Risk Score",
     description="Number of LSI-R assessments resulting in an increase in risk score",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.RISK_SCORE_ASSESSMENT,
-            event_conditions_dict={
-                "assessment_type": ["LSIR"],
-                "assessment_score_increase": ["true"],
-            },
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.RISK_SCORE_ASSESSMENT,
+        event_conditions_dict={
+            "assessment_type": ["LSIR"],
+            "assessment_score_increase": ["true"],
+        },
+    ),
 )
 
 LSIR_SCORE_PRESENT_AT_ASSIGNMENT = AssignmentSpanDaysMetric(
@@ -1899,12 +1791,10 @@ NUMBER_MONTHS_BETWEEN_DOWNGRADE_AND_ASSESSMENT_DUE = EventValueMetric(
     description="Average number of months ahead of a scheduled custody classification assessment that someone is downgraded."
     "A negative number means someone was downgraded sooner than expected. A positive number means they were"
     "downgraded after the assessment due date",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.CUSTODY_LEVEL_CHANGE,
-            event_conditions_dict={"change_type": ["DOWNGRADE"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.CUSTODY_LEVEL_CHANGE,
+        event_conditions_dict={"change_type": ["DOWNGRADE"]},
+    ),
     event_value_numeric="months_between_assessment_due_and_downgrade",
     event_count_metric=CUSTODY_LEVEL_DOWNGRADES,
 )
@@ -1915,15 +1805,13 @@ NUMBER_MONTHS_BETWEEN_DOWNGRADE_TO_MINIMUM_AND_ASSESSMENT_DUE = EventValueMetric
     description="Average number of months ahead of a scheduled custody classification assessment that someone is downgraded "
     "to minimum custody level. A negative number means someone was downgraded sooner than expected. "
     "A positive number means they were downgraded after the assessment due date",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.CUSTODY_LEVEL_CHANGE,
-            event_conditions_dict={
-                "change_type": ["DOWNGRADE"],
-                "new_custody_level": ["MINIMUM"],
-            },
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.CUSTODY_LEVEL_CHANGE,
+        event_conditions_dict={
+            "change_type": ["DOWNGRADE"],
+            "new_custody_level": ["MINIMUM"],
+        },
+    ),
     event_value_numeric="months_between_assessment_due_and_downgrade",
     event_count_metric=CUSTODY_LEVEL_DOWNGRADES_TO_MINIMUM,
 )
@@ -1932,24 +1820,20 @@ PAROLE_BOARD_HEARINGS = EventCountMetric(
     name="parole_board_hearings",
     display_name="Parole Board Hearings",
     description="Count of parole board hearings",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.PAROLE_HEARING,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.PAROLE_HEARING,
+        event_conditions_dict={},
+    ),
 )
 
 PAROLE_BOARD_HEARINGS_APPROVED = EventCountMetric(
     name="parole_board_hearings_approved",
     display_name="Parole Board Hearings: Approved",
     description="Count of approved parole board hearings",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.PAROLE_HEARING,
-            event_conditions_dict={"decision": ["APPROVED"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.PAROLE_HEARING,
+        event_conditions_dict={"decision": ["APPROVED"]},
+    ),
 )
 
 PAROLE_BOARD_HEARINGS_AVG_DAYS_SINCE_INCARCERATION = EventValueMetric(
@@ -1957,12 +1841,10 @@ PAROLE_BOARD_HEARINGS_AVG_DAYS_SINCE_INCARCERATION = EventValueMetric(
     display_name="Parole Board Hearings: Avg. Days Since Incarceration Start",
     description="Average number of days between the start of incarceration and all "
     "parole board hearings occurring during the period",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.PAROLE_HEARING,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.PAROLE_HEARING,
+        event_conditions_dict={},
+    ),
     event_value_numeric="days_since_incarceration_start",
     event_count_metric=PAROLE_BOARD_HEARINGS,
 )
@@ -1971,36 +1853,30 @@ PAROLE_BOARD_HEARINGS_CONTINUED = EventCountMetric(
     name="parole_board_hearings_continued",
     display_name="Parole Board Hearings: Continued",
     description="Count of continued parole board hearings",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.PAROLE_HEARING,
-            event_conditions_dict={"decision": ["CONTINUED"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.PAROLE_HEARING,
+        event_conditions_dict={"decision": ["CONTINUED"]},
+    ),
 )
 
 PAROLE_BOARD_HEARINGS_DENIED = EventCountMetric(
     name="parole_board_hearings_denied",
     display_name="Parole Board Hearings: Denied",
     description="Count of denied parole board hearings",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.PAROLE_HEARING,
-            event_conditions_dict={"decision": ["DENIED"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.PAROLE_HEARING,
+        event_conditions_dict={"decision": ["DENIED"]},
+    ),
 )
 
 PENDING_CUSTODY_STARTS = EventCountMetric(
     name="pending_custody_starts",
     display_name="Pending Custody Starts",
     description="Number of transitions to pending custody status",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.PENDING_CUSTODY_START,
-            event_conditions_dict={},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.PENDING_CUSTODY_START,
+        event_conditions_dict={},
+    ),
 )
 
 PERSON_DAYS_WEIGHTED_JUSTICE_IMPACT = SumSpanDaysMetric(
@@ -2072,24 +1948,20 @@ SUPERVISION_STARTS_FROM_INCARCERATION = EventCountMetric(
     name="supervision_starts_from_incarceration",
     display_name="Supervision Starts From Incarceration",
     description="Number of transitions to supervision from incarceration",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_START,
-            event_conditions_dict={"inflow_from_level_1": ["INCARCERATION"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_START,
+        event_conditions_dict={"inflow_from_level_1": ["INCARCERATION"]},
+    ),
 )
 
 INCARCERATION_RELEASES = EventCountMetric(
     name="incarceration_releases",
     display_name="Incarceration Releases",
     description="Number of transitions from incarceration to liberty or supervision",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_RELEASE,
-            event_conditions_dict={"outflow_to_level_1": ["LIBERTY", "SUPERVISION"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_RELEASE,
+        event_conditions_dict={"outflow_to_level_1": ["LIBERTY", "SUPERVISION"]},
+    ),
 )
 
 PROP_SENTENCE_SERVED_AT_INCARCERATION_TO_SUPERVISION_TRANSITION = EventValueMetric(
@@ -2098,12 +1970,10 @@ PROP_SENTENCE_SERVED_AT_INCARCERATION_TO_SUPERVISION_TRANSITION = EventValueMetr
     "Transition",
     description="Average proportion of sentence served at the transition from "
     "incarceration to supervision",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_RELEASE,
-            event_conditions_dict={"outflow_to_level_1": ["SUPERVISION"]},
-        )
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_RELEASE,
+        event_conditions_dict={"outflow_to_level_1": ["SUPERVISION"]},
+    ),
     event_value_numeric="prop_sentence_served",
     event_count_metric=SUPERVISION_STARTS_FROM_INCARCERATION,
 )
@@ -2112,12 +1982,10 @@ PROP_SENTENCE_SERVED_AT_LIBERTY_START = EventValueMetric(
     name="prop_sentence_served_at_liberty_start",
     display_name="Proportion Sentence Served At Liberty Start",
     description="Average proportion of sentence served as of the release event",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TRANSITIONS_TO_LIBERTY_FROM_IN_STATE,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TRANSITIONS_TO_LIBERTY_FROM_IN_STATE,
+        event_conditions_dict={},
+    ),
     event_value_numeric="prop_sentence_served",
     event_count_metric=LIBERTY_STARTS,
 )
@@ -2127,12 +1995,10 @@ PROP_SENTENCE_SERVED_AT_INCARCERATION_RELEASE = EventValueMetric(
     display_name="Proportion Sentence Served At Incarceration Release",
     description="Average proportion of sentence served as of the release from "
     "incarceration to liberty or supervision",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_RELEASE,
-            event_conditions_dict={"outflow_to_level_1": ["LIBERTY", "SUPERVISION"]},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_RELEASE,
+        event_conditions_dict={"outflow_to_level_1": ["LIBERTY", "SUPERVISION"]},
+    ),
     event_value_numeric="prop_sentence_served",
     event_count_metric=INCARCERATION_RELEASES,
 )
@@ -2143,12 +2009,10 @@ PROP_SENTENCE_SERVED_AT_SUPERVISION_INFLOW_FROM_INCARCERATION = EventValueMetric
     "Transition",
     description="Average proportion of sentence served at the transition from "
     "incarceration to supervision",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_START,
-            event_conditions_dict={"inflow_from_level_1": ["INCARCERATION"]},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_START,
+        event_conditions_dict={"inflow_from_level_1": ["INCARCERATION"]},
+    ),
     event_value_numeric="prop_sentence_served",
     event_count_metric=SUPERVISION_STARTS_FROM_INCARCERATION,
 )
@@ -2157,36 +2021,30 @@ SOLITARY_CONFINEMENT_ENDS = EventCountMetric(
     name="solitary_confinement_ends",
     display_name="Solitary Confinement Ends",
     description="Number of solitary confinement ends",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SOLITARY_CONFINEMENT_END,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SOLITARY_CONFINEMENT_END,
+        event_conditions_dict={},
+    ),
 )
 
 SOLITARY_CONFINEMENT_STARTS = EventCountMetric(
     name="solitary_confinement_starts",
     display_name="Solitary Confinement Starts",
     description="Number of solitary confinement starts",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SOLITARY_CONFINEMENT_START,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SOLITARY_CONFINEMENT_START,
+        event_conditions_dict={},
+    ),
 )
 
 SOLITARY_CONFINEMENT_LENGTH_OF_STAY_BY_END = EventValueMetric(
     name="solitary_confinement_length_of_stay_by_end",
     display_name="Solitary Confinement Length of Stay, by End Date",
     description="Length of stay in solitary confinement in days, by end date",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SOLITARY_CONFINEMENT_END,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SOLITARY_CONFINEMENT_END,
+        event_conditions_dict={},
+    ),
     event_value_numeric="length_of_stay",
     event_count_metric=SOLITARY_CONFINEMENT_ENDS,
 )
@@ -2195,12 +2053,10 @@ SOLITARY_CONFINEMENT_LENGTH_OF_STAY_BY_START = EventValueMetric(
     name="solitary_confinement_length_of_stay_by_start",
     display_name="Solitary Confinement Length of Stay, by Start Date",
     description="Length of stay in solitary confinement in days, by start date",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SOLITARY_CONFINEMENT_START,
-            event_conditions_dict={"is_active": ["false"]},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SOLITARY_CONFINEMENT_START,
+        event_conditions_dict={"is_active": ["false"]},
+    ),
     event_value_numeric="length_of_stay",
     event_count_metric=SOLITARY_CONFINEMENT_STARTS,
 )
@@ -2209,12 +2065,10 @@ SOLITARY_CONFINEMENT_STARTS_LAST_YEAR = EventValueMetric(
     name="solitary_confinement_starts_last_year",
     display_name="Solitary Confinement Starts in Last Year",
     description="Number of solitary confinement starts in the past year at date of assignment to solitary",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SOLITARY_CONFINEMENT_START,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SOLITARY_CONFINEMENT_START,
+        event_conditions_dict={},
+    ),
     event_value_numeric="solitary_starts_in_last_year",
     event_count_metric=SOLITARY_CONFINEMENT_STARTS,
 )
@@ -2223,63 +2077,53 @@ SUPERVISION_LEVEL_DOWNGRADES = EventCountMetric(
     name="supervision_level_downgrades",
     display_name="Supervision Level Downgrades",
     description="Number of supervision level changes to a lower level",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_LEVEL_CHANGE,
-            event_conditions_dict={"change_type": ["DOWNGRADE"]},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_LEVEL_CHANGE,
+        event_conditions_dict={"change_type": ["DOWNGRADE"]},
+    ),
 )
 
 SUPERVISION_LEVEL_DOWNGRADES_TO_LIMITED = EventCountMetric(
     name="supervision_level_downgrades_to_limited",
     display_name="Supervision Level Downgrades to Limited Supervision",
     description="Number of supervision level changes to limited supervision",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_LEVEL_CHANGE,
-            event_conditions_dict={"new_supervision_level": ["LIMITED"]},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_LEVEL_CHANGE,
+        event_conditions_dict={"new_supervision_level": ["LIMITED"]},
+    ),
 )
 
 SUPERVISION_LEVEL_UPGRADES = EventCountMetric(
     name="supervision_level_upgrades",
     display_name="Supervision Level Upgrades",
     description="Number of supervision level changes to a higher level",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_LEVEL_CHANGE,
-            event_conditions_dict={"change_type": ["UPGRADE"]},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_LEVEL_CHANGE,
+        event_conditions_dict={"change_type": ["UPGRADE"]},
+    ),
 )
 
 SUPERVISION_STARTS = EventCountMetric(
     name="supervision_starts",
     display_name="Supervision Starts",
     description="Number of transitions to supervision",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.SUPERVISION_START,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_START,
+        event_conditions_dict={},
+    ),
 )
 
 SUPERVISION_STARTS_1_MONTH_AFTER_PAROLE_ELIGIBILITY_DATE = EventCountMetric(
     name="supervision_starts_1_month_after_parole_eligibility_date",
     display_name="Supervision Starts One Month After Parole Eligibility",
     description="Number of people who are delayed for parole by at least 1 month",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.INCARCERATION_RELEASE,
-            event_conditions_dict={
-                "parole_release_1_month_flag": ["true"],
-                "outflow_to_level_1": ["SUPERVISION"],
-            },
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_RELEASE,
+        event_conditions_dict={
+            "parole_release_1_month_flag": ["true"],
+            "outflow_to_level_1": ["SUPERVISION"],
+        },
+    ),
 )
 
 
@@ -2289,12 +2133,10 @@ TASK_COMPLETED_METRICS_INCARCERATION = [
         name=f"task_completions_{b.task_type_name.lower()}",
         display_name=f"Task Completions: {b.task_title}",
         description=f"Number of task completions of type: {b.task_title.lower()}",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.TASK_COMPLETED,
-                event_conditions_dict={"task_type": [b.task_type_name]},
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.TASK_COMPLETED,
+            event_conditions_dict={"task_type": [b.task_type_name]},
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
@@ -2305,12 +2147,10 @@ TASK_COMPLETED_METRICS_SUPERVISION = [
         name=f"task_completions_{b.task_type_name.lower()}",
         display_name=f"Task Completions: {b.task_title}",
         description=f"Number of task completions of type: {b.task_title.lower()}",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.TASK_COMPLETED,
-                event_conditions_dict={"task_type": [b.task_type_name]},
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.TASK_COMPLETED,
+            event_conditions_dict={"task_type": [b.task_type_name]},
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
@@ -2322,15 +2162,13 @@ TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_INCARCERATION = [
         display_name=f"Task Completions While Eligible: {b.task_title}",
         description=f"Number of task completions of type: {b.task_title.lower()} "
         "occurring while eligible for opportunity",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.TASK_COMPLETED,
-                event_conditions_dict={
-                    "task_type": [b.task_type_name],
-                    "is_eligible": ["true"],
-                },
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.TASK_COMPLETED,
+            event_conditions_dict={
+                "task_type": [b.task_type_name],
+                "is_eligible": ["true"],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
@@ -2342,15 +2180,13 @@ TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_SUPERVISION = [
         display_name=f"Task Completions While Eligible: {b.task_title}",
         description=f"Number of task completions of type: {b.task_title.lower()}"
         "occurring while eligible for opportunity",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.TASK_COMPLETED,
-                event_conditions_dict={
-                    "task_type": [b.task_type_name],
-                    "is_eligible": ["true"],
-                },
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.TASK_COMPLETED,
+            event_conditions_dict={
+                "task_type": [b.task_type_name],
+                "is_eligible": ["true"],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
@@ -2361,17 +2197,15 @@ DAYS_ELIGIBLE_AT_TASK_COMPLETION_METRICS_INCARCERATION = [
         name=f"days_eligible_at_task_completion_{b.task_type_name.lower()}",
         display_name=f"Days Eligible At Task Completion: {b.task_title}",
         description=f"Number of days spent eligible for {b.task_title.lower()} opportunity at task completion",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.TASK_COMPLETED,
-                event_conditions_dict={"task_type": [b.task_type_name]},
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.TASK_COMPLETED,
+            event_conditions_dict={"task_type": [b.task_type_name]},
+        ),
         event_value_numeric="days_eligible",
         event_count_metric=next(
             metric
             for metric in TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_INCARCERATION
-            if metric.event_selectors[0].event_conditions_dict["task_type"]
+            if metric.event_selector.event_conditions_dict["task_type"]
             == [b.task_type_name]
         ),
     )
@@ -2384,17 +2218,15 @@ DAYS_ELIGIBLE_AT_TASK_COMPLETION_METRICS_SUPERVISION = [
         name=f"days_eligible_at_task_completion_{b.task_type_name.lower()}",
         display_name=f"Days Eligible At Task Completion: {b.task_title}",
         description=f"Number of days spent eligible for {b.task_title.lower()} opportunity at task completion",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.TASK_COMPLETED,
-                event_conditions_dict={"task_type": [b.task_type_name]},
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.TASK_COMPLETED,
+            event_conditions_dict={"task_type": [b.task_type_name]},
+        ),
         event_value_numeric="days_eligible",
         event_count_metric=next(
             metric
             for metric in TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_SUPERVISION
-            if metric.event_selectors[0].event_conditions_dict["task_type"]
+            if metric.event_selector.event_conditions_dict["task_type"]
             == [b.task_type_name]
         ),
     )
@@ -2406,24 +2238,20 @@ TREATMENT_REFERRALS = EventCountMetric(
     name="treatment_referrals",
     display_name="Treatment Referrals",
     description="Number of treatment referrals",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TREATMENT_REFERRAL,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TREATMENT_REFERRAL,
+        event_conditions_dict={},
+    ),
 )
 
 TREATMENT_STARTS = EventCountMetric(
     name="treatment_starts",
     display_name="Treatment Starts",
     description="Number of treatment starts (counts unique program_id's)",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TREATMENT_START,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TREATMENT_START,
+        event_conditions_dict={},
+    ),
     event_segmentation_columns=["program_id"],
 )
 
@@ -2431,24 +2259,20 @@ WORKFLOWS_CLIENT_STATUS_UPDATE = EventCountMetric(
     name="workflows_client_status_update",
     display_name="Workflows App Client Status Updates",
     description="Number of updates made on workflows app",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
+        event_conditions_dict={},
+    ),
 )
 
 VIOLATIONS = EventCountMetric(
     name="violations",
     display_name="Violations: All",
     description="Number of violations",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.VIOLATION,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.VIOLATION,
+        event_conditions_dict={},
+    ),
 )
 
 VIOLATIONS_BY_TYPE_METRICS = [
@@ -2456,12 +2280,10 @@ VIOLATIONS_BY_TYPE_METRICS = [
         name=f"violations_{category.lower()}",
         display_name=f"Violations: {category.replace('_', ' ').title()}",
         description=f"Number of {category.replace('_', ' ').lower()} violations",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.VIOLATION,
-                event_conditions_dict={"violation_type": types},
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.VIOLATION,
+            event_conditions_dict={"violation_type": types},
+        ),
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
@@ -2470,12 +2292,10 @@ VIOLATION_RESPONSES = EventCountMetric(
     name="violation_responses",
     display_name="Violation Responses: All",
     description="Number of violation responses",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.VIOLATION_RESPONSE,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.VIOLATION_RESPONSE,
+        event_conditions_dict={},
+    ),
 )
 
 VIOLATION_RESPONSES_BY_TYPE_METRICS = [
@@ -2484,12 +2304,10 @@ VIOLATION_RESPONSES_BY_TYPE_METRICS = [
         display_name=f"Violation Responses: {category.replace('_', ' ').title()}",
         description=f"Number of {category.replace('_', ' ').lower()} violation "
         "responses",
-        event_selectors=[
-            EventSelector(
-                event_type=EventType.VIOLATION_RESPONSE,
-                event_conditions_dict={"most_serious_violation_type": types},
-            ),
-        ],
+        event_selector=EventSelector(
+            event_type=EventType.VIOLATION_RESPONSE,
+            event_conditions_dict={"most_serious_violation_type": types},
+        ),
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]

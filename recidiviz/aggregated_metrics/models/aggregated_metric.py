@@ -120,26 +120,25 @@ class SpanMetricConditionsMixin(MetricConditionsMixin):
 class EventMetricConditionsMixin(MetricConditionsMixin):
     """Attributes and functions to derive query snippets applied to events"""
 
-    # The list of EventSelectors specifying conditions on a spans table
-    event_selectors: List[EventSelector]
+    # The EventSelector specifying the events to include in this metric
+    event_selector: EventSelector
 
     def get_metric_conditions(self) -> List[str]:
         return [
-            f"({s.generate_event_conditions_query_fragment(filter_by_event_type=True)})"
-            for s in self.event_selectors
+            f"({self.event_selector.generate_event_conditions_query_fragment(filter_by_event_type=True)})"
         ]
 
     @property
     def unit_of_observation(self) -> MetricUnitOfObservation:
-        return one({s.unit_of_observation for s in self.event_selectors})
+        return self.event_selector.unit_of_observation
 
     @property
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:
         return self.unit_of_observation.type
 
     @property
-    def event_types(self) -> List[EventType]:
-        return [s.event_type for s in self.event_selectors]
+    def event_type(self) -> EventType:
+        return self.event_selector.event_type
 
 
 @attr.define(frozen=True, kw_only=True)

@@ -34,14 +34,15 @@ from recidiviz.observations.metric_unit_of_observation_type import (
 @attr.define(frozen=True, kw_only=True)
 class EventSelector:
     """
-    Class that stores information about conditions on a events table, in order to
-    generate query fragments for filtering events.
+    Class that stores information that can be used to generate query fragments that
+    allow us to select a targeted set of events.
     """
 
-    # The EventType used to filter to a subset of events
+    # The EventTypes to select
     event_type: EventType
 
-    # Dictionary mapping event attributes to their associated conditions
+    # Dictionary mapping event attributes to their associated conditions. Only events
+    # with these attribute values will be selected.
     event_conditions_dict: Dict[str, Union[List[str], str]] = attr.ib()
 
     @property
@@ -57,7 +58,9 @@ class EventSelector:
     def generate_event_conditions_query_fragment(
         self, filter_by_event_type: bool
     ) -> str:
-        """Returns a query fragment that filters a query based on configured event conditions"""
+        """Returns a query fragment that filters a query that contains event rows based
+        on configured event conditions.
+        """
         condition_strings = []
 
         # TODO(#29291): Shouldn't need to filter by span_type once we're querying from
@@ -86,7 +89,9 @@ class EventSelector:
         return condition_strings_query_fragment
 
     def generate_event_selector_query(self) -> str:
-        """Returns a standalone query that filters the appropriate events table based on configured event conditions"""
+        """Returns a standalone query that returns the appropriate events table based on
+        configured event conditions.
+        """
         event_observations_address = (
             EventObservationBigQueryViewBuilder.materialized_view_address_for_event(
                 self.event_type

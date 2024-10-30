@@ -104,12 +104,10 @@ DISTINCT_ACTIVE_USERS_LOOKER = EventDistinctUnitCountMetric(
     display_name="Distinct Active Primary Users",
     description="Number of distinct primary (line staff) Workflows users having at least one usage event for the "
     "task type during the time period",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={},
+    ),
 )
 DISTINCT_REGISTERED_USERS_LOOKER = SpanDistinctUnitCountMetric(
     name="distinct_registered_users",
@@ -126,23 +124,19 @@ DISTINCT_LOGGED_IN_USERS_LOOKER = EventDistinctUnitCountMetric(
     name="distinct_logged_in_users",
     display_name="Distinct Primary Users Logging In",
     description="Number of distinct primary (line staff) Workflows users who logged into Workflows",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.WORKFLOWS_USER_LOGIN,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_LOGIN,
+        event_conditions_dict={},
+    ),
 )
 LOGINS_LOOKER = EventCountMetric(
     name="logins",
     display_name="Logins",
     description="Number of logins performed by primary Workflows users",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.WORKFLOWS_USER_LOGIN,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_LOGIN,
+        event_conditions_dict={},
+    ),
 )
 PERSON_DAYS_TASK_ELIGIBLE_LOOKER = SumSpanDaysMetric(
     name="person_days_task_eligible",
@@ -161,26 +155,22 @@ TASK_COMPLETIONS_LOOKER = EventCountMetric(
     name="task_completions",
     display_name="Task Completions",
     description="Number of task completions of selected task type",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TASK_COMPLETED,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={},
+    ),
     event_segmentation_columns=["task_type"],
 )
 TASK_COMPLETIONS_AFTER_TOOL_ACTION_LOOKER = EventCountMetric(
     name="task_completions_after_tool_action",
     display_name="Task Completions After Tool Action",
     description="Number of task completions for selected task type occurring after an action was taken in the tool",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TASK_COMPLETED,
-            event_conditions_dict={
-                "after_tool_action": ["true"],
-            },
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={
+            "after_tool_action": ["true"],
+        },
+    ),
     event_segmentation_columns=["task_type"],
 )
 TASK_COMPLETIONS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER = EventCountMetric(
@@ -188,29 +178,25 @@ TASK_COMPLETIONS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER = EventCountMetr
     display_name="Task Completions While Almost Eligible After Tool Action",
     description="Number of task completions occurring while client is almost eligible for selected task type, "
     "occurring after an action was taken in the tool",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TASK_COMPLETED,
-            event_conditions_dict={
-                "after_tool_action": ["true"],
-                "is_almost_eligible": ["true"],
-            },
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={
+            "after_tool_action": ["true"],
+            "is_almost_eligible": ["true"],
+        },
+    ),
     event_segmentation_columns=["task_type"],
 )
 TASK_COMPLETIONS_WHILE_ELIGIBLE_LOOKER = EventCountMetric(
     name="task_completions_while_eligible",
     display_name="Task Completions While Eligible",
     description="Number of task completions for selected task type occurring while eligible for opportunity",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TASK_COMPLETED,
-            event_conditions_dict={
-                "is_eligible": ["true"],
-            },
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={
+            "is_eligible": ["true"],
+        },
+    ),
     event_segmentation_columns=["task_type"],
 )
 FIRST_TOOL_ACTIONS_LOOKER = EventCountMetric(
@@ -218,28 +204,24 @@ FIRST_TOOL_ACTIONS_LOOKER = EventCountMetric(
     display_name="First Tool Actions",
     description="Number of unique instances of the first action taken in the workflows tool after a client is "
     "newly surfaced for the selected task type",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.WORKFLOWS_PERSON_USAGE_EVENT,
-            event_conditions_dict={
-                "is_first_tool_action": ["true"],
-            },
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_PERSON_USAGE_EVENT,
+        event_conditions_dict={
+            "is_first_tool_action": ["true"],
+        },
+    ),
     event_segmentation_columns=["task_type"],
 )
 DAYS_ELIGIBLE_AT_FIRST_TOOL_ACTION_LOOKER = EventValueMetric(
     name="days_eligible_at_first_tool_action",
     display_name="Days Eligible At First Workflows Tool Action",
     description="Number of days spent eligible for selected opportunity at time of first action in Workflows tool",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.WORKFLOWS_PERSON_USAGE_EVENT,
-            event_conditions_dict={
-                "is_first_tool_action": ["true"],
-            },
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_PERSON_USAGE_EVENT,
+        event_conditions_dict={
+            "is_first_tool_action": ["true"],
+        },
+    ),
     event_value_numeric="days_eligible",
     event_count_metric=FIRST_TOOL_ACTIONS_LOOKER,
 )
@@ -247,12 +229,10 @@ DAYS_ELIGIBLE_AT_TASK_COMPLETION_LOOKER = EventValueMetric(
     name="days_eligible_at_task_completion",
     display_name="Days Eligible At Task Completion",
     description="Number of days spent eligible for selected opportunity at task completion",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TASK_COMPLETED,
-            event_conditions_dict={},
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={},
+    ),
     event_value_numeric="days_eligible",
     event_count_metric=TASK_COMPLETIONS_LOOKER,
 )
@@ -261,14 +241,12 @@ TASK_ELIGIBILITY_STARTS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER = EventCo
     display_name="Task Eligibility Starts While Almost Eligible After Tool Action",
     description="Number of task eligibility starts occurring while client is almost eligible for selected task type, "
     "occurring after an action was taken in the tool",
-    event_selectors=[
-        EventSelector(
-            event_type=EventType.TASK_COMPLETED,
-            event_conditions_dict={
-                "after_tool_action": ["true"],
-                "after_almost_eligible": ["true"],
-            },
-        ),
-    ],
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={
+            "after_tool_action": ["true"],
+            "after_almost_eligible": ["true"],
+        },
+    ),
     event_segmentation_columns=["task_type"],
 )

@@ -87,16 +87,17 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
             if isinstance(m, EventMetricConditionsMixin)
         ]
         for metric in event_metrics:
-            for event_selector in metric.event_selectors:
-                for attribute in event_selector.event_conditions_dict:
-                    supported_attributes = self.event_builders_by_span_type[
-                        event_selector.event_type
-                    ].attribute_cols
-                    if attribute not in supported_attributes:
-                        raise ValueError(
-                            f"Event attribute `{attribute}` is not supported by {event_selector.event_type.value} event. "
-                            f"Supported attributes: {supported_attributes}"
-                        )
+            event_selector = metric.event_selector
+            event_type = metric.event_type
+            for attribute in event_selector.event_conditions_dict:
+                supported_attributes = self.event_builders_by_span_type[
+                    event_type
+                ].attribute_cols
+                if attribute not in supported_attributes:
+                    raise ValueError(
+                        f"Event attribute `{attribute}` is not supported by {event_type.value} event. "
+                        f"Supported attributes: {supported_attributes}"
+                    )
 
     # check that `event_value_numeric` is compatible with event attributes for all configured EventValue metrics
     def test_compatible_event_value_numeric(self) -> None:
@@ -105,17 +106,17 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
         ):
             if not isinstance(metric, EventValueMetric):
                 continue
-            for event in metric.event_types:
-                supported_attributes = self.event_builders_by_span_type[
-                    event
-                ].attribute_cols
-                if metric.event_value_numeric in supported_attributes:
-                    continue
-                raise ValueError(
-                    f"Configured event_value_numeric `{metric.event_value_numeric}` "
-                    f"referenced by metric [{metric.name}] is not supported by "
-                    f"{event.value} event. Supported attributes: {supported_attributes}"
-                )
+            event = metric.event_type
+            supported_attributes = self.event_builders_by_span_type[
+                event
+            ].attribute_cols
+            if metric.event_value_numeric in supported_attributes:
+                continue
+            raise ValueError(
+                f"Configured event_value_numeric `{metric.event_value_numeric}` "
+                f"referenced by metric [{metric.name}] is not supported by "
+                f"{event.value} event. Supported attributes: {supported_attributes}"
+            )
 
     # check that `span_value_numeric` is compatible with span attributes for all configured DailyAvgSpanValue
     # and AssignmentSpanValueAtStart metrics
@@ -172,20 +173,6 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
                     f"More than one unit_of_observation_type found for `{metric.name}` metric. "
                     f"All span selectors must be associated with the same unit_of_observation_type."
                 )
-            if (
-                isinstance(metric, EventMetricConditionsMixin)
-                and len(
-                    set(
-                        selector.unit_of_observation_type
-                        for selector in metric.event_selectors
-                    )
-                )
-                > 1
-            ):
-                raise ValueError(
-                    f"More than one unit_of_observation_type found for `{metric.name}` metric. "
-                    f"All event selectors must be associated with the same unit_of_observation_type."
-                )
 
     # Check that EventCount distinct attribute columns are all supported Event attributes
     def test_compatible_event_segmentation_columns(self) -> None:
@@ -196,13 +183,13 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
                 isinstance(metric, EventCountMetric)
                 and metric.event_segmentation_columns
             ):
-                for event in metric.event_types:
-                    for col in metric.event_segmentation_columns:
-                        supported_attributes = self.event_builders_by_span_type[
-                            event
-                        ].attribute_cols
-                        if col not in supported_attributes:
-                            raise ValueError(
-                                f"Configured event_segmentation_columns `{col}` is not supported by "
-                                f"{event.value} event. Supported attributes: {supported_attributes}"
-                            )
+                event = metric.event_type
+                for col in metric.event_segmentation_columns:
+                    supported_attributes = self.event_builders_by_span_type[
+                        event
+                    ].attribute_cols
+                    if col not in supported_attributes:
+                        raise ValueError(
+                            f"Configured event_segmentation_columns `{col}` is not supported by "
+                            f"{event.value} event. Supported attributes: {supported_attributes}"
+                        )
