@@ -58,6 +58,8 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
         for address_str in [
             # This source table is only in-use in production
             "pulse_dashboard_segment_metrics.frontend_opportunity_snoozed",
+            # This source table is not currently in use for measuring logins, but may be used again in the future
+            "pulse_dashboard_segment_metrics.identifies",
             *COMMON_VESTIGES,
         ]
     },
@@ -72,6 +74,8 @@ ALLOWED_VESTIGIAL_CONFIGURATIONS = {
             "spark_public_output_data.life_years_estimate_raw",
             # This table is only referenced in staging
             "spark_public_output_data.population_estimate_raw",
+            # This source table is not currently in use for measuring logins, but may be used again in the future
+            "pulse_dashboard_segment_metrics.identifies",
             *COMMON_VESTIGES,
         ]
     },

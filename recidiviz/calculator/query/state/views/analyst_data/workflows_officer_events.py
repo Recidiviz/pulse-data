@@ -153,15 +153,6 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         should_get_context_page=False,
     ),
     WorkflowsOfficerEventQueryConfig(
-        table_name="identifies",
-        officer_event_name=EventType.WORKFLOWS_USER_ACTION,
-        workflows_event_type="USER_IDENTIFIED",
-        has_person_external_id=False,
-        has_opportunity_type=False,
-        has_status=False,
-        should_get_context_page=True,
-    ),
-    WorkflowsOfficerEventQueryConfig(
         table_name="frontend_caseload_search",
         officer_event_name=EventType.WORKFLOWS_USER_ACTION,
         workflows_event_type="SEARCH_BAR_USED",
