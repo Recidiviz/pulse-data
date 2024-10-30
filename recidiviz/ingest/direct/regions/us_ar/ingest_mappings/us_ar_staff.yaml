@@ -3,7 +3,7 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - PARTYID
+  - staff_id_array
   - PERSONLASTNAME
   - PERSONFIRSTNAME
   - PERSONMIDDLENAME
@@ -13,9 +13,16 @@ unused_columns: []
 output:
   StateStaff:
     external_ids:
-      - StateStaffExternalId:
-          external_id: PARTYID
-          id_type: $literal("US_AR_PARTYID")
+      - $foreach:
+          $iterable: staff_id_array
+          $result:
+            $conditional:
+              - $if:
+                  $not_null: $iter_item
+                $then:
+                  StateStaffExternalId:
+                    external_id: $iter_item
+                    id_type: $literal("US_AR_PARTYID")
     full_name:
       $person_name:
         $given_names: PERSONFIRSTNAME
