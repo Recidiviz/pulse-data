@@ -142,7 +142,7 @@ SELECT
     )) AS reason,
     start_date AS minimum_time_served_date,
 FROM sub_sessions_with_attributes
-WHERE start_date != end_date
+WHERE start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
 """
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(

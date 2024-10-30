@@ -102,7 +102,7 @@ current_offense_cte AS (
     SELECT
       span.state_code,
       span.person_id,
-      STRING_AGG(sent.description, " @@@ ") AS form_information_current_offenses,
+      STRING_AGG(sent.description, " @@@ " ORDER BY sent.description) AS form_information_current_offenses,
     FROM
       `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
       UNNEST (sentences_preprocessed_id_array_projected_completion) AS sentences_preprocessed_id
@@ -155,7 +155,12 @@ work_assignments_cte AS (
       STRING_AGG(CONCAT(employer, ', ', 
                         occupation, '; ', 
                         work_assignments_start_date, ': ', 
-                        IFNULL(work_assignments_end_date, 'Present')), ' @@@ ') AS form_information_work_assignments
+                        IFNULL(work_assignments_end_date, 'Present')), ' @@@ '
+        ORDER BY work_assignments_start_date,
+          work_assignments_end_date,
+          employer,
+          occupation
+      ) AS form_information_work_assignments
     FROM
       cte
     GROUP BY
@@ -179,7 +184,7 @@ program_assignments_cte AS (
     SELECT
       person_id,
       state_code,
-      STRING_AGG(form_information_program_enrollment, ' @@@ ') AS form_information_program_enrollment
+      STRING_AGG(form_information_program_enrollment, ' @@@ ' ORDER BY form_information_program_enrollment) AS form_information_program_enrollment
     FROM
       cte
     INNER JOIN
@@ -208,7 +213,7 @@ case_plan_goals_cte AS (
       SELECT
       person_id,
       state_code,
-      STRING_AGG(form_information_case_plan_goals, ' @@@ ') AS form_information_case_plan_goals
+      STRING_AGG(form_information_case_plan_goals, ' @@@ ' ORDER BY form_information_case_plan_goals) AS form_information_case_plan_goals
     FROM
       cte
     INNER JOIN
@@ -225,7 +230,7 @@ furloughs_cte AS (
     SELECT
       state_code,
       person_id,
-      STRING_AGG(CAST(completion_event_date AS STRING), ", ") as form_information_furloughs,
+      STRING_AGG(CAST(completion_event_date AS STRING), ", " ORDER BY completion_event_date) as form_information_furloughs,
     FROM (
       SELECT
         *
@@ -265,7 +270,9 @@ disciplinary_reports_cte AS (
     SELECT
       state_code,
       person_id,
-      STRING_AGG(form_information_disciplinary_reports, " @@@ ") as form_information_disciplinary_reports,
+      STRING_AGG(
+        form_information_disciplinary_reports, " @@@ " ORDER BY form_information_disciplinary_reports
+      ) as form_information_disciplinary_reports,
     FROM
       cte
     GROUP BY 1, 2
@@ -279,7 +286,10 @@ escape_history_cte AS (
             CAST(date_imposed AS STRING),
             ' - ',
             description
-        ), '@@@') form_information_escape_history_10_years
+          ), 
+          '@@@'
+          ORDER BY date_imposed, description
+        ) form_information_escape_history_10_years
     FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` 
     WHERE statute IS NOT NULL
         -- Escape statutes
