@@ -67,17 +67,18 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
             if isinstance(m, SpanMetricConditionsMixin)
         ]
         for metric in span_metrics:
-            for span_selector in metric.span_selectors:
-                for attribute in span_selector.span_conditions_dict:
-                    supported_attributes = self.span_builders_by_span_type[
-                        span_selector.span_type
-                    ].attribute_cols
+            span_selector = metric.span_selector
+            for attribute in span_selector.span_conditions_dict:
+                span_type = span_selector.span_type
+                supported_attributes = self.span_builders_by_span_type[
+                    span_type
+                ].attribute_cols
 
-                    if attribute not in supported_attributes:
-                        raise ValueError(
-                            f"Span attribute `{attribute}` is not supported by {span_selector.span_type.value} span. "
-                            f"Supported attributes: {supported_attributes}"
-                        )
+                if attribute not in supported_attributes:
+                    raise ValueError(
+                        f"Span attribute `{attribute}` is not supported by {span_type.value} span. "
+                        f"Supported attributes: {supported_attributes}"
+                    )
 
     # check that event attribute filters are compatible with source events for all configured event metrics
     def test_compatible_event_attribute_filters(self) -> None:
@@ -127,15 +128,15 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
             if isinstance(
                 metric, (AssignmentSpanValueAtStartMetric, DailyAvgSpanValueMetric)
             ):
-                for span in metric.span_types:
-                    supported_attributes = self.span_builders_by_span_type[
-                        span
-                    ].attribute_cols
-                    if metric.span_value_numeric not in supported_attributes:
-                        raise ValueError(
-                            f"Configured span_value_numeric `{metric.span_value_numeric}` is not supported by "
-                            f"{span.value} span. Supported attributes: {supported_attributes}"
-                        )
+                span = metric.span_selector.span_type
+                supported_attributes = self.span_builders_by_span_type[
+                    span
+                ].attribute_cols
+                if metric.span_value_numeric not in supported_attributes:
+                    raise ValueError(
+                        f"Configured span_value_numeric `{metric.span_value_numeric}` is not supported by "
+                        f"{span.value} span. Supported attributes: {supported_attributes}"
+                    )
 
     # check that `weight_col` is compatible with span attributes for all configured SumSpanDays metrics
     def test_compatible_weight_col(self) -> None:
@@ -143,36 +144,17 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
             METRICS_BY_POPULATION_TYPE.values()
         ):
             if isinstance(metric, SumSpanDaysMetric):
-                for span in metric.span_types:
-                    supported_attributes = self.span_builders_by_span_type[
-                        span
-                    ].attribute_cols
-                    if metric.weight_col and (
-                        metric.weight_col not in supported_attributes
-                    ):
-                        raise ValueError(
-                            f"Configured weight_col `{metric.weight_col}` is not supported by {span.value} span. "
-                            f"Supported attributes: {supported_attributes}"
-                        )
-
-    def test_consistent_unit_of_observation_type(self) -> None:
-        for metric in itertools.chain.from_iterable(
-            METRICS_BY_POPULATION_TYPE.values()
-        ):
-            if (
-                isinstance(metric, SpanMetricConditionsMixin)
-                and len(
-                    set(
-                        selector.unit_of_observation_type
-                        for selector in metric.span_selectors
+                span = metric.span_selector.span_type
+                supported_attributes = self.span_builders_by_span_type[
+                    span
+                ].attribute_cols
+                if metric.weight_col and (
+                    metric.weight_col not in supported_attributes
+                ):
+                    raise ValueError(
+                        f"Configured weight_col `{metric.weight_col}` is not supported by {span.value} span. "
+                        f"Supported attributes: {supported_attributes}"
                     )
-                )
-                > 1
-            ):
-                raise ValueError(
-                    f"More than one unit_of_observation_type found for `{metric.name}` metric. "
-                    f"All span selectors must be associated with the same unit_of_observation_type."
-                )
 
     # Check that EventCount distinct attribute columns are all supported Event attributes
     def test_compatible_event_segmentation_columns(self) -> None:

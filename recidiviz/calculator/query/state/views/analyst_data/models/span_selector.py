@@ -44,10 +44,11 @@ class SpanSelector:
     generate query fragments for filtering spans.
     """
 
-    # The SpanType used to filter to a subset of spans
+    # The SpanType to select
     span_type: SpanType
 
-    # Dictionary mapping span attributes to their associated conditions
+    # Dictionary mapping span attributes to their associated conditions. Only spans
+    # with these attribute values will be selected.
     span_conditions_dict: Dict[str, Union[List[str], str]] = attr.ib()
 
     @property
@@ -57,11 +58,13 @@ class SpanSelector:
 
     @property
     def unit_of_observation(self) -> MetricUnitOfObservation:
-        """Returns the MetricUnitOfObservation object associated with the inputted type"""
+        """Returns the MetricUnitOfObservation object associated with the span type"""
         return MetricUnitOfObservation(type=self.unit_of_observation_type)
 
     def generate_span_conditions_query_fragment(self, filter_by_span_type: bool) -> str:
-        """Returns a query fragment that filters a query based on configured span conditions"""
+        """Returns a query fragment that filters a query that contains span rows based
+        on configured span conditions.
+        """
         condition_strings = []
 
         # TODO(#29291): Shouldn't need to filter by span_type once we're querying from

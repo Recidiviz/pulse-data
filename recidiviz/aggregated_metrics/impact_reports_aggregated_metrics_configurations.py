@@ -39,16 +39,14 @@ AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_SUPERVISION = [
         name=f"avg_daily_population_task_marked_ineligible_{b.task_type_name.lower()}",
         display_name=f"Average Population: Task Marked Ineligible, {b.task_title}",
         description=f"Average daily count of residents marked ineligible for task of type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-                span_conditions_dict={
-                    "marked_ineligible": ["true"],
-                    "is_eligible": ["true"],
-                    "task_type": [b.task_type_name],
-                },
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "marked_ineligible": ["true"],
+                "is_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
@@ -59,16 +57,14 @@ AVG_DAILY_POPULATION_TASK_MARKED_INELIGIBLE_METRICS_INCARCERATION = [
         name=f"avg_daily_population_task_marked_ineligible_{b.task_type_name.lower()}",
         display_name=f"Average Population: Task Marked Ineligible, {b.task_title}",
         description=f"Average daily count of residents marked ineligible for task of type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-                span_conditions_dict={
-                    "marked_ineligible": ["true"],
-                    "is_eligible": ["true"],
-                    "task_type": [b.task_type_name],
-                },
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "marked_ineligible": ["true"],
+                "is_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
@@ -79,15 +75,13 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_INCARCERATION = [
         name=f"avg_daily_population_task_almost_eligible_{b.task_type_name.lower()}",
         display_name=f"Average Population: Task Almost Eligible, {b.task_title}",
         description=f"Average daily count of residents almost eligible for task of type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-                span_conditions_dict={
-                    "is_almost_eligible": ["true"],
-                    "task_type": [b.task_type_name],
-                },
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_almost_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
@@ -98,17 +92,15 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_INCARCERATION = [
         name=f"avg_daily_population_task_eligible_and_viewed_{b.task_type_name.lower()}",
         display_name=f"Average Population: Task Eligible And Viewed, {b.task_title}",
         description=f"Average daily count of residents eligible and viewed for task of type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-                span_conditions_dict={
-                    "is_eligible": ["true"],
-                    "viewed": ["true"],
-                    "marked_ineligible": ["false"],
-                    "task_type": [b.task_type_name],
-                },
-            ),
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "viewed": ["true"],
+                "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
@@ -119,17 +111,15 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_VIEWED_METRICS_SUPERVISION = [
         name=f"avg_daily_population_task_eligible_and_viewed_{b.task_type_name.lower()}",
         display_name=f"Average Population: Task Eligible And Viewed, {b.task_title}",
         description=f"Average daily count of residents eligible and viewed for task of type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-                span_conditions_dict={
-                    "is_eligible": ["true"],
-                    "viewed": ["true"],
-                    "marked_ineligible": ["false"],
-                    "task_type": [b.task_type_name],
-                },
-            ),
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "viewed": ["true"],
+                "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
@@ -140,17 +130,15 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_SUPERVISION = [
         name=f"avg_daily_population_task_eligible_and_not_viewed_{b.task_type_name.lower()}",
         display_name=f"Average Population: Task Eligible And Not Viewed, {b.task_title}",
         description=f"Average daily count of residents eligible and not viewed for task of type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-                span_conditions_dict={
-                    "is_eligible": ["true"],
-                    "viewed": ["false"],
-                    "marked_ineligible": ["false"],
-                    "task_type": [b.task_type_name],
-                },
-            ),
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "viewed": ["false"],
+                "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
@@ -161,17 +149,15 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_AND_NOT_VIEWED_METRICS_INCARCERATION = [
         name=f"avg_daily_population_task_eligible_and_not_viewed_{b.task_type_name.lower()}",
         display_name=f"Average Population: Task Eligible And Not Viewed, {b.task_title}",
         description=f"Average daily count of residents eligible and not viewed for task of type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-                span_conditions_dict={
-                    "is_eligible": ["true"],
-                    "viewed": ["false"],
-                    "marked_ineligible": ["false"],
-                    "task_type": [b.task_type_name],
-                },
-            ),
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_eligible": ["true"],
+                "viewed": ["false"],
+                "marked_ineligible": ["false"],
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
@@ -183,15 +169,13 @@ AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_METRICS_SUPERVISION = [
         name=f"avg_daily_population_task_almost_eligible_{b.task_type_name.lower()}",
         display_name=f"Average Population: Task Almost Eligible, {b.task_title}",
         description=f"Average daily count of residents almost eligible for task of type: {b.task_title.lower()}",
-        span_selectors=[
-            SpanSelector(
-                span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
-                span_conditions_dict={
-                    "is_almost_eligible": ["true"],
-                    "task_type": [b.task_type_name],
-                },
-            )
-        ],
+        span_selector=SpanSelector(
+            span_type=SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
+            span_conditions_dict={
+                "is_almost_eligible": ["true"],
+                "task_type": [b.task_type_name],
+            },
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
@@ -235,22 +219,18 @@ DISTINCT_REGISTERED_USERS_SUPERVISION = SpanDistinctUnitCountMetric(
     name="distinct_registered_users_supervision",
     display_name="Distinct Total Registered Users",
     description="Number of distinct Workflows users who have signed up/logged into Workflows at least once",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
-            span_conditions_dict={"system_type": ["SUPERVISION"]},
-        ),
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+        span_conditions_dict={"system_type": ["SUPERVISION"]},
+    ),
 )
 
 DISTINCT_REGISTERED_USERS_INCARCERATION = SpanDistinctUnitCountMetric(
     name="distinct_registered_users_incarceration",
     display_name="Distinct Total Registered Users",
     description="Number of distinct Workflows users who have signed up/logged into Workflows at least once",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
-            span_conditions_dict={"system_type": ["INCARCERATION"]},
-        ),
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+        span_conditions_dict={"system_type": ["INCARCERATION"]},
+    ),
 )

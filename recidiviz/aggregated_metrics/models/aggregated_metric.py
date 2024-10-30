@@ -20,7 +20,6 @@ import re
 from typing import List, Optional
 
 import attr
-from more_itertools import one
 
 from recidiviz.calculator.query.bq_utils import nonnull_current_date_exclusive_clause
 from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
@@ -41,7 +40,6 @@ from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObserv
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
-from recidiviz.observations.span_type import SpanType
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -94,26 +92,21 @@ class MetricConditionsMixin:
 class SpanMetricConditionsMixin(MetricConditionsMixin):
     """Attributes and functions to derive query snippets applied to spans"""
 
-    # SpanSelectors specifying conditions on a spans table
-    span_selectors: List[SpanSelector]
+    # The SpanSelector specifying the spans to include in this metric
+    span_selector: SpanSelector
 
     def get_metric_conditions(self) -> List[str]:
         return [
-            f"({s.generate_span_conditions_query_fragment(filter_by_span_type=True)})"
-            for s in self.span_selectors
+            f"({self.span_selector.generate_span_conditions_query_fragment(filter_by_span_type=True)})"
         ]
 
     @property
     def unit_of_observation(self) -> MetricUnitOfObservation:
-        return one({s.unit_of_observation for s in self.span_selectors})
+        return self.span_selector.unit_of_observation
 
     @property
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:
         return self.unit_of_observation.type
-
-    @property
-    def span_types(self) -> List[SpanType]:
-        return [s.span_type for s in self.span_selectors]
 
 
 @attr.define(frozen=True, kw_only=True, slots=False)

@@ -80,24 +80,20 @@ TEST_POPULATION_METRIC = DailyAvgSpanCountMetric(
     name="test_population_metric",
     display_name="Test Population Metric",
     description="Description of test population metric",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.COMPARTMENT_SESSION,
-            span_conditions_dict={},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={},
+    ),
 )
 
 TEST_SPAN_DAYS_METRIC = SumSpanDaysMetric(
     name="test_span_days_metric",
     display_name="Test Span Days Metric",
     description="Description of test span days metric",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.JUSTICE_IMPACT_SESSION,
-            span_conditions_dict={},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.JUSTICE_IMPACT_SESSION,
+        span_conditions_dict={},
+    ),
     weight_col="justice_impact_weight",
 )
 
@@ -105,12 +101,10 @@ TEST_VALUE_METRIC = DailyAvgTimeSinceSpanStartMetric(
     name="test_value_metric",
     display_name="Test Value Metric",
     description="Test value metric",
-    span_selectors=[
-        SpanSelector(
-            span_type=SpanType.PERSON_DEMOGRAPHICS,
-            span_conditions_dict={},
-        )
-    ],
+    span_selector=SpanSelector(
+        span_type=SpanType.PERSON_DEMOGRAPHICS,
+        span_conditions_dict={},
+    ),
 )
 
 
