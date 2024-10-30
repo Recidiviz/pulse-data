@@ -274,12 +274,13 @@ class RawTableColumnInfo:
     def _validate_update_history(self) -> None:
         """Raises a ValueError if update_history is not sorted by update_datetime or if update_history contains invalid transitions
         Invalid transitions:
-        - DELETION -> ADDITION|RENAME|DELETION
+        - DELETION -> RENAME|DELETION
         - ADDITION|RENAME -> ADDITION
         - RENAME -> RENAME with the same previous_value
         - Any two updates with the same update_datetime
         Valid transitions:
         - ADDITION|RENAME -> RENAME|DELETION
+        - DELETION -> ADDITION
         """
         if self.update_history is None:
             return
@@ -300,8 +301,9 @@ class RawTableColumnInfo:
                     f"Invalid update_history sequence for column [{self.name}]. Found two updates with the same update_datetime [{current_update.update_datetime.isoformat()}]"
                 )
 
-            deletion_update_followed_by_anything_else = (
+            deletion_update_not_followed_by_addition = (
                 previous_update.update_type == ColumnUpdateOperation.DELETION
+                and current_update.update_type != ColumnUpdateOperation.ADDITION
             )
             addition_or_rename_followed_by_addition = (
                 previous_update.update_type
@@ -313,7 +315,7 @@ class RawTableColumnInfo:
             )
 
             if (
-                deletion_update_followed_by_anything_else
+                deletion_update_not_followed_by_addition
                 or addition_or_rename_followed_by_addition
             ):
                 raise ValueError(

@@ -454,13 +454,13 @@ class TestRawTableColumnInfo(unittest.TestCase):
                         update_datetime=datetime(2022, 1, 15),
                     ),
                     ColumnUpdateInfo(
-                        update_type=ColumnUpdateOperation.ADDITION,
+                        update_type=ColumnUpdateOperation.DELETION,
                         update_datetime=datetime(2022, 2, 1),
                     ),
                 ],
             )
         self.assertEqual(
-            "Invalid update_history sequence for column [COL1]. Found invalid transition from DELETION -> ADDITION",
+            "Invalid update_history sequence for column [COL1]. Found invalid transition from DELETION -> DELETION",
             str(context.exception),
         )
 
