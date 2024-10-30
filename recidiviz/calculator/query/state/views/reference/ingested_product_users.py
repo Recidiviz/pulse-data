@@ -80,8 +80,25 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
         -- Exclude D20 users because we're trying not to make any changes to them
         -- TODO(#25566): Add them back in
         WHERE state_code != "US_TN" OR district != "20" OR district IS NULL
+    ),
+    experiments AS (
+        SELECT 
+            "experiment-" || experiment_id || "-" || variant_id as experiment_role,
+            unit_id as email_address
+        FROM `{{project_id}}.experiments_metadata.experiment_assignments_materialized`
+        WHERE unit_type="OFFICER"
+    ),
+    all_users_with_experiments AS (
+        SELECT all_users.* EXCEPT(roles),
+        IFNULL(
+            all_users.roles || "," || STRING_AGG(experiment_role),
+            all_users.roles
+        ) as roles,
+        FROM all_users
+        LEFT JOIN experiments USING(email_address)
+        GROUP BY 1,2,3,4,5,6,7,all_users.roles
     )
-    SELECT {{columns}} FROM all_users
+    SELECT {{columns}} FROM all_users_with_experiments
 """
 
 
