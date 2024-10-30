@@ -1588,8 +1588,6 @@ class BigQueryClientImpl(BigQueryClient):
             else bigquery.job.WriteDisposition.WRITE_EMPTY
         )
 
-        logging.info("Creating table: %s with query: %s", address.to_str(), query)
-
         return self.insert_into_table_from_query_async(
             destination_address=address,
             query=query,

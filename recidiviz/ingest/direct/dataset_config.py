@@ -61,7 +61,10 @@ def raw_data_pruning_raw_data_diff_results_dataset(
 
 
 def raw_data_temp_load_dataset(
-    state_code: StateCode, instance: DirectIngestInstance
+    state_code: StateCode,
+    instance: DirectIngestInstance,
+    sandbox_dataset_prefix: Optional[str] = None,
 ) -> str:
     """Returns the dataset containing the temporary raw file load results"""
-    return f"{state_code.value.lower()}_{instance.value.lower()}_raw_data_temp_load"
+    prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{prefix}{state_code.value.lower()}_{instance.value.lower()}_raw_data_temp_load"

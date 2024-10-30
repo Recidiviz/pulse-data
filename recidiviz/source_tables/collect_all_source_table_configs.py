@@ -126,7 +126,7 @@ def build_raw_data_source_table_collections_for_state_and_instance(
             default_table_expiration_ms=ONE_DAY_MS,
             description=(
                 "Contains intermediate results of the raw data import process that "
-                "will be queried as part of the automatic raw data pruning process."
+                "will be queried during the raw data import DAG."
             ),
         ),
     ]

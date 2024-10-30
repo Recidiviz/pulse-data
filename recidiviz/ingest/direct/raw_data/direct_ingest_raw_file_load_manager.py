@@ -67,10 +67,12 @@ class DirectIngestRawFileLoadManager:
 
     def __init__(
         self,
+        *,
         raw_data_instance: DirectIngestInstance,
         region_raw_file_config: DirectIngestRegionRawFileConfig,
         fs: GCSFileSystem,
         big_query_client: Optional[BigQueryClient] = None,
+        sandbox_dataset_prefix: Optional[str] = None,
     ) -> None:
         self.region_code = region_raw_file_config.region_code
         self.state_code = StateCode(self.region_code.upper())
@@ -94,6 +96,23 @@ class DirectIngestRawFileLoadManager:
             self.region_code,
             metadata.project_id(),
             self.big_query_client,
+        )
+        self.sandbox_dataset_prefix = sandbox_dataset_prefix
+
+    @property
+    def raw_data_dataset(self) -> str:
+        return raw_tables_dataset_for_region(
+            state_code=self.state_code,
+            instance=self.raw_data_instance,
+            sandbox_dataset_prefix=self.sandbox_dataset_prefix,
+        )
+
+    @property
+    def raw_data_temp_load_dataset(self) -> str:
+        return raw_data_temp_load_dataset(
+            self.state_code,
+            self.raw_data_instance,
+            sandbox_dataset_prefix=self.sandbox_dataset_prefix,
         )
 
     def _delete_temp_files(self, temp_file_paths: List[GcsfsFilePath]) -> None:
@@ -279,17 +298,12 @@ class DirectIngestRawFileLoadManager:
         """
 
         temp_raw_file_address = BigQueryAddress(
-            dataset_id=raw_data_temp_load_dataset(
-                self.state_code, self.raw_data_instance
-            ),
+            dataset_id=self.raw_data_temp_load_dataset,
             table_id=f"{file.file_tag}__{file.file_id}",
         )
 
         temp_raw_file_with_transformations_address = BigQueryAddress(
-            dataset_id=raw_data_temp_load_dataset(
-                self.state_code,
-                self.raw_data_instance,
-            ),
+            dataset_id=self.raw_data_temp_load_dataset,
             table_id=f"{file.file_tag}__{file.file_id}__transformed",
         )
 
@@ -385,7 +399,7 @@ class DirectIngestRawFileLoadManager:
             )
             raise e
 
-    # TODO(#12390): Delete once raw data pruning is live.
+    # TODO(#12209): Delete once raw data pruning is live.
     def _should_generate_historical_diffs(self, file_tag: str) -> bool:
         """Returns whether or not we should apply historical diffs to this file during
         raw data import.
@@ -431,7 +445,6 @@ class DirectIngestRawFileLoadManager:
         error. To prevent against duplicates, however, we will run the deletion query
         just in case.
         """
-
         delete_job = self.big_query_client.delete_from_table_async(
             address=raw_data_table, filter_clause="WHERE file_id = " + str(file_id)
         )
@@ -469,6 +482,7 @@ class DirectIngestRawFileLoadManager:
         """
         file = append_ready_file.import_ready_file
 
+        # TODO(#12209) add sandbox support for raw data pruning datasets
         temp_raw_data_diff_table_address = BigQueryAddress(
             dataset_id=raw_data_pruning_raw_data_diff_results_dataset(
                 self.state_code, self.raw_data_instance
@@ -477,9 +491,7 @@ class DirectIngestRawFileLoadManager:
         )
 
         raw_data_table = BigQueryAddress(
-            dataset_id=raw_tables_dataset_for_region(
-                state_code=self.state_code, instance=self.raw_data_instance
-            ),
+            dataset_id=self.raw_data_dataset,
             table_id=file.file_tag,
         )
 

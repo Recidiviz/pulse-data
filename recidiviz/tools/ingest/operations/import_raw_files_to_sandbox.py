@@ -38,6 +38,7 @@ import datetime
 import logging
 import os
 import re
+from enum import Enum
 from typing import List, Optional, Tuple
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -45,13 +46,16 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import import (
+    SandboxConceptualFileImportResult,
+    SandboxImportRun,
     SandboxImportStatus,
-    SandboxRawFileImportResult,
+    import_raw_files_to_sandbox,
     legacy_import_raw_files_to_bq_sandbox,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
@@ -62,6 +66,11 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import FILE_ID_COL_NAME
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    ONE_DAY_MS,
+    SourceTableLabel,
+    raw_data_temp_load_dataset,
+)
 from recidiviz.source_tables.source_table_config import (
     RawDataSourceTableLabel,
     SourceTableCollection,
@@ -75,12 +84,18 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 
+# TODO(#28239) remove enum once raw data import dag is rolled out
+class SandboxImportInfraType(Enum):
+    LEGACY = "legacy"
+    NEW = "new"
+
+
 def get_unprocessed_raw_files_in_bucket(
     fs: DirectIngestGCSFileSystem,
     bucket_path: GcsfsBucketPath,
     region_raw_file_config: DirectIngestRegionRawFileConfig,
     file_tag_filters: Optional[List[str]],
-) -> Tuple[List[GcsfsFilePath], List[SandboxRawFileImportResult]]:
+) -> Tuple[List[GcsfsFilePath], List[SandboxConceptualFileImportResult]]:
     """Returns a list of paths to unprocessed raw files in the provided bucket that have
     registered file tags for a given region.
     """
@@ -92,8 +107,8 @@ def get_unprocessed_raw_files_in_bucket(
         if parts.file_tag in region_raw_file_config.raw_file_tags:
             if file_tag_filters is not None and parts.file_tag not in file_tag_filters:
                 skipped_files.append(
-                    SandboxRawFileImportResult(
-                        path=path,
+                    SandboxConceptualFileImportResult(
+                        paths=[path],
                         status=SandboxImportStatus.SKIPPED,
                         error_message="Excluded by file_tag_filters",
                     )
@@ -102,8 +117,8 @@ def get_unprocessed_raw_files_in_bucket(
                 unprocessed_raw_files.append(path)
         else:
             skipped_files.append(
-                SandboxRawFileImportResult(
-                    path=path,
+                SandboxConceptualFileImportResult(
+                    paths=[path],
                     status=SandboxImportStatus.SKIPPED,
                     error_message="Unrecognized file tag",
                 )
@@ -113,15 +128,24 @@ def get_unprocessed_raw_files_in_bucket(
 
 
 def source_table_collection_for_paths(
+    *,
     state_code: StateCode,
     files_to_import: List[GcsfsFilePath],
-    allow_incomplete_configs: bool,
+    create_tables_ahead_of_time: bool,
     sandbox_dataset_prefix: str,
     region_config: DirectIngestRegionRawFileConfig,
+    infra_type: SandboxImportInfraType,
 ) -> List[SourceTableCollection]:
     """Builds a SourceTableCollection object that contains sandbox raw data tables we
     can create ahead of time.
     """
+    labels: list[SourceTableLabel] = [
+        RawDataSourceTableLabel(
+            state_code=state_code, ingest_instance=DirectIngestInstance.PRIMARY
+        ),
+        StateSpecificSourceTableLabel(state_code=state_code),
+    ]
+
     sandbox_raw_data_collection = SourceTableCollection(
         dataset_id=raw_tables_dataset_for_region(
             state_code=state_code,
@@ -140,11 +164,7 @@ def source_table_collection_for_paths(
         description=f"Sandbox raw data tables from {StateCode.get_state(state_code)} with dataset prefix: {sandbox_dataset_prefix}",
     )
 
-    # If we are allowing incomplete configs, we cannot build the raw data table ahead
-    # of time as we do not know before reading the actual file what the schema will be.
-    # If allow_incomplete_configs is True, BQ will create the table automatically
-    # during the load job using the provided schema.
-    if not allow_incomplete_configs:
+    if create_tables_ahead_of_time:
         file_tags = {
             filename_parts_from_path(file).file_tag for file in files_to_import
         }
@@ -159,7 +179,26 @@ def source_table_collection_for_paths(
                 clustering_fields=[FILE_ID_COL_NAME],
             )
 
-    return [sandbox_raw_data_collection]
+    table_collections = [sandbox_raw_data_collection]
+
+    if infra_type == SandboxImportInfraType.NEW:
+        table_collections.append(
+            SourceTableCollection(
+                dataset_id=raw_data_temp_load_dataset(
+                    state_code,
+                    DirectIngestInstance.PRIMARY,
+                    sandbox_dataset_prefix=sandbox_dataset_prefix,
+                ),
+                labels=labels,
+                default_table_expiration_ms=ONE_DAY_MS,
+                description=(
+                    "Contains intermediate results of a sandbox raw data import process"
+                    "that will be queried during the sandbox import process."
+                ),
+            )
+        )
+
+    return table_collections
 
 
 def do_sandbox_raw_file_import(
@@ -167,18 +206,27 @@ def do_sandbox_raw_file_import(
     sandbox_dataset_prefix: str,
     source_bucket: GcsfsBucketPath,
     file_tag_filter_regex: Optional[str],
+    infra_type: Optional[SandboxImportInfraType],
     allow_incomplete_configs: bool,
 ) -> None:
     """Imports a set of raw data files in the given source bucket into a sandbox
     dataset.
     """
 
+    if infra_type is None:
+        infra_type = (
+            SandboxImportInfraType.NEW
+            if is_raw_data_import_dag_enabled(state_code, DirectIngestInstance.PRIMARY)
+            else SandboxImportInfraType.LEGACY
+        )
+
+    region_raw_file_config = DirectIngestRegionRawFileConfig(
+        region_code=state_code.value.lower()
+    )
+
     file_tag_filters = None
     if file_tag_filter_regex:
         file_tag_filters = []
-        region_raw_file_config = DirectIngestRegionRawFileConfig(
-            region_code=state_code.value.lower()
-        )
         for raw_file_tag in region_raw_file_config.raw_file_tags:
             if re.search(file_tag_filter_regex, raw_file_tag):
                 file_tag_filters.append(raw_file_tag)
@@ -211,12 +259,26 @@ def do_sandbox_raw_file_import(
         f"Proceed with sandbox import of [{len(files_to_import)}] files?"
     )
 
+    # In the LEGACY infra, allow_incomplete_configs means we cannot build the raw data
+    # table ahead of time as we do not know before reading the actual file what the
+    # schema will be. If allow_incomplete_configs is True, BQ will create the table
+    # automatically during the load job using the provided schema.
+    #
+    # In the NEW infra, we always create a temporary table that matches the schema
+    # of the raw data file and then map that schema onto the current raw data schema,
+    # so you will be always be able to see both the table with the schema that matches
+    # the file exactly, as well as that schema mapped to the current raw config schema.
+    create_tables_ahead_of_time = (
+        infra_type == SandboxImportInfraType.NEW or allow_incomplete_configs
+    )
+
     source_table_collections_for_sandbox = source_table_collection_for_paths(
         state_code=state_code,
         files_to_import=files_to_import,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
-        allow_incomplete_configs=allow_incomplete_configs,
+        create_tables_ahead_of_time=create_tables_ahead_of_time,
         region_config=region_raw_file_config,
+        infra_type=infra_type,
     )
 
     update_manager = SourceTableUpdateManager()
@@ -229,15 +291,27 @@ def do_sandbox_raw_file_import(
         log_output=True,
     )
 
-    # TODO(#34523): add gated update to use new import code here
-    sandbox_import_result = legacy_import_raw_files_to_bq_sandbox(
-        state_code=state_code,
-        sandbox_dataset_prefix=sandbox_dataset_prefix,
-        files_to_import=files_to_import,
-        allow_incomplete_configs=allow_incomplete_configs,
-        big_query_client=bq_client,
-        fs=fs,
-    )
+    sandbox_import_result: SandboxImportRun
+    match infra_type:
+        case SandboxImportInfraType.LEGACY:
+            sandbox_import_result = legacy_import_raw_files_to_bq_sandbox(
+                state_code=state_code,
+                sandbox_dataset_prefix=sandbox_dataset_prefix,
+                files_to_import=files_to_import,
+                allow_incomplete_configs=allow_incomplete_configs,
+                big_query_client=BigQueryClientImpl(),
+                fs=fs,
+            )
+        case SandboxImportInfraType.NEW:
+            sandbox_import_result = import_raw_files_to_sandbox(
+                state_code=state_code,
+                sandbox_dataset_prefix=sandbox_dataset_prefix,
+                files_to_import=files_to_import,
+                allow_incomplete_configs=allow_incomplete_configs,
+                big_query_client=bq_client,
+                fs=fs,
+                region_config=region_raw_file_config,
+            )
 
     logging.info("************************** RESULTS **************************")
     for status in list(SandboxImportStatus):
@@ -281,6 +355,19 @@ def parse_arguments() -> argparse.Namespace:
         "contain a match to this regex.",
     )
 
+    # TODO(#28239) remove flag once raw data import dag is rolled out
+    parser.add_argument(
+        "--infra-type",
+        help=(
+            "The infra that will be used to import the raw data files. If none is "
+            "specified, defaults to using whatever infra is enabled in PRIMARY for the "
+            "provided state_code."
+        ),
+        type=str,
+        choices=[type_.value for type_ in SandboxImportInfraType],
+        required=False,
+    )
+
     # TODO(#34523) update this flag to be --allow-incomplete-columns?
     parser.add_argument("--allow-incomplete-configs", type=str_to_bool, default=True)
 
@@ -296,5 +383,6 @@ if __name__ == "__main__":
             sandbox_dataset_prefix=known_args.sandbox_dataset_prefix,
             source_bucket=GcsfsBucketPath(known_args.source_bucket),
             file_tag_filter_regex=known_args.file_tag_filter_regex,
+            infra_type=SandboxImportInfraType(known_args.infra_type),
             allow_incomplete_configs=known_args.allow_incomplete_configs,
         )
