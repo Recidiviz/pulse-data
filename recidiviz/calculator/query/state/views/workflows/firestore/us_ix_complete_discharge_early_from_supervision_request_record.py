@@ -326,7 +326,13 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
     SELECT
         n.state_code,
         n.person_id,
-        TO_JSON(ARRAY_AGG(IF(n.note_title IS NOT NULL, STRUCT(n.note_title, n.note_body, n.event_date, n.criteria),NULL) IGNORE NULLS ORDER BY n.event_date)) AS case_notes,
+        TO_JSON(
+            ARRAY_AGG(
+                IF(n.note_title IS NOT NULL, STRUCT(n.note_title, n.note_body, n.event_date, n.criteria),NULL)
+                IGNORE NULLS
+                ORDER BY n.criteria, n.event_date, n.note_title
+            )
+        ) AS case_notes,
     FROM dedup_notes n
     GROUP BY 1,2
     )

@@ -208,7 +208,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
                     ReasonCode AS exemption_reason,
                     end_date AS exemption_end_date
                 )
-                ORDER BY start_date
+                ORDER BY start_date, end_date, ReasonCode
             )) AS current_exemptions,
         FROM `{{project_id}}.{{analyst_dataset}}.us_tn_exemptions_preprocessed`
         WHERE state_code = 'US_TN'

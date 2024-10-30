@@ -154,7 +154,11 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
                 DATE(EXIT_DATE) as exit_date,
                 TREAT_ID AS treatment_id,
                 EXIT_CODE as exit_code
-            ) ORDER BY ENTRY_DATE DESC) AS programs
+            ) ORDER BY ENTRY_DATE DESC,
+                EXIT_DATE DESC,
+                TREAT_ID,
+                EXIT_CODE
+            ) AS programs
         FROM `{{project_id}}.us_or_raw_data_up_to_date_views.RCDVZ_CISPRDDTA_CMOFFT_latest`
         GROUP BY 1
     )

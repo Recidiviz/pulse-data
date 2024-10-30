@@ -117,7 +117,7 @@ def keep_contact_codes(
             SELECT
                 person_id,
                 contact_date,
-                STRING_AGG(DISTINCT contact_type, ", ") AS contact_type,
+                STRING_AGG(DISTINCT contact_type, ", " ORDER BY contact_type) AS contact_type,
             FROM {codes_cte}
             {where_clause_codes_cte}
             GROUP BY 1,2
@@ -126,7 +126,7 @@ def keep_contact_codes(
             SELECT
                 person_id,
                 contact_date,
-                STRING_AGG(DISTINCT contact_comment, ", ") AS contact_comment,
+                STRING_AGG(DISTINCT contact_comment, ", " ORDER BY contact_comment) AS contact_comment,
             FROM {comments_cte}
             GROUP BY 1,2        
         )
@@ -243,6 +243,7 @@ def us_tn_classification_forms(
             TO_JSON(
                 ARRAY_AGG(
                     STRUCT(note_title, note_body, event_date, criteria)
+                    ORDER BY criteria, event_date, note_title
                     )
             ) AS case_notes,
         FROM
@@ -298,7 +299,7 @@ def us_tn_classification_forms(
                     ARRAY_AGG(
                         STRUCT(note_body, event_date)
                     IGNORE NULLS
-                    ORDER BY event_date DESC)
+                    ORDER BY event_date DESC, note_body)
                 ) AS form_information_q6_notes
         FROM (
             SELECT *
@@ -389,6 +390,7 @@ def us_tn_classification_forms(
                     TreatmentGoal,
                     VantagePointTitle
                 )
+                ORDER BY Recommendation, Pathway, PathwayName, TreatmentGoal, VantagePointTitle
             ) AS active_recommendations,
         FROM vantage
         -- Keep only recommendations that are still active, since there might be recommendations associated with the 
@@ -407,6 +409,8 @@ def us_tn_classification_forms(
                            description AS description,
                            charge_pending AS charge_pending
                            )
+                    ORDER BY start_date, detainer_felony_flag, detainer_misdemeanor_flag, jurisdiction, description,
+                        charge_pending
                 )
             ) AS form_information_q8_notes
         FROM ({detainers_cte()})
@@ -585,8 +589,11 @@ def us_tn_classification_forms(
     ) seg
         ON pei.external_id = seg.OffenderID
     LEFT JOIN (
-        SELECT OffenderID, ARRAY_AGG(STRUCT(incompatible_offender_id,
-                                            incompatible_type)) AS incompatible_array
+        SELECT OffenderID,
+            ARRAY_AGG(
+                STRUCT(incompatible_offender_id, incompatible_type)
+                ORDER BY incompatible_offender_id, incompatible_type
+            ) AS incompatible_array
         FROM
             incompatibles
         GROUP BY 1

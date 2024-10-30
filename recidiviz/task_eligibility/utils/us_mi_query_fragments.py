@@ -132,8 +132,12 @@ For bondable codes, the resident can remain in their current cell.
 For nonbondable code, the resident must be moved to segregation until ticket is heard. */
     SELECT 
         COALESCE(b.person_id, n.person_id) AS person_id,
-        CONCAT('(', STRING_AGG(DISTINCT CONCAT(bondable_offense, ', ', STRING(b.incident_date)), '), ('), ')') AS bondable_offenses_within_6_months,
-        CONCAT('(', STRING_AGG(DISTINCT CONCAT(nonbondable_offense, ', ', STRING(n.incident_date)), '), ('), ')') AS nonbondable_offenses_within_1_year
+        CONCAT('(', 
+            STRING_AGG(DISTINCT CONCAT(bondable_offense, ', ', STRING(b.incident_date)), '), (' ORDER BY CONCAT(bondable_offense, ', ', STRING(b.incident_date))),
+        ')') AS bondable_offenses_within_6_months,
+        CONCAT('(',
+            STRING_AGG(DISTINCT CONCAT(nonbondable_offense, ', ', STRING(n.incident_date)), '), (' ORDER BY CONCAT(nonbondable_offense, ', ', STRING(n.incident_date))),
+        ')') AS nonbondable_offenses_within_1_year
     FROM (
         SELECT 
             person_id,
@@ -157,8 +161,12 @@ recent_misconduct_codes AS (
 /* Queries bondable and nonbondable codes within the current housing_unit_session for metadata. */
     SELECT 
         h.person_id,
-        CONCAT('(', STRING_AGG(DISTINCT CONCAT(bondable_offense, ', ', STRING(b.incident_date)), '), ('), ')') AS bondable_offenses_within_6_months,
-        CONCAT('(', STRING_AGG(DISTINCT CONCAT(nonbondable_offense, ', ', STRING(n.incident_date)), '), ('), ')') AS nonbondable_offenses_within_1_year
+        CONCAT('(',
+            STRING_AGG(DISTINCT CONCAT(bondable_offense, ', ', STRING(b.incident_date)), '), (' ORDER BY CONCAT(bondable_offense, ', ', STRING(b.incident_date))),
+        ')') AS bondable_offenses_within_6_months,
+        CONCAT('(',
+            STRING_AGG(DISTINCT CONCAT(nonbondable_offense, ', ', STRING(n.incident_date)), '), (' ORDER BY CONCAT(nonbondable_offense, ', ', STRING(n.incident_date))),
+        ')') AS nonbondable_offenses_within_1_year,
     FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_collapsed_solitary_sessions_materialized` h
     LEFT JOIN (
         SELECT 
@@ -190,7 +198,9 @@ previous_ad_seg_stays AS (
 30 days in ad seg is used a proxy to determine "true" ad seg stays, vs. time spent in an ad seg cell */
 SELECT 
   person_id,
-  ARRAY_AGG(CONCAT('(', STRING(start_date), ',', offenses, ')') IGNORE NULLS) AS ad_seg_stays_and_reasons_within_3_yrs
+  ARRAY_AGG(
+    CONCAT('(', STRING(start_date), ',', offenses, ')') IGNORE NULLS ORDER BY start_date, offenses
+  ) AS ad_seg_stays_and_reasons_within_3_yrs
 FROM (
   SELECT 
     h.person_id,

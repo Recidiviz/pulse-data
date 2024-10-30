@@ -102,7 +102,10 @@ def array_agg_case_notes_by_external_id(
     return f"""    SELECT
             external_id,
             -- Group all notes into an array within a JSON
-            TO_JSON(ARRAY_AGG( STRUCT(note_title, note_body, event_date, criteria))) AS case_notes,
+            TO_JSON(ARRAY_AGG(
+                STRUCT(note_title, note_body, event_date, criteria)
+                ORDER BY event_date, note_title, note_body, criteria
+            )) AS case_notes,
         FROM {from_cte}
         LEFT JOIN {left_join_cte}
             USING(external_id)

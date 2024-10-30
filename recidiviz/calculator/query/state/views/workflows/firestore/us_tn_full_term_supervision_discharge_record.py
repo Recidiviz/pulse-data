@@ -143,7 +143,9 @@ new_offense_codes AS ( #all new offense codes
               contact_date,
               contact_type,
               contact_comment
-            )) AS new_offenses
+            )
+            ORDER BY contact_date, contact_type, contact_comment
+        ) AS new_offenses
     FROM ({keep_contact_codes(
             codes_cte="relevant_codes",
             comments_cte="comments_clean",
@@ -160,7 +162,9 @@ alc_history_codes AS (
               contact_date,
               contact_type,
               contact_comment
-            )) AS alc_history
+            )
+            ORDER BY contact_date, contact_type, contact_comment
+        ) AS alc_history
     FROM ({keep_contact_codes(
             codes_cte="relevant_codes",
             comments_cte="comments_clean",
@@ -240,7 +244,7 @@ sidebar_contact_notes_array AS (
                     NULL
                 )
             IGNORE NULLS
-            ORDER BY criteria, event_date
+            ORDER BY criteria, event_date, note_title
             )
         ) AS case_notes
     FROM sidebar_contact_notes_union
@@ -248,7 +252,7 @@ sidebar_contact_notes_array AS (
 ),
 sex_offenses AS (
   SELECT person_id,
-          ARRAY_AGG(offenses) AS sex_offenses
+          ARRAY_AGG(offenses ORDER BY offenses) AS sex_offenses
   FROM latest_sentences,
   UNNEST(current_offenses) as offenses
   LEFT JOIN (
