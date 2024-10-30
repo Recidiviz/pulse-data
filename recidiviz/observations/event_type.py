@@ -75,9 +75,16 @@ class EventType(Enum):
     # usage-related metrics or views that reference workflows_user_events.
     # e.g., `analyst_data.workflows_live_completion_event_types_by_state`
 
+    # Event tracking all activity that qualifies a Workflows user as "active"
+    WORKFLOWS_ACTIVE_USAGE_EVENT = "WORKFLOWS_ACTIVE_USAGE_EVENT"
+    # Event where the user took an action in Workflows not covered by
+    # WORKFLOWS_USER_CLIENT_STATUS_UPDATE
     WORKFLOWS_USER_ACTION = "WORKFLOWS_USER_ACTION"
+    # Event where the user updated a person's status (eligible, ineligible, etc.) in
+    # Workflows
     WORKFLOWS_USER_CLIENT_STATUS_UPDATE = "WORKFLOWS_USER_CLIENT_STATUS_UPDATE"
     WORKFLOWS_USER_LOGIN = "WORKFLOWS_USER_LOGIN"
+    # Event where the user visited a workflows page
     WORKFLOWS_USER_PAGE = "WORKFLOWS_USER_PAGE"
 
     US_AR_OVG_TRANCHE_CHANGES = "US_AR_OVG_TRANCHE_CHANGES"
@@ -135,6 +142,7 @@ class EventType(Enum):
         ]:
             return MetricUnitOfObservationType.PERSON_ID
         if self in [
+            EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
             EventType.WORKFLOWS_USER_ACTION,
             EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
             EventType.WORKFLOWS_USER_LOGIN,

@@ -106,15 +106,7 @@ DISTINCT_ACTIVE_USERS_LOOKER = EventDistinctUnitCountMetric(
     "task type during the time period",
     event_selectors=[
         EventSelector(
-            event_type=EventType.WORKFLOWS_USER_ACTION,
-            event_conditions_dict={},
-        ),
-        EventSelector(
-            event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
-            event_conditions_dict={},
-        ),
-        EventSelector(
-            event_type=EventType.WORKFLOWS_USER_PAGE,
+            event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
             event_conditions_dict={},
         ),
     ],
