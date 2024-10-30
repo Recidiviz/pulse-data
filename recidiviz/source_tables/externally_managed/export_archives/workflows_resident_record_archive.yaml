@@ -20,6 +20,9 @@ schema:
   - name: facility_id
     type: STRING
     mode: NULLABLE
+  - name: facility_unit_id
+    type: STRING
+    mode: NULLABLE
   - name: all_eligible_opportunities
     type: STRING
     mode: REPEATED
