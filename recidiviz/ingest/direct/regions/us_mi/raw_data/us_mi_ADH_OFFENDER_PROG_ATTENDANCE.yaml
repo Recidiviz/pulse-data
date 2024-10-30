@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_OFFENDER_PROG_ATTENDANCE
+file_description: |-
+  OMNI generated table containing information about client program attendance
+data_classification: source
+primary_key_cols:
+  - offender_prog_attendance_id
+columns:
+  - name: offender_prog_attendance_id
+    description: OMNI-generated ID for this program attendance record
+  - name: offender_prog_assignment_id
+    description: OMNI-generated ID for the corresponding program assignment record (joins with ADH_OFFENDER_PROG_ASSIGNMENT)
+  - name: attendance_date
+    description: Attendance date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: attendance_type_id
+    description: Attendance type ID (joins with ADH_REFERENCE_CODE)
+  - name: release_date
+    description: release date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: release_reason_id
+    description: Release reason ID (joins with ADH_REFERENCE_CODE)
+  - name: days_served
+    description: Days served in program
+  - name: notes
+    description: Notes
+    is_pii: True
+  - name: last_update_user
+    description: last update user
+    is_pii: True
+  - name: last_update_date
+    description: last update date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_node
+    description: last update node
+  - name: offender_prog_appointment_id
+    description: OMNI-generated ID for the program appointment record
+  - name: record_source_id
+    description: Record source ID (joins with ADH_REFERENCE_CODE)

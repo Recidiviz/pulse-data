@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_OFFENDER_REFERRAL
+file_description: |-
+  OMNI generated table containing information about referrals to services for clients
+data_classification: source
+primary_key_cols:
+  - offender_referral_id
+columns:
+  - name: offender_referral_id
+    description: OMNI-generated ID for a referral record
+  - name: offender_booking_id
+    description: offender booking id
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_MI_DOC_BOOK
+  - name: sequence_number
+    description: referral sequence number
+  - name: from_location_id
+    description: reference code for from location (links with ADH_LOCATION)
+  - name: referring_employee_id
+    description: employee_id for referring employee
+    is_pii: True
+  - name: report_type_id
+    description: reference code for report type
+  - name: referral_date
+    description: referral date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: referral_status_id
+    description: reference code for referral status
+  - name: due_date
+    description: due date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: reason_code_id
+    description: reference code for reason code
+  - name: to_location_id
+    description: reference code for to location (links with ADH_LOCATION)
+  - name: assigned_to_employee_id
+    description: employee_id of assigned employee
+    is_pii: True
+  - name: decision_id
+    description: reference code for decision
+  - name: decision_note
+    description: decision note
+    is_pii: true
+  - name: disposition_date
+    description: disposition date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: notes
+    description: notes
+    is_pii: True
+  - name: transfer_reason_id
+    description: reference code for transfer reason
+  - name: special_handling_flag
+    description: special handling flag
+  - name: security_level_transfer_to_id
+    description: reference code for security level JII is transferred to (?)
+  - name: last_update_user
+    description: last update user
+    is_pii: True
+  - name: last_update_date
+    description: last update date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_node
+    description: last update node
