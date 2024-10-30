@@ -22,8 +22,13 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Transitions to liberty"
-
+# TODO(#34511): Figure out how to consolidate TRANSITIONS_TO_LIBERTY_ALL and
+#  TRANSITIONS_TO_LIBERTY_FROM_IN_STATE into a single event type.
+_VIEW_DESCRIPTION = (
+    "Transitions to liberty from any non-liberty compartment. In addition to "
+    "INCARCERATION and SUPERVISION, this may include transitions from unknown "
+    "compartments or OUT_OF_STATE."
+)
 _SOURCE_DATA_QUERY_TEMPLATE = """
 SELECT
     state_code,
@@ -37,7 +42,7 @@ WHERE compartment_level_1 = "LIBERTY"
 """
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
-    event_type=EventType.LIBERTY_START,
+    event_type=EventType.TRANSITIONS_TO_LIBERTY_ALL,
     description=_VIEW_DESCRIPTION,
     sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
     attribute_cols=[

@@ -103,16 +103,19 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
         for metric in itertools.chain.from_iterable(
             METRICS_BY_POPULATION_TYPE.values()
         ):
-            if isinstance(metric, EventValueMetric):
-                for event in metric.event_types:
-                    supported_attributes = self.event_builders_by_span_type[
-                        event
-                    ].attribute_cols
-                    if metric.event_value_numeric not in supported_attributes:
-                        raise ValueError(
-                            f"Configured event_value_numeric `{metric.event_value_numeric}` is not supported by "
-                            f"{event.value} event. Supported attributes: {supported_attributes}"
-                        )
+            if not isinstance(metric, EventValueMetric):
+                continue
+            for event in metric.event_types:
+                supported_attributes = self.event_builders_by_span_type[
+                    event
+                ].attribute_cols
+                if metric.event_value_numeric in supported_attributes:
+                    continue
+                raise ValueError(
+                    f"Configured event_value_numeric `{metric.event_value_numeric}` "
+                    f"referenced by metric [{metric.name}] is not supported by "
+                    f"{event.value} event. Supported attributes: {supported_attributes}"
+                )
 
     # check that `span_value_numeric` is compatible with span attributes for all configured DailyAvgSpanValue
     # and AssignmentSpanValueAtStart metrics
