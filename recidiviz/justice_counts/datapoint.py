@@ -17,7 +17,6 @@
 """Interface for working with the Datapoint model."""
 import datetime
 import json
-import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
@@ -327,9 +326,6 @@ class DatapointInterface:
             # If this flag is set and there is an existing aggregate value, keep the
             # existing aggregate value.
             if existing_datapoint is not None and existing_datapoint.value is not None:
-                logging.info(
-                    "An aggregate value already exists in the database. Keeping the existing value."
-                )
                 return None
 
         new_datapoint = schema.Datapoint(
