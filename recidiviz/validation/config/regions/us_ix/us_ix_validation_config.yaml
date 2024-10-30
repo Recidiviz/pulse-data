@@ -58,19 +58,8 @@ max_allowed_error_overrides:
     override_reason:
       TODO(#23970) Error rate should not have increased from 1.96% to 2.02% on 9/8/23
       because the external data is not changing. Could have to do with recent IP work.
-      Needs to be investigated.
-  - validation_name: state_incarceration_period_by_release_date_stable_counts
-    hard_max_allowed_error_override: 0.27
-    override_reason: We're expecting this is standard variation.
-  - validation_name: state_supervision_period_by_start_date_stable_counts
-    hard_max_allowed_error_override: 0.27
-    override_reason: We're expecting this is standard variation.
-  - validation_name: state_supervision_period_by_termination_date_stable_counts
-    hard_max_allowed_error_override: .27
-    override_reason: We're expecting this is standard variation.
-  - validation_name: outliers_staff_count_percent_change_intermonth
-    hard_max_allowed_error_override: .04
-    override_reason: We're expecting this is standard variation.
+      Needs to be investigated. error rate at 2.00% as of 10/28/24, and has not changed in a year.
+      Status of ticket is to revisit if error rate changes.
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 2000
@@ -81,20 +70,9 @@ num_allowed_rows_overrides:
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     hard_num_allowed_rows_override: 11550
     override_reason: TODO(#20471) - Needs investigation.  Known issues with sentence dates.
-  - validation_name: incarceration_commitments_subset_of_admissions
-    hard_num_allowed_rows_override: 1
-    override_reason:
-      TODO(#20470) - Needs investigation. As of 2/24/23, just one failing row and it's
-      an admission from decades ago
   - validation_name: sentences_undefined_relationship
     hard_num_allowed_rows_override: 150
     override_reason: Needs investigation. Current failing level as of 2/24/23 is 69 rows #TODO(#19047)
-  - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 2750
-    override_reason: TODO(#23972) - Addressed known issues, ticket to investigate remaining issues.
-  - validation_name: incarceration_release_reason_no_release_date
-    hard_num_allowed_rows_override: 10
-    override_reason: TODO(#20471) - Really low error rate so just bumping threshold for now
   - validation_name: sentences_missing_date_imposed
     hard_num_allowed_rows_override: 40000
     override_reason:
@@ -102,11 +80,8 @@ num_allowed_rows_overrides:
       attached to an ingested sentence (20472 is the ticket to fix). The other half of
       the issue is from ingested early discharges that are attached to dummy sentences
       since we don't have sentence info.
-  - validation_name: normalized_state_charge_missing_descriptions
-    hard_num_allowed_rows_override: 60
-    override_reason: Current failing level as of 4/5/23 is 0 rows
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 200
+    hard_num_allowed_rows_override: 50
     override_reason: TODO(#21246) To investigate
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 3000
@@ -121,11 +96,5 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 9
     override_reason: TODO(#22279) Just a few cases, to investigate later
   - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 8
+    hard_num_allowed_rows_override: 9
     override_reason: TODO(#23965) Just a few cases, to investigate later
-  - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 100
-    override_reason:
-      TODO(#23965) Current failing level as of 11/10/23 is 38 rows. Likely the same root
-      cause as incarceration_admission_after_open_period failure. Increase in failing
-      rows after the custody level revision. Needs to be investigated.
