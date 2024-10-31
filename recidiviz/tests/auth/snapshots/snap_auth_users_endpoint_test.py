@@ -463,7 +463,7 @@ snapshots[
         "firstName": "facilities",
         "lastName": "user",
         "pseudonymizedId": "pseudo-2834",
-        "roles": ["facilities_staff", "supervision_staff"],
+        "roles": ["facilities_staff", "supervision_staff", "experiment_foo"],
         "routes": {"B": True, "C": True},
         "stateCode": "US_XX",
         "userHash": "qV9HFu2yhYFzM885nGWvJN1LqsJBuxINllOXOT9fzs8=",

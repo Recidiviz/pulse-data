@@ -127,13 +127,18 @@ def _upsert_user_rows(
         email = row["email_address"].lower()
         roles = [value.strip().lower() for value in row["roles"].split(",")]
 
+        # Experiments create arbitrary roles, and we don't want to throw an error if they aren't all configured
+        non_experiment_roles = [
+            role for role in roles if not role.startswith("experiment_")
+        ]
+
         associated_state_roles = (
             session.query(StateRolePermissions.role)
             .filter_by(state_code=f"{state_code.upper()}")
-            .where(StateRolePermissions.role.in_(roles))
+            .where(StateRolePermissions.role.in_(non_experiment_roles))
             .all()
         )
-        if len(associated_state_roles) != len(roles):
+        if len(associated_state_roles) != len(non_experiment_roles):
             raise ValueError(
                 f"Roster contains a row that with a role that does not exist in the default state role permissions. Offending row has email {email}"
             )
@@ -147,7 +152,7 @@ def _upsert_user_rows(
                 row["pseudonymized_id"] = generate_pseudonymized_id(
                     row["state_code"], row["external_id"]
                 )
-        row["roles"] = [value.strip().lower() for value in row["roles"].split(",")]
+        row["roles"] = roles
         row["user_hash"] = generate_user_hash(row["email_address"])
 
         # update existing row or add new row
