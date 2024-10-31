@@ -55,6 +55,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics_archive import (
+    SUPERVISION_OFFICER_METRICS_ARCHIVE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_outlier_status import (
     SUPERVISION_OFFICER_OUTLIER_STATUS_VIEW_BUILDER,
 )
@@ -82,6 +85,7 @@ from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics i
 from recidiviz.outliers.aggregated_metrics_collector import AggregatedMetricsCollector
 
 OUTLIERS_ARCHIVE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    SUPERVISION_OFFICER_METRICS_ARCHIVE_VIEW_BUILDER,
     SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_VIEW_BUILDER,
     SUPERVISION_OFFICER_SUPERVISORS_ARCHIVE_VIEW_BUILDER,
     SUPERVISION_OFFICERS_ARCHIVE_VIEW_BUILDER,

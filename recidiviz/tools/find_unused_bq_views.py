@@ -82,6 +82,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_
 from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_supervisors import (
     SUPERVISION_IMPACT_METRICS_SUPERVISORS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics_archive import (
+    SUPERVISION_OFFICER_METRICS_ARCHIVE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_outlier_status_archive import (
     SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_VIEW_BUILDER,
 )
@@ -318,6 +321,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER.address: (
         "Used to send ad hoc reports to TN every quarter. These views will eventually be deprecated if"
         "#21518 is completed (Damini Sharma 1/25/24)"
+    ),
+    SUPERVISION_OFFICER_METRICS_ARCHIVE_VIEW_BUILDER.address: (
+        "Will be referenced for zero grants impact tracking (see #34607) (Gina Valderrama 10/29/24)"
     ),
     SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_VIEW_BUILDER.address: (
         "Will be referenced to support Outliers analytics work (see #27576) (Alexa Batino 2/14/24)"

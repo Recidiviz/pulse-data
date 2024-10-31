@@ -33,8 +33,6 @@ COMMON_VESTIGES = [
     "validation_results.validation_results",
     # It is Polaris-convention to archive all exports for historical reference, even when the archive isn't used
     "export_archives.workflows_snooze_status_archive",
-    # The archive is not currently used, but will be referenced in a future view
-    "export_archives.insights_supervision_officer_metrics_archive",
     # This is a potentially useful general reference table for getting information about
     # a given zip code.
     "static_reference_tables.zip_city_county_state",
