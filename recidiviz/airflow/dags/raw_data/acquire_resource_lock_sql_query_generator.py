@@ -54,6 +54,8 @@ VALUES {values}
 RETURNING lock_id, lock_resource, released;"""
 
 
+# TODO(#30325) add polling / retry here to fail more gracefully if we are waiting
+# for another process to release the locks?
 class AcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]):
     """Custom query generator for acquiring raw data resource locks"""
 

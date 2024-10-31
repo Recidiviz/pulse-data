@@ -39,3 +39,7 @@ def get_raw_data_dag_enabled_state_and_instance_pairs() -> (
         for instance in DirectIngestInstance
         if is_raw_data_import_dag_enabled(state, instance)
     }
+
+
+def is_raw_data_dag_enabled_in_primary(state_code: StateCode) -> bool:
+    return is_raw_data_import_dag_enabled(state_code, DirectIngestInstance.PRIMARY)
