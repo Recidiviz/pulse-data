@@ -22,7 +22,7 @@ from unittest.mock import patch
 from airflow.models import DagBag
 
 import recidiviz
-from recidiviz.airflow.dags.sftp.metadata import START_SFTP, TASK_RETRIES
+from recidiviz.airflow.dags.sftp.metadata import END_SFTP, START_SFTP, TASK_RETRIES
 from recidiviz.airflow.tests.test_utils import (
     AIRFLOW_WORKING_DIRECTORY,
     DAG_FOLDER,
@@ -48,6 +48,18 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
 )
 class TestSftpPipelineDag(AirflowIntegrationTest):
     """Tests the sftp pipeline DAG."""
+
+    def setUp(self) -> None:
+        self.raw_data_dag_enabled_patcher = patch(
+            "recidiviz.airflow.dags.utils.dag_orchestration_utils.is_raw_data_import_dag_enabled"
+        )
+        self.raw_data_dag_enabled_mock = self.raw_data_dag_enabled_patcher.start()
+        self.raw_data_dag_enabled_mock.return_value = False
+        super().setUp()
+
+    def tearDown(self) -> None:
+        self.raw_data_dag_enabled_patcher.stop()
+        super().tearDown()
 
     SFTP_DAG_ID = f"{_PROJECT_ID}_sftp_dag"
 
@@ -150,3 +162,47 @@ class TestSftpPipelineDag(AirflowIntegrationTest):
             for task_type in task_types_with_retries:
                 if task_type in task.task_id:
                     self.assertEqual(TASK_RETRIES, task.retries)
+
+    def test_acquire_permission_happens_at_start_of_ingest_file_upload(self) -> None:
+        """Tests that releasing permission happens at before ingest file upload"""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.SFTP_DAG_ID]
+        state_specific_tasks_dag = dag.partial_subset(
+            task_ids_or_regex=r"US_[A-Z][A-Z].ingest_ready_file_upload",
+            include_downstream=True,
+            include_upstream=False,
+            include_direct_upstream=False,
+        )
+        self.assertNotEqual(0, len(state_specific_tasks_dag.task_ids))
+
+        # makes sure that acquire_permission_for_ingest_file_upload happens before we upload
+        # to the ingest bucket
+        for task in state_specific_tasks_dag.roots:
+            assert any(
+                "acquire_permission_for_ingest_file_upload" in task_id
+                for task_id in task.downstream_task_ids
+            )
+
+    def test_release_permission_happens_if_we_uploaded(self) -> None:
+        """Tests that the last thing in each branch is release_permission_for_ingest_file_upload,
+        if we uploaded files.
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.SFTP_DAG_ID]
+        state_specific_tasks_dag = dag.partial_subset(
+            task_ids_or_regex=END_SFTP,
+            include_downstream=False,
+            include_upstream=False,
+            include_direct_upstream=True,
+        )
+        self.assertNotEqual(0, len(state_specific_tasks_dag.task_ids))
+
+        upstream_tasks = set()
+        for task in state_specific_tasks_dag.tasks:
+            upstream_tasks.update(task.upstream_task_ids)
+
+        for task_id in upstream_tasks:
+            self.assertTrue(
+                "release_permission_for_ingest_file_upload" in task_id
+                or "do_not_upload_ingest_ready_files" in task_id
+            )
