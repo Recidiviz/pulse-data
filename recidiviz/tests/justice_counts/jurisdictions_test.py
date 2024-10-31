@@ -16,20 +16,26 @@
 # =============================================================================
 """The purpose of this file is to test that the conversion from CSV to json representation
 of all jurisdictions works as expected."""
-from unittest import TestCase
-
 import pandas as pd
 
-from recidiviz.tests.justice_counts.utils.utils import JusticeCountsSchemaTestObjects
+from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.agency_jurisdictions import AgencyJurisdictionInterface
+from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.tests.justice_counts.utils.utils import (
+    JusticeCountsDatabaseTestCase,
+    JusticeCountsSchemaTestObjects,
+)
 from recidiviz.tools.datasets.jurisdictions import (
     get_fips_code_to_jurisdiction_metadata,
 )
 
 
-class TestJurisdictions(TestCase):
+class TestJurisdictions(JusticeCountsDatabaseTestCase):
     """Test that get_fips_code_to_jurisdiction_metadata() converts csv to json as expected"""
 
     def setUp(self) -> None:
+        super().setUp()
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
         self.maxDiff = None
 
@@ -123,3 +129,100 @@ class TestJurisdictions(TestCase):
                 "type": "territory",
             },
         )
+
+    def test_get_agency_population(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            agency_A = AgencyInterface.create_or_update_agency(
+                session=session,
+                name="Agency Alpha",
+                systems=[schema.System.PRISONS],
+                state_code="us_ny",
+                fips_county_code=None,
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
+            )
+            populations_dict = AgencyJurisdictionInterface.get_agency_population(
+                agency_A
+            )
+            self.assertEqual(
+                set(populations_dict.keys()), {"biological_sex", "race_and_ethnicity"}
+            )
+
+            self.assertEqual(
+                set(populations_dict["biological_sex"].keys()), {"Female", "Male"}
+            )
+
+            self.assertEqual(
+                set(populations_dict["race_and_ethnicity"].keys()),
+                {
+                    "American Indian or Alaska Native",
+                    "Asian",
+                    "Black",
+                    "Hispanic or Latino",
+                    "More than one race",
+                    "Native Hawaiian or Pacific Islander",
+                    "White",
+                },
+            )
+
+            self.assertEqual(
+                populations_dict["biological_sex"]["Female"],
+                {
+                    2000: 7552996,
+                    2001: 7594773,
+                    2002: 7629590,
+                    2003: 7666088,
+                    2004: 7704669,
+                    2005: 7730550,
+                    2006: 7757331,
+                    2007: 7799114,
+                    2008: 7835408,
+                    2009: 7878572,
+                    2010: 7899236,
+                    2011: 7956059,
+                    2012: 8002188,
+                    2013: 8038323,
+                    2014: 8064504,
+                    2015: 8074684,
+                    2016: 8074601,
+                    2017: 8067748,
+                    2018: 8056799,
+                    2019: 8037418,
+                    2020: 8229952,
+                    2021: 8150837,
+                    2022: 8101971,
+                    2023: 8082795,
+                },
+            )
+
+            self.assertEqual(
+                populations_dict["race_and_ethnicity"]["Hispanic or Latino"],
+                {
+                    2000: 1991833,
+                    2001: 2032713,
+                    2002: 2068908,
+                    2003: 2102770,
+                    2004: 2133377,
+                    2005: 2160630,
+                    2006: 2188240,
+                    2007: 2225043,
+                    2008: 2266941,
+                    2009: 2313707,
+                    2010: 2456106,
+                    2011: 2510485,
+                    2012: 2560523,
+                    2013: 2603634,
+                    2014: 2638610,
+                    2015: 2668674,
+                    2016: 2694872,
+                    2017: 2712981,
+                    2018: 2733086,
+                    2019: 2744198,
+                    2020: 2882715,
+                    2021: 2869279,
+                    2022: 2859368,
+                    2023: 2866903,
+                },
+            )
