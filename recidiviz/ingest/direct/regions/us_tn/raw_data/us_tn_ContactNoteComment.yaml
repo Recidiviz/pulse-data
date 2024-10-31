@@ -6,6 +6,8 @@ data_classification: source
 # TODO(#29135) set always_historical_export: True, is_chunked_file: True, expected_number_of_chunks: 19 once raw data import dag is launched for US_TN
 # While the individual files we recieve of this file are always hitorical exports, they are parsed into 18+ different files due to size. Therefore, the full historical is split across multiple files so no single file has the full copy.
 always_historical_export: False
+is_chunked_file: True
+expected_number_of_chunks: 19
 primary_key_cols:
   - OffenderID
   - ContactNoteDateTime
