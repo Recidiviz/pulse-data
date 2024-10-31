@@ -60,6 +60,7 @@ _REASONS_FIELDS = [
 ]
 
 _QUERY_TEMPLATE = f"""
+# TODO(#34680): Revisit CSED logic
 WITH distinct_cseds AS (
     SELECT
         DISTINCT

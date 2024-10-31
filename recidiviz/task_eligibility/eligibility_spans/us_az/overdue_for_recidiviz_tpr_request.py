@@ -29,6 +29,7 @@ from recidiviz.task_eligibility.criteria.general import (
     no_nonviolent_incarceration_violation_within_6_months,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
+    acis_tpr_date_not_set,
     at_least_24_months_since_last_csed,
     is_us_citizen_or_legal_permanent_resident,
     meets_functional_literacy,
@@ -39,6 +40,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_sexual_offense_conviction,
     no_tpr_denial_in_current_incarceration,
     no_tpr_removals_from_self_improvement_programs,
+    no_transition_release_in_current_sentence_span,
     no_unsatisfactory_program_ratings_within_3_months,
     no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction,
     time_90_days_before_release,
@@ -52,6 +54,9 @@ from recidiviz.task_eligibility.criteria_condition import (
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    AndTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -79,9 +84,17 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
         no_dangerous_crimes_against_children_conviction.VIEW_BUILDER,
         meets_functional_literacy.VIEW_BUILDER,
-        no_tpr_denial_in_current_incarceration.VIEW_BUILDER,
         no_tpr_removals_from_self_improvement_programs.VIEW_BUILDER,
         within_6_months_of_recidiviz_tpr_date.VIEW_BUILDER,
+        AndTaskCriteriaGroup(
+            criteria_name="US_AZ_NO_TPR_DATE_OR_DENIAL_OR_RELEASE_IN_CURRENT_INCARCERATION",
+            sub_criteria_list=[
+                no_tpr_denial_in_current_incarceration.VIEW_BUILDER,
+                no_transition_release_in_current_sentence_span.VIEW_BUILDER,
+                acis_tpr_date_not_set.VIEW_BUILDER,
+            ],
+            allowed_duplicate_reasons_keys=[],
+        ),
     ],
     # TODO(#33655): Update this to the correct task completion event
     completion_event_builder=early_discharge.VIEW_BUILDER,
