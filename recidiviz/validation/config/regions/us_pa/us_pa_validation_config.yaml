@@ -52,47 +52,26 @@ max_allowed_error_overrides:
   - validation_name: state_supervision_period_by_termination_date_stable_counts
     hard_max_allowed_error_override: 0.3
     override_reason: We're expecting .28 is standard variation.
-  - validation_name: state_incarceration_period_by_release_date_stable_counts
-    hard_max_allowed_error_override: 0.3
-    override_reason: We're expecting .28 is standard variation.
-  - validation_name: state_incarceration_period_by_admission_date_stable_counts
-    hard_max_allowed_error_override: 0.3
-    override_reason: We're expecting .28 is standard variation.
-  - validation_name: state_supervision_period_by_start_date_stable_counts
-    hard_max_allowed_error_override: 0.3
-    override_reason: We're expecting .28 is standard variation.
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
     hard_max_allowed_error_override: 0.3
     override_reason: We're expecting .28 is standard variation.
   - validation_name: outliers_staff_count_percent_change_intramonth
     hard_max_allowed_error_override: 0.03
     override_reason: We're expecting .026 is standard variation.
-  - validation_name: outliers_staff_count_percent_change_intermonth
-    hard_max_allowed_error_override: 0.04
-    override_reason: We're expecting .04 is standard variation.
 num_allowed_rows_overrides:
-  - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 1450
-    override_reason:
-      There is a small amount of disagreement between the two data
-      sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
-      tables. This value was 12 as of 3/5/2021 and we expect that it may slowly grow
-      over time as new data is added. Current failing level as of 2/13/24 is 1,316 rows.
-      TODO(#9734) - need to investigate increase due to CCC ingest.
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 150000
+    hard_num_allowed_rows_override: 40000
     override_reason:
       There is a small amount of disagreement between the two data
       sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
-      tables. Current failing level as of 2/13/24 is 110,726 rows and we expect that it
+      tables. Current failing level as of 10/29/24 is 36,936 rows and we expect that it
       may slowly grow over time as new data is added.
       TODO(#9736) - need to investgate CCC ingest overlaps
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 800
+    hard_num_allowed_rows_override: 500
     override_reason: TODO(#6253)
       In the v5 version of SP ingest, overlapping periods are being created when a person has multiple ParoleNumbers.
-      The number of overlapping periods is small (as of 8/29, there are only 327 cases, but keeping threshold at 800 until
-      v5 ingest gets ungated to prod).
+      The number of overlapping periods is small (as of 10/29, there are only 334 cases)
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 5000
     override_reason:
@@ -116,9 +95,9 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 120000
     override_reason: Needs investigation.  Current failing level as of 2/13/24 is 102,288 rows #TODO(#16435)
   - validation_name: normalized_state_charge_missing_descriptions
-    hard_num_allowed_rows_override: 52000
+    hard_num_allowed_rows_override: 40000
     override_reason:
-      Current failing level as of 9/13/24 is 50,510 rows.  This is largely due to charges that are
+      Current failing level as of 10/29/24 is 31,859 rows.  This is largely due to charges that are
       getting ingested with almost all info missing.  We should re-evaluate this when we do the sentence refactor
       #TODO(#27541) #TODO(#29701)
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
@@ -130,12 +109,8 @@ num_allowed_rows_overrides:
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 180000
     override_reason: Current failing level as of 2/13/24 is 176,927 rows #TODO(#20404)
-  - validation_name: current_supervision_staff_missing_district
-    hard_num_allowed_rows_override: 2
-    override_reason: Current failing level as of 3/22/24 is 2 rows #TODO(#28381)
   - validation_name: in_custody_sps_have_associated_ip
-    hard_num_allowed_rows_override: 400000
+    hard_num_allowed_rows_override: 60000
     override_reason:
-      Current failing level as of 9/13/24 is 57690 rows in staging (with the refactored version of SPs that's gated there),
-      and 373,461 rows in prod (with the current version of supervision periods that will be replaced with the new version).
+      Current failing level as of 9/13/24 is 57690 rows in staging.
       For now, we are not inferring IPs for in custody periods until we can re-validate PA insights.
