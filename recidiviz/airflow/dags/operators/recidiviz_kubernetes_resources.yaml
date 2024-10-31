@@ -55,7 +55,7 @@ ValidationEntrypoint:
   default_resources:
     limits:
       cpu: 250m
-      memory: 1Gi
+      memory: 1.5Gi
 
 UpdateAllManagedViewsEntrypoint:
   default_resources:
