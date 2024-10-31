@@ -116,6 +116,7 @@ def main(
                     view_name=view_name,
                     time_dependent_person_attribute_query="SELECT *, NULL AS dummy_attribute, FROM sessions.system_sessions_materialized",
                     time_dependent_person_attribute_fields=["dummy_attribute"],
+                    demographic_attribute_field_filters_with_suggestions={},
                 ).write(output_subdirectory, source_script_path=__file__)
 
             generate_assignments_with_attributes_and_time_periods_view(

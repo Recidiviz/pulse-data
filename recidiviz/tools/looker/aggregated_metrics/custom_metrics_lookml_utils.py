@@ -53,7 +53,6 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
     MetricUnitOfAnalysisType,
     get_static_attributes_query_for_unit_of_analysis,
 )
-from recidiviz.common.constants.state.state_person import StateGender, StateRace
 from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
@@ -806,6 +805,7 @@ def generate_person_assignments_with_attributes_view(
     view_name: str,
     time_dependent_person_attribute_query: str,
     time_dependent_person_attribute_fields: List[str],
+    demographic_attribute_field_filters_with_suggestions: Dict[str, List[str]],
 ) -> LookMLView:
     """
     Generates LookMLView that joins assignment sessions view to attributes about the underlying justice-involved
@@ -840,16 +840,19 @@ def generate_person_assignments_with_attributes_view(
         )
 
     time_dependent_person_attribute_fields_query_fragment_with_prefix = (
-        ",\n            ".join(
+        "\n            ".join(
             [
-                f"time_dependent_attributes.{field}"
+                f"time_dependent_attributes.{field},"
                 for field in time_dependent_person_attribute_fields
             ]
         )
     )
-    time_dependent_person_attribute_fields_query_fragment_no_prefix = ", ".join(
-        time_dependent_person_attribute_fields
-    )
+    if time_dependent_person_attribute_fields:
+        time_dependent_person_attribute_fields_query_fragment_no_prefix = (
+            "EXCEPT(" + ", ".join(time_dependent_person_attribute_fields) + ")"
+        )
+    else:
+        time_dependent_person_attribute_fields_query_fragment_no_prefix = ""
     time_dependent_person_attribute_fields_liquid_wrap = "\n".join(
         [
             f"""
@@ -863,7 +866,7 @@ def generate_person_assignments_with_attributes_view(
     WITH assignments_with_time_dependent_attributes AS (
         SELECT
             assignment_sessions.* EXCEPT(assignment_date, assignment_end_date),
-            {time_dependent_person_attribute_fields_query_fragment_with_prefix},
+            {time_dependent_person_attribute_fields_query_fragment_with_prefix}
             GREATEST(assignment_sessions.assignment_date, time_dependent_attributes.start_date) AS assignment_date,
             {revert_nonnull_end_date_clause(
         f'LEAST({nonnull_end_date_clause("assignment_sessions.assignment_end_date")}, {nonnull_end_date_clause("time_dependent_attributes.end_date_exclusive")})'
@@ -881,7 +884,7 @@ def generate_person_assignments_with_attributes_view(
     )
     -- Join to static attribute tables
     SELECT
-        assignments.* EXCEPT({time_dependent_person_attribute_fields_query_fragment_no_prefix}),
+        assignments.* {time_dependent_person_attribute_fields_query_fragment_no_prefix},
         -- time-dependent attributes
         {time_dependent_person_attribute_fields_liquid_wrap}
 
@@ -996,59 +999,6 @@ def generate_person_assignments_with_attributes_view(
       AND {{% condition {view_name}.variant_date %}}variant_date{{% endcondition %}}
     """
 
-    static_person_attribute_dimensions = [
-        DimensionLookMLViewField(
-            field_name="gender",
-            parameters=[
-                LookMLFieldParameter.description("Gender of the person"),
-                LookMLFieldParameter.type(LookMLFieldType.STRING),
-                LookMLFieldParameter.view_label("Attributes"),
-                LookMLFieldParameter.group_label("Person Attributes"),
-                LookMLFieldParameter.sql("INITCAP(REPLACE(${TABLE}.gender, '_', ' '))"),
-                LookMLFieldParameter.suggestions(
-                    sorted([snake_to_title(member.value) for member in StateGender])
-                ),
-            ],
-        ),
-        DimensionLookMLViewField(
-            field_name="is_female",
-            parameters=[
-                LookMLFieldParameter.description("Yes if gender is like 'FEMALE'"),
-                LookMLFieldParameter.type(LookMLFieldType.YESNO),
-                LookMLFieldParameter.view_label("Attributes"),
-                LookMLFieldParameter.group_label("Person Attributes"),
-                LookMLFieldParameter.sql("${TABLE}.is_female"),
-            ],
-        ),
-        DimensionLookMLViewField(
-            field_name="race",
-            parameters=[
-                LookMLFieldParameter.description(
-                    "Prioritized race or ethnicity of the person"
-                ),
-                LookMLFieldParameter.type(LookMLFieldType.STRING),
-                LookMLFieldParameter.view_label("Attributes"),
-                LookMLFieldParameter.group_label("Person Attributes"),
-                LookMLFieldParameter.sql("INITCAP(REPLACE(${TABLE}.race, '_', ' '))"),
-                LookMLFieldParameter.suggestions(
-                    sorted([snake_to_title(member.value) for member in StateRace])
-                ),
-            ],
-        ),
-        DimensionLookMLViewField(
-            field_name="is_nonwhite",
-            parameters=[
-                LookMLFieldParameter.description(
-                    "Yes if prioritized race or ethnicity of the person/client is not 'WHITE'"
-                ),
-                LookMLFieldParameter.type(LookMLFieldType.STRING),
-                LookMLFieldParameter.view_label("Attributes"),
-                LookMLFieldParameter.group_label("Person Attributes"),
-                LookMLFieldParameter.sql("${TABLE}.is_nonwhite"),
-            ],
-        ),
-    ]
-
     time_dependent_attribute_dimensions = [
         DimensionLookMLViewField(
             field_name=field,
@@ -1101,13 +1051,70 @@ def generate_person_assignments_with_attributes_view(
             ],
         ),
     ]
+
+    demographic_attribute_field_filter_lookml_fields: List[LookMLViewField] = []
+    demographic_attribute_field_dimension_lookml_fields: List[
+        DimensionLookMLViewField
+    ] = []
+    for (
+        field,
+        suggestions,
+    ) in demographic_attribute_field_filters_with_suggestions.items():
+
+        if field in ["is_female", "is_nonwhite"]:
+            field_type = LookMLFieldType.YESNO
+            dimension_sql = f"${{TABLE}}.{field}"
+            if field == "is_female":
+                dimension_description = (
+                    "Yes if the gender of the person is like 'FEMALE'"
+                )
+            else:
+                dimension_description = "Yes if the race of the person is not 'WHITE'"
+        else:
+            field_type = LookMLFieldType.STRING
+            dimension_description = f"{field} of the person".capitalize()
+            dimension_sql = f"INITCAP(REPLACE(${{TABLE}}.{field}, '_', ' '))"
+
+        demographic_attribute_filter = FilterLookMLViewField(
+            field_name=f"{field}_filter",
+            parameters=[
+                LookMLFieldParameter.description(
+                    f"Filter that restricts {snake_to_title(field).lower()}"
+                ),
+                LookMLFieldParameter.type(field_type),
+                LookMLFieldParameter.view_label("Custom Filters"),
+                LookMLFieldParameter.sql(
+                    f"{{% condition {field}_filter %}} ${{{field}}} {{% endcondition %}}"
+                ),
+                LookMLFieldParameter.suggestions(suggestions),
+            ],
+        )
+        demographic_attribute_field_filter_lookml_fields.append(
+            demographic_attribute_filter
+        )
+
+        demographic_attribute_field_dimension_lookml_field = DimensionLookMLViewField(
+            field_name=f"{field}",
+            parameters=[
+                LookMLFieldParameter.description(dimension_description),
+                LookMLFieldParameter.type(field_type),
+                LookMLFieldParameter.view_label("Attributes"),
+                LookMLFieldParameter.group_label("Person Attributes"),
+                LookMLFieldParameter.sql(dimension_sql),
+            ],
+        )
+        demographic_attribute_field_dimension_lookml_fields.append(
+            demographic_attribute_field_dimension_lookml_field
+        )
+
     return LookMLView(
         view_name=f"person_assignments_with_attributes_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
         fields=[
-            *static_person_attribute_dimensions,
             *time_dependent_attribute_dimensions,
             *experiment_attribute_dimensions,
+            *demographic_attribute_field_dimension_lookml_fields,
+            *demographic_attribute_field_filter_lookml_fields,
         ],
     )
 

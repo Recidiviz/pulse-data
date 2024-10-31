@@ -39,6 +39,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulationType,
 )
+from recidiviz.common.constants.state.state_person import StateGender, StateRace
+from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
@@ -123,6 +125,16 @@ def main(output_directory: str, view_name: str) -> None:
                         "supervision_office",
                         "supervision_office_name",
                     ],
+                    demographic_attribute_field_filters_with_suggestions={
+                        "gender": sorted(
+                            [snake_to_title(member.value) for member in StateGender]
+                        ),
+                        "race": sorted(
+                            [snake_to_title(member.value) for member in StateRace]
+                        ),
+                        "is_female": [],
+                        "is_nonwhite": [],
+                    },
                 ).write(output_subdirectory, source_script_path=__file__)
 
             generate_assignments_with_attributes_and_time_periods_view(
