@@ -17,6 +17,7 @@
 """Describes spans of time when someone is within 6 months of their Recidiviz-projected TPR Date"""
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -40,6 +41,7 @@ SELECT
     end_date AS end_datetime,
     projected_tpr_date AS critical_date
 FROM `{{project_id}}.{{analyst_views_dataset}}.us_az_projected_dates_materialized`
+WHERE start_date != {nonnull_end_date_clause('end_date')}
 ),
 {critical_date_has_passed_spans_cte(
     meets_criteria_leading_window_time=6,
