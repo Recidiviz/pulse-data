@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for Justice Counts Control Panel"""
+import datetime
 import logging
 from typing import Any, Dict, List, Optional, Set
 
@@ -23,6 +24,7 @@ from flask import g, session
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -31,7 +33,10 @@ from recidiviz.utils.auth.auth0 import (
     TokenClaims,
     update_session_with_user_info,
 )
-from recidiviz.utils.environment import in_development
+from recidiviz.utils.environment import (
+    GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+    in_development,
+)
 
 APP_METADATA_CLAIM = "https://dashboard.recidiviz.org/app_metadata"
 AGENCY_IDS_KEY = "agency_ids"
@@ -308,3 +313,18 @@ def initialize_flask_server_debugger() -> None:
 
     # debugpy.wait_for_client()
     return
+
+
+def get_available_agency_dashboards_api_response_file_path(
+    project_id: str,
+) -> GcsfsFilePath:
+    today = datetime.date.today()
+    bucket_name = (
+        "justice-counts-prod-available-agency-dashboards-api-response"
+        if project_id == GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION
+        else "justice-counts-staging-available-agency-dashboards-api-response"
+    )
+    return GcsfsFilePath(
+        bucket_name=bucket_name,
+        blob_name=f"available-dashboards-api-response-{today.month}.{today.day}.{today.year}",
+    )

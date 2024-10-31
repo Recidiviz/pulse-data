@@ -34,6 +34,7 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.wrappers import response
 
 from recidiviz.auth.auth0_client import Auth0Client
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.fips import (
     get_county_code_to_county_fips,
     get_county_code_to_county_name,
@@ -50,6 +51,7 @@ from recidiviz.justice_counts.bulk_upload.template_generator import (
 )
 from recidiviz.justice_counts.control_panel.utils import (
     get_auth0_user_id,
+    get_available_agency_dashboards_api_response_file_path,
     raise_if_user_is_not_in_agency,
     raise_if_user_is_wrong_role,
 )
@@ -80,6 +82,7 @@ from recidiviz.justice_counts.utils.email import send_confirmation_email
 from recidiviz.justice_counts.utils.geoid import get_fips_code_to_geoid
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.sqlalchemy_flask_utils import current_session
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
     in_ci,
     in_development,
@@ -1929,39 +1932,12 @@ def get_api_blueprint(
     @api_blueprint.route("/agencies/dashboard", methods=["GET"])
     def get_dashboard_homepage_metadata() -> Response:
         try:
-            agency_query = AgencyInterface.get_agencies_with_enabled_dashboard(
-                session=current_session
+            fs = GcsfsFactory.build()
+            path = get_available_agency_dashboards_api_response_file_path(
+                project_id=metadata.project_id()
             )
-            agency_id_to_metric_key_to_metric_interface = (
-                MetricSettingInterface.get_agency_id_to_metric_key_to_metric_interface(
-                    session=current_session, agency_query=agency_query
-                )
-            )
-            agency_id_to_metric_key_dim_id_to_available_members = (
-                ReportInterface.get_agency_id_to_metric_key_dim_id_to_available_members(
-                    session=current_session
-                )
-            )
-            fips_code_to_geoid = get_fips_code_to_geoid()
-            county_code_to_county_name = get_county_code_to_county_name()
-            county_code_to_county_fips = get_county_code_to_county_fips()
-            agency_json = []
-            for agency in agency_query:
-                agency_json.append(
-                    AgencyInterface.get_dashboard_homepage_json(
-                        fips_code_to_geoid=fips_code_to_geoid,
-                        county_code_to_county_name=county_code_to_county_name,
-                        county_code_to_county_fips=county_code_to_county_fips,
-                        agency=agency,
-                        metric_key_to_metric_interface=agency_id_to_metric_key_to_metric_interface[
-                            agency.id
-                        ],
-                        metric_key_dim_id_to_available_members=agency_id_to_metric_key_dim_id_to_available_members[
-                            agency.id
-                        ],
-                    )
-                )
-            return jsonify(agency_json)
+            json_string = fs.download_as_string(path=path)
+            return json.loads(json_string)
         except Exception as e:
             raise _get_error(error=e) from e
 

@@ -25,7 +25,16 @@ from recidiviz.common.fips import (
     get_county_code_to_county_name,
 )
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.dimensions.courts import (
+    FundingType,
+    SentenceType,
+    StaffType,
+)
+from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.justice_counts.metrics.metric_disaggregation_data import (
+    MetricAggregatedDimensionData,
+)
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.geoid import get_fips_code_to_geoid
@@ -374,10 +383,27 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 agency=agency,
                 metric_key_to_metric_interface={
                     "COURTS_AND_PRETRIAL_FUNDING": MetricInterface(
-                        key="COURTS_AND_PRETRIAL_FUNDING", is_metric_enabled=True
+                        key="COURTS_AND_PRETRIAL_FUNDING",
+                        is_metric_enabled=True,
+                        aggregated_dimensions=[
+                            MetricAggregatedDimensionData(
+                                dimension_to_enabled_status={
+                                    member: True for member in FundingType
+                                }
+                            )
+                        ],
                     ),
                     "COURTS_AND_PRETRIAL_TOTAL_STAFF": MetricInterface(
-                        key="COURTS_AND_PRETRIAL_TOTAL_STAFF", is_metric_enabled=True
+                        key="COURTS_AND_PRETRIAL_TOTAL_STAFF",
+                        is_metric_enabled=True,
+                        aggregated_dimensions=[
+                            MetricAggregatedDimensionData(
+                                dimension_to_enabled_status={
+                                    member: len(member.dimension_name) % 2 == 0
+                                    for member in StaffType
+                                }
+                            )
+                        ],
                     ),
                     "COURTS_AND_PRETRIAL_PRETRIAL_RELEASES": MetricInterface(
                         key="COURTS_AND_PRETRIAL_PRETRIAL_RELEASES",
@@ -386,23 +412,46 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                     "COURTS_AND_PRETRIAL_SENTENCES": MetricInterface(
                         key="COURTS_AND_PRETRIAL_SENTENCES",
                         is_metric_enabled=True,
+                        aggregated_dimensions=[
+                            MetricAggregatedDimensionData(
+                                dimension_to_enabled_status={
+                                    member: False for member in RaceAndEthnicity
+                                }
+                            ),
+                            MetricAggregatedDimensionData(
+                                dimension_to_enabled_status={
+                                    member: False for member in BiologicalSex
+                                }
+                            ),
+                            MetricAggregatedDimensionData(
+                                dimension_to_enabled_status={
+                                    member: False for member in SentenceType
+                                }
+                            ),
+                        ],
                     ),
                 },
                 metric_key_dim_id_to_available_members={
-                    "COURTS_AND_PRETRIAL_FUNDING": {
-                        "metric/courts/funding/type": {
-                            "GRANTS",
+                    "COURTS_AND_PRETRIAL_TOTAL_STAFF": {
+                        "metric/courts/staff/type": {
+                            "SECURITY",
+                            "ADMINISTRATIVE",
+                            "JUDGES",
+                            "OTHER",
+                            "VACANT",
+                            "LEGAL",
+                            "ADVOCATE",
                             "UNKNOWN",
-                            "STATE_APPROPRIATION",
                         }
                     },
-                    "COURTS_AND_PRETRIAL_TOTAL_STAFF": {None: {None}},
-                    "COURTS_AND_PRETRIAL_PRETRIAL_RELEASES": {None: {None}},
-                    "COURTS_AND_PRETRIAL_SENTENCES": {
-                        "global/biological_sex": {"MALE", "FEMALE"},
-                        "metric/courts/sentence/type": {"PRISON", "SPLIT"},
-                        None: {None},
+                    "COURTS_AND_PRETRIAL_FUNDING": {
+                        "metric/courts/funding/type": {
+                            "UNKNOWN",
+                            "STATE_APPROPRIATION",
+                            "GRANTS",
+                        }
                     },
+                    "COURTS_AND_PRETRIAL_SENTENCES": {None: {None}},
                 },
             )
 
@@ -425,14 +474,13 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                                 "UNKNOWN",
                             ]
                         },
-                        "COURTS_AND_PRETRIAL_SENTENCES": {
-                            "global/biological_sex": [
-                                "MALE",
-                                "FEMALE",
-                            ],
-                            "metric/courts/sentence/type": [
-                                "PRISON",
-                                "SPLIT",
+                        "COURTS_AND_PRETRIAL_TOTAL_STAFF": {
+                            "metric/courts/staff/type": [
+                                "JUDGES",
+                                "SECURITY",
+                                "ADMINISTRATIVE",
+                                "ADVOCATE",
+                                "VACANT",
                             ],
                         },
                     },
