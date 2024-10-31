@@ -37,6 +37,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     DEDUPED_TASK_COMPLETION_EVENT_VB,
 )
+from recidiviz.common.constants.state.state_person import StateGender, StateRace
 from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
@@ -139,12 +140,18 @@ def main(
                 generate_person_assignments_with_attributes_view(
                     view_name=view_name,
                     # Renaming caseload and location allows them to be properly parsed as Dynamic Attributes in Looker
-                    time_dependent_person_attribute_query="SELECT *, caseload_id as workflows_caseload, location_name as workflows_location FROM sessions.person_caseload_location_sessions_materialized",
-                    time_dependent_person_attribute_fields=[
-                        "compartment_level_1",
-                        "workflows_caseload",
-                        "workflows_location",
-                    ],
+                    time_dependent_person_attribute_query="SELECT *, caseload_id as workflows_caseload FROM sessions.person_caseload_location_sessions_materialized",
+                    time_dependent_person_attribute_fields=[],
+                    demographic_attribute_field_filters_with_suggestions={
+                        "gender": sorted(
+                            [snake_to_title(member.value) for member in StateGender]
+                        ),
+                        "race": sorted(
+                            [snake_to_title(member.value) for member in StateRace]
+                        ),
+                        "is_female": [],
+                        "is_nonwhite": [],
+                    },
                 ).write(output_subdirectory, source_script_path=__file__)
 
             generate_assignments_with_attributes_and_time_periods_view(
