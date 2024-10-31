@@ -93,6 +93,43 @@ WHERE Org_cd NOT IN (
     SELECT DISTINCT location_external_id 
     FROM supervision_location_ids_cte
 )
+-- Add locations from dbo_LU_PBPP_Organization that aren't found in the first two sources
+UNION ALL
+select 
+    'US_PA' AS state_code,
+    Org_cd AS location_external_id,
+    Org_Name AS location_name,
+    -- TODO(#19341) hydrate location type for non-supervision locations when we start to use location metadata for facilities work
+    CASE WHEN DistrictOfficeCode IS NOT NULL THEN 'SUPERVISION_LOCATION' ELSE NULL
+        END AS location_type,
+    TO_JSON(
+      STRUCT(
+        IF(DistrictOfficeCode IS NOT NULL AND (UPPER(Org_Name) LIKE '%UNIT%' OR UPPER(Org_Name) LIKE "% UNT%"), Org_cd, NULL) 
+            AS {LocationMetadataKey.SUPERVISION_UNIT_ID.value},
+        IF(DistrictOfficeCode IS NOT NULL AND (UPPER(Org_Name) LIKE '%UNIT%' OR UPPER(Org_Name) LIKE "% UNT%"), Org_Name, NULL) 
+            AS {LocationMetadataKey.SUPERVISION_UNIT_NAME.value},
+        CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_OFFICE_ID.value},
+        CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_OFFICE_NAME.value},
+        IF(DistrictOfficeCode IS NOT NULL, UPPER(DistrictOfficeCode), NULL)
+            AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
+        CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
+        IF(DistrictOfficeCode IS NOT NULL, UPPER(Region_Code), NULL)
+            AS {LocationMetadataKey.SUPERVISION_REGION_ID.value},
+        IF(DistrictOfficeCode IS NOT NULL, UPPER(Region), NULL)
+            AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value}
+      )
+    ) AS location_metadata,
+from `{{project_id}}.{{us_pa_raw_data_up_to_date_dataset}}.dbo_LU_PBPP_Organization_latest`
+-- Do not duplicate entries
+where Org_cd NOT IN (
+    SELECT DISTINCT location_external_id 
+    FROM supervision_location_ids_cte
+
+    UNION DISTINCT
+    
+    SELECT DISTINCT Org_cd
+    FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_locations_from_supervision_contacts_latest`
+)
 """
 
 US_PA_LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
