@@ -145,6 +145,7 @@ run_cmd gcloud run jobs update recurring-new-mexico-courts-dataxchange --image "
 run_cmd gcloud run jobs update csg-data-pull --image "${LATEST_DOCKER_TAG}" --region "us-central1" --project "justice-counts-staging"
 run_cmd gcloud run jobs update upload-reminder-email-job --image "${LATEST_DOCKER_TAG}" --region "us-central1" --project "justice-counts-staging"
 run_cmd gcloud run jobs update copy-superagency-metric-settings-to-child-agencies --image "${LATEST_DOCKER_TAG}" --region "us-central1" --project "justice-counts-staging"
+run_cmd gcloud run jobs update available-agency-dashboards-api-response-job --image "${LATEST_DOCKER_TAG}" --region "us-central1" --project "justice-counts-staging"
 # TODO(#16325): Create release candidate branches to facilitate cherry-picks.
 
 # Step 9: Check out main in both justice-counts repo (where we are now) and pulse-data repo,

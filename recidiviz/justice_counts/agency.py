@@ -26,13 +26,13 @@ from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.justice_counts.control_panel.utils import is_demo_agency
-from recidiviz.justice_counts.dimensions.dimension_registry import (
-    DIMENSION_IDENTIFIER_TO_DIMENSION,
-)
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
-from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.report import ReportInterface
+from recidiviz.justice_counts.utils.constants import (
+    METRIC_KEY_TO_V2_DASHBOARD_METRIC_KEY,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
@@ -470,45 +470,73 @@ class AgencyInterface:
             if metric_interface.is_metric_enabled
         }
 
-        # Filter available metric keys that are enabled
-        available_metric_keys = [
-            metric_key
-            for metric_key in metric_key_dim_id_to_available_members.keys()
-            if metric_key in enabled_metrics
-        ]
+        available_sectors = []
+        available_metric_keys = []
         # Prepare available disaggregations: remove None keys and convert sets to lists
         available_disaggregations: Dict[str, Dict[str, List[str]]] = defaultdict(dict)
-        for (
-            metric_key,
-            dim_id_to_available_members,
-        ) in metric_key_dim_id_to_available_members.items():
-            for dim_id, available_members in dim_id_to_available_members.items():
-                if dim_id is None:
+
+        for system in schema.System.sort(
+            systems=[schema.System[system] for system in agency.systems]
+        ):
+            metrics = METRICS_BY_SYSTEM[system.name]
+            available_metric_keys_for_sector = []
+            for metric in metrics:
+                if metric.key not in enabled_metrics:
+                    # If metric is not enabled, don't add it to available metrics
                     continue
 
-                # Get the enum associated with the dimension identifier
-                dim_enum = DIMENSION_IDENTIFIER_TO_DIMENSION[dim_id]
+                if metric.key not in metric_key_dim_id_to_available_members:
+                    # If metric has no non-null published datapoints, don't add it to available metrics
+                    continue
 
-                # Sort available members based on their order in the dim_enum
-                dim_enum_ordered = [enum.name for enum in dim_enum]  # type: ignore[attr-defined]
-                available_members_list: List[str] = sorted(
-                    [member for member in available_members if member is not None],
-                    key=dim_enum_ordered.index,
+                available_metric_keys_for_sector.append(
+                    METRIC_KEY_TO_V2_DASHBOARD_METRIC_KEY.get(metric.key, metric.key)
                 )
 
-                # Add the sorted members to the available disaggregations
-                available_disaggregations[metric_key][dim_id] = available_members_list
+                metric_interface = metric_key_to_metric_interface[metric.key]
+                dim_id_to_dimension_to_enabled_status = {
+                    dim.dimension_identifier(): dim.dimension_to_enabled_status
+                    for dim in metric_interface.aggregated_dimensions
+                }
+                dim_id_to_available_members = metric_key_dim_id_to_available_members[
+                    metric.key
+                ]
 
-        available_sectors = {
-            METRIC_KEY_TO_METRIC[metric_key].system
-            for metric_key in available_metric_keys
-        }
+                for aggregated_dimension in metric.aggregated_dimensions or []:
+                    dimension_to_enabled_status = dim_id_to_dimension_to_enabled_status[
+                        aggregated_dimension.dimension.dimension_identifier()
+                    ]
+
+                    if dimension_to_enabled_status is None:
+                        continue
+
+                    available_members = dim_id_to_available_members.get(
+                        aggregated_dimension.dimension.dimension_identifier(), set()
+                    )
+                    available_members_list: List[str] = [
+                        member.name
+                        for member in aggregated_dimension.dimension  # type: ignore[attr-defined]
+                        if member.name in available_members
+                        and dimension_to_enabled_status[member] is True
+                    ]
+
+                    # Add the sorted members to the available disaggregations
+                    if len(available_members_list) > 0:
+                        available_disaggregations[
+                            METRIC_KEY_TO_V2_DASHBOARD_METRIC_KEY.get(
+                                metric.key, metric.key
+                            )
+                        ][
+                            aggregated_dimension.dimension.dimension_identifier()
+                        ] = available_members_list
+            available_metric_keys += available_metric_keys_for_sector
+            if len(available_metric_keys_for_sector) > 0:
+                available_sectors.append(system.name)
+
         return {
             "id": agency.id,
             "name": agency.name,
-            "available_sectors": [
-                s.name for s in schema.System.sort(systems=list(available_sectors))
-            ],
+            "available_sectors": available_sectors,
             "available_metric_keys": available_metric_keys,
             "available_disaggregations": dict(available_disaggregations),
             "is_dashboard_enabled": agency.is_dashboard_enabled is True,

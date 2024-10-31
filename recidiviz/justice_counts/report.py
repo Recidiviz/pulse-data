@@ -40,7 +40,11 @@ from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import UploadMethod
-from recidiviz.justice_counts.utils.datapoint_utils import get_dimension_id_and_member
+from recidiviz.justice_counts.utils.datapoint_utils import (
+    get_dimension_id_and_member,
+    get_value,
+    is_datapoint_deprecated,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 from .utils.date_utils import convert_date_range_to_year_month
@@ -901,9 +905,13 @@ class ReportInterface:
 
         for report in q:
             for datapoint in report.datapoints:
-                dim_id, dim_member = get_dimension_id_and_member(datapoint=datapoint)
-                agency_id_to_metric_key_dim_id_to_available_members[report.source_id][
-                    datapoint.metric_definition_key
-                ][dim_id].add(dim_member)
+                if not is_datapoint_deprecated(datapoint=datapoint):
+                    dim_id, dim_member = get_dimension_id_and_member(
+                        datapoint=datapoint
+                    )
+                    if get_value(datapoint) is not None:
+                        agency_id_to_metric_key_dim_id_to_available_members[
+                            report.source_id
+                        ][datapoint.metric_definition_key][dim_id].add(dim_member)
 
         return agency_id_to_metric_key_dim_id_to_available_members
