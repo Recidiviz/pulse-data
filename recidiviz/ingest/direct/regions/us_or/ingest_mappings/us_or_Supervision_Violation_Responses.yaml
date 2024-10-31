@@ -160,6 +160,7 @@ output:
                             - DRUG EVAL/TREATMENT (GC04)
                             - Sex Offender Treatment Program
                           StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN:
+                            - SPECIALTY COURTS
                             - PERMIT VISIT WORK OR HOME
                             - SEARCH CLAUSE
                             - ANSWER ALL QUESTIONS TRUTHFUL
