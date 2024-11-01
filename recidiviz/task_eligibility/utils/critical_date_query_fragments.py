@@ -61,6 +61,7 @@ def critical_date_has_passed_spans_cte(
     meets_criteria_leading_window_time: int = 0,
     attributes: Optional[List[str]] = None,
     date_part: str = "DAY",
+    table_name: str = "critical_date_spans",
 ) -> str:
     """Returns a CTE that indicates the span of time where a particular critical date
     was set and comes on or before the current date. The
@@ -84,6 +85,9 @@ def critical_date_has_passed_spans_cte(
 
     date_part (str, optional): Supports any of the BigQuery date_part values:
         "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+
+    table_name (str, optional): The name of the table that the critical date spans are
+        stored in. Defaults to "critical_date_spans".
     """
 
     if attributes:
@@ -113,7 +117,7 @@ def critical_date_has_passed_spans_cte(
             -- Maintain the original critical date for the final output
             critical_date,
             {attribute_str}
-        FROM critical_date_spans
+        FROM {table_name}
     ),
     criteria_spans AS (
         /*
