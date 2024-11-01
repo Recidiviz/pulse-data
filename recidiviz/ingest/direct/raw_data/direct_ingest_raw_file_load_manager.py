@@ -240,7 +240,7 @@ class DirectIngestRawFileLoadManager:
             self.raw_table_migrations.get_raw_table_migration_queries_for_file_tag(
                 file_tag,
                 table,
-                data_update_datetime=update_datetime,
+                data_update_datetime=update_datetime.replace(tzinfo=None),
             )
         )
 

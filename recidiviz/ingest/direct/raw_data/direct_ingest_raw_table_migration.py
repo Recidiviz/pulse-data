@@ -55,6 +55,13 @@ class RawTableMigration:
                 "Found None value in update_datetime_filters. To have a migration that "
                 "will run on all file versions, pass in update_datetime_filters=None."
             )
+        if update_datetime_filters and any(
+            dt.tzinfo is not None for dt in update_datetime_filters
+        ):
+            raise ValueError(
+                "Found datetime with timezone in update_datetime_filters. "
+                "All datetimes must be naive."
+            )
 
         filter_keys = [f[0] for f in filters]
         if len(set(filter_keys)) != len(filter_keys):

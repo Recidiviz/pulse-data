@@ -78,6 +78,11 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
         specified by |file_tag| that is located at |raw_table_address|, optionally
         filtering migrations by |data_update_datetime|
         """
+        # TODO(#34696) Enforce timezone awareness for data_update_datetime
+        if data_update_datetime is not None and data_update_datetime.tzinfo is not None:
+            raise ValueError(
+                "data_update_datetime must be a naive datetime object, not a timezone-aware datetime object"
+            )
         return RawTableMigrationGenerator.migration_queries(
             self._migration_by_file_tag[file_tag],
             raw_table_address=raw_table_address,
