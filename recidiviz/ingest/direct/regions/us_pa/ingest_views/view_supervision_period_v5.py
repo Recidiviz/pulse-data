@@ -233,11 +233,21 @@ dbo_RelAgentHistory AS (
             CASE 
               WHEN AgentName LIKE '%Vacant, Position%' OR AgentName LIKE '%Position, Vacant%' 
                 THEN 'VACANT'
-              ELSE curr.Agent_EmpNum
+              WHEN curr.Agent_EmpNum IS NOT NULL
+                THEN curr.Agent_EmpNum
+              WHEN NULLIF(Agent_LastName, "") IS NOT NULL AND NULLIF(Agent_PosNo, "") IS NOT NULL
+                THEN CONCAT(Agent_PosNo, "-", Agent_LastName, SUBSTR(Agent_first_name, 1, 1))
+              ELSE NULL
               END AS supervising_officer_id,
             GREATEST(DATE(CAST(LastModifiedDateTime AS DATETIME)), parole_start_date) AS key_date,
             CAST(SPLIT(SupervisorName, ' ')[SAFE_OFFSET(ARRAY_LENGTH(SPLIT(SupervisorName, ' '))-2)] AS INT64) AS supervision_location_org_code,
-          FROM {{dbo_RelAgentHistory}}
+          FROM (
+            SELECT *,
+              TRIM(REGEXP_REPLACE(UPPER(TRIM(SPLIT(AgentName, ",")[OFFSET(0)])), r' JR| III| IV| JR.| II| SR', "")) AS Agent_LastName,
+              SPLIT(TRIM(REGEXP_REPLACE(REPLACE(UPPER(AgentName), CONCAT(TRIM(REGEXP_REPLACE(UPPER(TRIM(SPLIT(AgentName, ",")[OFFSET(0)])), r' JR| III| IV| JR.| II| SR', "")), ", "), ""), r'[\\d,]+', "")), ' ')[OFFSET(0)] as Agent_first_name,
+              LTRIM(TRIM(REGEXP_REPLACE(AgentName, r'[^\\d]+', '')), '0') AS Agent_PosNo
+            FROM {{dbo_RelAgentHistory}}
+          )
           LEFT JOIN agent_employee_numbers curr USING(AgentName)
           INNER JOIN parole_counts_to_keep USING(ParoleNumber, ParoleCountId)
           WHERE AgentName IS NOT NULL
@@ -495,7 +505,11 @@ filled_in_first_value AS (
     FIRST_VALUE(county_of_residence IGNORE NULLS) OVER(term_window_forward) AS county_of_residence,
     FIRST_VALUE(supervision_level IGNORE NULLS) OVER(term_window_forward) AS supervision_level,
     FIRST_VALUE(district_office IGNORE NULLS) OVER(term_window_forward) AS district_office,
-    supervising_officer_id,
+    LTRIM(supervising_officer_id, "0") AS supervising_officer_id,
+    CASE WHEN supervising_officer_id like '%-%' THEN "PosNo"
+          WHEN supervising_officer_id IS NOT NULL THEN "EmpNum"
+          ELSE NULL
+          END AS supervising_officer_id_type,
     district_sub_office_id,
     supervision_location_org_code,
     condition_codes,
@@ -539,7 +553,7 @@ initial_periods AS (
 final_periods AS (
     {aggregate_adjacent_spans(
         table_name="initial_periods",
-        attribute=["admission_reason", "termination_reason", "status_code", "supervision_type", "county_of_residence", "supervision_level", "district_office", "supervising_officer_id", "district_sub_office_id", "supervision_location_org_code", "condition_codes", "next_status_code"],
+        attribute=["admission_reason", "termination_reason", "status_code", "supervision_type", "county_of_residence", "supervision_level", "district_office", "supervising_officer_id", "supervising_officer_id_type", "district_sub_office_id", "supervision_location_org_code", "condition_codes", "next_status_code"],
         index_columns=["ParoleNumber", "term_count"])}
 )
 

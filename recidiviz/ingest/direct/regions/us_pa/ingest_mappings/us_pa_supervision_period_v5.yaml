@@ -14,6 +14,7 @@ input_columns:
   - supervision_level
   - district_office
   - supervising_officer_id
+  - supervising_officer_id_type
   - district_sub_office_id
   - supervision_location_org_code
   - condition_codes
@@ -276,4 +277,11 @@ output:
             $conditional:
               - $if:
                   $not_null: supervising_officer_id
-                $then: $literal("US_PA_PBPP_EMPLOYEE_NUM")
+                $then:
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - supervising_officer_id_type
+                          - $literal("PosNo")
+                      $then: $literal("US_PA_PBPP_POSNO")
+                    - $else: $literal("US_PA_PBPP_EMPLOYEE_NUM")

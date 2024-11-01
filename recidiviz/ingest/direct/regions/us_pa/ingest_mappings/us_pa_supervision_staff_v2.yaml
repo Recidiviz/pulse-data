@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - EmpNum
+  - first_name
+  - middle_name
+  - last_name
+  - suffix
+  - Email
+  - PosNoIds
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - $conditional:
+          - $if:
+              $not_null: EmpNum
+            $then:
+              StateStaffExternalId:
+                external_id: EmpNum
+                id_type: $literal("US_PA_PBPP_EMPLOYEE_NUM")
+      - $foreach:
+          $iterable: PosNoIds
+          $result:
+            $conditional:
+              - $if:
+                  $not_null: $iter_item
+                $then:
+                  StateStaffExternalId:
+                    external_id: $iter_item
+                    id_type: $literal("US_PA_PBPP_POSNO")
+    full_name:
+      $person_name:
+        $given_names: first_name
+        $surname: last_name
+        $middle_names: middle_name
+        $name_suffix: suffix
+    email: Email

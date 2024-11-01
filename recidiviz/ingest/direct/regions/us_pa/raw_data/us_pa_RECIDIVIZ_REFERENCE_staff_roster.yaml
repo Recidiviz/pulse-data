@@ -80,7 +80,8 @@ file_description: |-
 data_classification: source
 update_cadence: MONTHLY
 primary_key_cols:
-  - EmployeeID
+  - Email
+  - AMU_Pos_No
 columns:
   - name: EmployeeID
     is_pii: True

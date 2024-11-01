@@ -70,6 +70,7 @@ def state_allows_multiple_ids_same_type_for_state_staff(state_code: str) -> bool
         "US_AZ",
         "US_TX",
         "US_AR",
+        "US_PA",
     ):
 
         return True

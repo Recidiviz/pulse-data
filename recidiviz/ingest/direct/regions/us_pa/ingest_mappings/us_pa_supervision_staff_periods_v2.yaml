@@ -1,0 +1,328 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - sort_key
+  - role_description
+  - org_cd
+  - AgentType
+  - start_date
+  - end_date
+  - period_id
+  - supervisor_id
+  - sort_key_type
+  - supervisor_id_type
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - $conditional:
+          - $if:
+              $equal:
+                - sort_key_type
+                - $literal("EmpNum")
+            $then:
+              StateStaffExternalId:
+                external_id: sort_key
+                id_type: $literal("US_PA_PBPP_EMPLOYEE_NUM")
+          - $else:
+              StateStaffExternalId:
+                external_id: sort_key
+                id_type: $literal("US_PA_PBPP_POSNO")
+    role_periods:
+      - $conditional:
+          - $if:
+              $not_null: role_description
+            $then:
+              StateStaffRolePeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - sort_key
+                      - period_id
+                start_date: start_date
+                end_date: end_date
+                role_type:
+                  $enum_mapping:
+                    $raw_text: role_description
+                    $mappings:
+                      StateStaffRoleType.SUPERVISION_OFFICER:
+                        - "Regional Institutional Parole Director"
+                        - "Regional Probation and Parole Director"
+                        - "District Director"
+                        - "Probation and Parole Deputy District Director"
+                        - "Pbtn Prl Dep Dstr Dir"
+                        - "Pbtn Prl Dstr Dir 1"
+                        - "Pbtn Prl Dstr Dir 2"
+                        - "Deputy Secretary for Field Services"
+                        - "Deputy Secretary for Reentry"
+                        - "Probation and Parole District Director 1"
+                        - "Probation and Parole District Director 2"
+                        - "Parole Agent 1"
+                        - "Parole Agent 2"
+                        - "Parole Agt 1"
+                        - "Parole Agt 2"
+                        - "Parole Staff Technician 2"
+                        - "[RelAgent] Officer"
+                        - "Parole Spvr"
+                        - "[RelAgent] Supervisor"
+                        - "Parole Manager 1"
+                        - "Parole Manager 2"
+                        - "Parole Supervisor"
+                        - "Prl Agt 2"
+                        - "Prl Agt 1"
+                        - "Prl Supv"
+                        - "Prl Mgr 1"
+                        - "Prl Mgr 2"
+                        - "Rgnl Pbtn Prl Dir"
+                        - "Deputy District Director"
+                        - "Dep Sec Reentry"
+                        - "Dir Bur Ctrl Srvs Pbtn Prl"
+                      StateStaffRoleType.INTERNAL_UNKNOWN:
+                        - "Administrative Assistant 1"
+                        - "Administrative Officer 5"
+                        - "Business Partner/Contractor"
+                        - "Clerical Assistant 2"
+                        - "Clerical Assistant 3"
+                        - "Clerical Supervisor 2"
+                        - "Executive Assistant"
+                        - "Institutional Parole Assistant"
+                        - "Parole Auditor"
+                        - "Parole Auditor Supervisor"
+                        - "Instl Prl Asst"
+                        - "Secretarial Supv 2"
+                        - "Prl Audr"
+                        - "Corr Crml Invtgr"
+                        - "Cler Supv 2"
+                        - "Contractor"
+                        - "Corr Cnslr 1"
+                        - "Prl Audr Supv"
+                        - "Corr Unt Mgr"
+                        - "Corr Ofr 3"
+                        - "Intlgnce Anl Supv"
+                        - "Corr Gen Indry Fctry Frmn 1"
+                        - "Corr Crml Invtgr Supv"
+                        - "Corr Ofr 1"
+                        - "Prl Hrng Ofr"
+                        - "Ex Asst"
+                        - "Corr Ofr Trn"
+                        - "Cler Asst 3"
+                        - "Corr Ofr 4"
+                        - "Cler Asst 2"
+                        - "Sxl Offender Asemt Bd Invtgr"
+                        - "Clk Typst 3"
+                        - "Corr Cnslr 2"
+                        - "Ex Dep Sec Reentry Cmy Corr Prl Fl Srvs"
+                        - "Corr Ofr 5"
+                        - "Psycl Srvs Assoc Corr"
+                        - "Hrng Exmr Corr"
+                        - "Intlgnce Anl 2"
+                        - "Corr Gen Indry Fctry Frpsn"
+                        - "Sxl Ofndrs Asemt Bd Invtgr Supv"
+                        - "Corr Clsftn Prgm Mgr"
+                        - "Vctm Astnc Coor"
+                        - "Cmy Corr Ctr Dir 1"
+                        - "Prj Mgr 2"
+                        - "Frnsc Psycl Srvs Assoc"
+                        - "Frnsc Psycl Srvs Assoc Mh"
+                        - "Adlt Bas Ed Tchr Corr Ed"
+                        - "Clk Typst 2"
+                        - "Cmy Corr Ctr Dir 2"
+                        - "Corr Trmt Srvs Prgm Adm"
+                        - "Rgnl Cmy Corr Dir"
+                role_subtype:
+                  $enum_mapping:
+                    $raw_text: role_description
+                    $mappings:
+                      StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER:
+                        - "Regional Institutional Parole Director"
+                        - "Regional Probation and Parole Director"
+                        - "District Director"
+                        - "Probation and Parole Deputy District Director"
+                        - "Pbtn Prl Dep Dstr Dir"
+                        - "Pbtn Prl Dstr Dir 1"
+                        - "Pbtn Prl Dstr Dir 2"
+                        - "Rgnl Pbtn Prl Dir"
+                        - "Deputy District Director"
+                      StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP:
+                        - "Deputy Secretary for Field Services"
+                        - "Deputy Secretary for Reentry"
+                        - "Probation and Parole District Director 1"
+                        - "Probation and Parole District Director 2"
+                      StateStaffRoleSubtype.INTERNAL_UNKNOWN:
+                        - "Administrative Assistant 1"
+                        - "Administrative Officer 5"
+                        - "Business Partner/Contractor"
+                        - "Clerical Assistant 2"
+                        - "Clerical Assistant 3"
+                        - "Clerical Supervisor 2"
+                        - "Executive Assistant"
+                        - "Institutional Parole Assistant"
+                        - "Parole Auditor"
+                        - "Parole Auditor Supervisor"
+                        - "Instl Prl Asst"
+                        - "Secretarial Supv 2"
+                        - "Prl Audr"
+                        - "Corr Crml Invtgr"
+                        - "Cler Supv 2"
+                        - "Contractor"
+                        - "Corr Cnslr 1"
+                        - "Prl Audr Supv"
+                        - "Corr Unt Mgr"
+                        - "Corr Ofr 3"
+                        - "Intlgnce Anl Supv"
+                        - "Corr Gen Indry Fctry Frmn 1"
+                        - "Corr Crml Invtgr Supv"
+                        - "Corr Ofr 1"
+                        - "Prl Hrng Ofr"
+                        - "Ex Asst"
+                        - "Corr Ofr Trn"
+                        - "Cler Asst 3"
+                        - "Corr Ofr 4"
+                        - "Cler Asst 2"
+                        - "Sxl Offender Asemt Bd Invtgr"
+                        - "Clk Typst 3"
+                        - "Corr Cnslr 2"
+                        - "Ex Dep Sec Reentry Cmy Corr Prl Fl Srvs"
+                        - "Corr Ofr 5"
+                        - "Psycl Srvs Assoc Corr"
+                        - "Hrng Exmr Corr"
+                        - "Intlgnce Anl 2"
+                        - "Corr Gen Indry Fctry Frpsn"
+                        - "Sxl Ofndrs Asemt Bd Invtgr Supv"
+                        - "Dep Sec Reentry"
+                        - "Corr Clsftn Prgm Mgr"
+                        - "Dir Bur Ctrl Srvs Pbtn Prl"
+                        - "Vctm Astnc Coor"
+                        - "Cmy Corr Ctr Dir 1"
+                        - "Prj Mgr 2"
+                        - "Cmy Corr Ctr Dir 2"
+                        - "Corr Trmt Srvs Prgm Adm"
+                        - "Frnsc Psycl Srvs Assoc"
+                        - "Frnsc Psycl Srvs Assoc Mh"
+                        - "Adlt Bas Ed Tchr Corr Ed"
+                        - "Clk Typst 2"
+                        - "Rgnl Cmy Corr Dir"
+                      StateStaffRoleSubtype.SUPERVISION_OFFICER:
+                        - "Parole Agent 1"
+                        - "Parole Agent 2"
+                        - "Parole Agt 1"
+                        - "Parole Agt 2"
+                        - "Parole Staff Technician 2"
+                        - "[RelAgent] Officer"
+                        - "Parole Manager 1"
+                        - "Parole Manager 2"
+                        - "Prl Agt 2"
+                        - "Prl Agt 1"
+                        - "Prl Mgr 1"
+                        - "Prl Mgr 2"
+                      StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
+                        - "Parole Spvr"
+                        - "[RelAgent] Supervisor"
+                        - "Parole Supervisor"
+                        - "Prl Supv"
+    location_periods:
+      - $conditional:
+          - $if:
+              $not_null: org_cd
+            $then:
+              StateStaffLocationPeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - sort_key
+                      - period_id
+                start_date: start_date
+                end_date: end_date
+                location_external_id:
+                  $concat:
+                    $values:
+                      - org_cd
+    caseload_type_periods:
+      - $conditional:
+          - $if:
+              $not_null: AgentType
+            $then:
+              StateStaffCaseloadTypePeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - sort_key
+                      - period_id
+                start_date: start_date
+                end_date: end_date
+                caseload_type:
+                  $enum_mapping:
+                    $raw_text: AgentType
+                    $mappings:
+                      StateStaffCaseloadType.SEX_OFFENSE:
+                        - SEX OFFENDER
+                      StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION:
+                        - ADMINISTRATIVE
+                        - ADMINSTRATIVE
+                        - ADMINISTRATIVE / COURT LIAISON
+                        - ADMINISTRATIVE & MONITOR CASES
+                        - ADMINISTRATIVE/MON/SPECIAL CIRCUMSTANCE
+                      StateStaffCaseloadType.ALCOHOL_AND_DRUG:
+                        - AOD
+                        - INTENSIVE DRUG
+                      StateStaffCaseloadType.INTENSIVE:
+                        - INTENSIVE CASELOAD
+                        - INTENSIVE SUPERVISION
+                        - INTENSIVE
+                        - INTENSIVE SUPERVISION AGENT
+                      StateStaffCaseloadType.MENTAL_HEALTH:
+                        - MENTAL HEALTH
+                        - MENTAL HEALTH (MIXED)
+                      StateStaffCaseloadType.ELECTRONIC_MONITORING:
+                        - GPS
+                      StateStaffCaseloadType.OTHER_COURT:
+                        - HEARING
+                        - COURT LIAISON
+                        - DRUG COURT LIASON
+                      StateStaffCaseloadType.VETERANS_COURT:
+                        - VETERANS (MIXED)
+                      StateStaffCaseloadType.COMMUNITY_FACILITY:
+                        - CCC AGENT
+                      StateStaffCaseloadType.OTHER:
+                        - INTERSTATE
+                        - HBG PD LIAISON
+                      StateStaffCaseloadType.INTERNAL_UNKNOWN:
+                        - FAST
+                        - STREET CRIME
+                        - STREET CRIMES
+                        - FTA
+                        - TRANSPORT
+                        - JUVENILE LIFER
+                        - JUVENILE LIFERS
+                        - JUVENILE LIFER/PSN
+                        - JUVENILE LIFER/WRAP AROUNDS
+                        - PROJECT SAFE NEIGHBORHOODS
+                        - REENTRY
+                        - TASK FORCE AGENT
+                        - FIELD TRAINING AGENT
+                        - K9
+                        - FTTD
+                      StateStaffCaseloadType.GENERAL:
+                        - GENERAL
+    supervisor_periods:
+      - $conditional:
+          - $if:
+              $not_null: supervisor_id
+            $then:
+              StateStaffSupervisorPeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - sort_key
+                      - period_id
+                start_date: start_date
+                end_date: end_date
+                supervisor_staff_external_id: supervisor_id
+                supervisor_staff_external_id_type:
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - supervisor_id_type
+                          - $literal("PosNoId")
+                      $then: $literal("US_PA_PBPP_POSNO")
+                    - $else: $literal("US_PA_PBPP_EMPLOYEE_NUM")
