@@ -34,6 +34,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodSpanAggregatedMetric,
     SpanMetricConditionsMixin,
 )
+from recidiviz.common.constants.state.state_person import StateGender, StateRace
+from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
@@ -119,7 +121,16 @@ def main(
                     view_name=view_name,
                     time_dependent_person_attribute_query="SELECT *, NULL AS dummy_attribute, FROM sessions.system_sessions_materialized",
                     time_dependent_person_attribute_fields=["dummy_attribute"],
-                    demographic_attribute_field_filters_with_suggestions={},
+                    demographic_attribute_field_filters_with_suggestions={
+                        "gender": sorted(
+                            [snake_to_title(member.value) for member in StateGender]
+                        ),
+                        "race": sorted(
+                            [snake_to_title(member.value) for member in StateRace]
+                        ),
+                        "is_female": [],
+                        "is_nonwhite": [],
+                    },
                 ).write(output_subdirectory, source_script_path=__file__)
 
             generate_assignments_with_attributes_and_time_periods_view(
