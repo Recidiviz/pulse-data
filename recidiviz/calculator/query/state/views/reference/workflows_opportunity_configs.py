@@ -74,6 +74,28 @@ class WorkflowsOpportunityConfig:
 
 WORKFLOWS_OPPORTUNITY_CONFIGS = [
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_AR,
+        opportunity_type="usArInstitutionalWorkerStatus",
+        experiment_id="US_AR_INSTITUTIONAL_WORKER_STATUS_WORKFLOWS",
+        opportunity_record_view_name="us_ar_institutional_worker_status_record_materialized",
+        task_completion_event=TaskCompletionEventType.GRANTED_INSTITUTIONAL_WORKER_STATUS,
+        source_filename="us_ar_institutional_worker_status_record.json",
+        export_collection_name="US_AR-InstitutionalWorkerStatusReferrals",
+        opportunity_type_path_str="institutionalWorkerStatus",
+        person_record_type=PersonRecordType.RESIDENT,
+    ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_AR,
+        opportunity_type="usArWorkRelease",
+        experiment_id="US_AR_WORK_RELEASE_WORKFLOWS",
+        opportunity_record_view_name="us_ar_work_release_record_materialized",
+        task_completion_event=TaskCompletionEventType.GRANTED_WORK_RELEASE,
+        source_filename="us_ar_work_release_record.json",
+        export_collection_name="US_AR-WorkReleaseReferrals",
+        opportunity_type_path_str="workRelease",
+        person_record_type=PersonRecordType.RESIDENT,
+    ),
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_AZ,
         opportunity_type="usAzReleaseToTPR",
         experiment_id="US_AZ_RELEASE_TO_TPR_WORKFLOWS",

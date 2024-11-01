@@ -18,7 +18,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
-    today_between_start_date_and_nullable_end_date_clause,
+    today_between_start_date_and_nullable_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
     join_sentence_spans_to_compartment_sessions,
@@ -35,7 +35,7 @@ Arkansas resident metadata
 
 
 US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
-    with all_residents AS (
+    WITH all_residents AS (
         SELECT
             pei.external_id,
             cs.*
@@ -63,7 +63,7 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
                 ) ORDER BY sent.effective_date DESC
             ) AS current_sentences,
         {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=["INCARCERATION"])}
-        WHERE {today_between_start_date_and_nullable_end_date_clause('span.start_date', 'span.end_date')}
+        WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause('span.start_date', 'span.end_date')}
         AND span.state_code = 'US_AR'
         AND sent.sentence_type = 'INCARCERATION'
         GROUP BY 1
@@ -80,11 +80,16 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
     )
     ,
     ged_completion AS (
-        SELECT
+        SELECT DISTINCT
             external_id,
-            program_achievement_date
+            FIRST_VALUE(program_achievement_date) OVER person_window AS program_achievement_date  
         FROM programs
         WHERE program_type = 'GED'
+        -- There are a handful of people with multiple GED completions, so we take the most recent one
+        WINDOW person_window AS (
+            PARTITION by external_id
+            ORDER BY program_achievement_date DESC
+        )
     )
     ,
     program_achievement AS (
@@ -111,7 +116,7 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
             end_date,
             reason,
         FROM `{{project_id}}.task_eligibility_criteria_general.no_incarceration_sanctions_within_6_months_materialized`
-        WHERE {today_between_start_date_and_nullable_end_date_clause(
+        WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
             start_date_column="start_date",
             end_date_column="end_date"
         )}
@@ -126,7 +131,7 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
             end_date,
             reason,
         FROM `{{project_id}}.task_eligibility_criteria_general.no_incarceration_sanctions_within_12_months_materialized`
-        WHERE {today_between_start_date_and_nullable_end_date_clause(
+        WHERE {today_between_start_date_and_nullable_end_date_exclusive_clause(
             start_date_column="start_date",
             end_date_column="end_date"
         )}
@@ -135,7 +140,7 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
         ar.person_id,
         ip.CURRENTGTEARNINGCLASS AS current_gt_earning_class,
         ip.CURRCUSTODYCLASSIFICATION AS current_custody_classification,
-        ip.INMCURRLOCATION AS current_location,
+        css.facility_name AS current_location,
         TO_JSON(IFNULL(current_sentences.current_sentences, [])) AS current_sentences,
         DATE(ip.PAROLEELIGIBILITYDATE) AS parole_eligibility_date,
         DATE(ip.PROJRELEASEDT) AS projected_release_date,
@@ -160,6 +165,11 @@ US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = f"""
     USING(person_id, state_code)
     LEFT JOIN violations_milestones_12_months vm12
     USING(person_id, state_code)
+    LEFT JOIN `{{project_id}}.sessions.compartment_sub_sessions_materialized` css
+    ON
+        ar.person_id = css.person_id
+        AND ar.state_code = css.state_code
+        AND css.end_date_exclusive IS NULL
     ORDER BY ip.OFFENDERID
 
 """
