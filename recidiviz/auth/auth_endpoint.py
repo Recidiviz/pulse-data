@@ -129,7 +129,7 @@ def _upsert_user_rows(
 
         # Experiments create arbitrary roles, and we don't want to throw an error if they aren't all configured
         non_experiment_roles = [
-            role for role in roles if not role.startswith("experiment_")
+            role for role in roles if not role.startswith("experiment-")
         ]
 
         associated_state_roles = (
