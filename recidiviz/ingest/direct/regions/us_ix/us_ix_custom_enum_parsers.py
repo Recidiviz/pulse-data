@@ -24,7 +24,11 @@ my_enum_field:
 """
 
 from datetime import date
+from typing import Optional
 
+from recidiviz.common.constants.state.state_incarceration_incident import (
+    StateIncarcerationIncidentType,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentencingAuthority
 from recidiviz.common.constants.state.state_shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_staff_caseload_type import (
@@ -225,3 +229,71 @@ def parse_sentencing_authority(raw_text: str) -> StateSentencingAuthority:
     if raw_text == "Idaho":
         return StateSentencingAuthority.STATE
     return StateSentencingAuthority.OTHER_STATE
+
+
+def map_incident_type(
+    raw_text: str,
+) -> Optional[StateIncarcerationIncidentType]:
+    """
+    Takes the raw text (which is a list of offense descriptions for the incident) and
+    parses out the incident type (prioritizing more specific incident types)
+    """
+
+    if any(
+        keyword in raw_text.lower()
+        for keyword in [
+            "fighting",
+            "assault",
+            "injury",
+            "homicide",
+            "destruction",
+            "riot",
+            "killing",
+            "harrasment",
+            "battery",
+            "violence",
+        ]
+    ):
+        return StateIncarcerationIncidentType.VIOLENCE
+
+    if any(
+        keyword in raw_text.lower()
+        for keyword in [
+            "contraband",
+            "possession",
+            "smuggling",
+            "paraphrenalia",
+            "substance",
+            "possessing",
+        ]
+    ):
+        return StateIncarcerationIncidentType.CONTRABAND
+
+    if "escape" in raw_text.lower():
+        return StateIncarcerationIncidentType.ESCAPE
+
+    if "minor" in raw_text.lower():
+        return StateIncarcerationIncidentType.MINOR_OFFENSE
+
+    if any(
+        keyword in raw_text.lower()
+        for keyword in [
+            "disturb",
+            "insolence",
+            "interfere",
+            "disobey",
+            "bribery",
+            "disperse",
+            "out of place",
+            "misconduct",
+            "threatening behavior",
+            "unauthorized",
+            "outside of authorized boundaries",
+        ]
+    ):
+        return StateIncarcerationIncidentType.DISORDERLY_CONDUCT
+
+    if raw_text:
+        return StateIncarcerationIncidentType.INTERNAL_UNKNOWN
+
+    return None
