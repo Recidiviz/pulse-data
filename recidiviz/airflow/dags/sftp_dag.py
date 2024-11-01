@@ -497,9 +497,9 @@ def sftp_dag() -> None:
                     # --- acquire permission w/ the correct infra --------------------------
 
                     acquire_permission_branch, _ = create_branch_by_bool(
-                        pause_ingest_queues,
-                        acquire_resource_locks,
-                        is_raw_data_dag_enabled_in_primary(state_code),
+                        branch_if_true=acquire_resource_locks,
+                        branch_if_false=pause_ingest_queues,
+                        bool_value=is_raw_data_dag_enabled_in_primary(state_code),
                     )
 
                 upload_files_to_ingest_bucket = SFTPGcsToGcsOperator.partial(
@@ -602,12 +602,12 @@ def sftp_dag() -> None:
                     # --- release permission w/ the correct infra --------------------------
 
                     create_branch_by_bool(
-                        [
+                        branch_if_true=release_locks,
+                        branch_if_false=[
                             resume_ingest_queues,
                             end_resume_queues_branch,
                         ],
-                        release_locks,
-                        is_raw_data_dag_enabled_in_primary(state_code),
+                        bool_value=is_raw_data_dag_enabled_in_primary(state_code),
                         # this should run no matter what
                         start_trigger_rule=TriggerRule.ALL_DONE,
                     )
