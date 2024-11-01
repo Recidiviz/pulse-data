@@ -146,7 +146,8 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
             outcome_type_raw_text AS sanction_code
         FROM `{{project_id}}.normalized_state.state_incarceration_incident_outcome`
         WHERE 
-            outcome_type_raw_text = 'D1'
+            state_code = 'US_MO'
+            AND outcome_type_raw_text = 'D1'
             AND date_effective >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 1 YEAR)
     )
     ,
@@ -201,6 +202,7 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
         FROM `{{project_id}}.normalized_state.state_incarceration_incident` cdv
         LEFT JOIN most_recent_hearings h
         USING(person_id)
+        WHERE cdv.state_code = 'US_MO'
     )
     ,
     cdv_majors_recent AS (
