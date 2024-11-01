@@ -17,6 +17,7 @@
 import { Button, PageHeader, Space } from "antd";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
+import { useHistory, useParams } from "react-router-dom";
 
 import { useInsightsStore } from "../StoreProvider";
 import StateSelect from "../Utilities/StateSelect";
@@ -25,13 +26,22 @@ import ConfigurationsTable from "./ConfigurationsTable";
 
 const InsightsConfigurationsView = (): JSX.Element => {
   const store = useInsightsStore();
+  const history = useHistory();
+  const { stateCode } = useParams<{
+    stateCode: string;
+    configId: string;
+  }>();
+
+  useEffect(() => {
+    store.setStateCode(stateCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stateCode]);
 
   useEffect(() => {
     if (store.hydrationState.status === "needs hydration") store.hydrate();
   }, [store]);
 
-  const { stateCodeInfo, stateCode, setStateCode, configurationPresenter } =
-    store;
+  const { stateCodeInfo, configurationPresenter } = store;
 
   const [addConfigFormVisible, setAddConfigFormVisible] = useState(false);
 
@@ -42,8 +52,11 @@ const InsightsConfigurationsView = (): JSX.Element => {
         <StateSelect
           states={stateCodeInfo}
           onChange={(state) => {
-            setStateCode(state.code);
+            history.push(
+              `/admin/line_staff_tools/insights_configurations/${state.code}`
+            );
           }}
+          initialValue={stateCode}
         />
         {(store.envIsStaging || store.envIsDevelopment) && (
           <Button

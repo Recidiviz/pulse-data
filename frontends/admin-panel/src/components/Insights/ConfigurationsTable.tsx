@@ -18,13 +18,12 @@ import { Alert, Spin, Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import { observer } from "mobx-react-lite";
 import moment from "moment";
-import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import styled from "styled-components/macro";
 
 import { InsightsConfiguration } from "../../InsightsStore/models/InsightsConfiguration";
 import ConfigurationPresenter from "../../InsightsStore/presenters/ConfigurationPresenter";
 import { optionalStringSort } from "../Utilities/GeneralUtilities";
-import ManageConfigDropdown from "./ManageConfigDropdown";
 
 const TableContainer = styled.div`
   padding-top: 1rem;
@@ -37,21 +36,6 @@ const ConfigurationsTable = ({
   presenter: ConfigurationPresenter;
   configs: InsightsConfiguration[];
 }): JSX.Element => {
-  const [selectedConfigId, setSelectedConfigId] = useState<number | undefined>(
-    undefined
-  );
-
-  // This canScroll state is used to prevent a ResizeObserver loop error
-  // Technically we should always have a config in this component, but
-  // a bug in rc-resize-observer is requiring us to do this as a workaround
-  // https://github.com/ant-design/ant-design/issues/26621#issuecomment-1798004981
-  const [canScroll, setCanScroll] = useState(false);
-  useEffect(() => {
-    if (configs) {
-      setCanScroll(true);
-    }
-  }, [configs]);
-
   type ColumnData = { text: string; value: string | boolean };
   const filterData =
     (colData: InsightsConfiguration[]) =>
@@ -68,13 +52,20 @@ const ConfigurationsTable = ({
   // Create metadata columns which require special handling
   const metadataColumns: ColumnsType<InsightsConfiguration> = [
     {
-      title: "ID",
+      title: "Click to view details",
       dataIndex: "id",
       key: "id",
       sorter: (a, b) => b.id - a.id,
       fixed: "left",
       defaultSortOrder: "ascend",
       width: 60,
+      render: (id) => (
+        <Link
+          to={`/admin/line_staff_tools/insights_configurations/${presenter.stateCode}/configurations/${id}`}
+        >
+          Configuration {id}
+        </Link>
+      ),
     },
     {
       title: "Status",
@@ -116,78 +107,9 @@ const ConfigurationsTable = ({
     },
   ];
 
-  // Create copy columns which have standard attributes
-  const copyColumnNames =
-    configs.length > 0
-      ? Object.keys(configs[0]).filter(
-          (d) =>
-            !metadataColumns
-              .map((c) => {
-                return c.key;
-              })
-              .includes(d) && d !== "actionStrategyCopy" // hiding this column for now since it will get removed in #34023 anyway
-        )
-      : [];
-  const copyColumns = copyColumnNames.map((c) => {
-    return {
-      title: c,
-      dataIndex: c,
-      key: c,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      sorter: (a: any, b: any) => a[c].localeCompare(b[c]),
-    };
-  });
-
   return (
     <TableContainer>
-      <div>
-        <h3>Managing configurations:</h3>
-        Only ACTIVE configurations are available for use by the staging and
-        production frontends. Use these actions to update which configurations
-        are ACTIVE for specified feature variants, or the default configuration
-        (no feature variant). Configurations cannot be created in production,
-        only promoted from staging.
-        <ul>
-          <li>
-            Reactivate: Turns an INACTIVE configuration ACTIVE. If there is
-            another ACTIVE configuration with the same feature variant, it will
-            become INACTIVE.
-          </li>
-          <li>
-            Deactivate: Turns an ACTIVE configuration INACTIVE. This means it is
-            no longer able to be promoted or used by the FE.
-          </li>
-          <li>
-            Promote to default: Available on ACTIVE configurations with a
-            feature variant set. Promoting to default will remove the feature
-            variant and set it to the ACTIVE configuration for the default view.
-          </li>
-          <li>
-            Promote to production: When promoted, this configuration will become
-            the ACTIVE configuration used in the production frontend. Only
-            available on staging configurations.
-          </li>
-        </ul>
-      </div>
-
-      <Table
-        columns={metadataColumns.concat(copyColumns)}
-        dataSource={configs}
-        rowKey="id"
-        rowSelection={{
-          type: "radio",
-          onChange: (_selectedRowKeys, selectedRows) =>
-            setSelectedConfigId(selectedRows[0].id),
-          columnTitle: (
-            <ManageConfigDropdown
-              presenter={presenter}
-              selectedConfigId={selectedConfigId}
-            />
-          ),
-          columnWidth: 130,
-        }}
-        scroll={canScroll ? { x: 4000 } : undefined}
-      />
+      <Table columns={metadataColumns} dataSource={configs} rowKey="id" />
     </TableContainer>
   );
 };

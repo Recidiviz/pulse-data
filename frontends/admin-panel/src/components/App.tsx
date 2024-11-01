@@ -40,6 +40,7 @@ import DemoAppManagementView from "./DemoAppManagement/DemoAppManagementView";
 import IngestStatusView from "./IngestStatus";
 import FlashDatabaseChecklist from "./IngestStatus/FlashChecklist/FlashDatabaseChecklist";
 import InsightsConfigurationsView from "./Insights/InsightsConfigurationsView";
+import InsightsConfigurationView from "./Insights/InsightsConfigurationView";
 import OnCallLogsReview from "./OnCall/LogsReview";
 import POEmailsView from "./POEmailsView";
 import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePermissionsView";
@@ -286,10 +287,16 @@ const App = (): JSX.Element => {
             component={OnCallLogsReview}
           />
           <StoreProvider>
-            <Route
-              path={LineStaffTools.INSIGHTS_CONFIGURATION_ROUTE}
-              component={InsightsConfigurationsView}
-            />
+            <Switch>
+              <Route
+                path={`${LineStaffTools.INSIGHTS_CONFIGURATION_ROUTE}/:stateCode/configurations/:configId`}
+                component={InsightsConfigurationView}
+              />
+              <Route
+                path={`${LineStaffTools.INSIGHTS_CONFIGURATION_ROUTE}/:stateCode?`}
+                component={InsightsConfigurationsView}
+              />
+            </Switch>
             <Route
               path={[
                 `${LineStaffTools.WORKFLOWS_OPPORTUNITIES_ROUTE}/:opportunityType?/configurations/:configId?`,
