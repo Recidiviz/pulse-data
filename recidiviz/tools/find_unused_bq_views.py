@@ -100,9 +100,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics i
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentence_sessions.sentence_inferred_group_projected_dates import (
-    SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_to_consecutive_parent_sentence import (
     CONSECUTIVE_SENTENCES_VIEW_BUILDER,
 )
@@ -191,10 +188,6 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
 # as possible when updating this list, including a point of contact and date we were
 # still using this view where possible.
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
-    SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VIEW_BUILDER.address: (
-        "Inferred group projected dates for v2 sentences will be used in downstream analysis"
-        "(Nick Tallant, 2024-10-03)"
-    ),
     **{
         BigQueryAddress(
             dataset_id=STATE_BASE_VIEWS_DATASET,
