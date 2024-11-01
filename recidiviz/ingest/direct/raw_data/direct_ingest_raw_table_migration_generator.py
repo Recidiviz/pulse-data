@@ -68,6 +68,11 @@ class RawTableMigrationGenerator:
         us to optimize which migration queries are run (some migrations apply only to
         data with certain update_datetime values).
         """
+        # TODO(#34696) Enforce timezone awareness for data_update_datetime
+        if data_update_datetime is not None and data_update_datetime.tzinfo is not None:
+            raise ValueError(
+                "data_update_datetime must be a naive datetime object, not a timezone-aware datetime object"
+            )
 
         cls._check_file_tags_match(migrations)
 
@@ -143,7 +148,7 @@ class RawTableMigrationGenerator:
 
         if len(filtered_migrations) != len(migrations_shared_filter_keys):
             logging.info(
-                "Excluding [%s of %s] mirations as they filter by an update_datetime"
+                "Excluding [%s of %s] migrations as they filter by an update_datetime "
                 "that is not included on the destination table",
                 len(migrations_shared_filter_keys) - len(filtered_migrations),
                 len(migrations_shared_filter_keys),
