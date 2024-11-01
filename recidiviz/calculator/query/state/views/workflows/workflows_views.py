@@ -105,6 +105,9 @@ from recidiviz.calculator.query.state.views.workflows.sentence_id_to_opportunity
 from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
     US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.us_az.resident_metadata import (
+    US_AZ_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.us_ix.resident_metadata import (
     US_IX_RESIDENT_METADATA_VIEW_BUILDER,
 )
@@ -147,6 +150,7 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     PERSON_RECORD_VIEW_BUILDER,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
     US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
+    US_AZ_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
     WORKFLOWS_USAGE_VIEW_BUILDER,
     US_IX_RESIDENT_METADATA_VIEW_BUILDER,
     US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER,

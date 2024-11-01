@@ -29,6 +29,7 @@ from recidiviz.task_eligibility.utils.us_mo_query_fragments import current_bed_s
 
 STATES_WITH_RESIDENT_METADATA = [
     StateCode.US_AR,
+    StateCode.US_AZ,
     StateCode.US_MO,
     StateCode.US_ME,
     StateCode.US_IX,
