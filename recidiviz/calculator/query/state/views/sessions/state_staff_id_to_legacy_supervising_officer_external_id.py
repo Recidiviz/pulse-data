@@ -56,6 +56,8 @@ USING
     (state_code, id_type)
 -- Pick the largest (usually most recent) external_id for the small subset of staff_id's
 -- having more than one external_id for a single id_type.
+-- For PA, we'll exclude this staff external id that was internally constructed for easier entity merging purposes
+WHERE id_type NOT IN ('US_PA_PBPP_POSNO')
 QUALIFY
     ROW_NUMBER() OVER (PARTITION BY staff_id ORDER BY external_id DESC) = 1
 """

@@ -100,8 +100,10 @@ US_PA_CONT = "US_PA_CONT"
 US_PA_PBPP = "US_PA_PBPP"
 # PA Inmate Number - associated with a single contiguous incarceration stay
 US_PA_INMATE = "US_PA_INMATE"
-# PA PBPP Employee Number - tracks employees of PBPP
+# PA PBPP Employee Number - tracks employees of PBPP by employee number
 US_PA_PBPP_EMPLOYEE_NUM = "US_PA_PBPP_EMPLOYEE_NUM"
+# PA PBPP PosNo - tracks employees of PBPP by PosNo + last name
+US_PA_PBPP_POSNO = "US_PA_PBPP_POSNO"
 
 US_TN_DOC = "US_TN_DOC"
 # Identifier for the type of state staff id provided by the TN system

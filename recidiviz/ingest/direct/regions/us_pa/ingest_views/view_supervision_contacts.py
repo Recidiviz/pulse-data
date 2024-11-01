@@ -34,7 +34,7 @@ SELECT
     ATTEMPTED as contact_attempt,
     COLLATERAL_TYPE as collateral_type,
     ASSISTED as assisted,
-    PRL_AGNT_EMPL_NO as agent_number,
+    LTRIM(PRL_AGNT_EMPL_NO, '0') as agent_number,
     PRL_AGNT_FIRST_NAME as agent_first_name,
     PRL_AGNT_LAST_NAME as agent_last_name,
     PRL_AGNT_ORG_NAME as parole_org
