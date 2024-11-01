@@ -49,7 +49,9 @@ class TestBranchingByKey(AirflowIntegrationTest):
             left = EmptyOperator(task_id="left")
             right = EmptyOperator(task_id="right")
 
-            create_branch_by_bool(left, right, True)
+            create_branch_by_bool(
+                branch_if_true=left, branch_if_false=right, bool_value=True
+            )
 
         test_dag = create_test_dag()
         branching_start = test_dag.get_task("branch_start")
@@ -71,7 +73,10 @@ class TestBranchingByKey(AirflowIntegrationTest):
             right = EmptyOperator(task_id="right")
 
             create_branch_by_bool(
-                left, right, True, start_trigger_rule=TriggerRule.ALL_FAILED
+                branch_if_true=left,
+                branch_if_false=right,
+                bool_value=True,
+                start_trigger_rule=TriggerRule.ALL_FAILED,
             )
 
         test_dag = create_test_dag()
@@ -94,7 +99,9 @@ class TestBranchingByKey(AirflowIntegrationTest):
             also_left = EmptyOperator(task_id="also_left")
             right = EmptyOperator(task_id="right")
 
-            create_branch_by_bool([left, also_left], right, True)
+            create_branch_by_bool(
+                branch_if_true=[left, also_left], branch_if_false=right, bool_value=True
+            )
 
         test_dag = create_test_dag()
         with Session(bind=self.engine) as session:
@@ -109,7 +116,9 @@ class TestBranchingByKey(AirflowIntegrationTest):
             also_left = EmptyOperator(task_id="also_left")
             right = EmptyOperator(task_id="right")
 
-            create_branch_by_bool([left, also_left], right, True)
+            create_branch_by_bool(
+                branch_if_true=[left, also_left], branch_if_false=right, bool_value=True
+            )
 
         test_dag = create_test_dag()
         with Session(bind=self.engine) as session:
@@ -124,7 +133,9 @@ class TestBranchingByKey(AirflowIntegrationTest):
             also_left = EmptyOperator(task_id="also_left")
             right = EmptyOperator(task_id="right")
 
-            create_branch_by_bool([left, also_left], right, True)
+            create_branch_by_bool(
+                branch_if_true=[left, also_left], branch_if_false=right, bool_value=True
+            )
 
         test_dag = create_test_dag()
         with Session(bind=self.engine) as session:

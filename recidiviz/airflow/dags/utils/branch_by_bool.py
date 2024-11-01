@@ -35,6 +35,7 @@ from recidiviz.airflow.dags.utils.branch_utils import (
 
 
 def create_branch_by_bool(
+    *,
     branch_if_true: List[TaskGroupOrOperator] | TaskGroupOrOperator,
     branch_if_false: List[TaskGroupOrOperator] | TaskGroupOrOperator,
     bool_value: bool,
