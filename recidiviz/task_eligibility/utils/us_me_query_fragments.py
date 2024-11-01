@@ -528,6 +528,7 @@ def cis_900_employee_to_supervisor_match() -> str:
         LOWER(cis900.Email_Tx) AS officer_email,
         cis900.Cis_900_Employee_Supervisor_Id AS supervisor_id,
     FROM `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_900_EMPLOYEE_latest` cis900
+    WHERE Logical_Delete_Ind = 'N'
     GROUP BY 1,2,3,4,5"""
 
 
