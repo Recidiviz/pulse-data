@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_IncarcerationIncident` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId
+  - InfractionDate
+  - DiscOffenseRptId
+  - LocationName
+  - DAProcedureStatusDesc
+  - outcome_list
+  - TermId
+  - DorOffenseTypeDesc
+  - DorOffenseCode
+  - SeverityDesc
+  - DorOffenseCategoryId
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id: DiscOffenseRptId
+          incident_date: InfractionDate
+          facility: LocationName
+          incident_severity:
+            $enum_mapping:
+              $raw_text: SeverityDesc
+              $mappings:
+                StateIncarcerationIncidentSeverity.HIGHEST:
+                  - Highest
+                StateIncarcerationIncidentSeverity.SECOND_HIGHEST:
+                  - High
+                StateIncarcerationIncidentSeverity.THIRD_HIGHEST:
+                  - Moderate
+                StateIncarcerationIncidentSeverity.FOURTH_HIGHEST:
+                  - Low Moderate
+                StateIncarcerationIncidentSeverity.FIFTH_HIGHEST:
+                  - Low
+                StateIncarcerationIncidentSeverity.INTERNAL_UNKNOWN:
+                  - None
+          incident_type:
+            $enum_mapping:
+              $raw_text: DorOffenseTypeDesc
+              $custom_parser: us_ix_custom_enum_parsers.map_incident_type
+          incident_metadata:
+            $json_dict:
+              ProcedureStatus: DAProcedureStatusDesc
+              TermId: TermId
+              OffenseCode: DorOffenseCode
+              OffenseCategoryId: DorOffenseCategoryId
+          incarceration_incident_outcomes:
+            - $foreach:
+                $iterable:
+                  $split_json: outcome_list
+                $result:
+                  StateIncarcerationIncidentOutcome:
+                    external_id:
+                      $json_extract:
+                        $key: penalty_id
+                        $json: $iter_item
+                    date_effective:
+                      $json_extract:
+                        $key: penalty_start
+                        $json: $iter_item
+                    projected_end_date:
+                      $json_extract:
+                        $key: penalty_end
+                        $json: $iter_item
+                    hearing_date:
+                      $json_extract:
+                        $key: hearing_date
+                        $json: $iter_item
+                    report_date:
+                      $json_extract:
+                        $key: insert_date
+                        $json: $iter_item
