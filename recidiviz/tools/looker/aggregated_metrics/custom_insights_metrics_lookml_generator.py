@@ -53,6 +53,9 @@ from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils impor
 INSIGHTS_IMPACT_LOOKER_METRICS = [
     insights_metrics.ABSCONSIONS_AND_BENCH_WARRANTS_LOOKER,
     insights_metrics.AVG_DAILY_POPULATION_LOOKER,
+    insights_metrics.DISTINCT_LOGGED_IN_USERS_LOOKER,
+    insights_metrics.DISTINCT_REGISTERED_USERS_LOOKER,
+    insights_metrics.LOGINS_LOOKER,
     insights_metrics.INCARCERATION_STARTS_LOOKER,
     insights_metrics.INCARCERATION_STARTS_AND_INFERRED_LOOKER,
     insights_metrics.VIOLATIONS_ABSCONSION,
