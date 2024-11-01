@@ -113,7 +113,17 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_events_by_client_no_na
             "officerId": "03",
             "pseudonymizedClientId": "clienthash5",
             "stateCode": "US_PA",
-        }
+        },
+        {
+            "attributes": None,
+            "clientId": "556665",
+            "clientName": None,
+            "eventDate": "2023-06-01",
+            "metricId": "violations",
+            "officerId": None,
+            "pseudonymizedClientId": "clienthash5",
+            "stateCode": "US_PA",
+        },
     ]
 }
 
