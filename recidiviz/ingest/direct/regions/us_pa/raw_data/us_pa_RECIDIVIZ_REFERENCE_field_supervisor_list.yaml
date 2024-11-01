@@ -27,6 +27,7 @@ columns:
       - value: Regional Manager
       - value: Deputy Secretary
       - value: Executive Assistant
+      - value: Regional Director
   - name: lastname
     is_pii: True
     description: The surname  of the agent.
