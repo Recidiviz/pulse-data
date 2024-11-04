@@ -67,8 +67,8 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
 def get_time_period_cte(
     interval_unit: MetricTimePeriod,
     interval_length: int,
-    min_date: datetime,
-    max_date: Optional[datetime],
+    min_end_date: datetime,
+    max_end_date: Optional[datetime],
     rolling_period_unit: Optional[MetricTimePeriod] = None,
     rolling_period_length: Optional[int] = None,
 ) -> str:
@@ -110,26 +110,26 @@ def get_time_period_cte(
     )
     period_str = f'"{MetricTimePeriod.CUSTOM.value}"'
     interval_str = f"INTERVAL {interval_length} {interval_unit.value}"
-    min_date_str = f'"{min_date.strftime("%Y-%m-%d")}"'
-    max_date_str = (
-        f'"{max_date.strftime("%Y-%m-%d")}"'
-        if max_date
+    min_end_date_str = f'"{min_end_date.strftime("%Y-%m-%d")}"'
+    max_end_date_str = (
+        f'"{max_end_date.strftime("%Y-%m-%d")}"'
+        if max_end_date
         else 'CURRENT_DATE("US/Eastern")'
     )
     return f"""
 SELECT
-    population_start_date,
-    DATE_ADD(population_start_date, {interval_str}) AS population_end_date,
+    DATE_SUB(population_end_date, {interval_str}) AS population_start_date,
+    population_end_date,
     {period_str} as period,
 FROM
     UNNEST(GENERATE_DATE_ARRAY(
-        {min_date_str},
-        {max_date_str},
+        {min_end_date_str},
+        {max_end_date_str},
         {rolling_interval_str}
-    )) AS population_start_date
+    )) AS population_end_date
 WHERE
-    DATE_ADD(population_start_date, {interval_str}) <= CURRENT_DATE("US/Eastern")
-    AND DATE_ADD(population_start_date, {interval_str}) <= {max_date_str}
+    population_end_date <= CURRENT_DATE("US/Eastern")
+    AND population_end_date <= {max_end_date_str}
 """
 
 
@@ -139,8 +139,8 @@ def get_custom_aggregated_metrics_query_template(
     population_type: MetricPopulationType,
     time_interval_unit: MetricTimePeriod,
     time_interval_length: int,
-    min_date: datetime = datetime(2020, 1, 1),
-    max_date: datetime = datetime(2023, 1, 1),
+    min_end_date: datetime,
+    max_end_date: Optional[datetime] = None,
     rolling_period_unit: Optional[MetricTimePeriod] = None,
     rolling_period_length: Optional[int] = None,
 ) -> str:
@@ -158,8 +158,8 @@ def get_custom_aggregated_metrics_query_template(
     time_period_cte = get_time_period_cte(
         time_interval_unit,
         time_interval_length,
-        min_date,
-        max_date,
+        min_end_date,
+        max_end_date,
         rolling_period_unit,
         rolling_period_length,
     )
@@ -296,6 +296,7 @@ def get_custom_aggregated_metrics(
     population_type: MetricPopulationType,
     time_interval_unit: MetricTimePeriod,
     time_interval_length: int,
+    # TODO(#34770): Update these parameters to make it clear they're end date based
     min_date: datetime = datetime(2020, 1, 1),
     max_date: datetime = datetime(2023, 1, 1),
     rolling_period_unit: Optional[MetricTimePeriod] = None,
