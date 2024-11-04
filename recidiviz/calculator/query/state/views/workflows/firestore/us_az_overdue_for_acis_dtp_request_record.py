@@ -54,6 +54,8 @@ SELECT
     state_code,
     reasons,
     ineligible_criteria,
+    is_eligible,
+    is_almost_eligible,
 FROM 
     eligible
 """

@@ -349,7 +349,7 @@ array_case_notes_cte AS (
 )
 
 SELECT
-  * EXCEPT (is_almost_eligible)
+  *
 FROM
   eligible_and_almost_eligible_clients
 LEFT JOIN

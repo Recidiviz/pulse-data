@@ -54,6 +54,8 @@ SELECT
         END AS metadata_interstate_flag,
     tes_all.start_date AS metadata_eligible_date,
     reasons,
+    tes.is_eligible,
+    tes.is_almost_eligible,
 FROM (
     SELECT * FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_discharge_early_from_probation_supervision_request_materialized` 
     UNION ALL

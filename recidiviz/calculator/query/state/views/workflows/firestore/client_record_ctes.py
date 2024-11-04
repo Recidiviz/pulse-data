@@ -283,7 +283,7 @@ _CLIENT_RECORD_SPECIAL_CONDITIONS_CTE = """
         SELECT 
             pei.state_code,
             pei.person_external_id,
-            ARRAY_AGG(conditions IGNORE NULLS) AS special_conditions_on_current_sentences
+            ARRAY_AGG(conditions IGNORE NULLS ORDER BY conditions) AS special_conditions_on_current_sentences
         FROM (
             SELECT person_id, conditions
             FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`
@@ -342,7 +342,7 @@ _CLIENT_RECORD_BOARD_CONDITIONS_CTE = """
         SELECT
             bc.person_external_id,
             ls.state_code, 
-            ARRAY_AGG(STRUCT(condition, condition_description)) AS board_conditions
+            ARRAY_AGG(STRUCT(condition, condition_description) ORDER BY condition, condition_description) AS board_conditions
         FROM latest_system_start ls
         INNER JOIN unpivot_board_conditions bc
             ON ls.person_external_id = bc.person_external_id
@@ -357,7 +357,10 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
         SELECT
             state_code,
             person_id,
-            ARRAY_AGG(STRUCT(employer_name AS name, employer_address AS address, start_date as start_date, employment_status as employment_status) IGNORE NULLS ORDER BY start_date ASC) AS current_employers
+            ARRAY_AGG(
+                STRUCT(employer_name AS name, employer_address AS address, start_date as start_date, employment_status as employment_status)
+                IGNORE NULLS
+                ORDER BY start_date ASC, employer_name, employment_status) AS current_employers
         FROM (
             SELECT DISTINCT
                 state_code,

@@ -54,6 +54,8 @@ SELECT
                                                         "Recommended supervision level" AS criteria)]) AS case_notes,
     tes_all.start_date AS metadata_eligible_date,
     reasons,
+    tes.is_eligible,
+    tes.is_almost_eligible,
 FROM `{{project_id}}.{{task_eligibility_dataset}}.supervision_level_downgrade_materialized` tes
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     ON tes.state_code = pei.state_code 

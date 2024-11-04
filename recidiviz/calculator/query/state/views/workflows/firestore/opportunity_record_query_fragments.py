@@ -129,6 +129,8 @@ def opportunity_query_final_select_with_case_notes(
         external_id,
         state_code,
         reasons,
+        is_eligible,
+        is_almost_eligible,
         ineligible_criteria,
         case_notes,
     FROM {from_cte}

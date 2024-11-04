@@ -53,6 +53,8 @@ base_query AS (
        pei.external_id, 
        tes.state_code,
        tes.reasons AS reasons,
+       tes.is_eligible,
+       tes.is_almost_eligible,
        viol_contact.contact_type AS note_title,
        viol_contact.contact_date AS event_date,
        CAST(NULL AS STRING) AS note_body,
@@ -129,6 +131,8 @@ SELECT
     external_id,
     state_code,
     reasons,
+    is_eligible,
+    is_almost_eligible,
     case_notes,
     --TODO(#27391): Deprecate this field
     IF(metadata_violations[offset(0)].event_date IS NULL, [], metadata_violations) AS metadata_violations,
@@ -138,6 +142,9 @@ FROM (
         external_id,
         state_code,
         ANY_VALUE(reasons) AS reasons,
+        --TODO(#27391): Remove this `LOGICAL_AND` when the violations group by is removed
+        LOGICAL_AND(is_eligible) AS is_eligible,
+        LOGICAL_AND(is_almost_eligible) AS is_almost_eligible,
         --TODO(#27391): Deprecate this field
         ARRAY_AGG(
             IF(

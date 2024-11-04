@@ -99,6 +99,8 @@ SELECT
     state_code,
     reasons,
     ineligible_criteria,
+    is_eligible,
+    is_almost_eligible,
     metadata_tab_description,
 FROM 
     combine_acis_and_recidiviz_dtp_dates

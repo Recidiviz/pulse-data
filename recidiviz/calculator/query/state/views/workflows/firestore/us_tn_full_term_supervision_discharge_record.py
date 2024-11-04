@@ -290,6 +290,8 @@ tes_cte AS (
          tes.state_code,
          pei.external_id,
          tes.reasons,
+         tes.is_eligible,
+         tes.is_almost_eligible,
          arr.case_notes,
          pse.latest_pse AS form_information_latest_pse,
          sex_offenses.sex_offenses AS form_information_sex_offenses,

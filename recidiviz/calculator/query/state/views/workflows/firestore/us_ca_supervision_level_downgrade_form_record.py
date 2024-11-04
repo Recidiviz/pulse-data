@@ -52,6 +52,8 @@ SELECT
     state_code,
     reasons,
     ineligible_criteria,
+    is_eligible,
+    is_almost_eligible,
     pp.Cdcno as form_information_cdcno
 FROM current_parole_pop_cte
 LEFT JOIN `{{project_id}}.{{us_ca_raw_data_up_to_date_dataset}}.PersonParole_latest` pp

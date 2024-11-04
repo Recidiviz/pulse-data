@@ -61,7 +61,8 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             state_code,
             reasons,
             ineligible_criteria,
-            is_eligible
+            is_eligible,
+            is_almost_eligible,
         FROM
             eligible_with_discretion
         
@@ -74,7 +75,8 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             state_code,
             reasons,
             ineligible_criteria,
-            is_eligible
+            is_eligible,
+            is_almost_eligible,
         FROM
             ({join_current_task_eligibility_spans_with_external_id(
                 state_code= "'US_TN'", 
@@ -105,6 +107,8 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             a.state_code,
             a.ineligible_criteria,
             b.reasons,
+            a.is_eligible,
+            a.is_almost_eligible,
         FROM eligible_discretion_and_almost a
         LEFT JOIN ({join_current_task_eligibility_spans_with_external_id(
                 state_code= "'US_TN'", 
@@ -220,6 +224,8 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
         base.state_code,
         base.reasons,
         base.ineligible_criteria,
+        base.is_eligible,
+        base.is_almost_eligible,
         pc.contact_type_arrest_check AS metadata_most_recent_arrest_check,
         pc.contact_type_spe_note AS metadata_most_recent_spe_note,
         att.DriverLicenseNumber AS form_information_drivers_license,

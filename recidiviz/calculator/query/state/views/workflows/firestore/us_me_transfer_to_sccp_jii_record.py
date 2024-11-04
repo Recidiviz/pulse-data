@@ -48,6 +48,7 @@ SELECT
     state_code,
     ineligible_criteria,
     is_eligible,
+    is_almost_eligible,
     JSON_QUERY_ARRAY(reasons) AS array_reasons
 FROM current_incarcerated_population """
 

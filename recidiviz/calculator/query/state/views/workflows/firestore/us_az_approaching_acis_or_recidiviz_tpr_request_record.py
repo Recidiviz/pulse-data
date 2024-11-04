@@ -131,6 +131,8 @@ SELECT
     state_code,
     reasons,
     ineligible_criteria,
+    is_eligible,
+    is_almost_eligible,
     metadata_tab_name,
     metadata_tab_description,
 FROM 

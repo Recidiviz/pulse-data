@@ -100,6 +100,8 @@ def get_eligibility_ctes(configs: List[WorkflowsOpportunityConfig]) -> str:
             state_code,
             external_id AS person_external_id,
             "{config.opportunity_type}" AS opportunity_name,
+            is_eligible,
+            is_almost_eligible,
         FROM `{{project_id}}.{{workflows_dataset}}.{config.opportunity_record_view_name}`
         -- TODO(Recidiviz/recidiviz-dashboards#5003): Remove this conditional
         WHERE external_id IS NOT NULL
@@ -115,7 +117,11 @@ def get_eligibility_ctes(configs: List[WorkflowsOpportunityConfig]) -> str:
         SELECT
             state_code,
             person_external_id,
-            ARRAY_AGG(DISTINCT opportunity_name) AS all_eligible_opportunities
+            ARRAY_AGG(
+                DISTINCT IF(is_eligible OR is_almost_eligible, opportunity_name, NULL)
+                IGNORE NULLS
+                ORDER BY IF(is_eligible OR is_almost_eligible, opportunity_name, NULL)
+            ) AS all_eligible_opportunities
         FROM opportunities
         GROUP BY 1, 2
     )
