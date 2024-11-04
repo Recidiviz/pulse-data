@@ -63,7 +63,7 @@ crical_date_spans_within_100_days_of_date AS (
         start_datetime,
         -- If the end_datetime is within 100 days of the critical_date, use the end_datetime
         -- Otherwise, use the critical_date + 100 days. That way people only stay eligible
-        -- for 100 days after their relevant date. After that they've likely loss their 
+        -- for 100 days after their relevant date. After that, they've likely loss their 
         -- eligibility for a transition release.
         IF(
             DATE_ADD(critical_date, INTERVAL 100 DAY) BETWEEN start_datetime AND IFNULL(end_datetime, '9999-12-31'),
@@ -75,6 +75,8 @@ crical_date_spans_within_100_days_of_date AS (
     -- Drop row if critical_date or critical_date + 100 is not between start and end_date
     WHERE (critical_date BETWEEN start_datetime AND IFNULL(end_datetime, '9999-12-31') 
         OR DATE_ADD(critical_date, INTERVAL 100 DAY) BETWEEN start_datetime AND IFNULL(end_datetime, '9999-12-31'))
+        -- The critical_date + 100 cannot be the start_datetime, this would create zero day spans
+        AND DATE_ADD(critical_date, INTERVAL 100 DAY) != start_datetime
 ),
 {critical_date_has_passed_spans_cte(table_name = 'crical_date_spans_within_100_days_of_date')}
 SELECT
