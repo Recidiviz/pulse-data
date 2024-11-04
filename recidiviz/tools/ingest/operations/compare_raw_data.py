@@ -31,11 +31,12 @@ python -m recidiviz.tools.ingest.operations.compare_raw_data --region us_tn \
 import argparse
 import logging
 import sys
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.ingest.operations.raw_data_region_diff_query_executor import (
     RawDataRegionDiffQueryExecutor,
+    RawDataRegionQueryResult,
 )
 from recidiviz.tools.ingest.operations.raw_table_data_diff_query_generator import (
     RawTableDataDiffQueryGenerator,
@@ -51,6 +52,20 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 
 LINE_SEPARATOR = "-" * 100
 
+RESULT_ROW_DISPLAY_LIMIT = 10
+
+RAW_DATA_DIFF_RESULTS_DATASET_ID = "raw_data_comparison_output"
+
+
+def _get_table_name_prefix(
+    region_code: str,
+    src_project_id: str,
+    src_ingest_instance: DirectIngestInstance,
+    cmp_project_id: str,
+    cmp_ingest_instance: DirectIngestInstance,
+) -> str:
+    return f"{region_code}_src_{src_project_id}_{src_ingest_instance.value}_cmp_{cmp_project_id}_{cmp_ingest_instance.value}_"
+
 
 def _log_successes(succeeded_tables: List[str]) -> None:
     if not succeeded_tables:
@@ -62,15 +77,57 @@ def _log_successes(succeeded_tables: List[str]) -> None:
     logging.info(LINE_SEPARATOR)
 
 
-def _log_failures(failed_table_results: Dict[str, RawTableDiffQueryResult]) -> None:
+def _log_failures(
+    failed_table_results: Dict[str, RawTableDiffQueryResult],
+    result_row_display_limit: Optional[int] = None,
+) -> None:
     if not failed_table_results:
         return
     logging.error("\nFAILURES")
     logging.error(LINE_SEPARATOR)
     for file_tag, result in failed_table_results.items():
         logging.error("%s:\n", file_tag)
-        logging.error(result)
+        logging.error(result.build_result_rows_str(limit=result_row_display_limit))
         logging.error(LINE_SEPARATOR)
+
+
+def _log_results(
+    results: RawDataRegionQueryResult,
+    result_row_display_limit: Optional[int] = None,
+) -> None:
+    _log_successes(
+        succeeded_tables=results.succeeded_tables,
+    )
+    _log_failures(
+        failed_table_results=results.failed_table_results,
+        result_row_display_limit=result_row_display_limit,
+    )
+
+
+def _execute_diff_query(
+    query_generator: RawTableDiffQueryGenerator,
+    region_code: str,
+    project_id: str,
+    file_tags: List[str],
+    save_to_table: bool = False,
+    dataset_id: Optional[str] = None,
+    table_name_prefix: Optional[str] = None,
+) -> RawDataRegionQueryResult:
+    """Create the query generator class, execute the queries, and log the results.
+    Returns True if the query returned no differences for all tables, False otherwise.
+    """
+
+    query_executor = RawDataRegionDiffQueryExecutor(
+        region_code=region_code,
+        project_id=project_id,
+        query_generator=query_generator,
+        file_tags=file_tags,
+        save_to_table=save_to_table,
+        dataset_id=dataset_id,
+        table_name_prefix=table_name_prefix,
+    )
+
+    return query_executor.run_queries()
 
 
 def _parse_args() -> argparse.Namespace:
@@ -128,37 +185,13 @@ def _parse_args() -> argparse.Namespace:
         help="If set, skips checking that there are the same number of distinct files"
         " in the two datasets.",
     )
+    parser.add_argument(
+        "--save-to-table",
+        action="store_true",
+        help="If set, saves the results of the comparison to a table in BigQuery. Tables have a TTL of 7 days.",
+    )
     args = parser.parse_args()
     return args
-
-
-def _execute_diff_query_and_log_results(
-    query_generator: RawTableDiffQueryGenerator,
-    region_code: str,
-    project_id: str,
-    file_tags: List[str],
-) -> bool:
-    """Create the query generator class, execute the queries, and log the results.
-    Returns True if the query returned no differences for all tables, False otherwise.
-    """
-
-    query_executor = RawDataRegionDiffQueryExecutor(
-        region_code=region_code,
-        project_id=project_id,
-        query_generator=query_generator,
-        file_tags=file_tags,
-    )
-
-    results = query_executor.run_queries()
-
-    _log_successes(
-        succeeded_tables=results.succeeded_tables,
-    )
-    _log_failures(
-        failed_table_results=results.failed_table_results,
-    )
-
-    return not results.failed_table_results
 
 
 def main() -> None:
@@ -178,8 +211,9 @@ def main() -> None:
     )
     logging.info(LINE_SEPARATOR)
 
+    file_tags = args.file_tags
     if not args.skip_file_counts_check:
-        success = _execute_diff_query_and_log_results(
+        results = _execute_diff_query(
             query_generator=RawTableFileCountsDiffQueryGenerator.create_query_generator(
                 region_code=args.region,
                 src_project_id=args.source_project_id,
@@ -190,12 +224,13 @@ def main() -> None:
             ),
             region_code=args.region,
             project_id=args.source_project_id,
-            file_tags=args.file_tags,
+            file_tags=file_tags,
         )
-        if not success:
-            sys.exit(1)
+        _log_results(results)
+        # Only fully compare the data for tables that have the same number of distinct file_ids
+        file_tags = results.succeeded_tables
 
-    success = _execute_diff_query_and_log_results(
+    results = _execute_diff_query(
         query_generator=RawTableDataDiffQueryGenerator.create_query_generator(
             region_code=args.region,
             src_project_id=args.source_project_id,
@@ -206,12 +241,48 @@ def main() -> None:
         ),
         region_code=args.region,
         project_id=args.source_project_id,
-        file_tags=args.file_tags,
+        file_tags=file_tags,
+        save_to_table=args.save_to_table,
+        dataset_id=RAW_DATA_DIFF_RESULTS_DATASET_ID if args.save_to_table else None,
+        table_name_prefix=(
+            _get_table_name_prefix(
+                region_code=args.region,
+                src_project_id=args.source_project_id,
+                src_ingest_instance=args.source_ingest_instance,
+                cmp_project_id=args.comparison_project_id,
+                cmp_ingest_instance=args.comparison_ingest_instance,
+            )
+            if args.save_to_table
+            else None
+        ),
     )
+    _log_results(
+        results,
+        result_row_display_limit=(RESULT_ROW_DISPLAY_LIMIT),
+    )
+    logging.info(
+        "Only the first %d rows of each category are displayed.",
+        RESULT_ROW_DISPLAY_LIMIT,
+    )
+    if args.save_to_table:
+        logging.info(
+            "To view all results, please check the BigQuery table for each file tag at %s.%s.%s{file_tag}",
+            args.source_project_id,
+            RAW_DATA_DIFF_RESULTS_DATASET_ID,
+            _get_table_name_prefix(
+                region_code=args.region,
+                src_project_id=args.source_project_id,
+                src_ingest_instance=args.source_ingest_instance,
+                cmp_project_id=args.comparison_project_id,
+                cmp_ingest_instance=args.comparison_ingest_instance,
+            ),
+        )
+    else:
+        logging.info(
+            "To view all results, rerun with the --save-to-table flag to save to the full results to a Big Query table."
+        )
 
-    # TODO(#32737) Add option to save full table diff results to a temporary BQ table
-
-    sys.exit(0 if success else 1)
+    sys.exit(0 if not results.failed_table_results else 1)
 
 
 if __name__ == "__main__":
