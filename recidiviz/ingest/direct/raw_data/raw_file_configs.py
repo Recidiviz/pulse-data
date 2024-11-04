@@ -384,20 +384,29 @@ class RawTableColumnInfo:
         return self.field_type == RawTableColumnFieldType.DATETIME
 
     def _existed_at_datetime(self, dt: datetime) -> bool:
+        """Determines if the column existed at the given datetime."""
         if self.update_history is None:
             return True
 
-        return all(
-            (
-                change.update_type != ColumnUpdateOperation.ADDITION
-                or change.update_datetime <= dt
+        for change in self.update_history:
+            dt_precedes_addition = (
+                change.update_type == ColumnUpdateOperation.ADDITION
+                and dt < change.update_datetime
             )
-            and (
-                change.update_type != ColumnUpdateOperation.DELETION
-                or change.update_datetime > dt
+            if dt_precedes_addition:
+                return False
+
+            dt_precedes_deletion = (
+                change.update_type == ColumnUpdateOperation.DELETION
+                and dt < change.update_datetime
             )
-            for change in self.update_history
+            if dt_precedes_deletion:
+                return True
+
+        final_update_is_not_deletion = (
+            self.update_history[-1].update_type != ColumnUpdateOperation.DELETION
         )
+        return final_update_is_not_deletion
 
     def name_at_datetime(self, dt: datetime) -> Optional[str]:
         """

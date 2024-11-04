@@ -368,6 +368,10 @@ class TestRawTableColumnInfo(unittest.TestCase):
                     ColumnUpdateOperation.DELETION,
                     update_datetime=datetime(2022, 2, 1),
                 ),
+                ColumnUpdateInfo(
+                    ColumnUpdateOperation.ADDITION,
+                    update_datetime=datetime(2022, 4, 1),
+                ),
             ],
         )
         self.assertIsNone(column_info.name_at_datetime(datetime(2022, 1, 1)))
@@ -377,6 +381,9 @@ class TestRawTableColumnInfo(unittest.TestCase):
 
         self.assertIsNone(column_info.name_at_datetime(datetime(2022, 2, 1)))
         self.assertIsNone(column_info.name_at_datetime(datetime(2022, 3, 1)))
+
+        self.assertEqual(column_info.name_at_datetime(datetime(2022, 4, 1)), "COL1")
+        self.assertEqual(column_info.name_at_datetime(datetime(2022, 5, 1)), "COL1")
 
     def test_valid_update_history(self) -> None:
         # Should not raise an error
