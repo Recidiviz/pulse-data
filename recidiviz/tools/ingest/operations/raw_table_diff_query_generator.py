@@ -48,6 +48,11 @@ class RawTableDiffQueryResult:
     rows_missing_from_cmp: Sequence[RawTableDiffQueryResultRow]
     rows_with_differences: Sequence[RawTableDiffQueryResultRow]
 
+    @abc.abstractmethod
+    def build_result_rows_str(self, limit: Optional[int] = None) -> str:
+        """Builds a string representation of the result rows, returning the first `limit` rows for each category
+        if a limit is provided, otherwise returns string representation of all rows"""
+
 
 @attr.define
 class RawTableDiffQueryGenerator:

@@ -37,10 +37,6 @@ from recidiviz.tools.ingest.operations.raw_table_diff_query_generator import (
 )
 from recidiviz.utils.string import StrictStringFormatter
 
-RECIDIVIZ_COLUMNS = [
-    IS_DELETED_COL_NAME,
-]
-
 QUERY_TEMPLATE = """
 WITH src AS (
   SELECT {src_columns}
@@ -110,19 +106,30 @@ class RawTableDataDiffQueryResult(RawTableDiffQueryResult):
 
     columns_with_differences: Set[str]
 
-    def __str__(self) -> str:
+    def build_result_rows_str(self, limit: Optional[int] = None) -> str:
+        limit = limit or max(
+            len(self.rows_with_differences),
+            len(self.rows_missing_from_src),
+            len(self.rows_missing_from_cmp),
+        )
         s = ""
         if self.columns_with_differences:
             formatted_columns = "\n\t- ".join(self.columns_with_differences)
             s += f"The following {len(self.columns_with_differences)} columns had differences:\n{formatted_columns}\n\n"
         if self.rows_with_differences:
-            formatted_rows = "\n".join(str(row) for row in self.rows_with_differences)
+            formatted_rows = "\n".join(
+                str(row) for row in self.rows_with_differences[:limit]
+            )
             s += f"In the following {len(self.rows_with_differences)} rows:\n{formatted_rows}\n\n"
         if self.rows_missing_from_src:
-            formatted_rows = "\n".join(str(row) for row in self.rows_missing_from_src)
+            formatted_rows = "\n".join(
+                str(row) for row in self.rows_missing_from_src[:limit]
+            )
             s += f"The following {len(self.rows_missing_from_src)} comparison table rows had no exact primary key match in the source table:\n{formatted_rows}\n\n"
         if self.rows_missing_from_cmp:
-            formatted_rows = "\n".join(str(row) for row in self.rows_missing_from_cmp)
+            formatted_rows = "\n".join(
+                str(row) for row in self.rows_missing_from_cmp[:limit]
+            )
             s += f"The following {len(self.rows_missing_from_cmp)} source table rows had no exact primary key match in the comparison table:\n{formatted_rows}\n\n"
 
         return s
@@ -177,7 +184,7 @@ class RawTableDataDiffQueryGenerator(RawTableDiffQueryGenerator):
     ) -> List[str]:
         columns_for_comparison = [
             f"{column} AS {prefix}{column}"
-            for column in file_column_names + RECIDIVIZ_COLUMNS
+            for column in file_column_names + [IS_DELETED_COL_NAME]
         ]
         columns_for_comparison.append(
             f"{self.truncate_update_datetime_col_name} AS {prefix}{UPDATE_DATETIME_COL_NAME}"

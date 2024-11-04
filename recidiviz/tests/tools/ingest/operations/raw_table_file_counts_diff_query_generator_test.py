@@ -136,7 +136,7 @@ The following comparison table update_datetimes have no entries in the source ta
             raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
 
-        self.assertEqual(str(parsed_result), expected_msg)
+        self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)
 
     def test_diff_file_count_missing_cmp(self) -> None:
         expected_msg = """
@@ -178,7 +178,7 @@ The following source table update_datetimes have no entries in the comparison ta
             raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
 
-        self.assertEqual(str(parsed_result), expected_msg)
+        self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)
 
     def test_diff_file_count_different_id_count(self) -> None:
         expected_msg = """
@@ -227,7 +227,7 @@ update_datetime: 2024-01-26T00:00:00
             raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
 
-        self.assertEqual(str(parsed_result), expected_msg)
+        self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)
 
     def test_diff_file_count_different_row_count(self) -> None:
         expected_msg = """
@@ -271,7 +271,7 @@ update_datetime: 2024-01-26T00:00:00
             raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
 
-        self.assertEqual(str(parsed_result), expected_msg)
+        self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)
 
     def test_truncate_datetime(self) -> None:
         data = [

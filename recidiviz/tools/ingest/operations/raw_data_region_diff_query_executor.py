@@ -16,12 +16,13 @@
 # =============================================================================
 """Executes raw data comparison queries for the given file tags in a region."""
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import attr
 from google.cloud import exceptions
 from google.cloud.bigquery import QueryJob
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_utils import bq_query_job_result_to_list_of_row_dicts
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
@@ -56,13 +57,23 @@ class RawDataRegionDiffQueryExecutor:
     region_raw_file_config: DirectIngestRegionRawFileConfig = attr.ib(init=False)
     bq_client: BigQueryClientImpl = attr.ib(init=False)
 
+    save_to_table: bool = False
+    dataset_id: Optional[str] = attr.ib(default=None)
+    table_name_prefix: Optional[str] = attr.ib(default=None)
+
     def __attrs_post_init__(self) -> None:
         self.region_raw_file_config = DirectIngestRegionRawFileConfig(self.region_code)
         self.bq_client = BigQueryClientImpl(project_id=self.project_id)
+
         if self.file_tags:
             self._verify_file_tags_have_config()
         else:
             self.file_tags = list(self.region_raw_file_config.raw_file_configs.keys())
+
+        if self.save_to_table and (not self.dataset_id or not self.table_name_prefix):
+            raise ValueError(
+                "Dataset ID and table name prefix must be provided when saving to a table"
+            )
 
     def _verify_file_tags_have_config(self) -> None:
         """Verify that the provided file tags have corresponding raw file configs."""
@@ -72,6 +83,16 @@ class RawDataRegionDiffQueryExecutor:
                     f"File tag [{file_tag}] not found in region config for [{self.region_code}]"
                 )
 
+    def _get_table_address(self, file_tag: str) -> BigQueryAddress:
+        if not self.dataset_id or not self.table_name_prefix:
+            raise ValueError(
+                "Dataset ID and table name prefix must be provided when saving to a table"
+            )
+        return BigQueryAddress(
+            dataset_id=self.dataset_id,
+            table_id=f"{self.table_name_prefix}{file_tag}",
+        )
+
     def _run_queries_async(self) -> Dict[str, QueryJob]:
         """Run queries asynchronously for all relevant file tags."""
         query_jobs = {}
@@ -79,9 +100,19 @@ class RawDataRegionDiffQueryExecutor:
         for file_tag in self.file_tags:
             query_str = self.query_generator.generate_query(file_tag)
 
-            query_job = self.bq_client.run_query_async(
-                query_str=query_str, use_query_cache=True
+            query_job = (
+                self.bq_client.create_table_from_query_async(
+                    address=self._get_table_address(file_tag),
+                    query=query_str,
+                    use_query_cache=True,
+                )
+                if self.save_to_table
+                else self.bq_client.run_query_async(
+                    query_str=query_str,
+                    use_query_cache=True,
+                )
             )
+
             query_jobs[file_tag] = query_job
 
         return query_jobs

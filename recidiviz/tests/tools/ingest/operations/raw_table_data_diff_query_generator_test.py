@@ -163,7 +163,7 @@ COLUMNS WITH DIFFERENCES:
             raw_result.to_dict("records")
         )
 
-        self.assertEqual(str(parsed_result), expected_msg)
+        self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)
 
     def test_diff_data_missing_src(self) -> None:
         expected_msg = """The following 1 comparison table rows had no exact primary key match in the source table:
@@ -202,7 +202,7 @@ COL1: val4, COL2: val55555, COL3: val6, is_deleted: False
         parsed_result = self.query_generator.parse_query_result(
             raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
-        self.assertEqual(str(parsed_result), expected_msg)
+        self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)
 
     def test_diff_data_missing_cmp(self) -> None:
         expected_msg = """The following 1 source table rows had no exact primary key match in the comparison table:
@@ -241,4 +241,4 @@ COL1: val4, COL2: val5, COL3: val6, is_deleted: False
         parsed_result = self.query_generator.parse_query_result(
             raw_result.applymap(lambda x: None if pd.isna(x) else x).to_dict("records")
         )
-        self.assertEqual(str(parsed_result), expected_msg)
+        self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)
