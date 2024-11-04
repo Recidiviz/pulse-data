@@ -108,6 +108,9 @@ def create_outliers_api_blueprint() -> Blueprint:
             config.to_json(),
             snake_to_camel,
         )
+        # The FE is expecting snake case keys in the actionStrategyCopy
+        # object so we will revert the snake_to_camel for that attr
+        config_json["actionStrategyCopy"] = config.action_strategy_copy
         return jsonify({"config": config_json})
 
     @api.get("/<state>/supervisors")

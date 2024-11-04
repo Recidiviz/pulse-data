@@ -558,7 +558,7 @@ class OutliersProductConfiguration:
     # The string that represents what a state calls an absconder
     absconder_label: str = attr.ib(default="absconder")
 
-    action_strategy_copy: str = attr.ib(default=ACTION_STRATEGIES_DEFAULT_COPY)
+    action_strategy_copy: Dict = attr.ib(default=ACTION_STRATEGIES_DEFAULT_COPY)
 
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
