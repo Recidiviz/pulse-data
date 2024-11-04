@@ -27,6 +27,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
     transfer_to_no_contact_parole,
 )
 from recidiviz.task_eligibility.criteria.general import (
+    assessed_risk_low_at_least_2_years,
     at_least_12_months_since_most_recent_positive_drug_test,
     latest_drug_test_is_negative,
     no_supervision_violation_within_2_years,
@@ -34,6 +35,7 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     no_sanctions_in_past_year,
     no_warrant_within_2_years,
+    not_interstate_compact_incoming,
     not_on_life_sentence_or_lifetime_supervision,
     special_conditions_are_current,
 )
@@ -53,23 +55,20 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="SUSPENSION_OF_DIRECT_SUPERVISION",
     description=_DESCRIPTION,
-    # TODO(#33650): Ensure that this is the correct candidate population for SDS
-    # (especially with respect to ISC cases).
+    # TODO(#34432): Since ISC-out cases would be eligible for SDS, we probably want to
+    # update the candidate population to include `SUPERVISION_OUT_OF_STATE` clients
+    # (which may require the creation of a new candidate population).
     candidate_population_view_builder=parole_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         # TODO(#33627): Create additional criterion to assess whether individuals have
         # been on supervision for two years (which includes time on CR, unless they were
         # removed from CR due to a sanction). Probably needs to be state-specific
         # because of this nuance?
-        # TODO(#33632): Create additional criterion to assess whether individuals have
-        # an overall risk score of "minimum" during two-year period. (Does this need to
-        # be state-specific, or can it be general?)
+        assessed_risk_low_at_least_2_years.VIEW_BUILDER,
         # TODO(#33636): Create additional criterion to assess whether individuals are
         # meeting financial obligations as outlined in payment plan. May be able to
         # reuse existing existing criterion/criteria, or may need to create a new
         # criterion.
-        # TODO(#33634): Double-check that this general criterion for drug tests does
-        # what we need it to do for SDS! (It should be good.)
         at_least_12_months_since_most_recent_positive_drug_test.VIEW_BUILDER,
         # TODO(#33640): Double-check that this existing general criterion is correct for
         # the specific SDS requirement related to an individual's latest drug screen.
@@ -82,6 +81,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # sanctions have been ingested?
         no_sanctions_in_past_year.VIEW_BUILDER,
         no_warrant_within_2_years.VIEW_BUILDER,
+        not_interstate_compact_incoming.VIEW_BUILDER,
         # TODO(#33641): Double-check that this existing state-specific criterion is
         # correct for the specific SDS requirement that individuals not be supervised
         # under a Community Supervision for Life certificate.
