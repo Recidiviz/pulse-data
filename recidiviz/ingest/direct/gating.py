@@ -40,6 +40,8 @@ STAGING_PRIMARY_ENABLED_STATES: Set[StateCode] = {
 # all states enabled in staging primary must be enabled in staging secondary, plus the
 # states we just want to be enabled in staging secondary
 STAGING_SECONDARY_ENABLED_STATES: Set[StateCode] = {
+    StateCode.US_AR,
+    StateCode.US_AZ,
     StateCode.US_IA,
     StateCode.US_MO,
     StateCode.US_PA,
