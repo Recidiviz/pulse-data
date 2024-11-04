@@ -40,6 +40,8 @@ SELECT
     pei.external_id,
     tes.state_code,
     reasons,
+    is_eligible,
+    is_almost_eligible,
 FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_full_term_discharge_from_supervision_materialized` tes
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
 ON tes.state_code = pei.state_code 

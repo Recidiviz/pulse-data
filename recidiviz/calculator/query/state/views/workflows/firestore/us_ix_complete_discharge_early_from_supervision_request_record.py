@@ -338,6 +338,7 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
     )
         SELECT
             tes.is_eligible,
+            tes.is_almost_eligible,
             pei.external_id AS external_id,
             tes.state_code,
             tes.start_date AS eligible_start_date,

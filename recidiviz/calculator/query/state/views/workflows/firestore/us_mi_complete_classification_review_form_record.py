@@ -59,6 +59,8 @@ eligible_clients AS (
         tes.person_id,
         pei.external_id, 
         tes.reasons,
+        tes.is_eligible,
+        tes.is_almost_eligible,
         CASE
             WHEN COALESCE(sai.meets_criteria, FALSE) THEN c.recommended_supervision_level
             WHEN cses.correctional_level = 'HIGH' THEN 'MAXIMUM' 
@@ -266,6 +268,8 @@ SELECT
     ec.external_id,
     ec.state_code,
     ec.reasons,
+    ec.is_eligible,
+    ec.is_almost_eligible,
     ec.metadata_recommended_supervision_level,
     cn.case_notes,
 FROM eligible_clients ec

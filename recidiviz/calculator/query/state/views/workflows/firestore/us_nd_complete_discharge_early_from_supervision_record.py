@@ -169,7 +169,9 @@ eligible_population AS (
      state_code,
      person_id,
      start_date,
-     reasons
+     reasons,
+     is_eligible,
+     is_almost_eligible,
    FROM `{project_id}.{task_eligibility_dataset}.complete_discharge_early_from_supervision_form_materialized`
    WHERE is_eligible
     AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND DATE_SUB(end_date, INTERVAL 1 DAY)
@@ -217,6 +219,8 @@ individual_sentence_ranks AS (
         || " " 
         || INITCAP(JSON_VALUE(PARSE_JSON(dm.full_name), '$.surname')) AS probation_officer_full_name,
     te.reasons, 
+    te.is_eligible,
+    te.is_almost_eligible,
    COUNT(*) OVER(PARTITION BY person_external_id) AS number_of_sentences
   FROM dataflow_metrics dm
   INNER JOIN eligible_population te
@@ -253,6 +257,8 @@ SELECT
     sa.phone_office as form_information_states_attorney_phone_number,
     sa.email_1 as form_information_states_attorney_email_address,
     reasons,
+    is_eligible,
+    is_almost_eligible,
     number_of_sentences > 1 AS metadata_multiple_sentences,
     supervision_type = "IC PROBATION" AS metadata_out_of_state,
     supervision_level = "INTERSTATE_COMPACT" AS metadata_IC_OUT,

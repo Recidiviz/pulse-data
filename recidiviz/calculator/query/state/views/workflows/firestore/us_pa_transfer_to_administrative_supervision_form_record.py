@@ -103,7 +103,7 @@ WITH
     GROUP BY 1
   )
   SELECT
-    eligible_and_almost_eligible.* EXCEPT(is_almost_eligible),
+    eligible_and_almost_eligible.*,
     form_information.* EXCEPT(person_id, form_information_drug_charge_initial),
     (form_information_drug_charge_initial OR form_information_statue_14 OR form_information_statue_30 OR form_information_statue_37)
         AS form_information_drug_charge, -- make sure that if sub-section is checked, drug charge box is checked 

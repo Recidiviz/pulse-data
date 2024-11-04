@@ -201,6 +201,7 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
         base.state_code,
         base.reasons,
         base.is_eligible,
+        base.is_almost_eligible,
         base.ineligible_criteria,
         TO_JSON(IFNULL(programming.programs, [])) AS metadata_programs,
         TO_JSON(eligible_sentences_by_person.eligible_sentences) AS metadata_eligible_sentences,

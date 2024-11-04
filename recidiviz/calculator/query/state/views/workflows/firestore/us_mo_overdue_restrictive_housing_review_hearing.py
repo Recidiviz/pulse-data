@@ -68,6 +68,8 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_REVIEW_HEARING_RECORD_QUERY_TEMPLATE = f"""
         base.state_code,
         base.reasons,
         base.is_eligible,
+        # TODO(#34745): refactor TES almost eligible conditions to handle this
+        NOT base.is_eligible AS is_almost_eligible,
         base.eligibility_category,
         base.ineligible_criteria,
         full_record.* EXCEPT(external_id, person_id, state_code)

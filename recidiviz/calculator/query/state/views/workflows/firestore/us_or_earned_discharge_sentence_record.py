@@ -205,14 +205,18 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
                 cc.conditions,
                 active_sentences.sentence_eligibility_date
             )) AS metadata_sentence,
-            -- Override the sentence eligible flag to FALSE if the sanction criteria is not met so that cases where
-            -- the sentence criteria are met but the sanction criterion is almost met are considered almost eligible
-            -- (is_eligible=False)
-            CASE
-                WHEN "{US_OR_EARNED_DISCHARGE_SANCTIONS_CRITERIA}" IN UNNEST(active_sentences.ineligible_criteria)
-                    THEN FALSE
-                ELSE sentence_is_eligible
-            END AS is_eligible,
+            -- Override the sentence eligible flag to TRUE if both the sanction criterion AND the sentence criterion
+            -- are met
+            (
+                "{US_OR_EARNED_DISCHARGE_SANCTIONS_CRITERIA}" NOT IN UNNEST(active_sentences.ineligible_criteria)
+                AND sentence_is_eligible
+            ) AS is_eligible,
+            -- Override the sentence almost eligible flag to TRUE if the sanctions criterion is not met OR the sentence
+            -- criterion is almost eligible
+            (
+                "{US_OR_EARNED_DISCHARGE_SANCTIONS_CRITERIA}" IN UNNEST(active_sentences.ineligible_criteria)
+                OR sentence_is_almost_eligible
+            ) AS is_almost_eligible,
         FROM sentences_with_reaggregated_reasons active_sentences
         INNER JOIN `{{project_id}}.sessions.sentences_preprocessed_materialized` sp
             USING (state_code, person_id, sentence_id)
@@ -261,6 +265,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
         sentences_with_metadata.state_code,
         sentences_with_metadata.reasons,
         sentences_with_metadata.is_eligible,
+        sentences_with_metadata.is_almost_eligible,
         -- Convert the `ineligible_criteria` from person-level to sentence-level
         CASE
             -- If this span is fully eligible then `ineligible_criteria` is NULL

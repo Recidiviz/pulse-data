@@ -513,6 +513,8 @@ def us_tn_classification_forms(
    )
     SELECT tes.state_code,
            tes.reasons,
+           tes.is_eligible,
+           tes.is_almost_eligible,
            pei.external_id,
            level_care.form_information_level_of_care,
            latest_classification.form_information_latest_classification_date,

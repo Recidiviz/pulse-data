@@ -64,6 +64,7 @@ SELECT
     eae.state_code,
     eae.ineligible_criteria,
     eae.is_eligible,
+    eae.is_almost_eligible,
     JSON_QUERY_ARRAY(reasons) AS array_reasons,
     cls.lsir_level,
 FROM eligible_and_almost_eligible eae

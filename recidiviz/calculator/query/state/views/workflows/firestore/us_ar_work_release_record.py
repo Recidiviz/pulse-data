@@ -44,6 +44,8 @@ US_AR_WORK_RELEASE_RECORD_QUERY_TEMPLATE = f"""
         base.external_id,
         base.state_code,
         base.reasons,
+        base.is_eligible,
+        base.is_almost_eligible,
         resident_metadata.* EXCEPT (person_id)
     FROM base
     LEFT JOIN `{{project_id}}.workflows_views.us_ar_resident_metadata_materialized` resident_metadata
