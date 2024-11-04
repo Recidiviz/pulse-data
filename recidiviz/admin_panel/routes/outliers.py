@@ -178,19 +178,24 @@ class PromoteToProdConfigurationsAPI(MethodView):
         config_dict.pop("status")
         config_dict.pop("duplicate_write", None)
 
+        camel_config = convert_nested_dictionary_keys(
+            config_dict,
+            snake_to_camel,
+        )
+        # The FE is expecting snake case keys in the actionStrategyCopy
+        # object so we will revert the snake_to_camel for that attr
+        camel_config["actionStrategyCopy"] = config_dict["action_strategy_copy"]
+
         logging.info(
             "Making request to /configurations API in production for [%s]",
-            str(config_dict),
+            str(camel_config),
         )
 
         # Make request
         response = requests.post(
             f"https://admin-panel-prod.recidiviz.org/admin/outliers/{state_code_str.upper()}/configurations",
             headers=auth_header_for_request_to_prod(),
-            json=convert_nested_dictionary_keys(
-                config_dict,
-                snake_to_camel,
-            ),
+            json=camel_config,
             timeout=60,
         )
 

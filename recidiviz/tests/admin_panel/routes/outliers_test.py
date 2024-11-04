@@ -30,7 +30,6 @@ from flask_smorest import Api
 
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.admin_panel.routes.outliers import outliers_blueprint
-from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.persistence.database.schema.insights.schema import (
     ACTION_STRATEGIES_DEFAULT_COPY,
     Configuration,
@@ -68,13 +67,6 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
         self.client = self.app.test_client()
 
         self.headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
-
-        # The request body will camel case the keys so we camel case the default to match
-        # in the test_promote_configuration_success test
-        action_strategy_copy = json.loads(ACTION_STRATEGIES_DEFAULT_COPY)
-        self.action_strategy_copy_camel = {
-            snake_to_camel(k): v for k, v in action_strategy_copy.items()
-        }
 
         with self.app.test_request_context():
             self.enabled_states = flask.url_for(
@@ -360,7 +352,7 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
                             "abscondersLabel": "absconders",
                             "atOrAboveRateLabel": "At or above statewide rate",
                             "docLabel": "DOC",
-                            "actionStrategyCopy": self.action_strategy_copy_camel,
+                            "actionStrategyCopy": ACTION_STRATEGIES_DEFAULT_COPY,
                         }
                     ),
                 ],
