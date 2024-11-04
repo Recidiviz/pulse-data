@@ -422,11 +422,12 @@ def get_admin_blueprint(
                     value = {
                         "agency_id": agency_id,
                         "user_account_id": user_json.get("user_account_id"),
+                        "role": (
+                            schema.UserAccountRole[user_json.get("role")]
+                            if user_json.get("role")
+                            else None
+                        ),
                     }
-
-                    if user_json.get("role") is not None:
-                        value["role"] = schema.UserAccountRole[user_json.get("role")]
-
                     values.append(value)
             if len(values) > 0:
                 insert_statement = insert(schema.AgencyUserAccountAssociation).values(
