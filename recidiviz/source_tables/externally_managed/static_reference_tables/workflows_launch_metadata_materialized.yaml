@@ -20,4 +20,7 @@ schema:
   - name: is_fully_launched
     type: BOOLEAN
     mode: NULLABLE
+  - name: launch_date
+    type: DATE
+    mode: NULLABLE
 clustering_fields: null
