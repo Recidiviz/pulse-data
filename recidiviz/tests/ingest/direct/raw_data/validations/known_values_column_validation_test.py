@@ -16,6 +16,7 @@
 # =============================================================================
 """Unit tests for known_values_column_validation.py."""
 
+import datetime
 from typing import Dict, List, Optional, Type
 
 import attr
@@ -46,17 +47,13 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.known_values = ["a", "b", "c"]
-        self.known_values_enums = [
-            ColumnEnumValueInfo(value=x, description="descript")
-            for x in self.known_values
-        ]
         self.happy_col = attr.evolve(
             self.happy_col,
-            known_values=self.known_values_enums,
+            known_values=self._known_values_strings_to_enums(self.known_values),
         )
         self.sad_col = attr.evolve(
             self.sad_col,
-            known_values=self.known_values_enums,
+            known_values=self._known_values_strings_to_enums(self.known_values),
         )
 
     def get_validation_class(self) -> Type[RawDataColumnImportBlockingValidation]:
@@ -66,6 +63,13 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
         return [
             {self.happy_col_name: "a", self.sad_col_name: "b"},
             {self.happy_col_name: "b", self.sad_col_name: "z"},
+        ]
+
+    def _known_values_strings_to_enums(
+        self, known_values: List[str]
+    ) -> List[ColumnEnumValueInfo]:
+        return [
+            ColumnEnumValueInfo(value=x, description="descript") for x in known_values
         ]
 
     def test_build_query_empty_known_values(self) -> None:
@@ -130,3 +134,44 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
                 non_known_values_column, raw_file_config
             )
         )
+
+    def test_query_properly_escapes_backslash(self) -> None:
+        known_values = ["a\\b", "c\\d"]
+        happy_col = attr.evolve(
+            self.happy_col,
+            known_values=self._known_values_strings_to_enums(known_values),
+        )
+        validation = KnownValuesColumnValidation.create_column_validation(
+            file_tag=self.file_tag,
+            project_id=self.project_id,
+            temp_table_address=self.temp_table_address,
+            file_upload_datetime=datetime.datetime.now(),
+            column=happy_col,
+        )
+        expected_query = rf"""
+SELECT {self.happy_col_name}
+FROM {self.project_id}.{self.temp_table_address.dataset_id}.{self.temp_table_address.table_id}
+WHERE {self.happy_col_name} IS NOT NULL AND {self.happy_col_name} NOT IN ("a\\b", "c\\d")
+LIMIT 1
+"""
+        self.assertEqual(validation.build_query(), expected_query)
+
+        known_values = ["\\"]
+        happy_col = attr.evolve(
+            self.happy_col,
+            known_values=self._known_values_strings_to_enums(known_values),
+        )
+        validation = KnownValuesColumnValidation.create_column_validation(
+            file_tag=self.file_tag,
+            project_id=self.project_id,
+            temp_table_address=self.temp_table_address,
+            file_upload_datetime=datetime.datetime.now(),
+            column=happy_col,
+        )
+        expected_query = rf"""
+SELECT {self.happy_col_name}
+FROM {self.project_id}.{self.temp_table_address.dataset_id}.{self.temp_table_address.table_id}
+WHERE {self.happy_col_name} IS NOT NULL AND {self.happy_col_name} NOT IN ("\\")
+LIMIT 1
+"""
+        self.assertEqual(validation.build_query(), expected_query)
