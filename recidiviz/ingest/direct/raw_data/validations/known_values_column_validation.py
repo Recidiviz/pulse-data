@@ -22,6 +22,7 @@ import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    ColumnEnumValueInfo,
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
 )
@@ -48,6 +49,10 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
 
     known_values: List[str]
 
+    @staticmethod
+    def _get_escaped_known_values(known_values: List[ColumnEnumValueInfo]) -> List[str]:
+        return [known_value.value.replace("\\", "\\\\") for known_value in known_values]
+
     @classmethod
     def create_column_validation(
         cls,
@@ -69,7 +74,7 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
             temp_table_address=temp_table_address,
             file_tag=file_tag,
             column_name=temp_table_col_name,
-            known_values=[known_value.value for known_value in column.known_values],
+            known_values=cls._get_escaped_known_values(column.known_values),
         )
 
     @staticmethod
