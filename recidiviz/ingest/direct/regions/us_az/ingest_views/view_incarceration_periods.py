@@ -49,18 +49,20 @@ SELECT DISTINCT
   UPPER(REPLACE(jail_lookup.DESCRIPTION, 'Court in ', '')) AS jail_location, 
 -- For some reason hospital locations sometimes say "Court in XX County"
   UPPER(REPLACE(REPLACE(hospital_lookup.DESCRIPTION, 'Court in ', ''), 'Hospital in ', '')) AS hospital_location,
+  -- TODO(#34785): Clarify why there are sometimes mismatches between the LOCATOR_CODE_ID, UNIT_ID, and PRISON_ID.
+  -- Whenever possible, simplify this logic. Ideally, we would use only LOCATOR_CODE_ID as a location source.
+  COALESCE(locator.LOCATOR_NAME, unit.UNIT_NAME) AS location_name,
   traffic.LOCATOR_CODE_ID, 
-  traffic.UNIT_ID, 
-  traffic.PRISON_ID,
+  prison.prison_name AS prison_name
 FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY} traffic
 LEFT JOIN {DOC_EPISODE} ep
   USING (DOC_ID)
 LEFT JOIN {AZ_DOC_MOVEMENT_CODES} mvmt_codes
   USING(MOVEMENT_CODE_ID) 
-LEFT JOIN {LOOKUPS} prison_lookup
-  ON(PRISON_ID = prison_lookup.LOOKUP_ID)
-LEFT JOIN {LOOKUPS} unit_lookup
-  ON(UNIT_ID = unit_lookup.LOOKUP_ID)
+LEFT JOIN {AZ_DOC_PRISON} prison
+  ON(traffic.PRISON_ID = prison.PRISON_ID)
+LEFT JOIN {AZ_DOC_UNIT} unit
+  ON(traffic.UNIT_ID = unit.UNIT_ID)
 LEFT JOIN {LOOKUPS} action_lookup
 -- This field establishes what the right course of action is regarding the period as a 
 -- result of this movement (close, open, or reopen)
@@ -127,9 +129,9 @@ SELECT DISTINCT
   CAST(NULL AS STRING) AS HOUSING_UNIT_DETAIL,
   CAST(NULL AS STRING) AS jail_location,
   CAST(NULL AS STRING) AS hospital_location,
+  CAST(NULL AS STRING) AS location_name,
   CAST(NULL AS STRING) AS LOCATOR_CODE_ID,
-  CAST(NULL AS STRING) AS UNIT_ID,
-  CAST(NULL AS STRING) AS PRISON_ID,
+  CAST(NULL AS STRING) AS prison_name,
 FROM {DOC_CLASSIFICATION} class
 LEFT JOIN {LOOKUPS} custody_lookup
 ON(CUSTODY_DISCIPLINE_LEVEL_ID = custody_lookup.LOOKUP_ID)
@@ -154,10 +156,10 @@ carry_forward_attributes AS (
     DOC_ID,    
     -- prioritize classification custody levels as we assume they are more reliable for the time being
     LAST_VALUE(CLASSIFICATION_CUSTODY_LEVEL IGNORE NULLS) OVER person_window AS custody_level,
-    LAST_VALUE(LOCATOR_CODE_ID IGNORE NULLS) OVER person_window AS locator_code_id,
-    LAST_VALUE(UNIT_ID IGNORE NULLS) OVER person_window AS unit_id,
-    LAST_VALUE(PRISON_ID IGNORE NULLS) OVER person_window AS prison_id,
-    LAST_VALUE(HOUSING_UNIT_DETAIL IGNORE NULLS) OVER person_window AS housing_unit_detail,
+    location_name,
+    locator_code_id,
+    LAST_VALUE(prison_name IGNORE NULLS) OVER person_window AS prison_name,
+    housing_unit_detail,
     jail_location,
     hospital_location,
     COALESCE(MOVEMENT_DATE, CLASSIFICATION_DATE) AS period_start_date,
@@ -168,16 +170,18 @@ carry_forward_attributes AS (
     CASE  
       WHEN MOVEMENT_DESCRIPTION LIKE 'CREATE-%' OR MOVEMENT_DESCRIPTION LIKE 'REOPEN-%' THEN 1
       WHEN MOVEMENT_DESCRIPTION = 'CLASSIFICATION' THEN 2
-      WHEN MOVEMENT_DESCRIPTION LIKE 'NULL-%' AND MOVEMENT_DESCRIPTION NOT LIKE '%-Release ISC' THEN 3
-      WHEN MOVEMENT_DESCRIPTION = 'NULL-Release ISC' THEN 4
-      WHEN MOVEMENT_DESCRIPTION LIKE 'CLOSE-%' THEN 5
+      WHEN MOVEMENT_DESCRIPTION LIKE 'NULL-%Out%' THEN 3
+      WHEN MOVEMENT_DESCRIPTION LIKE 'NULL-Return%' THEN 4
+      WHEN MOVEMENT_DESCRIPTION LIKE 'NULL-Transfer In%' then 5
+      WHEN MOVEMENT_DESCRIPTION = 'NULL-Release ISC' THEN 6
+      WHEN MOVEMENT_DESCRIPTION LIKE 'CLOSE-%' THEN 7
     END AS action_ranking
     FROM all_dates
   )
-  WINDOW person_window AS (PARTITION BY PERSON_ID, DOC_ID ORDER BY COALESCE(MOVEMENT_DATE,CLASSIFICATION_DATE),
+WINDOW person_window AS (PARTITION BY PERSON_ID, DOC_ID ORDER BY COALESCE(MOVEMENT_DATE,CLASSIFICATION_DATE),
   action_ranking,
   --deterministically sort when people are in multiple locations at the same time
-  locator_code_id, prison_id, unit_id, hospital_location, jail_location, CLASSIFICATION_CUSTODY_LEVEL, housing_unit_detail
+  locator_code_id, prison_name, hospital_location, jail_location, CLASSIFICATION_CUSTODY_LEVEL, housing_unit_detail
   ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
 ),
 -- Create periods based on the critical dates with all attributes carried forward as appropriate.
@@ -186,9 +190,9 @@ periods AS (
   SELECT DISTINCT
     PERSON_ID,
     DOC_ID,
+    location_name,
     locator_code_id,
-    unit_id,
-    prison_id,
+    prison_name,
     housing_unit_detail,
     jail_location,
     hospital_location,
@@ -210,8 +214,8 @@ periods AS (
   -- when both movements begin with NULL, order deterministically (these are all internal movements & are doubled, one OUT and one IN)
   MOVEMENT_DESCRIPTION DESC,
   -- There is exactly one case of a person being in two locations with all other things being equal. This sorts the two rows deterministically.
-  locator_code_id, prison_id, unit_id, hospital_location, jail_location, custody_level, housing_unit_detail)
-)
+  locator_code_id, prison_name, hospital_location, jail_location, custody_level, housing_unit_detail)
+  )
 -- Each of these conditions helps avoid including classifications that happen after a
 -- period has closed, which incorrectly keeps periods open forever.
 -- 1. Exclude events that come directly after period closures, but are not period openings.
@@ -234,30 +238,6 @@ AND NOT (
   -- for this to be NULL, there must be no OPEN or REOPEN movements associated with this 
   -- person & incarceration stint
   AND LATEST_INTAKE_DATE IS NULL)
-), 
--- Transform location codes to human-readable location names.
-decode_locations AS (
-  SELECT DISTINCT
-    PERSON_ID,
-    DOC_ID,
-    COALESCE(locator.LOCATOR_NAME, unit.UNIT_NAME) AS location_name,
-    prison.PRISON_NAME AS prison_name,
-    housing_unit_detail,
-    jail_location,
-    hospital_location,
-    custody_level,
-    start_date,
-    end_date,
-    start_reason,
-    end_reason,
-    action_ranking
-  FROM periods
-  LEFT JOIN {AZ_DOC_LOCATOR_CODE} locator
-    ON(periods.LOCATOR_CODE_ID=locator.LOCATOR_CODE_ID AND locator.ACTIVE='Y')
-  LEFT JOIN {AZ_DOC_UNIT} unit
-    ON(periods.UNIT_ID = unit.UNIT_ID AND unit.ACTIVE = 'Y')
-  LEFT JOIN {AZ_DOC_PRISON} prison
-    ON(periods.PRISON_ID = prison.PRISON_ID AND prison.ACTIVE = 'Y')
 )
 SELECT DISTINCT
   PERSON_ID,
@@ -277,7 +257,7 @@ SELECT DISTINCT
   action_ranking,
   -- deterministically sort movements that happened on the same day with the same period logic
   start_reason, end_reason, location_name, housing_unit_detail, custody_level) AS period_seq
-FROM decode_locations
+FROM periods
 WHERE PERSON_ID IS NOT NULL
 AND start_reason NOT LIKE "CLOSE-%" 
 AND start_reason NOT LIKE "%-Release ISC"
