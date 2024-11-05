@@ -61,9 +61,7 @@ columns:
       - value: 83
         description: Deceased
   - name: Cis_4009_Cons_Conc_Cd
-    description:
-      This identifies whether the sentence is concurrent, non-concurrent or
-      consecutive.
+    description: This identifies whether the sentence is concurrent, non-concurrent or consecutive.
     known_values:
       - value: 20
         description: Concurrent
@@ -137,8 +135,8 @@ columns:
         description: Pending - The court order is still in progress
       - value: 11
         description:
-          Court Sanction - Client does not have a term to serve but has
-          restitution fines due
+          Court Sanction - Client does not have a term to serve but has restitution
+          fines due
       - value: 2
         description: Committed - The incarceration sentence has started
       - value: 3
@@ -146,9 +144,7 @@ columns:
       - value: 4
         description: Probation - The probation sentence has started
       - value: 7
-        description:
-          Tolled - The client is in a violation period and awaiting an outcome
-          decision
+        description: Tolled - The client is in a violation period and awaiting an outcome decision
   - name: Cis_4012_Crt_Order_Type_Cd
     description: The court order type description.
     known_values:
@@ -225,8 +221,8 @@ columns:
   - name: Cis_908_Ccs_Location_Id
   - name: Cis_9902_Court_Cd
     description:
-      The court where the order originated from, see CIS_9902_COURT for all
-      possible values.
+      The court where the order originated from, see CIS_9902_COURT for all possible
+      values.
   - name: Cis_9904_Judge_Prof_Id
     is_pii: True
     description: The ID of the professional (judge or justice) who tried the court case.
@@ -240,8 +236,8 @@ columns:
       Additional information about the community override code
   - name: Comm_Override_Rel_Date
     description:
-      The overridden release date for a community supervision status. Updates to
-      this date are also reflected in the CIS_319_TERM table.
+      The overridden release date for a community supervision status. Updates to this
+      date are also reflected in the CIS_319_TERM table.
     field_type: datetime
   - name: Comm_Override_Rel_Ind
   - name: Comm_Rel_Date
@@ -249,14 +245,14 @@ columns:
     field_type: datetime
   - name: Comments_Tx
     description:
-      Free text field with comments about sentences. Days in county jail are
-      usually described here.
+      Free text field with comments about sentences. Days in county jail are usually
+      described here.
     is_pii: True
   - name: Count_Num
   - name: Court_Finding_Date
     description:
-      The date that the finding of the court was made, e.g. when conviction or
-      acquittal occurred.
+      The date that the finding of the court was made, e.g. when conviction or acquittal
+      occurred.
     field_type: datetime
   - name: Court_Order_Date
   - name: Court_Order_Id
@@ -267,23 +263,23 @@ columns:
   - name: Created_By_Tx
     is_pii: True
   - name: Created_On_Date
+    description: Date the record was created.
+    field_type: datetime
   - name: Csw_Comments_Tx
   - name: Csw_Due_Date
   - name: Csw_Hours_Num
   - name: Csw_Sus_Hours_Num
   - name: Csw_Total_Hours_Num
   - name: Curr_Cust_Rel_Date
-    description:
-      The most current custody release date, with adjusted good time factored
-      in.
+    description: The most current custody release date, with adjusted good time factored in.
     field_type: datetime
   - name: Cust_Override_Notes_Tx
     description: |-
       Additional information about the custody override code
   - name: Cust_Override_Rel_Date
     description:
-      The overridden release date for a release from custody. Updates to this
-      date are also reflected in the CIS_319_TERM table.
+      The overridden release date for a release from custody. Updates to this date are
+      also reflected in the CIS_319_TERM table.
     field_type: datetime
   - name: Cust_Override_Rel_Ind
   - name: Days_Earned_Num
@@ -323,6 +319,8 @@ columns:
   - name: Modified_By_Tx
     is_pii: True
   - name: Modified_On_Date
+    field_type: datetime
+    description: Date the record was updated.
   - name: Other_Court_Desc_Tx
     is_pii: True
   - name: Pre_Disp_Crt_App_Date
@@ -340,8 +338,8 @@ columns:
     description: The number of years in the probation sentence.
   - name: Probation_Term_Ind
     description:
-      Indicates that this is a sentence to a period of incarceration as a result
-      of the revocation of probation.
+      Indicates that this is a sentence to a period of incarceration as a result of the
+      revocation of probation.
   - name: Process_Adjustment_Ind
   - name: Resentence_Comments_Tx
     is_pii: True
@@ -366,24 +364,24 @@ columns:
     description: The number of years in the revocation sentence.
   - name: Serve_Days_Num
     description:
-      The number of days in the DOC facility sentence (with all suspended time
-      taken into account).
+      The number of days in the DOC facility sentence (with all suspended time taken
+      into account).
   - name: Serve_Mths_Num
     description:
-      The number of months in the DOC facility sentence (with all suspended time
-      taken into account).
+      The number of months in the DOC facility sentence (with all suspended time taken
+      into account).
   - name: Serve_Yrs_Num
     description:
-      The number of years in the DOC facility sentence (with all suspended time
-      taken into account).
+      The number of years in the DOC facility sentence (with all suspended time taken
+      into account).
   - name: Shock_Prob_Days_Num
     description:
       The number of days in the shock probation sentence, which only applies to
       juveniles.
   - name: Shock_Prob_Mths_Num
     description:
-      The number of months in the shock probation sentence, which only applies
-      to juveniles.
+      The number of months in the shock probation sentence, which only applies to
+      juveniles.
   - name: Shock_Prob_Yrs_Num
     description:
       The number of years in the shock probation sentence, which only applies to
