@@ -290,14 +290,16 @@ def compare_table_or_view(
     if ignore_columns:
         for ignore_col in ignore_columns:
             # Raise an error if the ignore column is not found in at least one of the tables
-            if (ignore_col not in all_column_names) or (
+            if (ignore_col not in all_column_names) and (
                 ignore_col not in new_all_column_names
             ):
                 raise ValueError(
                     f"Column to ignore [{ignore_col}] not found in either table"
                 )
-            all_column_names.remove(ignore_col)
-            new_all_column_names.remove(ignore_col)
+            if ignore_col in all_column_names:
+                all_column_names.remove(ignore_col)
+            if ignore_col in new_all_column_names:
+                new_all_column_names.remove(ignore_col)
 
         # Drop the ignore columns before generating the comparison queries below
         columns_df = columns_df[~columns_df["column_name"].isin(ignore_columns)]
