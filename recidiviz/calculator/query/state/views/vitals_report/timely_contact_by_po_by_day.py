@@ -42,7 +42,7 @@ WITH overdue_contacts AS (
         supervising_officer_external_id,
         IFNULL(level_1_supervision_location_external_id, 'UNKNOWN') as level_1_supervision_location_external_id,
         IFNULL(level_2_supervision_location_external_id, 'UNKNOWN') as level_2_supervision_location_external_id,
-        COUNT (DISTINCT( IF(next_recommended_face_to_face_date <= date_of_supervision, person_id, NULL))) as total_overdue,
+        COUNT (DISTINCT( IF(next_recommended_face_to_face_date < date_of_supervision, person_id, NULL))) as total_overdue,
     FROM `{project_id}.{shared_metric_views_dataset}.supervision_case_compliance_metrics_materialized` compliance
     -- Only count metrics of people who were active officers in the time period we care about
     INNER JOIN `{project_id}.{vitals_views_dataset}.supervision_officers_and_districts_materialized` officers
