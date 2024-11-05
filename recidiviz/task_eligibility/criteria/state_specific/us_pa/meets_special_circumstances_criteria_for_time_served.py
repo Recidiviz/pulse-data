@@ -17,17 +17,14 @@
 """Describes spans of time during which a candidate is potentially eligible for
     special circumstances supervision due to the time they've served on supervision,
     according to the following logic:
-    1. life sentence: must serve 7 years on supervision
-    2. non-life sentence for violent case: must serve 5 years on supervision
-    3. non-life sentence for non-violent case: must serve 3 years on supervision
-    4. special case: must serve 1 year on supervision
+    1. special case: must serve 1 year on supervision
+    2. life sentence: must serve 7 years on supervision
+    3. non-life sentence for violent case: must serve 5 years on supervision
+    4. non-life sentence for non-violent case: must serve 3 years on supervision
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
-    nonnull_end_date_exclusive_clause,
-)
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -53,47 +50,58 @@ _CRITERIA_NAME = "US_PA_MEETS_SPECIAL_CIRCUMSTANCES_CRITERIA_FOR_TIME_SERVED"
 _DESCRIPTION = """Describes spans of time during which a candidate is potentially eligible for
     special circumstances supervision due to the time they've served on supervision,
     according to the following logic:
-    1. life sentence: must serve 7 years on supervision
-    2. non-life sentence for violent case: must serve 5 years on supervision
-    3. non-life sentence for non-violent case: must serve 3 years on supervision
-    4. special case: must serve 1 year on supervision
+    1. special case: must serve 1 year on supervision
+    2. life sentence: must serve 7 years on supervision
+    3. non-life sentence for violent case: must serve 5 years on supervision
+    4. non-life sentence for non-violent case: must serve 3 years on supervision
 """
 
 _QUERY_TEMPLATE = f"""
-WITH supervision_starts_with_assessments AS (
-/* This CTE finds start dates for all active supervision starts and joins the first assessment done within that supervision
- super session */ 
-  SELECT
-    sup.state_code,
-    sup.person_id,
-    sup.start_date,
-    sup.end_date_exclusive AS end_date,
-    sup.supervision_super_session_id,
-    assessment_level,
-  FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` sup
-  LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` sap
-    ON sup.state_code = sap.state_code
-    AND sup.person_id = sap.person_id 
-    AND sap.assessment_date BETWEEN sup.start_date AND {nonnull_end_date_exclusive_clause('sup.end_date_exclusive')}
-  --only choose the first assessment score within a supervision super session
-  WHERE sup.state_code = "US_PA"
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY sup.person_id, sup.start_date, sup.end_date_exclusive ORDER BY sap.assessment_date)=1
-),
-sentence_spans_with_info AS (
+WITH sentence_spans AS (
 /* This CTE groups sentences by sentence span start_date and end_date, and adds relevant information on 
     whether the sentence is a life sentence */ 
-  SELECT
-    span.state_code,
-    span.person_id,
-    span.start_date,
-    span.end_date,
-    LOGICAL_OR(life_sentence) AS is_life_sentence,
-  FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-  UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-  INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
-    USING (state_code, person_id, sentences_preprocessed_id)
-  WHERE state_code = "US_PA"
-  GROUP BY 1,2,3,4
+    SELECT
+        span.state_code,
+        span.person_id,
+        span.start_date,
+        span.end_date,
+        LOGICAL_OR(life_sentence) AS life_sentence_ind,
+    FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
+    UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+        USING (state_code, person_id, sentences_preprocessed_id)
+    WHERE state_code = "US_PA"
+    GROUP BY 1,2,3,4
+),
+supervision_spans AS (
+/* This CTE pulls supervision super sessions and joins
+        1) the first assessment done within each supervision period
+        2) the sentence span that overlaps with the beginning of each supervision period */
+    SELECT
+        sup.state_code,
+        sup.person_id,
+        sup.start_date,
+        sup.end_date_exclusive AS end_date,
+        CASE WHEN life_sentence_ind THEN 'life sentence'
+            WHEN assessment_level IN ('MINIMUM', 'MEDIUM') THEN  'non-life sentence (violent case)' -- placeholder while we wait for strong-r data
+            ELSE 'non-life sentence (non-violent case)' 
+        END AS case_type,
+        sup.start_date AS supervision_super_session_start_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` sup
+    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` sap
+        ON sup.state_code = sap.state_code
+        AND sup.person_id = sap.person_id 
+        AND sap.assessment_date BETWEEN sup.start_date AND {nonnull_end_date_clause('sup.end_date')}
+    LEFT JOIN sentence_spans sent
+    --sentence spans are joined such that they overlap with the start of a supervision super session 
+    --this way, there is only one sentence span associated with a supervision super session 
+        ON sup.state_code = sent.state_code
+        AND sup.person_id = sent.person_id
+        AND sent.start_date <= sup.start_date
+        AND {nonnull_end_date_clause('sent.end_date')} > sup.start_date
+    WHERE sup.state_code = "US_PA"
+    --only choose the first assessment score within a supervision super session
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY sup.person_id, sup.start_date, sup.end_date_exclusive ORDER BY sap.assessment_date)=1
 ),
 special_case_spans AS (
 /* This CTE pulls all spans where someone is serving a special case */
@@ -101,96 +109,79 @@ special_case_spans AS (
         person_id,
         start_date,
         termination_date AS end_date,
-        TRUE AS is_special_case,
+        'special probation or parole case' AS case_type,
+        CAST(NULL AS DATE) AS supervision_super_session_start_date,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
     WHERE state_code = 'US_PA'
         AND {case_when_special_case()} THEN TRUE ELSE FALSE END
 ),
-/* the below CTE creates and de-dupes sub-sessions in case someone is serving multiple overlapping special cases at once */
-{create_sub_sessions_with_attributes('special_case_spans')} 
-, deduped_special_case_spans AS (
-    SELECT distinct 
-        state_code,
-        person_id,
-        start_date,
+all_spans AS (
+    SELECT * FROM supervision_spans
+    UNION ALL  
+    SELECT * FROM special_case_spans
+),
+{create_sub_sessions_with_attributes('all_spans')}, 
+sub_sessions_with_priority AS (
+/* this CTE de-dupes and assigns priority to one case type if someone is serving multiple in one sub-session */
+    SELECT state_code, 
+        person_id, 
+        start_date, 
         end_date,
-        is_special_case,
-     FROM sub_sessions_with_attributes
+        CASE WHEN LOGICAL_OR(case_type = 'special probation or parole case') THEN 'special probation or parole case'
+             WHEN LOGICAL_OR(case_type = 'life sentence') THEN 'life sentence'
+             WHEN LOGICAL_OR(case_type = 'non-life sentence (violent case)') THEN 'non-life sentence (violent case)'
+             WHEN LOGICAL_OR(case_type = 'non-life sentence (non-violent case)') THEN 'non-life sentence (non-violent case)'
+        ELSE NULL END AS case_type, 
+        MAX(supervision_super_session_start_date) AS supervision_start_date -- take non-null value from super sessions, rather than null value from special case spans
+    FROM sub_sessions_with_attributes
+    GROUP BY 1, 2, 3, 4
+    HAVING(MAX(supervision_super_session_start_date) IS NOT NULL) 
+        -- this filters out any spans where we see a special case sub-session (pulled from normalized state supervision period) 
+        -- but no supervision sub-session (pulled from supervision super sessions) 
+        -- in these instances, the client is likely incarcerated and the span should not count as time on supervision
 ),
-agg_special_case_spans AS (
-/* this aggregates the sub_sessions to create continuous spans where someone is serving a special case */
-{aggregate_adjacent_spans(table_name='deduped_special_case_spans', attribute = 'is_special_case')}
-),
-supervision_starts_with_priority AS (
-/* Here, supervision starts are given a case type, which determine how long someone has to spend on supervision
-  before being eligible. This type is determined on their status at the beginning of their supervision super session */ 
-  SELECT
-    ss.state_code,
-    ss.person_id,
-    ss.start_date,
-    ss.end_date,
-    ss.supervision_super_session_id,
-    CASE WHEN is_special_case THEN 'special probation or parole case'
-        WHEN is_life_sentence THEN 'life sentence'
-        WHEN assessment_level IN ('MINIMUM', 'MEDIUM') THEN 'non-life sentence (violent case)' # placeholder while we wait for strong-r data 
-        ELSE 'non-life sentence (non-violent case)'
-        END AS case_type,
-  FROM supervision_starts_with_assessments ss
-  --sentence spans are joined such that they overlap with the start of a supervision super session and therefore
-  --an entire supervision super session has only one case type 
-  LEFT JOIN sentence_spans_with_info q
-    ON ss.state_code = q.state_code
-    AND ss.person_id = q.person_id
-    AND q.start_date <= ss.start_date
-    AND {nonnull_end_date_clause('q.end_date')} > ss.start_date
-  LEFT JOIN agg_special_case_spans scs
-    ON ss.state_code = scs.state_code
-    AND ss.person_id = scs.person_id
-    AND scs.start_date <= ss.start_date
-    AND {nonnull_end_date_clause('scs.end_date')} > ss.start_date
+supervision_spans_with_priority AS (
+    {aggregate_adjacent_spans(table_name = 'sub_sessions_with_priority', attribute = ['case_type', 'supervision_start_date'])}
 ),
 critical_date_spans AS (
 /* This CTE assigns the critical date as 1, 3, 5, or 7 years from the supervision super session start
-    depending on the priority level assigned in supervision_starts_with_priority. It also assigns 
-    case type and years required to serve, which are eventually displayed as reasons */
+    depending on the case type */
   SELECT 
     person_id,
     state_code,
     start_date as start_datetime,
     end_date as end_datetime,
     case_type,
-    CASE
-        WHEN case_type = 'special probation or parole case' THEN DATE_ADD(start_date, INTERVAL 1 YEAR)
-        WHEN case_type = 'life sentence' THEN DATE_ADD(start_date, INTERVAL 7 YEAR)
-        WHEN case_type = 'non-life sentence (violent case)' THEN DATE_ADD(start_date, INTERVAL 5 YEAR)
-        WHEN case_type = 'non-life sentence (non-violent case)' THEN DATE_ADD(start_date, INTERVAL 3 YEAR)
+    CASE WHEN case_type = 'special probation or parole case' THEN DATE_ADD(supervision_start_date, INTERVAL 1 YEAR)
+        WHEN case_type = 'life sentence' THEN DATE_ADD(supervision_start_date, INTERVAL 7 YEAR)
+        WHEN case_type = 'non-life sentence (violent case)' THEN DATE_ADD(supervision_start_date, INTERVAL 5 YEAR)
+        WHEN case_type = 'non-life sentence (non-violent case)' THEN DATE_ADD(supervision_start_date, INTERVAL 3 YEAR)
         ELSE NULL
     END AS critical_date,
-    CASE
-        WHEN case_type = 'special probation or parole case' THEN 1
+    CASE WHEN case_type = 'special probation or parole case' THEN 1
         WHEN case_type = 'life sentence' THEN 7
         WHEN case_type = 'non-life sentence (violent case)' THEN 5
         WHEN case_type = 'non-life sentence (non-violent case)' THEN 3
         ELSE NULL
     END AS years_required_to_serve,
-  FROM supervision_starts_with_priority 
+  FROM supervision_spans_with_priority
 ),
 {critical_date_has_passed_spans_cte(attributes=['case_type', 'years_required_to_serve'])}
 SELECT
-    cd.state_code,
-    cd.person_id,
-    cd.start_date,
-    cd.end_date,
-    cd.critical_date_has_passed AS meets_criteria,
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    critical_date_has_passed AS meets_criteria,
     TO_JSON(STRUCT(
-        cd.case_type AS case_type,
-        cd.years_required_to_serve AS years_required_to_serve,
-        cd.critical_date AS eligible_date
+        case_type,
+        years_required_to_serve,
+        critical_date AS eligible_date
     )) AS reason,
-    cd.case_type AS case_type,
-    cd.years_required_to_serve AS years_required_to_serve,
-    cd.critical_date AS eligible_date,
-FROM critical_date_has_passed_spans cd
+    case_type,
+    years_required_to_serve,
+    critical_date AS eligible_date,
+FROM critical_date_has_passed_spans
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
