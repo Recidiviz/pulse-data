@@ -1,9 +1,6 @@
 # Configuration for which validations to run for region US_AZ.
 region_code: US_AZ
 exclusions:
-  - validation_name: sentence_comparison
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: AZ is being hydrated only with v2 sentences
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: AZ is being hydrated only with v2 sentences

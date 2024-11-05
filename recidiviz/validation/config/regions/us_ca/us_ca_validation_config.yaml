@@ -15,9 +15,6 @@ exclusions:
   - validation_name: sessions_missing_closest_sentence_imposed_group
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: TODO(#20922) -- We haven't hydrated sentences yet
-  - validation_name: sentence_comparison
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: TODO(#20922) -- We haven't hydrated sentences yet
 max_allowed_error_overrides:
   - validation_name: state_supervision_period_by_termination_date_stable_counts
     hard_max_allowed_error_override: .32
