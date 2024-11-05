@@ -26,6 +26,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
     early_release_to_drug_program_not_overdue,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
+    acis_dtp_date_not_set,
     enrolled_in_functional_literacy,
     meets_functional_literacy,
     no_domestic_violence_conviction,
@@ -78,7 +79,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             sub_criteria_list=[
                 no_dtp_denial_in_current_incarceration.VIEW_BUILDER,
                 not_previous_dtp_participant.VIEW_BUILDER,
-                # TODO(#34802): acis_dtp_date_not_set.VIEW_BUILDER,
+                acis_dtp_date_not_set.VIEW_BUILDER,
             ],
             allowed_duplicate_reasons_keys=[],
         ),
