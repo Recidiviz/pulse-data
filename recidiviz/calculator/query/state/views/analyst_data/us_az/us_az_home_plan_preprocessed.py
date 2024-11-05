@@ -43,11 +43,14 @@ SELECT DISTINCT
     CAST(det.HOME_PLAN_DETAIL_ID AS INT64) AS HOME_PLAN_DETAIL_ID,
     MAX(CAST(det.HOME_PLAN_DETAIL_ID AS INT64)) OVER (PARTITION BY DOC_ID) AS MAX_HOME_PLAN_DETAIL_ID,
     IS_HOMELESS_REQUEST, 
-    CASE WHEN 
-        status.DESCRIPTION IN ('Address Denied', 'CCO SUP', 'COIII', 'CCO', 'COIV', 'Release Unit', 'CCL') THEN 'HOME PLAN IN PROGRESS'
-        WHEN status.DESCRIPTION IS NULL THEN 'HOME PLAN NOT STARTED'
-        WHEN status.DESCRIPTION = 'Address Approved' THEN 'HOME PLAN APPROVED'
-        WHEN status.DESCRIPTION = 'Cancelled' THEN 'HOME PLAN CANCELLED'
+    CASE  
+        WHEN status.DESCRIPTION = 'Address Approved' THEN 'Home Plan Approved'
+        WHEN status.DESCRIPTION = 'Cancelled' THEN 'Home Plan Cancelled'
+        WHEN app.IS_RETURN_TO_COIII = 'Y' THEN 'Return to COIII'
+        WHEN app.IS_RE_INVESTIGATE = 'Y' THEN 'Return to CC Supervisor'
+        WHEN status.DESCRIPTION = 'Address Denied' THEN 'Denied' 
+        WHEN status.description IN ('CCO SUP', 'COIII', 'CCO', 'COIV', 'Release Unit', 'CCL') THEN 'Home Plan In Progress'
+        WHEN status.DESCRIPTION IS NULL THEN 'Home Plan Not Started'
     END AS PLAN_STATUS,
     CASE WHEN 
     -- AZ told us to use the date value from the APPROVAL table if and only if the plan was approved. 
