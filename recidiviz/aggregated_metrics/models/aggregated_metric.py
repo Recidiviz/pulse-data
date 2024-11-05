@@ -98,6 +98,9 @@ class MetricConditionsMixin(Generic[ObservationTypeT]):
             #  setting to True here so we can gate the new aggregated metric query code
             #  properly.
             read_attributes_from_json=True,
+            # TODO(#29291): Simplify to pass this arg through from the other
+            #  get_metric_conditions* functions.
+            strip_newlines=False,
         )
         return [f"({fragment})"]
 
