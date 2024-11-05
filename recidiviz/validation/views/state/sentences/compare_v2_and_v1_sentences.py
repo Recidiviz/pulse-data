@@ -18,6 +18,8 @@
 This validation view compares StateIncarcerationSentence and StateSupervisionSentence
 with StateSentence entities--ensuring they have the same charge.
 
+This validation only checks states that have v1 sentences hydrated.
+
 We are looking for StateSentence/StateChargeV2 pairings that do not have v1 counterpart
 by joining external IDs.
 """
@@ -88,14 +90,20 @@ V1_SENTENCES = """
 QUERY = f"""
 WITH 
     v2 AS ({V2_SENTENCES}),
-    v1 AS ({V1_SENTENCES})
+    v1 AS ({V1_SENTENCES}),
+    states_with_v1 AS (
+        SELECT DISTINCT state_code
+        FROM v1
+    )
 SELECT
     state_code,
     state_code AS region_code,
     sentence_external_id,
     charge_v1_external_id,
     charge_v2_external_id
-FROM v2 
+FROM states_with_v1
+LEFT JOIN v2
+USING (state_code) 
 LEFT JOIN v1 
 USING (state_code, sentence_external_id)
 """
