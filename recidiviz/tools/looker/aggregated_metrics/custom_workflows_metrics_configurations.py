@@ -24,17 +24,13 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     SpanDistinctUnitCountMetric,
     SumSpanDaysMetric,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
-    EventSelector,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
-    SpanSelector,
-)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events import (
     USAGE_EVENTS_DICT,
 )
 from recidiviz.common.str_field_utils import snake_to_title
+from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType
+from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
 
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER = DailyAvgSpanCountMetric(

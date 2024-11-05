@@ -37,13 +37,11 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysisType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
-    SpanSelector,
-)
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+from recidiviz.observations.span_selector import SpanSelector
 
 # Dictionary of queries define periods of assignment of a unit of observation to a unit of analysis
 _UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT: dict[

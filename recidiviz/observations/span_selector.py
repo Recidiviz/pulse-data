@@ -16,19 +16,15 @@
 # =============================================================================
 """Defines SpanSelector object used to filter rows from a spans table"""
 
-from typing import Dict, List, Sequence, Union
+from typing import Dict, List, Union
 
 import attr
 
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
-    list_to_query_string,
 )
-from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
-from recidiviz.observations.metric_unit_of_observation_type import (
-    MetricUnitOfObservationType,
-)
+from recidiviz.observations.observation_selector import ObservationSelector
 from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
 )
@@ -38,7 +34,7 @@ from recidiviz.observations.span_type import SpanType
 # TODO(#23055): Add state_code and person_id filters to support selecting custom
 #  populations
 @attr.define(frozen=True, kw_only=True)
-class SpanSelector:
+class SpanSelector(ObservationSelector[SpanType]):
     """
     Class that stores information about conditions on a spans table, in order to
     generate query fragments for filtering spans.
@@ -52,46 +48,16 @@ class SpanSelector:
     span_conditions_dict: Dict[str, Union[List[str], str]] = attr.ib()
 
     @property
-    def unit_of_observation_type(self) -> MetricUnitOfObservationType:
-        """Returns the MetricUnitOfObservationType associated with the span type"""
-        return self.span_type.unit_of_observation_type
+    def observation_type(self) -> SpanType:
+        return self.span_type
 
     @property
-    def unit_of_observation(self) -> MetricUnitOfObservation:
-        """Returns the MetricUnitOfObservation object associated with the span type"""
-        return MetricUnitOfObservation(type=self.unit_of_observation_type)
+    def observation_conditions_dict(self) -> dict[str, list[str] | str]:
+        return self.span_conditions_dict
 
-    def generate_span_conditions_query_fragment(self, filter_by_span_type: bool) -> str:
-        """Returns a query fragment that filters a query that contains span rows based
-        on configured span conditions.
-        """
-        condition_strings = []
-
-        # TODO(#29291): Shouldn't need to filter by span_type once we're querying from
-        #  the type-specific view. In order to do this, we will need to support having
-        #  an empty conditions fragment returned (or throw if this is called when
-        #  self.span_conditions_dict is empty).
-        if filter_by_span_type:
-            condition_strings.append(f'span = "{self.span_type.value}"')
-
-        for attribute, conditions in self.span_conditions_dict.items():
-            if isinstance(conditions, str):
-                attribute_condition_string = conditions
-            elif isinstance(conditions, Sequence):
-                attribute_condition_string = (
-                    f"IN ({list_to_query_string(conditions, quoted=True)})"
-                )
-            else:
-                raise TypeError(
-                    "All attribute filters must have type str or Sequence[str]"
-                )
-            condition_strings.append(
-                f"""JSON_EXTRACT_SCALAR(span_attributes, "$.{attribute}") {attribute_condition_string}"""
-            )
-        # Apply all conditions via AND to a single span type
-        condition_strings_query_fragment = "\n        AND ".join(condition_strings)
-        return condition_strings_query_fragment
-
+    # TODO(#29291): Move this logic off the SpanSelector. This is specifically relevant
+    #  to creating population spans and only used (outside of docstrings) in the
+    #  assignment view queries.
     def generate_span_selector_query(self) -> str:
         """Returns a standalone query that filters the appropriate spans table based on
         configured span conditions
@@ -102,8 +68,8 @@ class SpanSelector:
             )
         )
 
-        conditions_fragment = self.generate_span_conditions_query_fragment(
-            filter_by_span_type=False
+        conditions_fragment = self.generate_observation_conditions_query_fragment(
+            filter_by_observation_type=False, read_attributes_from_json=True
         )
         filter_clause = (
             f"WHERE {conditions_fragment}" if self.span_conditions_dict else ""

@@ -22,13 +22,9 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     EventDistinctUnitCountMetric,
     SpanDistinctUnitCountMetric,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
-    EventSelector,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
-    SpanSelector,
-)
+from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType
+from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
 
 ABSCONSIONS_AND_BENCH_WARRANTS_LOOKER = metric_config.ABSCONSIONS_BENCH_WARRANTS

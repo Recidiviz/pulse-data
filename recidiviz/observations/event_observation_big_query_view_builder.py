@@ -32,9 +32,6 @@ from recidiviz.observations.metric_unit_of_observation_type import (
 from recidiviz.utils.string_formatting import fix_indent
 from recidiviz.utils.types import assert_type
 
-_EVENT_DATE_OUTPUT_COL_NAME = "event_date"
-_EVENT_ATTRIBUTES_OUTPUT_COL_NAME = "event_attributes"
-
 
 class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """View builder that can be used to encode a collection of point-in-time
@@ -45,6 +42,9 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     which can later be associated with a unit of analysis (e.g. state_code, facility,
     etc.) in order to build a metric about that unit of analysis.
     """
+
+    EVENT_DATE_OUTPUT_COL_NAME = "event_date"
+    EVENT_ATTRIBUTES_OUTPUT_COL_NAME = "event_attributes"
 
     def __init__(
         self,
@@ -127,8 +127,8 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         return f"""
 SELECT DISTINCT
     {unit_of_observation.get_primary_key_columns_query_string()},
-    {event_date_col} AS {_EVENT_DATE_OUTPUT_COL_NAME},
-    {convert_cols_to_json_string(attribute_cols)} AS {_EVENT_ATTRIBUTES_OUTPUT_COL_NAME},
+    {event_date_col} AS {cls.EVENT_DATE_OUTPUT_COL_NAME},
+    {convert_cols_to_json_string(attribute_cols)} AS {cls.EVENT_ATTRIBUTES_OUTPUT_COL_NAME},
 FROM {source_query_fragment}
 """
 
@@ -148,6 +148,6 @@ FROM {source_query_fragment}
     ) -> list[str]:
         unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
         return unit_of_observation.primary_key_columns_ordered + [
-            _EVENT_DATE_OUTPUT_COL_NAME,
-            _EVENT_ATTRIBUTES_OUTPUT_COL_NAME,
+            cls.EVENT_DATE_OUTPUT_COL_NAME,
+            cls.EVENT_ATTRIBUTES_OUTPUT_COL_NAME,
         ]
