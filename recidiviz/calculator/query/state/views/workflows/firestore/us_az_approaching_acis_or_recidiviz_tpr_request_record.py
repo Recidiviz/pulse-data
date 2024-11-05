@@ -20,12 +20,17 @@ Queries information needed to surface eligible folks to be early released on a T
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    array_agg_case_notes_by_external_id,
     join_current_task_eligibility_spans_with_external_id,
+    opportunity_query_final_select_with_case_notes,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    home_plan_information_for_side_panel_notes,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -124,19 +129,23 @@ combine_acis_and_recidiviz_tpr_dates AS (
                     < SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.recidiviz_tpr_date') AS DATE)
             )
         )
+),
+
+side_panel_notes AS (
+    {home_plan_information_for_side_panel_notes()}
+),
+
+
+array_side_panel_notes_cte AS (
+    {array_agg_case_notes_by_external_id(
+        left_join_cte="side_panel_notes", 
+        from_cte="combine_acis_and_recidiviz_tpr_dates")}
 )
 
-SELECT 
-    external_id,
-    state_code,
-    reasons,
-    ineligible_criteria,
-    is_eligible,
-    is_almost_eligible,
-    metadata_tab_name,
-    metadata_tab_description,
-FROM 
-    combine_acis_and_recidiviz_tpr_dates
+{opportunity_query_final_select_with_case_notes(
+    from_cte = "combine_acis_and_recidiviz_tpr_dates",
+    left_join_cte="array_side_panel_notes_cte",
+    additional_columns="metadata_tab_name, metadata_tab_description",)}
 """
 
 US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_TPR_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

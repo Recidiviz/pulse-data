@@ -116,6 +116,7 @@ def array_agg_case_notes_by_external_id(
 def opportunity_query_final_select_with_case_notes(
     from_cte: str = "eligible_and_almost_eligible",
     left_join_cte: str = "array_case_notes_cte",
+    additional_columns: str = "",
 ) -> str:
     """The final CTE usually found in opportunity/form queries.
 
@@ -132,7 +133,7 @@ def opportunity_query_final_select_with_case_notes(
         is_eligible,
         is_almost_eligible,
         ineligible_criteria,
-        case_notes,
+        case_notes, {additional_columns}
     FROM {from_cte}
     LEFT JOIN {left_join_cte}
         USING(external_id)
