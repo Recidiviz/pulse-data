@@ -61,31 +61,34 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the eligibility spans for residents in AZ who are eligible for a Transition
-Program Release (TPR) release according to our (Recidiviz) calculations. 
-"""
+# Criteria shared in both TPR and DTP
+COMMON_CRITERIA_ACROSS_TPR_AND_DTP = [
+    time_90_days_before_release.VIEW_BUILDER,
+    no_sexual_offense_conviction.VIEW_BUILDER,
+    no_arson_conviction.VIEW_BUILDER,
+    no_active_felony_detainers.VIEW_BUILDER,
+    custody_level_is_minimum_or_medium.VIEW_BUILDER,
+    no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
+    no_major_violent_violation_during_incarceration.VIEW_BUILDER,
+    is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
+    no_dangerous_crimes_against_children_conviction.VIEW_BUILDER,
+    no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
+]
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
     task_name="OVERDUE_FOR_RECIDIVIZ_TPR_REQUEST",
-    description=_DESCRIPTION,
+    description=__doc__,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        time_90_days_before_release.VIEW_BUILDER,
-        no_sexual_offense_conviction.VIEW_BUILDER,
-        no_arson_conviction.VIEW_BUILDER,
-        no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction.VIEW_BUILDER,
-        no_active_felony_detainers.VIEW_BUILDER,
-        custody_level_is_minimum_or_medium.VIEW_BUILDER,
-        no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
-        no_major_violent_violation_during_incarceration.VIEW_BUILDER,
-        at_least_24_months_since_last_csed.VIEW_BUILDER,
-        is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
-        no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
-        no_dangerous_crimes_against_children_conviction.VIEW_BUILDER,
+        ### Criteria shared in both TPR and DTP
+        *COMMON_CRITERIA_ACROSS_TPR_AND_DTP,  # type: ignore
+        ### TPR-specific criteria
+        # a. Functional literacy
         meets_functional_literacy.VIEW_BUILDER,
-        no_tpr_removals_from_self_improvement_programs.VIEW_BUILDER,
-        within_6_months_of_recidiviz_tpr_date.VIEW_BUILDER,
+        # b. Offenses
+        no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction.VIEW_BUILDER,
+        # c. No TPR denials in current incarceration, TPRs on current sentence and no ACIS TPR date
         AndTaskCriteriaGroup(
             criteria_name="US_AZ_NO_TPR_DATE_OR_DENIAL_OR_RELEASE_IN_CURRENT_INCARCERATION",
             sub_criteria_list=[
@@ -95,6 +98,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             ],
             allowed_duplicate_reasons_keys=[],
         ),
+        # d. Self improvement programs
+        no_tpr_removals_from_self_improvement_programs.VIEW_BUILDER,
+        # e. Time
+        at_least_24_months_since_last_csed.VIEW_BUILDER,
+        within_6_months_of_recidiviz_tpr_date.VIEW_BUILDER,
     ],
     # TODO(#33655): Update this to the correct task completion event
     completion_event_builder=early_discharge.VIEW_BUILDER,
