@@ -48,6 +48,23 @@ def attributes_column_name_for_observation_type(
     )
 
 
+# TODO(#34498), TODO(#29291): We should be able to delete this clause (it will become
+#  trivial) once we are only reading from single observation tables and the single
+#  observation tables do not package their attributes into JSON.
+def observation_attribute_value_clause(
+    observation_type: EventType | SpanType,
+    attribute: str,
+    read_attributes_from_json: bool,
+) -> str:
+    """Gives a SQL clause that will return the value of a given observation
+    attribute.
+    """
+    if not read_attributes_from_json:
+        return attribute
+    attributes_column = attributes_column_name_for_observation_type(observation_type)
+    return f'JSON_EXTRACT_SCALAR({attributes_column}, "$.{attribute}")'
+
+
 def observation_type_name_column_for_observation_type(
     observation_type: EventType | SpanType,
 ) -> str:

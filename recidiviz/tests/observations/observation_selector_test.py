@@ -19,6 +19,7 @@ import unittest
 
 from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType
+from recidiviz.observations.observation_selector import ObservationSelector
 from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
 
@@ -37,19 +38,25 @@ class TestObservationSelector(unittest.TestCase):
         self.assertEqual(
             'span = "COMPARTMENT_SESSION"',
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=True, read_attributes_from_json=True
+                filter_by_observation_type=True,
+                read_attributes_from_json=True,
+                strip_newlines=False,
             ),
         )
         self.assertEqual(
             "TRUE",
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=False, read_attributes_from_json=True
+                filter_by_observation_type=False,
+                read_attributes_from_json=True,
+                strip_newlines=False,
             ),
         )
         self.assertEqual(
             "TRUE",
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=False, read_attributes_from_json=False
+                filter_by_observation_type=False,
+                read_attributes_from_json=False,
+                strip_newlines=False,
             ),
         )
 
@@ -64,19 +71,25 @@ class TestObservationSelector(unittest.TestCase):
         self.assertEqual(
             'event = "VIOLATION_RESPONSE"',
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=True, read_attributes_from_json=True
+                filter_by_observation_type=True,
+                read_attributes_from_json=True,
+                strip_newlines=False,
             ),
         )
         self.assertEqual(
             "TRUE",
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=False, read_attributes_from_json=True
+                filter_by_observation_type=False,
+                read_attributes_from_json=True,
+                strip_newlines=False,
             ),
         )
         self.assertEqual(
             "TRUE",
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=False, read_attributes_from_json=False
+                filter_by_observation_type=False,
+                read_attributes_from_json=False,
+                strip_newlines=False,
             ),
         )
 
@@ -92,19 +105,25 @@ class TestObservationSelector(unittest.TestCase):
             'span = "WORKFLOWS_USER_REGISTRATION_SESSION"\n'
             '        AND JSON_EXTRACT_SCALAR(span_attributes, "$.system_type") IN ("SUPERVISION")',
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=True, read_attributes_from_json=True
+                filter_by_observation_type=True,
+                read_attributes_from_json=True,
+                strip_newlines=False,
             ),
         )
         self.assertEqual(
             'JSON_EXTRACT_SCALAR(span_attributes, "$.system_type") IN ("SUPERVISION")',
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=False, read_attributes_from_json=True
+                filter_by_observation_type=False,
+                read_attributes_from_json=True,
+                strip_newlines=False,
             ),
         )
         self.assertEqual(
             'system_type IN ("SUPERVISION")',
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=False, read_attributes_from_json=False
+                filter_by_observation_type=False,
+                read_attributes_from_json=False,
+                strip_newlines=False,
             ),
         )
 
@@ -120,19 +139,25 @@ class TestObservationSelector(unittest.TestCase):
             'event = "INCARCERATION_RELEASE"\n'
             '        AND JSON_EXTRACT_SCALAR(event_attributes, "$.outflow_to_level_1") IN ("LIBERTY", "SUPERVISION")',
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=True, read_attributes_from_json=True
+                filter_by_observation_type=True,
+                read_attributes_from_json=True,
+                strip_newlines=False,
             ),
         )
         self.assertEqual(
             'JSON_EXTRACT_SCALAR(event_attributes, "$.outflow_to_level_1") IN ("LIBERTY", "SUPERVISION")',
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=False, read_attributes_from_json=True
+                filter_by_observation_type=False,
+                read_attributes_from_json=True,
+                strip_newlines=False,
             ),
         )
         self.assertEqual(
             'outflow_to_level_1 IN ("LIBERTY", "SUPERVISION")',
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=False, read_attributes_from_json=False
+                filter_by_observation_type=False,
+                read_attributes_from_json=False,
+                strip_newlines=False,
             ),
         )
 
@@ -156,7 +181,9 @@ class TestObservationSelector(unittest.TestCase):
             '    "GENERAL", "DOMESTIC_VIOLENCE"\n'
             ")",
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=True, read_attributes_from_json=True
+                filter_by_observation_type=True,
+                read_attributes_from_json=True,
+                strip_newlines=False,
             ),
         )
         self.assertEqual(
@@ -165,7 +192,9 @@ class TestObservationSelector(unittest.TestCase):
             '    "GENERAL", "DOMESTIC_VIOLENCE"\n'
             ")",
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=False, read_attributes_from_json=True
+                filter_by_observation_type=False,
+                read_attributes_from_json=True,
+                strip_newlines=False,
             ),
         )
         self.assertEqual(
@@ -174,7 +203,9 @@ class TestObservationSelector(unittest.TestCase):
             '    "GENERAL", "DOMESTIC_VIOLENCE"\n'
             ")",
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=False, read_attributes_from_json=False
+                filter_by_observation_type=False,
+                read_attributes_from_json=False,
+                strip_newlines=False,
             ),
         )
 
@@ -194,20 +225,177 @@ class TestObservationSelector(unittest.TestCase):
             '        AND JSON_EXTRACT_SCALAR(event_attributes, "$.status") IN ("COMPLETED")\n'
             '        AND JSON_EXTRACT_SCALAR(event_attributes, "$.contact_type") IN ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")',
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=True, read_attributes_from_json=True
+                filter_by_observation_type=True,
+                read_attributes_from_json=True,
+                strip_newlines=False,
             ),
         )
         self.assertEqual(
             'JSON_EXTRACT_SCALAR(event_attributes, "$.status") IN ("COMPLETED")\n'
             '        AND JSON_EXTRACT_SCALAR(event_attributes, "$.contact_type") IN ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")',
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=False, read_attributes_from_json=True
+                filter_by_observation_type=False,
+                read_attributes_from_json=True,
+                strip_newlines=False,
             ),
         )
         self.assertEqual(
             'status IN ("COMPLETED")\n'
             '        AND contact_type IN ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")',
             selector.generate_observation_conditions_query_fragment(
-                filter_by_observation_type=False, read_attributes_from_json=False
+                filter_by_observation_type=False,
+                read_attributes_from_json=False,
+                strip_newlines=False,
             ),
         )
+        self.assertEqual(
+            'status IN ("COMPLETED") '
+            'AND contact_type IN ("DIRECT", "BOTH_COLLATERAL_AND_DIRECT")',
+            selector.generate_observation_conditions_query_fragment(
+                filter_by_observation_type=False,
+                read_attributes_from_json=False,
+                strip_newlines=True,
+            ),
+        )
+
+    def test_build_selected_observations_query_no_attributes(self) -> None:
+        query = ObservationSelector.build_selected_observations_query_template(
+            observation_type=SpanType.COMPARTMENT_SESSION,
+            observation_selectors=[
+                SpanSelector(
+                    span_type=SpanType.COMPARTMENT_SESSION,
+                    span_conditions_dict={},
+                )
+            ],
+            output_attribute_columns=[],
+        )
+
+        expected_query = """
+SELECT
+    state_code,
+    person_id
+FROM (
+    SELECT
+        state_code,
+        person_id
+    FROM 
+        `{project_id}.observations__person_span.compartment_session_materialized`
+)
+WHERE
+    TRUE
+"""
+        self.assertEqual(expected_query, query)
+
+    def test_build_selected_observations_query_simple_span(self) -> None:
+        query = ObservationSelector.build_selected_observations_query_template(
+            observation_type=SpanType.COMPARTMENT_SESSION,
+            observation_selectors=[
+                SpanSelector(
+                    span_type=SpanType.COMPARTMENT_SESSION,
+                    span_conditions_dict={
+                        "compartment_level_1": ["INCARCERATION", "SUPERVISION"],
+                        "compartment_level_2": ["COMMUNITY_CONFINEMENT"],
+                    },
+                )
+            ],
+            output_attribute_columns=["compartment_level_1", "case_type_start"],
+        )
+
+        expected_query = """
+SELECT
+    state_code,
+    person_id,
+    case_type_start,
+    compartment_level_1
+FROM (
+    SELECT
+        state_code,
+        person_id,
+        JSON_EXTRACT_SCALAR(span_attributes, "$.case_type_start") AS case_type_start,
+        JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_1") AS compartment_level_1,
+        JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_2") AS compartment_level_2
+    FROM 
+        `{project_id}.observations__person_span.compartment_session_materialized`
+)
+WHERE
+    compartment_level_1 IN ("INCARCERATION", "SUPERVISION") AND compartment_level_2 IN ("COMMUNITY_CONFINEMENT")
+"""
+        self.assertEqual(expected_query, query)
+
+    def test_build_selected_observations_query_simple_event(self) -> None:
+        query = ObservationSelector.build_selected_observations_query_template(
+            observation_type=EventType.CUSTODY_LEVEL_CHANGE,
+            observation_selectors=[
+                EventSelector(
+                    event_type=EventType.CUSTODY_LEVEL_CHANGE,
+                    event_conditions_dict={"change_type": ["DOWNGRADE"]},
+                )
+            ],
+            output_attribute_columns=["change_type", "previous_custody_level"],
+        )
+
+        expected_query = """
+SELECT
+    state_code,
+    person_id,
+    change_type,
+    previous_custody_level
+FROM (
+    SELECT
+        state_code,
+        person_id,
+        JSON_EXTRACT_SCALAR(event_attributes, "$.change_type") AS change_type,
+        JSON_EXTRACT_SCALAR(event_attributes, "$.previous_custody_level") AS previous_custody_level
+    FROM 
+        `{project_id}.observations__person_event.custody_level_change_materialized`
+)
+WHERE
+    change_type IN ("DOWNGRADE")
+"""
+        self.assertEqual(expected_query, query)
+
+    def test_build_selected_observations_query_multiple_events(self) -> None:
+        query = ObservationSelector.build_selected_observations_query_template(
+            observation_type=EventType.CUSTODY_LEVEL_CHANGE,
+            observation_selectors=[
+                EventSelector(
+                    event_type=EventType.CUSTODY_LEVEL_CHANGE,
+                    event_conditions_dict={"change_type": ["DOWNGRADE"]},
+                ),
+                EventSelector(
+                    event_type=EventType.CUSTODY_LEVEL_CHANGE,
+                    event_conditions_dict={"change_type": ["UPGRADE"]},
+                ),
+                EventSelector(
+                    event_type=EventType.CUSTODY_LEVEL_CHANGE,
+                    event_conditions_dict={
+                        "change_type": ["DOWNGRADE"],
+                        "new_custody_level": ["MINIMUM"],
+                    },
+                ),
+            ],
+            output_attribute_columns=["change_type", "previous_custody_level"],
+        )
+
+        expected_query = """
+SELECT
+    state_code,
+    person_id,
+    change_type,
+    previous_custody_level
+FROM (
+    SELECT
+        state_code,
+        person_id,
+        JSON_EXTRACT_SCALAR(event_attributes, "$.change_type") AS change_type,
+        JSON_EXTRACT_SCALAR(event_attributes, "$.new_custody_level") AS new_custody_level,
+        JSON_EXTRACT_SCALAR(event_attributes, "$.previous_custody_level") AS previous_custody_level
+    FROM 
+        `{project_id}.observations__person_event.custody_level_change_materialized`
+)
+WHERE
+    ( change_type IN ("DOWNGRADE") )
+    OR ( change_type IN ("UPGRADE") )
+    OR ( change_type IN ("DOWNGRADE") AND new_custody_level IN ("MINIMUM") )
+"""
+        self.assertEqual(expected_query, query)

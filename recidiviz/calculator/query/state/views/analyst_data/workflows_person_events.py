@@ -82,7 +82,7 @@ def get_usage_status_case_statement(
     return "\n".join(
         [
             f"""
-        WHEN {v.generate_observation_conditions_query_fragment(filter_by_observation_type=True, read_attributes_from_json=True)}
+        WHEN {v.generate_observation_conditions_query_fragment(filter_by_observation_type=True, read_attributes_from_json=True, strip_newlines=False)}
         THEN "{k}"
     """
             for k, v in usage_event_selectors.items()

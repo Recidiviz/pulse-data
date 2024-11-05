@@ -17,18 +17,25 @@
 """Defines an ObservationSelector object used to filter rows from an observations table.
 """
 import abc
-from typing import Generic
+import re
+from typing import Generic, Sequence
+
+from more_itertools import one
 
 from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
 from recidiviz.observations.observation_type_utils import (
     ObservationTypeT,
-    attributes_column_name_for_observation_type,
+    materialized_view_address_for_observation,
+    observation_attribute_value_clause,
     observation_type_name_column_for_observation_type,
 )
+from recidiviz.observations.span_type import SpanType
+from recidiviz.utils.string_formatting import fix_indent
 
 
 class ObservationSelector(Generic[ObservationTypeT]):
@@ -66,6 +73,7 @@ class ObservationSelector(Generic[ObservationTypeT]):
         #  False) once we are only reading from single observation tables and the single
         #  observation tables do not package their attributes into JSON.
         read_attributes_from_json: bool,
+        strip_newlines: bool,
     ) -> str:
         """Returns a query fragment that filters a query that contains observation rows
         based on configured observation conditions.
@@ -76,6 +84,8 @@ class ObservationSelector(Generic[ObservationTypeT]):
             read_attributes_from_json: Whether we're querying from observation rows that
                 are storing their attributes in JSON (e.g. the event_attributes column)
                 vs having attributes already unpacked into individual columns.
+            strip_newlines: If True, the resulting fragment will have newlines removed
+                and the full clause will be a single line.
         """
         condition_strings = []
 
@@ -97,13 +107,14 @@ class ObservationSelector(Generic[ObservationTypeT]):
             else:
                 raise TypeError("All attribute filters must have type str or list[str]")
 
-            if read_attributes_from_json:
-                attributes_column = attributes_column_name_for_observation_type(
-                    self.observation_type
-                )
-                condition_string = f"""JSON_EXTRACT_SCALAR({attributes_column}, "$.{attribute}") {attribute_condition_string}"""
-            else:
-                condition_string = f"""{attribute} {attribute_condition_string}"""
+            attribute_value_clause = observation_attribute_value_clause(
+                observation_type=self.observation_type,
+                attribute=attribute,
+                read_attributes_from_json=read_attributes_from_json,
+            )
+            condition_string = (
+                f"""{attribute_value_clause} {attribute_condition_string}"""
+            )
 
             condition_strings.append(condition_string)
 
@@ -112,4 +123,104 @@ class ObservationSelector(Generic[ObservationTypeT]):
 
         # Apply all conditions via AND to a single observation type
         condition_strings_query_fragment = "\n        AND ".join(condition_strings)
+
+        if strip_newlines:
+            condition_strings_query_fragment = re.sub(
+                r"\s+|\n+", " ", condition_strings_query_fragment
+            )
+
         return condition_strings_query_fragment
+
+    @classmethod
+    def build_selected_observations_query_template(
+        cls,
+        *,
+        observation_type: EventType | SpanType,
+        observation_selectors: Sequence["ObservationSelector"],
+        output_attribute_columns: list[str],
+    ) -> str:
+        """Given a set of ObservationSelector that *all have the same observation_type*,
+        returns a query template (with a project_id format arg) that will select any
+        observation row of that type that matches ANY of the selector conditions.
+
+        Args:
+            observation_type: The observation type to query
+            observation_selectors: Selectors with the given observation_type
+            output_attribute_columns: The set of attribute columns to include in the
+                result. All primary key columns for |observation_type| will also be
+                returned.
+        """
+        if not observation_selectors:
+            raise ValueError("Must provide at least one selector.")
+
+        for selector in observation_selectors:
+            if selector.observation_type != observation_type:
+                raise ValueError(
+                    f"Can only pass selectors that match the single expected "
+                    f"observation type to build_selected_observations_query(). Found "
+                    f"selector with observation_type [{selector.observation_type}] "
+                    f"which does not match expected type [{observation_type}]."
+                )
+
+        attribute_columns_in_filters: set[str] = {
+            attribute_col
+            for selector in observation_selectors
+            for attribute_col in selector.observation_conditions_dict.keys()
+        }
+
+        unit_of_observation: MetricUnitOfObservation = MetricUnitOfObservation(
+            type=observation_type.unit_of_observation_type
+        )
+        observation_column_strs = [*unit_of_observation.primary_key_columns_ordered]
+        for attribute in sorted(
+            {*attribute_columns_in_filters, *output_attribute_columns}
+        ):
+            attribute_value_str = observation_attribute_value_clause(
+                observation_type=observation_type,
+                attribute=attribute,
+                read_attributes_from_json=True,
+            )
+            observation_column_strs.append(f"{attribute_value_str} AS {attribute}")
+
+        observation_columns_str = ",\n".join(observation_column_strs)
+        observations_address = materialized_view_address_for_observation(
+            observation_type
+        )
+        observations_rows_query = f"""
+SELECT
+{fix_indent(observation_columns_str, indent_level=4)}
+FROM 
+    `{{project_id}}.{observations_address.to_str()}`
+"""
+
+        filter_clauses = [
+            selector.generate_observation_conditions_query_fragment(
+                filter_by_observation_type=False,
+                read_attributes_from_json=False,
+                strip_newlines=True,
+            )
+            for selector in observation_selectors
+        ]
+
+        if len(filter_clauses) == 1:
+            filters_str = one(filter_clauses)
+        else:
+            filters_str = "\nOR ".join(f"( {clause} )" for clause in filter_clauses)
+
+        output_columns = [
+            *unit_of_observation.primary_key_columns_ordered,
+            *sorted(output_attribute_columns),
+        ]
+        output_columns_str = ",\n".join(output_columns)
+
+        # TODO(#34498): Simplify this query structure once observation attributes are no
+        #  longer packaged in JSON (will no longer need the inner SELECT query).
+        return f"""
+SELECT
+{fix_indent(output_columns_str, indent_level=4)}
+FROM (
+{fix_indent(observations_rows_query, indent_level=4)}
+)
+WHERE
+{fix_indent(filters_str, indent_level=4)}
+"""

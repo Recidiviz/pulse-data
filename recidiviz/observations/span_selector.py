@@ -69,7 +69,9 @@ class SpanSelector(ObservationSelector[SpanType]):
         )
 
         conditions_fragment = self.generate_observation_conditions_query_fragment(
-            filter_by_observation_type=False, read_attributes_from_json=True
+            filter_by_observation_type=False,
+            read_attributes_from_json=True,
+            strip_newlines=False,
         )
         filter_clause = (
             f"WHERE {conditions_fragment}" if self.span_conditions_dict else ""

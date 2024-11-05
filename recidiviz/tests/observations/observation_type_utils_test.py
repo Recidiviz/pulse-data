@@ -22,6 +22,7 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.observations.observation_type_utils import (
     attributes_column_name_for_observation_type,
     materialized_view_address_for_observation,
+    observation_attribute_value_clause,
 )
 from recidiviz.observations.span_type import SpanType
 
@@ -37,6 +38,40 @@ class TestObservationTypeUtils(unittest.TestCase):
         self.assertEqual(
             "span_attributes",
             attributes_column_name_for_observation_type(SpanType.SENTENCE_SPAN),
+        )
+
+    def test_observation_attribute_value_clause(self) -> None:
+        self.assertEqual(
+            'JSON_EXTRACT_SCALAR(event_attributes, "$.is_positive_result")',
+            observation_attribute_value_clause(
+                EventType.DRUG_SCREEN,
+                attribute="is_positive_result",
+                read_attributes_from_json=True,
+            ),
+        )
+        self.assertEqual(
+            "is_positive_result",
+            observation_attribute_value_clause(
+                EventType.DRUG_SCREEN,
+                attribute="is_positive_result",
+                read_attributes_from_json=False,
+            ),
+        )
+        self.assertEqual(
+            'JSON_EXTRACT_SCALAR(span_attributes, "$.effective_date")',
+            observation_attribute_value_clause(
+                SpanType.SENTENCE_SPAN,
+                attribute="effective_date",
+                read_attributes_from_json=True,
+            ),
+        )
+        self.assertEqual(
+            "effective_date",
+            observation_attribute_value_clause(
+                SpanType.SENTENCE_SPAN,
+                attribute="effective_date",
+                read_attributes_from_json=False,
+            ),
         )
 
     def test_materialized_view_address_for_observation(self) -> None:
