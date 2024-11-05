@@ -84,7 +84,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
             # Almost eligible if:
-            # (3 months within FTCD OR 3 months within PRD)
+            # (3 months within 1 year of FTCD OR 3 months within 1 year of PRD)
             #   XOR missing 30 days in same facility
             #   XOR missing 90 days incarcerated
             #   XOR missing not enrolled in relevant program
@@ -93,14 +93,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                     TimeDependentCriteriaCondition(
                         criteria=incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release.VIEW_BUILDER,
                         reasons_date_field="full_term_completion_date",
-                        interval_length=3,
+                        interval_length=15,
                         interval_date_part=BigQueryDateInterval.MONTH,
                         description="Within 3 months from eligibility according to the full term completion date",
                     ),
                     TimeDependentCriteriaCondition(
                         criteria=incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release.VIEW_BUILDER,
                         reasons_date_field="parole_review_date",
-                        interval_length=3,
+                        interval_length=15,
                         interval_date_part=BigQueryDateInterval.MONTH,
                         description="Within 3 months away from eligibility according to the parole review date",
                     ),
