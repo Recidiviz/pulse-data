@@ -124,8 +124,33 @@ columns:
   - name: Role
     description: Job title
     known_values:
+      - value: Administrative Assistant 1
+      - value: Administrative Officer 5
+      - value: Clerical Assistant 2
+      - value: Clerical Assistant 3
+      - value: Clerical Supervisor 2
+      - value: Deputy District Director
+      - value: Deputy Secretary for Field Services
+      - value: Deputy Secretary for Reentry
+      - value: District Director
+      - value: Institutional Parole Assistant
+      - value: Parole Agent 1
+      - value: Parole Agent 2
+      - value: Parole Agt 1
       - value: Parole Agt 2
+      - value: Parole Auditor
+      - value: Parole Auditor Supervisor
+      - value: Parole Manager 1
+      - value: Parole Manager 2
       - value: Parole Spvr
+      - value: Parole Staff Technician 2
+      - value: Parole Supervisor
+      - value: Pbtn Prl Dep Dstr Dir
+      - value: Pbtn Prl Dstr Dir 1
+      - value: Pbtn Prl Dstr Dir 2
+      - value: Probation and Parole District Director 1
+      - value: Probation and Parole District Director 2
+      - value: Regional Institutional Parole Director
   - name: Supervisor_EmpNum
     is_pii: True
     description: |-
@@ -134,3 +159,6 @@ columns:
   - name: AgentType
     description: |-
       Officer's caseload type. NULL = General.
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-11-27T00:00:00Z
