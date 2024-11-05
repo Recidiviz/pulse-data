@@ -24,24 +24,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 WITH 
--- This CTE pulls in relevant data from the monthly P&P directories that we receive
--- via email and upload as raw data. It uses the update_datetime on each file to 
--- track edge dates, as well as the most recent file we received (last_file_update_datetime),
--- and the most recent file that each employee appeared in (last_appearance_datetime).
-staff_from_directory AS (
-    SELECT
-        -- Make officer IDs uniform across sources 
-        CAST(OFFICER AS INT64) AS OFFICER,
-        -- Transform district names into district external IDs
-        xref.supervising_district_external_id AS location,
-        CAST(update_datetime AS DATETIME) AS edge_date,
-        '(1)' AS STATUS, 
-        MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,
-        MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY OFFICER) AS last_appearance_datetime, 
-    FROM {RECIDIVIZ_REFERENCE_PP_directory@ALL} dir
-    LEFT JOIN {RECIDIVIZ_REFERENCE_supervision_district_id_to_name} xref
-    ON(UPPER(dir.Location) = UPPER(xref.supervising_district_name))
-),
 -- This CTE gets the officer data directly from the Docstars system into the same format
 -- as above, to the extent possible. In Docstars, RecDate is the date the row was created.
 staff_from_docstars AS (
@@ -50,35 +32,10 @@ staff_from_docstars AS (
         CAST(OFFICER AS INT64) AS OFFICER,
         SITEID AS location,
         CAST(RecDate AS DATETIME) AS edge_date, 
-        STATUS,
-        MAX(CAST(RecDate AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,
-        MAX(CAST(RecDate AS DATETIME)) OVER (PARTITION BY OFFICER) AS last_appearance_datetime, 
+        STATUS
     FROM {docstars_officers@ALL} 
 ),
--- This CTE combines the data from the two sources. Officers often appear in both, 
--- so we want to consider all rows from both sources when creating periods.
-combined_data AS (
-    SELECT 
-        OFFICER,
-        location,
-        edge_date,
-        STATUS,
-        last_file_update_datetime,
-        last_appearance_datetime,
-    FROM staff_from_directory
-    
-    UNION ALL 
-
-    SELECT 
-        OFFICER,
-        location,
-        edge_date,
-        STATUS,
-        last_file_update_datetime,
-        last_appearance_datetime,
-    FROM staff_from_docstars 
-),
--- This CTE filters the combined data to include only the rows that are relevant to the
+-- This CTE filters the raw data to include only the rows that are relevant to the
 -- location periods we are constructing. These are rows where an officer just started working
 -- or changed locations. We also include all rows where the edge date is the last update
 -- we have about a given officer, to account for rows that signify an officer becoming inactive.
@@ -90,9 +47,7 @@ SELECT * FROM (
         LAG(location) OVER (PARTITION BY OFFICER ORDER BY edge_date) AS prev_location, 
         edge_date,
         STATUS,
-        last_file_update_datetime,
-        last_appearance_datetime
-    FROM combined_data) cd
+    FROM staff_from_docstars) cd
 WHERE 
     -- officer just started working 
     (cd.prev_location IS NULL AND cd.location IS NOT NULL) 
@@ -100,8 +55,6 @@ WHERE
     OR cd.prev_location != location
     -- officer's employment was terminated (RecDate in these rows is officers' termination date)
     OR cd.STATUS='0'   
-    -- include the latest update even if the previous conditions are not true
-    OR edge_date = last_file_update_datetime 
 ), 
 -- This CTE constructs periods using the compiled critical dates. End dates follow this 
 -- logic: 
@@ -120,15 +73,10 @@ SELECT
     -- if status is 0, RecDate is previous period's end date, there should not be a period with that as start date
     edge_date AS start_date,
     CASE 
-        -- If a staff member stops appearing in the roster, close their employment period
-        -- on the last date we receive a roster that included them
-        WHEN LEAD(edge_date) OVER person_window IS NULL 
-            AND edge_date < last_file_update_datetime
-            THEN last_appearance_datetime 
         -- There is a more recent update to this person's location
         WHEN LEAD(edge_date) OVER person_window IS NOT NULL 
             THEN LEAD(edge_date) OVER person_window 
-        -- All currently-employed staff will appear in the latest roster
+        -- All currently-employed staff will appear in the latest raw data
         ELSE CAST(NULL AS DATETIME)
     END AS end_date,
 FROM critical_dates
