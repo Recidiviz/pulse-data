@@ -61,9 +61,6 @@ from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import 
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_home_plan_preprocessed import (
-    US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_groups import (
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER,
 )
@@ -268,9 +265,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "This is a state-specific preprocessing view that is useful for ad-hoc analysis and "
         "provides a template for an eventual  schema addition to support parole boards info. "
         "Will also likely be relevant to upcoming best path work (mayukas 12/21/23)"
-    ),
-    US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER.address: (
-        "Used in ongoing AZ reentry planning analysis. (EG)"
     ),
     US_AZ_ACTION_QUEUE_VIEW_BUILDER.address: (
         "Used in ongoing AZ reentry planning analysis. (EG)"

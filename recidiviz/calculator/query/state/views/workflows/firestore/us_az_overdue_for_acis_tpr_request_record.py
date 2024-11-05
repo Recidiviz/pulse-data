@@ -21,12 +21,17 @@ Release (TPR) in AZ based on their ACIS (Time Comp) TPR date.
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    array_agg_case_notes_by_external_id,
     join_current_task_eligibility_spans_with_external_id,
+    opportunity_query_final_select_with_case_notes,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    home_plan_information_for_side_panel_notes,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -48,17 +53,21 @@ WITH eligible AS (
                                                       tes_task_query_view='overdue_for_acis_tpr_request_materialized',
                                                       id_type="'US_AZ_ADC_NUMBER'",
                                                       eligible_only=True)}
+),
+
+side_panel_notes AS (
+    {home_plan_information_for_side_panel_notes()}
+),
+
+array_side_panel_notes_cte AS (
+    {array_agg_case_notes_by_external_id(
+        left_join_cte="side_panel_notes", 
+        from_cte="eligible")}
 )
 
-SELECT 
-    external_id,
-    state_code,
-    reasons,
-    ineligible_criteria,
-    is_eligible,
-    is_almost_eligible,
-FROM 
-    eligible
+{opportunity_query_final_select_with_case_notes(
+    from_cte = "eligible",
+    left_join_cte="array_side_panel_notes_cte",)}
 """
 
 US_AZ_OVERDUE_FOR_ACIS_TPR_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
