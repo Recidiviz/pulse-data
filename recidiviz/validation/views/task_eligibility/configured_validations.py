@@ -64,6 +64,9 @@ from recidiviz.validation.views.task_eligibility.start_after_end_date_tes_criter
 from recidiviz.validation.views.task_eligibility.unique_task_eligiblity_span_ids import (
     UNIQUE_TASK_ELIGIBILITY_SPAN_IDS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.task_eligibility.us_az_eligible_or_almost_eligible_for_more_than_one_tpr_or_dtp_opportunity import (
+    US_AZ_ELIGIBLE_OR_ALMOST_ELIGIBLE_FOR_MORE_THAN_ONE_TPR_OR_DTP_OPPORTUNITY_VIEW_BUILDER,
+)
 from recidiviz.validation.views.task_eligibility.us_mi_ineligible_clients_surfaced_for_telephone_reporting import (
     US_MI_INELIGIBLE_CLIENTS_SURFACED_FOR_TELEPHONE_REPORTING_VIEW_BUILDER,
 )
@@ -154,6 +157,10 @@ def get_all_task_eligibility_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=US_MI_INELIGIBLE_CLIENTS_SURFACED_FOR_TELEPHONE_REPORTING_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_AZ_ELIGIBLE_OR_ALMOST_ELIGIBLE_FOR_MORE_THAN_ONE_TPR_OR_DTP_OPPORTUNITY_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
