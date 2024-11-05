@@ -26,9 +26,6 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
-    SpanSelector,
-)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
@@ -38,6 +35,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
 
 

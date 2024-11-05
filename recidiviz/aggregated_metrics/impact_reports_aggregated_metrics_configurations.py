@@ -24,13 +24,9 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     DEDUPED_TASK_COMPLETION_EVENT_VB,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
-    EventSelector,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
-    SpanSelector,
-)
+from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType
+from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
 from recidiviz.workflows.types import WorkflowsSystemType
 

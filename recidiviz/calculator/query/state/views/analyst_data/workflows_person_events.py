@@ -19,9 +19,7 @@ from typing import Dict
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
-from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
-    EventSelector,
-)
+from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -79,10 +77,12 @@ USAGE_EVENTS_DICT: Dict[str, EventSelector] = {
 def get_usage_status_case_statement(
     usage_event_selectors: Dict[str, EventSelector]
 ) -> str:
+    # TODO(#34498): When we stop packing observation attributes into JSON in
+    #  single-observation views, flip read_attributes_from_json to False.
     return "\n".join(
         [
             f"""
-        WHEN {v.generate_event_conditions_query_fragment(filter_by_event_type=True)}
+        WHEN {v.generate_observation_conditions_query_fragment(filter_by_observation_type=True, read_attributes_from_json=True)}
         THEN "{k}"
     """
             for k, v in usage_event_selectors.items()

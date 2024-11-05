@@ -36,17 +36,11 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     CASELOAD_CATEGORIES_BY_CATEGORY_TYPE,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
-    EventSelector,
-)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulationType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
-    SpanSelector,
 )
 from recidiviz.calculator.query.state.views.sessions.justice_impact_sessions import (
     JusticeImpactType,
@@ -55,7 +49,9 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.str_field_utils import snake_to_title
+from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType
+from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     TaskCompletionEventBigQueryViewCollector,

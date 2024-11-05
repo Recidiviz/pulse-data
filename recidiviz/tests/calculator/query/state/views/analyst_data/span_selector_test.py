@@ -22,9 +22,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
-    SpanSelector,
-)
+from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
 
 

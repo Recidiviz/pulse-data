@@ -17,29 +17,28 @@
 """Creates AggregatedMetric objects with properties of spans/events required to calculate a metric"""
 import abc
 import re
-from typing import List, Optional
+from typing import Generic, List, Optional
 
 import attr
 
 from recidiviz.calculator.query.bq_utils import nonnull_current_date_exclusive_clause
-from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
-    EventSelector,
-)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulationType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
-    SpanSelector,
-)
 from recidiviz.common import attr_validators
+from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+from recidiviz.observations.observation_selector import ObservationSelector
+from recidiviz.observations.observation_type_utils import ObservationTypeT
+from recidiviz.observations.span_selector import SpanSelector
+from recidiviz.observations.span_type import SpanType
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -69,13 +68,45 @@ class AggregatedMetric:
         return re.sub(r"(\w)([A-Z])", r"\1 \2", short_cls_name)
 
 
-class MetricConditionsMixin:
+class MetricConditionsMixin(Generic[ObservationTypeT]):
     """Attributes and functions to derive query snippets for defining a metric"""
 
+    @property
+    @abc.abstractmethod
+    def observation_selector(self) -> ObservationSelector[ObservationTypeT]:
+        """Returns the ObservationSelector that should be used to select the
+        observations referenced by this aggregated metric.
+        """
+
+    @property
+    def unit_of_observation(self) -> MetricUnitOfObservation:
+        return self.observation_selector.unit_of_observation
+
+    @property
+    def unit_of_observation_type(self) -> MetricUnitOfObservationType:
+        return self.unit_of_observation.type
+
+    # TODO(#29291): Simplify this to return just a `str` since there's now only one
+    #  fragment. Consider renaming get_metric_conditions* functions to
+    #  get_observation_conditions*.
+    def get_metric_conditions(self) -> List[str]:
+        """Returns a list of conditional query fragments filtering spans or events."""
+        fragment = self.observation_selector.generate_observation_conditions_query_fragment(
+            filter_by_observation_type=True,
+            # TODO(#29291): Figure out where get_metric_conditions() is being used and
+            #  pass as a parameter through to get_metric_conditions() instead of always
+            #  setting to True here so we can gate the new aggregated metric query code
+            #  properly.
+            read_attributes_from_json=True,
+        )
+        return [f"({fragment})"]
+
+    # TODO(#29291): Write tests for this
     def get_metric_conditions_string(self) -> str:
         """Returns a query fragment string that joins SQL conditional statements with `AND`."""
         return "\n\t\t\t\tOR\n".join(self.get_metric_conditions())
 
+    # TODO(#29291): Write tests for this
     def get_metric_conditions_string_no_newline(self) -> str:
         """
         Returns a query fragment string that joins SQL conditional statements with `AND` without line breaks
@@ -83,51 +114,33 @@ class MetricConditionsMixin:
         """
         return re.sub(r" +|\n+", " ", " OR ".join(self.get_metric_conditions()))
 
-    @abc.abstractmethod
-    def get_metric_conditions(self) -> List[str]:
-        """Returns a list of conditional query fragments filtering spans or events."""
-
 
 @attr.define(frozen=True, kw_only=True, slots=False)
-class SpanMetricConditionsMixin(MetricConditionsMixin):
+class SpanMetricConditionsMixin(MetricConditionsMixin[SpanType]):
     """Attributes and functions to derive query snippets applied to spans"""
 
     # The SpanSelector specifying the spans to include in this metric
     span_selector: SpanSelector
 
-    def get_metric_conditions(self) -> List[str]:
-        return [
-            f"({self.span_selector.generate_span_conditions_query_fragment(filter_by_span_type=True)})"
-        ]
+    @property
+    def observation_selector(self) -> SpanSelector:
+        return self.span_selector
 
     @property
-    def unit_of_observation(self) -> MetricUnitOfObservation:
-        return self.span_selector.unit_of_observation
-
-    @property
-    def unit_of_observation_type(self) -> MetricUnitOfObservationType:
-        return self.unit_of_observation.type
+    def span_type(self) -> SpanType:
+        return self.span_selector.span_type
 
 
 @attr.define(frozen=True, kw_only=True, slots=False)
-class EventMetricConditionsMixin(MetricConditionsMixin):
+class EventMetricConditionsMixin(MetricConditionsMixin[EventType]):
     """Attributes and functions to derive query snippets applied to events"""
 
     # The EventSelector specifying the events to include in this metric
     event_selector: EventSelector
 
-    def get_metric_conditions(self) -> List[str]:
-        return [
-            f"({self.event_selector.generate_event_conditions_query_fragment(filter_by_event_type=True)})"
-        ]
-
     @property
-    def unit_of_observation(self) -> MetricUnitOfObservation:
-        return self.event_selector.unit_of_observation
-
-    @property
-    def unit_of_observation_type(self) -> MetricUnitOfObservationType:
-        return self.unit_of_observation.type
+    def observation_selector(self) -> EventSelector:
+        return self.event_selector
 
     @property
     def event_type(self) -> EventType:

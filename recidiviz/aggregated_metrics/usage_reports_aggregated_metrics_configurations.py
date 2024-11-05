@@ -19,9 +19,7 @@
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     DailyAvgSpanCountMetric,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
-    SpanSelector,
-)
+from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
 
 AVG_DAILY_POPULATION_SURFACEABLE_NOT_MARKED_INELIGIBLE = DailyAvgSpanCountMetric(

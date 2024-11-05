@@ -28,12 +28,6 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
-    EventSelector,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
-    SpanSelector,
-)
 from recidiviz.looker.lookml_view_field import (
     DimensionLookMLViewField,
     LookMLFieldParameter,
@@ -45,7 +39,9 @@ from recidiviz.looker.lookml_view_field_parameter import (
     LookMLSqlReferenceType,
 )
 from recidiviz.looker.parameterized_value import ParameterizedValue
+from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType
+from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils import (
     custom_description_param_value_builder,
