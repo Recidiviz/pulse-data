@@ -15,55 +15,53 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes spans of time when someone is ineligible due to a current or
-past conviction a violent offense"""
+past conviction causing them to serve their full flat time sentence"""
 
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.sessions_query_fragments import (
+    join_sentence_spans_to_compartment_sessions,
+)
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.us_az_query_fragments import (
-    no_current_or_prior_convictions,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_AZ_NO_VIOLENT_CONVICTION"
+_CRITERIA_NAME = "US_AZ_NOT_SERVING_FLAT_SENTENCE"
 
-_DESCRIPTION = """Describes spans of time when someone is ineligible due to a current or
-past conviction a violent offense"""
-
-_INELIGIBLE_STATUTES = [
-    "13-1304",  # KIDNAPPING
-    "13-1211",  # FIREARM OFFENSES
-]
-
-_QUERY_TEMPLATE = no_current_or_prior_convictions(
-    statute=_INELIGIBLE_STATUTES,
-    additional_where_clause="sent.is_violent",
-    or_where_clause=True,
-)
+_QUERY_TEMPLATE = f"""
+    SELECT
+        span.state_code,
+        span.person_id,
+        span.start_date,
+        span.end_date,
+        FALSE AS meets_criteria,
+        TO_JSON(STRUCT(JSON_VALUE(sentence_metadata, '$.flat_sentence') as flat_sentence)) AS reason,
+        JSON_VALUE(sentence_metadata, '$.flat_sentence') AS flat_sentence,
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap='INCARCERATION')}
+    WHERE JSON_VALUE(sentence_metadata, '$.flat_sentence') = 'Y'
+    GROUP BY 1,2,3,4,5,sentence_metadata
+    """
 
 _REASONS_FIELDS = [
     ReasonsField(
-        name="ineligible_offenses",
-        type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-        description="A list of ineligible offenses related to violent crimes",
+        name="flat_sentence",
+        type=bigquery.enums.StandardSqlTypeNames.BOOL,
+        description="A boolean indicator of if a resident is serving a flat sentence",
     )
 ]
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_AZ,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
     )

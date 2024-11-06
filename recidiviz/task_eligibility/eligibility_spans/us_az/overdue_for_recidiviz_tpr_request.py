@@ -34,7 +34,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     acis_tpr_date_not_set,
     at_least_24_months_since_last_csed,
     is_us_citizen_or_legal_permanent_resident,
-    meets_functional_literacy,
+    meets_functional_literacy_tpr,
     no_active_felony_detainers,
     no_arson_conviction,
     no_dangerous_crimes_against_children_conviction,
@@ -45,7 +45,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_transition_release_in_current_sentence_span,
     no_unsatisfactory_program_ratings_within_3_months,
     no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction,
-    time_90_days_before_release,
+    not_serving_flat_sentence,
     within_6_months_of_recidiviz_tpr_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -65,16 +65,22 @@ from recidiviz.utils.metadata import local_project_id_override
 
 # Criteria shared in both TPR and DTP
 COMMON_CRITERIA_ACROSS_TPR_AND_DTP = [
-    time_90_days_before_release.VIEW_BUILDER,
     no_sexual_offense_conviction.VIEW_BUILDER,
     no_arson_conviction.VIEW_BUILDER,
     no_active_felony_detainers.VIEW_BUILDER,
     custody_level_is_minimum_or_medium.VIEW_BUILDER,
-    no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
-    no_major_violent_violation_during_incarceration.VIEW_BUILDER,
-    is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
     no_dangerous_crimes_against_children_conviction.VIEW_BUILDER,
     no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
+    not_serving_flat_sentence.VIEW_BUILDER,
+    AndTaskCriteriaGroup(
+        criteria_name="US_AZ_NO_VIOLATIONS_AND_ELIGIBLE_LEGAL_STATUS",
+        sub_criteria_list=[
+            no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
+            no_major_violent_violation_during_incarceration.VIEW_BUILDER,
+            is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[],
+    ),
 ]
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
@@ -87,7 +93,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         *COMMON_CRITERIA_ACROSS_TPR_AND_DTP,  # type: ignore
         ### TPR-specific criteria
         # a. Functional literacy
-        meets_functional_literacy.VIEW_BUILDER,
+        meets_functional_literacy_tpr.VIEW_BUILDER,
         # b. Offenses
         no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction.VIEW_BUILDER,
         # c. No TPR denials in current incarceration, TPRs on current sentence and no ACIS TPR date
@@ -97,6 +103,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 no_tpr_denial_in_current_incarceration.VIEW_BUILDER,
                 no_transition_release_in_current_sentence_span.VIEW_BUILDER,
                 acis_tpr_date_not_set.VIEW_BUILDER,
+                not_serving_flat_sentence.VIEW_BUILDER,
             ],
             allowed_duplicate_reasons_keys=[],
         ),
@@ -113,7 +120,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             PickNCompositeCriteriaCondition(
                 sub_conditions_list=[
                     NotEligibleCriteriaCondition(
-                        criteria=meets_functional_literacy.VIEW_BUILDER,
+                        criteria=meets_functional_literacy_tpr.VIEW_BUILDER,
                         description="Missing Mandatory Literacy criteria",
                     ),
                     EligibleCriteriaCondition(
@@ -145,7 +152,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                                 description="Missing Felony Detainer criteria",
                             ),
                             NotEligibleCriteriaCondition(
-                                criteria=meets_functional_literacy.VIEW_BUILDER,
+                                criteria=meets_functional_literacy_tpr.VIEW_BUILDER,
                                 description="Missing Mandatory Literacy criteria",
                             ),
                         ],
@@ -159,7 +166,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                                 description="Missing Felony Detainer criteria",
                             ),
                             EligibleCriteriaCondition(
-                                criteria=meets_functional_literacy.VIEW_BUILDER,
+                                criteria=meets_functional_literacy_tpr.VIEW_BUILDER,
                                 description="Missing Mandatory Literacy criteria",
                             ),
                         ],
