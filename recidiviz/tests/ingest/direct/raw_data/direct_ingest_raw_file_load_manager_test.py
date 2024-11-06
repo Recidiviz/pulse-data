@@ -18,7 +18,7 @@
 import datetime
 import os
 from typing import Any, List, Tuple
-from unittest.mock import create_autospec, patch
+from unittest.mock import MagicMock, create_autospec, patch
 
 import pandas as pd
 from google.api_core.exceptions import InternalServerError
@@ -303,6 +303,182 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
         assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
         assert len(list(self.bq_client.list_tables("us_xx_raw_data"))) == 1
 
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager.DirectIngestRawTablePreImportValidator"
+    )
+    def test_no_migrations_no_changes_skip_import_blocking(
+        self, pre_import_validator: MagicMock
+    ) -> None:
+        (
+            file_tag,
+            input_paths,
+            prep_output,
+            _append_output,
+            _raw_data_table,
+        ) = self._prep_test("no_migrations_no_changes_single_file")
+        irf = ImportReadyFile(
+            file_id=1,
+            file_tag=file_tag,
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            original_file_paths=input_paths,
+            pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
+            ),
+        )
+        append_ready_file = self.manager.load_and_prep_paths(
+            irf, skip_blocking_validations=True
+        )
+
+        assert append_ready_file.import_ready_file == irf
+        assert append_ready_file.raw_rows_count == 2
+        assert (
+            append_ready_file.append_ready_table_address.to_str()
+            == "us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"
+        )
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                BigQueryAddress(
+                    dataset_id="us_xx_primary_raw_data_temp_load",
+                    table_id="singlePrimaryKey__1",
+                )
+            )
+        )
+
+        self.assertTrue(len(self.fs.all_paths) == 1)
+
+        self.compare_output_against_expected(
+            append_ready_file.append_ready_table_address, prep_output
+        )
+
+        pre_import_validator.assert_not_called()
+
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_load_manager.DirectIngestRawTableMigrationCollector"
+    )
+    def test_skip_migrations(self, migration_collector: MagicMock) -> None:
+        (
+            file_tag,
+            input_paths,
+            prep_output,
+            _append_output,
+            _raw_data_table,
+        ) = self._prep_test("no_migrations_no_changes_single_file")
+        irf = ImportReadyFile(
+            file_id=1,
+            file_tag=file_tag,
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            original_file_paths=input_paths,
+            pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
+            ),
+        )
+        append_ready_file = self.manager.load_and_prep_paths(
+            irf, skip_blocking_validations=True
+        )
+
+        assert append_ready_file.import_ready_file == irf
+        assert append_ready_file.raw_rows_count == 2
+        assert (
+            append_ready_file.append_ready_table_address.to_str()
+            == "us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"
+        )
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                BigQueryAddress(
+                    dataset_id="us_xx_primary_raw_data_temp_load",
+                    table_id="singlePrimaryKey__1",
+                )
+            )
+        )
+
+        self.assertTrue(len(self.fs.all_paths) == 1)
+
+        self.compare_output_against_expected(
+            append_ready_file.append_ready_table_address, prep_output
+        )
+
+        migration_collector.assert_not_called()
+
+    def test_no_migrations_no_changes_no_clean_up(self) -> None:
+        (
+            file_tag,
+            input_paths,
+            prep_output,
+            append_output,
+            raw_data_table,
+        ) = self._prep_test("no_migrations_no_changes_single_file")
+        irf = ImportReadyFile(
+            file_id=1,
+            file_tag=file_tag,
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            original_file_paths=input_paths,
+            pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
+            ),
+        )
+        append_ready_file = self.manager.load_and_prep_paths(
+            irf, persist_intermediary_tables=True
+        )
+
+        assert append_ready_file.import_ready_file == irf
+        assert append_ready_file.raw_rows_count == 2
+        assert (
+            append_ready_file.append_ready_table_address.to_str()
+            == "us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"
+        )
+
+        self.assertTrue(
+            self.bq_client.table_exists(
+                BigQueryAddress(
+                    dataset_id="us_xx_primary_raw_data_temp_load",
+                    table_id="singlePrimaryKey__1",
+                )
+            )
+        )
+
+        self.assertTrue(len(self.fs.all_paths) == 1)
+
+        self.compare_output_against_expected(
+            append_ready_file.append_ready_table_address, prep_output
+        )
+
+        _ = self.manager.append_to_raw_data_table(
+            append_ready_file, persist_intermediary_tables=True
+        )
+
+        self.compare_output_against_expected(raw_data_table, append_output)
+
+        # make sure we didnt clean up
+
+        self.assertTrue(
+            self.bq_client.table_exists(
+                BigQueryAddress(
+                    dataset_id="us_xx_primary_raw_data_temp_load",
+                    table_id="singlePrimaryKey__1",
+                )
+            )
+        )
+
+        self.assertTrue(
+            self.bq_client.table_exists(
+                BigQueryAddress(
+                    dataset_id="us_xx_primary_raw_data_temp_load",
+                    table_id="singlePrimaryKey__1__transformed",
+                )
+            )
+        )
+
+        assert (
+            len(list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load")))
+            == 2
+        )
+        assert len(list(self.bq_client.list_tables("us_xx_raw_data"))) == 1
+
     def test_duplicate_rows_in_raw_data_table(self) -> None:
         (
             file_tag,
@@ -418,7 +594,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             append_ready_file.append_ready_table_address, output_df
         )
 
-    def test_historical_diff_depends_on_trasnform(self) -> None:
+    def test_historical_diff_depends_on_transform(self) -> None:
         self._set_pruning_mocks(True)
         (
             file_tag,
@@ -426,7 +602,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             prep_output,
             append_output,
             raw_data_table,
-        ) = self._prep_test("historical_diff_depends_on_trasnform")
+        ) = self._prep_test("historical_diff_depends_on_transform")
         irf = ImportReadyFile(
             file_id=10,
             file_tag=file_tag,

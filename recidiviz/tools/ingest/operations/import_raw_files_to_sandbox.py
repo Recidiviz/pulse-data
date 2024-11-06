@@ -81,7 +81,6 @@ from recidiviz.source_tables.source_table_update_manager import SourceTableUpdat
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.params import str_to_bool
 
 
 # TODO(#28239) remove enum once raw data import dag is rolled out
@@ -153,7 +152,7 @@ def source_table_collection_for_paths(
             sandbox_dataset_prefix=sandbox_dataset_prefix,
         ),
         # update config is regenerable if you want to be able to update the schema in
-        # the same sandbox prefix between
+        # the same sandbox prefix between runs
         update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[
             RawDataSourceTableLabel(
@@ -202,12 +201,17 @@ def source_table_collection_for_paths(
 
 
 def do_sandbox_raw_file_import(
+    *,
     state_code: StateCode,
     sandbox_dataset_prefix: str,
     source_bucket: GcsfsBucketPath,
     file_tag_filter_regex: Optional[str],
     infra_type: Optional[SandboxImportInfraType],
-    allow_incomplete_configs: bool,
+    infer_schema_from_csv: bool,
+    skip_blocking_validations: bool,
+    skip_raw_data_migrations: bool,
+    persist_intermediary_tables: bool,
+    allow_incomplete_chunked_files: bool,
 ) -> None:
     """Imports a set of raw data files in the given source bucket into a sandbox
     dataset.
@@ -259,9 +263,9 @@ def do_sandbox_raw_file_import(
         f"Proceed with sandbox import of [{len(files_to_import)}] files?"
     )
 
-    # In the LEGACY infra, allow_incomplete_configs means we cannot build the raw data
+    # In the LEGACY infra, infer_schema_from_csv means we cannot build the raw data
     # table ahead of time as we do not know before reading the actual file what the
-    # schema will be. If allow_incomplete_configs is True, BQ will create the table
+    # schema will be. If infer_schema_from_csv is True, BQ will create the table
     # automatically during the load job using the provided schema.
     #
     # In the NEW infra, we always create a temporary table that matches the schema
@@ -269,7 +273,7 @@ def do_sandbox_raw_file_import(
     # so you will be always be able to see both the table with the schema that matches
     # the file exactly, as well as that schema mapped to the current raw config schema.
     create_tables_ahead_of_time = (
-        infra_type == SandboxImportInfraType.NEW or allow_incomplete_configs
+        infra_type == SandboxImportInfraType.NEW or infer_schema_from_csv
     )
 
     source_table_collections_for_sandbox = source_table_collection_for_paths(
@@ -298,7 +302,7 @@ def do_sandbox_raw_file_import(
                 state_code=state_code,
                 sandbox_dataset_prefix=sandbox_dataset_prefix,
                 files_to_import=files_to_import,
-                allow_incomplete_configs=allow_incomplete_configs,
+                infer_schema_from_csv=infer_schema_from_csv,
                 big_query_client=BigQueryClientImpl(),
                 fs=fs,
             )
@@ -307,10 +311,14 @@ def do_sandbox_raw_file_import(
                 state_code=state_code,
                 sandbox_dataset_prefix=sandbox_dataset_prefix,
                 files_to_import=files_to_import,
-                allow_incomplete_configs=allow_incomplete_configs,
                 big_query_client=bq_client,
                 fs=fs,
                 region_config=region_raw_file_config,
+                infer_schema_from_csv=infer_schema_from_csv,
+                skip_blocking_validations=skip_blocking_validations,
+                skip_raw_data_migrations=skip_raw_data_migrations,
+                persist_intermediary_tables=persist_intermediary_tables,
+                allow_incomplete_chunked_files=allow_incomplete_chunked_files,
             )
 
     logging.info("************************** RESULTS **************************")
@@ -368,9 +376,60 @@ def parse_arguments() -> argparse.Namespace:
         required=False,
     )
 
-    # TODO(#34523) update this flag to be --allow-incomplete-columns?
-    parser.add_argument("--allow-incomplete-configs", type=str_to_bool, default=True)
+    # TODO(#28239) clean up doc when raw data infra is rolled out
+    parser.add_argument(
+        "--infer-schema-from-csv",
+        help=(
+            "For files with a header row, will infers the raw file's schema from the "
+            "header row of the csv instead of using the raw file config to determine the "
+            "schema. If running on the new infra, we will additionally persist the "
+            "__transformed table whose schema will match the raw data file and has a "
+            "default TTL of 1 day."
+        ),
+        action="store_true",
+    )
 
+    parser.add_argument(
+        "--skip-blocking-validations",
+        help=(
+            "Skips import blocking validations during the big query load step. These "
+            "validations validate things like columns types, datetime parsers and "
+            "historical file counts."
+        ),
+        action="store_true",
+    )
+
+    # TODO(#28239) clean up doc when raw data infra is rolled out
+    parser.add_argument(
+        "--skip-raw-data-migrations",
+        help=(
+            "Skips raw data migrations during the big query load step. Only applies to"
+            "the new raw data infra."
+        ),
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--persist-intermediary-tables",
+        help=(
+            "Ensures that intermediary tables, namely the temporary raw file table that "
+            "directly reflects the raw file and the transformed table with raw data "
+            "migrations applied, are persisted after a successful sandbox import. Both "
+            "of these tables have an default TTL of 1 day."
+        ),
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--allow-incomplete-chunked-files",
+        help=(
+            "Allows incomplete chunked files, meaning that we don't enforce that the "
+            "expected_number_of_chunks specified for in chunked file's config matches"
+            "the number of chunks for each day when grouping files marked is_chunked_file "
+            "in the raw file config."
+        ),
+        action="store_true",
+    )
     return parser.parse_args()
 
 
@@ -384,5 +443,9 @@ if __name__ == "__main__":
             source_bucket=GcsfsBucketPath(known_args.source_bucket),
             file_tag_filter_regex=known_args.file_tag_filter_regex,
             infra_type=SandboxImportInfraType(known_args.infra_type),
-            allow_incomplete_configs=known_args.allow_incomplete_configs,
+            infer_schema_from_csv=known_args.infer_schema_from_csv,
+            skip_blocking_validations=known_args.skip_blocking_validations,
+            skip_raw_data_migrations=known_args.skip_raw_data_migrations,
+            persist_intermediary_tables=known_args.persist_intermediary_tables,
+            allow_incomplete_chunked_files=known_args.allow_incomplete_chunked_files,
         )

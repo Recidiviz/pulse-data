@@ -278,7 +278,14 @@ class DirectIngestRawFileLoadManager:
             raw_file_config.separator,
         )
 
-    def load_and_prep_paths(self, file: ImportReadyFile) -> AppendReadyFile:
+    def load_and_prep_paths(
+        self,
+        file: ImportReadyFile,
+        *,
+        skip_raw_data_migrations: bool = False,
+        skip_blocking_validations: bool = False,
+        persist_intermediary_tables: bool = False,
+    ) -> AppendReadyFile:
         """Loads and transforms a raw data file into a temp table, in the order of:
             (1) load raw data directly into a temp table
             (2) apply pre-migration transformations
@@ -330,14 +337,15 @@ class DirectIngestRawFileLoadManager:
             file.update_datetime,
         )
 
-        self._apply_migrations(
-            file.file_tag,
-            file.update_datetime,
-            temp_raw_file_with_transformations_address,
-        )
+        if not skip_raw_data_migrations:
+            self._apply_migrations(
+                file.file_tag,
+                file.update_datetime,
+                temp_raw_file_with_transformations_address,
+            )
 
         # TODO(#34610) Skip import entirely if there are no rows in an incremental file
-        if (
+        if not skip_blocking_validations or (
             raw_rows_count != 0
             or self.region_raw_file_config.raw_file_configs[
                 file.file_tag
@@ -349,7 +357,8 @@ class DirectIngestRawFileLoadManager:
                 temp_raw_file_with_transformations_address,
             )
 
-        self._clean_up_temp_tables(temp_raw_file_address)
+        if not persist_intermediary_tables:
+            self._clean_up_temp_tables(temp_raw_file_address)
 
         return AppendReadyFile(
             import_ready_file=file,
@@ -473,6 +482,8 @@ class DirectIngestRawFileLoadManager:
     def append_to_raw_data_table(
         self,
         append_ready_file: AppendReadyFile,
+        *,
+        persist_intermediary_tables: bool = False,
     ) -> AppendSummary:
         """Appends already loaded and transformed data to the raw data table,
         optionally applying a historical data diff to the data if historical diffs
@@ -516,10 +527,12 @@ class DirectIngestRawFileLoadManager:
         self._append_data_to_raw_table(
             source_table=append_source_table, destination_table=raw_data_table
         )
-        self._clean_up_temp_tables(
-            append_ready_file.append_ready_table_address,
-            temp_raw_data_diff_table_address,
-        )
+
+        if not persist_intermediary_tables:
+            self._clean_up_temp_tables(
+                append_ready_file.append_ready_table_address,
+                temp_raw_data_diff_table_address,
+            )
 
         # TODO(#28694) add additional query to grab these stats
         return AppendSummary(

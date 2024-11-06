@@ -1162,7 +1162,7 @@ class RawFileImport(BaseResult):
     ) -> "RawFileImport":
         return RawFileImport(
             import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
-            file_id=append_ready_file.import_ready_file.file_id,
+            file_id=append_summary.file_id,
             raw_rows=append_ready_file.raw_rows_count,
             net_new_or_updated_rows=append_summary.net_new_or_updated_rows,
             deleted_rows=append_summary.deleted_rows,
