@@ -20,6 +20,7 @@ import struct
 from unittest import TestCase
 from unittest.mock import ANY, MagicMock, call, create_autospec, patch
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -33,6 +34,9 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import impo
     legacy_import_raw_files_to_bq_sandbox,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
+    AppendReadyFile,
+    AppendSummary,
+    ImportReadyFile,
     PreImportNormalizationType,
     PreImportNormalizedCsvChunkResult,
     RawBigQueryFileMetadata,
@@ -99,7 +103,7 @@ class LegacyImportRawFilesToBQSandboxTest(TestCase):
         legacy_import_raw_files_to_bq_sandbox(
             state_code=StateCode.US_XX,
             sandbox_dataset_prefix="foo",
-            allow_incomplete_configs=False,
+            infer_schema_from_csv=False,
             files_to_import=files_to_import,
             big_query_client=self.mock_big_query_client,
             fs=self.mock_gcsfs,
@@ -128,7 +132,7 @@ class LegacyImportRawFilesToBQSandboxTest(TestCase):
         legacy_import_raw_files_to_bq_sandbox(
             state_code=StateCode.US_XX,
             sandbox_dataset_prefix="foo",
-            allow_incomplete_configs=False,
+            infer_schema_from_csv=False,
             files_to_import=files_to_import,
             big_query_client=self.mock_big_query_client,
             fs=self.mock_gcsfs,
@@ -311,6 +315,14 @@ class ImportRawFilesToBQSandboxTest(TestCase):
         bq_metadata = RawBigQueryFileMetadata.from_gcs_files(gcs_files)
 
         headers_mock.return_value = ["col", "col2", "col3"]
+        load_mock().load_and_prep_paths.return_value = AppendReadyFile(
+            import_ready_file=create_autospec(ImportReadyFile),
+            append_ready_table_address=create_autospec(BigQueryAddress),
+            raw_rows_count=1,
+        )
+        load_mock().append_to_raw_data_table.return_value = AppendSummary(
+            file_id=1, historical_diffs_active=False
+        )
 
         _import_bq_metadata_to_sandbox(
             fs=self.mock_gcsfs,
@@ -318,7 +330,10 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             region_config=self.region_raw_file_config,
             bq_metadata=bq_metadata,
             sandbox_dataset_prefix="test",
-            allow_incomplete_configs=False,
+            infer_schema_from_csv=False,
+            skip_blocking_validations=False,
+            persist_intermediary_tables=False,
+            skip_raw_data_migrations=False,
         )
 
         headers_mock.assert_called_once()
@@ -368,6 +383,14 @@ class ImportRawFilesToBQSandboxTest(TestCase):
         bq_metadata = RawBigQueryFileMetadata.from_gcs_files(gcs_files)
 
         headers_mock.return_value = ["col", "col2", "col3"]
+        load_mock().load_and_prep_paths.return_value = AppendReadyFile(
+            import_ready_file=create_autospec(ImportReadyFile),
+            append_ready_table_address=create_autospec(BigQueryAddress),
+            raw_rows_count=1,
+        )
+        load_mock().append_to_raw_data_table.return_value = AppendSummary(
+            file_id=1, historical_diffs_active=False
+        )
 
         _import_bq_metadata_to_sandbox(
             fs=self.mock_gcsfs,
@@ -375,7 +398,10 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             region_config=self.region_raw_file_config,
             bq_metadata=bq_metadata,
             sandbox_dataset_prefix="test",
-            allow_incomplete_configs=False,
+            infer_schema_from_csv=False,
+            skip_blocking_validations=False,
+            persist_intermediary_tables=False,
+            skip_raw_data_migrations=False,
         )
 
         headers_mock.assert_called_once()
@@ -411,6 +437,14 @@ class ImportRawFilesToBQSandboxTest(TestCase):
         bq_metadata = RawBigQueryFileMetadata.from_gcs_files(gcs_files)
 
         headers_mock.return_value = ["col", "col2", "col3"]
+        load_mock().load_and_prep_paths.return_value = AppendReadyFile(
+            import_ready_file=create_autospec(ImportReadyFile),
+            append_ready_table_address=create_autospec(BigQueryAddress),
+            raw_rows_count=1,
+        )
+        load_mock().append_to_raw_data_table.return_value = AppendSummary(
+            file_id=1, historical_diffs_active=False
+        )
 
         _import_bq_metadata_to_sandbox(
             fs=self.mock_gcsfs,
@@ -418,10 +452,199 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             region_config=self.region_raw_file_config,
             bq_metadata=bq_metadata,
             sandbox_dataset_prefix="test",
-            allow_incomplete_configs=False,
+            infer_schema_from_csv=False,
+            skip_blocking_validations=False,
+            persist_intermediary_tables=False,
+            skip_raw_data_migrations=False,
         )
 
         headers_mock.assert_called_once()
         pre_import_mock.assert_called_once()
         load_mock().load_and_prep_paths.assert_called_once()
         load_mock().append_to_raw_data_table.assert_called_once()
+
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import._validate_headers"
+    )
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import._do_pre_import_normalization"
+    )
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import.DirectIngestRawFileLoadManager"
+    )
+    def test_import_bq_metadata_to_infer_columns(
+        self,
+        load_mock: MagicMock,
+        pre_import_mock: MagicMock,
+        headers_mock: MagicMock,
+    ) -> None:
+        gcs_files = [
+            RawGCSFileMetadata(
+                path=GcsfsFilePath.from_absolute_path(
+                    "gs://test/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv"
+                ),
+                gcs_file_id=1,
+                file_id=1,
+            )
+        ]
+
+        bq_metadata = RawBigQueryFileMetadata.from_gcs_files(gcs_files)
+
+        headers_mock.return_value = ["col", "col2", "col3"]
+        load_mock().load_and_prep_paths.return_value = AppendReadyFile(
+            import_ready_file=create_autospec(ImportReadyFile),
+            append_ready_table_address=create_autospec(BigQueryAddress),
+            raw_rows_count=1,
+        )
+        load_mock().append_to_raw_data_table.return_value = AppendSummary(
+            file_id=1, historical_diffs_active=False
+        )
+
+        _import_bq_metadata_to_sandbox(
+            fs=self.mock_gcsfs,
+            bq_client=self.mock_big_query_client,
+            region_config=self.region_raw_file_config,
+            bq_metadata=bq_metadata,
+            sandbox_dataset_prefix="test",
+            infer_schema_from_csv=True,
+            skip_blocking_validations=False,
+            persist_intermediary_tables=False,
+            skip_raw_data_migrations=False,
+        )
+
+        headers_mock.assert_called_once()
+        pre_import_mock.assert_called_once()
+        load_mock().load_and_prep_paths.assert_called_once()
+        load_mock().append_to_raw_data_table.assert_has_calls(
+            [call(ANY, persist_intermediary_tables=True)]
+        )
+
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import._validate_headers"
+    )
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import._do_pre_import_normalization"
+    )
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import.DirectIngestRawFileLoadManager"
+    )
+    def test_import_bq_metadata_persist_tables(
+        self,
+        load_mock: MagicMock,
+        pre_import_mock: MagicMock,
+        headers_mock: MagicMock,
+    ) -> None:
+        gcs_files = [
+            RawGCSFileMetadata(
+                path=GcsfsFilePath.from_absolute_path(
+                    "gs://test/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv"
+                ),
+                gcs_file_id=1,
+                file_id=1,
+            )
+        ]
+
+        bq_metadata = RawBigQueryFileMetadata.from_gcs_files(gcs_files)
+
+        headers_mock.return_value = ["col", "col2", "col3"]
+        load_mock().load_and_prep_paths.return_value = AppendReadyFile(
+            import_ready_file=create_autospec(ImportReadyFile),
+            append_ready_table_address=create_autospec(BigQueryAddress),
+            raw_rows_count=1,
+        )
+        load_mock().append_to_raw_data_table.return_value = AppendSummary(
+            file_id=1, historical_diffs_active=False
+        )
+
+        _import_bq_metadata_to_sandbox(
+            fs=self.mock_gcsfs,
+            bq_client=self.mock_big_query_client,
+            region_config=self.region_raw_file_config,
+            bq_metadata=bq_metadata,
+            sandbox_dataset_prefix="test",
+            infer_schema_from_csv=False,
+            skip_blocking_validations=False,
+            persist_intermediary_tables=True,
+            skip_raw_data_migrations=False,
+        )
+
+        headers_mock.assert_called_once()
+        pre_import_mock.assert_called_once()
+        load_mock().load_and_prep_paths.assert_has_calls(
+            [
+                call(
+                    ANY,
+                    skip_blocking_validations=False,
+                    persist_intermediary_tables=True,
+                    skip_raw_data_migrations=False,
+                )
+            ]
+        )
+        load_mock().append_to_raw_data_table.assert_has_calls(
+            [call(ANY, persist_intermediary_tables=True)]
+        )
+
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import._validate_headers"
+    )
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import._do_pre_import_normalization"
+    )
+    @patch(
+        "recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_sandbox_import.DirectIngestRawFileLoadManager"
+    )
+    def test_import_bq_metadata_skip_migrations(
+        self,
+        load_mock: MagicMock,
+        pre_import_mock: MagicMock,
+        headers_mock: MagicMock,
+    ) -> None:
+        gcs_files = [
+            RawGCSFileMetadata(
+                path=GcsfsFilePath.from_absolute_path(
+                    "gs://test/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv"
+                ),
+                gcs_file_id=1,
+                file_id=1,
+            )
+        ]
+
+        bq_metadata = RawBigQueryFileMetadata.from_gcs_files(gcs_files)
+
+        headers_mock.return_value = ["col", "col2", "col3"]
+        load_mock().load_and_prep_paths.return_value = AppendReadyFile(
+            import_ready_file=create_autospec(ImportReadyFile),
+            append_ready_table_address=create_autospec(BigQueryAddress),
+            raw_rows_count=1,
+        )
+        load_mock().append_to_raw_data_table.return_value = AppendSummary(
+            file_id=1, historical_diffs_active=False
+        )
+
+        _import_bq_metadata_to_sandbox(
+            fs=self.mock_gcsfs,
+            bq_client=self.mock_big_query_client,
+            region_config=self.region_raw_file_config,
+            bq_metadata=bq_metadata,
+            sandbox_dataset_prefix="test",
+            infer_schema_from_csv=False,
+            skip_blocking_validations=False,
+            persist_intermediary_tables=False,
+            skip_raw_data_migrations=True,
+        )
+
+        headers_mock.assert_called_once()
+        pre_import_mock.assert_called_once()
+        load_mock().load_and_prep_paths.assert_has_calls(
+            [
+                call(
+                    ANY,
+                    skip_blocking_validations=False,
+                    persist_intermediary_tables=False,
+                    skip_raw_data_migrations=True,
+                )
+            ]
+        )
+        load_mock().append_to_raw_data_table.assert_has_calls(
+            [call(ANY, persist_intermediary_tables=False)]
+        )

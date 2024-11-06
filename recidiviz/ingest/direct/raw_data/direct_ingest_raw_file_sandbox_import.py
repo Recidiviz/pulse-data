@@ -61,12 +61,12 @@ from recidiviz.ingest.direct.raw_data.read_raw_file_column_headers import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
-    AppendSummary,
     ImportReadyFile,
     PreImportNormalizationType,
     PreImportNormalizedCsvChunkResult,
     RawBigQueryFileMetadata,
     RawFileBigQueryLoadConfig,
+    RawFileImport,
     RawGCSFileMetadata,
     RequiresPreImportNormalizationFile,
 )
@@ -93,7 +93,7 @@ class SandboxImportStatus(Enum):
     FAILED = "failed"
 
 
-@attr.define
+@attr.define(kw_only=True)
 class SandboxConceptualFileImportResult:
     """Represents the import result of a conceptual raw data file"""
 
@@ -103,11 +103,34 @@ class SandboxConceptualFileImportResult:
     status: SandboxImportStatus = attr.ib(
         validator=attr.validators.in_(SandboxImportStatus)
     )
-    error_message: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
+    raw_rows_count: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+    error_message: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    def __attrs_post_init__(self) -> None:
+        if self.raw_rows_count is not None and self.error_message is not None:
+            raise ValueError(
+                "Cannot have both an error message and a number of successful row count"
+            )
+
+    @property
+    def suffix(self) -> str:
+        if self.error_message and self.raw_rows_count:
+            raise ValueError(
+                "If we have a raw rows count, we shouldn't have an error message"
+            )
+        if self.error_message is not None:
+            return f": {self.error_message}"
+        if self.raw_rows_count is not None:
+            return f": {self.raw_rows_count} rows"
+
+        return ""
 
     def format_for_print(self) -> str:
-        suffix = f": {self.error_message}" if self.error_message else ""
-        return f"[{self.status.name}] {','.join([path.blob_name for path in self.paths])} {suffix}"
+        return f"[{self.status.name}] {','.join([path.blob_name for path in self.paths])} {self.suffix}"
 
 
 @attr.define
@@ -127,7 +150,7 @@ def legacy_import_raw_files_to_bq_sandbox(
     state_code: StateCode,
     sandbox_dataset_prefix: str,
     files_to_import: List[GcsfsFilePath],
-    allow_incomplete_configs: bool,
+    infer_schema_from_csv: bool,
     big_query_client: BigQueryClient,
     fs: DirectIngestGCSFileSystem,
 ) -> SandboxImportRun:
@@ -151,7 +174,7 @@ def legacy_import_raw_files_to_bq_sandbox(
             csv_reader=csv_reader,
             big_query_client=big_query_client,
             sandbox_dataset_prefix=sandbox_dataset_prefix,
-            allow_incomplete_configs=allow_incomplete_configs,
+            infer_schema_from_csv=infer_schema_from_csv,
             # Sandbox instance can be primary
             instance=DirectIngestInstance.PRIMARY,
         )
@@ -243,14 +266,14 @@ def _validate_headers(
     fs: GCSFileSystem,
     raw_file_config: DirectIngestRawFileConfig,
     bq_metadata: RawBigQueryFileMetadata,
-    allow_incomplete_configs: bool,
+    infer_schema_from_csv: bool,
 ) -> List[str]:
     """Executes header validation for all the gcs paths for |bq_metadata|."""
     for file in bq_metadata.gcs_files:
         header = DirectIngestRawFileHeaderReader(
             fs=fs,
             file_config=raw_file_config,
-            allow_incomplete_configs=allow_incomplete_configs,
+            infer_schema_from_csv=infer_schema_from_csv,
         ).read_and_validate_column_headers(file.path)
 
     return header
@@ -334,8 +357,11 @@ def _import_bq_metadata_to_sandbox(
     region_config: DirectIngestRegionRawFileConfig,
     bq_metadata: RawBigQueryFileMetadata,
     sandbox_dataset_prefix: str,
-    allow_incomplete_configs: bool,
-) -> AppendSummary:
+    infer_schema_from_csv: bool,
+    skip_blocking_validations: bool,
+    skip_raw_data_migrations: bool,
+    persist_intermediary_tables: bool,
+) -> RawFileImport:
     """Imports a single |bq_metadata| into a sandbox raw data table."""
 
     logging.info(
@@ -352,7 +378,7 @@ def _import_bq_metadata_to_sandbox(
         fs=fs,
         raw_file_config=raw_file_config,
         bq_metadata=bq_metadata,
-        allow_incomplete_configs=allow_incomplete_configs,
+        infer_schema_from_csv=infer_schema_from_csv,
     )
     load_config = RawFileBigQueryLoadConfig.from_headers_and_raw_file_config(
         file_headers=headers,
@@ -388,20 +414,26 @@ def _import_bq_metadata_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
     )
 
-    # TODO(#34523) add --run-blocking-validations flag as defaulting to True. if they
-    # are failing for an expected reason, it would be nice to be able to get passed
-    # them
-    # TODO(#34523) add --delete-intermediary-tables flag as defaulting to True. it would
-    # be nice to be able to see all intermediary tables if you want to see the raw file
-    # in bq as well as the transformed file
-    append_ready = loader.load_and_prep_paths(import_ready_file)
+    append_ready = loader.load_and_prep_paths(
+        import_ready_file,
+        skip_blocking_validations=skip_blocking_validations,
+        skip_raw_data_migrations=skip_raw_data_migrations,
+        persist_intermediary_tables=persist_intermediary_tables,
+    )
     # TODO(#12209) add additional features for raw data pruning -- for tables that will be
     # pruned, what do we want the behavior of the sandbox import to look like? importing
     # the whole file? or import what _would_ be imported into the table if ran (also
     # how would that work for older update_datetimes????)
-    result = loader.append_to_raw_data_table(append_ready)
+    append_summary = loader.append_to_raw_data_table(
+        append_ready,
+        # persist intermediary tables (the __transformed table) if persist_intermediary_tables
+        # is true or if infer_schema_from_csv is true and we want a table that directly
+        # reflects the raw file irrespective of what the config says
+        persist_intermediary_tables=persist_intermediary_tables
+        or infer_schema_from_csv,
+    )
 
-    return result
+    return RawFileImport.from_load_results(append_ready, append_summary)
 
 
 def _build_gcs_metadata(
@@ -421,6 +453,7 @@ def _build_gcs_metadata(
 def _build_bq_metadata(
     gcs_metadata: List[RawGCSFileMetadata],
     region_raw_file_config: DirectIngestRegionRawFileConfig,
+    allow_incomplete_chunked_files: bool,
 ) -> Tuple[List[RawBigQueryFileMetadata], List[SandboxConceptualFileImportResult]]:
     """Builds "conceptual" RawBigQueryFileMetadata files from the literal gcs files
     represented in RawGCSFileMetadata objects.
@@ -464,8 +497,9 @@ def _build_bq_metadata(
 
                 gcs_files = upload_date_to_gcs_files[upload_date]
 
-                # TODO(#34523) add --allow-incomplete-conceptual-files flag?
-                if expected_chunk_count == len(upload_date_to_gcs_files[upload_date]):
+                if allow_incomplete_chunked_files or expected_chunk_count == len(
+                    upload_date_to_gcs_files[upload_date]
+                ):
                     logging.info(
                         "Found %s/%s paths for %s on %s -- grouping %s",
                         len(gcs_files),
@@ -505,36 +539,47 @@ def import_raw_files_to_sandbox(
     state_code: StateCode,
     sandbox_dataset_prefix: str,
     files_to_import: List[GcsfsFilePath],
-    allow_incomplete_configs: bool,
     big_query_client: BigQueryClient,
     fs: DirectIngestGCSFileSystem,
     region_config: DirectIngestRegionRawFileConfig,
+    infer_schema_from_csv: bool,
+    skip_blocking_validations: bool,
+    skip_raw_data_migrations: bool,
+    persist_intermediary_tables: bool,
+    allow_incomplete_chunked_files: bool,
 ) -> SandboxImportRun:
     """Executes a sandbox import for |files_to_import|."""
     status_to_imports = defaultdict(list)
 
     gcs_metadata = _build_gcs_metadata(state_code, files_to_import)
-    bq_metadata, skipped_files = _build_bq_metadata(gcs_metadata, region_config)
+    bq_metadata, skipped_files = _build_bq_metadata(
+        gcs_metadata,
+        region_config,
+        allow_incomplete_chunked_files=allow_incomplete_chunked_files,
+    )
 
     if skipped_files:
         status_to_imports[SandboxImportStatus.SKIPPED] = skipped_files
 
     for metadata in bq_metadata:
         try:
-            # TODO(#34523) add stats about run to result
-            _result = _import_bq_metadata_to_sandbox(
+            result = _import_bq_metadata_to_sandbox(
                 fs=fs,
                 bq_client=big_query_client,
                 region_config=region_config,
                 bq_metadata=metadata,
                 sandbox_dataset_prefix=sandbox_dataset_prefix,
-                allow_incomplete_configs=allow_incomplete_configs,
+                infer_schema_from_csv=infer_schema_from_csv,
+                skip_blocking_validations=skip_blocking_validations,
+                skip_raw_data_migrations=skip_raw_data_migrations,
+                persist_intermediary_tables=persist_intermediary_tables,
             )
             status_to_imports[SandboxImportStatus.SUCCEEDED].append(
                 SandboxConceptualFileImportResult(
                     paths=[gcs_file.path for gcs_file in metadata.gcs_files],
                     status=SandboxImportStatus.SUCCEEDED,
                     error_message=None,
+                    raw_rows_count=result.raw_rows,
                 )
             )
 

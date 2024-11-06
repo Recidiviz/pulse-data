@@ -87,11 +87,11 @@ class DirectIngestRawFileReader:
         *,
         csv_reader: GcsfsCsvReader,
         region_raw_file_config: DirectIngestRegionRawFileConfig,
-        allow_incomplete_configs: bool = False,
+        infer_schema_from_csv: bool = False,
     ) -> None:
         self.csv_reader = csv_reader
         self.region_raw_file_config = region_raw_file_config
-        self.allow_incomplete_configs = allow_incomplete_configs
+        self.infer_schema_from_csv = infer_schema_from_csv
 
     def read_raw_file_from_gcs(
         self,
@@ -195,7 +195,7 @@ class DirectIngestRawFileReader:
                     f"upload."
                 )
 
-        if not self.allow_incomplete_configs:
+        if not self.infer_schema_from_csv:
             check_found_columns_are_subset_of_config(
                 raw_file_config=file_config, found_columns=normalized_csv_columns
             )
@@ -247,7 +247,7 @@ class LegacyDirectIngestRawFileImportManager:
         instance: DirectIngestInstance,
         region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None,
         sandbox_dataset_prefix: Optional[str] = None,
-        allow_incomplete_configs: bool = False,
+        infer_schema_from_csv: bool = False,
     ):
         self.region = region
         self.state_code = StateCode(self.region.region_code.upper())
@@ -265,7 +265,7 @@ class LegacyDirectIngestRawFileImportManager:
         self.raw_file_reader = DirectIngestRawFileReader(
             csv_reader=csv_reader,
             region_raw_file_config=self.region_raw_file_config,
-            allow_incomplete_configs=allow_incomplete_configs,
+            infer_schema_from_csv=infer_schema_from_csv,
         )
         self.instance = instance
         self.raw_table_migrations = DirectIngestRawTableMigrationCollector(

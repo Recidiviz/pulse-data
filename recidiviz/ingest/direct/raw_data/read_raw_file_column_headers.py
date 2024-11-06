@@ -38,12 +38,12 @@ class DirectIngestRawFileHeaderReader:
     Attributes:
         fs: GCSFileSystem object for reading the file.
         file_config: DirectIngestRawFileConfig object containing the file configuration.
-        allow_incomplete_configs: If False, will raise a ValueError if a column found in the raw
+        infer_schema_from_csv: If False, will raise a ValueError if a column found in the raw
             file is not found in the raw file config. Defaults to False."""
 
     fs: GCSFileSystem
     file_config: DirectIngestRawFileConfig
-    allow_incomplete_configs: bool = False
+    infer_schema_from_csv: bool = False
 
     def read_and_validate_column_headers(
         self, gcs_file_path: GcsfsFilePath
@@ -119,7 +119,7 @@ class DirectIngestRawFileHeaderReader:
         If file_config.infer_columns_from_config is True:
             Validate that all of the columns found in |expected_column_names| are present
             in the file and that there are no duplicate column names.
-            If allow_incomplete_configs is False, will also validate that all columns
+            If infer_schema_from_csv is False, will also validate that all columns
             found in the file are present in |expected_column_names|.
 
         If file_config.infer_columns_from_config is False:
@@ -151,7 +151,7 @@ class DirectIngestRawFileHeaderReader:
             caps_normalized_col = lowercase_col_name_to_expected_col_name.get(
                 normalized_col.lower()
             )
-            if not caps_normalized_col and not self.allow_incomplete_configs:
+            if not caps_normalized_col and not self.infer_schema_from_csv:
                 raise ValueError(
                     f"Column name [{normalized_col}] not found in config for [{self.file_config.file_tag}]."
                 )

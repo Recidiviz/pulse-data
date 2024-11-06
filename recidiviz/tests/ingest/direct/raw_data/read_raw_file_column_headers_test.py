@@ -200,7 +200,7 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
         )
 
         header_reader = DirectIngestRawFileHeaderReader(
-            self.fs, updated_file_config, allow_incomplete_configs=True
+            self.fs, updated_file_config, infer_schema_from_csv=True
         )
 
         result = header_reader.read_and_validate_column_headers(file_path)
