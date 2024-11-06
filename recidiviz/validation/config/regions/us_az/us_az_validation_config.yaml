@@ -25,7 +25,7 @@ exclusions:
 max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
     soft_max_allowed_error_override: 0.03
-    hard_max_allowed_error_override: 0.60
+    hard_max_allowed_error_override: 0.20
     override_reason: Investigation needed. TODO(#30582)
   - validation_name: supervision_population_by_type_external_comparison
     hard_max_allowed_error_override: 0.11
@@ -35,18 +35,15 @@ max_allowed_error_overrides:
       of the raw data available. More recent months are within that threshold, and older
       months have higher error rates.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
-    hard_max_allowed_error_override: .1
+    hard_max_allowed_error_override: .11
     override_reason: Investigation needed. TODO(#32640)
   - validation_name: incarceration_population_by_custody_level_external_comparison
     hard_max_allowed_error_override: .3
     override_reason: Investigation needed. TODO(#33417)
 num_allowed_rows_overrides:
   - validation_name: invalid_release_reasons_for_temporary_custody
-    hard_num_allowed_rows_override: 3000
-    override_reason: |-
-      These rows relate to periods where a person was incarcerated prior to receiving
-      an official revocation of their supervision. The release reasons that are invalid
-      are mostly REVOCATION. This is expected.
+    hard_num_allowed_rows_override: 50
+    override_reason: Investigation needed. TODO(#34826)
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 150
     override_reason: |-
