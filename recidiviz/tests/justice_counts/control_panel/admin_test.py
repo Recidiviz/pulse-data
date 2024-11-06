@@ -27,7 +27,7 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
-from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics import law_enforcement, prisons
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
@@ -1013,3 +1013,118 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(child_agency_B_data["child_agency_ids"], [])
 
         self.assertEqual(systems_data, [system.value for system in VALID_SYSTEMS])
+
+    def test_get_agency_reporting_agencies(self) -> None:
+        """Test retrieval of reporting agency options and metrics for a specific child agency."""
+
+        # Set up test agencies and commit to obtain their IDs
+        super_agency = self.test_schema_objects.test_prison_super_agency
+        vendor_A = self.test_schema_objects.vendor_A
+        csg = self.test_schema_objects.csg
+
+        self.session.add_all([super_agency, vendor_A, csg])
+        self.session.commit()
+        self.session.refresh(super_agency)
+        self.session.refresh(vendor_A)
+        self.session.refresh(csg)
+
+        # Configure child agency and assign the super agency
+        child_agency_A = self.test_schema_objects.test_prison_child_agency_A
+        child_agency_A.super_agency_id = super_agency.id
+        self.session.add(child_agency_A)
+        self.session.commit()
+        self.session.refresh(child_agency_A)
+
+        # Add metric settings to test self-reporting and reporting by other agencies
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=child_agency_A,
+            agency_metric_updates=MetricInterface(
+                key=prisons.funding.key, is_self_reported=True
+            ),
+        )
+
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=child_agency_A,
+            agency_metric_updates=MetricInterface(
+                key=prisons.expenses.key, reporting_agency_id=super_agency.id
+            ),
+        )
+
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=child_agency_A,
+            agency_metric_updates=MetricInterface(
+                key=prisons.staff.key, reporting_agency_id=csg.id
+            ),
+        )
+
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=child_agency_A,
+            agency_metric_updates=MetricInterface(
+                key=prisons.readmissions.key, reporting_agency_id=vendor_A.id
+            ),
+        )
+        self.session.commit()
+
+        # Make the GET request to the endpoint
+        response = self.client.get(
+            f"/admin/agency/{child_agency_A.id}/reporting-agency"
+        )
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+
+        # Validate the metrics structure in the response
+        metrics_json = response_json["metrics"]
+        self.assertEqual(["PRISONS"], list(metrics_json.keys()))
+        self.assertEqual(
+            {metric["key"] for metric in metrics_json["PRISONS"]},
+            {
+                prisons.funding.key,
+                prisons.expenses.key,
+                prisons.staff.key,
+                prisons.readmissions.key,
+                prisons.grievances_upheld.key,
+                prisons.admissions.key,
+                prisons.releases.key,
+                prisons.staff_use_of_force_incidents.key,
+                prisons.daily_population.key,
+            },
+        )
+
+        # Validate reporting agencies information in the response
+        reporting_agencies_json = response_json["reporting_agencies"]
+        self.assertIn("PRISONS", reporting_agencies_json)
+        for metric in reporting_agencies_json["PRISONS"]:
+            key = metric["metric_key"]
+            if key == prisons.funding.key:
+                self.assertTrue(metric["is_self_reported"])
+                self.assertIsNone(metric["reporting_agency_id"])
+                self.assertIsNone(metric["reporting_agency_name"])
+            elif key == prisons.expenses.key:
+                self.assertEqual(metric["reporting_agency_id"], super_agency.id)
+                self.assertEqual(metric["reporting_agency_name"], super_agency.name)
+            elif key == prisons.staff.key:
+                self.assertEqual(metric["reporting_agency_id"], csg.id)
+                self.assertEqual(metric["reporting_agency_name"], csg.name)
+            elif key == prisons.readmissions.key:
+                self.assertEqual(metric["reporting_agency_id"], vendor_A.id)
+                self.assertEqual(metric["reporting_agency_name"], vendor_A.name)
+            else:
+                self.assertEqual(metric["reporting_agency_id"], None)
+                self.assertEqual(metric["reporting_agency_name"], None)
+
+        # Validate reporting agency options in the response
+        reporting_agency_options_json = response_json["reporting_agency_options"]
+        expected_options = {
+            (csg.id, "CSG"),
+            (vendor_A.id, "VENDOR"),
+            (super_agency.id, "AGENCY"),
+        }
+        actual_options = {
+            (opt["reporting_agency_id"], opt["category"])
+            for opt in reporting_agency_options_json
+        }
+        self.assertEqual(expected_options, actual_options)
