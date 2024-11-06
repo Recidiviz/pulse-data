@@ -78,6 +78,7 @@ class RawTableDataDiffQueryGeneratorTest(BigQueryEmulatorTestCase):
                 self.region_code, region_module=fake_regions
             ),
             truncate_update_datetime_col_name="update_datetime",
+            optional_datetime_filter=None,
         )
         self.query_str = self.query_generator.generate_query(self.file_tag)
 
@@ -164,6 +165,57 @@ COLUMNS WITH DIFFERENCES:
         )
 
         self.assertEqual(parsed_result.build_result_rows_str(), expected_msg)
+
+    def test_datetime_filter(self) -> None:
+        src_data = [
+            {
+                "COL1": "val1",
+                "COL2": "val2",
+                "COL3": "val3",
+                "update_datetime": datetime.datetime(2023, 1, 26, 0, 0, 0, 0),
+                "is_deleted": False,
+            },
+            {
+                "COL1": "val4",
+                "COL2": "val5",
+                "COL3": "val6",
+                "update_datetime": datetime.datetime(2024, 1, 26, 0, 0, 0, 0),
+                "is_deleted": False,
+            },
+        ]
+        cmp_data = [
+            {
+                "COL1": "val1",
+                "COL2": "val2",
+                "COL3": "val3",
+                "update_datetime": datetime.datetime(2023, 1, 26, 0, 0, 0, 0),
+                "is_deleted": False,
+            },
+            {
+                "COL1": "val4",
+                "COL2": "val55555",  # different value
+                "COL3": "val6",
+                "update_datetime": datetime.datetime(2024, 1, 26, 0, 0, 0, 0),
+                "is_deleted": False,
+            },
+        ]
+
+        self._load_data(src_data=src_data, cmp_data=cmp_data)
+
+        query_generator = RawTableDataDiffQueryGenerator(
+            src_project_id=self.project_id,
+            src_dataset_id=self.src_dataset_id,
+            cmp_project_id=self.project_id,
+            cmp_dataset_id=self.cmp_dataset_id,
+            region_raw_file_config=DirectIngestRegionRawFileConfig(
+                self.region_code, region_module=fake_regions
+            ),
+            truncate_update_datetime_col_name="update_datetime",
+            optional_datetime_filter="WHERE update_datetime < '2024-01-26'",
+        )
+
+        result = self.query(query_generator.generate_query(self.file_tag))
+        self.assertTrue(result.empty)
 
     def test_diff_data_missing_src(self) -> None:
         expected_msg = """The following 1 comparison table rows had no exact primary key match in the source table:

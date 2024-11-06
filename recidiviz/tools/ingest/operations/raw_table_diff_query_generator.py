@@ -63,6 +63,7 @@ class RawTableDiffQueryGenerator:
     cmp_project_id: str
     cmp_dataset_id: str
     truncate_update_datetime_col_name: str
+    optional_datetime_filter: Optional[str]
 
     @classmethod
     def create_query_generator(
@@ -73,6 +74,8 @@ class RawTableDiffQueryGenerator:
         cmp_project_id: str,
         cmp_ingest_instance: DirectIngestInstance,
         truncate_update_datetime_part: Optional[str] = None,
+        start_date_inclusive: Optional[datetime.datetime] = None,
+        end_date_exclusive: Optional[datetime.datetime] = None,
     ) -> "RawTableDiffQueryGenerator":
         state_code = StateCode(region_code.upper())
 
@@ -91,6 +94,9 @@ class RawTableDiffQueryGenerator:
             ),
             truncate_update_datetime_col_name=cls._get_truncated_datetime_column_name(
                 truncate_update_datetime_part
+            ),
+            optional_datetime_filter=cls._get_optional_datetime_filter(
+                start_date_inclusive, end_date_exclusive
             ),
         )
 
@@ -113,6 +119,26 @@ class RawTableDiffQueryGenerator:
             if truncate_update_datetime_part
             else UPDATE_DATETIME_COL_NAME
         )
+
+    @staticmethod
+    def _get_optional_datetime_filter(
+        start_date_inclusive: Optional[datetime.datetime],
+        end_date_exclusive: Optional[datetime.datetime],
+    ) -> Optional[str]:
+        if not start_date_inclusive and not end_date_exclusive:
+            return None
+
+        clauses: List[str] = []
+        if start_date_inclusive:
+            clauses.append(
+                f"{UPDATE_DATETIME_COL_NAME} >= '{start_date_inclusive.isoformat()}' "
+            )
+        if end_date_exclusive:
+            clauses.append(
+                f"{UPDATE_DATETIME_COL_NAME} < '{end_date_exclusive.isoformat()}'"
+            )
+
+        return f"WHERE {'AND '.join(clauses)}"
 
     @abc.abstractmethod
     def generate_query(self, file_tag: str) -> str:

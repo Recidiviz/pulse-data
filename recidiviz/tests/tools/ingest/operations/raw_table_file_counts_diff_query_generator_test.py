@@ -96,6 +96,144 @@ class RawTableFileCountsDiffQueryGeneratorTest(BigQueryEmulatorTestCase):
         result = self.query(self.query_str)
         self.assertTrue(result.empty)
 
+    def test_datetime_filter_end_date(self) -> None:
+        src_data = [
+            {
+                "file_id": "1",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2023, 1, 26, 0, 0, 0, 0),
+            },
+            {
+                "file_id": "2",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2024, 1, 26, 0, 0, 0, 0),
+            },
+        ]
+        cmp_data = [
+            {
+                "file_id": "1",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2023, 1, 26, 0, 0, 0, 0),
+            },
+            {
+                "file_id": "2",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2024, 1, 26, 0, 0, 0, 0),
+            },
+            {
+                "file_id": "3",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2024, 2, 26, 0, 0, 0, 0),
+            },
+        ]
+        self._load_data(src_data=src_data, cmp_data=cmp_data)
+
+        query_generator = RawTableFileCountsDiffQueryGenerator.create_query_generator(
+            region_code=self.region_code,
+            src_project_id=self.project_id,
+            src_ingest_instance=DirectIngestInstance.PRIMARY,
+            cmp_project_id=self.project_id,
+            cmp_ingest_instance=DirectIngestInstance.SECONDARY,
+            end_date_exclusive=datetime.datetime(2024, 2, 1),
+        )
+
+        result = self.query(query_generator.generate_query(self.file_tag))
+        self.assertTrue(result.empty)
+
+    def test_datetime_filter_start_date(self) -> None:
+        src_data = [
+            {
+                "file_id": "1",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2023, 1, 26, 0, 0, 0, 0),
+            },
+            {
+                "file_id": "2",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2024, 1, 26, 0, 0, 0, 0),
+            },
+        ]
+        cmp_data = [
+            {
+                "file_id": "0",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2022, 2, 26, 0, 0, 0, 0),
+            },
+            {
+                "file_id": "1",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2023, 1, 26, 0, 0, 0, 0),
+            },
+            {
+                "file_id": "2",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2024, 1, 26, 0, 0, 0, 0),
+            },
+            {
+                "file_id": "3",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2024, 2, 26, 0, 0, 0, 0),
+            },
+        ]
+        self._load_data(src_data=src_data, cmp_data=cmp_data)
+
+        query_generator = RawTableFileCountsDiffQueryGenerator.create_query_generator(
+            region_code=self.region_code,
+            src_project_id=self.project_id,
+            src_ingest_instance=DirectIngestInstance.PRIMARY,
+            cmp_project_id=self.project_id,
+            cmp_ingest_instance=DirectIngestInstance.SECONDARY,
+            start_date_inclusive=datetime.datetime(2023, 1, 1),
+            end_date_exclusive=datetime.datetime(2024, 2, 1),
+        )
+
+        result = self.query(query_generator.generate_query(self.file_tag))
+        self.assertTrue(result.empty)
+
+    def test_datetime_filter_start_and_end_date(self) -> None:
+        src_data = [
+            {
+                "file_id": "1",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2023, 1, 26, 0, 0, 0, 0),
+            },
+            {
+                "file_id": "2",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2024, 1, 26, 0, 0, 0, 0),
+            },
+        ]
+        cmp_data = [
+            {
+                "file_id": "0",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2022, 2, 26, 0, 0, 0, 0),
+            },
+            {
+                "file_id": "1",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2023, 1, 26, 0, 0, 0, 0),
+            },
+            {
+                "file_id": "2",
+                "col1": "val",
+                "update_datetime": datetime.datetime(2024, 1, 26, 0, 0, 0, 0),
+            },
+        ]
+        self._load_data(src_data=src_data, cmp_data=cmp_data)
+
+        query_generator = RawTableFileCountsDiffQueryGenerator.create_query_generator(
+            region_code=self.region_code,
+            src_project_id=self.project_id,
+            src_ingest_instance=DirectIngestInstance.PRIMARY,
+            cmp_project_id=self.project_id,
+            cmp_ingest_instance=DirectIngestInstance.SECONDARY,
+            start_date_inclusive=datetime.datetime(2023, 1, 1),
+        )
+
+        result = self.query(query_generator.generate_query(self.file_tag))
+        self.assertTrue(result.empty)
+
     def test_diff_file_count_missing_src(self) -> None:
         expected_msg = """
 The following comparison table update_datetimes have no entries in the source table:

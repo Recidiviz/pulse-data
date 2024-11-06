@@ -29,6 +29,7 @@ python -m recidiviz.tools.ingest.operations.compare_raw_data --region us_tn \
     --file-tags file_tag_1,file_tag_2
 """
 import argparse
+import datetime
 import logging
 import sys
 from typing import Dict, List, Optional
@@ -190,6 +191,16 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="If set, saves the results of the comparison to a table in BigQuery. Tables have a TTL of 7 days.",
     )
+    parser.add_argument(
+        "--start-date-inclusive",
+        type=str,
+        help="Inclusive start date in the format YYYY-MM-DD to compare data.",
+    )
+    parser.add_argument(
+        "--end-date-exclusive",
+        type=str,
+        help="Exclusive end date in the format YYYY-MM-DD to compare data.",
+    )
     args = parser.parse_args()
     return args
 
@@ -221,6 +232,16 @@ def main() -> None:
                 cmp_project_id=args.comparison_project_id,
                 cmp_ingest_instance=args.comparison_ingest_instance,
                 truncate_update_datetime_part=args.truncate_update_datetime,
+                start_date_inclusive=(
+                    datetime.datetime.fromisoformat(args.start_date)
+                    if args.start_date_inclusive
+                    else None
+                ),
+                end_date_exclusive=(
+                    datetime.datetime.fromisoformat(args.end_date)
+                    if args.end_date_exclusive
+                    else None
+                ),
             ),
             region_code=args.region,
             project_id=args.source_project_id,
@@ -238,6 +259,16 @@ def main() -> None:
             cmp_project_id=args.comparison_project_id,
             cmp_ingest_instance=args.comparison_ingest_instance,
             truncate_update_datetime_part=args.truncate_update_datetime,
+            start_date_inclusive=(
+                datetime.datetime.fromisoformat(args.start_date)
+                if args.start_date
+                else None
+            ),
+            end_date_exclusive=(
+                datetime.datetime.fromisoformat(args.end_date)
+                if args.end_date
+                else None
+            ),
         ),
         region_code=args.region,
         project_id=args.source_project_id,
