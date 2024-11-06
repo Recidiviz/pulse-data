@@ -90,7 +90,8 @@ SELECT
 FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Site_latest` site
 LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_supervision_locations_latest` sup_ref ON site_code = SiteID
 LEFT JOIN `{{project_id}}.{{external_reference_dataset}}.us_tn_incarceration_facility_map` inc_ref ON level_1_incarceration_location_external_id = SiteID 
-WHERE SiteID IS NOT NULL
+-- checkinng for location to district mappings that are still active
+WHERE SiteID IS NOT NULL AND sup_ref.end_date IS NULL
 """
 
 US_TN_LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
