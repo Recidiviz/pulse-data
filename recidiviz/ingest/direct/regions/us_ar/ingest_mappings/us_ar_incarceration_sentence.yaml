@@ -23,7 +23,6 @@ input_columns:
   - STATUTE2
   - STATUTE3
   - STATUTE4
-  - JUDGEPARTYID
   - FELONYCLASS
   - NUMBERCOUNTS
   - SERIOUSNESSLEVEL
@@ -33,10 +32,13 @@ input_columns:
   - SENTENCETYPE4
   - SENTENCEBEGINDATE
   - OFFENSEDATE
+  - JUDGEPARTYID
   - TYPEORDER
   - COUNTYOFCONVICTION
   - COURTID
   - OTHSTATE
+  - any_violent
+  - any_sex
 unused_columns: []
 variables:
   - sentence_external_id:
@@ -238,6 +240,10 @@ output:
                 judge_external_id: JUDGEPARTYID
                 judicial_district_code: COURTID
                 offense_type: $variable(offense_type_str)
+                is_violent:
+                  $equal: [any_violent, $literal("True")]
+                is_sex_offense:
+                  $equal: [any_sex, $literal("True")]
                 attempted:
                   $custom:
                     $function: us_ar_custom_parsers.is_attempted

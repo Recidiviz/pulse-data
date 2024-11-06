@@ -105,6 +105,22 @@ sc_cleaned AS (
         USING(OFFENDERID,COMMITMENTPREFIX,SENTENCECOMPONENT)
         WHERE REGEXP_CONTAINS(OFFENDERID, r'^[[:digit:]]+$') 
     )
+),
+-- For each component, add flags for violent/sex offenses based on the component's statute columns.
+component_with_offense_category AS (
+  SELECT
+    OFFENDERID,
+    COMMITMENTPREFIX,
+    SENTENCECOMPONENT,
+    LOGICAL_OR(COALESCE(ref.is_violent,'False') = 'True') AS any_violent,
+    LOGICAL_OR(COALESCE(ref.is_sex,'False') = 'True') AS any_sex
+  FROM {SENTENCECOMPONENT} component
+  LEFT JOIN {RECIDIVIZ_REFERENCE_TARGET_STATUTES} ref
+  ON component.STATUTE1 = ref.sentence_component_statute OR
+    component.STATUTE2 = ref.sentence_component_statute OR
+    component.STATUTE3 = ref.sentence_component_statute OR
+    component.STATUTE4 = ref.sentence_component_statute
+  GROUP BY 1,2,3
 )
 /*
 Some sentence components have both parole and probation sub-components (i.e., rows
@@ -114,24 +130,32 @@ either PAROLE or PROBATION so that the mapping knows which of the sentence lengt
 should be used.
 */
 SELECT 
-    *, 
-    'PAROLE' AS SUPVTYPE 
-FROM sc_cleaned 
-WHERE parole_days != 0
-UNION ALL (
-    SELECT
+    sentences.*,
+    coc.any_violent,
+    coc.any_sex
+FROM (
+    SELECT 
         *, 
-        'PROBATION' AS SUPVTYPE 
+        'PAROLE' AS SUPVTYPE 
     FROM sc_cleaned 
-    WHERE GREATEST(
-        PROBATIONTERMY,
-        PROBATIONTERMM,
-        PROBATIONTERMD,
-        EXTENDEDTERMY,
-        EXTENDEDTERMM,
-        EXTENDEDTERMD
-    ) != '0'
-) 
+    WHERE parole_days != 0
+    UNION ALL (
+        SELECT
+            *, 
+            'PROBATION' AS SUPVTYPE 
+        FROM sc_cleaned 
+        WHERE GREATEST(
+            PROBATIONTERMY,
+            PROBATIONTERMM,
+            PROBATIONTERMD,
+            EXTENDEDTERMY,
+            EXTENDEDTERMM,
+            EXTENDEDTERMD
+        ) != '0'
+    ) 
+) sentences
+LEFT JOIN component_with_offense_category coc
+USING(OFFENDERID,COMMITMENTPREFIX,SENTENCECOMPONENT)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
