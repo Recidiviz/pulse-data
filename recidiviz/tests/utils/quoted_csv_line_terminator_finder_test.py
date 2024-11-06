@@ -19,22 +19,24 @@
 import unittest
 
 from recidiviz.common.constants.csv import (
+    CARRIAGE_RETURN,
     DEFAULT_CSV_LINE_TERMINATOR,
     DEFAULT_CSV_QUOTE_CHAR,
     DEFAULT_CSV_SEPARATOR,
 )
 from recidiviz.utils.quoted_csv_line_terminator_finder import (
     determine_quoting_state_for_buffer,
-    find_line_terminator_for_quoted_csv,
-    walk_to_find_unescaped_line_terminator,
+    find_end_of_line_for_quoted_csv,
+    walk_to_find_line_end,
 )
 
 
-class TestWalkToFindUnescapedNewline(unittest.TestCase):
-    """Unit tests for walk_to_find_unescaped_line_terminator"""
+class TestWalkToFindLineEnd(unittest.TestCase):
+    """Unit tests for walk_to_find_line_end"""
 
     quote_char = DEFAULT_CSV_QUOTE_CHAR.encode()
-    line_term = DEFAULT_CSV_LINE_TERMINATOR.encode()
+    newline = [DEFAULT_CSV_LINE_TERMINATOR.encode()]
+    two_line_terms = [DEFAULT_CSV_LINE_TERMINATOR.encode(), CARRIAGE_RETURN.encode()]
 
     def test_walk_to_find_unquoted_line_term_empty(self) -> None:
         tests = [
@@ -45,76 +47,94 @@ class TestWalkToFindUnescapedNewline(unittest.TestCase):
         ]
 
         for buffer, in_quoted_cell, expected_line_terminator_index in tests:
-            actual_line_terminator_index = walk_to_find_unescaped_line_terminator(
+            actual_line_terminator_index = walk_to_find_line_end(
                 buffer=buffer,
                 in_quoted_cell=in_quoted_cell,
                 quote_char=self.quote_char,
-                line_terminator=self.line_term,
+                line_terminators=self.newline,
             )
             assert actual_line_terminator_index == expected_line_terminator_index
 
     def test_walk_to_find_unquoted_line_term_simple(self) -> None:
         tests = [
-            (b"this,is,a,simple,unquoted,csv\nfun,fun,fun", False, 29),
-            (b'this,is,a,simple,"quoted\n","csv"\nfun,"fun",fun', False, 32),
-            (b'this,is,a,quoted,field",csv\n"and,another"\n', True, 27),
-            (b'\nthis,is,a,"newline"', False, 0),
-            (b'this","is","a","fully","quoted","csv"\n"fun","fun","fun"', True, 37),
+            (b"this,is,a,simple,unquoted,csv\nfun,fun,fun", False, 30),
+            (b'this,is,a,simple,"quoted\n","csv"\nfun,"fun",fun', False, 33),
+            (b'this,is,a,quoted,field",csv\n"and,another"\n', True, 28),
+            (b'\nthis,is,a,"newline"', False, 1),
+            (b'this","is","a","fully","quoted","csv"\n"fun","fun","fun"', True, 38),
             (b"this,is,all,a,quoted,field\nfun,fun,fun", True, None),
         ]
 
         for buffer, in_quoted_cell, expected_line_terminator_index in tests:
-            actual_line_terminator_index = walk_to_find_unescaped_line_terminator(
+            actual_line_terminator_index = walk_to_find_line_end(
                 buffer=buffer,
                 in_quoted_cell=in_quoted_cell,
                 quote_char=self.quote_char,
-                line_terminator=self.line_term,
+                line_terminators=self.newline,  # just \n
+            )
+            assert actual_line_terminator_index == expected_line_terminator_index
+
+        for buffer, in_quoted_cell, expected_line_terminator_index in tests:
+            actual_line_terminator_index = walk_to_find_line_end(
+                buffer=buffer,
+                in_quoted_cell=in_quoted_cell,
+                quote_char=self.quote_char,
+                line_terminators=self.two_line_terms,  # with \n and \r\n is the same
             )
             assert actual_line_terminator_index == expected_line_terminator_index
 
     def test_walk_to_find_unquoted_line_term_tricky(self) -> None:
         tests = [
-            (b'unquoted field,"""this is a quoted field\n""",csv\nfun,', False, 48),
-            (b'unquoted,"\n""\n""\n""this is a quoted field"""""""\nfun,f', False, 48),
-            (b'in a \nquoted \nfield "" <--- that\'s escaped "\nwahoooo', True, 44),
-            (b',"","","","""","""""","""\n""",""""\n"","","",""', False, 34),
+            (b'unquoted field,"""this is a quoted field\n""",csv\nfun,', False, 49),
+            (b'unquoted,"\n""\n""\n""this is a quoted field"""""""\nfun,f', False, 49),
+            (b'in a \nquoted \nfield "" <--- that\'s escaped "\nwahoooo', True, 45),
+            (b',"","","","""","""""","""\n""",""""\n"","","",""', False, 35),
         ]
 
         for buffer, in_quoted_cell, expected_line_terminator_index in tests:
-            actual_line_terminator_index = walk_to_find_unescaped_line_terminator(
+            actual_line_terminator_index = walk_to_find_line_end(
                 buffer=buffer,
                 in_quoted_cell=in_quoted_cell,
                 quote_char=self.quote_char,
-                line_terminator=self.line_term,
+                line_terminators=self.newline,
+            )
+            assert actual_line_terminator_index == expected_line_terminator_index
+
+        for buffer, in_quoted_cell, expected_line_terminator_index in tests:
+            actual_line_terminator_index = walk_to_find_line_end(
+                buffer=buffer,
+                in_quoted_cell=in_quoted_cell,
+                quote_char=self.quote_char,
+                line_terminators=self.two_line_terms,
             )
             assert actual_line_terminator_index == expected_line_terminator_index
 
     def test_walk_to_find_unquoted_line_term_alt_values(self) -> None:
         tests = [
             (b"'", b"\r\n", b"this,only,has,a,newline,not,the,term,csv\n", False, None),
-            (b"'", b"\r\n", b"this,is,a,simple,unquoted,csv\r\nfun,fun,fun", False, 29),
-            (b"'", b"\r\n", b"unquoted \n <-not one... but is one->\r\n", False, 36),
+            (b"'", b"\r\n", b"this,is,a,simple,unquoted,csv\r\nfun,fun,fun", False, 31),
+            (b"'", b"\r\n", b"unquoted \n <-not one... but is one->\r\n", False, 38),
             (
                 b"'",
                 b"\r\n",
                 b"this,is,a,simple,'quoted\r\n','csv'\r\nfun,'fun',fun",
                 False,
-                33,
+                35,
             ),
             (
                 b"'",
                 b"\r\n",
                 b"this,is,a,quoted,field',csv\r\n'and,another'\r\n",
                 True,
-                27,
+                29,
             ),
-            (b"'", b"\r\n", b"\r\nthis,is,a,'newline'", False, 0),
+            (b"'", b"\r\n", b"\r\nthis,is,a,'newline'", False, 2),
             (
                 b"'",
                 b"\r\n",
                 b"this','is','a','fully','quoted','csv'\r\n'fun'",
                 True,
-                37,
+                39,
             ),
             (b"'", b"\r\n", b"this,is,all,a,quoted,field\r\nfun,fun,fun", True, None),
         ]
@@ -126,11 +146,11 @@ class TestWalkToFindUnescapedNewline(unittest.TestCase):
             in_quoted_cell,
             expected_line_terminator_index,
         ) in tests:
-            actual_line_terminator_index = walk_to_find_unescaped_line_terminator(
+            actual_line_terminator_index = walk_to_find_line_end(
                 buffer=buffer,
                 in_quoted_cell=in_quoted_cell,
                 quote_char=quote_char,
-                line_terminator=line_term,
+                line_terminators=[line_term],
             )
             assert actual_line_terminator_index == expected_line_terminator_index
 
@@ -139,8 +159,31 @@ class TestDetermineQuotingStateForBuffer(unittest.TestCase):
     """Unit tests for determine_quoting_state_for_buffer"""
 
     quote_char = DEFAULT_CSV_QUOTE_CHAR.encode()
-    line_term = DEFAULT_CSV_LINE_TERMINATOR.encode()
+    newline = [DEFAULT_CSV_LINE_TERMINATOR.encode()]
+    carriage = [CARRIAGE_RETURN.encode()]
     separator = DEFAULT_CSV_SEPARATOR.encode()
+    two_line_terms = [DEFAULT_CSV_LINE_TERMINATOR.encode(), CARRIAGE_RETURN.encode()]
+
+    def test_invalid(self) -> None:
+        invalid_tests = [
+            ("\n", "\n"),
+            ("\r\n", "\r\n"),
+            ("‡\n", "\r\n"),
+            ("‡\n", "\n"),
+        ]
+        for line_term, alt_line_term in invalid_tests:
+            with self.assertRaisesRegex(
+                ValueError,
+                r"If you are specifying multiple line terminators, the line terminators MUST be the newline \[\\n\] and carriage return \[\\r\\n\]. Instead, found:.*",
+            ):
+                determine_quoting_state_for_buffer(
+                    buffer=b"",
+                    buffer_byte_start=0,
+                    quote_char=self.quote_char,
+                    separator=self.separator,
+                    encoding="utf-8",
+                    line_terminators=[line_term.encode(), alt_line_term.encode()],
+                )
 
     def test_determine_quoting_state_for_buffer_simple(self) -> None:
         tests = [
@@ -167,7 +210,8 @@ class TestDetermineQuotingStateForBuffer(unittest.TestCase):
             (b'unquoted,"\nunquoted', None, None),
             (b'unquoted,"\nunquoted,but,eventually,"quoted,"\n', True, 36),
             # START_OF_QUOTED_LINE
-            (b'this,is,a,quoted,field\n"csv,"and,another"\n', False, 22),
+            (b'this,is,a,quoted,field\n"csv,"and,another"\n', True, 24),
+            (b'this,is,a,quoted,field\n"""csv,"and,another"\n', True, 26),
         ]
 
         for buffer, expected_in_quoted_cell, expected_cursor in tests:
@@ -176,7 +220,8 @@ class TestDetermineQuotingStateForBuffer(unittest.TestCase):
                 buffer_byte_start=0,
                 quote_char=self.quote_char,
                 separator=self.separator,
-                line_terminator=self.line_term,
+                encoding="utf-8",
+                line_terminators=self.newline,
             )
             if result is None:
                 assert result == expected_in_quoted_cell
@@ -195,7 +240,7 @@ class TestDetermineQuotingStateForBuffer(unittest.TestCase):
             # END_OF_QUOTED_LINE
             (b'in a \nquoted \nfield "" <--- that\'s escaped "\nwahoooo', False, 44),
             # START_OF_QUOTED_LINE
-            (b',"","","","""","""""","""\n""",""""\n"aaa","","",""', False, 34),
+            (b',"","","","""","""""","""\n""",""""\n"aaa","","",""', True, 36),
         ]
 
         for buffer, expected_in_quoted_cell, expected_cursor in tests:
@@ -204,7 +249,41 @@ class TestDetermineQuotingStateForBuffer(unittest.TestCase):
                 buffer_byte_start=0,
                 quote_char=self.quote_char,
                 separator=self.separator,
-                line_terminator=self.line_term,
+                encoding="utf-8",
+                line_terminators=self.newline,
+            )
+            if result is None:
+                assert result == expected_in_quoted_cell
+                assert result == expected_cursor
+            else:
+                actual_cursor, actual_in_quoted_cell = result
+                assert actual_in_quoted_cell == expected_in_quoted_cell
+                assert actual_cursor == expected_cursor
+
+    def test_determine_quoting_state_for_buffer_carriage(self) -> None:
+        tests = [
+            # START_QUOTED_CELL
+            (b'unquoted field,""",this is a quoted field\n","csv"\nfun,', True, 45),
+            (b'unquoted field,""",this is a quoted field\r\n","csv"\r\nfun,', True, 46),
+            # END_QUOTED_CELL
+            (b'unquoted,"\n""\n""\n""this is a quoted field",fun,f', False, 42),
+            (b'unquoted,"\r\n""\r\n""\r\n""this is a quoted field",fun,f', False, 45),
+            # END_OF_QUOTED_LINE
+            (b'in a \nquoted \nfield "" <--- that\'s escaped "\nwahoooo', False, 44),
+            (b'in a \r\nquoted \r\nfield "" <--- that\'s escaped "\r\nwaho', False, 46),
+            # START_OF_QUOTED_LINE
+            (b',"","","","""","""""","""\n""",""""\n"aaa","","",""', True, 36),
+            (b',"","","","""","""""","""\r\n""",""""\r\n"aaa","","",""', True, 38),
+        ]
+
+        for buffer, expected_in_quoted_cell, expected_cursor in tests:
+            result = determine_quoting_state_for_buffer(
+                buffer=buffer,
+                buffer_byte_start=0,
+                quote_char=self.quote_char,
+                separator=self.separator,
+                encoding="utf-8",
+                line_terminators=self.two_line_terms,
             )
             if result is None:
                 assert result == expected_in_quoted_cell
@@ -215,28 +294,49 @@ class TestDetermineQuotingStateForBuffer(unittest.TestCase):
                 assert actual_cursor == expected_cursor
 
 
-class TestFindLineTerminatorForQuotedCsv(unittest.TestCase):
-    """Unit tests for find_line_terminator_for_quoted_csv"""
+class TestFindEndOfLineForQuotedCSV(unittest.TestCase):
+    """Unit tests for find_end_of_line_for_quoted_csv"""
 
     quote_char = DEFAULT_CSV_QUOTE_CHAR.encode()
-    line_term = DEFAULT_CSV_LINE_TERMINATOR.encode()
+    newline = [DEFAULT_CSV_LINE_TERMINATOR.encode()]
     separator = DEFAULT_CSV_SEPARATOR.encode()
+
+    def test_invalid(self) -> None:
+        invalid_tests = [
+            ("\n", "\n"),
+            ("\r\n", "\r\n"),
+            ("‡\n", "\r\n"),
+            ("‡\n", "\n"),
+        ]
+        for line_term, alt_line_term in invalid_tests:
+            with self.assertRaisesRegex(
+                ValueError,
+                r"If you are specifying multiple line terminators, the line terminators MUST be the newline \[\\n\] and carriage return \[\\r\\n\]. Instead, found:.*",
+            ):
+                find_end_of_line_for_quoted_csv(
+                    buffer=b"",
+                    buffer_byte_start=0,
+                    quote_char=self.quote_char,
+                    separator=self.separator,
+                    encoding="utf-8",
+                    line_terminators=[line_term.encode(), alt_line_term.encode()],
+                )
 
     def test_find_line_terminator_for_quoted_csv_simple(self) -> None:
         tests = [
             # none
             (b"this,is,a,simple,unquoted,csv\nfun,fun,fun", None),
             (b"this,is,all,a,quoted,field\nfun,fun,fun", None),
-            # START_QUOTED_CELL -> walk from 18 to 32
-            (b'this,is,a,simple,"quoted\n","csv"\nfun,"fun",fun', 32),
+            # START_QUOTED_CELL -> walk from 18 to 33
+            (b'this,is,a,simple,"quoted\n","csv"\nfun,"fun",fun', 33),
             # START_QUOTED_CELL -> no newline after 12
             (b'\nthis,is,a,"newline"', None),
-            # END_QUOTED_CELL -> walk from 23 to 27
-            (b'this,is,a,quoted,field",csv\n"and,another"\n', 27),
-            # END_QUOTED_CELL -> walk from 5 to 37
-            (b'this","is","a","fully","quoted","csv"\n"fun","fun","fun"', 37),
+            # END_QUOTED_CELL -> walk from 23 to 28
+            (b'this,is,a,quoted,field",csv\n"and,another"\n', 28),
+            # END_QUOTED_CELL -> walk from 5 to 38
+            (b'this","is","a","fully","quoted","csv"\n"fun","fun","fun"', 38),
             # END_OF_QUOTED_LINE -> walk from 23 to 24
-            (b'this,is,a,quoted,field"\ncsv,"and,another"\n', 23),
+            (b'this,is,a,quoted,field"\ncsv,"and,another"\n', 24),
             # START_OF_QUOTED_CELL_OR_END_OF_QUOTED_LINE -> no walking
             (b'quoted,"\ncsv', None),
             # START_OF_QUOTED_CELL_OR_END_OF_QUOTED_LINE -> no newline after 14
@@ -246,50 +346,59 @@ class TestFindLineTerminatorForQuotedCsv(unittest.TestCase):
             # START_OR_END_OF_QUOTED_CELL -> no newline after 21
             (b'quoted,",not quoted,"quoted"', None),
             # START_OR_END_OF_QUOTED_CELL -> walk 21 -> 29
-            (b'quoted,",not quoted,"quoted"\n', 28),
+            (b'quoted,",not quoted,"quoted"\n', 29),
             # END_OF_QUOTED_CELL_OR_START_OF_QUOTED_LINE -> no walking
             (b'unquoted\n",quoted not closed', None),
             # END_OF_QUOTED_CELL_OR_START_OF_QUOTED_LINE -> no newline after 29
             (b'unquoted\n",quoted and closed",unquoted', None),
-            # END_OF_QUOTED_CELL_OR_START_OF_QUOTED_LINE -> walk from 29 -> 38
-            (b'unquoted\n",quoted and closed",unquoted\n', 38),
+            # END_OF_QUOTED_CELL_OR_START_OF_QUOTED_LINE -> walk from 29 -> 39
+            (b'unquoted\n",quoted and closed",unquoted\n', 39),
             # END_OF_QUOTED_CELL_OR_START_OF_QUOTED_LINE -> no walking
             (b'unquoted,"\nunquoted', None),
-            # END_OF_QUOTED_CELL_OR_START_OF_QUOTED_LINE -> walk from 36 -> 44
-            (b'unquoted,"\nunquoted,but,eventually,"quoted,"\n', 44),
-            # START_OF_QUOTED_LINE -> walk from 22 -> 22
-            (b'this,is,a,quoted,field\n"csv,"and,another"\n', 22),
+            # END_OF_QUOTED_CELL_OR_START_OF_QUOTED_LINE -> walk from 36 -> 45
+            (b'unquoted,"\nunquoted,but,eventually,"quoted,"\n', 45),
+            # START_OF_QUOTED_LINE -> no newline after 24
+            (b'this,is,a,quoted,field\n"csv,"and,another"', None),
+            # START_OF_QUOTED_LINE -> no unquoted newline after 24
+            (b'this,is,a,quoted,field\n"csv,",and,another -> "\n', None),
+            # START_OF_QUOTED_LINE -> walk from 24 -> 37
+            (b'this,is,a,quoted,field\n"and,another"\n', 37),
         ]
 
         for buffer, expected_line_term_index in tests:
-            actual_line_term_index = find_line_terminator_for_quoted_csv(
+            actual_line_term_index = find_end_of_line_for_quoted_csv(
                 buffer=buffer,
                 buffer_byte_start=0,
                 quote_char=self.quote_char,
                 separator=self.separator,
-                line_terminator=self.line_term,
+                encoding="utf-8",
+                line_terminators=self.newline,
             )
             assert actual_line_term_index == expected_line_term_index
 
     def test_find_line_terminator_for_quoted_csv_complex(self) -> None:
         tests = [
-            # START_QUOTED_CELL -> walk from 44 -> 48
-            (b'unquoted field,"""this is a quoted field\n","csv"\nfun,', 48),
+            # START_QUOTED_CELL -> walk from 44 -> 49
+            (b'unquoted field,"""this is a quoted field\n","csv"\nfun,', 49),
             # END_QUOTED_CELL -> no newline after 42
             (b'unquoted,"\n""\n""\n""this is a quoted field",fun,f', None),
-            # END_QUOTED_CELL -> walk from 42 -> 46
-            (b'unquoted,"\n""\n""\n""this is a quoted field",fun\nf', 46),
-            # END_OF_QUOTED_LINE -> walk from 44 -> 44
-            (b'in a \nquoted \nfield "" <--- that\'s escaped "\nwahoooo', 44),
-            # START_OF_QUOTED_LINE -> walk from 34 -> 34
-            (b',"","","","""","""""","""\n""",""""\n"aaa","","",""', 34),
+            # END_QUOTED_CELL -> walk from 42 -> 47
+            (b'unquoted,"\n""\n""\n""this is a quoted field",fun\nf', 47),
+            # END_OF_QUOTED_LINE -> walk from 44 -> 45
+            (b'in a \nquoted \nfield "" <--- that\'s escaped "\nwahoooo', 45),
+            # START_OF_QUOTED_LINE -> no newline after 34
+            (b',"","","","""","""""","""\n""",""""\n"aaa","","",""', None),
+            # START_OF_QUOTED_LINE -> walk from 34 -> 41
+            (b',"","","","""","""""","""\n""",""""\n"aaa"\n"","",""', 41),
         ]
         for buffer, expected_line_term_index in tests:
-            actual_line_term_index = find_line_terminator_for_quoted_csv(
+            print(buffer)
+            actual_line_term_index = find_end_of_line_for_quoted_csv(
                 buffer=buffer,
                 buffer_byte_start=0,
                 quote_char=self.quote_char,
                 separator=self.separator,
-                line_terminator=self.line_term,
+                encoding="utf-8",
+                line_terminators=self.newline,
             )
             assert actual_line_term_index == expected_line_term_index

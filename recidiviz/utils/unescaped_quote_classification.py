@@ -19,6 +19,27 @@ from enum import Enum
 
 import attr
 
+from recidiviz.common.constants.csv import VALID_MULTIPLE_LINE_TERMINATORS
+
+
+def validate_line_terminators(*, encoding: str, line_terminators: list[bytes]) -> None:
+    """Different file systems sometimes use newline (\n) and carriage return (\r\n)
+    interchangeably (even within the same file) and python's built-in open(...) and csv
+    module treats them both as standard newlines. Thus, when we see a standard newline
+    as the terminator (\n), we also look for carriage return (\r\n). However, in all
+    other cases, we only want to support a single line terminator.
+    """
+    if len(line_terminators) > 1:
+        _line_terminators_str = {
+            line_terminator.decode(encoding) for line_terminator in line_terminators
+        }
+        if _line_terminators_str != VALID_MULTIPLE_LINE_TERMINATORS:
+            raise ValueError(
+                f"If you are specifying multiple line terminators, the line terminators "
+                f"MUST be the newline [\\n] and carriage return [\\r\\n]. Instead, "
+                f"found: {repr(_line_terminators_str)}."
+            )
+
 
 class UnescapedQuoteState(Enum):
     """Represents the different roles a single, unescaped quote can be playing in a
@@ -79,13 +100,24 @@ class UnescapedQuote:
         return self.index + len(self.quote_char) * self.quote_count
 
     def get_quote_state(
-        self, *, line_term: bytes, separator: bytes
+        self,
+        *,
+        separator: bytes,
+        encoding: str,
+        line_terminators: list[bytes],
     ) -> UnescapedQuoteState:
         """Determines UnescapedQuoteState of the UnescapedQuote. Because of how we
         identify unescaped quotes, we can safely assume that there are no quote chars
         in the bytes directly preceding or succeeding the UnescapedQuote.
         """
-        required_peek = max(len(line_term), len(separator), len(self.quote_char))
+
+        validate_line_terminators(encoding=encoding, line_terminators=line_terminators)
+
+        required_peek = max(
+            len(separator),
+            len(self.quote_char),
+            *[len(line_terminator) for line_terminator in line_terminators],
+        )
         has_prev_chars = len(self.prev_chars) >= required_peek
         has_next_chars = len(self.next_chars) >= required_peek
 
@@ -98,12 +130,15 @@ class UnescapedQuote:
         previous_character_is_separator = (
             self.prev_chars[-1 * len(separator) :] == separator
         )
-        previous_character_is_line_term = (
-            self.prev_chars[-1 * len(line_term) :] == line_term
+        previous_character_is_line_term = any(
+            self.prev_chars[-1 * len(line_terminator) :] == line_terminator
+            for line_terminator in line_terminators
         )
         next_character_is_separator = self.next_chars[: len(separator)] == separator
-        next_character_is_line_term = self.next_chars[: len(line_term)] == line_term
-
+        next_character_is_line_term = any(
+            self.next_chars[: len(line_terminator)] == line_terminator
+            for line_terminator in line_terminators
+        )
         # cases that start like ,"
         if previous_character_is_separator:
             if next_character_is_separator:
@@ -153,7 +188,7 @@ class UnescapedQuote:
 
 
 def find_first_unescaped_quote(
-    buffer: bytes, quote_char: bytes, min_buffer_peek: int
+    *, buffer: bytes, cursor: int, quote_char: bytes, min_buffer_peek: int
 ) -> UnescapedQuote | None:
     """Searches |buffer| to find the first "unescaped" |quote_char| we can find.
     n.b. we will skip all non-odd-numbered quotes, which means we are skipping double
@@ -165,7 +200,6 @@ def find_first_unescaped_quote(
         raise ValueError("Cannot have a quote char that is more than a single byte")
 
     quote_count = 0
-    cursor = 0
     while (relative_quote_index := buffer[cursor:].find(quote_char)) != -1:
         quote_count += 1
         absolute_quote_index = cursor + relative_quote_index
