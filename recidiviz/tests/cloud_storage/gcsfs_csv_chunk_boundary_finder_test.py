@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for the boundary finder file"""
 import csv
+import re
 import unittest
 from typing import List, Optional
 
@@ -296,6 +297,23 @@ class GcsfsCsvChunkBoundaryFinderChunksForPathTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self._get_finder(quote_char=invalid_quote_char)
 
+    # pylint: disable=protected-access
+    def test_valid_params(self) -> None:
+        finder = self._get_finder(max_cell_size=10)
+        assert finder._max_read_size == 20
+
+        finder = self._get_finder(line_terminator=DEFAULT_CSV_LINE_TERMINATOR)
+        assert finder._line_terminators == [
+            DEFAULT_CSV_LINE_TERMINATOR.encode(),
+            CARRIAGE_RETURN.encode(),
+        ]
+
+        finder = self._get_finder(line_terminator=CARRIAGE_RETURN)
+        assert finder._line_terminators == [CARRIAGE_RETURN.encode()]
+
+        finder = self._get_finder(line_terminator="‡\n")
+        assert finder._line_terminators == ["‡\n".encode()]
+
     def test_chunk_size_one(self) -> None:
         expected_boundaries = [
             CsvChunkBoundary(start_inclusive=0, end_exclusive=16, chunk_num=0),
@@ -406,6 +424,21 @@ class GcsfsCsvChunkBoundaryFinderChunksForPathTests(unittest.TestCase):
             line_terminator=CARRIAGE_RETURN,
         )
 
+        # okay if re run it again but this time dont specify the carriage return we
+        # should have the same outcome -- the case this is really catching is the
+        #       "quoted field"\r\n
+        # case if we didnt automatically look for carriage returns, we'd classify this
+        # as invalid as we'd parse it as d"\r which is invalid
+        self.run_local_test(
+            QUOTED_CARRIAGE_NEWLINE,
+            expected_boundaries,
+            expected_chunks,
+            chunk_size=50,
+            peek_size=10,
+            encoding="UTF-8",
+            quoting_mode=csv.QUOTE_MINIMAL,
+        )
+
     def test_quoted_newlines_no_ending_newline_one_line_each(self) -> None:
         expected_boundaries = [
             CsvChunkBoundary(start_inclusive=0, end_exclusive=46, chunk_num=0),
@@ -509,6 +542,30 @@ class GcsfsCsvChunkBoundaryFinderChunksForPathTests(unittest.TestCase):
             expected_chunks,
             line_terminator="no_newlines_here",
         )
+
+    def test_no_new_lines(self) -> None:
+        expected_boundaries = [
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=90, chunk_num=0)
+        ]
+        expected_chunks = [
+            '"col_1","col2","col3"\n'
+            '"abc","it\'s easy","as"\n'
+            '"123","as simple","as\n'
+            '"do re mi","abc","123"\n'
+        ]
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Could not find line terminator between bytes offset [20] and [60] without exceeding our max_read_size of [40] for [gs://my-bucket/input.csv]. Please ensure that the encoding [utf-8], separator [b','], line terminator [b'no_newlines_here'] quote char [b'\"'] and quoting mode [3] are accurate for this file. If they are, consider increasing the [max_cell_size] for this file."
+            ),
+        ):
+            self.run_local_test(
+                NORMALIZED_FILE,
+                expected_boundaries,
+                expected_chunks,
+                line_terminator="no_newlines_here",
+                max_cell_size=20,
+            )
 
 
 class TestCsvChunkBoundary(unittest.TestCase):

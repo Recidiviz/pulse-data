@@ -25,9 +25,14 @@ from annotated_types import Gt
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_storage.types import CsvChunkBoundary
-from recidiviz.common.constants.csv import DEFAULT_CSV_QUOTE_CHAR, VALID_QUOTE_CHARS
+from recidiviz.common.constants.csv import (
+    CARRIAGE_RETURN,
+    DEFAULT_CSV_LINE_TERMINATOR,
+    DEFAULT_CSV_QUOTE_CHAR,
+    VALID_QUOTE_CHARS,
+)
 from recidiviz.utils.quoted_csv_line_terminator_finder import (
-    find_line_terminator_for_quoted_csv,
+    find_end_of_line_for_quoted_csv,
 )
 
 DEFAULT_CHUNK_SIZE = 100 * 1024 * 1024  # TODO(#28653) configure a sensible default
@@ -91,9 +96,18 @@ class GcsfsCsvChunkBoundaryFinder:
             )
 
         self._encoding = encoding
-        self._line_terminator = bytes(line_terminator, self._encoding)
         self._quote_char = bytes(quote_char, self._encoding)
         self._separator = bytes(separator, self._encoding)
+
+        self._line_terminators = [bytes(line_terminator, self._encoding)]
+
+        # different file systems sometimes use newline (\n) and carriage return (\r\n)
+        # interchangeably (even within the same file). python's built-in open(...) and csv
+        # module treats them both as standard newlines under the hood. when we see a
+        # standard newline as the terminator (\n), we also look for carriage return (\r\n).
+        # however, in all other cases, we only want to support a single line terminator.
+        if line_terminator == DEFAULT_CSV_LINE_TERMINATOR:
+            self._line_terminators.append(bytes(CARRIAGE_RETURN, self._encoding))
 
     @staticmethod
     def _get_peek_size(peek_size: Optional[int], quoting: int) -> int:
@@ -110,7 +124,7 @@ class GcsfsCsvChunkBoundaryFinder:
             else DEFAULT_PEEK_SIZE_QUOTES
         )
 
-    def _find_line_terminator_for_quoted_csv(
+    def _find_end_of_line_for_quoted_csv(
         self,
         buffer: bytes,
         buffer_byte_start: int,
@@ -120,18 +134,21 @@ class GcsfsCsvChunkBoundaryFinder:
         we think that: we are in a minimally quoted file that has no usable quotes,
         so we will warn, declare bankruptcy and return the first newline we can find.
         """
-        line_term_index = find_line_terminator_for_quoted_csv(
+        line_term_index = find_end_of_line_for_quoted_csv(
             buffer=buffer,
             buffer_byte_start=buffer_byte_start,
             quote_char=self._quote_char,
             separator=self._separator,
-            line_terminator=self._line_terminator,
+            encoding=self._encoding,
+            line_terminators=self._line_terminators,
         )
 
         if line_term_index is not None:
             return line_term_index
 
-        # if we haven't been able to determine our place in the file, let's declare
+        # if we haven't been able to determine our place in the file and we're at our
+        # max read size, we think we're either in an unquoted section of the csv or
+        # a quoted cell is larger than our read size. in either case, let's declare
         # bankruptcy and guess
         if len(buffer) >= self._max_read_size:
             logging.warning(
@@ -143,25 +160,30 @@ class GcsfsCsvChunkBoundaryFinder:
                 buffer_byte_start + len(buffer),
                 self._max_read_size,
             )
-            first_line_term = buffer.find(self._line_terminator)
-            return first_line_term if first_line_term != -1 else None
+            for line_terminator in self._line_terminators:
+                first_line_term_index = buffer.find(line_terminator)
+                if first_line_term_index != -1:
+                    return first_line_term_index + len(line_terminator)
 
-        # if we have't read to our max read size, let's keep looking
         return None
 
-    def _find_line_term_quote_safe(
+    def _find_end_of_line_quote_safe(
         self,
         buffer: bytes,
         buffer_byte_start: int,
     ) -> int | None:
-        """Searches |buffer| for the first quote-safe line terminator. If the file is
-        not quoted, returns the first line terminator we find.
+        """Searches |buffer| for the first quote-safe end of line. If the file is
+        not quoted, returns the first character after line terminator we find.
         """
         if self._quoting_mode == csv.QUOTE_NONE:
-            first_line_term = buffer.find(self._line_terminator)
-            return first_line_term if first_line_term != -1 else None
+            for line_terminator in self._line_terminators:
+                first_line_term_index = buffer.find(line_terminator)
+                if first_line_term_index != -1:
+                    return first_line_term_index + len(line_terminator)
 
-        return self._find_line_terminator_for_quoted_csv(
+            return None
+
+        return self._find_end_of_line_for_quoted_csv(
             buffer=buffer, buffer_byte_start=buffer_byte_start
         )
 
@@ -207,13 +229,13 @@ class GcsfsCsvChunkBoundaryFinder:
                 cursor += self._chunk_size
 
                 peeked_bytes = b""
-                line_term_index: int | None = None
+                end_of_line_index: int | None = None
 
                 # until we find the end of the file or a line terminator, keep reading
                 while (
                     not at_eof
                     and (
-                        line_term_index := self._find_line_term_quote_safe(
+                        end_of_line_index := self._find_end_of_line_quote_safe(
                             peeked_bytes, cursor
                         )
                     )
@@ -223,9 +245,9 @@ class GcsfsCsvChunkBoundaryFinder:
                         raise ValueError(
                             f"Could not find line terminator between bytes offset [{cursor}] "
                             f"and [{cursor + len(peeked_bytes)}] without exceeding our "
-                            f"max_read_size of [{self._max_read_size}]for [{path.uri()}]. "
+                            f"max_read_size of [{self._max_read_size}] for [{path.uri()}]. "
                             f"Please ensure that the encoding [{self._encoding}], "
-                            f"separator [{self._separator!r}], line terminator [{self._line_terminator!r}] "
+                            f"separator [{self._separator!r}], line terminator {self._line_terminators} "
                             f"quote char [{self._quote_char!r}] and quoting mode [{self._quoting_mode}] "
                             f"are accurate for this file. If they are, consider "
                             f"increasing the [max_cell_size] for this file."
@@ -250,13 +272,13 @@ class GcsfsCsvChunkBoundaryFinder:
 
                 if at_eof:
                     cursor = path_size
-                elif line_term_index is None:
+                elif end_of_line_index is None:
                     raise ValueError(
                         "Should always have a non-None line_term_index if we have not"
                         "reached the end of the file."
                     )
                 else:
-                    cursor = cursor + line_term_index + len(self._line_terminator)
+                    cursor = cursor + end_of_line_index
 
                 logging.info(
                     "\t\t[%s]: found CSV line boundary for [%s] @ byte offset [%s]",

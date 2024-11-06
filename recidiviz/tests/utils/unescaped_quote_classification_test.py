@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Test for unescaped quote utils."""
-
 import unittest
 
 from recidiviz.common.constants.csv import (
@@ -34,10 +33,37 @@ from recidiviz.utils.unescaped_quote_classification import (
 class TestUnescapedQuote(unittest.TestCase):
     """Tests for UnescapedQuote class"""
 
-    line_term = DEFAULT_CSV_LINE_TERMINATOR.encode()
+    line_term = (DEFAULT_CSV_LINE_TERMINATOR.encode(),)
     separator = DEFAULT_CSV_SEPARATOR.encode()
-    carriage_return = CARRIAGE_RETURN.encode()
+    carriage_return = (CARRIAGE_RETURN.encode(),)
     quote_char = DEFAULT_CSV_QUOTE_CHAR.encode()
+    line_and_carriage = (DEFAULT_CSV_LINE_TERMINATOR.encode(), CARRIAGE_RETURN.encode())
+
+    def test_invalid(self) -> None:
+
+        invalid_tests = [
+            [b"\n", b"\n"],
+            [b"\r\n", b"\r\n"],
+            [b"n\n", b"\r\n"],
+            [b"n\n", b"\n"],
+        ]
+        for line_terminators in invalid_tests:
+
+            with self.assertRaisesRegex(
+                ValueError,
+                r"If you are specifying multiple line terminators, the line terminators MUST be the newline \[\\n\] and carriage return \[\\r\\n\]. Instead, found:.*",
+            ):
+                UnescapedQuote(
+                    index=0,
+                    quote_char=self.quote_char,
+                    prev_chars=b"",
+                    next_chars=b"",
+                    quote_count=1,
+                ).get_quote_state(
+                    separator=self.separator,
+                    encoding="utf-8",
+                    line_terminators=line_terminators,
+                )
 
     def test_empties(self) -> None:
 
@@ -58,8 +84,9 @@ class TestUnescapedQuote(unittest.TestCase):
                     next_chars=next_,
                     quote_count=1,
                 ).get_quote_state(
-                    line_term=line_term,
+                    line_terminators=list(line_term),
                     separator=self.separator,
+                    encoding="utf-8",
                 )
                 == UnescapedQuoteState.INDETERMINATE
             )
@@ -115,8 +142,9 @@ class TestUnescapedQuote(unittest.TestCase):
                     next_chars=next_,
                     quote_count=1,
                 ).get_quote_state(
-                    line_term=line_term,
+                    line_terminators=list(line_term),
                     separator=self.separator,
+                    encoding="utf-8",
                 )
                 == state
             )
@@ -134,6 +162,21 @@ class TestUnescapedQuote(unittest.TestCase):
                 b"\n",
                 b",",
             ): UnescapedQuoteState.END_OF_QUOTED_CELL_OR_START_OF_QUOTED_LINE,
+            (
+                self.line_and_carriage,
+                b"\n",
+                b",",
+            ): UnescapedQuoteState.INDETERMINATE,
+            (
+                self.line_and_carriage,  # this is two chars and the look back isn't enough!
+                b"a\n",
+                b",a",
+            ): UnescapedQuoteState.END_OF_QUOTED_CELL_OR_START_OF_QUOTED_LINE,
+            (
+                self.line_and_carriage,
+                b"\r\n",
+                b",a",
+            ): UnescapedQuoteState.END_OF_QUOTED_CELL_OR_START_OF_QUOTED_LINE,
             # examples:
             #   - unquoted cell end of line\n"\nstart of quoted line starting w a newline"
             #   - unquoted cell end of line\n"""\nquoted cell starting w a newline after a quote"
@@ -146,6 +189,31 @@ class TestUnescapedQuote(unittest.TestCase):
                 b"\n",
             ): UnescapedQuoteState.START_OF_QUOTED_CELL_OR_END_OF_QUOTED_LINE,
             (
+                self.line_and_carriage,  # this is two chars and the look back isn't enough!
+                b"\n",
+                b"\n",
+            ): UnescapedQuoteState.INDETERMINATE,
+            (
+                self.line_and_carriage,
+                b"a\n",
+                b"\na",
+            ): UnescapedQuoteState.START_OF_QUOTED_CELL_OR_END_OF_QUOTED_LINE,
+            (
+                self.line_and_carriage,
+                b"\r\n",
+                b"\na",
+            ): UnescapedQuoteState.START_OF_QUOTED_CELL_OR_END_OF_QUOTED_LINE,
+            (
+                self.line_and_carriage,
+                b"a\n",
+                b"\r\n",
+            ): UnescapedQuoteState.START_OF_QUOTED_CELL_OR_END_OF_QUOTED_LINE,
+            (
+                self.line_and_carriage,
+                b"\r\n",
+                b"\r\n",
+            ): UnescapedQuoteState.START_OF_QUOTED_CELL_OR_END_OF_QUOTED_LINE,
+            (
                 self.carriage_return,
                 b"\r\n",
                 b"\r\n",
@@ -154,6 +222,26 @@ class TestUnescapedQuote(unittest.TestCase):
             #   - unquoted cell end of line\n"start of quoted line"
             #   - unquoted cell end of line\n"""quoted cell starting w a quote"
             (
+                self.line_term,
+                b"\n",
+                b"a",
+            ): UnescapedQuoteState.START_OF_QUOTED_LINE,
+            (
+                self.line_and_carriage,  # this is two chars and the look back isn't enough!
+                b"\n",
+                b"a",
+            ): UnescapedQuoteState.INDETERMINATE,
+            (
+                self.line_and_carriage,
+                b"\r\n",
+                b"aa",
+            ): UnescapedQuoteState.START_OF_QUOTED_LINE,
+            (
+                self.line_and_carriage,
+                b"a\n",
+                b"aa",
+            ): UnescapedQuoteState.START_OF_QUOTED_LINE,
+            (
                 self.carriage_return,
                 b"\r\n",
                 b"a,",
@@ -161,8 +249,7 @@ class TestUnescapedQuote(unittest.TestCase):
             (self.line_term, b"\nx", b"\r"): UnescapedQuoteState.INVALID,
         }
 
-        for (line_term, prev_, next_), state in _tests.items():
-
+        for (line_terms, prev_, next_), state in _tests.items():
             assert (
                 UnescapedQuote(
                     index=0,
@@ -171,8 +258,9 @@ class TestUnescapedQuote(unittest.TestCase):
                     next_chars=next_,
                     quote_count=1,
                 ).get_quote_state(
-                    line_term=line_term,
+                    line_terminators=list(line_terms),
                     separator=self.separator,
+                    encoding="utf-8",
                 )
                 == state
             )
@@ -186,6 +274,16 @@ class TestUnescapedQuote(unittest.TestCase):
             #   - quoted cell end of line""","start of quoted line"
             #   - quoted cell end of line""","""start of quoted line"
             (self.line_term, b"a", b",a"): UnescapedQuoteState.END_QUOTED_CELL,
+            (
+                self.line_and_carriage,
+                b"a",
+                b",a",
+            ): UnescapedQuoteState.INDETERMINATE,
+            (
+                self.line_and_carriage,
+                b"aa",
+                b",a",
+            ): UnescapedQuoteState.END_QUOTED_CELL,
             # examples:
             #   - quoted cell end of line"\n start of unquoted line"
             #   - quoted cell end of line"\n"start of quoted line"
@@ -198,6 +296,21 @@ class TestUnescapedQuote(unittest.TestCase):
                 b"\nx",
             ): UnescapedQuoteState.END_OF_QUOTED_LINE,
             (
+                self.line_and_carriage,
+                b"a",
+                b"\nx",
+            ): UnescapedQuoteState.INDETERMINATE,
+            (
+                self.line_and_carriage,
+                b"aa",
+                b"\nx",
+            ): UnescapedQuoteState.END_OF_QUOTED_LINE,
+            (
+                self.line_and_carriage,
+                b"aa",
+                b"\r\n",
+            ): UnescapedQuoteState.END_OF_QUOTED_LINE,
+            (
                 self.carriage_return,
                 b"dd",
                 b"\r\n",
@@ -206,7 +319,7 @@ class TestUnescapedQuote(unittest.TestCase):
             (self.line_term, b"dd", b"\r\n"): UnescapedQuoteState.INVALID,
         }
 
-        for (line_term, prev_, next_), state in _tests.items():
+        for (line_terms, prev_, next_), state in _tests.items():
 
             assert (
                 UnescapedQuote(
@@ -216,8 +329,9 @@ class TestUnescapedQuote(unittest.TestCase):
                     next_chars=next_,
                     quote_count=1,
                 ).get_quote_state(
-                    line_term=line_term,
+                    line_terminators=list(line_terms),
                     separator=self.separator,
+                    encoding="utf-8",
                 )
                 == state
             )
@@ -279,8 +393,6 @@ class TestUnescapedQuote(unittest.TestCase):
         }
 
         for (separator, prev_, next_), state in _tests.items():
-
-            print(separator, prev_.encode(), next_.encode())
             assert (
                 UnescapedQuote(
                     index=0,
@@ -289,8 +401,9 @@ class TestUnescapedQuote(unittest.TestCase):
                     next_chars=next_.encode(),
                     quote_count=1,
                 ).get_quote_state(
-                    line_term=self.line_term,
+                    line_terminators=list(self.line_term),
                     separator=separator.encode(),
+                    encoding="utf-8",
                 )
                 == state
             )
@@ -305,7 +418,9 @@ class TestFindUnescapedQuote(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError, "Cannot have a quote char that is more than a single byte"
         ):
-            find_first_unescaped_quote(b"", b"to", 2)
+            find_first_unescaped_quote(
+                buffer=b"", cursor=0, quote_char=b"to", min_buffer_peek=2
+            )
 
     def test_empty(self) -> None:
         buffers = [
@@ -316,7 +431,15 @@ class TestFindUnescapedQuote(unittest.TestCase):
             b'heheonlytriplequotes""nosingles',
         ]
         for buffer in buffers:
-            assert find_first_unescaped_quote(buffer, self.quote_char, 2) is None
+            assert (
+                find_first_unescaped_quote(
+                    buffer=buffer,
+                    cursor=0,
+                    quote_char=self.quote_char,
+                    min_buffer_peek=2,
+                )
+                is None
+            )
 
     def test_finds_simple(self) -> None:
         buffers = [
@@ -343,7 +466,12 @@ class TestFindUnescapedQuote(unittest.TestCase):
         ]
         for buffer, expected_result in buffers:
             assert (
-                find_first_unescaped_quote(buffer, self.quote_char, 2)
+                find_first_unescaped_quote(
+                    buffer=buffer,
+                    cursor=0,
+                    quote_char=self.quote_char,
+                    min_buffer_peek=2,
+                )
                 == expected_result
             )
 
@@ -382,7 +510,12 @@ class TestFindUnescapedQuote(unittest.TestCase):
         ]
         for buffer, expected_result in buffers:
             assert (
-                find_first_unescaped_quote(buffer, self.quote_char, 2)
+                find_first_unescaped_quote(
+                    buffer=buffer,
+                    cursor=0,
+                    quote_char=self.quote_char,
+                    min_buffer_peek=2,
+                )
                 == expected_result
             )
 
@@ -411,4 +544,9 @@ class TestFindUnescapedQuote(unittest.TestCase):
             ),
         ]
         for buffer, expected_result in buffers:
-            assert find_first_unescaped_quote(buffer, quote_char, 1) == expected_result
+            assert (
+                find_first_unescaped_quote(
+                    buffer=buffer, cursor=0, quote_char=quote_char, min_buffer_peek=1
+                )
+                == expected_result
+            )

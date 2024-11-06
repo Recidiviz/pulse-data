@@ -15,11 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for safely finding line terminators in quoted CSV files"""
-from typing import Tuple
 
 from recidiviz.utils.unescaped_quote_classification import (
     UnescapedQuoteState,
     find_first_unescaped_quote,
+    validate_line_terminators,
 )
 
 
@@ -29,14 +29,21 @@ def determine_quoting_state_for_buffer(
     buffer_byte_start: int,
     quote_char: bytes,
     separator: bytes,
-    line_terminator: bytes,
-) -> Tuple[int, bool] | None:
+    encoding: str,
+    line_terminators: list[bytes],
+) -> tuple[int, bool] | None:
     """Searches |buffer| to find a single, unescaped quote that we can use to determine
     where in the file we are. Returns values are:
         - cursor in |buffer| of the next non-quote character
         - if our cursor is inside of a quoted cell
     """
-    peek_into_buffer_size = max(len(quote_char), len(line_terminator), len(separator))
+    validate_line_terminators(encoding=encoding, line_terminators=line_terminators)
+
+    peek_into_buffer_size = max(
+        len(quote_char),
+        len(separator),
+        *[len(line_terminator) for line_terminator in line_terminators],
+    )
 
     cursor = 0
     in_quoted_cell: bool | None = None
@@ -46,7 +53,10 @@ def determine_quoting_state_for_buffer(
         in_quoted_cell is None
         and (
             next_unescaped_quote := find_first_unescaped_quote(
-                buffer[cursor:], quote_char, peek_into_buffer_size
+                buffer=buffer,
+                cursor=cursor,
+                quote_char=quote_char,
+                min_buffer_peek=peek_into_buffer_size,
             )
         )
         is not None
@@ -54,8 +64,7 @@ def determine_quoting_state_for_buffer(
         # next: we determine the quote's state, or what that quote means about where
         # we are within the csv file
         quote_state = next_unescaped_quote.get_quote_state(
-            line_term=line_terminator,
-            separator=separator,
+            separator=separator, encoding=encoding, line_terminators=line_terminators
         )
         # then: we determine if that state deterministically tells us if we are in
         # a quoted block or not
@@ -67,11 +76,7 @@ def determine_quoting_state_for_buffer(
             case UnescapedQuoteState.END_OF_QUOTED_LINE:
                 in_quoted_cell = False
             case UnescapedQuoteState.START_OF_QUOTED_LINE:
-                # we move backwards to as to locate the newline behind the quote
-                return (
-                    cursor + next_unescaped_quote.index - len(line_terminator),
-                    False,
-                )
+                in_quoted_cell = True
             # with the other cases, we cannot be confident of whether we are in a
             # quoted cell or not, so we must keep looking
             case UnescapedQuoteState.START_OF_QUOTED_CELL_OR_END_OF_QUOTED_LINE:
@@ -93,7 +98,7 @@ def determine_quoting_state_for_buffer(
                     f"the csv is improperly quoted."
                 )
 
-        cursor += next_unescaped_quote.next_non_quote_char_position
+        cursor = next_unescaped_quote.next_non_quote_char_position
 
     # TODO(#30505) we can be smarter about where we make our educated guess where the
     # line term is if we cant definitively find it
@@ -106,14 +111,21 @@ def determine_quoting_state_for_buffer(
     return cursor, in_quoted_cell
 
 
-def walk_to_find_unescaped_line_terminator(
-    *, buffer: bytes, in_quoted_cell: bool, quote_char: bytes, line_terminator: bytes
+def walk_to_find_line_end(
+    *,
+    buffer: bytes,
+    in_quoted_cell: bool,
+    quote_char: bytes,
+    line_terminators: list[bytes],
 ) -> int | None:
     """Searches |buffer| for the first line terminator outside of a quote cell by
     flipping |in_quoted_cell| each time we encounter a quote in |buffer| until we find a
     line terminator that is not in a quoted cell.
     """
-    peek_size_into_buffer = max(len(quote_char), len(line_terminator))
+    peek_size_into_buffer = max(
+        len(quote_char),
+        *[len(line_terminator) for line_terminator in line_terminators],
+    )
 
     for i in range(len(buffer)):
         next_bytes = buffer[i : i + peek_size_into_buffer]
@@ -121,26 +133,31 @@ def walk_to_find_unescaped_line_terminator(
         # escaped quote (i.e. even count) this flag will remain the same
         if next_bytes.startswith(quote_char):
             in_quoted_cell = not in_quoted_cell
-        # if we find a newline and we're not inside quotes, we're good to go!
-        elif next_bytes.startswith(line_terminator) and not in_quoted_cell:
-            return i
+        else:
+            for line_terminator in line_terminators:
+                # if we find a newline and we're not inside quotes, we're good to go!
+                if next_bytes.startswith(line_terminator) and not in_quoted_cell:
+                    return i + len(line_terminator)
+
     return None
 
 
-def find_line_terminator_for_quoted_csv(
+def find_end_of_line_for_quoted_csv(
     *,
     buffer: bytes,
     buffer_byte_start: int,
     quote_char: bytes,
     separator: bytes,
-    line_terminator: bytes,
+    encoding: str,
+    line_terminators: list[bytes],
 ) -> int | None:
     """Searches |buffer| in an attempt to find an line terminator for a conceptual csv
-    line (i.e. a |line_terminator| character that is not inside of a quoted cell.) We do
-    so by identifying any unescaped quotes to find a deterministic csv state in |buffer|
-    and walking the rest of |buffer| until we find an line terminator we are confident is
-    not in a quoted field.
+    line (i.e. a |line_terminator| or |alt_line_terminator| character that is not inside of
+    a quoted cell.) We do so by identifying any unescaped quotes to find a deterministic
+    csv state in |buffer| and walking the rest of |buffer| until we find a |line_terminator|
+    or |alt_line_terminator| we are confident is not in a quoted field.
     """
+    validate_line_terminators(encoding=encoding, line_terminators=line_terminators)
 
     # Find the index after the first unescaped quote character which gives us enough context
     #  to understand if we're inside or outside a quoted block of characters.
@@ -149,7 +166,8 @@ def find_line_terminator_for_quoted_csv(
         buffer_byte_start=buffer_byte_start,
         quote_char=quote_char,
         separator=separator,
-        line_terminator=line_terminator,
+        encoding=encoding,
+        line_terminators=line_terminators,
     )
 
     if quoting_state is None:
@@ -159,11 +177,11 @@ def find_line_terminator_for_quoted_csv(
 
     # Walk the buffer to find the index of the first conceptual CSV line terminator (e.g.
     # first line terminator not inside a quoted block).
-    relative_line_term_index = walk_to_find_unescaped_line_terminator(
+    relative_line_term_index = walk_to_find_line_end(
         buffer=buffer[post_quote_cursor:],
         in_quoted_cell=in_quoted_cell,
         quote_char=quote_char,
-        line_terminator=line_terminator,
+        line_terminators=line_terminators,
     )
 
     if relative_line_term_index is None:

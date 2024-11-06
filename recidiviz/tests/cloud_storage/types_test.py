@@ -21,14 +21,19 @@ import unittest
 from recidiviz.cloud_storage.types import CsvChunkBoundary
 
 
-class TestChunkBoundary(unittest.TestCase):
-    """Tests for CsvChunkBoundary"""
+class TestCsvChunkBoundary(unittest.TestCase):
+    """Test serialization/deserialization for CsvChunkBoundary"""
 
-    def test_serialization(self) -> None:
-        chunk_boundary = CsvChunkBoundary(
-            start_inclusive=0, end_exclusive=100, chunk_num=1
-        )
+    def test_serialize_deserialize(self) -> None:
+        original = CsvChunkBoundary(start_inclusive=0, end_exclusive=100, chunk_num=1)
 
-        assert chunk_boundary == CsvChunkBoundary.deserialize(
-            chunk_boundary.serialize()
-        )
+        serialized = original.serialize()
+        deserialized = CsvChunkBoundary.deserialize(serialized)
+
+        self.assertEqual(original.start_inclusive, deserialized.start_inclusive)
+        self.assertEqual(original.end_exclusive, deserialized.end_exclusive)
+        self.assertEqual(original.chunk_num, deserialized.chunk_num)
+
+    def test_get_chunk_size(self) -> None:
+        boundary = CsvChunkBoundary(start_inclusive=0, end_exclusive=100, chunk_num=1)
+        self.assertEqual(boundary.get_chunk_size(), 100)
