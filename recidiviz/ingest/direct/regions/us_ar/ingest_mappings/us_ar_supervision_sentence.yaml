@@ -29,6 +29,8 @@ input_columns:
   - last_min_term_date
   - parole_days
   - SUPVTYPE
+  - any_violent
+  - any_sex
 unused_columns: []
 variables:
   - is_prob:
@@ -194,6 +196,10 @@ output:
                     $include_nulls: False
                 counts: NUMBERCOUNTS
                 offense_type: $variable(offense_type_str)
+                is_violent:
+                  $equal: [any_violent, $literal("True")]
+                is_sex_offense:
+                  $equal: [any_sex, $literal("True")]
                 attempted:
                   $custom:
                     $function: us_ar_custom_parsers.is_attempted
