@@ -189,12 +189,15 @@ def parse_incident_type(raw_text: str) -> Optional[StateIncarcerationIncidentTyp
         ):
             return StateIncarcerationIncidentType.MINOR_OFFENSE
         if raw_text in (
-            "FIGHTING"
-            "ASSAULT ON INMATE"
-            "ASSAULT ON STAFF THAT DID NOT INVOLVE SERIOUS INJURY"
-            "AGGRAVATED ASSAULT (INMATE ON INMATE)"
-            "ASSAULT ON STAFF (THAT INVOLVED SERIOUS INJURY)"
-            "MANSLAUGHTER"
+            "ARSON",
+            "FIGHTING",
+            "ASSAULT ON INMATE",
+            "ASSAULT ON STAFF THAT DID NOT INVOLVE SERIOUS INJURY",
+            "AGGRAVATED ASSAULT (INMATE ON INMATE)",
+            "ASSAULT ON STAFF (THAT INVOLVED SERIOUS INJURY)",
+            "MANSLAUGHTER",
+            "THREATENING OR INTIMIDATING",
+            "TAMPERING WITH SECURITY OR SAFETY DEVICES",
         ):
             return StateIncarcerationIncidentType.VIOLENCE
         return StateIncarcerationIncidentType.REPORT
