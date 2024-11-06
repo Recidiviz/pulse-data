@@ -18,6 +18,7 @@
 TPR/DTP dates (Transition Program Release/Drug Transition Program)"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -106,11 +107,14 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
             *
           FROM
             sub_sessions_with_attributes
+          WHERE start_date != {nonnull_end_date_clause('end_date')}
             -- These ensure that the latest update_datetime is used for the given dates, as dates can be updated multiple times within a day
           QUALIFY
             ROW_NUMBER() OVER (PARTITION BY person_id, state_code, start_date, end_date, csbd_date, ercd_date 
                 ORDER BY update_datetime DESC) = 1
             AND ROW_NUMBER() OVER (PARTITION BY person_id, state_code, start_date, end_date, acis_tpr_date 
+                ORDER BY update_datetime DESC) = 1 
+            AND ROW_NUMBER() OVER (PARTITION BY person_id, state_code, start_date, end_date, acis_dtp_date 
                 ORDER BY update_datetime DESC) = 1 
           ),
       combine_cte AS (

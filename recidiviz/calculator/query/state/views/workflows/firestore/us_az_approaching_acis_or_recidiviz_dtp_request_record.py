@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    almost_eligible_tab_logic,
     home_plan_information_for_side_panel_notes,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -50,7 +51,7 @@ WITH recidiviz_dtp_date_approaching AS (
 {join_current_task_eligibility_spans_with_external_id(
     state_code="'US_AZ'",
     tes_task_query_view='overdue_for_recidiviz_dtp_request_materialized',
-    id_type="'US_AZ_ADC_NUMBER'",
+    id_type="'US_AZ_PERSON_ID'",
     almost_eligible_only=True)}
 ),
 
@@ -58,51 +59,17 @@ acis_dtp_date_approaching AS (
 {join_current_task_eligibility_spans_with_external_id(
     state_code="'US_AZ'",
     tes_task_query_view='overdue_for_acis_dtp_request_materialized',
-    id_type="'US_AZ_ADC_NUMBER'",
+    id_type="'US_AZ_PERSON_ID'",
     almost_eligible_only=True)}
 ),
 
 combine_acis_and_recidiviz_dtp_dates AS (
-    -- Fast track: ACIS DTP date within 1 days and 30 days
-    SELECT
-        * EXCEPT(criteria_reason),
-        "FAST_TRACK" AS metadata_tab_description,
-    FROM acis_dtp_date_approaching,
-    UNNEST(JSON_QUERY_ARRAY(reasons)) AS criteria_reason
-    WHERE "US_AZ_INCARCERATION_PAST_ACIS_DTP_DATE" IN UNNEST(ineligible_criteria)
-        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_AZ_INCARCERATION_PAST_ACIS_DTP_DATE"
-        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.acis_dtp_date') AS DATE) BETWEEN 
-            DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 DAY) AND DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 30 DAY)
-
-    UNION ALL
-
-    -- Approved by Time Comp: ACIS DTP date within 31 days and 180 days
-    SELECT
-        * EXCEPT(criteria_reason),
-        "APPROVED_BY_TIME_COMP" AS metadata_tab_description 
-    FROM acis_dtp_date_approaching,
-    UNNEST(JSON_QUERY_ARRAY(reasons)) AS criteria_reason
-    WHERE "US_AZ_INCARCERATION_PAST_ACIS_DTP_DATE" IN UNNEST(ineligible_criteria)
-        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.criteria_name') AS STRING) = "US_AZ_INCARCERATION_PAST_ACIS_DTP_DATE"
-        AND SAFE_CAST(JSON_VALUE(criteria_reason, '$.reason.acis_dtp_date') AS DATE) BETWEEN 
-            DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 31 DAY) AND DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 180 DAY)
-
-    UNION ALL
-
-    -- Almost eligible section 1: Projected DTP date within 7 days and 180 days
-    # TODO(#33958) - recidiviz_tpr_date_approaching needs to be split into section 1 and 2
-    SELECT 
-        *,
-        "ALMOST_ELIGIBLE_SECTION_1" AS metadata_tab_description 
-    FROM recidiviz_dtp_date_approaching
-
-    -- Almost eligible section 2: Projected DTP date within 181 days and 365 days
+{almost_eligible_tab_logic(opp_name='dtp')}
 ),
 
 side_panel_notes AS (
     {home_plan_information_for_side_panel_notes()}
 ),
-
 
 array_side_panel_notes_cte AS (
     {array_agg_case_notes_by_external_id(
@@ -113,7 +80,7 @@ array_side_panel_notes_cte AS (
 {opportunity_query_final_select_with_case_notes(
     from_cte = "combine_acis_and_recidiviz_dtp_dates",
     left_join_cte="array_side_panel_notes_cte",
-    additional_columns="metadata_tab_description",)}
+    additional_columns="metadata_tab_name, metadata_tab_description",)}
 """
 
 US_AZ_APPROACHING_ACIS_OR_RECIDIVIZ_DTP_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
