@@ -21,6 +21,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from flask import Blueprint, Response, jsonify, make_response, request
 from google.cloud import run_v2
+from sqlalchemy import or_
 from sqlalchemy.dialects.postgresql import insert
 
 from recidiviz.auth.auth0_client import Auth0Client
@@ -30,6 +31,7 @@ from recidiviz.justice_counts.agency_user_account_association import (
 )
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.agency_utils import delete_agency
 from recidiviz.justice_counts.utils.constants import (
@@ -525,5 +527,100 @@ def get_admin_blueprint(
 
         current_session.commit()
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+    @admin_blueprint.route("/agency/<agency_id>/reporting-agency", methods=["GET"])
+    @auth_decorator
+    def get_agency_reporting_agencies(agency_id: int) -> Response:
+        """Fetch reporting agency options, agencies reporting metrics, and metric details for a specified agency."""
+
+        agency = AgencyInterface.get_agency_by_id(
+            session=current_session, agency_id=agency_id
+        )
+
+        metric_definitions = MetricInterface.get_metric_definitions_by_systems(
+            systems={schema.System[system] for system in agency.systems or []},
+        )
+
+        metric_key_to_metric_interface = (
+            MetricSettingInterface.get_metric_key_to_metric_interface(
+                session=current_session, agency=agency
+            )
+        )
+
+        # Query for agencies that can report metrics for the selected agency:
+        # 1. Central State Government (CSG)
+        # 2. Vendors
+        # 3. Super agency (if applicable)
+        reporting_agencies = (
+            current_session.query(schema.Source)
+            .filter(
+                or_(
+                    schema.Source.type == "csg",
+                    schema.Source.type == "vendor",
+                    schema.Source.id == agency.super_agency_id,
+                )
+            )
+            .order_by(schema.Source.type)
+            .all()
+        )
+
+        # Build a list of reporting agency options, categorized by type (CSG, vendor, super agency).
+        # This will be used to populate a dropdown or selection field in the UI.
+        reporting_agency_options_json = [
+            {
+                "reporting_agency_name": a.name,
+                "reporting_agency_id": a.id,
+                "category": a.type.upper(),
+            }
+            for a in reporting_agencies
+        ]
+
+        metric_json = defaultdict(list)
+        system_to_reporting_agency_metadata = defaultdict(list)
+        reporting_agency_id_to_agency_name = {a.id: a.name for a in reporting_agencies}
+
+        for definition in metric_definitions:
+            # Collect metric details by system for use in the response JSON.
+            metric_json[definition.system.name].append(
+                {"key": definition.key, "name": definition.display_name}
+            )
+
+            # For each metric, gather the reporting agency's information, including name and ID,
+            # and whether the metric is self-reported by the agency.
+            metric_interface = metric_key_to_metric_interface.get(definition.key)
+            system_to_reporting_agency_metadata[definition.system.name].append(
+                {
+                    "metric_key": definition.key,
+                    "reporting_agency_id": (
+                        metric_interface.reporting_agency_id
+                        if metric_interface is not None
+                        else None
+                    ),
+                    "reporting_agency_name": (
+                        reporting_agency_id_to_agency_name.get(
+                            metric_interface.reporting_agency_id
+                        )
+                        if metric_interface is not None
+                        else None
+                    ),
+                    "is_self_reported": (
+                        metric_interface.is_self_reported
+                        if metric_interface is not None
+                        else None
+                    ),
+                }
+            )
+
+        # Return a JSON response containing:
+        # 1. `reporting_agency_options`: Available agencies that can report metrics.
+        # 2. `reporting_agencies`: Mapping of each system's metrics to the responsible agency.
+        # 3. `metrics`: List of metrics grouped by system.
+        return jsonify(
+            {
+                "reporting_agency_options": reporting_agency_options_json,
+                "reporting_agencies": system_to_reporting_agency_metadata,
+                "metrics": metric_json,
+            }
+        )
 
     return admin_blueprint
