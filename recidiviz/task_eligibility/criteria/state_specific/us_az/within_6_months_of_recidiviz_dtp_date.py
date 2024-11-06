@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes spans of time when someone is within 6 months of their Recidiviz-projected TPR Date"""
+"""Describes spans of time when someone is within 6 months of their Recidiviz-projected DTP Date"""
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
@@ -29,13 +29,13 @@ from recidiviz.task_eligibility.utils.us_az_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_AZ_WITHIN_6_MONTHS_OF_RECIDIVIZ_TPR_DATE"
+_CRITERIA_NAME = "US_AZ_WITHIN_6_MONTHS_OF_RECIDIVIZ_DTP_DATE"
 
 _REASONS_FIELDS = [
     ReasonsField(
-        name="recidiviz_tpr_date",
+        name="recidiviz_dtp_date",
         type=bigquery.enums.StandardSqlTypeNames.DATE,
-        description="Projected Recidiviz TPR eligibility date",
+        description="Projected Recidiviz DTP eligibility date",
     ),
 ]
 
@@ -43,7 +43,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
-        criteria_spans_query_template=within_x_months_of_date("TPR", time_interval=6),
+        criteria_spans_query_template=within_x_months_of_date("DTP", time_interval=6),
         reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_AZ,
         analyst_views_dataset=ANALYST_VIEWS_DATASET,
