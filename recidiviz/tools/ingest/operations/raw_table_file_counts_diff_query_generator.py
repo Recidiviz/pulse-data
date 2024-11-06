@@ -37,6 +37,7 @@ WITH src AS (
       COUNT(*) AS src_row_count
     FROM
       `{src_project_id}.{src_raw_data_dataset_id}.{raw_data_table_id}`
+    {optional_datetime_filter}
     GROUP BY
       update_datetime
 ),
@@ -47,6 +48,7 @@ cmp AS (
       COUNT(*) AS cmp_row_count
     FROM
       `{cmp_project_id}.{cmp_raw_data_dataset_id}.{raw_data_table_id}`
+    {optional_datetime_filter}
     GROUP BY
       update_datetime
 )
@@ -146,6 +148,7 @@ class RawTableFileCountsDiffQueryGenerator(RawTableDiffQueryGenerator):
             cmp_raw_data_dataset_id=self.cmp_dataset_id,
             raw_data_table_id=file_tag,
             datetime_column=self.truncate_update_datetime_col_name,
+            optional_datetime_filter=self.optional_datetime_filter or "",
         )
 
     @staticmethod

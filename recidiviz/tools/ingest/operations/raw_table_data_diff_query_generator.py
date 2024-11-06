@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Generates a query to compare raw data between tables."""
+import datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import attr
@@ -41,16 +42,20 @@ QUERY_TEMPLATE = """
 WITH src AS (
   SELECT {src_columns}
   FROM `{src_project_id}.{src_raw_data_dataset_id}.{raw_data_table_id}`
+  {optional_datetime_filter}
   EXCEPT DISTINCT
   SELECT {cmp_columns}
   FROM `{cmp_project_id}.{cmp_raw_data_dataset_id}.{raw_data_table_id}`
+  {optional_datetime_filter}
 ),
 cmp AS (
   SELECT {cmp_columns}
   FROM `{cmp_project_id}.{cmp_raw_data_dataset_id}.{raw_data_table_id}`
+  {optional_datetime_filter}
   EXCEPT DISTINCT
   SELECT {src_columns}
   FROM `{src_project_id}.{src_raw_data_dataset_id}.{raw_data_table_id}`
+  {optional_datetime_filter}
 )
 SELECT
     *
@@ -157,6 +162,8 @@ class RawTableDataDiffQueryGenerator(RawTableDiffQueryGenerator):
         cmp_project_id: str,
         cmp_ingest_instance: DirectIngestInstance,
         truncate_update_datetime_part: Optional[str] = None,
+        start_date_inclusive: Optional[datetime.datetime] = None,
+        end_date_exclusive: Optional[datetime.datetime] = None,
     ) -> "RawTableDataDiffQueryGenerator":
         state_code = StateCode(region_code.upper())
 
@@ -177,6 +184,9 @@ class RawTableDataDiffQueryGenerator(RawTableDiffQueryGenerator):
                 truncate_update_datetime_part
             ),
             region_raw_file_config=DirectIngestRegionRawFileConfig(region_code),
+            optional_datetime_filter=cls._get_optional_datetime_filter(
+                start_date_inclusive, end_date_exclusive
+            ),
         )
 
     def _build_columns_for_comparison(
@@ -227,6 +237,7 @@ class RawTableDataDiffQueryGenerator(RawTableDiffQueryGenerator):
                 f"{SRC_COLUMN_PREFIX}{column} = {CMP_COLUMN_PREFIX}{column}"
                 for column in self._build_primary_key_columns(file_config)
             ),
+            optional_datetime_filter=self.optional_datetime_filter or "",
         )
 
     @staticmethod
