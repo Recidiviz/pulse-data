@@ -97,23 +97,28 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
     with local_project_id_override(args.project_id):
-        referenced_source_tables = BigQueryViewDagWalker(
-            views=[
-                view_builder.build() for view_builder in all_deployed_view_builders()
-            ]
-        ).get_referenced_source_tables()
+        if not args.table_ids:
+            # If an explicit list of table addresses to update was not provided, instead
+            # infer the list from the BQ view graph, updating all tables that are
+            # referenced by any view.
+            referenced_source_tables = BigQueryViewDagWalker(
+                views=[
+                    view_builder.build()
+                    for view_builder in all_deployed_view_builders()
+                ]
+            ).get_referenced_source_tables()
+            tables_to_update = {
+                source_table_address
+                for source_table_address in referenced_source_tables
+                if source_table_address.dataset_id == args.dataset_id
+            }
+        else:
+            tables_to_update = {
+                BigQueryAddress(dataset_id=args.dataset_id, table_id=table_id)
+                for table_id in args.table_ids
+            }
 
-        referenced_source_tables = {
-            source_table_address
-            for source_table_address in referenced_source_tables
-            if source_table_address.dataset_id == args.dataset_id
-            and (
-                len(args.table_ids) == 0
-                or source_table_address.table_id in args.table_ids
-            )
-        }
-
-        for source_table_address in referenced_source_tables:
+        for source_table_address in tables_to_update:
             try:
                 update_source_file_yaml(source_table_address)
             except Exception as e:
