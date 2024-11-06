@@ -1,0 +1,679 @@
+state_assessment:
+  fields:
+    assessment_class: The classification of assessment that was conducted.
+    assessment_class_raw_text: The raw text value of the classification of assessment.
+    assessment_date: The date the assessment was conducted.
+    assessment_level: The final level output by the assessment, if applicable.
+    assessment_level_raw_text: The raw text value of the assessment level
+    assessment_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of a particular assessment.
+    assessment_score: The final score output by the assessment, if applicable.
+    assessment_type: The specific type of assessment that was conducted.
+    assessment_type_raw_text: The raw text value of the assessment type.
+    conducting_staff_external_id: >-
+      The external id of the staff member conducting this
+      assessment. This field with the conducting_staff_external_id_type field make
+      up a primary key for the state_staff_external_id table.
+    conducting_staff_external_id_type: >-
+      The ID type associated with external id of
+      the staff member conducting this assessment. This field with the conducting_staff_external_id
+      field make up a primary key for the state_staff_external_id table.
+
+state_charge:
+  fields:
+    attempted: Whether this charge was an attempt or not (e.g. attempted murder).
+    charge_notes: Free text containing other information about a charge.
+    charging_entity: >-
+      The entity that brought this charge (e.g., Boston Police Department, Southern District of New York).
+    classification_subtype: >-
+      The sub-classification of the charge, such as a degree
+      (e.g. 1st Degree, 2nd Degree, etc.) or a class (e.g. Class A, Class B, etc.).
+    classification_type: Charge classification.
+    classification_type_raw_text: The raw text value of the charge classification.
+    counts: The number of counts of this charge which are being brought against the person.
+    county_code: The code of the county under whose jurisdiction the charge was brought.
+    date_charged: The date the person was charged with the alleged offense.
+    description: A text description of the charge.
+    is_controlling: >-
+      Whether or not this is the "controlling" charge in a set of related
+      charges. A controlling charge is the one which is responsible for the longest
+      possible sentence duration in the set.
+    is_drug: Whether this charge was for a drug-related crime or not.
+    is_sex_offense: Whether or not the violation involved a sex offense.
+    is_violent: Whether this charge was for a violent crime or not.
+    judge_external_id: >-
+      The unique identifier for the presiding judge, unique within
+      the scope of the source data system.
+    judge_full_name: >-
+      The full name of the judge presiding over the court case associated
+      with this charge.
+    judicial_district_code: >-
+      The code of the judicial district under whose jurisdiction
+      the case was tried.
+    ncic_code: >-
+      The standardized NCIC (National Crime Information Center) code for
+      the charged offense. NCIC codes are a set of nationally recognized codes for
+      certain types of crimes.
+    offense_date: The date of the alleged offense that led to this charge.
+    offense_type: The type of offense associated with the charge.
+    status: The status of the charge.
+    status_raw_text: The raw text value of the status of the charge.
+    statute: The identifier of the charge in the state or federal code.
+
+state_charge_v2:
+  fields:
+    attempted: Whether this charge was an attempt or not (e.g. attempted murder).
+    charge_notes: Free text containing other information about a charge.
+    charging_entity: >-
+      The entity that brought this charge (e.g., Boston Police Department,
+      Southern District of New York).
+    classification_subtype: >-
+      The sub-classification of the charge, such as a degree
+      (e.g. 1st Degree, 2nd Degree, etc.) or a class (e.g. Class A, Class B, etc.).
+    classification_type: Charge classification.
+    classification_type_raw_text: The raw text value of the charge classification.
+    counts: The number of counts of this charge which are being brought against the person.
+    county_code: The code of the county under whose jurisdiction the charge was brought.
+    date_charged: The date the person was charged with the alleged offense.
+    description: A text description of the charge.
+    is_controlling: >-
+      Whether or not this is the "controlling" charge in a set of related
+      charges. A controlling charge is the one which is responsible for the longest
+      possible sentence duration in the set.
+    is_drug: Whether this charge was for a drug-related crime or not.
+    is_sex_offense: Whether or not the violation involved a sex offense.
+    is_violent: Whether this charge was for a violent crime or not.
+    judge_external_id: >-
+      The unique identifier for the presiding judge, unique within
+      the scope of the source data system.
+    judge_full_name: >-
+      The full name of the judge presiding over the court case associated
+      with this charge.
+    judicial_district_code: The code of the judicial district under whose jurisdiction the case was tried.
+    ncic_code: >-
+      The standardized NCIC (National Crime Information Center) code for
+      the charged offense. NCIC codes are a set of nationally recognized codes for
+      certain types of crimes.
+    offense_date: The date of the alleged offense that led to this charge.
+    offense_type: The type of offense associated with the charge.
+    status: The status of the charge.
+    status_raw_text: The raw text value of the status of the charge.
+    statute: The identifier of the charge in the state or federal code.
+
+state_drug_screen:
+  fields:
+    drug_screen_date: Date the drug screen was administered. This is the date the sample was collected or a positive admission was recorded.
+    drug_screen_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of this drug screen.
+    drug_screen_result: Enum indicating whether the test result was positive, negative or other.
+    drug_screen_result_raw_text: Raw text for the result field.
+    sample_type: Type of sample collected for the drug screen.
+    sample_type_raw_text: Raw text for the sample_type field.
+
+state_early_discharge:
+  fields:
+    county_code: The code of the county under whose jurisdiction the early discharge took place.
+    deciding_body_type: The type of body that made or will make the early discharge decision.
+    deciding_body_type_raw_text: The raw text value of the deciding body type.
+    decision: The decided result of this early decision request.
+    decision_date: The date on which the result of this early decision request was decided.
+    decision_raw_text: The raw text value of the early discharge decision.
+    decision_status: The current status of the early discharge decision.
+    decision_status_raw_text: The raw text value of the early discharge decision status.
+    request_date: The date on which the early discharge request took place.
+    requesting_body_type: The type of body that requested the early discharge for this person.
+    requesting_body_type_raw_text: The raw text value of the requesting body type.
+
+state_employment_period:
+  fields:
+    employer_address: >-
+      Physical address where the person goes to work. May also use
+      the employer mailing address as a fallback if we don't have the physical address.
+    employer_name: The name of the person's employer.
+    employment_status: Indicates the type of the person's employment or unemployment during the given period of time.
+    employment_status_raw_text: The raw text value of the employment status.
+    end_date: Date on which a person's employment with the given employer and job title terminated.
+    end_reason: >-
+      The reason why this period of employment or unemployment was terminated.
+      Should only be set if the `end_date` is nonnull.
+    end_reason_raw_text: The raw text value of the end reason.
+    job_title: The name of the person's job position.
+    last_verified_date: >-
+      Most recent date on which person's employment with a
+      given employer and job title was verified. Note that this field is only meaningful
+      for open employment periods.
+    start_date: Date on which a person's employment with the given employer and job title started.
+
+state_incarceration_incident:
+  fields:
+    facility: The facility in which the incident took place.
+    incident_date: The date on which the incident took place.
+    incident_details: Free-text notes about / description of the incident.
+    incident_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of a particular incident.
+    incident_severity: The severity of the incident.
+    incident_severity_raw_text: The raw text value of the incident severity.
+    incident_type: The type of incident.
+    incident_type_raw_text: The raw text value of the incident type.
+    location_within_facility: The more specific location where the incident took place.
+
+state_incarceration_incident_outcome:
+  fields:
+    date_effective: The date on which the outcome takes effect.
+    hearing_date: The date on which the hearing for the incident is taking place.
+    outcome_description: Descriptive notes describing the outcome.
+    outcome_type: The type of outcome.
+    outcome_type_raw_text: The raw text value of the outcome type.
+    projected_end_date: The date on which the outcome is supposed to end.
+    punishment_length_days: The length of any durational, punishment-focused outcome.
+    report_date: The date on which the incident was reported.
+
+state_incarceration_period:
+  fields:
+    admission_date: The date the person was admitted to this particular period of incarceration.
+    admission_reason: The reason the person was admitted to this particular period of incarceration.
+    admission_reason_raw_text: The raw text value of the incarceration period admission reason.
+    county_code: The code of the county where the person is currently incarcerated.
+    custodial_authority: >-
+      The type of government entity directly responsible for the
+      person in this period of incarceration. Not necessarily the decision making
+      authority. For example, the supervision authority in a state might be the custodial
+      authority for someone on probation, even though the courts are the body with
+      the power to make decisions about that person's path through the system.
+    custodial_authority_raw_text: The raw text value of the incarceration period's custodial authority.
+    custody_level: >-
+      The level of staff supervision and security employed for a person
+      held in custody, usually determined based on their offense history and conduct.
+    custody_level_raw_text: The raw text value of the incarceration period custody level.
+    facility: The facility in which the person is currently incarcerated.
+    housing_unit: The housing unit within the facility in which the person currently resides.
+    housing_unit_category: A supertype corresponding to the housing_unit_type.
+    housing_unit_category_raw_text: The raw text value of the incarceration period housing unit category.
+    housing_unit_type: >-
+      Where the person is currently being housed regardless of technical
+      assignment/custody level - i.e. whether this person is housed in solitary confinement
+    housing_unit_type_raw_text: The raw text value of the incarceration period housing unit type.
+    incarceration_type: The type of incarceration the person is serving.
+    incarceration_type_raw_text: The raw text value of the incarceration period type.
+    release_date: The date the person was released from this particular period of incarceration.
+    release_reason: The reason the person was released from this particular period of incarceration.
+    release_reason_raw_text: The raw text value of the incarceration period's release reason.
+    specialized_purpose_for_incarceration: >-
+      The specialized purpose for incarceration
+      for this particular incarceration period.
+    specialized_purpose_for_incarceration_raw_text: The raw text value of the specialized purpose for incarceration.
+
+state_incarceration_sentence:
+  fields:
+    completion_date: The date this sentence has been completed.
+    conditions: >-
+      The conditions of this incarceration sentence which the person must
+      follow to avoid a disciplinary response. If this field is empty, there may still
+      be applicable conditions that apply to someone's current term of supervision/incarceration
+      - either inherited from another ongoing sentence or the current supervision term. (See conditions on StateSupervisionPeriod).
+    county_code: The code of the county under whose jurisdiction the sentence was imposed.
+    date_imposed: >-
+      The date this sentence was imposed, e.g. the date of actual sentencing,
+      but not necessarily the date the person started serving the sentence
+    earned_time_days: >-
+      Any earned time (in days) the person has credited against this
+      sentence due to participation in programming designed to reduce the likelihood
+      of re-offense, if applicable.
+    effective_date: >-
+      The date on which a sentence effectively begins being served,
+      including any pre-trial jail detention time if applicable.
+    good_time_days: >-
+      Any good time (in days) the person has credited against this sentence
+      due to good conduct, a.k.a. time off for good behavior, if applicable.
+    incarceration_type: The type of incarceration the person is being sentenced to.
+    incarceration_type_raw_text: The raw text value of the type of incarceration of this sentence.
+    initial_time_served_days: >-
+      The amount of any time already served (in days), to
+      possible be credited against the overall sentence duration.
+    is_capital_punishment: Whether or not this is a sentence for the death penalty.
+    is_life: Whether or not this is a life sentence.
+    max_length_days: The maximum duration of this sentence in days.
+    min_length_days: The minimum duration of this sentence in days.
+    parole_eligibility_date: >-
+      The first date under which the person becomes eligible
+      for parole under the terms of this sentence.
+    parole_possible: Whether or not the person may be released to parole under the terms of this sentence.
+    projected_max_release_date: >-
+      The latest projected date the person may be released
+      from incarceration due to this sentence.
+    projected_min_release_date: >-
+      The earliest projected date the person may be released
+      from incarceration due to this sentence.
+    sentence_metadata: >-
+      Arbitrary JSON-formatted metadata relevant to a fine understanding
+      of a particular sentence.
+    status: The current status of this sentence.
+    status_raw_text: The raw text value of the status of the sentence.
+
+state_person:
+  fields:
+    birthdate: Date the person was born. Use this when it is known. When a person's age but not birthdate is reported, use age instead.
+    current_address: The current address of the person.
+    current_email_address: The current email address of the person.
+    current_phone_number: The current phone number of the person.
+    full_name: A person's name. Only use this when names are in a single field. Use surname and given_names when they are separate.
+    gender: A person's gender, as reported by the state."
+    gender_raw_text: The raw text value of the person's state-reported gender.
+    residency_status: A person's reported residency status.
+    residency_status_raw_text:
+      The raw text used to derive a person's reported residency
+      status.
+
+state_person_address_period:
+  fields:
+    address_city: The city name of the address
+    address_county: The county name of the address
+    address_end_date: Date on which a person's address ended
+    address_is_verified: Boolean to determine whether the person's address has been verified
+    address_line_1: The first line of the address, used to display street number and name.
+    address_line_2: The second line of the address, should denote apt. number or PO box number
+    address_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of a particular address
+    address_start_date: Date on which a person's address changed or was registered for the first time
+    address_type: Indicates the address type
+    address_type_raw_text: Text used to infer address_type
+    address_zip: The 5 digit zipcode of the address
+
+state_person_alias:
+  fields:
+    alias_type: The type of the name alias.
+    alias_type_raw_text: The raw text value for the alias type.
+    full_name: A person's name.
+
+state_person_ethnicity:
+  fields:
+    ethnicity: A person's reported ethnicity.
+    ethnicity_raw_text: The raw text value of the ethnicity.
+
+state_person_external_id:
+  fields:
+    id_type:
+      The type of id provided by the system. For example, in a state with multiple
+      data systems that we ingest, this may be the name of the system from the id
+      emanates.
+
+state_person_housing_status_period:
+  fields:
+    housing_status_end_date: Date on which a person's housing status ended
+    housing_status_start_date: Date on which a person's housing status changed or was registered for the first time
+    housing_status_type: Indicates the housing status type
+    housing_status_type_raw_text: Text used to infer housing_status_type
+
+state_person_race:
+  fields:
+    race: A person's reported race.
+    race_raw_text: The raw text value of the person's race.
+
+state_program_assignment:
+  fields:
+    discharge_date: The date the person was discharged from the program, if applicable.
+    participation_status: The status of the person's participation in the program.
+    participation_status_raw_text: The raw text value of the participation status.
+    program_id: Unique identifier for a program being assigned to.
+    program_location_id: The id of where the program takes place.
+    referral_date: The date the person was referred to the program, if applicable.
+    referral_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of a particular referral.
+    referring_staff_external_id: >-
+      The external id of the staff member who made the
+      program referral. This field with the referring_staff_external_id_type field
+      make up a primary key for the state_staff_external_id table.
+    referring_staff_external_id_type: >-
+      The ID type associated with the external id
+      of the staff member who made the program referral. This field with the referring_staff_external_id
+      field make up a primary key for the state_staff_external_id table.
+    start_date: The date the person started the program, if applicable.
+
+state_sentence:
+  fields:
+    conditions: >-
+      A comma-separated list of conditions of this sentence which the person
+      must follow to avoid a disciplinary response. If this field is empty, there
+      may still be applicable conditions that apply to someone's current term of supervision/incarceration
+      - either inherited from another ongoing sentence or the current supervision
+      term. (See conditions on StateSupervisionPeriod).
+    county_code: The code of the county under whose jurisdiction the sentence was imposed
+    imposed_date: >-
+      The date this sentence was imposed, e.g. the date of actual sentencing,
+      but not necessarily the date the person started serving the sentence.
+    initial_time_served_days: >-
+      The amount of any time already served (in days) at time
+      of sentence imposition to possibly be credited against the overall sentence
+      duration.
+    is_capital_punishment: True if this is sentence is for the death penalty
+    is_life: True if this is sentence is a life sentence.
+    parent_sentence_external_id_array: >-
+      Identifier of the sentences to which this sentence is consecutive (external_id), 
+      formatted as a string of comma-separated id's. For instance, if sentence C has a 
+      consecutive_sentence_id_array of [A, B], then both A and B must be 
+      completed before C can be served. The string must be parseable as a comma-separated list.
+    parole_possible: >-
+      True if the person may be released to parole under the terms
+      of this sentence (only relevant to INCARCERATION sentence type)
+    sentence_group_external_id: An ID for the sentence group given to us by the state for this sentence.
+    sentence_metadata: Additional metadata field with additional sentence attributes
+    sentence_type: The type of sentence (INCARCERATION, PROBATION, etc.)
+    sentence_type_raw_text: Raw text indicating whether a sentence is supervision/incarceration/etc
+    sentencing_authority: The class of authority imposing the sentence (COUNTY, STATE, etc.)
+    sentencing_authority_raw_text: Raw text used to hydrate sentencing_authority.
+
+state_sentence_group:
+  fields: {}
+
+state_sentence_group_length:
+  fields:
+    group_update_datetime: >-
+      The start of the period of time over which the set of all
+      sentence group attributes are valid.
+    parole_eligibility_date_external: >-
+      The date on which a person is expected to become
+      eligible for parole under the terms of this sentence
+    projected_full_term_release_date_max_external: >-
+      The latest date on which a person
+      is projected to be released to liberty after having completed all sentences
+      in the term.
+    projected_full_term_release_date_min_external: >-
+      The earliest date on which a person
+      is projected to be released to liberty after having completed all sentences
+      in the term.
+    projected_parole_release_date_external: >-
+      The date on which a person is projected
+      to be released from incarceration to parole
+    sequence_num: >-
+      The ordinal position of this observation in the sequence of StateSentenceGroupLength
+      observations for this observation's StateSentenceGroup
+
+state_sentence_length:
+  fields:
+    earned_time_days: >-
+      Any earned time (in days) the person has credited against this
+      sentence due to participation in programming designed to reduce the likelihood
+      of re-offense, if applicable.
+    good_time_days: >-
+      Any good time (in days) the person has credited against this sentence
+      due to good conduct, a.k.a. time off for good behavior, if applicable.
+    length_update_datetime: >-
+      The start of the period of time over which the set of
+      all sentence length attributes are true.
+    parole_eligibility_date_external: >-
+      The date on which a person is expected to become
+      eligible for parole under the terms of this sentence
+    projected_completion_date_max_external: >-
+      The latest date on which a person is projected
+      to be released to liberty after having completed all sentences in the term.
+    projected_completion_date_min_external: >-
+      The earliest date on which a person is
+      projected to be released to liberty after having completed all sentences in
+      the term.
+    projected_parole_release_date_external: >-
+      The date on which a person is projected
+      to be released from incarceration to parole
+    sentence_length_days_max: The maximum duration of this sentence in days
+    sentence_length_days_min: The maximum duration of this sentence in days
+    sequence_num: >-
+      The ordinal position of this observation in the sequence of StateSentenceLength
+      observations for this observation's StateSentence
+
+state_sentence_status_snapshot:
+  fields:
+    sequence_num: >-
+      The ordinal position of this observation in the sequence of StateSentenceStatusSnapshot
+      observations for this observation's StateSentence
+    status: The status of this sentence for the time period of this observation.
+    status_raw_text: The raw text value of the status of the sentence
+    status_update_datetime: >-
+      The start of the period of time over which the sentence
+      status is valid
+
+state_staff:
+  fields:
+    email: >-
+      The staff member's official email. The value in this field may change over
+      time if the staff member's official email changes.
+    full_name: >-
+      The staff member's full name. The value in this field may change over
+      time as the staff member's name changes.
+
+state_staff_caseload_type_period:
+  fields:
+    caseload_type: Indicates the type of the caseload an officer supervises
+    caseload_type_raw_text: Raw text for the caseload type field.
+    end_date: The end of the period where this officer had this type of caseload.
+    start_date: The beginning of the period where this officer had this type of caseload.
+
+state_staff_external_id:
+  fields:
+    id_type: >-
+      The type of id provided by the system. In a state where there are multiple
+      identifiers used (e.g. a system user id vs an employee id), this type will help
+      us differentiate between the different schemes.
+
+state_staff_location_period:
+  fields:
+    end_date: >-
+      The date on which the staff member stopped working at this location.
+      This is an exclusive end date, meaning this staff member is no longer considered
+      to be associated with this location on this day.
+    location_external_id: The state-issued stable id associated with this location.
+    start_date: >-
+      The date on which the staff member started working at this location.
+      This is an inclusive start date, meaning the staff member was working at this
+      location on this day.
+
+state_staff_role_period:
+  fields:
+    end_date: >-
+      The date on which the staff member stopped serving this role. This is
+      an exclusive end date, meaning this staff member is no longer considered to
+      have this role on this day.
+    role_subtype: The specific role subtype for this staff member.
+    role_subtype_raw_text: The raw text of the role subtype.
+    role_type: The general role of this staff member.
+    role_type_raw_text: The raw text value of the role type.
+    start_date: >-
+      The date on which the staff member started serving this role.This
+      is an inclusive start date, meaning the staff member had this role on this day.
+
+state_staff_supervisor_period:
+  fields:
+    end_date: >-
+      The date on which the staff member stopped working under this supervisor.
+      This is an exclusive end date, meaning this staff member is no longer considered
+      to have this role on this day.
+    start_date: >-
+      The date on which the staff member started working under this supervisor.This
+      is an inclusive start date, meaning the staff member had this supervisor on
+      this day.
+    supervisor_staff_external_id: The external id of this staff member's supervisor.
+    supervisor_staff_external_id_type: The id type associated with the supervisor_staff_external_id field.
+
+state_supervision_case_type_entry:
+  fields:
+    case_type: The type of case that describes the associated period of supervision.
+    case_type_raw_text: The raw text value of the case type.
+
+state_supervision_contact:
+  fields:
+    contact_date: The date when this contact happened.
+    contact_method: The method used to perform the contact.
+    contact_method_raw_text: The raw text value of the contact method.
+    contact_reason: The reason why this contact took place.
+    contact_reason_raw_text: The raw text value of the contact reason.
+    contact_type: The type of contact which took place.
+    contact_type_raw_text: The raw text value of the contact type.
+    contacting_staff_external_id: >-
+      The external id of the staff member who made the
+      contact. This field with the contacting_staff_external_id_type field make up
+      a primary key for the state_staff_external_id table.
+    contacting_staff_external_id_type: >-
+      The ID type associated with the external id
+      of the staff member who made the contact. This field with the contacting_staff_external_id
+      field make up a primary key for the state_staff_external_id table.
+    location: Where this contact took place.
+    location_raw_text: The raw text value of the contact location.
+    resulted_in_arrest: Whether or not this contact resulted in the person's arrest.
+    status: The current status of this contact.
+    status_raw_text: The raw text value of the contact status.
+    supervision_contact_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of this supervision contact.
+    verified_employment: Whether or not the person's current employment status was verified at this contact.
+
+state_supervision_period:
+  fields:
+    admission_reason: The reason the person was admitted to this particular period of supervision.
+    admission_reason_raw_text: The raw text value of the supervision period's admission reason.
+    conditions: >-
+      The conditions of this period of supervision which the person must
+      follow to avoid a disciplinary response. If this is empty, there may still be
+      applicable conditions that apply to the whole term of the sentence. (See conditions
+      on StateSupervisionSentence/StateIncarcerationSentence)
+    county_code: The code of the county where the person is currently supervised.
+    custodial_authority: >-
+      The type of government entity directly responsible for the
+      person in this period of incarceration. Not necessarily the decision making
+      authority. For example, the supervision authority in a state might be the custodial
+      authority for someone on probation, even though the courts are the body with
+      the power to make decisions about that person's path through the system.
+    custodial_authority_raw_text: The raw text value of the supervision period's custodial authority.
+    legal_authority: >-
+      The type of government entity responsible for making decisions
+      about a person's path through the system. Not necessarily the same entity
+      responsible for the person during this period of time.
+    legal_authority_raw_text: The raw text value of the supervision period legal authority.
+    start_date: The date the person began this period of supervision.
+    supervising_officer_staff_external_id: >-
+      The external id of this person's supervising officer during this period. 
+      This field with the supervising_officer_staff_external_id_type
+      field make up a primary key for the state_staff_external_id table.
+    supervising_officer_staff_external_id_type: >-
+      The ID type associated with the external
+      id of this person's supervising officer during this period. This field
+      with the supervising_officer_staff_external_id field make up a primary key
+      for the state_staff_external_id table.
+    supervision_level: >-
+      The level of supervision the person is receiving, i.e. an analog
+      to the security level of incarceration, indicating frequency of contact, strictness
+      of constraints, etc.
+    supervision_level_raw_text: The raw text value of the supervision period's supervision level.
+    supervision_period_metadata: >-
+      Arbitrary JSON-formatted metadata relevant to a fine
+      understanding of a particular supervision period.
+    supervision_site: >-
+      A single string encoding the location (i.e. office/region/district)
+      this person is being supervised out of. This field may eventually be split into
+      multiple to better encode supervision org structure. See #3829.
+    supervision_type: The type of supervision the person is serving during this time period.
+    supervision_type_raw_text: The raw text value of the supervision period supervision type.
+    termination_date: The date the period of supervision was terminated, either positively or negatively.
+    termination_reason: The reason the period of supervision was terminated.
+    termination_reason_raw_text: The raw text value of the supervision period's termination reason.
+
+state_supervision_sentence:
+  fields:
+    completion_date: The date the person actually did complete their supervision.
+    conditions: >-
+      The conditions of this supervision sentence which the person must
+      follow to avoid a disciplinary response. If this field is empty, there may still
+      be applicable conditions that apply to someone's current term of supervision/incarceration
+      - either inherited from another ongoing sentence or the current supervision
+      term. (See conditions on StateSupervisionPeriod).
+    county_code: The code of the county under whose jurisdiction the sentence was imposed.
+    date_imposed:
+      The date this sentence was imposed, e.g. the date of actual sentencing,
+      but not necessarily the date the person started serving the sentence.
+    effective_date:
+      The date on which a sentence effectively begins being served,
+      including any pre-trial jail detention time if applicable.
+    is_life: Whether or not this is a life sentence.
+    max_length_days: Maximum duration of this sentence in days.
+    min_length_days: Minimum duration of this sentence in days.
+    projected_completion_date: The earliest projected date the person may have completed their supervision.
+    sentence_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of a particular sentence.
+    status: The current status of this sentence.
+    status_raw_text: The raw text value of the current status of this sentence.
+    supervision_type: The type of supervision the person is being sentenced to.
+    supervision_type_raw_text: The raw text value of the type of supervision the person is being sentenced to.
+
+state_supervision_violated_condition_entry:
+  fields:
+    condition: The specific condition of supervision which was violated.
+    condition_raw_text: The raw text value of the condition.
+
+state_supervision_violation:
+  fields:
+    is_sex_offense: Whether or not the violation involved a sex offense.
+    is_violent: Whether or not the violation was violent in nature.
+    violation_date: The date on which the violation took place.
+    violation_metadata: >-
+      Arbitrary JSON-formatted metadata relevant to a fine understanding
+      of a particular violation. It can be provided in any format, but will be transformed
+      into JSON prior to persistence.
+
+state_supervision_violation_response:
+  fields:
+    deciding_body_type: >-
+      The type of decision-making body who made the decision, such
+      as a supervising officer or a parole board or a judge.
+    deciding_body_type_raw_text: >-
+      The raw text value of the supervision violation deciding body type.
+    deciding_staff_external_id: >-
+      The external id of the staff member who made the decision(s)
+      associated with this response. This field with the deciding_staff_external_id_type
+      field make up a primary key for the state_staff_external_id table.
+    deciding_staff_external_id_type: >-
+      The ID type associated with the external id of
+      the staff member who made the decision(s) associated with this response. This
+      field with the deciding_staff_external_id field make up a primary key for the
+      state_staff_external_id table.
+    is_draft: >-
+      Whether or not this is response is still a draft, i.e. is not yet finalized
+      by the deciding body.
+    response_date: The date on which the response was made official.
+    response_subtype: The type of response subtype to the violation.
+    response_type: The type of response to the violation.
+    response_type_raw_text: The raw text value of the response type.
+    violation_response_metadata: >-
+      Arbitrary JSON-formatted metadata relevant to a fine
+      understanding of a particular violation response. It can be provided in any
+      format, but will be transformed into JSON prior to persistence.
+
+state_supervision_violation_response_decision_entry:
+  fields:
+    decision: A specific decision that was made in response.
+    decision_raw_text: The raw text value of the supervision violation response decision.
+
+state_supervision_violation_type_entry:
+  fields:
+    violation_type: The type of violation.
+    violation_type_raw_text: The raw text value of the violation type.
+
+state_task_deadline:
+  fields:
+    due_date: >-
+      The date the task must be completed by. This should be set if there
+      is an upper bound date by which this task must be completed in order to be incompliance
+      with some law or policy.
+    eligible_date: >-
+      The date on or after which someone could complete this task. This
+      should be set for tasks that can only be completed once some date date has passed,whether
+      or not there is a strict deadline by which it must be completed.For example,
+      a `APPEAL_FOR_TRANSFER_TO_SUPERVISION_FROM_INCARCERATION` taskmay fill this
+      field with someone's parole eligibility date. A null value inthis field along
+      with a null value in the due_date field could be used toindicate that this person
+      used to be eligible but is no longer eligible, or to explicitly track that they
+      are not yet eligible.
+    sequence_num: >-
+      The ordinal position of this observation in the sequence of StateTaskDeadline
+      observations for this observation's StatePerson
+    task_metadata: >-
+      Arbitrary JSON-formatted metadata relevant to a fine understanding
+      of this task deadline.
+    task_subtype: >-
+      A string that gives further information about the task type. For
+      example, for a face-to-face contact deadline, might indicate whether the deadline
+      is for a virtual contact or for an in-office visit.
+    task_type: The type of task that should be performed.
+    task_type_raw_text: Raw text for the task_type field.
+    update_datetime: >-
+      The the time at which this deadline was updated for this person.
+      Will generally correspond to the time we received the raw data file with this
+      deadline from the state.
