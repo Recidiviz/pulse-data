@@ -34,6 +34,7 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
             OffenderId,
             STRING_AGG(CONCAT('"',PSIReportId,'"'), ',' ORDER BY UpdateDate) AS case_ids
         FROM  `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest`
+        WHERE DATE(CompletedDate) > DATE_SUB(CURRENT_DATE, INTERVAL 2 YEAR)
         GROUP BY OffenderId
     )
     SELECT DISTINCT
@@ -68,6 +69,6 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
     LEFT JOIN `{project_id}.reference_views.location_metadata_materialized` lmm
         ON lmm.state_code = "US_IX" AND lmm.location_external_id =  CONCAT("ATLAS-",loc.LocationId)
     -- Gets most recent county of client, doesn't exclude if no county on record
-    WHERE recency_rank = 1 or recency_rank IS NULL
+    WHERE (recency_rank = 1 or recency_rank IS NULL) AND DATE(CompletedDate) > DATE_SUB(CURRENT_DATE, INTERVAL 2 YEAR)
 
 """
