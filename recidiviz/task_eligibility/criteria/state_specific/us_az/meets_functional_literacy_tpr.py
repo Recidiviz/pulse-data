@@ -14,39 +14,50 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes spans of time when a candidate has fulfilled meeting with their CO III for release planning"""
+"""Describes spans of time during which a candidate meets functional literacy for TPR"""
 from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    meets_mandatory_literacy,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_AZ_TIME_90_DAYS_BEFORE_RELEASE"
-
-_DESCRIPTION = """Describes spans of time when a candidate has fulfilled meeting with their CO III for release
-planning"""
+_CRITERIA_NAME = "US_AZ_MEETS_FUNCTIONAL_LITERACY_TPR"
 
 _REASONS_FIELDS = [
     ReasonsField(
-        name="release_planning_eligible",
+        name="latest_functional_literacy_date",
         type=bigquery.enums.StandardSqlTypeNames.DATE,
-        description="The point at which a candidate is 90 days from expected release",
+        description="Date of meeting functional literacy.",
+    ),
+    ReasonsField(
+        name="latest_data_location",
+        type=bigquery.enums.StandardSqlTypeNames.STRING,
+        description="Latest data location a given row is pulled from. Either raw table or PRG_EVAL.",
     ),
 ]
-
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
+        criteria_spans_query_template=meets_mandatory_literacy("TPR"),
         reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_AZ,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_AZ,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
+        meets_criteria_default=False,
     )
 )
 

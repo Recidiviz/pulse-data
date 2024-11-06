@@ -14,61 +14,49 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes spans of time during which a candidate meets functional literacy"""
+"""Describes spans of time during which a candidate meets functional literacy for DTP"""
 from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    meets_mandatory_literacy,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_AZ_MEETS_FUNCTIONAL_LITERACY"
-
-_DESCRIPTION = (
-    """Describes spans of time during which a candidate meets functional literacy"""
-)
-
-_QUERY_TEMPLATE = """
-    SELECT
-      state_code,
-      person_id,
-      discharge_date as start_date,
-      CAST(NULL AS DATE) AS end_date,
-      TRUE AS meets_criteria,
-      TO_JSON(STRUCT(
-                discharge_date AS meets_functional_literacy
-            )) AS reason,
-      discharge_date AS meets_functional_literacy,
-    #TODO(#33858): Ingest into state task deadline or find some way to view this historically
-    FROM
-      `{project_id}.{normalized_state_dataset}.state_program_assignment`
-    WHERE state_code = 'US_AZ'
-    AND participation_status_raw_text IN ('COMPLETED')
-    AND program_id LIKE '%MAN%LIT%'
-    #TODO(#33737): Look into multiple span cases for residents who have completed in MAN-LIT programs
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY start_date ASC) = 1
-"""
+_CRITERIA_NAME = "US_AZ_MEETS_FUNCTIONAL_LITERACY_DTP"
 
 _REASONS_FIELDS = [
     ReasonsField(
-        name="meets_functional_literacy",
+        name="latest_functional_literacy_date",
         type=bigquery.enums.StandardSqlTypeNames.DATE,
         description="Date of meeting functional literacy.",
     ),
+    ReasonsField(
+        name="latest_data_location",
+        type=bigquery.enums.StandardSqlTypeNames.STRING,
+        description="Latest data location a given row is pulled from. Either raw table or PRG_EVAL.",
+    ),
 ]
-
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
+        description=__doc__,
+        criteria_spans_query_template=meets_mandatory_literacy("DTP"),
         reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_AZ,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_AZ,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
         meets_criteria_default=False,
     )
 )

@@ -17,6 +17,7 @@
 """Describes spans of time when someone is enrolled in a functional literacy program"""
 from google.cloud import bigquery
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -30,7 +31,7 @@ _CRITERIA_NAME = "US_AZ_ENROLLED_IN_FUNCTIONAL_LITERACY"
 
 _DESCRIPTION = """Describes spans of time when someone is enrolled in a functional literacy program"""
 
-_QUERY_TEMPLATE = """
+_QUERY_TEMPLATE = f"""
     SELECT
       state_code,
       person_id,
@@ -43,15 +44,14 @@ _QUERY_TEMPLATE = """
       start_date AS enrollment_date,
     FROM
     #TODO(#33858): Ingest into state task deadline or find some way to view this historically
-      `{project_id}.{normalized_state_dataset}.state_program_assignment`
+      `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment`
     WHERE state_code = 'US_AZ'
     AND participation_status_raw_text IN ('PARTICIPATING')
     AND program_id LIKE '%MAN%LIT%'
     # Fixing the issue of zero-day spans while still keeping all participating individuals
-    AND CASE WHEN discharge_date IS NULL
-        THEN True
-        ELSE start_date != discharge_date 
-        END 
+    # This also takes care of cases when the start_date happens after the discharge_date
+    # TODO(#34798): Remove erroneous cases where start_date > discharge_date
+    AND start_date < {nonnull_end_date_clause('discharge_date')}  
     #TODO(#33737): Look into multiple span cases for residents participating in MAN-LIT programs
     QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY start_date ASC) = 1
 """

@@ -29,7 +29,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     acis_dtp_date_not_set,
     enrolled_in_functional_literacy,
-    meets_functional_literacy,
+    meets_functional_literacy_dtp,
     no_active_felony_detainers,
     no_domestic_violence_conviction,
     no_drug_offense_conviction,
@@ -75,7 +75,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         OrTaskCriteriaGroup(
             criteria_name="US_AZ_ENROLLED_IN_OR_MEETS_MANDATORY_LITERACY",
             sub_criteria_list=[
-                meets_functional_literacy.VIEW_BUILDER,
+                meets_functional_literacy_dtp.VIEW_BUILDER,
                 enrolled_in_functional_literacy.VIEW_BUILDER,
             ],
             allowed_duplicate_reasons_keys=[],
@@ -108,7 +108,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             PickNCompositeCriteriaCondition(
                 sub_conditions_list=[
                     NotEligibleCriteriaCondition(
-                        criteria=meets_functional_literacy.VIEW_BUILDER,
+                        criteria=meets_functional_literacy_dtp.VIEW_BUILDER,
                         description="Missing Mandatory Literacy criteria",
                     ),
                     EligibleCriteriaCondition(
@@ -140,7 +140,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                                 description="Missing Felony Detainer criteria",
                             ),
                             NotEligibleCriteriaCondition(
-                                criteria=meets_functional_literacy.VIEW_BUILDER,
+                                criteria=meets_functional_literacy_dtp.VIEW_BUILDER,
                                 description="Missing Mandatory Literacy criteria",
                             ),
                         ],
@@ -154,7 +154,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                                 description="Missing Felony Detainer criteria",
                             ),
                             EligibleCriteriaCondition(
-                                criteria=meets_functional_literacy.VIEW_BUILDER,
+                                criteria=meets_functional_literacy_dtp.VIEW_BUILDER,
                                 description="Missing Mandatory Literacy criteria",
                             ),
                         ],

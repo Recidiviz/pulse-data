@@ -38,6 +38,7 @@ def no_current_or_prior_convictions(
     statute: Optional[str] | Optional[list] = None,
     description: Optional[list] = None,
     additional_where_clause: Optional[str] = None,
+    or_where_clause: Optional[bool] = False,
     negate_statute: bool = False,
 ) -> str:
     """Helper function for a denial reason for a current or prior conviction.
@@ -46,6 +47,11 @@ def no_current_or_prior_convictions(
     Args:
         statute (str | list): The statute(s) to be included in the exclusion
         description (list): The charge descriptions to be included in the exclusion, typically specified in regex
+        additional_where_clause (str): Any additional logic not captured by a statute or description filter
+        or_where_clause (bool): Used in specific scenarios where someone wants all included statutes/descriptions with
+            additional caveats in the where clause (for example, sent.is_violent does not include KIDNAPPING, so
+            need to add that as an additional caveat)
+        negate_statute (bool): Whether there are exceptions to certain statutes or descriptions
     """
     if statute is None:
         statute = []
@@ -59,6 +65,13 @@ def no_current_or_prior_convictions(
         raise ValueError(
             "Either 'statute', 'description' or 'additional_where_clause' must be provided."
         )
+    # If you want the additional logic to use 'OR', then we must ensure a statute or description have been included
+    if or_where_clause and not statute and not description:
+        raise ValueError(
+            "If or_where_clause is to be included, one of statute and description must be included."
+        )
+
+    pre_clause = "OR" if or_where_clause else "AND"
 
     return f"""
     WITH
@@ -96,7 +109,7 @@ def no_current_or_prior_convictions(
     else ""}
             {"AND (" + " OR ".join([f"charge.description LIKE '%{d}%'" for d in description]) + ")" if description
     else ""}
-            {f"AND {additional_where_clause}" if additional_where_clause else ""}),
+            {f"{pre_clause} {additional_where_clause}" if additional_where_clause else ""}),
       {create_sub_sessions_with_attributes('ineligible_spans')}
         SELECT
             state_code,
@@ -341,7 +354,7 @@ def almost_eligible_tab_logic(opp_name: str) -> str:
             WHEN is_eligible THEN "ALMOST_ELIGIBLE_BETWEEN_7_AND_180_DAYS"
             WHEN ARRAY_LENGTH(ineligible_criteria) = 1
                 THEN CASE
-                    WHEN "US_AZ_MEETS_FUNCTIONAL_LITERACY" IN UNNEST(ineligible_criteria)
+                    WHEN "US_AZ_MEETS_FUNCTIONAL_LITERACY_{opp_name.upper()}" IN UNNEST(ineligible_criteria)
                         THEN "ALMOST_ELIGIBLE_MISSING_MANLIT_BETWEEN_7_AND_180_DAYS"
                     WHEN "US_AZ_WITHIN_6_MONTHS_OF_RECIDIVIZ_{opp_name.upper()}_DATE" IN UNNEST(ineligible_criteria)
                         THEN "ALMOST_ELIGIBLE_BETWEEN_181_AND_365_DAYS"
@@ -352,7 +365,7 @@ def almost_eligible_tab_logic(opp_name: str) -> str:
             WHEN is_eligible THEN "ALMOST_ELIGIBLE_1"
             WHEN ARRAY_LENGTH(ineligible_criteria) = 1
                 THEN CASE
-                    WHEN "US_AZ_MEETS_FUNCTIONAL_LITERACY" IN UNNEST(ineligible_criteria)
+                    WHEN "US_AZ_MEETS_FUNCTIONAL_LITERACY_{opp_name.upper()}" IN UNNEST(ineligible_criteria)
                         THEN "ALMOST_ELIGIBLE_1"
                     WHEN "US_AZ_WITHIN_6_MONTHS_OF_RECIDIVIZ_{opp_name.upper()}_DATE" IN UNNEST(ineligible_criteria)
                         THEN "ALMOST_ELIGIBLE_2"
@@ -404,3 +417,92 @@ def within_x_months_of_date(opp_name: str, time_interval: int) -> str:
             cd.critical_date AS recidiviz_{opp_name.lower()}_date,
         FROM critical_date_has_passed_spans cd
         """
+
+
+def meets_mandatory_literacy(opp_name: str) -> str:
+    assert opp_name.upper() in ("TPR", "DTP"), "Opportunity Name must be one of TPR/DTP"
+    if opp_name.upper() == "TPR":
+        _TABLE = "AZ_DOC_TRANSITION_PRG_EVAL"
+        _ELIG_TABLE = "AZ_DOC_TRANSITION_PRG_ELIG"
+        _ID_MAP = "TRANSITION_PRG_ELIGIBILITY_ID"
+    else:
+        _TABLE = "AZ_DOC_DRUG_TRANSITION_PRG_EVAL"
+        _ELIG_TABLE = "AZ_DOC_DRUG_TRAN_PRG_ELIG"
+        _ID_MAP = "DRUG_TRAN_PRG_ELIGIBILITY_ID"
+    return f"""
+    WITH manlit_ingest AS (
+        SELECT
+          state_code,
+          person_id,
+          discharge_date as start_date,
+          CAST(NULL AS DATE) AS end_date,
+          TRUE AS meets_criteria,
+          discharge_date AS latest_functional_literacy_date,
+          'Program Assignment' AS data_location
+        #TODO(#33858): Ingest into state task deadline or find some way to view this historically
+        FROM
+          `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment`
+        WHERE state_code = 'US_AZ'
+        AND participation_status_raw_text IN ('COMPLETED')
+        AND program_id LIKE '%MAN%LIT%'
+        #TODO(#33737): Look into multiple span cases for residents who have completed in MAN-LIT programs
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY start_date ASC) = 1
+    ),
+    #TODO(#34752): Make mandatory literacy data pull more accurate
+    manlit_prg_eval AS (
+        SELECT
+          pei.state_code,
+          pei.person_id, 
+          -- We use the earliest possible CREATE_DTM case when we see a 'Y' for Mandatory Literacy Status
+          -- CREATE_DTM is associated with all aspects of the chosen _TABLE and therefore we may see multiple
+          -- CREATE_DTMs for the same literacy status due to another variable of someone's eligibility changing
+          MIN(PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)] )) AS start_date,
+          CAST(NULL AS DATE) AS end_date,
+          TRUE AS meets_criteria,
+          MIN(PARSE_DATE('%m/%d/%Y', SPLIT(eval.CREATE_DTM, ' ')[OFFSET(0)] )) AS latest_functional_literacy_date,
+          'PRG_EVAL' AS data_location,
+        FROM
+          `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.{_TABLE}_latest` eval
+        INNER JOIN 
+        `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.{_ELIG_TABLE}_latest` map_to_docid
+        USING ({_ID_MAP})
+        LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest` doc_ep
+        USING(DOC_ID)
+        LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.PERSON_latest` person
+        USING(PERSON_ID)
+        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+            ON ADC_NUMBER = external_id 
+            AND pei.state_code = 'US_AZ'
+            AND pei.id_type = 'US_AZ_ADC_NUMBER'
+        WHERE MEETS_MANDITORY_LITERACY = 'Y'
+        GROUP BY 1,2
+    ),
+    union_cte AS (
+        SELECT
+          *
+        FROM
+          manlit_ingest 
+        UNION ALL
+        SELECT
+          *
+        FROM
+          manlit_prg_eval 
+    ),
+    {create_sub_sessions_with_attributes('union_cte')}
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        meets_criteria,
+        TO_JSON(STRUCT(
+                latest_functional_literacy_date AS latest_functional_literacy_date,
+                data_location AS latest_data_location
+            )) AS reason,
+        latest_functional_literacy_date AS latest_functional_literacy_date,
+        data_location AS latest_data_location,
+    FROM
+        sub_sessions_with_attributes
+    -- Ensuring for every row, we grab the latest data location and latest date of meeting literacy
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id, start_date, meets_criteria ORDER BY latest_functional_literacy_date DESC) = 1
+    """
