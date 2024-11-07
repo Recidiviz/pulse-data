@@ -79,9 +79,17 @@ columns:
   - name: PrimaryTreatment
     description: |-
       The Primary Treatment Method from STRONG-R
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: SecondaryTreatment
     description: |-
       The Secondary Treatment Method from STRONG-R
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: LastUpdateStaffID
     is_pii: True
     description: |-

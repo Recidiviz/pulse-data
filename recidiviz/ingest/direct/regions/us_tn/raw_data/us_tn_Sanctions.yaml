@@ -60,6 +60,10 @@ columns:
   - name: CAReview
     description: |-
       TODO(#11323): fill out description once received.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: CAReviewedBy
     is_pii: True
     description: |-
@@ -82,6 +86,10 @@ columns:
   - name: RequestedReviewPPM
     description: |-
       TODO(#11323): fill out description once received.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: CurrentSupervisionLevel
     is_pii: True
     description: |-
