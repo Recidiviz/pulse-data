@@ -412,6 +412,7 @@ def get_admin_blueprint(
                 child_agency_ids=[agency.id],
                 super_agency_id=request_json["super_agency_id"],
             )
+            current_session.refresh(agency)
 
         if request_json.get("team") is not None:
             # Prepare all the values that should be "upserted" to the DB
