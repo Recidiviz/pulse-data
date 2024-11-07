@@ -209,7 +209,7 @@ def xcom_output_is_non_empty_list(
 def discovered_files_lists_are_equal_and_non_empty(
     xcom_prior_discovered_files: Optional[List],
     xcom_discovered_files: Optional[List],
-    task_id_if_equal: str,
+    task_ids_if_equal: List[str],
     task_id_if_not_equal_or_empty: str,
 ) -> Union[str, List[str]]:
     if xcom_prior_discovered_files is None:
@@ -221,7 +221,7 @@ def discovered_files_lists_are_equal_and_non_empty(
         or len(xcom_discovered_files) == 0
     ):
         return task_id_if_not_equal_or_empty
-    return task_id_if_equal
+    return task_ids_if_equal
 
 
 @task
@@ -495,7 +495,10 @@ def sftp_dag() -> None:
 
                     # --- acquire permission w/ the correct infra --------------------------
 
-                    acquire_permission_branch, _ = create_branch_by_bool(
+                    (
+                        acquire_permission_start,
+                        end_permission_start,
+                    ) = create_branch_by_bool(
                         branch_if_true=[acquire_locks, ensure_acquired_locks],
                         branch_if_false=pause_ingest_queues,
                         bool_value=is_raw_data_dag_enabled_in_primary(state_code),
@@ -536,7 +539,6 @@ def sftp_dag() -> None:
                 with TaskGroup(
                     "release_permission_for_ingest_file_upload"
                 ) as release_permission_for_ingest_file_upload:
-
                     # TODO(#28239) remove resuming ingest queues
                     # --- resume ingest queues ---------------------------------------------
                     with TaskGroup("resume_ingest_queues") as resume_ingest_queues:
@@ -600,7 +602,10 @@ def sftp_dag() -> None:
 
                     # --- release permission w/ the correct infra --------------------------
 
-                    create_branch_by_bool(
+                    (
+                        start_release_permission,
+                        end_release_permission,
+                    ) = create_branch_by_bool(
                         branch_if_true=release_locks,
                         branch_if_false=[
                             resume_ingest_queues,
@@ -633,7 +638,13 @@ def sftp_dag() -> None:
                     "xcom_discovered_files": XComArg(
                         gather_discovered_ingest_ready_files
                     ),
-                    "task_id_if_equal": acquire_permission_branch.operator.task_id,
+                    "task_ids_if_equal": [
+                        acquire_permission_start.operator.task_id,
+                        start_release_permission.operator.task_id,
+                        ensure_acquired_locks.operator.task_id,
+                        end_release_permission.operator.task_id,
+                        end_permission_start.operator.task_id,
+                    ],
                     "task_id_if_not_equal_or_empty": do_not_upload_ingest_ready_files.task_id,
                 },
                 # This task will always trigger no matter the status of the prior tasks.
@@ -647,7 +658,14 @@ def sftp_dag() -> None:
                 >> gather_prior_discovered_ingest_ready_files
                 >> ingest_ready_file_discovery
                 >> check_if_ingest_ready_files_have_stabilized
-                >> [ingest_ready_file_upload, do_not_upload_ingest_ready_files]
+                >> [
+                    ingest_ready_file_upload,
+                    do_not_upload_ingest_ready_files,
+                    start_release_permission,
+                    ensure_acquired_locks,
+                    end_release_permission,
+                    end_permission_start,
+                ]
             )
 
         rm_dags >> state_specific_task_group >> end_sftp

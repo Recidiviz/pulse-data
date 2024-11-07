@@ -20,6 +20,7 @@ import re
 from unittest.mock import patch
 
 from airflow.models import DagBag
+from airflow.utils.trigger_rule import TriggerRule
 
 import recidiviz
 from recidiviz.airflow.dags.sftp.metadata import END_SFTP, START_SFTP, TASK_RETRIES
@@ -205,4 +206,43 @@ class TestSftpPipelineDag(AirflowIntegrationTest):
             self.assertTrue(
                 "release_permission_for_ingest_file_upload" in task_id
                 or "do_not_upload_ingest_ready_files" in task_id
+            )
+
+    def test_all_done_operators_downstream_of_check_if_ingest_ready_files_have_stabilized_are_directly_downstream(
+        self,
+    ) -> None:
+        """Test that makes sure that all ALL_DONE operators downstream of the
+        `check_if_ingest_ready_files_have_stabilized` task are directly downstream
+        (and therefore can be skipped if their branch is not chosen)
+        """
+
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.SFTP_DAG_ID]
+        downstream_of_stabilized = dag.partial_subset(
+            task_ids_or_regex="check_if_ingest_ready_files_have_stabilized",
+            include_downstream=True,
+            include_upstream=False,
+            include_direct_upstream=False,
+        )
+        self.assertNotEqual(0, len(downstream_of_stabilized.task_ids))
+
+        downstream_all_done_tasks = set()
+        directly_downstream_of_check_if_ingest_ready_files_have_stabilized_tasks = set()
+        for task in downstream_of_stabilized.tasks:
+            if task.trigger_rule == TriggerRule.ALL_DONE:
+                if "check_if_ingest_ready_files_have_stabilized" in task.task_id:
+                    directly_downstream_of_check_if_ingest_ready_files_have_stabilized_tasks.update(
+                        task.downstream_task_ids
+                    )
+                elif END_SFTP not in task.task_id:
+                    downstream_all_done_tasks.add(task.task_id)
+
+        if (
+            missing := downstream_all_done_tasks
+            - directly_downstream_of_check_if_ingest_ready_files_have_stabilized_tasks
+        ):
+            raise ValueError(
+                f"Found tasks downstream of `check_if_ingest_ready_files_have_stabilized` "
+                f"that have an ALL_DONE trigger rule but are not directly downstream of "
+                f"check_if_ingest_ready_files_have_stabilized: [{missing}]"
             )
