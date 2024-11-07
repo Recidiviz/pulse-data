@@ -58,12 +58,11 @@ _DROP_REPEATED_SCCP_NOTES = """(SELECT *
 
 US_ME_TRANSFER_TO_SCCP_RECORD_QUERY_TEMPLATE = f"""
 
-WITH eligible_and_almost_eligible AS (
+WITH all_current_spans AS (
 {join_current_task_eligibility_spans_with_external_id(
     state_code= "'US_ME'",
     tes_task_query_view = 'transfer_to_sccp_form_materialized',
     id_type = "'US_ME_DOC'",
-    eligible_and_almost_eligible_only=True,
 )}
 ),
 
@@ -127,10 +126,10 @@ case_notes_cte AS (
 ),
 
 array_case_notes_cte AS (
-{array_agg_case_notes_by_external_id(left_join_cte=_DROP_REPEATED_SCCP_NOTES)}
+{array_agg_case_notes_by_external_id(from_cte="all_current_spans", left_join_cte=_DROP_REPEATED_SCCP_NOTES)}
 )
 
-{opportunity_query_final_select_with_case_notes()}
+{opportunity_query_final_select_with_case_notes(from_cte="all_current_spans")}
 """
 
 US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
