@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IncarcerationSentence
+file_description: |-
+  Captor table containing incarceration sentence data
+data_classification: source
+encoding: windows-1252
+separator: "‡"
+custom_line_terminator: "†"
+ignore_quotes: True
+primary_key_cols:
+  - Lifecycle_Number
+  - Indictment_Id
+  - Indictment_Sequence_No
+  - Code
+  - Ranking
+  - UCR_Category
+  - Subcategory
+columns:
+  - name: Lifecycle_Number
+    description: Lifecycle Number
+  - name: Indictment_Id
+    description: Indictment ID
+  - name: Indictment_Sequence_No
+    description: Indictment Sequence Number
+  - name: Code
+    description: Code
+  - name: Short_Description
+    description: Short Description
+  - name: Grade
+    description: Grade
+  - name: Crime_Code_Type
+    description: Crime Code Type
+  - name: Min_Sentence_Class
+    description: Minimum Sentence Class
+  - name: Min_Sentence_Years
+    description: Minimum Sentence Years
+  - name: Min_Sentence_Months
+    description: Minimum Sentence Months
+  - name: Min_Sentence_Days
+    description: Minimum Sentence Days
+  - name: Min_Minus_Days
+    description: Minimum Minus Days
+  - name: Max_Sentence_Class
+    description: Maximum Sentence Class
+  - name: Max_Sentence_Years
+    description: Maximum Sentence Years
+  - name: Max_Sentence_Months
+    description: Maximum Sentence Months
+  - name: Max_Sentence_Days
+    description: Maximum Sentence Days
+  - name: Max_Minus_Days
+    description: Maximum Minus Days
+  - name: Sequence_Type_Code
+    description: Sequence Type Code
+  - name: Ranking
+    description: Ranking
+  - name: Ranking_Description
+    description: Ranking Description
+  - name: Subcategory
+    description: Subcategory
+  - name: SubCategory_Description
+    description: Subcateory Description
+  - name: UCR_Category
+    description: UCR Category
+  - name: UCRCategory_Description
+    description: UCR Category Description
+  - name: RRRI_Calc_Years
+    description: RRRI Calculation Years
+  - name: RRRI_Calc_Months
+    description: RRRI  Calculation Months
+  - name: RRRI_Calc_Days
+    description: RRRI Calculation Days
+  - name: RRRI_Calc_Minus_Days
+    description: RRRI Calculation Minus Days
+  - name: RRRI_Flag
+    description: RRRI Flag

@@ -1,5 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_LU_ReleaseEntryCodesAddCase
+encoding: windows-1252
+separator: "‡"
+custom_line_terminator: "†"
+ignore_quotes: True
 file_description: |-
   A lookup table mapping "Release table" entry codes to additional contextual information.
   NOT REFRESHED REGULARLY.
