@@ -306,54 +306,72 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
             query_str=f"SELECT * FROM {self.test_table_address.to_str()}",
             use_query_cache=False,
         )
-        external_id_to_phone_num_to_text_dict = generate_initial_text_messages_dict(
-            bq_output=query_job
-        )
+        initial_text_dicts = generate_initial_text_messages_dict(bq_output=query_job)
 
-        self.assertEqual(len(external_id_to_phone_num_to_text_dict), 5)
+        self.assertEqual(len(initial_text_dicts), 5)
         self.assertEqual(
-            external_id_to_phone_num_to_text_dict["0"],
+            initial_text_dicts[0],
             {
-                "1234567890": StrictStringFormatter().format(
+                "external_id": "0",
+                "phone_num": "1234567890",
+                "text_body": StrictStringFormatter().format(
                     INITIAL_TEXT, given_name="Ted", po_name="Test Po 1"
                 )
-                + ALL_CLOSER
+                + ALL_CLOSER,
+                "po_name": "Test Po 1",
+                "district": "district 2",
             },
         )
         self.assertEqual(
-            external_id_to_phone_num_to_text_dict["1"],
+            initial_text_dicts[1],
             {
-                "1111111111": StrictStringFormatter().format(
+                "external_id": "1",
+                "phone_num": "1111111111",
+                "text_body": StrictStringFormatter().format(
                     INITIAL_TEXT, given_name="Roy", po_name="Test Po 1"
                 )
-                + ALL_CLOSER
+                + ALL_CLOSER,
+                "po_name": "Test Po 1",
+                "district": "district 4",
             },
         )
         self.assertEqual(
-            external_id_to_phone_num_to_text_dict["2"],
+            initial_text_dicts[2],
             {
-                "2222222222": StrictStringFormatter().format(
+                "external_id": "2",
+                "phone_num": "2222222222",
+                "text_body": StrictStringFormatter().format(
                     INITIAL_TEXT, given_name="Keeley", po_name="Test Po 2"
                 )
-                + ALL_CLOSER
+                + ALL_CLOSER,
+                "po_name": "Test Po 2",
+                "district": "district 6",
             },
         )
         self.assertEqual(
-            external_id_to_phone_num_to_text_dict["3"],
+            initial_text_dicts[3],
             {
-                "3333333333": StrictStringFormatter().format(
+                "external_id": "3",
+                "phone_num": "3333333333",
+                "text_body": StrictStringFormatter().format(
                     INITIAL_TEXT, given_name="Coach", po_name="Test Po 2"
                 )
-                + ALL_CLOSER
+                + ALL_CLOSER,
+                "po_name": "Test Po 2",
+                "district": "district 3",
             },
         )
         self.assertEqual(
-            external_id_to_phone_num_to_text_dict["4"],
+            initial_text_dicts[4],
             {
-                "4444444444": StrictStringFormatter().format(
+                "external_id": "4",
+                "phone_num": "4444444444",
+                "text_body": StrictStringFormatter().format(
                     INITIAL_TEXT, given_name="Rebecca", po_name="Test Po 1"
                 )
-                + ALL_CLOSER
+                + ALL_CLOSER,
+                "po_name": "Test Po 1",
+                "district": "district 1",
             },
         )
 
@@ -363,15 +381,17 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
             query_str=f"SELECT * FROM {self.test_table_address.to_str()}",
             use_query_cache=False,
         )
-        external_id_to_phone_num_to_text_dict = generate_eligibility_text_messages_dict(
+        eligibility_text_dicts = generate_eligibility_text_messages_dict(
             bq_output=query_job
         )
-        self.assertEqual(len(external_id_to_phone_num_to_text_dict), 5)
+        self.assertEqual(len(eligibility_text_dicts), 5)
 
         self.assertEqual(
-            external_id_to_phone_num_to_text_dict["0"],
+            eligibility_text_dicts[0],
             {
-                "1234567890": StrictStringFormatter().format(
+                "external_id": "0",
+                "phone_num": "1234567890",
+                "text_body": StrictStringFormatter().format(
                     MISSING_NEGATIVE_DA_OR_INCOME,
                     given_name="Ted",
                     missing_documentation=MISSING_INCOME_DOCUMENTATION,
@@ -379,13 +399,17 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     additional_contact=" or contact a specialist at district2Admin@idoc.idaho.gov",
                 )
                 + LEARN_MORE
-                + ALL_CLOSER
+                + ALL_CLOSER,
+                "po_name": "Test Po 1",
+                "district": "district 2",
             },
         )
         self.assertEqual(
-            external_id_to_phone_num_to_text_dict["1"],
+            eligibility_text_dicts[1],
             {
-                "1111111111": StrictStringFormatter().format(
+                "external_id": "1",
+                "phone_num": "1111111111",
+                "text_body": StrictStringFormatter().format(
                     MISSING_NEGATIVE_DA_OR_INCOME,
                     given_name="Roy",
                     missing_documentation=MISSING_NEGATIVE_DA_DOCUMENTATION,
@@ -393,45 +417,59 @@ class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
                     additional_contact=" or a specialist at d4ppspecialists@idoc.idaho.gov or 208-327-7008",
                 )
                 + LEARN_MORE
-                + ALL_CLOSER
+                + ALL_CLOSER,
+                "po_name": "Test Po 1",
+                "district": "district 4",
             },
         )
         self.assertEqual(
-            external_id_to_phone_num_to_text_dict["2"],
+            eligibility_text_dicts[2],
             {
-                "2222222222": StrictStringFormatter().format(
+                "external_id": "2",
+                "phone_num": "2222222222",
+                "text_body": StrictStringFormatter().format(
                     FULLY_ELIGIBLE_TEXT,
                     given_name="Keeley",
                     po_name="Test Po 2",
                     additional_contact="",
                 )
                 + LEARN_MORE
-                + ALL_CLOSER
+                + ALL_CLOSER,
+                "po_name": "Test Po 2",
+                "district": "district 6",
             },
         )
         self.assertEqual(
-            external_id_to_phone_num_to_text_dict["3"],
+            eligibility_text_dicts[3],
             {
-                "3333333333": StrictStringFormatter().format(
+                "external_id": "3",
+                "phone_num": "3333333333",
+                "text_body": StrictStringFormatter().format(
                     MISSING_NEGATIVE_DA_AND_INCOME,
                     given_name="Coach",
                     po_name="Test Po 2",
                     additional_contact=" or a specialist at specialistsd3@idoc.idaho.gov or (208) 454-7601",
                 )
                 + LEARN_MORE
-                + ALL_CLOSER
+                + ALL_CLOSER,
+                "po_name": "Test Po 2",
+                "district": "district 3",
             },
         )
         self.assertEqual(
-            external_id_to_phone_num_to_text_dict["4"],
+            eligibility_text_dicts[4],
             {
-                "4444444444": StrictStringFormatter().format(
+                "external_id": "4",
+                "phone_num": "4444444444",
+                "text_body": StrictStringFormatter().format(
                     FULLY_ELIGIBLE_EXCEPT_FFR,
                     given_name="Rebecca",
                     po_name="Test Po 1",
                     additional_contact=" or email D1Connect@idoc.idaho.gov",
                 )
                 + LEARN_MORE
-                + ALL_CLOSER
+                + ALL_CLOSER,
+                "po_name": "Test Po 1",
+                "district": "district 1",
             },
         )

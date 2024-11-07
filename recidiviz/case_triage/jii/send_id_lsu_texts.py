@@ -132,7 +132,6 @@ from recidiviz.case_triage.jii.helpers import (
 )
 from recidiviz.case_triage.util import MessageType
 from recidiviz.case_triage.workflows.utils import ExternalSystemRequestStatus
-from recidiviz.common.constants.states import StateCode
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.environment import (
     GCP_PROJECT_PRODUCTION,
@@ -249,6 +248,29 @@ def send_id_lsu_texts(
 
     firestore_client = FirestoreClientImpl(project_id="jii-pilots")
 
+    # Get all data from the BigQuery table
+    query = f"SELECT * FROM {bigquery_view}"
+    query_job = BigQueryClientImpl().run_query_async(
+        query_str=query, use_query_cache=True
+    )
+
+    # Get the state_code from the BigQuery table
+    state_code_query = f"SELECT DISTINCT(state_code) FROM {bigquery_view}"
+    state_code_query_job = BigQueryClientImpl().run_query_async(
+        query_str=state_code_query, use_query_cache=True
+    )
+    state_codes = []
+    for row in state_code_query_job:
+        state_codes.append(row[0])
+
+    num_states = len(state_codes)
+    if num_states != 1:
+        raise SystemError(
+            f"The BigQuery view contains {num_states} distinct state codes: {state_codes}. We expect 1 state code per batch."
+        )
+    state_code = state_codes[0].lower()
+    logging.info("state_code: %s", state_code)
+
     # Store current_batch_id and Big Query View in Firestore db
     if dry_run is False:
         store_batch_id(
@@ -257,53 +279,57 @@ def send_id_lsu_texts(
             message_type=message_type,
             redeliver_failed_messages=redeliver_failed_messages,
             bigquery_view=bigquery_view,
+            state_code=state_code,
         )
-
-    query = f"SELECT * FROM {bigquery_view}"
-    query_job = BigQueryClientImpl().run_query_async(
-        query_str=query, use_query_cache=True
-    )
 
     (
         initial_text_document_ids,
         eligibility_text_document_ids_to_text_timestamp,
-    ) = get_initial_and_eligibility_doc_ids(firestore_client=firestore_client)
+    ) = get_initial_and_eligibility_doc_ids(
+        firestore_client=firestore_client, state_code=state_code
+    )
 
     logging.info(
-        "%s individuals have already received initial/welcome texts.",
+        "%s individuals from %s have already received initial/welcome texts.",
         len(initial_text_document_ids),
+        state_code,
     )
     logging.info(
-        "Document ids of individuals who have received initial/welcome texts: "
+        "Document ids of individuals from %s who have received initial/welcome texts: ",
+        state_code,
     )
     logging.info(initial_text_document_ids)
     logging.info(
-        "%s individuals have already received eligibility texts.",
+        "%s individuals from %s have already received eligibility texts.",
         len(eligibility_text_document_ids_to_text_timestamp),
+        state_code,
     )
-    logging.info("Document ids of individuals who have received eligibility texts: ")
+    logging.info(
+        "Document ids of individuals from %s who have received eligibility texts: ",
+        state_code,
+    )
     logging.info(eligibility_text_document_ids_to_text_timestamp.keys())
 
-    opt_out_document_ids = get_opt_out_document_ids(firestore_client=firestore_client)
+    opt_out_document_ids = get_opt_out_document_ids(
+        firestore_client=firestore_client, state_code=state_code
+    )
 
-    # Generate the dictionary that maps external ids to phone numbers to text strings
-    logging.info("Generate dictionary of external ids to phone numbers to text strings")
+    # Generate the list of dictionaries that contains external ids, phone numbers, and text strings
+    logging.info(
+        "Generate list of dictionaries with external ids, phone numbers, and text strings"
+    )
     if message_type == MessageType.INITIAL_TEXT.value.lower():
-        external_id_to_phone_num_to_text_dict = generate_initial_text_messages_dict(
-            bq_output=query_job
-        )
+        text_messages_dicts = generate_initial_text_messages_dict(bq_output=query_job)
         message_type = MessageType.INITIAL_TEXT.value
         logging.info("message_type: %s", message_type)
     elif message_type == MessageType.ELIGIBILITY_TEXT.value.lower():
-        external_id_to_phone_num_to_text_dict = generate_eligibility_text_messages_dict(
+        text_messages_dicts = generate_eligibility_text_messages_dict(
             bq_output=query_job
         )
         message_type = MessageType.ELIGIBILITY_TEXT.value
         logging.info("message_type: %s", message_type)
     else:
         raise ValueError(f"Unexpected message_type [{message_type}]")
-
-    state_code = StateCode.US_ID.value.lower()
 
     if previous_batch_id is not None:
         external_ids_to_retry = update_statuses_from_previous_batch(
@@ -314,126 +340,140 @@ def send_id_lsu_texts(
     else:
         external_ids_to_retry = set()
 
-    logging.info("Iterate through dictionary construction from bigquery")
-    # Iterate through the dictionary that maps external ids to phone numbers to text strings
-    for (
-        external_id,
-        phone_num_to_text_dict,
-    ) in external_id_to_phone_num_to_text_dict.items():
-        for phone_number, text_body in phone_num_to_text_dict.items():
-            document_id = f"{state_code}_{external_id}"
-            logging.info("document_id: %s", document_id)
+    logging.info("Iterate through list of dictionaries constructed from bigquery")
+    # Iterate through the list of dictionaries that contains text strings
+    for text_messages_dict in text_messages_dicts:
+        external_id = text_messages_dict["external_id"]
+        phone_number = text_messages_dict["phone_num"]
+        text_body = text_messages_dict["text_body"]
+        po_name = text_messages_dict["po_name"]
+        district = text_messages_dict["district"]
 
-            attempt_to_send_text_bool = attempt_to_send_text(
-                previous_batch_id=previous_batch_id,
-                redeliver_failed_messages=redeliver_failed_messages,
-                document_id=document_id,
-                external_ids_to_retry=external_ids_to_retry,
-                opt_out_document_ids=opt_out_document_ids,
-                message_type=message_type,
-                initial_text_document_ids=initial_text_document_ids,
-                eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
-                resend_eligibility_texts=resend_eligibility_texts,
-            )
-            if attempt_to_send_text_bool is False:
-                continue
+        document_id = f"{state_code}_{external_id}"
+        logging.info("document_id: %s", document_id)
 
+        attempt_to_send_text_bool = attempt_to_send_text(
+            previous_batch_id=previous_batch_id,
+            redeliver_failed_messages=redeliver_failed_messages,
+            document_id=document_id,
+            external_ids_to_retry=external_ids_to_retry,
+            opt_out_document_ids=opt_out_document_ids,
+            message_type=message_type,
+            initial_text_document_ids=initial_text_document_ids,
+            eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
+            resend_eligibility_texts=resend_eligibility_texts,
+        )
+        if attempt_to_send_text_bool is False:
+            continue
+
+        logging.info(
+            "Twilio send SMS gcp environment: [%s]",
+            get_gcp_environment(),
+        )
+        base_url = STAGING_URL
+        if get_gcp_environment() == "production":
+            base_url = PRODUCTION_URL
+        if callback_url is not None:
+            base_url = callback_url
+
+        if dry_run is True:
             logging.info(
-                "Twilio send SMS gcp environment: [%s]",
-                get_gcp_environment(),
+                "DRY RUN: Would send the following text to individual with document id: %s",
+                document_id,
             )
-            base_url = STAGING_URL
-            if get_gcp_environment() == "production":
-                base_url = PRODUCTION_URL
-            if callback_url is not None:
-                base_url = callback_url
+            with open(f"{current_batch_id}_texts.txt", "a", encoding="utf-8") as file:
+                file.write(phone_number)
+                file.write("\n")
+                file.write(text_body)
+                file.write("\n")
+                file.write("\n")
+                file.close()
+            continue
+        # Send text message to individual
+        logging.info("Sending text to individual with document id: %s", document_id)
+        firestore_individual_path = f"twilio_messages/{document_id}"
+        try:
+            response = twilio_client.messages.create(
+                body=text_body,
+                messaging_service_sid=messaging_service_sid,
+                to=phone_number,
+                status_callback=f"{base_url}/jii/webhook/twilio_status",
+            )
 
-            if dry_run is True:
-                logging.info(
-                    "DRY RUN: Would send the following text to individual with document id: %s",
-                    document_id,
-                )
-                with open(
-                    f"{current_batch_id}_texts.txt", "a", encoding="utf-8"
-                ) as file:
-                    file.write(phone_number)
-                    file.write("\n")
-                    file.write(text_body)
-                    file.write("\n")
-                    file.write("\n")
-                    file.close()
-                continue
-            # Send text message to individual
-            logging.info("Sending text to individual with document id: %s", document_id)
-            firestore_individual_path = f"twilio_messages/{document_id}"
-            try:
-                response = twilio_client.messages.create(
-                    body=text_body,
-                    messaging_service_sid=messaging_service_sid,
-                    to=phone_number,
-                    status_callback=f"{base_url}/jii/webhook/twilio_status",
-                )
+            # Store the individual's phone number in their individual level doc
+            logging.info(
+                "Updating individual's phone_numbers with document id: %s",
+                document_id,
+            )
+            firestore_client.set_document(
+                document_path=firestore_individual_path,
+                data={
+                    "last_update": datetime.datetime.now(datetime.timezone.utc),
+                    "phone_numbers": ArrayUnion([phone_number]),
+                    "state_code": state_code,
+                    "external_id": external_id,
+                    "batch_ids": ArrayUnion([current_batch_id]),
+                    "po_names": ArrayUnion([po_name]),
+                    "districts": ArrayUnion([district]),
+                },
+                merge=True,
+            )
 
-                # Store the individual's phone number in their individual level doc
-                logging.info(
-                    "Updating individual's phone_numbers with document id: %s",
-                    document_id,
-                )
-                firestore_client.set_document(
-                    document_path=firestore_individual_path,
-                    data={
-                        "last_phone_num_update": datetime.datetime.now(
-                            datetime.timezone.utc
-                        ),
-                        "phone_numbers": ArrayUnion([phone_number]),
+            # Next, update their message level doc
+            firestore_message_path = f"twilio_messages/{document_id}/lsu_eligibility_messages/eligibility_{current_batch_id}"
+            logging.info(
+                "Updating individual's message level doc with document id: %s",
+                document_id,
+            )
+            firestore_client.set_document(
+                document_path=firestore_message_path,
+                data={
+                    "timestamp": datetime.datetime.now(datetime.timezone.utc),
+                    "message_sid": response.sid,
+                    "body": text_body,
+                    "phone_number": phone_number,
+                    "message_type": message_type,
+                    "state_code": state_code,
+                    "external_id": external_id,
+                    "batch_id": current_batch_id,
+                    "po_name": po_name,
+                    "district": district,
+                },
+                merge=True,
+            )
+        except Exception as e:
+            logging.error("Error sending sms request to Twilio. Error: %s", e)
+            firestore_client.set_document(
+                firestore_individual_path,
+                {
+                    "status": ExternalSystemRequestStatus.FAILURE.value,
+                    "updated": {
+                        "date": datetime.datetime.now(datetime.timezone.utc),
+                        "by": "RECIDIVIZ",
                     },
-                    merge=True,
-                )
-
-                # Next, update their message level doc
-                firestore_message_path = f"twilio_messages/{document_id}/lsu_eligibility_messages/eligibility_{current_batch_id}"
-                logging.info(
-                    "Updating individual's message level doc with document id: %s",
-                    document_id,
-                )
-                firestore_client.set_document(
-                    document_path=firestore_message_path,
-                    data={
-                        "timestamp": datetime.datetime.now(datetime.timezone.utc),
-                        "message_sid": response.sid,
-                        "body": text_body,
-                        "phone_number": phone_number,
-                        "message_type": message_type,
-                    },
-                    merge=True,
-                )
-            except Exception as e:
-                logging.error("Error sending sms request to Twilio. Error: %s", e)
-                firestore_client.set_document(
-                    firestore_individual_path,
-                    {
-                        "status": ExternalSystemRequestStatus.FAILURE.value,
-                        "updated": {
-                            "date": datetime.datetime.now(datetime.timezone.utc),
-                            "by": "RECIDIVIZ",
-                        },
-                        "errors": [str(e)],
-                    },
-                    merge=True,
-                )
+                    "errors": [str(e)],
+                },
+                merge=True,
+            )
 
 
-def get_opt_out_document_ids(firestore_client: FirestoreClientImpl) -> set[str]:
+def get_opt_out_document_ids(
+    firestore_client: FirestoreClientImpl, state_code: str
+) -> set[str]:
     """Get all document ids of jii level documents associated with individuals that
     have opted out of text messages.
     """
     twilio_ref = firestore_client.get_collection(collection_path="twilio_messages")
     doc_query = twilio_ref.where(
         filter=FieldFilter("opt_out_type", "in", OPT_OUT_KEY_WORDS)
-    )
+    ).where(filter=FieldFilter("state_code", "==", state_code))
     opt_out_document_ids = {jii_doc.id for jii_doc in doc_query.stream()}
-    logging.info("%s individuals have opted-out of texts.", len(opt_out_document_ids))
-    logging.info("Document ids of individuals who have opted-out: ")
+    logging.info(
+        "%s individuals from %s have opted-out of texts.",
+        len(opt_out_document_ids),
+        state_code,
+    )
+    logging.info("Document ids of individuals who have opted-out from %s: ", state_code)
     logging.info(opt_out_document_ids)
     return opt_out_document_ids
 
@@ -444,6 +484,7 @@ def store_batch_id(
     message_type: str,
     redeliver_failed_messages: bool,
     bigquery_view: str,
+    state_code: str,
 ) -> None:
     """
     Store the batch_id and Big Query View of the current launch in the Firestore database.
@@ -461,6 +502,7 @@ def store_batch_id(
             "message_type": message_type.upper(),
             "redelivery": redeliver_failed_messages,
             "bigquery_view": bigquery_view,
+            "state_code": state_code,
         },
     )
 
@@ -552,6 +594,7 @@ def attempt_to_send_text(
 
 def get_initial_and_eligibility_doc_ids(
     firestore_client: FirestoreClientImpl,
+    state_code: str,
 ) -> Tuple[set, Dict]:
     """Get all document_ids for individuals who already received a text (initial or eligibility).
     Store and return document_ids for initial text messages as a set.
@@ -565,7 +608,7 @@ def get_initial_and_eligibility_doc_ids(
     )
     message_query = message_ref.where(
         filter=FieldFilter("status", "==", ExternalSystemRequestStatus.SUCCESS.value)
-    )
+    ).where(filter=FieldFilter("state_code", "==", state_code))
     initial_text_document_ids = set()
     eligibility_text_document_ids_to_text_timestamp: Dict[
         str, datetime.datetime

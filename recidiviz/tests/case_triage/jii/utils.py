@@ -31,7 +31,7 @@ class JIITestObjects:
         self.test_text_message_document_A = DocumentSnapshot(
             reference=DocumentReference(
                 "twilio_messages",
-                "999999999",
+                "us_test_999999999",
                 "lsu_eligibility_messages",
                 "eligibility_01_2023",
             ),
@@ -48,6 +48,9 @@ class JIITestObjects:
                 "timestamp": datetime.datetime(
                     2024, 6, 11, 19, 13, 40, 403400, tzinfo=datetime.timezone.utc
                 ),
+                "state_code": "us_test",
+                "external_id": "999999999",
+                "batch_id": "01_2023",
             },
             exists=True,
             read_time=datetime.datetime(
@@ -63,7 +66,7 @@ class JIITestObjects:
         self.test_text_message_document_B = DocumentSnapshot(
             reference=DocumentReference(
                 "twilio_messages",
-                "888888888",
+                "us_test_888888888",
                 "lsu_eligibility_messages",
                 "eligibility_01_2023",
             ),
@@ -80,6 +83,9 @@ class JIITestObjects:
                 "timestamp": datetime.datetime(
                     2024, 6, 11, 19, 13, 40, 403400, tzinfo=datetime.timezone.utc
                 ),
+                "state_code": "us_test",
+                "external_id": "888888888",
+                "batch_id": "01_2023",
             },
             exists=True,
             read_time=datetime.datetime(
@@ -95,7 +101,7 @@ class JIITestObjects:
         self.test_text_message_document_C = DocumentSnapshot(
             reference=DocumentReference(
                 "twilio_messages",
-                "222222222",
+                "us_test_222222222",
                 "lsu_eligibility_messages",
                 "eligibility_01_01_2024_12_00_01",
             ),
@@ -112,6 +118,9 @@ class JIITestObjects:
                 "timestamp": datetime.datetime(
                     2024, 6, 11, 19, 13, 40, 403400, tzinfo=datetime.timezone.utc
                 ),
+                "state_code": "us_test",
+                "external_id": "222222222",
+                "batch_id": "01_01_2024_12_00_01",
             },
             exists=True,
             read_time=datetime.datetime(
@@ -127,7 +136,7 @@ class JIITestObjects:
         self.test_jii_document_A = DocumentSnapshot(
             reference=DocumentReference(
                 "twilio_messages",
-                "888888888",
+                "us_test_888888888",
             ),
             data={
                 "last_phone_num_update": datetime.datetime(
@@ -153,6 +162,9 @@ class JIITestObjects:
                         ),
                     }
                 ],
+                "state_code": "us_test",
+                "external_id": "888888888",
+                "batch_ids": ["01_2023"],
             },
             exists=True,
             read_time=datetime.datetime(

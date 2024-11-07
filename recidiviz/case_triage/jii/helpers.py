@@ -23,7 +23,7 @@ import datetime
 import logging
 from ast import literal_eval
 from collections import defaultdict
-from typing import Any, Dict, Generator, Optional
+from typing import Any, Dict, Generator, List, Optional
 
 from google.cloud import bigquery
 from google.cloud.firestore_v1 import DocumentSnapshot
@@ -63,21 +63,23 @@ D7_ADDITIONAL_CONTACT = (
 
 def generate_initial_text_messages_dict(
     bq_output: bigquery.QueryJob,
-) -> Dict[str, Dict[str, str]]:
+) -> List[Dict[str, str]]:
     """Iterates through the data (bigquery output). For each bigquery row (individual),
     we construct an initial text message body for that individual, regardless of their
     eligibility status. This allows jii to opt-out of future text messages.
 
-    This function returns a dictionary that maps external ids to phone number strings to text message strings.
+    This function returns a list of dictionaries. Each dictionary contains an individual's
+    external_id, phone number, the text body, their po name, and their district.
     """
-    external_id_to_phone_num_to_text_dict: Dict[str, Dict[str, str]] = defaultdict(dict)
+    initial_text_messages_dicts: List = []
 
     for individual in bq_output:
+        initial_text_messages_dict: Dict[str, str] = defaultdict()
         external_id = str(individual["external_id"])
         phone_num = str(individual["phone_number"])
         given_name = literal_eval(individual["person_name"])["given_names"].title()
         po_name = individual["po_name"].title()
-
+        district = individual["district"].lower().strip()
         fully_eligible = individual["is_eligible"]
         fines_n_fees_denials = individual["fines_n_fees_denials"]
         # We do not expect jii with fully_eligible=False and fines_n_fees_denials=True to be included in the BigQuery table as we do not want to text these individuals
@@ -93,25 +95,33 @@ def generate_initial_text_messages_dict(
             INITIAL_TEXT, given_name=given_name, po_name=po_name
         )
         text_body += ALL_CLOSER
-        external_id_to_phone_num_to_text_dict[external_id] = {phone_num: text_body}
+
+        initial_text_messages_dict["external_id"] = external_id
+        initial_text_messages_dict["phone_num"] = phone_num
+        initial_text_messages_dict["text_body"] = text_body
+        initial_text_messages_dict["po_name"] = po_name
+        initial_text_messages_dict["district"] = district
+        initial_text_messages_dicts.append(initial_text_messages_dict)
         logging.info("Initial text constructed for external_id: %s", external_id)
 
-    return external_id_to_phone_num_to_text_dict
+    return initial_text_messages_dicts
 
 
 def generate_eligibility_text_messages_dict(
     bq_output: bigquery.QueryJob,
-) -> Dict[str, Dict[str, str]]:
+) -> List[Dict[str, str]]:
     """Iterates through the data (bigquery output). For each bigquery row (individual),
     we check if the individual is either fully eligible, missing ua, and or missing
     employment eligibility. Depending on these criteria, we then call
     construct_text_body() to construct a text message body for that individual.
 
-    This function returns a dictionary that maps external ids to phone number strings to text message strings.
+    This function returns a list of dictionaries. Each dictionary contains an individual's
+    external_id, phone number, the text body, their po name, and their district.
     """
-    external_id_to_phone_num_to_text_dict: Dict[str, Dict[str, str]] = defaultdict(dict)
+    eligibility_text_messages_dicts: List = []
 
     for individual in bq_output:
+        eligibility_text_messages_dict: Dict[str, str] = defaultdict()
         fully_eligible = False
         missing_negative_da_within_90_days = False
         missing_income_verified_within_3_months = False
@@ -145,14 +155,24 @@ def generate_eligibility_text_messages_dict(
             )
             continue
 
+        po_name = individual["po_name"].title()
+        district = individual["district"].lower().strip()
         text_body = construct_text_body(
             individual=individual,
             fully_eligible=fully_eligible,
             missing_negative_da_within_90_days=missing_negative_da_within_90_days,
             missing_income_verified_within_3_months=missing_income_verified_within_3_months,
             fines_n_fees_denials=fines_n_fees_denials,
+            po_name=po_name,
+            district=district,
         )
-        external_id_to_phone_num_to_text_dict[external_id] = {phone_num: text_body}
+        eligibility_text_messages_dict["external_id"] = external_id
+        eligibility_text_messages_dict["phone_num"] = phone_num
+        eligibility_text_messages_dict["text_body"] = text_body
+        eligibility_text_messages_dict["po_name"] = po_name
+        eligibility_text_messages_dict["district"] = district
+        eligibility_text_messages_dicts.append(eligibility_text_messages_dict)
+
         logging.info("Eligibility text constructed for external_id: %s", external_id)
         logging.info("fully_eligible: %s", fully_eligible)
         logging.info("fines_n_fees_denials: %s", fines_n_fees_denials)
@@ -164,7 +184,7 @@ def generate_eligibility_text_messages_dict(
             missing_income_verified_within_3_months,
         )
 
-    return external_id_to_phone_num_to_text_dict
+    return eligibility_text_messages_dicts
 
 
 def construct_text_body(
@@ -173,14 +193,14 @@ def construct_text_body(
     missing_negative_da_within_90_days: bool,
     missing_income_verified_within_3_months: bool,
     fines_n_fees_denials: bool,
+    po_name: str,
+    district: str,
 ) -> str:
     """Constructs a text message (string) to be sent to a given individual based on their
     eligibility criteria.
     """
     text_body = """"""
     given_name = literal_eval(individual["person_name"])["given_names"].title()
-    po_name = individual["po_name"].title()
-    district = individual["district"].lower().strip()
 
     if district == "district 1":
         additional_contact = D1_ADDITIONAL_CONTACT
