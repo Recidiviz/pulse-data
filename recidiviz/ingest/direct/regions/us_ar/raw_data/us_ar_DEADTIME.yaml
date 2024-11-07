@@ -34,6 +34,11 @@ columns:
     description: |-
       Dead time comments
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
+          This field was only populated in the 2023-12-14T00:00:00 version of the file
   - name: DATELASTUPDATE
     description: |-
       Date last updated

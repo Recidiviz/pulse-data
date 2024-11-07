@@ -21,6 +21,11 @@ columns:
     description: |-
       Street name
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
+          This field was only populated in the 2023-11-09T00:00:00 and 2023-07-20T00:00:00 versions of the file
   - name: STREETTYPE
     description: |-
       Street type
@@ -74,6 +79,12 @@ columns:
     description: |-
       Staff last updated
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
+          This field was only populated in the 2023-11-09T00:00:00 and 2023-07-20T00:00:00 versions of the file
+          (and a few rows that were incorrectly imported in other versions).
   - name: STREETDIRECTIONSUFFIX
     description: |-
       Street direction suffix
