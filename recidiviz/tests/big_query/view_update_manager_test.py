@@ -19,7 +19,7 @@
 import unittest
 from typing import Iterator, Set, Tuple
 from unittest import mock
-from unittest.mock import MagicMock, call, create_autospec, patch
+from unittest.mock import call, create_autospec, patch
 
 from google.cloud import bigquery
 
@@ -32,19 +32,12 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-from recidiviz.big_query.view_update_manager import (
-    BigQueryViewUpdateSandboxContext,
-    execute_update_all_managed_views,
-)
+from recidiviz.big_query.view_update_manager import BigQueryViewUpdateSandboxContext
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_source_table_datasets,
 )
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import (
-    GCP_PROJECT_PRODUCTION,
-    GCP_PROJECT_STAGING,
-    GCPEnvironment,
-)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
@@ -896,73 +889,3 @@ class ViewManagerTest(unittest.TestCase):
                 f"DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED, which should only "
                 f"contain datasets that currently hold or once held managed views.",
             )
-
-
-class TestExecuteUpdateAllManagedViews(unittest.TestCase):
-    """Tests the execute_update_all_managed_views function."""
-
-    def setUp(self) -> None:
-        self.all_views_update_success_persister_patcher = patch(
-            "recidiviz.big_query.view_update_manager.AllViewsUpdateSuccessPersister"
-        )
-        self.all_views_update_success_persister_constructor = (
-            self.all_views_update_success_persister_patcher.start()
-        )
-        self.mock_all_views_update_success_persister = (
-            self.all_views_update_success_persister_constructor.return_value
-        )
-        self.environment_patcher = mock.patch(
-            "recidiviz.utils.environment.get_gcp_environment",
-            return_value=GCPEnvironment.PRODUCTION.value,
-        )
-        self.environment_patcher.start()
-
-        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
-        self.project_id_patcher.start().return_value = GCP_PROJECT_PRODUCTION
-
-    def tearDown(self) -> None:
-        self.environment_patcher.stop()
-        self.all_views_update_success_persister_patcher.stop()
-        self.project_id_patcher.stop()
-
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager.deployed_view_builders",
-    )
-    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
-    )
-    def test_execute_update_all_managed_views(
-        self,
-        mock_create: MagicMock,
-        _mock_bq_client: MagicMock,
-        _mock_view_builders: MagicMock,
-    ) -> None:
-        execute_update_all_managed_views(sandbox_prefix=None)
-        mock_create.assert_called()
-        self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
-            deployed_view_builders=mock.ANY,
-            dataset_override_prefix=None,
-            runtime_sec=mock.ANY,
-        )
-
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager.deployed_view_builders",
-    )
-    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
-    )
-    def test_execute_update_all_managed_views_with_sandbox_prefix(
-        self,
-        mock_create: MagicMock,
-        _mock_bq_client: MagicMock,
-        _mock_view_builders: MagicMock,
-    ) -> None:
-        execute_update_all_managed_views(sandbox_prefix="test_prefix")
-        mock_create.assert_called()
-        self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
-            deployed_view_builders=mock.ANY,
-            dataset_override_prefix="test_prefix",
-            runtime_sec=mock.ANY,
-        )

@@ -18,8 +18,10 @@
 KubernetesPodOperator."""
 import argparse
 
-from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
+from recidiviz.view_registry.execute_update_all_managed_views import (
+    execute_update_all_managed_views,
+)
 
 
 class UpdateAllManagedViewsEntrypoint(EntrypointInterface):

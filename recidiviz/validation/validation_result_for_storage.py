@@ -17,18 +17,12 @@
 """Handles storing validation results in BigQuery"""
 import datetime
 import json
-import logging
 from ast import literal_eval
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, Optional, cast
 
 import attr
 import cattr
-import pytz
-from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.common import serialization
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.monitoring.context import get_current_trace_id
@@ -214,113 +208,3 @@ class ValidationResultForStorage:
         )
         structured = converter.structure(serialized, ValidationResultForStorage)
         return structured
-
-
-VALIDATION_RESULTS_DATASET_ID = "validation_results"
-
-VALIDATION_RESULTS_BIGQUERY_ADDRESS = BigQueryAddress(
-    dataset_id=VALIDATION_RESULTS_DATASET_ID, table_id="validation_results"
-)
-
-
-def store_validation_results_in_big_query(
-    validation_results: List[ValidationResultForStorage],
-) -> None:
-    if not environment.in_gcp():
-        logging.info(
-            "Skipping storing [%d] validation results in BigQuery.",
-            len(validation_results),
-        )
-        return
-
-    bq_client = BigQueryClientImpl()
-    bq_client.stream_into_table(
-        VALIDATION_RESULTS_BIGQUERY_ADDRESS,
-        [result.to_serializable() for result in validation_results],
-    )
-
-
-VALIDATION_RUN_ID_COL = "run_id"
-REGION_CODE_COL = "region_code"
-SUCCESS_TIMESTAMP_COL = "success_timestamp"
-NUM_VALIDATIONS_RUN_COL = "num_validations_run"
-VALIDATIONS_RUNTIME_SEC_COL = "validations_runtime_sec"
-INGEST_INSTANCE_COL = "ingest_instance"
-SANDBOX_DATASET_PREFIX_COL = "sandbox_dataset_prefix"
-
-VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS = BigQueryAddress(
-    dataset_id=VALIDATION_RESULTS_DATASET_ID, table_id="validations_completion_tracker"
-)
-
-
-def store_validation_run_completion_in_big_query(
-    validation_run_id: str,
-    num_validations_run: int,
-    validations_runtime_sec: int,
-    ingest_instance: DirectIngestInstance,
-    sandbox_dataset_prefix: Optional[str],
-) -> None:
-    """Persists a row to BQ that indicates that a particular validation run has
-    completed without crashing. This row will be used by our Airflow DAG to determine
-    whether we can continue.
-    """
-
-    if not environment.in_gcp():
-        logging.info("Skipping storing validation run completion in BigQuery for task.")
-        return
-
-    bq_client = BigQueryClientImpl()
-    success_row_streamer = BigQueryRowStreamer(
-        bq_client=bq_client,
-        table_address=VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS,
-        table_schema=[
-            bigquery.SchemaField(
-                name=VALIDATION_RUN_ID_COL,
-                field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                mode="REQUIRED",
-            ),
-            bigquery.SchemaField(
-                name=REGION_CODE_COL,
-                field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                mode="NULLABLE",
-            ),
-            bigquery.SchemaField(
-                name=SUCCESS_TIMESTAMP_COL,
-                field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,
-                mode="REQUIRED",
-            ),
-            bigquery.SchemaField(
-                name=NUM_VALIDATIONS_RUN_COL,
-                field_type=bigquery.enums.SqlTypeNames.INT64.value,
-                mode="REQUIRED",
-            ),
-            bigquery.SchemaField(
-                name=VALIDATIONS_RUNTIME_SEC_COL,
-                field_type=bigquery.enums.SqlTypeNames.INT64.value,
-                mode="REQUIRED",
-            ),
-            bigquery.SchemaField(
-                name=INGEST_INSTANCE_COL,
-                field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                mode="NULLABLE",
-            ),
-            bigquery.SchemaField(
-                name=SANDBOX_DATASET_PREFIX_COL,
-                field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                mode="NULLABLE",
-            ),
-        ],
-    )
-
-    success_row_streamer.stream_rows(
-        [
-            {
-                VALIDATION_RUN_ID_COL: validation_run_id,
-                SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
-                NUM_VALIDATIONS_RUN_COL: num_validations_run,
-                VALIDATIONS_RUNTIME_SEC_COL: validations_runtime_sec,
-                INGEST_INSTANCE_COL: ingest_instance.value,
-                SANDBOX_DATASET_PREFIX_COL: sandbox_dataset_prefix,
-            }
-        ]
-    )

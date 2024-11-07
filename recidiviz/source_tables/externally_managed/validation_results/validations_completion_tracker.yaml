@@ -1,0 +1,29 @@
+address:
+  dataset_id: validation_results
+  table_id: validations_completion_tracker
+description: >-
+  Table that holds information summary information about each successfully completed validation run for a given state. A 
+  new row is added each time we successfully run validations (success == not crashing).
+schema:
+  - name: run_id
+    type: STRING
+    mode: REQUIRED
+  - name: success_timestamp
+    type: TIMESTAMP
+    mode: REQUIRED
+  - name: num_validations_run
+    type: INTEGER
+    mode: REQUIRED
+  - name: validations_runtime_sec
+    type: INTEGER
+    mode: REQUIRED
+  - name: region_code
+    type: STRING
+    mode: NULLABLE
+  - name: ingest_instance
+    type: STRING
+    mode: NULLABLE
+  - name: sandbox_dataset_prefix
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

@@ -1,0 +1,26 @@
+address:
+  dataset_id: view_update_metadata
+  table_id: metric_view_data_export_tracker
+description: >-
+  Table that holds information summary information about each successful job that exports metric view data to GCS. A 
+  new row is added each time we successfully complete a single metric export job.
+schema:
+  - name: success_timestamp
+    type: TIMESTAMP
+    mode: REQUIRED
+  - name: export_job_name
+    type: STRING
+    mode: REQUIRED
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: metric_view_data_export_runtime_sec
+    type: INTEGER
+    mode: REQUIRED
+  - name: destination_override
+    type: STRING
+    mode: NULLABLE
+  - name: sandbox_dataset_prefix
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

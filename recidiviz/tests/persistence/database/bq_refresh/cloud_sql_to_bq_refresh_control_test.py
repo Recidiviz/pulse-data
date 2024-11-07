@@ -18,16 +18,20 @@
 import unittest
 from typing import Optional
 from unittest import mock
+from unittest.mock import MagicMock
 
 from mock import create_autospec
 from parameterized import parameterized
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.success_persister import RefreshBQDatasetSuccessPersister
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_control
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
+    RefreshBQDatasetSuccessPersister,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.utils.environment import GCPEnvironment
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCPEnvironment
+from recidiviz.utils.metadata import local_project_id_override
 
 REFRESH_CONTROL_PACKAGE_NAME = cloud_sql_to_bq_refresh_control.__name__
 
@@ -180,3 +184,18 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
             dataset_override_prefix=sandbox_called_with,
             runtime_sec=mock.ANY,
         )
+
+
+class TestRefreshBQDatasetSuccessPersister(unittest.TestCase):
+    def test_persist(self) -> None:
+        mock_client = MagicMock()
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            persister = RefreshBQDatasetSuccessPersister(bq_client=mock_client)
+
+            # Just shouldn't crash
+            persister.record_success_in_bq(
+                schema_type=SchemaType.OPERATIONS,
+                direct_ingest_instance=DirectIngestInstance.PRIMARY,
+                runtime_sec=100,
+                dataset_override_prefix=None,
+            )

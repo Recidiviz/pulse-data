@@ -29,13 +29,15 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
-from recidiviz.validation.validation_result_storage import VALIDATION_RESULTS_DATASET_ID
 from recidiviz.validation.views.dataset_config import (
     validation_oneoff_dataset_for_state,
 )
 
 VERA_DATASET: str = "vera_data"
 
+VALIDATION_RESULTS_DATASET_ID: str = "validation_results"
+
+VIEW_UPDATE_METADATA_DATASET: str = "view_update_metadata"
 
 VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
     validation_oneoff_dataset_for_state(state_code): (
@@ -99,5 +101,8 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     ),
     VERA_DATASET: (
         "Stores data calculated outside of our codebase by Vera. Used only by Vera."
+    ),
+    VIEW_UPDATE_METADATA_DATASET: (
+        "Stores metadata about the performance of our view update process"
     ),
 }

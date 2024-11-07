@@ -60,6 +60,11 @@ class SourceTableConfig:
         return any(c.name == column for c in self.schema_fields + self.pseudocolumns)
 
     @property
+    def column_names(self) -> list[str]:
+        """The list of column names for columns in this table"""
+        return [f.name for f in self.schema_fields]
+
+    @property
     def pseudocolumns(self) -> list[SchemaField]:
         """Returns a list of pseudocolumns that are available for query on this table.
         These are columns that will not be returned by a SELECT * query on this table,

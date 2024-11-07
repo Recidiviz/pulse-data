@@ -213,7 +213,7 @@ class TestExecuteValidationRequest(TestCase):
             GCPEnvironment.STAGING
         )
         self.trace_patcher = mock.patch(
-            "recidiviz.validation.validation_result_storage.get_current_trace_id"
+            "recidiviz.validation.validation_result_for_storage.get_current_trace_id"
         )
         self.trace_patcher.start().return_value = "trace-id"
 
@@ -273,6 +273,7 @@ class TestExecuteValidationRequest(TestCase):
         self.assertEqual(5, len(results))
 
         mock_store_run_success.assert_called_with(
+            state_code=StateCode.US_XX,
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
@@ -326,6 +327,7 @@ class TestExecuteValidationRequest(TestCase):
         self.assertEqual(5, len(results))
 
         mock_store_run_success.assert_called_with(
+            state_code=StateCode.US_XX,
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
@@ -424,6 +426,7 @@ class TestExecuteValidationRequest(TestCase):
         self.assertEqual(5, len(results))
 
         mock_store_run_success.assert_called_with(
+            state_code=StateCode.US_XX,
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
@@ -533,6 +536,7 @@ class TestExecuteValidationRequest(TestCase):
         self.assertEqual(5, len(results))
 
         mock_store_run_success.assert_called_with(
+            state_code=StateCode.US_XX,
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
@@ -588,6 +592,7 @@ class TestExecuteValidationRequest(TestCase):
         self.assertEqual(0, len(results))
 
         mock_store_run_success.assert_called_with(
+            state_code=StateCode.US_XX,
             num_validations_run=0,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,

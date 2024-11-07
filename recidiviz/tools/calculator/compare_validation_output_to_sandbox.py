@@ -38,7 +38,7 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import non_optional
 from recidiviz.validation.validation_models import ValidationCheckType
-from recidiviz.validation.validation_result_storage import (
+from recidiviz.validation.validation_result_for_storage import (
     ValidationResultForStorage,
     ValidationResultStatus,
 )

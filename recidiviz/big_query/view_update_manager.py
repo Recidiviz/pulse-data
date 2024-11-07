@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Provides utilities for updating views within a live BigQuery instance."""
-import datetime
 import logging
 from concurrent import futures
 from concurrent.futures import Future
@@ -42,7 +41,6 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
 )
 from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-from recidiviz.big_query.success_persister import AllViewsUpdateSuccessPersister
 from recidiviz.big_query.view_update_config import (
     get_deployed_view_dag_update_perf_config,
 )
@@ -53,17 +51,9 @@ from recidiviz.big_query.view_update_manager_utils import (
 from recidiviz.common import attr_validators
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import CounterInstrumentKey
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_source_table_datasets,
-)
-from recidiviz.utils import metadata, structured_logging
-from recidiviz.utils.environment import gcp_only
+from recidiviz.utils import structured_logging
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
-)
-from recidiviz.view_registry.deployed_views import (
-    DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-    deployed_view_builders,
 )
 
 # We set this to 10 because urllib3 (used by the Google BigQuery client) has a default limit of 10 connections and
@@ -99,43 +89,6 @@ class BigQueryViewUpdateSandboxContext:
     parent_address_formatter_provider: BigQueryAddressFormatterProvider | None = (
         attr.ib(validator=attr_validators.is_opt(BigQueryAddressFormatterProvider))
     )
-
-
-@gcp_only
-def execute_update_all_managed_views(sandbox_prefix: Optional[str]) -> None:
-    """
-    Updates all views in the view registry. If dataset_ids_to_load is provided, only views in those datasets and
-    their ancestors will be updated. If sandbox_prefix is provided, all views will be deployed to a sandbox dataset.
-    """
-    start = datetime.datetime.now()
-    view_builders = deployed_view_builders()
-
-    view_update_sandbox_context = None
-    if sandbox_prefix:
-        view_update_sandbox_context = BigQueryViewUpdateSandboxContext(
-            output_sandbox_dataset_prefix=sandbox_prefix,
-            input_source_table_overrides=BigQueryAddressOverrides.empty(),
-            parent_address_formatter_provider=None,
-        )
-
-    create_managed_dataset_and_deploy_views_for_view_builders(
-        view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
-        view_builders_to_update=view_builders,
-        historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-        view_update_sandbox_context=view_update_sandbox_context,
-        force_materialize=True,
-        allow_slow_views=False,
-    )
-    end = datetime.datetime.now()
-    runtime_sec = int((end - start).total_seconds())
-
-    success_persister = AllViewsUpdateSuccessPersister(bq_client=BigQueryClientImpl())
-    success_persister.record_success_in_bq(
-        deployed_view_builders=view_builders,
-        dataset_override_prefix=sandbox_prefix,
-        runtime_sec=runtime_sec,
-    )
-    logging.info("All managed views successfully updated and materialized.")
 
 
 def create_managed_dataset_and_deploy_views_for_view_builders(

@@ -1,0 +1,23 @@
+address:
+  dataset_id: view_update_metadata
+  table_id: refresh_bq_dataset_tracker
+description: >-
+  Table that holds information about successful CloudSQL to BQ refresh dataset jobs. A new row is added each time we
+  successfully complete a refresh of a single schema.
+schema:
+  - name: success_timestamp
+    type: TIMESTAMP
+    mode: REQUIRED
+  - name: schema_type
+    type: STRING
+    mode: REQUIRED
+  - name: refresh_bq_dataset_runtime_sec
+    type: INTEGER
+    mode: REQUIRED
+  - name: direct_ingest_instance
+    type: STRING
+    mode: NULLABLE
+  - name: dataset_override_prefix
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

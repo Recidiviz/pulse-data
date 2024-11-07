@@ -19,7 +19,11 @@ import datetime
 import logging
 from typing import Dict, List, Optional, Sequence
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+import pytz
+
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -38,9 +42,6 @@ from recidiviz.big_query.export.big_query_view_exporter import (
 from recidiviz.big_query.export.export_query_config import (
     ExportOutputFormatType,
     ExportValidationType,
-)
-from recidiviz.big_query.view_export_success_persister import (
-    MetricViewDataExportSuccessPersister,
 )
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -63,6 +64,12 @@ from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import
 )
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
+from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
+    build_source_table_repository_for_externally_managed_tables,
+)
+from recidiviz.source_tables.externally_managed.datasets import (
+    VIEW_UPDATE_METADATA_DATASET,
+)
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, gcp_only
 from recidiviz.view_registry.address_overrides_factory import (
@@ -72,6 +79,48 @@ from recidiviz.view_registry.address_overrides_factory import (
 
 class ViewExportConfigurationError(Exception):
     """Error thrown when views are misconfigured."""
+
+
+# Table that holds information about metric view data export jobs
+METRIC_VIEW_DATA_EXPORT_TRACKER_ADDRESS = BigQueryAddress(
+    dataset_id=VIEW_UPDATE_METADATA_DATASET, table_id="metric_view_data_export_tracker"
+)
+
+
+class MetricViewDataExportSuccessPersister(BigQueryRowStreamer):
+    """Class that persists runtime of successful export of metric view data."""
+
+    def __init__(self, bq_client: BigQueryClient):
+        source_table_repository = (
+            build_source_table_repository_for_externally_managed_tables(
+                metadata.project_id()
+            )
+        )
+        source_table_config = source_table_repository.build_config(
+            METRIC_VIEW_DATA_EXPORT_TRACKER_ADDRESS
+        )
+        super().__init__(
+            bq_client, source_table_config.address, source_table_config.schema_fields
+        )
+
+    def record_success_in_bq(
+        self,
+        export_job_name: str,
+        runtime_sec: int,
+        state_code: Optional[str],
+        sandbox_dataset_prefix: Optional[str],
+    ) -> None:
+        success_row = {
+            "success_timestamp": datetime.datetime.now(tz=pytz.UTC).isoformat(),
+            "export_job_name": export_job_name,
+            "state_code": state_code,
+            # TODO(#22440): Remove this column entirely - export location implied by existence of sandbox prefix.
+            "destination_override": None,
+            "sandbox_dataset_prefix": sandbox_dataset_prefix,
+            "metric_view_data_export_runtime_sec": runtime_sec,
+        }
+
+        self.stream_rows([success_row])
 
 
 @gcp_only

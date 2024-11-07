@@ -29,6 +29,14 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 COMMON_VESTIGES = [
+    # These are unused but will be referenced soon in Doppler KPI views.
+    #  TODO(#34767): Remove these tracker tables from the list once they're referenced
+    #   in downstream views.
+    "validation_results.validations_completion_tracker",
+    "view_update_metadata.metric_view_data_export_tracker",
+    "view_update_metadata.refresh_bq_dataset_tracker",
+    "view_update_metadata.rematerialization_tracker",
+    "view_update_metadata.view_update_tracker",
     # Validation results are referenced outside the view graph via the Admin Panel
     "validation_results.validation_results",
     # It is Polaris-convention to archive all exports for historical reference, even when the archive isn't used
