@@ -124,9 +124,6 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assess
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
     US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.vitals_report.supervision_case_compliance_spans import (
-    SUPERVISION_CASE_COMPLIANCE_SPANS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.all_funnel_events import (
     ALL_FUNNEL_EVENTS_VIEW_BUILDER,
 )
@@ -377,9 +374,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     CASE_NOTES_DATA_STORE_VIEW_BUILDER.address: (
         "This view backs the datastore for Vertex AI search (Roshan Agrawal 10/24/2024)"
-    ),
-    SUPERVISION_CASE_COMPLIANCE_SPANS_VIEW_BUILDER.address: (
-        "Will be used for Operations aggregated metrics (#34505) (Dana Hoffman 10/25/2024)"
     ),
 }
 

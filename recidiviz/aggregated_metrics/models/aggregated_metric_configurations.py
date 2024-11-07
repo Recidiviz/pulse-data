@@ -767,6 +767,57 @@ AVG_DAILY_POPULATION_MINIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     ),
 )
 
+AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED = DailyAvgSpanCountMetric(
+    name="avg_population_assessment_required",
+    display_name="Average Population: Clients Requiring Risk Assessment",
+    description="Average daily population of clients requiring a risk assessment based on their "
+    "supervision level",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_CASE_COMPLIANCE_SPAN,
+        span_conditions_dict={"assessment_required": ["true"]},
+    ),
+)
+
+AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE = DailyAvgSpanCountMetric(
+    name="avg_population_assessment_overdue",
+    display_name="Average Population: Clients Requiring Risk Assessment Whose Assessments Are Overdue",
+    description="Average daily population of clients requiring a risk assessment based on their "
+    "supervision level who are overdue to receive one",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_CASE_COMPLIANCE_SPAN,
+        span_conditions_dict={
+            "assessment_required": ["true"],
+            "assessment_overdue": ["true"],
+        },
+    ),
+)
+
+AVG_DAILY_POPULATION_CONTACT_REQUIRED = DailyAvgSpanCountMetric(
+    name="avg_population_contact_required",
+    display_name="Average Population: Clients Requiring A Face-To-Face Contact",
+    description="Average daily population of clients requiring a face-to-face contact based on "
+    "their supervision level",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_CASE_COMPLIANCE_SPAN,
+        span_conditions_dict={"contact_required": ["true"]},
+    ),
+)
+
+AVG_DAILY_POPULATION_CONTACT_OVERDUE = DailyAvgSpanCountMetric(
+    name="avg_population_contact_overdue",
+    display_name="Average Population: Clients Requiring Face-To-Face-Contact Whose Contacts Are "
+    "Overdue",
+    description="Average daily population of clients requiring a face-to-face contact based on "
+    "their supervision level who are overdue to receive one",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_CASE_COMPLIANCE_SPAN,
+        span_conditions_dict={
+            "contact_required": ["true"],
+            "contact_overdue": ["true"],
+        },
+    ),
+)
+
 AVG_LSIR_SCORE = DailyAvgSpanValueMetric(
     name="avg_lsir_score",
     display_name="Average LSI-R Score",
