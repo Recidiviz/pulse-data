@@ -116,6 +116,11 @@ columns:
     description: |-
       Sentencing summary
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
+          This field is always null
   - name: PHYCHARACTERISTICSINTAKE
     description: |-
       Phys. characteristics
@@ -200,6 +205,11 @@ columns:
   - name: ADMISSIONCOMMENTS
     description: |-
       Admission comments
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
+          This field is always null
   - name: PREAASSESSMENTINTAKE
     description: |-
       PREA assessment

@@ -1108,6 +1108,11 @@ columns:
   - name: TIERLEVEL
     description: |-
       Tier level
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
+          This field is always null
   - name: ACTIONTYPE
     description: |-
       Action type

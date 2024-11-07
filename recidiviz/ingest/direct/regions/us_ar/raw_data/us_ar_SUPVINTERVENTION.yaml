@@ -37,6 +37,12 @@ columns:
     description: |-
       Intervention comments
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
+          This field was only populated in the 2023-11-09T00:00:00 and 2023-08-01T00:00:00 versions of the file
+          (and a few rows that were incorrectly imported in other versions).
   - name: DATELASTUPDATE
     description: |-
       Date last updated

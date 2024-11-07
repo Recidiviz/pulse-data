@@ -891,6 +891,11 @@ columns:
     description: |-
       Appeal Attorney
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
+          This field is always null
   - name: PROPOSEDPBA5
     description: |-
       Proposed parole board action 5
@@ -933,6 +938,11 @@ columns:
   - name: PAROLEBOARDFINALACTION6
     description: |-
       Parole board final action 6
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
+          This field is always null
   - name: PAROLEBOARDACTIONRSN5
     description: |-
       Parole board action reason 5
@@ -961,6 +971,11 @@ columns:
   - name: PAROLEBOARDACTIONRSN12
     description: |-
       Parole board action reason 12
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
+          This field is always null
 table_relationships:
   - foreign_table: OFFENDERPROFILE
     join_logic:
