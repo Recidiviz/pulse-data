@@ -1,0 +1,20 @@
+address:
+  dataset_id: view_update_metadata
+  table_id: view_update_tracker
+description: >-
+  Table that holds information summary information about each successful view update. A new row is added each time we
+  successfully update our full graph of BigQuery views.
+schema:
+  - name: success_timestamp
+    type: TIMESTAMP
+    mode: REQUIRED
+  - name: num_deployed_views
+    type: INTEGER
+    mode: REQUIRED
+  - name: view_update_runtime_sec
+    type: INTEGER
+    mode: REQUIRED
+  - name: dataset_override_prefix
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

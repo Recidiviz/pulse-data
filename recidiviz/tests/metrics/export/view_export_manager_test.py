@@ -39,6 +39,7 @@ from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.metrics.export import view_export_manager
 from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
 from recidiviz.metrics.export.view_export_manager import (
+    MetricViewDataExportSuccessPersister,
     ViewExportConfigurationError,
     execute_metric_view_data_export,
 )
@@ -49,6 +50,7 @@ from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
     GCPEnvironment,
 )
+from recidiviz.utils.metadata import local_project_id_override
 
 
 @mock.patch(
@@ -584,3 +586,18 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             sandbox_prefix=None,
         )
         mock_export_view_data_to_cloud_storage.assert_called()
+
+
+class TestMetricViewDataExportSuccessPersister(unittest.TestCase):
+    def test_persist(self) -> None:
+        mock_client = MagicMock()
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            persister = MetricViewDataExportSuccessPersister(bq_client=mock_client)
+
+            # Just shouldn't crash
+            persister.record_success_in_bq(
+                export_job_name="MY_EXPORT",
+                runtime_sec=100,
+                state_code=StateCode.US_XX.value,
+                sandbox_dataset_prefix=None,
+            )

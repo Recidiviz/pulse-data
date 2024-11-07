@@ -18,8 +18,11 @@
 import datetime
 from typing import Optional
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.success_persister import RefreshBQDatasetSuccessPersister
+import pytz
+
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
@@ -28,9 +31,56 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh
     federated_bq_schema_refresh,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
+    build_source_table_repository_for_externally_managed_tables,
+)
+from recidiviz.source_tables.externally_managed.datasets import (
+    VIEW_UPDATE_METADATA_DATASET,
+)
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import gcp_only
 
 LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT = 60 * 60 * 4  # 4 hours
+
+
+# Table that holds information about refresh BQ dataset jobs
+REFRESH_BQ_DATASET_TRACKER_ADDRESS = BigQueryAddress(
+    dataset_id=VIEW_UPDATE_METADATA_DATASET, table_id="refresh_bq_dataset_tracker"
+)
+
+
+class RefreshBQDatasetSuccessPersister(BigQueryRowStreamer):
+    """Class that persists runtime of successful refresh of BQ datasets."""
+
+    def __init__(self, bq_client: BigQueryClient):
+        source_table_repository = (
+            build_source_table_repository_for_externally_managed_tables(
+                metadata.project_id()
+            )
+        )
+        source_table_config = source_table_repository.build_config(
+            REFRESH_BQ_DATASET_TRACKER_ADDRESS
+        )
+        super().__init__(
+            bq_client, source_table_config.address, source_table_config.schema_fields
+        )
+
+    def record_success_in_bq(
+        self,
+        schema_type: SchemaType,
+        direct_ingest_instance: DirectIngestInstance,
+        dataset_override_prefix: Optional[str],
+        runtime_sec: int,
+    ) -> None:
+        success_row = {
+            "success_timestamp": datetime.datetime.now(tz=pytz.UTC).isoformat(),
+            "schema_type": schema_type.value,
+            "direct_ingest_instance": direct_ingest_instance.value,
+            "dataset_override_prefix": dataset_override_prefix,
+            "refresh_bq_dataset_runtime_sec": runtime_sec,
+        }
+
+        self.stream_rows([success_row])
 
 
 @gcp_only

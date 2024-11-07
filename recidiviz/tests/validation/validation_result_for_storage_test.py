@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for validation_result_storage"""
+"""Tests for validation_result_for_storage"""
 import datetime
 import unittest
 from unittest import mock
@@ -30,6 +30,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.validation.checks.sameness_check import (
     ResultRow,
@@ -45,10 +46,12 @@ from recidiviz.validation.validation_models import (
     ValidationCheckType,
     ValidationResultStatus,
 )
-from recidiviz.validation.validation_result_storage import (
-    ValidationResultForStorage,
+from recidiviz.validation.validation_outputs import (
     store_validation_results_in_big_query,
     store_validation_run_completion_in_big_query,
+)
+from recidiviz.validation.validation_result_for_storage import (
+    ValidationResultForStorage,
 )
 
 
@@ -58,7 +61,7 @@ from recidiviz.validation.validation_result_storage import (
     MagicMock(return_value="v1.0.0"),
 )
 class TestValidationResultStorage(unittest.TestCase):
-    """Tests for validation_result_storage"""
+    """Tests for validation_result_for_storage"""
 
     def setUp(self) -> None:
         # Reset client caching
@@ -66,7 +69,7 @@ class TestValidationResultStorage(unittest.TestCase):
         big_query_client._clients_by_project_id_by_region.clear()
 
         self.trace_patcher = mock.patch(
-            "recidiviz.validation.validation_result_storage.get_current_trace_id"
+            "recidiviz.validation.validation_result_for_storage.get_current_trace_id"
         )
         self.trace_patcher.start().return_value = "trace-id"
 
@@ -638,6 +641,7 @@ class TestValidationResultStorage(unittest.TestCase):
 
         # Act
         store_validation_run_completion_in_big_query(
+            state_code=StateCode.US_XX,
             validation_run_id="abc123",
             num_validations_run=10,
             validations_runtime_sec=5,
@@ -650,6 +654,7 @@ class TestValidationResultStorage(unittest.TestCase):
             mock_table,
             [
                 {
+                    "region_code": "US_XX",
                     "run_id": "abc123",
                     "success_timestamp": "2022-01-01T00:00:00+00:00",
                     "num_validations_run": 10,
@@ -670,6 +675,7 @@ class TestValidationResultStorage(unittest.TestCase):
 
         # Act
         store_validation_run_completion_in_big_query(
+            state_code=StateCode.US_XX,
             validation_run_id="abc123",
             num_validations_run=10,
             validations_runtime_sec=5,

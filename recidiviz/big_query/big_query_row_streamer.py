@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class that can be used for streaming rows into a given table."""
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, Sequence
 
 from google.cloud import bigquery
 
@@ -30,28 +30,32 @@ class BigQueryRowStreamer:
         self,
         bq_client: BigQueryClient,
         table_address: BigQueryAddress,
-        table_schema: List[bigquery.SchemaField],
+        expected_table_schema: list[bigquery.SchemaField],
     ) -> None:
         self.bq_client = bq_client
         self.table_address = table_address
-        self.table_schema = table_schema
+        self.expected_table_schema = expected_table_schema
+
+    def _check_row_has_expected_columns(self, row: dict[str, Any]) -> None:
+        row_columns = set(row.keys())
+        expected_columns = set(c.name for c in self.expected_table_schema)
+
+        if missing := expected_columns - row_columns:
+            raise ValueError(
+                f"Cannot output to table [{self.table_address.to_str()}] - rows "
+                f"missing columns {sorted(missing)}."
+            )
+
+        if extra := row_columns - expected_columns:
+            raise ValueError(
+                f"Cannot output to table [{self.table_address.to_str()}] - rows "
+                f"have extra unexpected columns {sorted(extra)}."
+            )
 
     def stream_rows(self, rows: Sequence[Dict[str, Any]]) -> None:
-        """Streams the provided rows into the streamer's table, creating the table first
-        if it does not exist.
-        """
-        self._create_or_update_table_if_necessary()
-        self.bq_client.stream_into_table(self.table_address, rows)
+        """Streams the provided rows into the streamer's table."""
+        if not rows:
+            return
 
-    def _create_or_update_table_if_necessary(self) -> None:
-        self.bq_client.create_dataset_if_necessary(self.table_address.dataset_id)
-        if not self.bq_client.table_exists(self.table_address):
-            self.bq_client.create_table_with_schema(
-                self.table_address, schema_fields=self.table_schema
-            )
-        else:
-            self.bq_client.update_schema(
-                self.table_address,
-                desired_schema_fields=self.table_schema,
-                allow_field_deletions=False,
-            )
+        self._check_row_has_expected_columns(rows[0])
+        self.bq_client.stream_into_table(self.table_address, rows)

@@ -52,10 +52,12 @@ from recidiviz.validation.validation_models import (
     DataValidationJobResult,
     ValidationResultStatus,
 )
-from recidiviz.validation.validation_result_storage import (
-    ValidationResultForStorage,
+from recidiviz.validation.validation_outputs import (
     store_validation_results_in_big_query,
     store_validation_run_completion_in_big_query,
+)
+from recidiviz.validation.validation_result_for_storage import (
+    ValidationResultForStorage,
 )
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
@@ -112,6 +114,7 @@ def execute_validation_request(
     runtime_sec = int((end_datetime - start_datetime).total_seconds())
 
     store_validation_run_completion_in_big_query(
+        state_code=state_code,
         validation_run_id=run_id,
         num_validations_run=num_validations_run,
         validations_runtime_sec=runtime_sec,
