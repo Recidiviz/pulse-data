@@ -28,10 +28,11 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
-from recidiviz.source_tables.collect_all_source_table_configs import (
-    collect_externally_managed_source_table_collections,
+from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
+    build_source_table_repository_for_externally_managed_tables,
 )
 from recidiviz.source_tables.source_table_config import SourceTableConfig
+from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.types import assert_type
 
@@ -154,22 +155,18 @@ def get_large_experiment_assignments_source_table_config() -> SourceTableConfig:
         dataset_id=MANUALLY_UPDATED_SOURCE_TABLES_DATASET,
         table_id="experiment_assignments_large",
     )
-    for collection in collect_externally_managed_source_table_collections(
-        project_id=None
-    ):
-        for config in collection.source_tables:
-            if config.address != table_address:
-                continue
-            for col in _REFERENCED_EXPERIMENT_ASSIGNMENTS_COLUMNS:
-                if not config.has_column(col):
-                    raise ValueError(
-                        f"Expected [{config.address.to_str()}] to have column [{col}]"
-                    )
-            return config
 
-    raise ValueError(
-        f"Could not find source table config for [{table_address.to_str()}]."
+    source_table_repository: SourceTableRepository = (
+        build_source_table_repository_for_externally_managed_tables(project_id=None)
     )
+
+    config = source_table_repository.build_config(table_address)
+    for col in _REFERENCED_EXPERIMENT_ASSIGNMENTS_COLUMNS:
+        if not config.has_column(col):
+            raise ValueError(
+                f"Expected [{config.address.to_str()}] to have column [{col}]"
+            )
+    return config
 
 
 def upload_assignments_to_gbq(

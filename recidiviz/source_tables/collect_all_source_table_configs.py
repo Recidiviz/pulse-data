@@ -15,20 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains utilities to collect and build source tables"""
-import glob
-import os.path
 from functools import cache
-from itertools import groupby
 from types import ModuleType
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
-from recidiviz.calculator.query.state.dataset_config import (
-    AUTH0_EVENTS,
-    AUTH0_PROD_ACTION_LOGS,
-    EXPORT_ARCHIVES_DATASET,
-    PULSE_DASHBOARD_SEGMENT_DATASET,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
@@ -52,8 +43,8 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.source_tables.dataflow_output_table_collector import (
     get_dataflow_output_source_table_collections,
 )
-from recidiviz.source_tables.externally_managed.datasets import (
-    EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS,
+from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
+    collect_externally_managed_source_table_collections,
 )
 from recidiviz.source_tables.sentencing_source_table_collection import (
     collect_sentencing_source_tables,
@@ -63,8 +54,6 @@ from recidiviz.source_tables.source_table_config import (
     SchemaTypeSourceTableLabel,
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
-    SourceTableCollectionValidationConfig,
-    SourceTableConfig,
     SourceTableLabel,
     StateSpecificSourceTableLabel,
 )
@@ -199,67 +188,6 @@ def _collect_cloudsql_mirror_source_table_collections() -> list[SourceTableColle
             )
 
     return results
-
-
-def collect_externally_managed_source_table_collections(
-    project_id: str | None,
-) -> list[SourceTableCollection]:
-    """
-    Collects all externally managed source tables.
-    We declare datasets here where we are only interested in validating a subset of
-    fields.
-
-    If project_id is None, returns all source tables that exist in any project.
-    Otherwise, only returns the collections that are deployed to the given project.
-    """
-    yaml_paths = glob.glob(
-        os.path.join(os.path.dirname(__file__), "externally_managed/**/*.yaml")
-    )
-
-    def _source_table_sorter(source_table: SourceTableConfig) -> str:
-        return source_table.address.dataset_id
-
-    source_tables_by_dataset = groupby(
-        sorted(
-            [SourceTableConfig.from_file(yaml_path) for yaml_path in yaml_paths],
-            key=_source_table_sorter,
-        ),
-        key=_source_table_sorter,
-    )
-
-    # "required" columns here means they are required by the view graph and should be
-    # validated that the fields exist in BigQuery, not the column mode (REQUIRED vs NULLABLE)
-    datasets_to_validation_config = {
-        AUTH0_EVENTS: SourceTableCollectionValidationConfig(
-            only_check_required_columns=True,
-        ),
-        AUTH0_PROD_ACTION_LOGS: SourceTableCollectionValidationConfig(
-            only_check_required_columns=True,
-        ),
-        PULSE_DASHBOARD_SEGMENT_DATASET: SourceTableCollectionValidationConfig(
-            only_check_required_columns=True,
-        ),
-        EXPORT_ARCHIVES_DATASET: SourceTableCollectionValidationConfig(
-            only_check_required_columns=True,
-        ),
-    }
-
-    return [
-        SourceTableCollection(
-            dataset_id=dataset_id,
-            update_config=SourceTableCollectionUpdateConfig.unmanaged(),
-            validation_config=datasets_to_validation_config.get(dataset_id, None),
-            source_tables_by_address={
-                source_table.address: source_table
-                for source_table in source_tables
-                # Filter project-specific source tables
-                if (not project_id or not source_table.deployed_projects)
-                or (project_id in source_table.deployed_projects)
-            },
-            description=EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS[dataset_id],
-        )
-        for dataset_id, source_tables in source_tables_by_dataset
-    ]
 
 
 @cache

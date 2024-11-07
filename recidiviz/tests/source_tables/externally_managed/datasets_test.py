@@ -17,7 +17,7 @@
 """Tests for recidiviz/source_tables/externally_managed/datasets.py"""
 import unittest
 
-from recidiviz.source_tables.collect_all_source_table_configs import (
+from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
     collect_externally_managed_source_table_collections,
 )
 from recidiviz.source_tables.externally_managed.datasets import (
