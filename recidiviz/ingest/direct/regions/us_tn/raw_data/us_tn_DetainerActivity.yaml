@@ -39,6 +39,10 @@ columns:
   - name: HearingDecision
     description: |-
       The decision on a hearing held for a person  in the detainer process.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: FormMailDate
     description: |-
       This is the date that a detainer form is mailed.

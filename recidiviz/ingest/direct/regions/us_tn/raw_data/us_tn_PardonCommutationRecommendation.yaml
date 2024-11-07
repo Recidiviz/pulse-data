@@ -43,15 +43,24 @@ columns:
   - name: ParoleCondition2
     description: |-
       An abbreviation representing an condition for parole.
-    known_values: []
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/7/24, this column is entirely null.
   - name: ParoleCondition3
     description: |-
       An abbreviation representing an condition for parole.
-    known_values: []
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/7/24, this column is entirely null.
   - name: ParoleCondition4
     description: |-
       An abbreviation representing an condition for parole.
-    known_values: []
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/7/24, this column is entirely null.
   - name: Comments
     is_pii: True
     description: |-

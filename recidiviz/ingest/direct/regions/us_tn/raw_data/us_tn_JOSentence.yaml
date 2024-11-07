@@ -134,20 +134,34 @@ columns:
   - name: Period
     description: |-
       Text field for displaying the decode of the period of conflict codes.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: LifeDeathHabitual
     description: |-
       Indicator to tell if a person  was sentenced on the judgment order to a life or death sentence.
     known_values:
       - value: D
-        description: Death. The person will be executed. There will be no calculations of a potential release date.
+        description:
+          Death. The person will be executed. There will be no calculations of a
+          potential release date.
       - value: H
-        description: Habitual. This is an old law and is a deprecated value. It is equivalent to life.
+        description:
+          Habitual. This is an old law and is a deprecated value. It is
+          equivalent to life.
       - value: L
-        description: Life sentence. There be calculations of a potential release date because they might be released to parole.
+        description:
+          Life sentence. There be calculations of a potential release date
+          because they might be released to parole.
       - value: M
-        description: Minimum of 25 years in prison before parole. This determines the person's release eligility date.
+        description:
+          Minimum of 25 years in prison before parole. This determines the
+          person's release eligility date.
       - value: W
-        description: Life sentence without parole. There will be no calculations of a potential release date.
+        description:
+          Life sentence without parole. There will be no calculations of a
+          potential release date.
   - name: UnpaidCommunityServiceHours
     description: |-
       The number of hours of unpaid community service of a person  according to the judgment order.

@@ -74,9 +74,17 @@ columns:
   - name: UnitID
     description: |-
       A unique identifier assigned to a particular unit within an institution.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: RoomID
     description: |-
       The room number or identifier for the scheduled room assignment.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: WorkArea
     description: |-
       This is the code for the work area that an inmate reports to fora class or a job.
@@ -88,6 +96,10 @@ columns:
     field_type: datetime
     description: |-
       The last previous date on which an audit is performed on a job.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: PayRateAmount
     description: |-
       Rate of Pay
