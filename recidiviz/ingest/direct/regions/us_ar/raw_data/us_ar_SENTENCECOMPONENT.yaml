@@ -209,6 +209,9 @@ columns:
     description: |-
       Official version of crime associated with sentence
     is_pii: True
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-02-01T21:49:39Z
   - name: DATEFIRSTCREATED
     description: |-
       Date first created
@@ -277,9 +280,15 @@ columns:
     description: |-
       Alternative release date
     field_type: datetime
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-02-01T21:49:39Z
   - name: ALTRELEASETYPE
     description: |-
       Alternative release type
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-02-01T21:49:39Z
 table_relationships:
   - foreign_table: OFFENDERPROFILE
     join_logic:
