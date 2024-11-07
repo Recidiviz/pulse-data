@@ -546,6 +546,7 @@ class DirectIngestViewQueryBuilder:
                     raw_data_source_instance=config.raw_data_source_instance,
                     raw_file_config=raw_table_dependency_config.raw_file_config,
                     regions_module=self._region_module,
+                    filter_to_only_documented_columns=True,
                 )
                 .table_for_query.to_project_specific_address(project_id)
                 .select_query()

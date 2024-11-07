@@ -174,7 +174,11 @@ def state_specific_deployed_views_without_state_code_columns(
         for instance in DirectIngestInstance
         for state_code in get_existing_direct_ingest_states()
         for latest_view_builder in DirectIngestRawDataTableLatestViewCollector(
-            region_code=state_code.value, raw_data_source_instance=instance
+            region_code=state_code.value,
+            raw_data_source_instance=instance,
+            # Regardless of whether a raw data table is properly documented, do
+            # not ingest.
+            filter_to_documented=False,
         ).collect_view_builders()
         if (
             STATE_CODE_COLUMN_NAME

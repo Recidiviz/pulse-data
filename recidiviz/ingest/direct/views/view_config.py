@@ -31,7 +31,7 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
 # In the past, this was a constant, but that caused this to actually execute upon
 # import, which was slowing down the endpoint documentation generator. Don't change
 # it (or the below function) back to a constant without profiling it first!
-def get_direct_ingest_view_builders() -> Sequence[BigQueryViewBuilder]:
+def get_direct_ingest_latest_view_builders_to_deploy() -> Sequence[BigQueryViewBuilder]:
     return list(
         itertools.chain.from_iterable(
             # This returns a list of DirectIngestRawTableLatestViewBuilder, one per raw
@@ -41,6 +41,9 @@ def get_direct_ingest_view_builders() -> Sequence[BigQueryViewBuilder]:
                 # We only deploy latest views for PRIMARY - views for SECONDARY can be
                 # loaded via a sandbox.
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                # Only views that have documented columns are loaded and can be
+                # referenced downstream.
+                filter_to_documented=True,
             ).collect_view_builders()
             for state_code in get_existing_direct_ingest_states()
         )
@@ -48,4 +51,4 @@ def get_direct_ingest_view_builders() -> Sequence[BigQueryViewBuilder]:
 
 
 def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
-    return get_direct_ingest_view_builders()
+    return get_direct_ingest_latest_view_builders_to_deploy()
