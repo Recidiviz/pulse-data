@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: dbo_EmploymentPeriod
+encoding: windows-1252
+separator: "‡"
+custom_line_terminator: "†"
+ignore_quotes: True
+file_description: |-
+  Table containing data about employment periods
+data_classification: source
+primary_key_cols:
+  - Parole_No
+  - Org_Name
+  - Effective_Start_Date
+columns:
+  - name: Person_Id
+    description: Person ID
+    is_pii: True
+  - name: Parole_No
+    description: Parole Number
+    field_type: person_external_id
+    external_id_type: US_PA_PBPP
+    is_pii: True
+  - name: Offender_Attribute_Value
+    description: Attribute value
+  - name: Offender_Attribute_Code
+    description: Attribute code
+  - name: Org_Name
+    description: Organization Name
+  - name: Effective_Start_Date
+    description: Effective Start Date
+    field_type: datetime
+  - name: Effective_End_Date
+    description: Effective End Date
+    field_type: datetime
