@@ -176,8 +176,22 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
               AND ic.state_code = t.state_code
               AND CURRENT_DATE('US/Eastern') 
                 BETWEEN t.start_date AND {nonnull_end_date_exclusive_clause('t.end_date_exclusive')} 
-        WHERE ic.state_code NOT IN ("US_ME", "US_MO", "US_TN")
+        WHERE ic.state_code NOT IN ("US_AZ", "US_ME", "US_MO", "US_TN")
         WINDOW w as (PARTITION BY ic.person_id)
+
+        UNION ALL
+
+        # TODO(#33748): migrate this to the v2 projected end date view
+        SELECT
+            ic.*,
+            sed_date AS release_date,
+            CAST(NULL AS DATE) AS us_tn_facility_admission_date,
+        FROM
+            incarceration_cases ic
+        LEFT JOIN `{{project_id}}.workflows_views.us_az_resident_metadata_materialized` t
+        USING
+            (state_code, person_id)
+        WHERE ic.state_code = "US_AZ"
     ),
 """
 
