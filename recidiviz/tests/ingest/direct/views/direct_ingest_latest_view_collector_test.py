@@ -59,6 +59,27 @@ SELECT col1, col2
 FROM filtered_rows
 """
 
+NON_HISTORICAL_LATEST_VIEW_QUERY_WITH_UNDOCUMENTED = """
+WITH filtered_rows AS (
+    SELECT
+        * EXCEPT (recency_rank)
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY col1, col2
+                               ORDER BY update_datetime DESC, CAST(seq_num AS INT64)) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.table_name`
+        
+    ) a
+    WHERE
+        recency_rank = 1
+        AND is_deleted = False
+)
+SELECT col1, col2, undocumented_col
+FROM filtered_rows
+"""
+
 
 HISTORICAL_LATEST_VIEW_QUERY = """
 WITH max_update_datetime AS (
@@ -116,6 +137,12 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                     is_pii=False,
                     description="col2 description",
                 ),
+                RawTableColumnInfo(
+                    name="undocumented_col",
+                    field_type=RawTableColumnFieldType.STRING,
+                    is_pii=False,
+                    description=None,
+                ),
             ],
             supplemental_order_by_clause="CAST(seq_num AS INT64)",
             encoding="any-encoding",
@@ -139,6 +166,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=self.raw_file_config,
             regions_module=fake_regions,
+            filter_to_only_documented_columns=True,
         ).build(sandbox_context=None)
 
         self.assertEqual(self.project_id, view.project)
@@ -147,6 +175,30 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
         self.assertEqual("table_name_latest", view.view_id)
 
         self.assertEqual(NON_HISTORICAL_LATEST_VIEW_QUERY, view.view_query)
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_latest`",
+            view.select_query,
+        )
+        self.assertTrue(view.should_deploy())
+
+    def test_build_latest_view_with_undocumented(self) -> None:
+        view = DirectIngestRawDataTableLatestViewBuilder(
+            region_code="us_xx",
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
+            raw_file_config=self.raw_file_config,
+            regions_module=fake_regions,
+            # INCLUDE ALL COLUMNS, INCLUDING UNDOCUMENTED ONES
+            filter_to_only_documented_columns=False,
+        ).build(sandbox_context=None)
+
+        self.assertEqual(self.project_id, view.project)
+        self.assertEqual("us_xx_raw_data_up_to_date_views", view.dataset_id)
+        self.assertEqual("table_name_latest", view.table_id)
+        self.assertEqual("table_name_latest", view.view_id)
+
+        self.assertEqual(
+            NON_HISTORICAL_LATEST_VIEW_QUERY_WITH_UNDOCUMENTED, view.view_query
+        )
         self.assertEqual(
             "SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_latest`",
             view.select_query,
@@ -162,6 +214,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=raw_file_config,
             regions_module=fake_regions,
+            filter_to_only_documented_columns=True,
         ).build(sandbox_context=None)
 
         self.assertEqual(self.project_id, view.project)
@@ -196,6 +249,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_file_config=raw_file_config,
                 regions_module=fake_regions,
+                filter_to_only_documented_columns=True,
             ).build(sandbox_context=None)
 
     def test_build_primary_keys_nonempty_no_throw(self) -> None:
@@ -210,6 +264,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=raw_file_config,
             regions_module=fake_regions,
+            filter_to_only_documented_columns=True,
         ).build(sandbox_context=None)
 
     def test_build_primary_keys_throw(self) -> None:
@@ -253,6 +308,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_file_config=raw_file_config,
                 regions_module=fake_regions,
+                filter_to_only_documented_columns=True,
             ).build(sandbox_context=None)
 
     def test_build_no_columns_throws(self) -> None:
@@ -272,6 +328,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_file_config=raw_file_config,
                 regions_module=fake_regions,
+                filter_to_only_documented_columns=True,
             ).build(sandbox_context=None)
 
 
@@ -292,6 +349,7 @@ class DirectIngestRawDataTableLatestViewCollectorTest(unittest.TestCase):
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
             regions_module=fake_regions,
+            filter_to_documented=True,
         )
 
         builders = collector.collect_view_builders()
@@ -314,10 +372,54 @@ class DirectIngestRawDataTableLatestViewCollectorTest(unittest.TestCase):
             [b.view_id for b in builders],
         )
 
+    def test_collect_latest_view_builders_include_undocumented(self) -> None:
+        collector = DirectIngestRawDataTableLatestViewCollector(
+            StateCode.US_XX.value,
+            DirectIngestInstance.PRIMARY,
+            regions_module=fake_regions,
+            filter_to_documented=False,
+        )
+
+        builders = collector.collect_view_builders()
+        self.assertCountEqual(
+            [
+                "file_tag_first_latest",
+                "file_tag_second_latest",
+                "multipleColPrimaryKeyHistorical_latest",
+                "singlePrimaryKey_latest",
+                "tagBasicData_latest",
+                "tagCustomLineTerminatorNonUTF8_latest",
+                "tagDoubleDaggerWINDOWS1252_latest",
+                "tagFullHistoricalExport_latest",
+                "tagInvalidCharacters_latest",
+                "tagMoreBasicData_latest",
+                "tagNormalizationConflict_latest",
+                "tagPipeSeparatedNonUTF8_latest",
+                "tagColumnRenamed_latest",
+                "tagColCapsDoNotMatchConfig_latest",
+                "tagRowMissingColumns_latest",
+                "tagInvalidFileConfigHeaders_latest",
+                "tagRowExtraColumns_latest",
+                "tagMissingColumnsDefined_latest",
+                "tagFileConfigHeaders_latest",
+                "tagOneAllNullRow_latest",
+                "tagChunkedFileTwo_latest",
+                "tagColumnMissingInRawData_latest",
+                "tagChunkedFile_latest",
+                "tagOneAllNullRowTwoGoodRows_latest",
+                "tagColumnsMissing_latest",
+                "tagFileConfigHeadersUnexpectedHeader_latest",
+                "tagFileConfigCustomDatetimeSql_latest",
+            ],
+            [b.view_id for b in builders],
+        )
+
     def test_collect_latest_view_builders_all(self) -> None:
         for state_code in get_existing_direct_ingest_states():
             collector = DirectIngestRawDataTableLatestViewCollector(
-                state_code.value, DirectIngestInstance.PRIMARY
+                state_code.value,
+                DirectIngestInstance.PRIMARY,
+                filter_to_documented=True,
             )
 
             # Just make sure we don't crash

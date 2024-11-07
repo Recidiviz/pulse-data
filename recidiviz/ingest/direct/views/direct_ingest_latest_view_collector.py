@@ -48,6 +48,7 @@ class DirectIngestRawDataTableLatestViewBuilder(BigQueryViewBuilder):
         raw_data_source_instance: DirectIngestInstance,
         raw_file_config: DirectIngestRawFileConfig,
         regions_module: ModuleType,
+        filter_to_only_documented_columns: bool,
     ):
         self.raw_data_source_instance = raw_data_source_instance
         self.region_code = region_code
@@ -69,6 +70,20 @@ class DirectIngestRawDataTableLatestViewBuilder(BigQueryViewBuilder):
             state_code=StateCode(region_code.upper()),
             instance=self.raw_data_source_instance,
             sandbox_dataset_prefix=None,
+        )
+        self.filter_to_only_documented_columns = filter_to_only_documented_columns
+
+    def has_valid_query(self) -> bool:
+        """Returns whether the raw file configuration has enough information for this
+        view to produce a SQL query that will compile.
+
+        For files that are non-historical (incremental), we cannot build a query without
+        primary keys defined because we need primary keys to select the most recent
+        valid version of each row.
+        """
+        return (
+            bool(self.raw_file_config.primary_key_cols)
+            or self.raw_file_config.always_historical_export
         )
 
     def _build(
@@ -95,7 +110,7 @@ class DirectIngestRawDataTableLatestViewBuilder(BigQueryViewBuilder):
                 normalized_column_values=True,
                 raw_data_datetime_upper_bound=None,
                 filter_to_latest=True,
-                filter_to_only_documented_columns=True,
+                filter_to_only_documented_columns=self.filter_to_only_documented_columns,
             )
             # Remove the project id values from the query and replace with template
             # params so we can enforce that no BigQueryView view_query_template have
@@ -122,10 +137,12 @@ class DirectIngestRawDataTableLatestViewCollector(
         self,
         region_code: str,
         raw_data_source_instance: DirectIngestInstance,
+        filter_to_documented: bool,
         regions_module: ModuleType = regions,
     ):
         self.region_code = region_code
         self.raw_data_source_instance = raw_data_source_instance
+        self.filter_to_documented = filter_to_documented
         self.regions_module = regions_module
 
     def collect_view_builders(self) -> List[DirectIngestRawDataTableLatestViewBuilder]:
@@ -137,7 +154,7 @@ class DirectIngestRawDataTableLatestViewCollector(
         return [
             self._builder_for_config(config)
             for config in raw_file_configs.values()
-            if not config.is_undocumented
+            if not config.is_undocumented or not self.filter_to_documented
         ]
 
     def _builder_for_config(
@@ -148,4 +165,5 @@ class DirectIngestRawDataTableLatestViewCollector(
             raw_file_config=config,
             raw_data_source_instance=self.raw_data_source_instance,
             regions_module=self.regions_module,
+            filter_to_only_documented_columns=self.filter_to_documented,
         )

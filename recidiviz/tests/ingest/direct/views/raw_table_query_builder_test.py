@@ -526,7 +526,7 @@ WITH filtered_rows AS (
         recency_rank = 1
         AND is_deleted = False
 )
-SELECT col1, 
+SELECT col1, undocumented_column_2, 
         COALESCE(
             CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
             CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),

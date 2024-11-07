@@ -271,7 +271,7 @@ class RawTableQueryBuilder:
         non_datetime_cols_to_format = (
             raw_file_config.documented_non_datetime_cols
             if filter_to_only_documented_columns
-            else raw_file_config.documented_non_datetime_cols
+            else raw_file_config.non_datetime_cols
         )
         non_datetime_col_str = ", ".join(non_datetime_cols_to_format)
         datetime_cols_to_format = (
