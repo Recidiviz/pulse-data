@@ -475,29 +475,28 @@ def sftp_dag() -> None:
                         )
 
                     # --- raw data resource lock acquisition -------------------------------
-                    with TaskGroup("acquire_resource_locks") as acquire_resource_locks:
-                        acquire_locks = CloudSqlQueryOperator(
-                            task_id="acquire_raw_data_resource_locks",
-                            cloud_sql_conn_id=operations_cloud_sql_conn_id,
-                            query_generator=AcquireRawDataResourceLockSqlQueryGenerator(
-                                region_code=state_code.value,
-                                raw_data_instance=DirectIngestInstance.PRIMARY,
-                                resources=SFTP_REQUIRED_RESOURCES,
-                                lock_description=SFTP_RESOURCE_LOCK_DESCRIPTION,
-                                lock_ttl_seconds=SFTP_RESOURCE_LOCK_TTL_SECONDS,
-                            ),
-                        )
+                    acquire_locks = CloudSqlQueryOperator(
+                        task_id="acquire_raw_data_resource_locks",
+                        cloud_sql_conn_id=operations_cloud_sql_conn_id,
+                        query_generator=AcquireRawDataResourceLockSqlQueryGenerator(
+                            region_code=state_code.value,
+                            raw_data_instance=DirectIngestInstance.PRIMARY,
+                            resources=SFTP_REQUIRED_RESOURCES,
+                            lock_description=SFTP_RESOURCE_LOCK_DESCRIPTION,
+                            lock_ttl_seconds=SFTP_RESOURCE_LOCK_TTL_SECONDS,
+                        ),
+                    )
 
-                        ensure_acquired_locks = successfully_acquired_all_locks(
-                            acquire_locks.output, SFTP_REQUIRED_RESOURCES
-                        )
+                    ensure_acquired_locks = successfully_acquired_all_locks(
+                        acquire_locks.output, SFTP_REQUIRED_RESOURCES
+                    )
 
                     acquire_locks >> ensure_acquired_locks
 
                     # --- acquire permission w/ the correct infra --------------------------
 
                     acquire_permission_branch, _ = create_branch_by_bool(
-                        branch_if_true=acquire_resource_locks,
+                        branch_if_true=[acquire_locks, ensure_acquired_locks],
                         branch_if_false=pause_ingest_queues,
                         bool_value=is_raw_data_dag_enabled_in_primary(state_code),
                     )
