@@ -35,44 +35,63 @@ columns:
     description: |-
       An abbreviation representing a level of custody of a person  as determined by the classification committee.
     # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: MED
+      - value: MIR
+      - value: MID
+      - value: MIT
+      - value: CLS
+      - value: MAX
   - name: NumberOffenderVisitor
     description: |-
       The number of visitors entertained by a person.
   - name: EscapeFlag
     description: |-
-      Indicator for a person  that tells whether the person is escaped.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+      Indicator for a person that tells whether the person is escaped.
+    known_values:
+      - value: Y
+        description: "Yes, they have escaped"
+      - value: N
+        description: "No, they have not escaped"
   - name: EscapeHistoryFlag
     description: |-
-      Indicator for a person  that tells whether the person has a history of escaping.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+      Indicator for a person that tells whether the person has a history of escaping.
+    known_values:
+      - value: Y
+        description: "Yes, they have a history of escaping"
+      - value: N
+        description: "No, they do not have a history of escaping"
   - name: Jurisdication
     description: |-
-      The code for the jurisdiction in which a person  is serving his sentence.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+      The code for the jurisdiction in which a person is serving their sentence.
   - name: ArchiveDate
     field_type: datetime
     description: |-
-      The date on which a person  and his related tables have been archived to tape.
+      The date on which a person and their related tables have been archived to tape.
   - name: AbscondedParoleFlag
     description: |-
-      Indicator for a person  that tells whether the person has absconded from parole.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+      Indicator for a person that tells whether the person has absconded from parole.
+    known_values:
+      - value: Y
+        description: "Yes, they have absconded from parole"
+      - value: N
+        description: "No, they have not absconded from parole"
   - name: AbscondedProbationFlag
     description: |-
-      Indicator for a person  that tells whether the person has absconded from probation.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+      Indicator for a person that tells whether the person has absconded from probation.
+    known_values:
+      - value: Y
+        description: "Yes, they have absconded from probation"
+      - value: N
+        description: "No, they have not absconded from probation"
   - name: AbscondedCommunityCorrectionFlag
     description: |-
       Indicator for a person  that tells whether the person has absconded from community corrections.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: Y
+        description: "Yes, they have absconded from community corrections"
+      - value: N
+        description: "No, they have not absconded from community corrections"
   - name: ParoleOfficeID
     description: |-
       This identifies a parole office. Parole offices are a subset of all sites.
