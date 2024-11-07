@@ -97,6 +97,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
     ),
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_AZ,
+        opportunity_type="usAzReleaseToDTP",
+        experiment_id="US_AZ_RELEASE_TO_DTP_WORKFLOWS",
+        opportunity_record_view_name="us_az_approaching_acis_or_recidiviz_dtp_request_record_materialized",
+        task_completion_event=TaskCompletionEventType.EARLY_RELEASE_NOT_OVERDUE,
+        source_filename="us_az_approaching_acis_or_recidiviz_dtp_request_record.json",
+        export_collection_name="US_AZ-DTPReferrals",
+        opportunity_type_path_str="DTP",
+        person_record_type=PersonRecordType.RESIDENT,
+    ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_AZ,
         opportunity_type="usAzReleaseToTPR",
         experiment_id="US_AZ_RELEASE_TO_TPR_WORKFLOWS",
         opportunity_record_view_name="us_az_approaching_acis_or_recidiviz_tpr_request_record_materialized",
