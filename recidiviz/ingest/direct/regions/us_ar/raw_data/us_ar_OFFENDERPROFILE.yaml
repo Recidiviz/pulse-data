@@ -61,10 +61,16 @@ columns:
   - name: JUSTICEXCHANGENOTIFICATION
     description: |-
       Justice exchange notification
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-11-09T00:00:00Z
   - name: JUSTICEXCHGNOTIFYDATE
     description: |-
       Justice exchange notify date
     field_type: datetime
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-11-09T00:00:00Z
   - name: SEXOFFNRISKLEVEL
     description: |-
       Sex offender risk level

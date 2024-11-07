@@ -179,6 +179,9 @@ columns:
     description: |-
       Common ID
     is_pii: True
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-11-09T00:00:00Z
   - name: PERSONCOMMENTS
     description: |-
       Comments
