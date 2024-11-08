@@ -563,6 +563,8 @@ columns:
         description: License Professional Counselor
       - value: ANM
         description: Social Worker
+      - value: ANN
+        description: TODO(#34880) Document this field.
       - value: ANO
         description: Act 33 Notices
       - value: ANP
@@ -683,6 +685,8 @@ columns:
         description: Public Information Specialist
       - value: ATX
         description: Accountant I
+      - value: AU3
+        description: TODO(#34880) Document this field.
       - value: AV1
         description: PREA Chaplain
       - value: AV2
@@ -739,6 +743,8 @@ columns:
         description: Governor
       - value: B11
         description: Governor's Staff
+      - value: B12
+        description: TODO(#34880) Document this field.
       - value: B20
         description: Offsite H/S Medical Staff
       - value: B30
@@ -975,10 +981,12 @@ columns:
         description: Volunteer
       - value: F02
         description: Religious Volunteer
-      - value: nan
-        description: Not Applicable
+      - value: N/A
+        description: TODO(#34880) Document this field.
       - value: P07
         description: Officer
+      - value: nan
+        description: Not Applicable
   - name: PARTYRELEND
     description: |-
       End of relationship
@@ -1032,18 +1040,32 @@ columns:
     known_values:
       - value: "1"
         description: ACC Parole/Probation Area Supv
+      - value: "01"
+        description: TODO(#34880) Document this field.
       - value: "2"
         description: ACC Parole/Probation Officer
+      - value: "02"
+        description: TODO(#34880) Document this field.
       - value: "3"
         description: ACC Work Program Advisor
+      - value: "03"
+        description: TODO(#34880) Document this field.
       - value: "4"
         description: ACC Economic Sanction Officer
+      - value: "04"
+        description: TODO(#34880) Document this field.
       - value: "5"
         description: ACC Intake Officr/Fld Clerical
+      - value: "05"
+        description: TODO(#34880) Document this field.
       - value: "6"
         description: ACC Other Fld Oper Professionl
+      - value: "06"
+        description: TODO(#34880) Document this field.
       - value: "7"
         description: CCC Staff w/Regular Contact
+      - value: "07"
+        description: TODO(#34880) Document this field.
       - value: "8"
         description: CCC Staff w/Minimum Contact
       - value: "9"
@@ -1081,20 +1103,36 @@ columns:
     known_values:
       - value: "1"
         description: Son
+      - value: "01"
+        description: TODO(#34880) Document this field.
       - value: "2"
         description: Son-in-law
+      - value: "02"
+        description: TODO(#34880) Document this field.
       - value: "3"
         description: Step Son
+      - value: "03"
+        description: TODO(#34880) Document this field.
       - value: "4"
         description: Grandson
+      - value: "04"
+        description: TODO(#34880) Document this field.
       - value: "5"
         description: Daughter
+      - value: "05"
+        description: TODO(#34880) Document this field.
       - value: "6"
         description: Daughter-in-law
+      - value: "06"
+        description: TODO(#34880) Document this field.
       - value: "7"
         description: Step Daughter
+      - value: "07"
+        description: TODO(#34880) Document this field.
       - value: "8"
         description: Granddaughter
+      - value: "08"
+        description: TODO(#34880) Document this field.
       - value: "10"
         description: Nephew
       - value: "11"
@@ -1183,6 +1221,30 @@ columns:
         description: UM Follow Up in Progress
       - value: X
         description: Cancelled Appointment
+      - value: Y4
+        description: TODO(#34880) Document this field.
+      - value: Y6
+        description: TODO(#34880) Document this field.
+      - value: Z0
+        description: TODO(#34880) Document this field.
+      - value: Z1
+        description: TODO(#34880) Document this field.
+      - value: Z3
+        description: TODO(#34880) Document this field.
+      - value: Z5
+        description: TODO(#34880) Document this field.
+      - value: Z6
+        description: TODO(#34880) Document this field.
+      - value: Z7
+        description: TODO(#34880) Document this field.
+      - value: ZC
+        description: TODO(#34880) Document this field.
+      - value: ZD
+        description: TODO(#34880) Document this field.
+      - value: ZF
+        description: TODO(#34880) Document this field.
+      - value: ZU
+        description: TODO(#34880) Document this field.
   - name: REASONCODE
     description: |-
       Reason code

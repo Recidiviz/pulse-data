@@ -51,6 +51,12 @@ columns:
         description: Warrant - Act 378
       - value: W814
         description: Warrant - Act 814
+      - value: WABS
+        description: TODO(#34880) Document this field.
+      - value: WDEL
+        description: TODO(#34880) Document this field.
+      - value: WTEC
+        description: TODO(#34880) Document this field.
   - name: DETAINERREASON
     description: |-
       Detainer reason

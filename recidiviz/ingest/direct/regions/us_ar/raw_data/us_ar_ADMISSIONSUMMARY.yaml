@@ -75,6 +75,8 @@ columns:
         description: On Fast Track I
       - value: "2"
         description: On Fast Track II
+      - value: "3"
+        description: TODO(#34880) Document this field.
       - value: "9"
         description: Unknown
       - value: A

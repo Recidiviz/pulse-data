@@ -64,18 +64,18 @@ columns:
     description: |-
       OFFENDER'S RACE CODE
     known_values:
-      - value: C
-        description: Cuban
-      - value: M
-        description: Mexican
       - value: A
         description: Asian
       - value: B
         description: Black
+      - value: C
+        description: Cuban
       - value: H
         description: Hispanic
       - value: I
         description: NA Indian
+      - value: M
+        description: Mexican
       - value: "N"
         description: Native Hawaiian or Pacific Isl
       - value: O
@@ -330,6 +330,8 @@ columns:
     description: |-
       STG AFFILIATION CODE
     known_values:
+      - value: "0"
+        description: TODO(#34880) Document this field.
       - value: "1"
         description: Member
       - value: "2"

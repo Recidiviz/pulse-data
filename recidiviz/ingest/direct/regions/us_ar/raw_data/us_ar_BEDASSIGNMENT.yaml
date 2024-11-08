@@ -112,8 +112,14 @@ columns:
         description: Protection
       - value: R
         description: Requested by Inmate
+      - value: S
+        description: TODO(#34880) Document this field.
       - value: T
         description: Treatment
+      - value: U
+        description: TODO(#34880) Document this field.
+      - value: X
+        description: TODO(#34880) Document this field.
   - name: BEDASSIGNAPPRBY
     description: |-
       Staff approving bed assignment
@@ -128,6 +134,8 @@ columns:
         description: Pending Assignment
       - value: U
         description: Unassigned
+      - value: V
+        description: TODO(#34880) Document this field.
       - value: X
         description: Void
   - name: INMBEDSTATUSDATE
