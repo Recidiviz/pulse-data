@@ -79,6 +79,7 @@ def generate_config(
             }
         ],
         notifications=[],
+        zero_grants_tooltip="example tooltip",
     )
 
 
@@ -339,6 +340,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                 }
             ],
             "notifications": config_fields.notifications,
+            "zeroGrantsTooltip": config_fields.zero_grants_tooltip,
         }
 
         mock_querier.return_value.add_config.return_value = TEST_CONFIG_ID
@@ -384,6 +386,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                 ],
                 notifications=req_body["notifications"],
                 staging_id=None,
+                zero_grants_tooltip=req_body["zeroGrantsTooltip"],
             )
 
     ########
@@ -594,6 +597,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                             "featureVariant": "feature_variant",
                             "stagingId": TEST_CONFIG_ID,
                             "createdBy": "email@fake.com",
+                            "zeroGrantsTooltip": "example tooltip",
                         }
                     ),
                 ],

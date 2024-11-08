@@ -115,6 +115,7 @@ def make_add_config_arguments(
         "tab_groups": None,
         "compare_by": None,
         "notifications": [],
+        "zero_grants_tooltip": "zero grants tooltip",
     }
 
 
@@ -645,6 +646,7 @@ class TestWorkflowsQuerier(TestCase):
         self.assertEqual(actual.sidebar_components, deactivated.sidebar_components)  # type: ignore
         self.assertEqual(actual.tab_groups, deactivated.tab_groups)  # type: ignore
         self.assertEqual(actual.compare_by, deactivated.compare_by)  # type: ignore
+        self.assertEqual(actual.zero_grants_tooltip, deactivated.zero_grants_tooltip)  # type: ignore
 
     def test_activate_config_nonexistent(self) -> None:
         querier = WorkflowsQuerier(StateCode.US_ID)

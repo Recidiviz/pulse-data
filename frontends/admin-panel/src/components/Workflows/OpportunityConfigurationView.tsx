@@ -96,6 +96,9 @@ const OpportunityConfigurationSettings = ({
         <Form.Item label="Tooltip Eligibility Text">
           <span className="ant-form-text">{config.tooltipEligibilityText}</span>
         </Form.Item>
+        <Form.Item label="Zero Grants Tooltip">
+          <span className="ant-form-text">{config.zeroGrantsTooltip}</span>
+        </Form.Item>
         <Form.Item label="Call To Action">
           <span className="ant-form-text">{config.callToAction}</span>
         </Form.Item>

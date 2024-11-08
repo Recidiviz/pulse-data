@@ -41,6 +41,7 @@ const OPTIONAL_FIELDS: (keyof z.input<
   "denialText",
   "eligibilityDateText",
   "tooltipEligibilityText",
+  "zeroGrantsTooltip",
 ];
 
 const OpportunityConfigurationForm = ({
@@ -140,6 +141,9 @@ const OpportunityConfigurationForm = ({
         <Checkbox />
       </Form.Item>
       <Form.Item label="Tooltip Eligibility Text" name="tooltipEligibilityText">
+        <Input />
+      </Form.Item>
+      <Form.Item label="Zero Grants Tooltip" name="zeroGrantsTooltip">
         <Input />
       </Form.Item>
       <Form.Item

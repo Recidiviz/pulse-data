@@ -222,6 +222,7 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     tab_groups = fields.Dict(fields.Str(), fields.List(fields.Str()), required=False)
     compare_by = fields.List(fields.Nested(SortParamSchema()), required=False)
     notifications = fields.List(fields.Nested(NotificationSchema()))
+    zero_grants_tooltip = fields.Str(required=False)
 
 
 class WorkflowsFullConfigSchema(WorkflowsConfigSchema):

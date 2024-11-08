@@ -165,6 +165,7 @@ class OpportunityConfigurationsAPI(MethodView):
             compare_by=body_args.get("compare_by"),
             notifications=body_args["notifications"],
             staging_id=body_args.get("staging_id"),
+            zero_grants_tooltip=body_args.get("zero_grants_tooltip"),
         )
         return new_config_id
 
