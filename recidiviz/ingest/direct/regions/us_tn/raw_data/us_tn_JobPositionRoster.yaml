@@ -45,6 +45,10 @@ columns:
     field_type: datetime
     description: |-
       The date a vocational or class assignment ends. The date a draw limit ends. Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/8/24, this only has one non-null value. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: MondayFlag
     description: |-
       The first day of the week with Sunday being the last.
