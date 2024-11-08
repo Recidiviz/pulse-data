@@ -14,6 +14,10 @@ columns:
     description: |-
       External id for a unique person from the Docstars system.
   - name: TIME_STAMP
+    update_history:
+      # TODO(#34922) Ensure this column is not being used anywhere and was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: CONTACT_CODE
     description: |-
       - Supervision officers can pick up to **6** contact codes (i.e. 1 value for `CONTACT_CODE`, and `C2-C6` all populated as well)<br>- **Face to Face** contacts are *only* placed in the `CONTACT_CODE` column<br>- The rest can be in C2→ C6<br>- You can have `C2-6`, without `CONTACT_CODE`:<br>- This can happen when another officer (who doesn’t have the supervisee on their caseload) logs that something happened and the associated office is not present<br>- Only a person who has a supervisee in their caseload can add an entry with an associated `CONTACT_CODE`.
@@ -23,7 +27,9 @@ columns:
       - value: HV
         description: Home Visit; going to the residence/current location
       - value: OO
-        description: Out of Office Visit; supervisee's workplace, public spot (i.e. park, mall)
+        description:
+          Out of Office Visit; supervisee's workplace, public spot (i.e. park,
+          mall)
       - value: OV
         description: Office Visit; At supervision officer's office
       - value: SG
@@ -97,20 +103,67 @@ columns:
     description: |-
       Additional sub-code for the kind of contact which occurred. Known values are same as those captured in CONTACT_CODE or C2
   - name: REMARKS
+    update_history:
+      # TODO(#34922) Ensure this column is not being used anywhere and was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: ALCO_POS
+    update_history:
+      # TODO(#34922) Ensure these column is not being used anywhere and was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: ALCO_NEG
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: COKE_POS
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: COKE_NEG
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: THC_POS
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: THC_NEG
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: OPIATE_POS
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: OPIATE_NEG
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: AMP_METH_POS
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: AMP_METH_NEG
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: SYNTHETIC_POS
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: SYNTHETIC_NEG
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: OTHER_POS
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: OTHER_NEG
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
   - name: CATEGORY
     description: |-
       The type of contact (i.e. Supervision, Recovery, etc.).
@@ -132,3 +185,7 @@ columns:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: LASTUPDATE
+    update_history:
+      # TODO(#34922) Ensure this column is not being used anywhere and was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2021-04-21T12:45:59.480761Z
