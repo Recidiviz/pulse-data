@@ -40,7 +40,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_arson_conviction,
     no_dangerous_crimes_against_children_conviction,
     no_domestic_violence_conviction,
-    no_drug_offense_conviction,
     no_dtp_denial_in_current_incarceration,
     no_dtp_removals_from_self_improvement_programs,
     no_major_violent_violation_during_incarceration,
@@ -50,6 +49,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_violent_conviction,
     not_previous_dtp_participant,
     not_serving_flat_sentence,
+    only_drug_offense_convictions,
     within_6_months_of_recidiviz_dtp_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -122,7 +122,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
             allowed_duplicate_reasons_keys=[],
         ),
         # b. Offenses
-        no_drug_offense_conviction.VIEW_BUILDER,  # TODO(#34802) Negate and fix
+        only_drug_offense_convictions.VIEW_BUILDER,
         no_domestic_violence_conviction.VIEW_BUILDER,
         no_sexual_exploitation_of_children_conviction.VIEW_BUILDER,
         no_violent_conviction.VIEW_BUILDER,
@@ -138,7 +138,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # d. Self improvement programs
         no_dtp_removals_from_self_improvement_programs.VIEW_BUILDER,
         # e. Time
-        # TODO(#34802): within_6_months_of_recidiviz_dtp_date.VIEW_BUILDER,
         within_6_months_of_recidiviz_dtp_date.VIEW_BUILDER,
     ],
     completion_event_builder=early_release_to_drug_program_not_overdue.VIEW_BUILDER,
