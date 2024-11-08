@@ -60,7 +60,6 @@ WORKFLOWS_CONFIGS_WITH_RESIDENTS = [
     if config.person_record_type == PersonRecordType.RESIDENT
 ]
 
-# TODO(#34231): Change the display ID for Arizona to be the US_AZ_ADC_NUMBER instead of the US_AZ_PERSON_ID.
 RESIDENT_RECORD_QUERY_TEMPLATE = f"""
     WITH
         {get_eligibility_ctes(WORKFLOWS_CONFIGS_WITH_RESIDENTS)},
