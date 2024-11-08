@@ -13,55 +13,54 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# ============================================================================
-"""Describes spans of time when someone is ineligible due to a current or
-past conviction for dangerous crimes against children"""
-
+# =============================================================================
+"""Defines a criteria span view that shows spans of time during which someone is
+    eligible or almost eligible for overdue for ACIS DTP"""
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.us_az_query_fragments import (
-    no_current_or_prior_convictions,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_AZ_NO_DANGEROUS_CRIMES_AGAINST_CHILDREN_CONVICTION"
+_CRITERIA_NAME = "US_AZ_ELIGIBLE_OR_ALMOST_ELIGIBLE_FOR_OVERDUE_FOR_ACIS_DTP"
 
-_DESCRIPTION = """Describes spans of time when someone is ineligible due to a current or
-past conviction for dangerous crimes against children"""
-
-_SEC_STATUTE = [
-    "13-604.01-NONE",  # DANG. CRIMES AG. CHILDREN
-]
-
-_QUERY_TEMPLATE = no_current_or_prior_convictions(
-    statute=_SEC_STATUTE, reasons_field_name="ineligible_offenses_crimes_ag_children"
-)
-
-_REASONS_FIELDS = [
-    ReasonsField(
-        name="ineligible_offenses_crimes_ag_children",
-        type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-        description="A list of ineligible offenses related to dangerous crimes against children",
-    )
-]
+_QUERY_TEMPLATE = """
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    NOT (is_eligible OR is_almost_eligible) AS meets_criteria,
+    TO_JSON(STRUCT(is_eligible AS is_eligible,
+                   is_almost_eligible AS is_almost_eligible)) AS reason,
+    is_eligible AS is_eligible,
+    is_almost_eligible AS is_almost_eligible
+FROM `{project_id}.{spans_dataset}.overdue_for_acis_dtp_request_materialized`
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_AZ,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        sessions_dataset=SESSIONS_DATASET,
+        spans_dataset="""task_eligibility_spans_us_az""",
+        reasons_fields=[
+            ReasonsField(
+                name="is_eligible",
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
+                description="Is this person eligible for overdue_for_acis_dtp?",
+            ),
+            ReasonsField(
+                name="is_almost_eligible",
+                type=bigquery.enums.StandardSqlTypeNames.BOOL,
+                description="Is this person almost_eligible for overdue_for_acis_dtp?",
+            ),
+        ],
         meets_criteria_default=True,
     )
 )

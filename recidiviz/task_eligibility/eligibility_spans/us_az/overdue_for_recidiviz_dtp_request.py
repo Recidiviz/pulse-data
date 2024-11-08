@@ -26,18 +26,30 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
     early_release_to_drug_program_not_overdue,
 )
+from recidiviz.task_eligibility.criteria.general import (
+    custody_level_is_minimum_or_medium,
+    no_nonviolent_incarceration_violation_within_6_months,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     acis_dtp_date_not_set,
+    acis_tpr_date_not_set,
     enrolled_in_functional_literacy,
+    is_us_citizen_or_legal_permanent_resident,
     meets_functional_literacy_dtp,
     no_active_felony_detainers,
+    no_arson_conviction,
+    no_dangerous_crimes_against_children_conviction,
     no_domestic_violence_conviction,
     no_drug_offense_conviction,
     no_dtp_denial_in_current_incarceration,
     no_dtp_removals_from_self_improvement_programs,
+    no_major_violent_violation_during_incarceration,
     no_sexual_exploitation_of_children_conviction,
+    no_sexual_offense_conviction,
+    no_unsatisfactory_program_ratings_within_3_months,
     no_violent_conviction,
     not_previous_dtp_participant,
+    not_serving_flat_sentence,
     within_6_months_of_recidiviz_dtp_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -45,9 +57,6 @@ from recidiviz.task_eligibility.criteria_condition import (
     NotEligibleCriteriaCondition,
     PickNCompositeCriteriaCondition,
     TimeDependentCriteriaCondition,
-)
-from recidiviz.task_eligibility.eligibility_spans.us_az.overdue_for_recidiviz_tpr_request import (
-    COMMON_CRITERIA_ACROSS_TPR_AND_DTP,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -59,9 +68,41 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Shows the eligibility spans for residents in AZ who are eligible for a Drug Transition
-Program (DTP) release according to our (Recidiviz) calculations. 
-"""
+# Criteria shared in both TPR and DTP
+COMMON_CRITERIA_ACROSS_TPR_AND_DTP = [
+    AndTaskCriteriaGroup(
+        criteria_name="US_AZ_NO_SEXUAL_ARSON_OR_DANGEROUS_CRIMES_AGAINST_CHILDREN",
+        sub_criteria_list=[
+            no_sexual_offense_conviction.VIEW_BUILDER,
+            no_arson_conviction.VIEW_BUILDER,
+            no_dangerous_crimes_against_children_conviction.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[],
+    ),
+    no_active_felony_detainers.VIEW_BUILDER,
+    custody_level_is_minimum_or_medium.VIEW_BUILDER,
+    no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
+    not_serving_flat_sentence.VIEW_BUILDER,
+    AndTaskCriteriaGroup(
+        criteria_name="US_AZ_NO_VIOLATIONS_AND_ELIGIBLE_LEGAL_STATUS",
+        sub_criteria_list=[
+            no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
+            no_major_violent_violation_during_incarceration.VIEW_BUILDER,
+            is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[],
+    ),
+    AndTaskCriteriaGroup(
+        criteria_name="US_AZ_NO_ACIS_DTP_OR_TPR_DATE_SET",
+        sub_criteria_list=[
+            acis_dtp_date_not_set.VIEW_BUILDER,
+            acis_tpr_date_not_set.VIEW_BUILDER,
+        ],
+        allowed_duplicate_reasons_keys=[],
+    ),
+]
+
+
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
     task_name="OVERDUE_FOR_RECIDIVIZ_DTP_REQUEST",
@@ -85,13 +126,12 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_domestic_violence_conviction.VIEW_BUILDER,
         no_sexual_exploitation_of_children_conviction.VIEW_BUILDER,
         no_violent_conviction.VIEW_BUILDER,
-        # c. No DTP denials in current incarceration, DTPs in the past and no ACIS DTP date
+        # c. No DTP denials in current incarceration, DTPs in the past
         AndTaskCriteriaGroup(
-            criteria_name="US_AZ_NO_DTP_DATE_OR_DENIAL_OR_PREVIOUS_DTP_RELEASE",
+            criteria_name="US_AZ_NO_DTP_DENIAL_OR_PREVIOUS_DTP_RELEASE",
             sub_criteria_list=[
                 no_dtp_denial_in_current_incarceration.VIEW_BUILDER,
                 not_previous_dtp_participant.VIEW_BUILDER,
-                acis_dtp_date_not_set.VIEW_BUILDER,
             ],
             allowed_duplicate_reasons_keys=[],
         ),

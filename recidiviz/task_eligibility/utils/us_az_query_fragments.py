@@ -40,6 +40,7 @@ def no_current_or_prior_convictions(
     additional_where_clause: Optional[str] = None,
     or_where_clause: Optional[bool] = False,
     negate_statute: bool = False,
+    reasons_field_name: str = "ineligible_offenses",
 ) -> str:
     """Helper function for a denial reason for a current or prior conviction.
     Requires a state specific jargon due to charge_v2 change.
@@ -117,8 +118,8 @@ def no_current_or_prior_convictions(
             start_date,
             end_date,
             meets_criteria,
-            TO_JSON(STRUCT( ARRAY_AGG(DISTINCT description) AS ineligible_offenses)) AS reason,
-            ARRAY_AGG(DISTINCT description ORDER BY description) AS ineligible_offenses,
+            TO_JSON(STRUCT( ARRAY_AGG(DISTINCT description) AS {reasons_field_name})) AS reason,
+            ARRAY_AGG(DISTINCT description ORDER BY description) AS {reasons_field_name},
         FROM sub_sessions_with_attributes
         GROUP BY 1,2,3,4,5
     """
@@ -228,21 +229,31 @@ def acis_date_not_set_criteria_builder(
     Returns:
         StateSpecificTaskCriteriaBigQueryViewBuilder: The criteria builder"""
 
+    assert task_subtype in [
+        "STANDARD TRANSITION RELEASE",
+        "DRUG TRANSITION RELEASE",
+    ], "task_subtype must be 'STANDARD TRANSITION RELEASE' or 'DRUG TRANSITION RELEASE'"
+
+    if task_subtype == "STANDARD TRANSITION RELEASE":
+        task = "TPR"
+    else:
+        task = "DTP"
+
     _REASONS_FIELDS = [
         ReasonsField(
-            name="statutes",
+            name=f"{task.lower()}_statutes",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="Relevant statutes associated with the transition release",
+            description=f"{task}: Relevant statutes associated with the transition release",
         ),
         ReasonsField(
-            name="descriptions",
+            name=f"{task.lower()}_descriptions",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="Descriptions of relevant statutes associated with the transition release",
+            description=f"{task}: Descriptions of relevant statutes associated with the transition release",
         ),
         ReasonsField(
-            name="latest_acis_update_date",
+            name=f"{task.lower()}_latest_acis_update_date",
             type=bigquery.enums.StandardSqlTypeNames.DATE,
-            description="Most recent date ACIS date was set",
+            description=f"{task}: Most recent date ACIS date was set",
         ),
     ]
 
@@ -294,13 +305,13 @@ def acis_date_not_set_criteria_builder(
         end_date,
         False AS meets_criteria,
         TO_JSON(STRUCT(
-            STRING_AGG(statute, ', ' ORDER BY statute) AS statutes,
-            STRING_AGG(description, ', ' ORDER BY description) AS descriptions,
-            MAX(acis_set_date) AS latest_acis_update_date
+            STRING_AGG(statute, ', ' ORDER BY statute) AS {task.lower()}_statutes,
+            STRING_AGG(description, ', ' ORDER BY description) AS {task.lower()}_descriptions,
+            MAX(acis_set_date) AS {task.lower()}_latest_acis_update_date
         )) AS reason,
-        STRING_AGG(statute, ', ' ORDER BY statute) AS statutes,
-        STRING_AGG(description, ', ' ORDER BY description) AS descriptions,
-        MAX(acis_set_date) AS latest_acis_update_date
+        STRING_AGG(statute, ', ' ORDER BY statute) AS {task.lower()}_statutes,
+        STRING_AGG(description, ', ' ORDER BY description) AS {task.lower()}_descriptions,
+        MAX(acis_set_date) AS {task.lower()}_latest_acis_update_date
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4
     """
