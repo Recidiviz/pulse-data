@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Shows the eligibility spans for residents in AZ who are eligible for a Transition 
-Program Release (TPR) release according to our (Recidiviz) calculations. 
+Program Release (TPR) release according to our (Recidiviz) calculations. If someone is also
+eligible or almost eligible for a Drug Transition Program (DTP) release, they will not be 
+considered eligible or almost eligible for this opportunity.  
 """
 
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
@@ -26,24 +28,14 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
     early_release_not_overdue,
 )
-from recidiviz.task_eligibility.criteria.general import (
-    custody_level_is_minimum_or_medium,
-    no_nonviolent_incarceration_violation_within_6_months,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
-    acis_tpr_date_not_set,
     at_least_24_months_since_last_csed,
-    is_us_citizen_or_legal_permanent_resident,
+    eligible_or_almost_eligible_for_overdue_for_recidiviz_dtp,
     meets_functional_literacy_tpr,
     no_active_felony_detainers,
-    no_arson_conviction,
-    no_dangerous_crimes_against_children_conviction,
-    no_major_violent_violation_during_incarceration,
-    no_sexual_offense_conviction,
     no_tpr_denial_in_current_incarceration,
     no_tpr_removals_from_self_improvement_programs,
     no_transition_release_in_current_sentence_span,
-    no_unsatisfactory_program_ratings_within_3_months,
     no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction,
     not_serving_flat_sentence,
     within_6_months_of_recidiviz_tpr_date,
@@ -54,6 +46,9 @@ from recidiviz.task_eligibility.criteria_condition import (
     PickNCompositeCriteriaCondition,
     TimeDependentCriteriaCondition,
 )
+from recidiviz.task_eligibility.eligibility_spans.us_az.overdue_for_recidiviz_dtp_request import (
+    COMMON_CRITERIA_ACROSS_TPR_AND_DTP,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -62,26 +57,6 @@ from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder impor
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-# Criteria shared in both TPR and DTP
-COMMON_CRITERIA_ACROSS_TPR_AND_DTP = [
-    no_sexual_offense_conviction.VIEW_BUILDER,
-    no_arson_conviction.VIEW_BUILDER,
-    no_active_felony_detainers.VIEW_BUILDER,
-    custody_level_is_minimum_or_medium.VIEW_BUILDER,
-    no_dangerous_crimes_against_children_conviction.VIEW_BUILDER,
-    no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
-    not_serving_flat_sentence.VIEW_BUILDER,
-    AndTaskCriteriaGroup(
-        criteria_name="US_AZ_NO_VIOLATIONS_AND_ELIGIBLE_LEGAL_STATUS",
-        sub_criteria_list=[
-            no_nonviolent_incarceration_violation_within_6_months.VIEW_BUILDER,
-            no_major_violent_violation_during_incarceration.VIEW_BUILDER,
-            is_us_citizen_or_legal_permanent_resident.VIEW_BUILDER,
-        ],
-        allowed_duplicate_reasons_keys=[],
-    ),
-]
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_AZ,
@@ -98,11 +73,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction.VIEW_BUILDER,
         # c. No TPR denials in current incarceration, TPRs on current sentence and no ACIS TPR date
         AndTaskCriteriaGroup(
-            criteria_name="US_AZ_NO_TPR_DATE_OR_DENIAL_OR_RELEASE_IN_CURRENT_INCARCERATION",
+            criteria_name="US_AZ_NO_TPR_DENIAL_OR_RELEASE_IN_CURRENT_INCARCERATION_OR_FLAT_SENTENCE",
             sub_criteria_list=[
                 no_tpr_denial_in_current_incarceration.VIEW_BUILDER,
                 no_transition_release_in_current_sentence_span.VIEW_BUILDER,
-                acis_tpr_date_not_set.VIEW_BUILDER,
                 not_serving_flat_sentence.VIEW_BUILDER,
             ],
             allowed_duplicate_reasons_keys=[],
@@ -112,6 +86,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # e. Time
         at_least_24_months_since_last_csed.VIEW_BUILDER,
         within_6_months_of_recidiviz_tpr_date.VIEW_BUILDER,
+        # f. Not already eligible for overdue_for_recidiviz_dtp
+        eligible_or_almost_eligible_for_overdue_for_recidiviz_dtp.VIEW_BUILDER,
     ],
     completion_event_builder=early_release_not_overdue.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(

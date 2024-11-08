@@ -53,11 +53,13 @@ _SEC_STATUTE = [
     "13-236-NONE",  # ARSON UNOCCUPIED STRUCTURE
 ]
 
-_QUERY_TEMPLATE = no_current_or_prior_convictions(statute=_SEC_STATUTE)
+_QUERY_TEMPLATE = no_current_or_prior_convictions(
+    statute=_SEC_STATUTE, reasons_field_name="ineligible_offenses_arson"
+)
 
 _REASONS_FIELDS = [
     ReasonsField(
-        name="ineligible_offenses",
+        name="ineligible_offenses_arson",
         type=bigquery.enums.StandardSqlTypeNames.ARRAY,
         description="A list of ineligible offenses related to arson",
     )
