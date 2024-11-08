@@ -211,9 +211,22 @@ const NewCancelReimportChecklist = (): JSX.Element => {
         <NewStyledStepContent
           description={
             <p>
-              Mark all <code>SECONDARY</code> instance rows in the{" "}
-              <code>direct_ingest_raw_file_metadata</code> operations database
-              table as invalidated.
+              Mark all <code>SECONDARY</code> instance rows in the following
+              operations database tables as invalidated:
+              <ul>
+                <li>
+                  <code>direct_ingest_raw_big_query_file_metadata</code>
+                </li>
+                <li>
+                  <code>direct_ingest_raw_gcs_file_metadata</code>
+                </li>
+                <li>
+                  <code>direct_ingest_raw_file_import_run</code>
+                </li>
+                <li>
+                  <code>direct_ingest_raw_file_import</code>
+                </li>
+              </ul>
             </p>
           }
           actionButtonEnabled={currentLockStatus.allSecondaryLocksHeldByAdHoc()}
