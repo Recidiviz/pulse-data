@@ -38,7 +38,8 @@ _DESCRIPTION = """Describes spans of time when someone is ineligible due to a cu
 past conviction for dangerous crimes against children"""
 
 _SEC_STATUTE = [
-    "13-604.01-NONE",  # DANG. CRIMES AG. CHILDREN
+    "13-604.01-NONE",  # OLD DANG. CRIMES AG. CHILDREN CODE
+    "13-705",  # NEW DANG. CRIMES AG. CHILDREN CODE
 ]
 
 _QUERY_TEMPLATE = no_current_or_prior_convictions(
