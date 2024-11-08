@@ -168,7 +168,7 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.TCU_DRUG_SCREEN: "Texas Christian University (TCU) Drug "
     "Screen (TCU)",
     StateAssessmentType.TX_CST: "Community Supervision Tool (CST)",
-    StateAssessmentType.TX_CSST: "Community SUpervision Screening Tool (CSST)",
+    StateAssessmentType.TX_CSST: "Community Supervision Screening Tool (CSST)",
     StateAssessmentType.TX_SRT: "Supplementary Reentry Tool (SRT)",
     StateAssessmentType.TX_RT: "Reentry Tool (RT)",
     StateAssessmentType.ACCAT: "Arizona Community Corrections Assessment Tool",
