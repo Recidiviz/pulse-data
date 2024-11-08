@@ -18,9 +18,6 @@ columns:
   - name: IncompatibleType
     description: |-
       This indicates if the person involved in an incident is an offender, staff, contact or visitor.
-  - name: InvolvementType
-    description: |-
-      An abbreviation for the reason the person is involved in an incident.
   - name: StaffID
     is_pii: True
     description: |-
