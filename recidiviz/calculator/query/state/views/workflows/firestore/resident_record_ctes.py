@@ -399,11 +399,25 @@ _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
     ),
 """
 
+_RESIDENT_RECORD_DISPLAY_ID_CTE = """
+    display_ids AS (
+        SELECT
+            state_code,
+            person_id,
+            external_id as display_id,
+        FROM join_residents
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id`
+        USING (state_code, person_id)
+        WHERE state_code = 'US_AZ'
+            AND id_type = 'US_AZ_ADC_NUMBER'
+    ),
+"""
+
 _RESIDENTS_CTE = """
     residents AS (
         SELECT
             person_external_id,
-            person_external_id as display_id,
+            COALESCE(display_id, person_external_id) as display_id,
             state_code,
             person_name,
             person_id,
@@ -425,6 +439,7 @@ _RESIDENTS_CTE = """
         LEFT JOIN opportunities_aggregated USING (state_code, person_external_id)
         LEFT JOIN portion_needed USING (state_code, person_id)
         LEFT JOIN months_remaining USING (state_code, person_id)
+        LEFT JOIN display_ids USING (state_code, person_id)
     )
 """
 
@@ -441,5 +456,6 @@ def full_resident_record() -> str:
     {_RESIDENT_MONTHS_REMAINING_NEEDED_CTE}
     {generate_resident_metadata_cte(STATES_WITH_RESIDENT_METADATA)}
     {_RESIDENT_RECORD_JOIN_RESIDENTS_CTE}
+    {_RESIDENT_RECORD_DISPLAY_ID_CTE}
     {_RESIDENTS_CTE}
     """
