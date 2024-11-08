@@ -68,6 +68,10 @@ columns:
     field_type: datetime
     description: |-
       The date on which a person and their related tables have been archived to tape.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/8/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: AbscondedParoleFlag
     description: |-
       Indicator for a person that tells whether the person has absconded from parole.
