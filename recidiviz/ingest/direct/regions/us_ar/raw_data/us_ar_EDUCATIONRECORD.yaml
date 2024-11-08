@@ -69,6 +69,8 @@ columns:
         description: Masters
       - value: "N"
         description: None
+      - value: U
+        description: TODO(#34880) Document this field.
       - value: X
         description: Unknown (conversion)
   - name: EDUCDATASOURCE
@@ -81,6 +83,8 @@ columns:
         description: Court (Docket#)
       - value: DOC
         description: Documentation
+      - value: JUV
+        description: TODO(#34880) Document this field.
       - value: NIC
         description: NCIC
       - value: OOS

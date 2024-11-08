@@ -91,6 +91,8 @@ columns:
         description: Electronic Monitoring Ended
       - value: S13
         description: Restart Drug Court Program
+      - value: S14
+        description: TODO(#34880) Document this field.
       - value: S15
         description: Pending Revocation
       - value: S16
@@ -99,6 +101,8 @@ columns:
         description: Parole Reinstated
       - value: S18
         description: From County Works Program
+      - value: S19
+        description: TODO(#34880) Document this field.
       - value: S20
         description: PATH Started
       - value: S21
@@ -153,24 +157,26 @@ columns:
     known_values:
       - value: "0"
         description: Not Applicable
+      - value: "00"
+        description: TODO(#34880) Document this field.
+      - value: "01"
+        description: TODO(#34880) Document this field.
+      - value: "02"
+        description: TODO(#34880) Document this field.
+      - value: "03"
+        description: TODO(#34880) Document this field.
+      - value: "04"
+        description: TODO(#34880) Document this field.
+      - value: "05"
+        description: TODO(#34880) Document this field.
+      - value: "07"
+        description: TODO(#34880) Document this field.
+      - value: "08"
+        description: TODO(#34880) Document this field.
+      - value: "09"
+        description: TODO(#34880) Document this field.
       - value: "1"
         description: Admin. Transfer (from ADC)
-      - value: "2"
-        description: Pre-Trial Release
-      - value: "3"
-        description: Interstate Compact
-      - value: "4"
-        description: Court (Probation) Order
-      - value: "5"
-        description: Parole Board Action
-      - value: "6"
-        description: Client lives in Border County
-      - value: "7"
-        description: Offender Relocated
-      - value: "8"
-        description: Parole Reinstated
-      - value: "9"
-        description: Probation Reinstated
       - value: "10"
         description: OTC/Awaiting Acceptance
       - value: "11"
@@ -191,6 +197,8 @@ columns:
         description: Admitted to SSP
       - value: "19"
         description: Released from SSP
+      - value: "2"
+        description: Pre-Trial Release
       - value: "20"
         description: Abscond - No Warrant Issued
       - value: "21"
@@ -211,6 +219,8 @@ columns:
         description: Parole Board Warrant
       - value: "29"
         description: Boot Camp Warrant
+      - value: "3"
+        description: Interstate Compact
       - value: "30"
         description: Bench Warrant
       - value: "31"
@@ -231,6 +241,8 @@ columns:
         description: Revoked - Absconder
       - value: "39"
         description: Revoked - New Felony
+      - value: "4"
+        description: Court (Probation) Order
       - value: "40"
         description: Revoked - New Misd
       - value: "41"
@@ -251,6 +263,8 @@ columns:
         description: Record Sealed
       - value: "49"
         description: Record Expunged
+      - value: "5"
+        description: Parole Board Action
       - value: "50"
         description: No Interest in Case
       - value: "51"
@@ -271,6 +285,8 @@ columns:
         description: Death due to AIDS
       - value: "59"
         description: Death due to Injury to Self
+      - value: "6"
+        description: Client lives in Border County
       - value: "60"
         description: Death - Accidental
       - value: "61"
@@ -291,6 +307,8 @@ columns:
         description: Other State Prison
       - value: "69"
         description: Federal Prison
+      - value: "7"
+        description: Offender Relocated
       - value: "70"
         description: Violation of Order
       - value: "71"
@@ -311,6 +329,8 @@ columns:
         description: Mental Institution (Crt Ord.)
       - value: "79"
         description: Released from Boot Camp
+      - value: "8"
+        description: Parole Reinstated
       - value: "80"
         description: Incarcerated Pending VOP
       - value: "81"
@@ -331,6 +351,8 @@ columns:
         description: Taking Up New Sentence
       - value: "89"
         description: Hold for ADC/ACC
+      - value: "9"
+        description: Probation Reinstated
       - value: "90"
         description: Admin. Transfer (from CCC)
       - value: "91"
@@ -495,22 +517,34 @@ columns:
     description: |-
       Supervision type
     known_values:
-      - value: "2"
-        description: Parole (ISC)
-      - value: "3"
-        description: Parole (PE)
-      - value: "4"
-        description: Parole (TE)
-      - value: "5"
-        description: Parole (Parole Board)
-      - value: "6"
-        description: Boot Camp
-      - value: "7"
-        description: Dual - Boot Camp/Probation
-      - value: "8"
-        description: Dual - Parole & Probation
-      - value: "9"
-        description: Dual - Parole & SIS
+      - value: "02"
+        description: TODO(#34880) Document this field.
+      - value: "03"
+        description: TODO(#34880) Document this field.
+      - value: "04"
+        description: TODO(#34880) Document this field.
+      - value: "05"
+        description: TODO(#34880) Document this field.
+      - value: "06"
+        description: TODO(#34880) Document this field.
+      - value: "07"
+        description: TODO(#34880) Document this field.
+      - value: "08"
+        description: TODO(#34880) Document this field.
+      - value: "09"
+        description: TODO(#34880) Document this field.
+      - value: 0A
+        description: Parole (Act 539)
+      - value: 0B
+        description: Dual Act 539 & Probation
+      - value: 0C
+        description: Dual Act 539 & SIS
+      - value: 0D
+        description: Dual Act 539 & ISC
+      - value: 0E
+        description: Dual Act 539 & Drug Court
+      - value: 0F
+        description: Dual Act 539 & Parole (TE)
       - value: "11"
         description: Probation (Regular)
       - value: "12"
@@ -529,6 +563,8 @@ columns:
         description: Probation (Unsupervised)
       - value: "19"
         description: Dual - Probation & ISC
+      - value: "2"
+        description: Parole (ISC)
       - value: "20"
         description: Suspended (Direct)
       - value: "21"
@@ -545,28 +581,30 @@ columns:
         description: Dual - Drug Court/Probation ISC
       - value: "27"
         description: Dual - Drug Court/Parole ISC
+      - value: "3"
+        description: Parole (PE)
       - value: "30"
         description: Pre-Trial
       - value: "31"
         description: Holding for ADC
       - value: "32"
         description: Sex Offender Extended Supervision
+      - value: "4"
+        description: Parole (TE)
       - value: "40"
         description: Re-Entry Program
+      - value: "5"
+        description: Parole (Parole Board)
+      - value: "6"
+        description: Boot Camp
+      - value: "7"
+        description: Dual - Boot Camp/Probation
+      - value: "8"
+        description: Dual - Parole & Probation
+      - value: "9"
+        description: Dual - Parole & SIS
       - value: "99"
         description: Conversion data
-      - value: 0A
-        description: Parole (Act 539)
-      - value: 0B
-        description: Dual Act 539 & Probation
-      - value: 0C
-        description: Dual Act 539 & SIS
-      - value: 0D
-        description: Dual Act 539 & ISC
-      - value: 0E
-        description: Dual Act 539 & Drug Court
-      - value: 0F
-        description: Dual Act 539 & Parole (TE)
   - name: SUPVCATEGORY
     description: |-
       Supervision category
@@ -581,6 +619,8 @@ columns:
         description: Probation
       - value: RET
         description: Re-Entry Program
+      - value: SIS
+        description: TODO(#34880) Document this field.
       - value: SUS
         description: Suspended
       - value: XXX

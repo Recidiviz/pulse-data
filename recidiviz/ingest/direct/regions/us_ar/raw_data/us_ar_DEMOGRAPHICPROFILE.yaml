@@ -379,6 +379,8 @@ columns:
         description: Ukrainian
       - value: urd
         description: Urdu
+      - value: US
+        description: TODO(#34880) Document this field.
       - value: uzb
         description: Uzbek
       - value: ven
@@ -525,6 +527,8 @@ columns:
         description: Arkansas
       - value: AZ
         description: Arizona
+      - value: BC
+        description: British Columbia
       - value: BK
         description: Baker Island
       - value: CA
@@ -575,6 +579,8 @@ columns:
         description: Louisiana
       - value: MA
         description: Massachusetts
+      - value: MB
+        description: Manitoba
       - value: MD
         description: Maryland
       - value: ME
@@ -599,26 +605,42 @@ columns:
         description: North Dakota
       - value: NE
         description: Nebraska
+      - value: NF
+        description: Newfoundland/Labrador
       - value: NH
         description: New Hampshire
       - value: NJ
         description: New Jersey
+      - value: NK
+        description: New Brunswick
       - value: NM
         description: New Mexico
+      - value: NS
+        description: Nova Scotia
+      - value: NT
+        description: Northwest Territories
       - value: NV
         description: Nevada
       - value: NY
         description: New York
+      - value: OC
+        description: TODO(#34880) Document this field.
       - value: OH
         description: Ohio
       - value: OK
         description: Oklahoma
+      - value: ON
+        description: Ontario
       - value: OR
         description: Oregon
       - value: PA
         description: Pennsylvania
+      - value: PE
+        description: Prince Edward Island
       - value: PL
         description: Palmyra Atoll
+      - value: PQ
+        description: Quebec
       - value: PR
         description: Puerto Rico
       - value: RI
@@ -627,6 +649,8 @@ columns:
         description: South Carolina
       - value: SD
         description: South Dakota
+      - value: SN
+        description: Saskatchewan
       - value: TN
         description: Tennessee
       - value: TX
@@ -655,34 +679,12 @@ columns:
         description: West Virginia
       - value: WY
         description: Wyoming
-      - value: BC
-        description: British Columbia
-      - value: MB
-        description: Manitoba
-      - value: NF
-        description: Newfoundland/Labrador
-      - value: NK
-        description: New Brunswick
-      - value: NS
-        description: Nova Scotia
-      - value: NT
-        description: Northwest Territories
-      - value: ON
-        description: Ontario
-      - value: PE
-        description: Prince Edward Island
-      - value: PQ
-        description: Quebec
-      - value: SN
-        description: Saskatchewan
       - value: YT
         description: Yukon Territory
   - name: INTERPRETERNEEDED
     description: |-
       TYPE OF INTERPRETER NEEDED
     known_values:
-      - value: DF
-        description: Deaf
       - value: ARB
         description: Arabic
       - value: ASL
@@ -695,6 +697,8 @@ columns:
         description: Chinese
       - value: CMB
         description: Cambodian
+      - value: DF
+        description: Deaf
       - value: ENG
         description: English
       - value: FR
@@ -773,6 +777,8 @@ columns:
     description: |-
       EYE COLOR CODE
     known_values:
+      - value: "0"
+        description: TODO(#34880) Document this field.
       - value: "1"
         description: Black
       - value: "2"
@@ -795,6 +801,8 @@ columns:
     description: |-
       HAIR COLOR CODE
     known_values:
+      - value: A
+        description: TODO(#34880) Document this field.
       - value: B
         description: Brown
       - value: D
@@ -899,30 +907,28 @@ columns:
     description: |-
       RESULT OF DRUG TEST
     known_values:
-      - value: I
-        description: Inconclusive
-      - value: "N"
-        description: Negative
-      - value: P
-        description: Positive
+      - value: "00"
+        description: TODO(#34880) Document this field.
+      - value: "01"
+        description: TODO(#34880) Document this field.
+      - value: "02"
+        description: TODO(#34880) Document this field.
+      - value: "03"
+        description: TODO(#34880) Document this field.
+      - value: "04"
+        description: TODO(#34880) Document this field.
+      - value: "05"
+        description: TODO(#34880) Document this field.
+      - value: "06"
+        description: TODO(#34880) Document this field.
+      - value: "07"
+        description: TODO(#34880) Document this field.
+      - value: "08"
+        description: TODO(#34880) Document this field.
+      - value: "09"
+        description: TODO(#34880) Document this field.
       - value: "1"
         description: Barbiturates
-      - value: "2"
-        description: Crack
-      - value: "3"
-        description: Cocaine
-      - value: "4"
-        description: Heroin/Opiates
-      - value: "5"
-        description: Speed
-      - value: "6"
-        description: Alcohol
-      - value: "7"
-        description: Prescription Abuse
-      - value: "8"
-        description: LSD
-      - value: "9"
-        description: THC/Marijuana
       - value: "10"
         description: Inhalants
       - value: "11"
@@ -943,6 +949,8 @@ columns:
         description: Creatinine
       - value: "19"
         description: Ecstasy
+      - value: "2"
+        description: Crack
       - value: "20"
         description: Propoxyphene
       - value: "21"
@@ -963,6 +971,8 @@ columns:
         description: K2 (SPICE)
       - value: "29"
         description: pH
+      - value: "3"
+        description: Cocaine
       - value: "30"
         description: Hydrocodone
       - value: "31"
@@ -973,6 +983,28 @@ columns:
         description: Fentanyl
       - value: "34"
         description: Kratom
+      - value: "35"
+        description: TODO(#34880) Document this field.
+      - value: "36"
+        description: TODO(#34880) Document this field.
+      - value: "4"
+        description: Heroin/Opiates
+      - value: "5"
+        description: Speed
+      - value: "6"
+        description: Alcohol
+      - value: "7"
+        description: Prescription Abuse
+      - value: "8"
+        description: LSD
+      - value: "9"
+        description: THC/Marijuana
+      - value: I
+        description: Inconclusive
+      - value: "N"
+        description: Negative
+      - value: P
+        description: Positive
   - name: FREQADMINCODE
     description: |-
       FREQ. OF ADMINISTRATION CODE
@@ -1056,10 +1088,8 @@ columns:
     description: |-
       Sex Offn. Level of Risk
     known_values:
-      - value: "5"
-        description: Juvenile Court
-      - value: "9"
-        description: Not Required to Register
+      - value: "0"
+        description: TODO(#34880) Document this field.
       - value: "1"
         description: Low
       - value: "2"
@@ -1068,10 +1098,14 @@ columns:
         description: High
       - value: "4"
         description: Sexually Dangerous Person
+      - value: "5"
+        description: Juvenile Court
       - value: "7"
         description: Out of State
       - value: "8"
         description: Deceased
+      - value: "9"
+        description: Not Required to Register
       - value: "N"
         description: "No"
       - value: "Y"
@@ -1130,10 +1164,10 @@ columns:
     known_values:
       - value: "N"
         description: "No"
-      - value: "Y"
-        description: "Yes"
       - value: U
         description: Unknown
+      - value: "Y"
+        description: "Yes"
   - name: PRILANGUAGEREAD
     description: |-
       Primary Language - Read
@@ -1178,6 +1212,8 @@ columns:
     known_values:
       - value: "N"
         description: "No"
+      - value: U
+        description: TODO(#34880) Document this field.
       - value: "Y"
         description: "Yes"
   - name: SECLANGUAGEWRITE
@@ -1186,6 +1222,8 @@ columns:
     known_values:
       - value: "N"
         description: "No"
+      - value: U
+        description: TODO(#34880) Document this field.
       - value: "Y"
         description: "Yes"
   - name: SECLANGUAGESPEAK
@@ -1194,6 +1232,8 @@ columns:
     known_values:
       - value: "N"
         description: "No"
+      - value: U
+        description: TODO(#34880) Document this field.
       - value: "Y"
         description: "Yes"
   - name: COUNTRYOFCITIZENSHIP
@@ -1202,6 +1242,8 @@ columns:
     known_values:
       - value: AA
         description: Albania
+      - value: AB
+        description: Alberta
       - value: AC
         description: Africa
       - value: AD
@@ -1236,6 +1278,8 @@ columns:
         description: Belarus
       - value: BB
         description: Barbados
+      - value: BC
+        description: British Columbia
       - value: BD
         description: Bahamas
       - value: BE
@@ -1466,6 +1510,8 @@ columns:
         description: Libya
       - value: MA
         description: Macedonia
+      - value: MB
+        description: Manitoba
       - value: MC
         description: Malawi
       - value: MD
@@ -1506,8 +1552,12 @@ columns:
         description: Malaysia
       - value: NA
         description: Nauru
+      - value: NB
+        description: New Brunswick
       - value: NE
         description: Netherlands (Holland)
+      - value: NF
+        description: Newfoundland/Labrador
       - value: NG
         description: Nigeria
       - value: NI
@@ -1520,6 +1570,8 @@ columns:
         description: New Guinea
       - value: NP
         description: Nepal
+      - value: NS
+        description: Nova Scotia
       - value: NT
         description: Northwest Territories
       - value: NU
@@ -1552,6 +1604,8 @@ columns:
         description: Panama
       - value: PO
         description: Poland
+      - value: PQ
+        description: Quebec
       - value: PR
         description: Puerto Rico
       - value: PT
@@ -1602,6 +1656,8 @@ columns:
         description: South Sudan
       - value: SM
         description: Somalia
+      - value: SN
+        description: Saskatchewan
       - value: SO
         description: State of Palestine
       - value: SP
@@ -1712,22 +1768,6 @@ columns:
         description: Mozambique
       - value: ZR
         description: New Brunswick
-      - value: AB
-        description: Alberta
-      - value: BC
-        description: British Columbia
-      - value: MB
-        description: Manitoba
-      - value: NB
-        description: New Brunswick
-      - value: NF
-        description: Newfoundland/Labrador
-      - value: NS
-        description: Nova Scotia
-      - value: PQ
-        description: Quebec
-      - value: SN
-        description: Saskatchewan
   - name: STGNATION
     description: |-
       STG Nation

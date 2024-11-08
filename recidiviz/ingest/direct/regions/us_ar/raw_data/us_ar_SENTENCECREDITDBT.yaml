@@ -26,6 +26,18 @@ columns:
     description: |-
       Sentence Credit/Debit Type
     known_values:
+      - value: "00"
+        description: TODO(#34880) Document this field.
+      - value: "01"
+        description: TODO(#34880) Document this field.
+      - value: "03"
+        description: TODO(#34880) Document this field.
+      - value: "04"
+        description: TODO(#34880) Document this field.
+      - value: "05"
+        description: TODO(#34880) Document this field.
+      - value: "06"
+        description: TODO(#34880) Document this field.
       - value: "1"
         description: Admission
       - value: "3"
@@ -46,6 +58,8 @@ columns:
         description: County Jail 626
       - value: "17"
         description: Emergency Powers 418
+      - value: "18"
+        description: TODO(#34880) Document this field.
       - value: "19"
         description: Lump Sum Good Time
       - value: "20"
@@ -68,8 +82,20 @@ columns:
     description: |-
       Supervision Good Time Class
     known_values:
+      - value: I-A
+        description: TODO(#34880) Document this field.
+      - value: I-B
+        description: TODO(#34880) Document this field.
+      - value: I-C
+        description: TODO(#34880) Document this field.
+      - value: I-D
+        description: TODO(#34880) Document this field.
       - value: I-P
         description: Class I-P
+      - value: II
+        description: TODO(#34880) Document this field.
+      - value: III
+        description: TODO(#34880) Document this field.
       - value: IV
         description: Class IV
   - name: GOODTIMECLASSDURATION
@@ -124,8 +150,14 @@ columns:
         description: School
       - value: B03
         description: GED
+      - value: B04
+        description: TODO(#34880) Document this field.
       - value: B05
         description: Beginner Level Work Assignment
+      - value: B06
+        description: TODO(#34880) Document this field.
+      - value: B07
+        description: TODO(#34880) Document this field.
       - value: B08
         description: Bonus
       - value: B09
@@ -174,6 +206,8 @@ columns:
         description: Class I
       - value: B31
         description: Parenting
+      - value: B32
+        description: TODO(#34880) Document this field.
       - value: B33
         description: Stress Management
       - value: B34
@@ -188,6 +222,8 @@ columns:
         description: Therapeutic Community (TC)
       - value: B39
         description: SOFT
+      - value: B41
+        description: TODO(#34880) Document this field.
       - value: B42
         description: Substance Use Intervention
       - value: B43
@@ -196,6 +232,8 @@ columns:
         description: CTE Program
       - value: B45
         description: CTE Completed
+      - value: BC3
+        description: TODO(#34880) Document this field.
       - value: C00
         description: Disciplinary Penalty
       - value: C01
@@ -234,6 +272,8 @@ columns:
         description: 30 Day Review
       - value: C18
         description: 7 Day Review
+      - value: C2
+        description: TODO(#34880) Document this field.
       - value: C20
         description: Initial Review
       - value: C21
@@ -248,6 +288,8 @@ columns:
         description: Work Release Eligible
       - value: C29
         description: Eligible for 309
+      - value: C3
+        description: TODO(#34880) Document this field.
       - value: C30
         description: Adm Seg Annual Review
       - value: C31
@@ -258,10 +300,14 @@ columns:
         description: Release From Punitive Isolatn
       - value: C34
         description: Complete SURS
+      - value: C4
+        description: TODO(#34880) Document this field.
       - value: C40
         description: Prot Cust Annual Review
       - value: C50
         description: Medical Limitation Review
+      - value: C6
+        description: TODO(#34880) Document this field.
       - value: C60
         description: Mental Health Annual Review
       - value: C70
@@ -286,10 +332,14 @@ columns:
         description: Unspecified Custody/Class Updt
       - value: C99
         description: Unknown
+      - value: CFQ
+        description: TODO(#34880) Document this field.
       - value: CI15
         description: Class I-C 15 Days
       - value: CI24
         description: Class I 24 Days
+      - value: CkA
+        description: TODO(#34880) Document this field.
       - value: D15
         description: Disciplinary Free 15 Days
       - value: M60
