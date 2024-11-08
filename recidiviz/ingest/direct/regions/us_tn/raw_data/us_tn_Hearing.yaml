@@ -104,6 +104,8 @@ columns:
         description: DECLINE CUSTODIAL   D
       - value: DE
         description: DECLINE EARLY RELEASD
+      - value: DN
+        description: "TODO(#7424): Update with definition."
       - value: DR
         description: DECLINE RED         D
       - value: DS
@@ -158,13 +160,13 @@ columns:
     description: |-
       A code value defining a reason for a particular recommendation concerning a person's parole decision.
     known_values:
-      - value: 01
+      - value: "01"
         description: DISCIPLINARY ACTION
-      - value: 02
+      - value: "02"
         description: RECEIVED NEW SENTENCE
-      - value: 03
+      - value: "03"
         description: NEW INFORMATION AVAILABLE
-      - value: 04
+      - value: "04"
         description: PROGRAM REJECTED
       - value: AB
         description: ABSCONDER
@@ -284,13 +286,13 @@ columns:
     description: |-
       A code value defining a reason for a particular recommendation concerning a person's parole decision.
     known_values:
-      - value: 01
+      - value: "01"
         description: DISCIPLINARY ACTION
-      - value: 02
+      - value: "02"
         description: RECEIVED NEW SENTENCE
-      - value: 03
+      - value: "03"
         description: NEW INFORMATION AVAILABLE
-      - value: 04
+      - value: "04"
         description: PROGRAM REJECTED
       - value: AB
         description: ABSCONDER
@@ -406,7 +408,7 @@ columns:
     description: |-
       A code value defining a reason for a particular recommendation concerning a person's parole decision.
     known_values:
-      - value: 04
+      - value: "04"
         description: PROGRAM REJECTED
       - value: AD
         description: ADVERSELY AFFECTS DISCIPLINE
@@ -522,6 +524,8 @@ columns:
         description: HIGH RISK
       - value: M1
         description: MILD SUBSTANCE ABUSE - PRE REL
+      - value: MI
+        description: "TODO(#7424): Update with definition."
       - value: OR
         description: OFFENDER REQUEST
       - value: OW
@@ -2189,13 +2193,13 @@ columns:
     description: |-
       A code value defining the final reason which the board members have agreed upon to deny a person  parole.
     known_values:
-      - value: 01
+      - value: "01"
         description: DISCIPLINARY ACTION
-      - value: 02
+      - value: "02"
         description: RECEIVED NEW SENTENCE
-      - value: 03
+      - value: "03"
         description: NEW INFORMATION AVAILABLE
-      - value: 04
+      - value: "04"
         description: PROGRAM REJECTED
       - value: AB
         description: ABSCONDER
@@ -2300,7 +2304,7 @@ columns:
       - value: TT
         description: TAKE AMOUNT/DATE
       - value: ZA
-        description: #TODO(#7424): Update with definition.
+        description: "TODO(#7424): Update with definition."
       - value: ZC
         description: OTHER CONTINUE REASON
       - value: ZD
@@ -2313,13 +2317,13 @@ columns:
     description: |-
       A code value defining the final reason which the board members have agreed upon to deny a person  parole.
     known_values:
-      - value: 01
+      - value: "01"
         description: DISCIPLINARY ACTION
-      - value: 02
+      - value: "02"
         description: RECEIVED NEW SENTENCE
-      - value: 03
+      - value: "03"
         description: NEW INFORMATION AVAILABLE
-      - value: 04
+      - value: "04"
         description: PROGRAM REJECTED
       - value: AB
         description: ABSCONDER
@@ -2453,9 +2457,9 @@ columns:
     description: |-
       A code value defining the final reason which the board members have agreed upon to deny a person  parole.
     known_values:
-      - value: 03
+      - value: "03"
         description: NEW INFORMATION AVAILABLE
-      - value: 04
+      - value: "04"
         description: PROGRAM REJECTED
       - value: AD
         description: ADVERSELY AFFECTS DISCIPLINE
@@ -2725,6 +2729,8 @@ columns:
         description: ADMINISTRATIVE APPEAL
       - value: AAR
         description: REVOCATION APPEAL
+      - value: AAU
+        description: "TODO(#7424): Update with definition."
       - value: AAV
         description: PAROLE REVIEW APPEAL
       - value: APL

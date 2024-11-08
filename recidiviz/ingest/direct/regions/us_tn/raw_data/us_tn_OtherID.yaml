@@ -23,12 +23,29 @@ columns:
     description: |-
       The NCIC race code.
     # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: A
+        description: ASIAN OR PACIFIC ISLANDER
+      - value: B
+        description: BLACK
+      - value: H
+        description: HISPANIC
+      - value: I
+        description: AMERICAN INDIAN OR ALASKAN NATIVE
+      - value: W
+        description: WHITE
+      - value: U
+        description: UNKNOWN
   - name: Sex
     description: |-
       An abbreviation that identifies the sex of a person.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: M
+        description: Male
+      - value: F
+        description: Female
+      - value: U
+        description: Unknown
   - name: BirthDate
     is_pii: True
     field_type: datetime

@@ -77,7 +77,7 @@ columns:
     description: |-
       Indicates the status of the eligibility response.
     known_values:
-      - value: 00
+      - value: "00"
         description: "TODO(#7424): Update with definition."
       - value: 10
         description: "TODO(#7424): Update with definition."

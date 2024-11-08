@@ -7,11 +7,11 @@ primary_key_cols:
   - OffenderID
 columns:
   - name: OffenderID
-    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
     field_type: person_external_id
     external_id_type: US_TN_DOC
+    is_pii: True
   - name: Weight
     description: |-
       The weight of an individual, measured in pounds.
@@ -30,28 +30,251 @@ columns:
   - name: Complexion
     description: |-
       The predominant skin color of a person.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: ALB
+        description: "TODO(#7424): Update with definition."
+      - value: BLK
+        description: "TODO(#7424): Update with definition."
+      - value: DBR
+        description: "TODO(#7424): Update with definition."
+      - value: DRK
+        description: "TODO(#7424): Update with definition."
+      - value: FAR
+        description: "TODO(#7424): Update with definition."
+      - value: LBR
+        description: "TODO(#7424): Update with definition."
+      - value: LGT
+        description: "TODO(#7424): Update with definition."
+      - value: MBR
+        description: "TODO(#7424): Update with definition."
+      - value: MED
+        description: "TODO(#7424): Update with definition."
+      - value: OLV
+        description: "TODO(#7424): Update with definition."
+      - value: RUD
+        description: "TODO(#7424): Update with definition."
+      - value: SAL
+        description: "TODO(#7424): Update with definition."
+      - value: YEL
+        description: "TODO(#7424): Update with definition."
   - name: MaritalStatus
     description: |-
       The abbreviation of the marital status of a person.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: C
+        description: "TODO(#7424): Update with definition."
+      - value: D
+        description: "TODO(#7424): Update with definition."
+      - value: M
+        description: "TODO(#7424): Update with definition."
+      - value: P
+        description: "TODO(#7424): Update with definition."
+      - value: S
+        description: "TODO(#7424): Update with definition."
+      - value: W
+        description: "TODO(#7424): Update with definition."
   - name: DriverLicenseState
     description: |-
       The state issuing a driver's license.
   - name: DriverLicenseNumber
-    is_pii: True
     description: |-
       A unique identifier assigned to a driver's license by the state issuing the license.
+    is_pii: True
   - name: ScarsMarksTattoos
     description: |-
       The data reported on a criminal history report of distinguishing scars, marks, or tattoos that a person  might be identified by.
   - name: Religion
     description: |-
       An abbreviation of the type of Religion practiced by a person.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: "01"
+        description: "TODO(#7424): Update with definition."
+      - value: "02"
+        description: "TODO(#7424): Update with definition."
+      - value: "03"
+        description: "TODO(#7424): Update with definition."
+      - value: "04"
+        description: "TODO(#7424): Update with definition."
+      - value: "05"
+        description: "TODO(#7424): Update with definition."
+      - value: "06"
+        description: "TODO(#7424): Update with definition."
+      - value: "07"
+        description: "TODO(#7424): Update with definition."
+      - value: "08"
+        description: "TODO(#7424): Update with definition."
+      - value: "09"
+        description: "TODO(#7424): Update with definition."
+      - value: 10
+        description: "TODO(#7424): Update with definition."
+      - value: 11
+        description: "TODO(#7424): Update with definition."
+      - value: 12
+        description: "TODO(#7424): Update with definition."
+      - value: 13
+        description: "TODO(#7424): Update with definition."
+      - value: 14
+        description: "TODO(#7424): Update with definition."
+      - value: 15
+        description: "TODO(#7424): Update with definition."
+      - value: 16
+        description: "TODO(#7424): Update with definition."
+      - value: 17
+        description: "TODO(#7424): Update with definition."
+      - value: 18
+        description: "TODO(#7424): Update with definition."
+      - value: 19
+        description: "TODO(#7424): Update with definition."
+      - value: 20
+        description: "TODO(#7424): Update with definition."
+      - value: 21
+        description: "TODO(#7424): Update with definition."
+      - value: 22
+        description: "TODO(#7424): Update with definition."
+      - value: 23
+        description: "TODO(#7424): Update with definition."
+      - value: 24
+        description: "TODO(#7424): Update with definition."
+      - value: 25
+        description: "TODO(#7424): Update with definition."
+      - value: 26
+        description: "TODO(#7424): Update with definition."
+      - value: 27
+        description: "TODO(#7424): Update with definition."
+      - value: 28
+        description: "TODO(#7424): Update with definition."
+      - value: 29
+        description: "TODO(#7424): Update with definition."
+      - value: 30
+        description: "TODO(#7424): Update with definition."
+      - value: 31
+        description: "TODO(#7424): Update with definition."
+      - value: 32
+        description: "TODO(#7424): Update with definition."
+      - value: 33
+        description: "TODO(#7424): Update with definition."
+      - value: 34
+        description: "TODO(#7424): Update with definition."
+      - value: 35
+        description: "TODO(#7424): Update with definition."
+      - value: 36
+        description: "TODO(#7424): Update with definition."
+      - value: 37
+        description: "TODO(#7424): Update with definition."
+      - value: 38
+        description: "TODO(#7424): Update with definition."
+      - value: 39
+        description: "TODO(#7424): Update with definition."
+      - value: 40
+        description: "TODO(#7424): Update with definition."
+      - value: 41
+        description: "TODO(#7424): Update with definition."
+      - value: 42
+        description: "TODO(#7424): Update with definition."
+      - value: 43
+        description: "TODO(#7424): Update with definition."
+      - value: 44
+        description: "TODO(#7424): Update with definition."
+      - value: 45
+        description: "TODO(#7424): Update with definition."
+      - value: 46
+        description: "TODO(#7424): Update with definition."
+      - value: 47
+        description: "TODO(#7424): Update with definition."
+      - value: 48
+        description: "TODO(#7424): Update with definition."
+      - value: 49
+        description: "TODO(#7424): Update with definition."
+      - value: 50
+        description: "TODO(#7424): Update with definition."
+      - value: 51
+        description: "TODO(#7424): Update with definition."
+      - value: 52
+        description: "TODO(#7424): Update with definition."
+      - value: 53
+        description: "TODO(#7424): Update with definition."
+      - value: 54
+        description: "TODO(#7424): Update with definition."
+      - value: 55
+        description: "TODO(#7424): Update with definition."
+      - value: 56
+        description: "TODO(#7424): Update with definition."
+      - value: 57
+        description: "TODO(#7424): Update with definition."
+      - value: 58
+        description: "TODO(#7424): Update with definition."
+      - value: 59
+        description: "TODO(#7424): Update with definition."
+      - value: 60
+        description: "TODO(#7424): Update with definition."
+      - value: 61
+        description: "TODO(#7424): Update with definition."
+      - value: 62
+        description: "TODO(#7424): Update with definition."
+      - value: 63
+        description: "TODO(#7424): Update with definition."
+      - value: 64
+        description: "TODO(#7424): Update with definition."
+      - value: 65
+        description: "TODO(#7424): Update with definition."
+      - value: 66
+        description: "TODO(#7424): Update with definition."
+      - value: 67
+        description: "TODO(#7424): Update with definition."
+      - value: 68
+        description: "TODO(#7424): Update with definition."
+      - value: 69
+        description: "TODO(#7424): Update with definition."
+      - value: 70
+        description: "TODO(#7424): Update with definition."
+      - value: 71
+        description: "TODO(#7424): Update with definition."
+      - value: 72
+        description: "TODO(#7424): Update with definition."
+      - value: 73
+        description: "TODO(#7424): Update with definition."
+      - value: 74
+        description: "TODO(#7424): Update with definition."
+      - value: 75
+        description: "TODO(#7424): Update with definition."
+      - value: 76
+        description: "TODO(#7424): Update with definition."
+      - value: 77
+        description: "TODO(#7424): Update with definition."
+      - value: 78
+        description: "TODO(#7424): Update with definition."
+      - value: 79
+        description: "TODO(#7424): Update with definition."
+      - value: 80
+        description: "TODO(#7424): Update with definition."
+      - value: 81
+        description: "TODO(#7424): Update with definition."
+      - value: 82
+        description: "TODO(#7424): Update with definition."
+      - value: 83
+        description: "TODO(#7424): Update with definition."
+      - value: 84
+        description: "TODO(#7424): Update with definition."
+      - value: 85
+        description: "TODO(#7424): Update with definition."
+      - value: 86
+        description: "TODO(#7424): Update with definition."
+      - value: 87
+        description: "TODO(#7424): Update with definition."
+      - value: 88
+        description: "TODO(#7424): Update with definition."
+      - value: 89
+        description: "TODO(#7424): Update with definition."
+      - value: 90
+        description: "TODO(#7424): Update with definition."
+      - value: 91
+        description: "TODO(#7424): Update with definition."
+      - value: 92
+        description: "TODO(#7424): Update with definition."
+      - value: 93
+        description: "TODO(#7424): Update with definition."
+      - value: 94
+        description: "TODO(#7424): Update with definition."
   - name: BirthCounty
     description: |-
       The county in which a person  was born.
@@ -59,47 +282,55 @@ columns:
     description: |-
       The state in which a person  was born.
   - name: NCICFingerprintID
-    is_pii: True
     description: |-
       An alphanumeric identified assigned by NCIC which uniquely identifies a person.
-  - name: TennesseeFingerprintID
     is_pii: True
+  - name: TennesseeFingerprintID
     description: |-
-      An alphanumeric identified assigned by the state of Tennesse which uniquely identifies a person.
+      An alphanumeric identified assigned by the state of Tennessee which uniquely identifies a person.
+    is_pii: True
   - name: DeathType
     description: |-
       The abbreviation for the cause of death of a person.
   - name: DeathDate
-    field_type: datetime
     description: |-
       The date of the death of a person.
+    field_type: datetime
   - name: DeathLocation
     description: |-
       The exact location (address, building number, cell number) at which an inmate died.
   - name: DisposalType
     description: |-
       This indicates how the remains of a dead inmate were disposed.
-    known_values: []
+    known_values:
+      - value: BU
+        description: "TODO(#7424): Update with definition."
+      - value: CA
+        description: "TODO(#7424): Update with definition."
+      - value: CR
+        description: "TODO(#7424): Update with definition."
+      - value: RR
+        description: "TODO(#7424): Update with definition."
   - name: DisposalDate
-    field_type: datetime
     description: |-
       The date on which an inmate's remains were disposed. The date on which damaged or scrap merchandise is disposed of.
+    field_type: datetime
   - name: DisposalLocation
-    is_pii: True
     description: |-
       The exact location (address, burial plot, or medical facility) at which disposal of an inmate's remains were made.
-  - name: DeathPostedByStaffID
     is_pii: True
+  - name: DeathPostedByStaffID
     description: |-
       The staff id of the individual who initially posted the death of a person.
-  - name: OBSCISID
     is_pii: True
+  - name: OBSCISID
     description: |-
       This is the person ID used on the OBSCIS system.
+    is_pii: True
   - name: RestoreDate
-    field_type: datetime
     description: |-
       The date on which a person  and his related tables have been restored from tape.
+    field_type: datetime
   - name: DeathSiteID
     description: |-
       This identifies the organizational/location entity which reports a person  as dead.
@@ -107,9 +338,9 @@ columns:
     description: |-
       This flag signifies that a death certificate was obtained as proof of death.
   - name: OldFBINumber
-    is_pii: True
     description: |-
       The old FBI number associated with the person.
+    is_pii: True
   - name: OldSTGAffiliation
     description: |-
       This code is no longer used.  It was replaced by the STG (Security Threat Group) conversation.
@@ -126,26 +357,25 @@ columns:
     description: |-
       This element will contain a person's place of birth (city) for a person  whose citizenship is other than the USA.
   - name: AlienID
-    is_pii: True
     description: |-
       An identifier which uniquely identifies a person  with respect to immigration authorities.
-  - name: FBINumber
     is_pii: True
+  - name: FBINumber
     description: |-
       The FBI number for a person's attributes. This field differs from TENBF013 by having a different length. This field replaces the old NBR-FBI field.
+    is_pii: True
   - name: SIDNumber
-    is_pii: True
     description: |-
-      An alphanumeric identifier assigned by the state of Tennesse which uniquely identifies a person.
-  - name: LastUpdateUserID
+      An alphanumeric identifier assigned by the state of Tennessee which uniquely identifies a person.
     is_pii: True
+  - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+    is_pii: True
   - name: LastUpdateDate
-    field_type: datetime
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
-
+    field_type: datetime
 table_relationships:
   - foreign_table: OffenderName
     join_logic:
