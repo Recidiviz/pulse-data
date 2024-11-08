@@ -43,6 +43,8 @@ STAGING_SECONDARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_AR,
     StateCode.US_AZ,
     StateCode.US_IA,
+    StateCode.US_IX,
+    StateCode.US_ME,
     StateCode.US_MI,
     StateCode.US_MO,
     StateCode.US_ND,
