@@ -19,6 +19,7 @@ Snapshots for recidiviz/tests/workflows/querier/querier_test.py
 Update by running `pytest recidiviz/tests/admin_panel/routes/workflows_test.py --snapshot-update`
 You will need to replace this header afterward.
 """
+
 # -*- coding: utf-8 -*-
 # snapshottest: v1 - https://goo.gl/zC4yUc
 from __future__ import unicode_literals
@@ -65,6 +66,7 @@ snapshots[
         "subheading": "this is what the policy does",
         "tabGroups": {},
         "tooltipEligibilityText": "Eligible",
+        "zeroGrantsTooltip": "example tooltip",
     },
     {
         "callToAction": "do something",
@@ -101,6 +103,7 @@ snapshots[
         "subheading": "this is what the policy does",
         "tabGroups": {},
         "tooltipEligibilityText": "Eligible",
+        "zeroGrantsTooltip": "example tooltip",
     },
     {
         "callToAction": "do something",
@@ -137,5 +140,6 @@ snapshots[
         "subheading": "this is what the policy does",
         "tabGroups": {},
         "tooltipEligibilityText": "Eligible",
+        "zeroGrantsTooltip": "example tooltip",
     },
 ]

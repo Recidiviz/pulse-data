@@ -88,6 +88,7 @@ class OpportunityConfig:
     tab_groups: Optional[Dict[str, List[str]]] = attr.ib()
     compare_by: Optional[List[Any]] = attr.ib()
     notifications: List[Any] = attr.ib()
+    zero_grants_tooltip: Optional[str] = attr.ib()
 
     def to_dict(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
@@ -119,6 +120,7 @@ class OpportunityConfig:
             tab_groups=full_config.tab_groups,
             compare_by=full_config.compare_by,
             notifications=full_config.notifications,
+            zero_grants_tooltip=full_config.zero_grants_tooltip,
         )
 
 
@@ -170,6 +172,7 @@ class FullOpportunityConfig(OpportunityConfig):
             compare_by=config.compare_by,
             notifications=config.notifications,
             staging_id=config.staging_id,
+            zero_grants_tooltip=config.zero_grants_tooltip,
         )
 
 
@@ -211,4 +214,5 @@ class OpportunityConfigResponse(OpportunityInfo, OpportunityConfig):
             tab_groups=config.tab_groups,
             compare_by=config.compare_by,
             notifications=config.notifications,
+            zero_grants_tooltip=config.zero_grants_tooltip,
         )

@@ -89,6 +89,7 @@ export const babyOpportunityConfigurationSchema = z.object({
   ),
 
   description: z.string(),
+  zeroGrantsTooltip: nullishAsUndefined(z.string()),
 });
 
 export type BabyOpportunityConfiguration = z.infer<

@@ -1858,6 +1858,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                     }
                 ],
                 notifications=[],
+                zero_grants_tooltip="example tooltip",
             )
         }
 
@@ -1912,6 +1913,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                         "tabGroups": None,
                         "tooltipEligibilityText": "eligible",
                         "urlSection": "urlSection",
+                        "zeroGrantsTooltip": "example tooltip",
                     }
                 }
             },

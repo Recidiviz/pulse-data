@@ -296,6 +296,7 @@ class WorkflowsQuerier:
         compare_by: Optional[List[Any]],
         notifications: List[Any],
         staging_id: Optional[str] = None,
+        zero_grants_tooltip: Optional[str],
     ) -> int:
         """
         Given an opportunity type and a config, adds that config to the database,
@@ -339,6 +340,7 @@ class WorkflowsQuerier:
                     compare_by=compare_by,
                     notifications=notifications,
                     staging_id=staging_id,
+                    zero_grants_tooltip=zero_grants_tooltip,
                 )
                 .returning(OpportunityConfiguration.id)
             )
@@ -402,6 +404,7 @@ class WorkflowsQuerier:
             tab_groups=config.tab_groups,
             compare_by=config.compare_by,
             notifications=config.notifications,
+            zero_grants_tooltip=config.zero_grants_tooltip,
         )
 
     def deactivate_config(self, opportunity_type: str, config_id: int) -> None:

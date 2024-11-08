@@ -208,3 +208,6 @@ class OpportunityConfiguration(WorkflowsBase):
     # Hydrated in production to indicate which configuration in staging this
     # entity corresponds to
     staging_id = Column(Integer, nullable=True)
+
+    # Optional tooltip for the zero grants pill
+    zero_grants_tooltip = Column(String, nullable=True)
