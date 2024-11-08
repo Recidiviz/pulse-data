@@ -37,7 +37,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     no_tpr_removals_from_self_improvement_programs,
     no_transition_release_in_current_sentence_span,
     no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction,
-    not_serving_flat_sentence,
     within_6_months_of_recidiviz_tpr_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -73,11 +72,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction.VIEW_BUILDER,
         # c. No TPR denials in current incarceration, TPRs on current sentence and no ACIS TPR date
         AndTaskCriteriaGroup(
-            criteria_name="US_AZ_NO_TPR_DENIAL_OR_RELEASE_IN_CURRENT_INCARCERATION_OR_FLAT_SENTENCE",
+            criteria_name="US_AZ_NO_TPR_DENIAL_OR_RELEASE_IN_CURRENT_INCARCERATION",
             sub_criteria_list=[
                 no_tpr_denial_in_current_incarceration.VIEW_BUILDER,
                 no_transition_release_in_current_sentence_span.VIEW_BUILDER,
-                not_serving_flat_sentence.VIEW_BUILDER,
             ],
             allowed_duplicate_reasons_keys=[],
         ),
