@@ -601,7 +601,7 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
 
   const rawDataImportResourcesView = (
     <Descriptions bordered>
-      <Descriptions.Item label="Raw Data Input Bucket" span={3}>
+      <Descriptions.Item label="Raw Data Ingest Bucket" span={3}>
         {!ingestInstanceResources ? (
           <Spin />
         ) : (
