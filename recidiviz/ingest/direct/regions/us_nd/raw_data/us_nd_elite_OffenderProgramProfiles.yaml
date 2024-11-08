@@ -134,14 +134,25 @@ columns:
         description: Completed
       - value: NC
         description: Not completed
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-10-31T12:46:58.820113Z
   - name: OFFENDER_END_DATE_2
     description: |-
       Misnamed field, always empty. 
       TODO(#18645): Clarify with ND
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-10-31T12:46:58.8201130Z
   - name: OFFENDER_END_DATE_3
     description: |-
       Misnamed field, always empty. 
       TODO(#18645): Clarify with ND
+    update_history:
+      - update_type: DELETION
+        # This date might be wrong; there are no values for this column in the raw data table
+        # so I can't tell when it was deleted
+        update_datetime: 2023-10-12T00:00:00Z
   - name: OFFENDER_END_REASON
     description: |-
       The reason the person finished this program/activity.

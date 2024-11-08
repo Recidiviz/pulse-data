@@ -28,12 +28,20 @@ columns:
   - name: PENDING_CODE
     description: |-
       Code describing whether this episode is pending.
+    update_history:
+      # TODO(#34922) Ensure this column is not being used anywhere and was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2021-10-14T12:46:08.731983Z
   - name: LOCATION_ID
     description: |-
       ID of the location of the assigned FTR provider for this episode.
   - name: FUNCTIONAL_IMPAIRMENTS
     description: |-
       Codes of functional impairments to be treated during this episode.
+    update_history:
+      # TODO(#34922) Ensure this column is not being used anywhere and was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2023-06-30T12:45:38.310129Z
   - name: CURRENT_NEEDS
     description: |-
       A replacement field for FUNCTIONAL_IMPAIRMENTS. Codes of needs to be treated 
