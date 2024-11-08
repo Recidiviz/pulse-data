@@ -66,6 +66,8 @@ columns:
         description: "TODO(#7424): Update with definition."
       - value: CP
         description: "TODO(#7424): Update with definition."
+      - value: CT
+        description: "TODO(#7424): Update with definition."
       - value: CQ
         description: "TODO(#7424): Update with definition."
       - value: CR
@@ -142,6 +144,8 @@ columns:
         description: AMERICAN INDIAN OR ALASKAN NATIVE
       - value: W
         description: WHITE
+      - value: U
+        description: UNKNOWN
   - name: Sex
     description: |-
       An abbreviation that identifies the sex of a person.
@@ -356,6 +360,8 @@ columns:
         description: CHF PRIN CT CLK-MITTIMUS
       - value: CPLD
         description: CORRECTIONAL PLANNING DIRECTOR
+      - value: CPLN
+        description: "TODO(#7424): Update with definition."
       - value: CPMG
         description: CORRECTIONAL PROGRAM MANAGER
       - value: CPRN

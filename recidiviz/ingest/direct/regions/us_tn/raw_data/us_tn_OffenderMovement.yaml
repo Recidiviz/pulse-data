@@ -8,11 +8,11 @@ primary_key_cols:
   - MovementDateTime
 columns:
   - name: OffenderID
-    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
     field_type: person_external_id
     external_id_type: US_TN_DOC
+    is_pii: True
   - name: MovementDateTime
     description: |-
       The date on which a person  is moved from one location to another. / The time at which a person  was moved.
@@ -250,6 +250,10 @@ columns:
         description: MANDATORY PAROLE
       - value: MEDAD
         description: MEDICAL ADMIN
+      - value: MEDFR
+        description: "TODO(#7424): Update with definition."
+      - value: MEDFU
+        description: "TODO(#7424): Update with definition."
       - value: MEDOJ
         description: MED OTHER JUR
       - value: MEDRE
@@ -262,6 +266,10 @@ columns:
         description: MISDEMEANOR PROBATION
       - value: MIVOK
         description: MISDEMEANOR REVOKED
+      - value: MSELG
+        description: "TODO(#7424): Update with definition."
+      - value: MSIEL
+        description: "TODO(#7424): Update with definition."
       - value: NELIG
         description: NOT ELIGIBLE DUE TO LAW
       - value: NEWAD
@@ -297,7 +305,7 @@ columns:
       - value: PTVOK
         description: PARTIAL REVOCATION
       - value: PTVOS
-        description: # TODO(#11765): Fill in definition for code description
+        description: "TODO(#7424): Update with definition."
       - value: RCPAR
         description: ALREADY RECOMMENDED PAROLE
       - value: RECIS
@@ -383,13 +391,13 @@ columns:
           and readmitted for the weekend. This status is used for the re-release to
           supervision.
   - name: FromLocationID
-    is_pii: True
     description: |-
       This identifies an organizational/location entity. Location may include institutions, staff agencies, hospitals, etc. This is a database element.
+    is_pii: True
   - name: ToLocationID
-    is_pii: True
     description: |-
       This identifies an organizational/location entity. Location may include institutions, staff agencies, hospitals, etc. This is a database element.
+    is_pii: True
   - name: ArrivalDepartureFlag
     description: |-
       This indicates that the user is entereing either an arrival or a departure.
@@ -433,13 +441,12 @@ columns:
       - value: "`"
         description: "TODO(#7424): Update with definition."
   - name: LastUpdateUserID
-    is_pii: True
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+    is_pii: True
   - name: LastUpdateDate
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
-
 table_relationships:
   - foreign_table: OffenderName
     join_logic:
