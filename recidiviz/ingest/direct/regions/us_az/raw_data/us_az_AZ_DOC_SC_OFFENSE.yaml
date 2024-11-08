@@ -767,30 +767,12 @@ columns:
   - name: NUM_PROBATION_DAYS_ARD
     description: |-
       Number of days for probation, Adjust Release Dates
-    field_type: datetime
-    datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
-      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: NUM_PROBATION_DAYS_ML
     description: |-
       Number of days for probation, Manual Lock
-    field_type: datetime
-    datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
-      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: NUM_TEMP_RELEASE_DAYS_ARD
     description: |-
       Number of temporary release days, Adjust Release Dates
-    field_type: datetime
-    datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
-      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: NUM_TEMP_RELEASE_DAYS_ML
     description: |-
       Number of temporary release days, Manual Lock
