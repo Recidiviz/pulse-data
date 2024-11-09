@@ -118,9 +118,7 @@ def get_token_auth_header(auth_header: Optional[str] = None) -> str:
             header from Flask.request.
     """
     auth = (
-        auth_header
-        if auth_header is not None
-        else request.headers.get("Authorization", None)
+        auth_header if auth_header is not None else request.headers.get("Authorization")
     )
     if not auth:
         raise AuthorizationError(
