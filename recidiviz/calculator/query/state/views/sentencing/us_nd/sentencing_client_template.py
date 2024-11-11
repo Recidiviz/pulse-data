@@ -40,6 +40,8 @@ US_ND_SENTENCING_CLIENT_TEMPLATE = """
 SELECT
   DISTINCT REPLACE(psi.SID, ',', '') AS external_id,
   p.full_name as full_name,
+  p.gender,
+  p.birthdate,
   off_raw.COUNTY_RESIDENCE as county,
   COURT1,
   COURT2,
@@ -59,16 +61,4 @@ LEFT JOIN
     `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offenders_latest` off_raw
 ON 
     (REPLACE(psi.SID, ',', '') = off_raw.SID)
--- This join is most likely buggy, but can be used as an example of how to connect these data
--- to LSIR scores that have been associated with this person in the past. There is no LSIR
--- field on the PSI data specifically, so it is probably easiest to use this sessions view
--- of LSI raw data from ND. 
-LEFT JOIN
-    `{project_id}.{sessions_dataset}.us_nd_raw_lsir_assessments` lsir
-ON
--- I joined on the person, and then also limited the LSI results to those that were created
--- before the PSI was due. This still generated what I would expect to be far too many results; 
--- maybe we want to find the LSI results that were logged closest to the PSI due date? 
-    (lsir.person_id = p.person_id 
-    AND lsir.assessment_date < pARSE_DATETIME('%m/%d/%Y  %I:%M:%S %p', psi.DATE_DUE))
 """
