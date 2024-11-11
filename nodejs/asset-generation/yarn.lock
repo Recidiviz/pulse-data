@@ -1496,10 +1496,10 @@
   resolved "https://registry.yarnpkg.com/@google-cloud/promisify/-/promisify-4.0.0.tgz#a906e533ebdd0f754dca2509933334ce58b8c8b1"
   integrity sha512-Orxzlfb9c67A15cq2JQEyVc7wEsmFBmHjZWZYQMUyJ1qivXyMwdyNOs9odi79hze+2zqdTtu1E19IM/FtqZ10g==
 
-"@google-cloud/run@^0.5.0":
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/@google-cloud/run/-/run-0.5.0.tgz#0c47e4055614629aa8f659d1ce9884fad7412b12"
-  integrity sha512-EN8q0UeNGnKQXWFJWVeHWPAZQDwHBBi7ciECLlYvx64nRyWi1uMglUriQjD+8zGInjDS6s6euOBghBYpIYnDRg==
+"@google-cloud/run@^0.6.0":
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/@google-cloud/run/-/run-0.6.0.tgz#e72612608b89b148e262f88e0d6e8acfe00d43a3"
+  integrity sha512-yLtfBG3T2Z+LcTA6eKpxQL81eojEJhHiATsmC2K0tIMYnPB14/jJMc8WErj0DoGtumhgTOiupUR4KBD+vCIFlw==
   dependencies:
     google-gax "^3.5.8"
 
