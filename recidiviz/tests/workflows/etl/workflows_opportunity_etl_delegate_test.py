@@ -81,6 +81,8 @@ TEST_DATA = {
     "random_field_with_metadata": False,
     "opportunity_id": "id001",
     "opportunity_pseudonymized_id": "anon001",
+    "is_eligible": False,
+    "is_almost_eligible": True,
 }
 
 EXPECTED_DOCUMENT = {
@@ -147,8 +149,6 @@ EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED = {
     "ineligibleCriteria": {},
     "metadata": {},
     "caseNotes": {},
-    "isEligible": True,
-    "isAlmostEligible": False,
 }
 
 # Test data specific to IX for the ATLAS migration
@@ -178,8 +178,6 @@ EXPECTED_IX_DOCUMENT_WITHOUT_PREFIX_STRIPPED = {
     },
     "metadata": {},
     "caseNotes": {},
-    "isEligible": False,
-    "isAlmostEligible": True,
 }
 
 TEST_DATA_WITH_NESTED_CRITERIA = {
@@ -216,8 +214,6 @@ EXPECTED_DOCUMENT_WITH_NESTED_CRITERIA = {
     "ineligibleCriteria": {},
     "metadata": {},
     "caseNotes": {},
-    "isEligible": True,
-    "isAlmostEligible": False,
 }
 
 TEST_DATA_WITH_NO_EXTERNAL_ID = {
@@ -298,8 +294,6 @@ class TestWorkflowsETLDelegate(TestCase):
         expected: dict[str, Any] = deepcopy(EXPECTED_DOCUMENT)
         expected["eligibleCriteria"].update(expected["ineligibleCriteria"])
         expected["ineligibleCriteria"] = {}  # type: ignore
-        expected["isEligible"] = True
-        expected["isAlmostEligible"] = False
         new_document = delegate.build_document(data)
         self.assertEqual(
             expected,
@@ -314,8 +308,6 @@ class TestWorkflowsETLDelegate(TestCase):
         expected: dict[str, Any] = deepcopy(EXPECTED_DOCUMENT)
         expected["eligibleCriteria"].update(expected["ineligibleCriteria"])
         expected["ineligibleCriteria"] = {}  # type: ignore
-        expected["isEligible"] = True
-        expected["isAlmostEligible"] = False
         new_document = delegate.build_document(data)
         self.assertEqual(
             expected,
