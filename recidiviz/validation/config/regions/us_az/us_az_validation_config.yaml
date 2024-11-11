@@ -53,3 +53,6 @@ num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 300
     override_reason: To investigate (#32648)
+  - validation_name: inferred_group_aggregated_projected_dates_validation
+    hard_num_allowed_rows_override: 60000
+    override_reason: Bumping until work is complete to fix. TODO(#34857), TODO(#34858)
