@@ -26,7 +26,6 @@ from recidiviz.task_eligibility.completion_events.general import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     negative_da_within_90_days,
-    no_felony_within_24_months,
     on_supervision_at_least_one_year,
     supervision_level_is_not_limited,
     supervision_not_past_full_term_completion_date,
@@ -59,7 +58,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         negative_da_within_90_days.VIEW_BUILDER,
         lsir_level_low_for_90_days.VIEW_BUILDER,
-        no_felony_within_24_months.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
         income_verified_within_3_months.VIEW_BUILDER,
         on_supervision_at_least_one_year.VIEW_BUILDER,
