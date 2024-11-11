@@ -216,13 +216,14 @@ def get_admin_blueprint(
 
             # Add user to agencies
             if len(agency_ids_to_add) > 0:
-                agencies_to_add = [
-                    a for a in agencies if a.id in agency_ids_to_add
-                ] + child_agencies_to_add
+                agencies_to_add = set(
+                    [a for a in agencies if a.id in agency_ids_to_add]
+                    + child_agencies_to_add
+                )
                 UserAccountInterface.add_or_update_user_agency_association(
                     session=current_session,
                     user=user,
-                    agencies=agencies_to_add,
+                    agencies=list(agencies_to_add),
                 )
 
             # Remove user from agencies
