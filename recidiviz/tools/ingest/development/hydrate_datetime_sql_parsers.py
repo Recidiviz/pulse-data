@@ -55,10 +55,19 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 from recidiviz.utils.string import StrictStringFormatter
 
 DEFAULT_PARSERS_TO_TRY = [
+    # m/d/y format parsers
     "SAFE.PARSE_DATE('%m/%d/%y', {col_name})",
     "SAFE.PARSE_DATE('%m/%d/%Y', {col_name})",
-    "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', {col_name})",
     "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})",
+    # https://docs.python.org/3/library/time.html#time.strftime
+    # When used with the strptime() function, the %p directive only affects the output
+    # hour field if the %I directive is used to parse the hour.
+    "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', {col_name})",
+    # y-m-d format parsers
+    "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', {col_name})",
+    "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H', {col_name})",
+    "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', {col_name})",
+    "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %I:%M:%S%p', {col_name})",
 ]
 
 
