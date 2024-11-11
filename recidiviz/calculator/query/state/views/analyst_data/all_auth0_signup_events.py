@@ -57,7 +57,7 @@ WITH all_signups AS (
 SELECT
     CASE state_code WHEN "US_ID" THEN "US_IX" ELSE state_code END AS state_code,
     email_address,
-    CAST(timestamp AS DATETIME) AS signup_date,
+    DATETIME(timestamp, "US/Eastern") AS signup_date,
     has_workflows_access,
     has_insights_access,
 FROM
