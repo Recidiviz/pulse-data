@@ -20,7 +20,6 @@ someone in ID is eligible or almost eligible to complete the form for transfer t
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.criteria.general import (
     negative_da_within_90_days,
-    no_felony_within_24_months,
     not_serving_for_sexual_offense,
     on_supervision_at_least_one_year,
     supervision_level_is_not_limited,
@@ -62,7 +61,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         negative_da_within_90_days.VIEW_BUILDER,
         lsir_level_low_for_90_days.VIEW_BUILDER,
-        no_felony_within_24_months.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
         income_verified_within_3_months.VIEW_BUILDER,
         on_supervision_at_least_one_year.VIEW_BUILDER,
