@@ -539,16 +539,12 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             schema.UserAccount,
         )
         self.assertEqual(len(user.agency_assocs), 2)
-        self.assertEqual(user.agency_assocs[0].agency_id, self.agency_A_id)
-        self.assertEqual(
-            user.agency_assocs[0].role,
-            schema.UserAccountRole.AGENCY_ADMIN,
-        )
-        self.assertEqual(user.agency_assocs[1].agency_id, self.agency_B_id)
-        self.assertEqual(
-            user.agency_assocs[1].role,
-            schema.UserAccountRole.AGENCY_ADMIN,
-        )
+        for assoc in user.agency_assocs:
+            self.assertEqual(
+                assoc.role,
+                schema.UserAccountRole.AGENCY_ADMIN,
+            )
+            self.assertTrue(assoc.agency_id in {self.agency_A_id, self.agency_B_id})
 
         # Update Jane Smith, Add John Doe
         response = self.client.put(
