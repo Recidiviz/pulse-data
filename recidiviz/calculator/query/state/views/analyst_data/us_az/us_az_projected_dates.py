@@ -110,12 +110,8 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
           WHERE start_date != {nonnull_end_date_clause('end_date')}
             -- These ensure that the latest update_datetime is used for the given dates, as dates can be updated multiple times within a day
           QUALIFY
-            ROW_NUMBER() OVER (PARTITION BY person_id, state_code, start_date, end_date, csbd_date, ercd_date 
+            ROW_NUMBER() OVER (PARTITION BY person_id, state_code, start_date, end_date, csbd_date, ercd_date, acis_tpr_date, acis_dtp_date 
                 ORDER BY update_datetime DESC) = 1
-            AND ROW_NUMBER() OVER (PARTITION BY person_id, state_code, start_date, end_date, acis_tpr_date 
-                ORDER BY update_datetime DESC) = 1 
-            AND ROW_NUMBER() OVER (PARTITION BY person_id, state_code, start_date, end_date, acis_dtp_date 
-                ORDER BY update_datetime DESC) = 1 
           ),
       combine_cte AS (
           SELECT
