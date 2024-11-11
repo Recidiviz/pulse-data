@@ -54,7 +54,7 @@ WITH all_logins AS (
 SELECT
     CASE state_code WHEN "US_ID" THEN "US_IX" ELSE state_code END AS state_code,
     email_address,
-    CAST(timestamp AS DATETIME) AS login_date,
+    DATETIME(timestamp, "US/Eastern") AS login_date,
     has_workflows_access,
     has_insights_access,
 FROM

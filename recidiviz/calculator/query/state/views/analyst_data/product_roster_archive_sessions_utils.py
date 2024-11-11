@@ -165,7 +165,7 @@ registration_sessions AS (
     SELECT
         a.state_code,
         a.{product_name_str}_user_email_address,
-        GREATEST(a.start_date, b.{product_name_str}_registration_date) AS start_date,
+        GREATEST(a.start_date, DATE(b.{product_name_str}_registration_date)) AS start_date,
         a.end_date_exclusive,
         a.registration_session_id,
         a.system_type,
