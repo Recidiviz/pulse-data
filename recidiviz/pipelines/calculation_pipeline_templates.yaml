@@ -229,6 +229,18 @@ metric_pipelines:
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-west1
 
+  # Full US_TX calculations with no time limit
+  - pipeline: population_span_metrics
+    state_code: US_TX
+    metric_types: SUPERVISION_POPULATION_SPAN
+    region: us-central1
+    staging_only: True
+  - pipeline: supervision_metrics
+    state_code: US_TX
+    metric_types: SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE
+    region: us-central1
+    staging_only: True
+
 supplemental_dataset_pipelines:
   # TODO(#16661) Rename US_IX -> US_ID in this file when we are ready to migrate the
   # new ATLAS pipeline to run for US_ID
