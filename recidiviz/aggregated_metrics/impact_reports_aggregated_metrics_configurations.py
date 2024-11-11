@@ -211,6 +211,39 @@ DISTINCT_ACTIVE_USERS_SUPERVISION = [
     if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
 ]
 
+supervision_task_types = [
+    b.task_type_name
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.SUPERVISION
+]
+
+DISTINCT_ACTIVE_USERS_ALL_SUPERVISION_TASKS = EventDistinctUnitCountMetric(
+    name="distinct_active_users_supervision",
+    display_name="Distinct Active Users",
+    description="Number of distinct supervision Workflows users having at least one usage event during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"task_type": supervision_task_types},
+    ),
+)
+
+incarceration_task_types = [
+    b.task_type_name
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.completion_event_type.system_type == WorkflowsSystemType.INCARCERATION
+]
+
+DISTINCT_ACTIVE_USERS_ALL_INCARCERATION_TASKS = EventDistinctUnitCountMetric(
+    name="distinct_active_users_incarceration",
+    display_name="Distinct Active Users",
+    description="Number of distinct incarceration Workflows users having at least one usage event during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"task_type": incarceration_task_types},
+    ),
+)
+
+
 DISTINCT_REGISTERED_USERS_SUPERVISION = SpanDistinctUnitCountMetric(
     name="distinct_registered_users_supervision",
     display_name="Distinct Total Registered Users",
