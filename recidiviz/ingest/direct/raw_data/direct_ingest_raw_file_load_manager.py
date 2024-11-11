@@ -345,7 +345,7 @@ class DirectIngestRawFileLoadManager:
             )
 
         # TODO(#34610) Skip import entirely if there are no rows in an incremental file
-        if not skip_blocking_validations or (
+        if not skip_blocking_validations and (
             raw_rows_count != 0
             or self.region_raw_file_config.raw_file_configs[
                 file.file_tag
