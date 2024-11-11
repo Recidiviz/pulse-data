@@ -86,7 +86,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
             "experiment-" || experiment_id || "-" || variant_id as experiment_role,
             unit_id as email_address
         FROM `{{project_id}}.experiments_metadata.experiment_assignments_materialized`
-        WHERE unit_type="OFFICER"
+        WHERE unit_type IN ("OFFICER", "UNIT")
     ),
     all_users_with_experiments AS (
         SELECT all_users.* EXCEPT(roles),
