@@ -118,7 +118,7 @@ class OutliersMetric:
         """
         The query fragment to use to filter analyst_data.person_events for this metric's events
         """
-        return self.aggregated_metric.get_metric_conditions_string_no_newline()
+        return self.aggregated_metric.get_observation_conditions_string_no_newline()
 
 
 @attr.s

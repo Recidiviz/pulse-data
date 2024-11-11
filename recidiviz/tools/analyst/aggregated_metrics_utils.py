@@ -420,7 +420,7 @@ def get_person_events(
                     LEFT JOIN `normalized_state.state_person_external_id` pei
                         ON e.person_id = pei.person_id
                         AND e.state_code = pei.state_code
-                    WHERE ({' OR '.join(metric.get_metric_conditions())})
+                    WHERE ({metric.get_observation_conditions_string()})
                     {officer_ids_filter}
                     AND e.event_date BETWEEN {min_date_str} AND {max_date_str}
 

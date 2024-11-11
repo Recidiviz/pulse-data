@@ -86,36 +86,38 @@ class MetricConditionsMixin(Generic[ObservationTypeT]):
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:
         return self.unit_of_observation.type
 
-    # TODO(#29291): Simplify this to return just a `str` since there's now only one
-    #  fragment. Consider renaming get_metric_conditions* functions to
-    #  get_observation_conditions*.
-    def get_metric_conditions(self) -> List[str]:
-        """Returns a list of conditional query fragments filtering spans or events."""
+    def get_observation_conditions_string(self) -> str:
+        """Returns a query fragment that filters a rows that contain observation data
+        based on configured observation conditions for this metric.
+        """
         fragment = self.observation_selector.generate_observation_conditions_query_fragment(
             filter_by_observation_type=True,
-            # TODO(#29291): Figure out where get_metric_conditions() is being used and
-            #  pass as a parameter through to get_metric_conditions() instead of always
-            #  setting to True here so we can gate the new aggregated metric query code
-            #  properly.
+            # TODO(#29291): Figure out where get_observation_conditions_string() is
+            #  being used and pass as a parameter through to
+            #  get_observation_conditions_string() instead of always setting to True
+            #  here so we can gate the new aggregated metric query code properly.
             read_attributes_from_json=True,
-            # TODO(#29291): Simplify to pass this arg through from the other
-            #  get_metric_conditions* functions.
             strip_newlines=False,
         )
-        return [f"({fragment})"]
+        return f"({fragment})"
 
-    # TODO(#29291): Write tests for this
-    def get_metric_conditions_string(self) -> str:
-        """Returns a query fragment string that joins SQL conditional statements with `AND`."""
-        return "\n\t\t\t\tOR\n".join(self.get_metric_conditions())
-
-    # TODO(#29291): Write tests for this
-    def get_metric_conditions_string_no_newline(self) -> str:
+    def get_observation_conditions_string_no_newline(self) -> str:
+        """Returns a query fragment that filters a rows that contain observation data
+        based on configured observation conditions for this metric. All newlines are
+        stripped from the condition string so this can be used in places where we want
+        more succinct output.
         """
-        Returns a query fragment string that joins SQL conditional statements with `AND` without line breaks
-        or extra spaces, for more succinct print output.
-        """
-        return re.sub(r" +|\n+", " ", " OR ".join(self.get_metric_conditions()))
+        fragment = self.observation_selector.generate_observation_conditions_query_fragment(
+            filter_by_observation_type=True,
+            # TODO(#29291): Figure out where
+            #  get_observation_conditions_string_no_newline() is being used and pass as
+            #  a parameter through to get_observation_conditions_string_no_newline()
+            #  instead of always setting to True here so we can gate the new aggregated
+            #  metric query code properly.
+            read_attributes_from_json=True,
+            strip_newlines=True,
+        )
+        return f"({fragment})"
 
 
 @attr.define(frozen=True, kw_only=True, slots=False)
@@ -263,7 +265,7 @@ class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric):
                     LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
                     GREATEST({period_start_date_col}, {span_start_date_col}),
                     DAY)
-                ) * (IF({self.get_metric_conditions_string()}, 1, 0)) / DATE_DIFF({period_end_date_col}, {period_start_date_col}, DAY)
+                ) * (IF({self.get_observation_conditions_string()}, 1, 0)) / DATE_DIFF({period_end_date_col}, {period_start_date_col}, DAY)
             ) AS {self.name}
         """
 
@@ -303,7 +305,7 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric):
                         GREATEST({period_start_date_col}, {span_start_date_col}),
                         DAY
                     ) * IF(
-                        {self.get_metric_conditions_string()},
+                        {self.get_observation_conditions_string()},
                         CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.{self.span_value_numeric}") AS FLOAT64),
                         0
                     )
@@ -313,7 +315,7 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric):
                         LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
                         GREATEST({period_start_date_col}, {span_start_date_col}),
                         DAY
-                    ) * IF({self.get_metric_conditions_string()}, 1, 0)
+                    ) * IF({self.get_observation_conditions_string()}, 1, 0)
                 )
             ) AS {self.name}
         """
@@ -354,7 +356,7 @@ class DailyAvgTimeSinceSpanStartMetric(PeriodSpanAggregatedMetric):
                         GREATEST({period_start_date_col}, {span_start_date_col}),
                         DAY
                     ) * IF(
-                        {self.get_metric_conditions_string()},
+                        {self.get_observation_conditions_string()},
                         (
                             # Average of LoS on last day (inclusive) of period/span and LoS on first day of period/span
                             (DATE_DIFF(
@@ -373,7 +375,7 @@ class DailyAvgTimeSinceSpanStartMetric(PeriodSpanAggregatedMetric):
                         LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
                         GREATEST({period_start_date_col}, {span_start_date_col}),
                         DAY
-                    ) * IF({self.get_metric_conditions_string()}, 1, 0)
+                    ) * IF({self.get_observation_conditions_string()}, 1, 0)
                 )
             ) AS {self.name}
         """
@@ -421,7 +423,7 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric):
                     LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
                     GREATEST({period_start_date_col}, {span_start_date_col}),
                     DAY)
-                ) * (IF({self.get_metric_conditions_string()}, 1, 0))
+                ) * (IF({self.get_observation_conditions_string()}, 1, 0))
             ) AS {self.name}
         """
 
@@ -448,7 +450,7 @@ class SpanDistinctUnitCountMetric(PeriodSpanAggregatedMetric):
     ) -> str:
         return f"""
             COUNT(DISTINCT IF(
-                {self.get_metric_conditions_string()},
+                {self.get_observation_conditions_string()},
                 CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix="ses")}),
                 NULL
             )) AS {self.name}
@@ -473,7 +475,7 @@ class AssignmentSpanDaysMetric(AssignmentSpanAggregatedMetric):
     ) -> str:
         return f"""
             SUM(
-                IF({self.get_metric_conditions_string()}, DATE_DIFF(
+                IF({self.get_observation_conditions_string()}, DATE_DIFF(
                     LEAST(
                         DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
                         {nonnull_current_date_exclusive_clause(span_end_date_col)}
@@ -507,7 +509,7 @@ class AssignmentSpanMaxDaysMetric(AssignmentSpanAggregatedMetric):
         return f"""
             MAX(
                 IF(
-                    {self.get_metric_conditions_string()}
+                    {self.get_observation_conditions_string()}
                     AND {span_start_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
                     DATE_DIFF(
                         LEAST(
@@ -546,7 +548,7 @@ class AssignmentSpanValueAtStartMetric(AssignmentSpanAggregatedMetric):
         return f"""
             AVG(
                 IF(
-                    {self.get_metric_conditions_string()}
+                    {self.get_observation_conditions_string()}
                     AND {assignment_date_col} BETWEEN {span_start_date_col} AND {nonnull_current_date_exclusive_clause(span_end_date_col)},
                     CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.{self.span_value_numeric}") AS FLOAT64),
                     NULL
@@ -608,7 +610,7 @@ class EventCountMetric(PeriodEventAggregatedMetric):
         )
         return f"""
             COUNT(DISTINCT IF(
-                {self.get_metric_conditions_string()},
+                {self.get_observation_conditions_string()},
                 CONCAT(
                     {self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")}, 
                     {event_date_col}{event_segmentation_columns_str}
@@ -638,7 +640,7 @@ class EventValueMetric(PeriodEventAggregatedMetric):
     def generate_aggregation_query_fragment(self, event_date_col: str) -> str:
         return f"""
             AVG(IF(
-                {self.get_metric_conditions_string()},
+                {self.get_observation_conditions_string()},
                 CAST(JSON_EXTRACT_SCALAR(event_attributes, "$.{self.event_value_numeric}") AS FLOAT64),
                 NULL
             )) AS {self.name}
@@ -660,7 +662,7 @@ class EventDistinctUnitCountMetric(PeriodEventAggregatedMetric):
     def generate_aggregation_query_fragment(self, event_date_col: str) -> str:
         return f"""
             COUNT(DISTINCT IF(
-                {self.get_metric_conditions_string()},
+                {self.get_observation_conditions_string()},
                 CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")}),
                 NULL
             )) AS {self.name}
@@ -687,7 +689,7 @@ class AssignmentDaysToFirstEventMetric(AssignmentEventAggregatedMetric):
             MIN(DATE_DIFF(
                 IFNULL(
                     IF(
-                        {self.get_metric_conditions_string()},
+                        {self.get_observation_conditions_string()},
                         LEAST({event_date_col}, DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY)),
                         NULL
                     ), DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY)),
@@ -715,7 +717,7 @@ class AssignmentEventCountMetric(AssignmentEventAggregatedMetric):
         return f"""
             COUNT(
                 DISTINCT IF(
-                    {self.get_metric_conditions_string()}
+                    {self.get_observation_conditions_string()}
                     AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
                     CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")}, {event_date_col}),
                     NULL
@@ -741,7 +743,7 @@ class AssignmentEventBinaryMetric(AssignmentEventAggregatedMetric):
     ) -> str:
         return f"""
             CAST(LOGICAL_OR(
-                {self.get_metric_conditions_string()}
+                {self.get_observation_conditions_string()}
                 AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY)
             ) AS INT64) AS {self.name}"""
 
