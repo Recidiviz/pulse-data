@@ -6985,10 +6985,10 @@ mlly@^1.2.0:
     pkg-types "^1.0.2"
     ufo "^1.1.1"
 
-mock-gcs@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/mock-gcs/-/mock-gcs-1.0.4.tgz#0286eac66d74ab16c78bdb167775e9472f424758"
-  integrity sha512-f6NkI8eV9a2gdiC0UsARMJlh4MlGSSUTyHg0cSk/osKVyBgOWv7oj/bmdChpmInNBctIarVcywUFqg8IBG2Zpw==
+mock-gcs@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/mock-gcs/-/mock-gcs-1.2.0.tgz#44f4698a7b45e290b1fb4c935e05c64df8545ba6"
+  integrity sha512-/RsqqS9ZsjFnTNTYjOwW7q0y9Y84idZVNMA+S9kVdbWjPVq92jzxNWqBmOIEFY9D2O1JZw+wyGh9gwuMm3TT+g==
   dependencies:
     stream-buffers "^3.0.2"
 
