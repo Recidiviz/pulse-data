@@ -33,12 +33,17 @@ in the admin panel.
 _QUERY_TEMPLATE = f"""
 WITH product_roster_archive AS (
     SELECT
-        CASE state_code WHEN "US_ID" THEN "US_IX" ELSE state_code END AS state_code,
-        email_address,
-        export_date AS start_date,
-        LEAD(export_date) OVER (
-            PARTITION BY state_code, email_address ORDER BY export_date
-        ) AS end_date_exclusive,
+        CASE archive.state_code WHEN "US_ID" THEN "US_IX" ELSE archive.state_code END AS state_code,
+        archive.email_address,
+        archive.export_date AS start_date,
+        -- If this is the last export date for this user in product roster archive,
+        -- and there are other users having export dates after this date, close out the
+        -- session under the assumption that this user was removed from the roster.
+        -- If there was genuinely a gap in export rows over a span of day, 
+        -- the session will be closed out at the next available export date for the 
+        -- entire state. This logic allows us to close out users who genuinely left
+        -- the roster while still maintaining open periods over archive export failures.
+        MIN(future_exports.future_export_date) AS end_date_exclusive,
         ARRAY_TO_STRING(ARRAY(SELECT role FROM UNNEST(roles) AS role ORDER BY role), ",") AS roles_as_string,
         #TODO(#31965) district field is not guaranteed to be an id until roster sync is complete
         district AS location_id,
@@ -46,7 +51,14 @@ WITH product_roster_archive AS (
         IFNULL(routes_insights, FALSE) AS has_insights_access,
 
     FROM
-        `{{project_id}}.export_archives.product_roster_archive`
+        `{{project_id}}.export_archives.product_roster_archive` archive
+    LEFT JOIN (
+        SELECT DISTINCT state_code, export_date AS future_export_date
+        FROM `{{project_id}}.export_archives.product_roster_archive`
+    ) future_exports
+        ON archive.state_code = future_exports.state_code
+        AND archive.export_date < future_exports.future_export_date
+    GROUP BY 1, 2, 3, 5, 6, 7, 8
 )
 {aggregate_adjacent_spans(
     table_name='product_roster_archive',
