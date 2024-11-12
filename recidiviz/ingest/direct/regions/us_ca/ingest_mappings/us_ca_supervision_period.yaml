@@ -26,79 +26,135 @@ output:
                 - OffenderId
                 - period_sequence_number
           supervision_level:
-            $conditional:
-              - $if:
-                  $not_null: SupervisionLevel
-                $then:
+            $enum_mapping:
+              $raw_text: SupervisionLevel
+              $mappings:
+                # TODO(#21418) Is High Control actually higher?
+                StateSupervisionLevel.MAXIMUM:
+                  - High Control
+                  - OCS High Control
+                StateSupervisionLevel.HIGH:
+                  - Category A
+                  - SO Category A
+                StateSupervisionLevel.MEDIUM:
+                  - Category B
+                  - SO Category B
+                StateSupervisionLevel.MINIMUM:
+                  - Category C
+                  - SO Category C
+                  # TODO(#21418) Should Minimum be mapped to LIMITED?
+                  - Minimum Supervision
+                StateSupervisionLevel.IN_CUSTODY:
+                  - Category D
+                  - SO Category D
+                # I think you may be able to enter the Transition Phase in times
+                # besides simply Intake, so consider reconsindering.
+                StateSupervisionLevel.INTAKE:
+                  - Transition Phase
+                  - SO Transition Phase (TP)
+                StateSupervisionLevel.RESIDENTIAL_PROGRAM:
+                  - Category P
+                  - SO Category P
+                StateSupervisionLevel.LIMITED:
+                  - Deported
+                  - Pending Deport
+                  - Category E
+                  - SO Category E
+              $ignore:
+                - EO Non-Specialized
+                - OCS Sex Offender
+                - Act Gang GPS Specialized
+                - In-Home Det Monitor
+                - Act Gang GPS Non-Specialized
+                - In-Home Det Sanction
+                - Category I
+                - Pass P290 GPS Specialized
+                - Pass P290 GPS Non-Specialized
+                - Act HRSO GPS Non-Specialized
+                - Control Services
+                - SO Category I
+                - Act HRSO GPS Specialized
+                - Enhanced Outpatient
+                - SO Non-Specialized
+                - Second Striker
+                - Offender with Mental Health Disorder Non-Specialized
+                - CS Prop 36 Eligible
+                - High Risk Sex Offender
+                - MS Prop 36 Eligible
+                - HR Non-Specialized
+                - HC/HS Prop 36 Eligible
+                - Offender with Mental Health Disorder
+                - Trans Phase MISD
+                - High Services
+                - Vulnerable Release Program
+                - Low Super MISD
+                - Highest Super MISD
+                - Moderate Super MISD
+                - Community Custody Release
+                - In-Custody MISD
+                - EX and SX
+                - CS P36 Specialized Caseload
+          supervision_site: upper_ParoleUnit
+          case_type_entries:
+            - StateSupervisionCaseTypeEntry:
+                case_type:
                   $enum_mapping:
                     $raw_text: SupervisionLevel
                     $mappings:
-                      # TODO(#21418) Is High Control actually higher?
-                      StateSupervisionLevel.MAXIMUM:
+                      StateSupervisionCaseType.SEX_OFFENSE:
+                        - SO Category A
+                        - SO Category B
+                        - SO Category C
+                        - SO Category D
+                        - SO Category E
+                        - SO Category P
+                        - SO Transition Phase (TP)
+                        - SO Category I
+                        - SO Non-Specialized
+                        - OCS Sex Offender
+                      StateSupervisionCaseType.GENERAL:
                         - High Control
                         - OCS High Control
-                      StateSupervisionLevel.HIGH:
                         - Category A
-                        - SO Category A
-                      StateSupervisionLevel.MEDIUM:
                         - Category B
-                        - SO Category B
-                      StateSupervisionLevel.MINIMUM:
                         - Category C
-                        - SO Category C
-                        # TODO(#21418) Should Minimum be mapped to LIMITED?
                         - Minimum Supervision
-                      StateSupervisionLevel.IN_CUSTODY:
                         - Category D
-                        - SO Category D
-                      # I think you may be able to enter the Transition Phase in times
-                      # besides simply Intake, so consider reconsindering.
-                      StateSupervisionLevel.INTAKE:
                         - Transition Phase
-                        - SO Transition Phase (TP)
-                      StateSupervisionLevel.RESIDENTIAL_PROGRAM:
                         - Category P
-                        - SO Category P
-                      StateSupervisionLevel.LIMITED:
                         - Deported
                         - Pending Deport
                         - Category E
-                        - SO Category E
-                    $ignore:
-                      - EO Non-Specialized
-                      - OCS Sex Offender
-                      - Act Gang GPS Specialized
-                      - In-Home Det Monitor
-                      - Act Gang GPS Non-Specialized
-                      - In-Home Det Sanction
-                      - Category I
-                      - Pass P290 GPS Specialized
-                      - Pass P290 GPS Non-Specialized
-                      - Act HRSO GPS Non-Specialized
-                      - Control Services
-                      - SO Category I
-                      - Act HRSO GPS Specialized
-                      - Enhanced Outpatient
-                      - SO Non-Specialized
-                      - Second Striker
-                      - Offender with Mental Health Disorder Non-Specialized
-                      - CS Prop 36 Eligible
-                      - High Risk Sex Offender
-                      - MS Prop 36 Eligible
-                      - HR Non-Specialized
-                      - HC/HS Prop 36 Eligible
-                      - Offender with Mental Health Disorder
-                      - Trans Phase MISD
-                      - High Services
-                      - Vulnerable Release Program
-                      - Low Super MISD
-                      - Highest Super MISD
-                      - Moderate Super MISD
-                      - Community Custody Release
-                      - In-Custody MISD
-                      - EX and SX
-                      - CS P36 Specialized Caseload
-          supervision_site: upper_ParoleUnit
+                        - EO Non-Specialized
+                        - Act Gang GPS Specialized
+                        - In-Home Det Monitor
+                        - Act Gang GPS Non-Specialized
+                        - In-Home Det Sanction
+                        - Category I
+                        - Pass P290 GPS Specialized
+                        - Pass P290 GPS Non-Specialized
+                        - Act HRSO GPS Non-Specialized
+                        - Control Services
+                        - Act HRSO GPS Specialized
+                        - Enhanced Outpatient
+                        - Second Striker
+                        - Offender with Mental Health Disorder Non-Specialized
+                        - CS Prop 36 Eligible
+                        - High Risk Sex Offender
+                        - MS Prop 36 Eligible
+                        - HR Non-Specialized
+                        - HC/HS Prop 36 Eligible
+                        - Offender with Mental Health Disorder
+                        - Trans Phase MISD
+                        - High Services
+                        - Vulnerable Release Program
+                        - Low Super MISD
+                        - Highest Super MISD
+                        - Moderate Super MISD
+                        - Community Custody Release
+                        - In-Custody MISD
+                        - EX and SX
+                        - CS P36 Specialized Caseload
           supervision_type:
             # If someone's SupervisionLevel says they are deported, make them deported.
             # Otherwise, we use OffenderGroup to see if someone is absconded. If

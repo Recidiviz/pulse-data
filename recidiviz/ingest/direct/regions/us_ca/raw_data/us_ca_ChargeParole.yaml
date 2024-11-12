@@ -26,11 +26,21 @@ columns:
     description: |-
       Identifies the multiple offenses that may be part of the same sentence.
   - name: SentencingCounty
+    description: County the person was sentenced in
   - name: CaseNumber
+    description: |-
+      The case number associated with the charge. Can be used to group multiple charges
+      together.
   - name: CaseStatus
+    description: |-
+      Status of the case. Need to add known values
   - name: Offense
+    description: Offense code.
   - name: OffenseStatus
+    description: Status of the offense. Need to add known values.
   - name: OffenseDescription
+    description: Description of the offense.
   - name: PrincipalOffense
+    description: Whether or not this was the principal offense.
   - name: SentencingFactor
   - name: SentencingChainType
