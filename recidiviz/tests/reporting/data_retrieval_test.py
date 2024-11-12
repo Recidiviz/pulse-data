@@ -29,7 +29,7 @@ from recidiviz.outliers.types import (
 )
 from recidiviz.reporting.constants import ReportType
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixtures import (
-    config_fixture,
+    get_config_fixture_for_state,
 )
 from recidiviz.reporting.data_retrieval import filter_recipients, start
 from recidiviz.reporting.email_reporting_utils import Batch
@@ -80,9 +80,8 @@ class OutliersDataRetrievalTests(TestCase):
 class OutliersSupervisionOfficerSupervisorDataRetrievalTest(OutliersDataRetrievalTests):
     """Class for tests specific to OutliersSupervisionOfficerSupervisor report type"""
 
-    @property
-    def config(self) -> OutliersProductConfiguration:
-        return config_fixture
+    def config_for_state(self, state_code: StateCode) -> OutliersProductConfiguration:
+        return get_config_fixture_for_state(state_code)
 
     @property
     def report(self) -> OfficerSupervisorReportData:
@@ -102,7 +101,7 @@ class OutliersSupervisionOfficerSupervisorDataRetrievalTest(OutliersDataRetrieva
                 additional_email_addresses=["additional@recidiviz.org"],
                 data={
                     "report": self.report,
-                    "config": self.config,
+                    "config": self.config_for_state(StateCode.US_IX),
                     "review_year": "2023",
                     "review_month": "7",
                 },
@@ -150,7 +149,7 @@ class OutliersSupervisionOfficerSupervisorDataRetrievalTest(OutliersDataRetrieva
                 additional_email_addresses=["additional@recidiviz.org"],
                 data={
                     "report": self.report,
-                    "config": self.config,
+                    "config": self.config_for_state(StateCode.US_IX),
                     "review_year": "2023",
                     "review_month": "7",
                 },
@@ -197,7 +196,7 @@ class OutliersSupervisionOfficerSupervisorDataRetrievalTest(OutliersDataRetrieva
                 additional_email_addresses=[],
                 data={
                     "report": self.report,
-                    "config": self.config,
+                    "config": self.config_for_state(StateCode.US_IX),
                     "review_year": "2023",
                     "review_month": "7",
                 },

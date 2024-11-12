@@ -37,7 +37,7 @@ from recidiviz.reporting.context.outliers_supervision_officer_supervisor.context
     OutliersSupervisionOfficerSupervisorContext,
 )
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixtures import (
-    config_fixture,
+    get_config_fixture_for_state,
 )
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.email_generation import generate
@@ -95,9 +95,8 @@ class OutliersSupervisionOfficerSupervisorGenerationTest(EmailGenerationTests):
             report_type=self.report_type,
         )
 
-    @property
-    def config(self) -> OutliersProductConfiguration:
-        return config_fixture
+    def config_for_state(self, state_code: StateCode) -> OutliersProductConfiguration:
+        return get_config_fixture_for_state(state_code)
 
     @property
     def report(self) -> OfficerSupervisorReportData:
@@ -132,7 +131,7 @@ class OutliersSupervisionOfficerSupervisorGenerationTest(EmailGenerationTests):
                 state_code=state_code,
                 data={
                     "report": self.report,
-                    "config": self.config,
+                    "config": self.config_for_state(state_code),
                     "review_month": 6,
                     "review_year": 2023,
                 },
@@ -169,7 +168,7 @@ class OutliersSupervisionOfficerSupervisorGenerationTest(EmailGenerationTests):
                 state_code=state_code,
                 data={
                     "report": self.report,
-                    "config": self.config,
+                    "config": self.config_for_state(state_code),
                     "review_month": 6,
                     "review_year": 2023,
                 },

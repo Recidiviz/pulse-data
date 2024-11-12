@@ -35,10 +35,8 @@ from recidiviz.case_triage.outliers.outliers_authorization import (
     on_successful_authorization,
 )
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
-from recidiviz.outliers.constants import (
-    INCARCERATION_STARTS_AND_INFERRED,
-    VIOLATION_RESPONSES,
-)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.outliers.constants import VIOLATION_RESPONSES
 from recidiviz.outliers.types import (
     ActionStrategySurfacedEvent,
     ActionStrategyType,
@@ -46,7 +44,6 @@ from recidiviz.outliers.types import (
     ExcludedSupervisionOfficerEntity,
     OutliersBackendConfig,
     OutliersClientEventConfig,
-    OutliersMetricConfig,
     OutliersProductConfiguration,
     PersonName,
     SupervisionOfficerEntity,
@@ -63,21 +60,12 @@ from recidiviz.persistence.database.schema.insights.schema import (
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.insights.insights_db_test_case import InsightsDbTestCase
 from recidiviz.tests.insights.utils import load_model_from_json_fixture
-from recidiviz.tests.outliers.querier_test import TEST_CLIENT_EVENT_1, TEST_METRIC_3
-from recidiviz.utils.metadata import local_project_id_override
-
-TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
-    metric=INCARCERATION_STARTS_AND_INFERRED,
-    title_display_name="Incarceration Rate (CPVs & TPVs)",
-    body_display_name="incarceration rate",
-    event_name="incarcerations",
-    event_name_singular="incarceration",
-    event_name_past_tense="were incarcerated",
-    description_markdown="""Incarceration rate description
-
-<br />
-Incarceration rate denominator description""",
+from recidiviz.tests.outliers.querier_test import (
+    TEST_CLIENT_EVENT_1,
+    build_test_metric_1,
+    build_test_metric_3,
 )
+from recidiviz.utils.metadata import local_project_id_override
 
 TEST_CLIENT_EVENT = OutliersClientEventConfig.build(
     event=VIOLATION_RESPONSES, display_name="Sanctions"
@@ -228,7 +216,10 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             officer_has_no_eligible_clients_label="Nice! No outstanding opportunities for now.",
             supervision_unit_label="unit",
             supervision_supervisor_label="supervisor",
-            metrics=[TEST_METRIC_1, TEST_METRIC_3],
+            metrics=[
+                build_test_metric_1(StateCode.US_IX),
+                build_test_metric_3(StateCode.US_IX),
+            ],
             client_events=[TEST_CLIENT_EVENT],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1821,7 +1812,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
         )
 
         response = self.test_client.get(
@@ -1850,7 +1841,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
         )
 
         response = self.test_client.get(
@@ -1883,7 +1874,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
         )
 
         mock_get_officer_entity.return_value = None
@@ -1924,7 +1915,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -2001,7 +1992,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -2039,7 +2030,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             mock_get_events.return_value = (
                 session.query(SupervisionClientEvent)
                 .filter(
-                    SupervisionClientEvent.metric_id == TEST_METRIC_3.name,
+                    SupervisionClientEvent.metric_id
+                    == build_test_metric_3(StateCode.US_PA).name,
                     SupervisionClientEvent.client_id == "222",
                 )
                 .all()
@@ -2077,7 +2069,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -2128,7 +2120,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -2198,7 +2190,10 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3, TEST_METRIC_1],
+            metrics=[
+                build_test_metric_3(StateCode.US_PA),
+                build_test_metric_1(StateCode.US_PA),
+            ],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -2211,7 +2206,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             caseload_category="ALL",
             outlier_metrics=[
                 {
-                    "metric_id": TEST_METRIC_1.name,
+                    "metric_id": build_test_metric_1(StateCode.US_PA).name,
                     "statuses_over_time": [
                         {
                             "end_date": "2023-05-01",
@@ -2279,7 +2274,10 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3, TEST_METRIC_1],
+            metrics=[
+                build_test_metric_3(StateCode.US_PA),
+                build_test_metric_1(StateCode.US_PA),
+            ],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -2292,7 +2290,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             caseload_category="ALL",
             outlier_metrics=[
                 {
-                    "metric_id": TEST_METRIC_1.name,
+                    "metric_id": build_test_metric_1(StateCode.US_PA).name,
                     "statuses_over_time": [
                         {
                             "end_date": "2023-05-01",
@@ -2302,7 +2300,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                 },
                 {
-                    "metric_id": TEST_METRIC_3.name,
+                    "metric_id": build_test_metric_3(StateCode.US_PA).name,
                     "statuses_over_time": [
                         {
                             "end_date": "2023-05-01",
@@ -2325,7 +2323,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_get_events.assert_called_with(
             "hashhash",
-            [TEST_METRIC_3.name],
+            [build_test_metric_3(StateCode.US_PA).name],
             datetime.strptime("2023-05-01", "%Y-%m-%d"),
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -2359,7 +2357,10 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3, TEST_METRIC_1],
+            metrics=[
+                build_test_metric_3(StateCode.US_PA),
+                build_test_metric_1(StateCode.US_PA),
+            ],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -2391,7 +2392,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             mock_get_events.return_value = (
                 session.query(SupervisionClientEvent)
                 .filter(
-                    SupervisionClientEvent.metric_id == TEST_METRIC_3.name,
+                    SupervisionClientEvent.metric_id
+                    == build_test_metric_3(StateCode.US_PA).name,
                     SupervisionClientEvent.client_id == "222",
                 )
                 .all()
@@ -2411,7 +2413,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             self.snapshot.assert_match(response.json, name="test_get_events_by_officer_success")  # type: ignore[attr-defined]
             mock_get_events.assert_called_with(
                 "hashhash",
-                [TEST_METRIC_3.name],
+                [build_test_metric_3(StateCode.US_PA).name],
                 datetime.strptime("2023-05-01", "%Y-%m-%d"),
             )
 
@@ -2444,7 +2446,10 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3, TEST_METRIC_1],
+            metrics=[
+                build_test_metric_3(StateCode.US_PA),
+                build_test_metric_1(StateCode.US_PA),
+            ],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -2476,7 +2481,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             mock_get_events.return_value = (
                 session.query(SupervisionClientEvent)
                 .filter(
-                    SupervisionClientEvent.metric_id == TEST_METRIC_1.name,
+                    SupervisionClientEvent.metric_id
+                    == build_test_metric_1(StateCode.US_PA).name,
                     SupervisionClientEvent.client_id
                     == "444",  # this client fixture null supervision/assignment dates
                 )
@@ -2497,7 +2503,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             self.snapshot.assert_match(response.json, name="test_get_events_by_officer_success_with_null_dates")  # type: ignore[attr-defined]
             mock_get_events.assert_called_with(
                 "hashhash",
-                [TEST_METRIC_1.name],
+                [build_test_metric_1(StateCode.US_PA).name],
                 datetime.strptime("2023-05-01", "%Y-%m-%d"),
             )
 
@@ -2520,7 +2526,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
         )
 
         mock_get_officer_entity.return_value = None
@@ -2561,7 +2567,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -2634,7 +2640,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -2692,7 +2698,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -2766,7 +2772,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -3241,7 +3247,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -3279,7 +3285,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -3333,7 +3339,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -3382,7 +3388,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -3431,7 +3437,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -3480,7 +3486,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -3533,7 +3539,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -3585,7 +3591,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -3637,7 +3643,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_3],
+            metrics=[build_test_metric_3(StateCode.US_PA)],
             client_events=[TEST_CLIENT_EVENT_1],
         )
 

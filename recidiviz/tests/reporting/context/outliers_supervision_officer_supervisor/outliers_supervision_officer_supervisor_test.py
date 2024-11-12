@@ -36,9 +36,9 @@ from recidiviz.reporting.context.outliers_supervision_officer_supervisor.context
 )
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixtures import (
     create_fixture,
+    get_metric_fixtures_for_state,
     highlighted_officers_fixture_adverse,
     highlighted_officers_fixture_favorable_zero,
-    metric_fixtures,
     other_officers_fixture_adverse,
     other_officers_fixture_favorable_zero,
     target_fixture_adverse,
@@ -56,6 +56,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
 
     def setUp(self) -> None:
         self.test_email = "test-outliers-supervisor@recidiviz.org"
+        self.metric_fixtures = get_metric_fixtures_for_state(StateCode.US_XX)
         self.batch = Batch(
             state_code=StateCode.US_XX,
             batch_id="20230614123033",
@@ -75,9 +76,9 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             supervision_unit_label="unit",
             supervision_supervisor_label="supervisor",
             metrics=[
-                metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
-                metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
-                metric_fixtures[EARLY_DISCHARGE_REQUESTS],
+                self.metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
+                self.metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
+                self.metric_fixtures[EARLY_DISCHARGE_REQUESTS],
             ],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -163,7 +164,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
         test_report = OfficerSupervisorReportData(
             metrics=[
                 create_fixture(
-                    metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
+                    self.metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
                     target_fixture_adverse,
                     other_officers_fixture_adverse,
                     highlighted_officers_fixture_adverse,
@@ -184,7 +185,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
         test_report = OfficerSupervisorReportData(
             metrics=[
                 create_fixture(
-                    metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
+                    self.metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
                     target_fixture_adverse,
                     other_officers_fixture_adverse,
                     highlighted_officers_fixture_adverse,
@@ -229,7 +230,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
 
         test_report.metrics = [
             create_fixture(
-                metric_fixtures[EARLY_DISCHARGE_REQUESTS],
+                self.metric_fixtures[EARLY_DISCHARGE_REQUESTS],
                 target_fixture_favorable_zero,
                 other_officers_fixture_favorable_zero,
                 highlighted_officers_fixture_favorable_zero,
@@ -268,19 +269,19 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             OfficerSupervisorReportData(
                 metrics=[
                     create_fixture(
-                        metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
+                        self.metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
                         target_fixture_adverse,
                         other_officers_fixture_adverse,
                         highlighted_officers_fixture_adverse[:2],
                     ),
                     create_fixture(
-                        metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
+                        self.metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
                         target_fixture_adverse,
                         other_officers_fixture_adverse,
                         highlighted_officers_fixture_adverse,
                     ),
                     create_fixture(
-                        metric_fixtures[EARLY_DISCHARGE_REQUESTS],
+                        self.metric_fixtures[EARLY_DISCHARGE_REQUESTS],
                         target_fixture_favorable_zero,
                         other_officers_fixture_favorable_zero,
                         highlighted_officers_fixture_favorable_zero[:1],
@@ -338,7 +339,9 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
         actual = self._get_prepared_data(
             OfficerSupervisorReportData(
                 metrics=[],
-                metrics_without_outliers=[metric_fixtures[ABSCONSIONS_BENCH_WARRANTS]],
+                metrics_without_outliers=[
+                    self.metric_fixtures[ABSCONSIONS_BENCH_WARRANTS]
+                ],
                 recipient_email_address=self.test_email,
                 additional_recipients=[],
             )
@@ -349,8 +352,8 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             OfficerSupervisorReportData(
                 metrics=[],
                 metrics_without_outliers=[
-                    metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
-                    metric_fixtures[EARLY_DISCHARGE_REQUESTS],
+                    self.metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
+                    self.metric_fixtures[EARLY_DISCHARGE_REQUESTS],
                 ],
                 recipient_email_address=self.test_email,
                 additional_recipients=[],
@@ -365,9 +368,9 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             OfficerSupervisorReportData(
                 metrics=[],
                 metrics_without_outliers=[
-                    metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
-                    metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
-                    metric_fixtures[EARLY_DISCHARGE_REQUESTS],
+                    self.metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
+                    self.metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
+                    self.metric_fixtures[EARLY_DISCHARGE_REQUESTS],
                 ],
                 recipient_email_address=self.test_email,
                 additional_recipients=[],

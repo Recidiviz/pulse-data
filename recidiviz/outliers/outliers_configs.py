@@ -58,9 +58,10 @@ US_CA_EXCLUDED_UNITS = [
 ]
 
 _OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
-    StateCode.US_ID: OutliersBackendConfig(
+    StateCode.US_IX: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_IX,
                 metric=INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
                 title_display_name="Incarceration Rate",
                 body_display_name="incarceration rate",
@@ -74,6 +75,7 @@ The denominator is the average daily caseload for the officer over the given tim
                 list_table_text="""Clients will appear on this list multiple times if they have been incarcerated more than once under this officer in the time period.""",
             ),
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_IX,
                 metric=VIOLATIONS_ABSCONSION,
                 is_absconsion_metric=True,
                 title_display_name="Absconsion Rate",
@@ -109,6 +111,7 @@ The denominator is the average daily caseload for the officer over the given tim
     StateCode.US_PA: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_PA,
                 metric=INCARCERATION_STARTS_AND_INFERRED,
                 title_display_name="Incarceration Rate (CPVs & TPVs)",
                 body_display_name="incarceration rate",
@@ -117,6 +120,7 @@ The denominator is the average daily caseload for the officer over the given tim
                 event_name_past_tense="were incarcerated",
             ),
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_PA,
                 metric=INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
                 title_display_name="Technical Incarceration Rate (TPVs)",
                 body_display_name="technical incarceration rate",
@@ -125,6 +129,7 @@ The denominator is the average daily caseload for the officer over the given tim
                 event_name_past_tense="had a technical incarceration",
             ),
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_PA,
                 metric=ABSCONSIONS_BENCH_WARRANTS,
                 is_absconsion_metric=True,
                 title_display_name="Absconsion Rate",
@@ -143,6 +148,7 @@ The denominator is the average daily caseload for the officer over the given tim
     StateCode.US_MI: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_MI,
                 metric=INCARCERATION_STARTS_AND_INFERRED,
                 title_display_name="Incarceration Rate",
                 body_display_name="incarceration rate",
@@ -156,6 +162,7 @@ Denominator is the average daily caseload for the agent over the given time peri
                 list_table_text="""Clients will appear on this list multiple times if they have been incarcerated more than once under this agent in the time period.""",
             ),
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_MI,
                 metric=ABSCONSIONS_BENCH_WARRANTS,
                 is_absconsion_metric=True,
                 title_display_name="Absconder Warrant Rate",
@@ -188,6 +195,7 @@ Denominator is the average daily caseload for the agent over the given time peri
     StateCode.US_TN: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_TN,
                 metric=INCARCERATION_STARTS,
                 title_display_name="Incarceration Rate",
                 body_display_name="incarceration rate",
@@ -200,6 +208,7 @@ Denominator is the average daily caseload for the agent over the given time peri
 Denominator is the average daily caseload for the officer over the given time period, including people on both active and admin supervision levels.""",
             ),
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_TN,
                 metric=ABSCONSIONS_BENCH_WARRANTS,
                 is_absconsion_metric=True,
                 title_display_name="Absconsion Rate",
@@ -213,6 +222,7 @@ Denominator is the average daily caseload for the officer over the given time pe
 Denominator is the average daily caseload for the officer over the given time period, including people on both active and admin supervision levels.""",
             ),
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_TN,
                 metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
                 title_display_name="Technical Incarceration Rate",
                 body_display_name="technical incarceration rate",
@@ -256,6 +266,7 @@ Denominator is the average daily caseload for the officer over the given time pe
     StateCode.US_CA: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_CA,
                 metric=ABSCONSIONS_BENCH_WARRANTS,
                 is_absconsion_metric=True,
                 title_display_name="Absconding Rate",
@@ -268,6 +279,7 @@ Denominator is the average daily caseload for the officer over the given time pe
 Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
             ),
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_CA,
                 metric=TREATMENT_STARTS,
                 title_display_name="Program Start Rate",
                 body_display_name="program start rate",
@@ -289,6 +301,7 @@ Denominator is the average daily caseload for the agent over the given time peri
     StateCode.US_ND: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_ND,
                 metric=INCARCERATION_STARTS_AND_INFERRED,
                 # TODO(#31528): Check wording with TTs
                 title_display_name="Incarceration Rate",
@@ -302,6 +315,7 @@ Denominator is the average daily caseload for the agent over the given time peri
 Denominator is the average daily caseload for the agent over the given time period.""",
             ),
             OutliersMetricConfig.build_from_metric(
+                state_code=StateCode.US_ND,
                 metric=ABSCONSIONS_BENCH_WARRANTS,
                 is_absconsion_metric=True,
                 # TODO(#31528): Check wording with TTs
@@ -341,7 +355,7 @@ for config in _OUTLIERS_BACKEND_CONFIGS_BY_STATE.values():
 
 
 def get_outliers_backend_config(state_code: str) -> OutliersBackendConfig:
-    if state_code == StateCode.US_IX.value:
-        return _OUTLIERS_BACKEND_CONFIGS_BY_STATE[StateCode.US_ID]
+    if state_code == StateCode.US_ID.value:
+        return _OUTLIERS_BACKEND_CONFIGS_BY_STATE[StateCode.US_IX]
 
     return _OUTLIERS_BACKEND_CONFIGS_BY_STATE[StateCode(state_code)]

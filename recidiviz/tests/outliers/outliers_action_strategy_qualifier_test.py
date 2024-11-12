@@ -21,6 +21,7 @@ from unittest import TestCase
 
 import freezegun
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
 )
@@ -954,6 +955,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
         config = OutliersBackendConfig(
             metrics=[
                 OutliersMetricConfig.build_from_metric(
+                    state_code=StateCode.US_XX,
                     metric=INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
                     title_display_name="Technical Incarceration Rate (TPVs)",
                     body_display_name="technical incarceration rate",

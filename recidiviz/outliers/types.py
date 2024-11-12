@@ -28,7 +28,10 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import EventCountMetr
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     InsightsCaseloadCategoryType,
 )
+from recidiviz.common import attr_validators
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import person_name_case
+from recidiviz.observations.event_type import EventType
 from recidiviz.persistence.database.schema.insights.schema import (
     ACTION_STRATEGIES_DEFAULT_COPY,
 )
@@ -146,13 +149,33 @@ class OutliersClientEvent:
         return self.aggregated_metric.name
 
 
-@attr.s(eq=False, kw_only=True)
+@attr.s(frozen=True, kw_only=True)
 class OutliersMetricConfig:
     """
     Represents all information needed for a single metric in the Outliers products
     """
 
+    # The state associated with this metric configuration. This is nulled out in API
+    # responses because it is unused in the frontend.
+    #
+    # TODO(#16661): This state_code value represents the state_code value in
+    #  the *data*. This this distinction is only meaningful for US_ID/US_IX and we only
+    #  null out this field in API responses because the frontend has no concept of US_IX
+    #  and shouldn't ever see US_IX. We could start sending this value to the frontend
+    #  once
+    state_code: StateCode | None = attr.ib(
+        validator=attr_validators.is_opt(StateCode), default=None
+    )
+
+    # The name of the underlying EventCountMetric for this metric
     name: str = attr.ib()
+
+    # The EventType for observations referenced by the underlying underlying
+    # EventCountMetric for this metric. This is nulled out in API responses because it
+    # is unused in the frontend.
+    event_observation_type: EventType | None = attr.ib(
+        validator=attr_validators.is_opt(EventType), default=None
+    )
 
     outcome_type: MetricOutcome = attr.ib()
 
@@ -176,8 +199,10 @@ class OutliersMetricConfig:
     # displayed when a user clicks on the info icon next to the metric.
     description_markdown: str = attr.ib()
 
-    # The query fragment to use to filter analyst_data.person_events for this metric's events
-    metric_event_conditions_string: str = attr.ib(default=None)
+    # The query fragment to use to filter analyst_data.person_events for this metric's
+    # events. This is nulled out in API responses because it is unused in the frontend.
+    # because it is unused in the frontend.
+    metric_event_conditions_string: str | None = attr.ib(default=None)
 
     # The top percent (as an integer) of officers to highlight for this metric, if applicable;
     # i.e. top_x_pct = 10 translates to highlighting officers that are in the top 10%
@@ -193,6 +218,7 @@ class OutliersMetricConfig:
     def build_from_metric(
         cls,
         *,
+        state_code: StateCode,
         metric: OutliersMetric,
         title_display_name: str,
         body_display_name: str,
@@ -206,8 +232,10 @@ class OutliersMetricConfig:
         list_table_text: str | None = None,
     ) -> "OutliersMetricConfig":
         return cls(
+            state_code=state_code,
             name=metric.name,
             outcome_type=metric.outcome_type,
+            event_observation_type=metric.aggregated_metric.event_type,
             title_display_name=title_display_name,
             body_display_name=body_display_name,
             event_name=event_name,
@@ -277,9 +305,14 @@ class OutliersBackendConfig:
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
 
-        # Omit the conditions string since this is only used in BQ views.
+        # Omit the state_code, event_observation_type, and
+        # metric_event_conditions_string fields since they are only used in BQ views.
         metrics_unst_hook = make_dict_unstructure_fn(
-            OutliersMetricConfig, c, metric_event_conditions_string=override(omit=True)
+            OutliersMetricConfig,
+            c,
+            metric_event_conditions_string=override(omit=True),
+            event_observation_type=override(omit=True),
+            state_code=override(omit=True),
         )
         c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
 
@@ -381,7 +414,11 @@ class OfficerSupervisorReportData:
 
         # Omit the conditions string since this is only used in BQ views.
         metrics_unst_hook = make_dict_unstructure_fn(
-            OutliersMetricConfig, c, metric_event_conditions_string=override(omit=True)
+            OutliersMetricConfig,
+            c,
+            metric_event_conditions_string=override(omit=True),
+            event_observation_type=override(omit=True),
+            state_code=override(omit=True),
         )
         c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
 
@@ -574,9 +611,14 @@ class OutliersProductConfiguration:
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
 
-        # Omit the conditions string since this is only used in BQ views.
+        # Omit the state_code, event_observation_type, and
+        # metric_event_conditions_string fields since they are only used in BQ views.
         metrics_unst_hook = make_dict_unstructure_fn(
-            OutliersMetricConfig, c, metric_event_conditions_string=override(omit=True)
+            OutliersMetricConfig,
+            c,
+            metric_event_conditions_string=override(omit=True),
+            event_observation_type=override(omit=True),
+            state_code=override(omit=True),
         )
         c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
 

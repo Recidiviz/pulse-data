@@ -80,10 +80,10 @@ from recidiviz.reporting.context.outliers_supervision_officer_supervisor.data_re
 )
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixtures import (
     create_fixture,
+    get_metric_fixtures_for_state,
     highlighted_officers_fixture_adverse,
     highlighted_officers_fixture_favorable,
     highlighted_officers_fixture_favorable_zero,
-    metric_fixtures,
     other_officers_fixture_adverse,
     other_officers_fixture_favorable,
     other_officers_fixture_favorable_zero,
@@ -361,6 +361,7 @@ if __name__ == "__main__":
         test_report_date = datetime.datetime.now()
         test_state_code = StateCode.US_OZ
 
+        metric_fixtures = get_metric_fixtures_for_state(test_state_code)
         test_config = OutliersProductConfiguration(
             updated_at=datetime.datetime(2024, 1, 1),
             updated_by="alexa@recidiviz.org",
