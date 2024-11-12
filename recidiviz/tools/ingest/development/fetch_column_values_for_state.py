@@ -28,6 +28,7 @@ After running the script, be sure to either fill in or delete any blank descript
 Example Usage:
     python -m recidiviz.tools.ingest.development.fetch_column_values_for_state --state-code US_ND \
         --project-id recidiviz-staging \
+        --issue-id 1234 \
         [--file-tag-filters RAW_TABLE_1 RAW_TABLE_2] \
         [--sandbox_dataset_prefix SANDBOX_DATASET_PREFIX]
 """
@@ -47,7 +48,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 from recidiviz.tools.ingest.development.raw_data_config_writer import (
     RawDataConfigWriter,
 )
@@ -61,6 +61,7 @@ def _get_known_values(
     state_code: StateCode,
     project_id: str,
     bq_client: BigQueryClientImpl,
+    default_description: str,
     sandbox_dataset_prefix: Optional[str],
 ) -> RawTableColumnInfo:
     """Creates a list of possible enum values for a column in a given table"""
@@ -92,9 +93,15 @@ ORDER BY
     for value in distinct_values:
         if value not in existing_values:
             new_known_values_list.append(
-                ColumnEnumValueInfo(value=value, description=PLACEHOLDER_TO_DO_STRING)
+                ColumnEnumValueInfo(value=value, description=default_description)
             )
-    new_known_values_list.sort()
+
+    new_known_values_list.sort(
+        key=lambda e: (
+            e.value.isdigit(),
+            int(e.value) if e.value.isdigit() else e.value.lower(),
+        )
+    )
     return RawTableColumnInfo(
         name=column.name,
         description=column.description,
@@ -108,6 +115,7 @@ def _update_enum_known_values(
     original_config: DirectIngestRawFileConfig,
     project_id: str,
     bq_client: BigQueryClientImpl,
+    default_description: str,
     sandbox_dataset_prefix: Optional[str],
 ) -> DirectIngestRawFileConfig:
     new_columns = [
@@ -117,6 +125,7 @@ def _update_enum_known_values(
             original_config.state_code,
             project_id,
             bq_client,
+            default_description,
             sandbox_dataset_prefix,
         )
         for column in original_config.columns
@@ -151,6 +160,7 @@ def main(
     state_code: str,
     project_id: str,
     file_tags: List[str],
+    issue_id: int,
     sandbox_dataset_prefix: Optional[str],
 ) -> None:
     """Update columns in raw data configs with known values fetched from BigQuery."""
@@ -174,10 +184,11 @@ def main(
         config for config in raw_file_configs if config.has_enums
     ]:
         updated_raw_file_config = _update_enum_known_values(
-            original_raw_file_config,
-            project_id,
-            bq_client,
-            sandbox_dataset_prefix,
+            original_config=original_raw_file_config,
+            project_id=project_id,
+            bq_client=bq_client,
+            default_description="TO" + "DO(#" + f"{issue_id}): Document this value.",
+            sandbox_dataset_prefix=sandbox_dataset_prefix,
         )
         raw_data_config_writer = RawDataConfigWriter()
         raw_data_config_writer.output_to_file(
@@ -217,6 +228,14 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--issue-id",
+        dest="issue_id",
+        help="The ID for the issue tracking the documentation of the newly added fields.",
+        type=int,
+        required=True,
+    )
+
+    parser.add_argument(
         "--file-tag-filters",
         dest="file_tags",
         default=[],
@@ -249,5 +268,6 @@ if __name__ == "__main__":
             args.state_code,
             args.project_id,
             args.file_tags,
+            args.issue_id,
             args.sandbox_dataset_prefix,
         )
