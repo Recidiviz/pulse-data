@@ -17,7 +17,7 @@
 """Interface for working with the AgencySetting model."""
 
 
-from typing import Any, List
+from typing import Any, List, Optional
 
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -54,4 +54,19 @@ class AgencySettingInterface:
             session.query(schema.AgencySetting)
             .filter(schema.AgencySetting.source_id == agency_id)
             .all()
+        )
+
+    @staticmethod
+    def get_agency_setting_by_setting_type(
+        session: Session,
+        agency_id: int,
+        setting_type: schema.AgencySettingType,
+    ) -> Optional[schema.AgencySetting]:
+        return (
+            session.query(schema.AgencySetting)
+            .filter(
+                schema.AgencySetting.source_id == agency_id,
+                schema.AgencySetting.setting_type == setting_type.value,
+            )
+            .one_or_none()
         )

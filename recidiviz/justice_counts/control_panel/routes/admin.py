@@ -26,6 +26,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
@@ -256,7 +257,7 @@ def get_admin_blueprint(
         Instead, associations will be fetched on-demand when an Agency Panel is opened.
         """
         agencies = AgencyInterface.get_agencies(
-            session=current_session, with_users=False, with_settings=False
+            session=current_session, with_users=False, with_settings=True
         )
         super_agency_id_to_child_agency_ids = defaultdict(list)
         for agency in agencies:
@@ -270,6 +271,15 @@ def get_admin_blueprint(
             agency_json = agency.to_json(with_team=False, with_settings=False)
             agency_json["child_agency_ids"] = super_agency_id_to_child_agency_ids.get(
                 agency.id, []
+            )
+            agency_setting_type_to_value = {
+                a.setting_type: a.value for a in agency.agency_settings
+            }
+            agency_json["agency_url"] = agency_setting_type_to_value.get(
+                schema.AgencySettingType.HOMEPAGE_URL.value
+            )
+            agency_json["agency_description"] = agency_setting_type_to_value.get(
+                schema.AgencySettingType.PURPOSE_AND_FUNCTIONS.value
             )
             agency_jsons.append(agency_json)
 
@@ -327,8 +337,8 @@ def get_admin_blueprint(
                         ),
                     }
                 )
-
         agency_json = agency.to_json(with_team=False, with_settings=False)
+
         return jsonify(
             {
                 "agency": agency_json,
@@ -415,6 +425,22 @@ def get_admin_blueprint(
             )
             current_session.refresh(agency)
 
+        if request_json.get("agency_description") is not None:
+            AgencySettingInterface.create_or_update_agency_setting(
+                session=current_session,
+                agency_id=agency.id,
+                setting_type=schema.AgencySettingType.PURPOSE_AND_FUNCTIONS,
+                value=request_json.get("agency_description"),
+            )
+
+        if request_json.get("agency_url") is not None:
+            AgencySettingInterface.create_or_update_agency_setting(
+                session=current_session,
+                agency_id=agency.id,
+                setting_type=schema.AgencySettingType.HOMEPAGE_URL,
+                value=request_json.get("agency_url"),
+            )
+
         if request_json.get("team") is not None:
             # Prepare all the values that should be "upserted" to the DB
             values = []
@@ -459,10 +485,32 @@ def get_admin_blueprint(
         # The commit will clear assocs from session and we need the agency users
         # in the JSON response.
         agency = AgencyInterface.get_agency_by_id(
-            session=current_session, agency_id=agency.id, with_users=True
+            session=current_session,
+            agency_id=agency.id,
+            with_users=True,
         )
 
         agency_json = agency.to_json()
+
+        url_agency_setting = AgencySettingInterface.get_agency_setting_by_setting_type(
+            session=current_session,
+            agency_id=agency.id,
+            setting_type=schema.AgencySettingType.HOMEPAGE_URL,
+        )
+
+        description_setting = AgencySettingInterface.get_agency_setting_by_setting_type(
+            session=current_session,
+            agency_id=agency.id,
+            setting_type=schema.AgencySettingType.PURPOSE_AND_FUNCTIONS,
+        )
+
+        agency_json["agency_url"] = (
+            url_agency_setting.value if url_agency_setting is not None else None
+        )
+        agency_json["agency_description"] = (
+            description_setting.value if description_setting is not None else None
+        )
+
         agency_json["child_agency_ids"] = [a.id for a in child_agencies]
         return jsonify(agency_json)
 
