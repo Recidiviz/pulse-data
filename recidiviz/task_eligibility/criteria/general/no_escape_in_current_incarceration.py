@@ -19,11 +19,12 @@ Shows the spans of time during which someone is ineligible for a task because th
 an escape sentence in their current incarceration.
 """
 from google.cloud import bigquery
+
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -52,10 +53,10 @@ SELECT
   cs.end_date,
   False AS meets_criteria,
   TO_JSON(STRUCT(
-      ARRAY_AGG(e.description) AS ineligible_offenses_descriptions,
+      ARRAY_AGG(e.description ORDER BY e.description) AS ineligible_offenses_descriptions,
       MAX(e.date_imposed) AS most_recent_escape_date
   )) AS reason,
-  ARRAY_AGG(e.description) AS ineligible_offenses_descriptions,
+  ARRAY_AGG(e.description ORDER BY e.description) AS ineligible_offenses_descriptions,
   MAX(e.date_imposed) AS most_recent_escape_date
 FROM `{project_id}.{sessions_dataset}.incarceration_super_sessions_materialized` cs
 INNER JOIN escape_related_sentences e

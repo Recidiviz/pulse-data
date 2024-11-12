@@ -51,7 +51,7 @@ WITH payments_n_invoices AS (
         change_date,
         SUM(invoice_amount) AS invoice_amount,
         SUM(activity_amount) AS activity_amount,
-        STRING_AGG(transaction_type) AS transaction_type,
+        STRING_AGG(transaction_type ORDER BY transaction_type) AS transaction_type,
       FROM (
           SELECT 
             state_code,

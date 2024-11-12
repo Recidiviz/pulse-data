@@ -104,7 +104,10 @@ eligible_clients AS (
 three_progress_notes AS (
   SELECT 
     plan_detail_id,
-    STRING_AGG(CONCAT(STRING(note_date), ': ', progress_notes), "; ") AS last_3_progress_notes
+    STRING_AGG(
+        CONCAT(STRING(note_date), ': ', progress_notes), "; "
+        ORDER BY STRING(note_date), progress_notes
+    ) AS last_3_progress_notes
   FROM (
       SELECT 
         DISTINCT
@@ -253,7 +256,12 @@ array_case_notes_for_eligible_folks AS (
     SELECT 
       external_id,
       -- Group all notes into an array within a JSON
-      TO_JSON(ARRAY_AGG( STRUCT(note_title, note_body, event_date, criteria))) AS case_notes,
+      TO_JSON(
+        ARRAY_AGG(
+            STRUCT(note_title, note_body, event_date, criteria)
+            ORDER BY note_title, note_body, event_date, criteria
+        )
+      ) AS case_notes,
     FROM case_notes_cte cn
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON cn.person_id = pei.person_id

@@ -86,7 +86,7 @@ SELECT
     start_date,
     end_date,
     LOGICAL_AND(is_drug_span) AS meets_criteria,
-    TO_JSON(STRUCT( ARRAY_AGG(DISTINCT description) AS ineligible_offenses)) AS reason,
+    TO_JSON(STRUCT( ARRAY_AGG(DISTINCT description ORDER BY description) AS ineligible_offenses)) AS reason,
     ARRAY_AGG(DISTINCT description ORDER BY description) AS ineligible_offenses,
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4

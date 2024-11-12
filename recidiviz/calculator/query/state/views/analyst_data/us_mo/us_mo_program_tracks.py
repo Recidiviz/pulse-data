@@ -196,7 +196,7 @@ flag_120 AS (
 ),
 board_mandated AS (
   SELECT person_id, 
-         ARRAY_AGG(CI_SPC) AS special_conditions,
+         ARRAY_AGG(CI_SPC ORDER BY CI_SPC) AS special_conditions,
   FROM `{{project_id}}.{{analyst_dataset}}.us_mo_sentencing_dates_preprocessed_materialized`
   LEFT JOIN `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK046_latest`
       ON doc_id = CI_DOC

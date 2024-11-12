@@ -68,14 +68,14 @@ SELECT
     end_date,
     FALSE AS meets_criteria,
     TO_JSON(STRUCT(
-        STRING_AGG(evaluation_result, ' - ') AS evaluation_result,
-        STRING_AGG(assess_comment_text, ' - ') AS assess_comment_text,
-        STRING_AGG(committee_comment_text, ' - ') AS committee_comment,
+        STRING_AGG(evaluation_result, ' - ' ORDER BY evaluation_result) AS evaluation_result,
+        STRING_AGG(assess_comment_text, ' - ' ORDER BY assess_comment_text) AS assess_comment_text,
+        STRING_AGG(committee_comment_text, ' - ' ORDER BY committee_comment_text) AS committee_comment,
         MAX(next_review_date) AS next_review_date
     )) AS reason,
-    STRING_AGG(evaluation_result, ' - ') AS evaluation_result,
-    STRING_AGG(assess_comment_text, ' - ') AS assess_comment_text,
-    STRING_AGG(committee_comment_text, ' - ') AS committee_comment_text,
+    STRING_AGG(evaluation_result, ' - ' ORDER BY evaluation_result) AS evaluation_result,
+    STRING_AGG(assess_comment_text, ' - ' ORDER BY assess_comment_text) AS assess_comment_text,
+    STRING_AGG(committee_comment_text, ' - ' ORDER BY committee_comment_text) AS committee_comment_text,
     MAX(next_review_date) AS next_review_date,
 FROM sub_sessions_with_attributes
 WHERE start_date != {nonnull_end_date_clause('end_date')}

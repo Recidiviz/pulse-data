@@ -218,7 +218,7 @@ _QUERY_TEMPLATE = f"""
             COALESCE(LOGICAL_OR(meets_criteria_high_12_months_since_positive),TRUE) AS meets_criteria_high_12_months_since_positive,
             LOGICAL_OR(meets_criteria_latest_screen_negative) AS meets_criteria_latest_screen_negative,            
             TO_JSON(ARRAY_AGG(
-                reason
+                reason ORDER BY JSON_VALUE(reason, "$.criteria_name")
             )) AS reason,
 
             ANY_VALUE(JSON_EXTRACT(reason_v2, "$.latest_alcohol_drug_need_level")) AS alc_drug_need_level,

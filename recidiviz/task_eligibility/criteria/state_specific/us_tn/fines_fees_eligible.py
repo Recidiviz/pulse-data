@@ -94,7 +94,7 @@ _QUERY_TEMPLATE = f"""
         end_date,
         LOGICAL_OR(meets_criteria) AS meets_criteria,
         TO_JSON(ARRAY_AGG(
-            reason
+            reason ORDER BY JSON_VALUE(reason, "$.criteria_name")
         )) AS reason,
         ANY_VALUE(JSON_EXTRACT(JSON_EXTRACT(reason, "$.reason"), "$.amount_owed")) AS amount_owed,
         ANY_VALUE(JSON_EXTRACT(JSON_EXTRACT(reason, "$.reason"), "$.consecutive_monthly_payments")) AS consecutive_monthly_payments,

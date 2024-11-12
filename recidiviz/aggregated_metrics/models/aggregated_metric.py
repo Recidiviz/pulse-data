@@ -172,7 +172,7 @@ class MiscAggregatedMetric(AggregatedMetric):
     unit_of_analysis_types: List[MetricUnitOfAnalysisType]
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
-        return f"ARRAY_AGG({self.name}) AS {self.name}"
+        return f"ARRAY_AGG({self.name} ORDER BY {self.name}) AS {self.name}"
 
     @classmethod
     def pretty_name(cls) -> str:

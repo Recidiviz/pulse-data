@@ -98,10 +98,10 @@ SELECT
     NOT LOGICAL_OR(cd.critical_date_has_passed) AS meets_criteria,
     --only included sentence dates where meets_criteria is FALSE
     TO_JSON(STRUCT(
-      IF(LOGICAL_OR(cd.critical_date_has_passed), ARRAY_AGG(cd.critical_date), NULL)
+      IF(LOGICAL_OR(cd.critical_date_has_passed), ARRAY_AGG(cd.critical_date ORDER BY cd.critical_date), NULL)
         AS latest_ineligible_convictions
     )) AS reason,
-    IF(LOGICAL_OR(cd.critical_date_has_passed), ARRAY_AGG(cd.critical_date), NULL)
+    IF(LOGICAL_OR(cd.critical_date_has_passed), ARRAY_AGG(cd.critical_date ORDER BY cd.critical_date), NULL)
         AS latest_ineligible_convictions,
 FROM sub_sessions_with_attributes cd
 GROUP BY 1,2,3,4

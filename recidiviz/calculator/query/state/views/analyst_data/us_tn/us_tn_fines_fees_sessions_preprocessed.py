@@ -103,7 +103,7 @@ US_TN_FINES_FEES_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
             change_date,
             SUM(invoice_amount) AS invoice_amount,
             SUM(activity_amount) AS activity_amount,
-            STRING_AGG(transaction_type) AS transaction_type
+            STRING_AGG(transaction_type ORDER BY transaction_type) AS transaction_type
         FROM
             population_change_dates
         GROUP BY

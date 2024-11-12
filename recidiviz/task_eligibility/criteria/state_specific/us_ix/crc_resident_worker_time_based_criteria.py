@@ -75,7 +75,9 @@ _CRITERIA_QUERY_3 = """
     FROM `{project_id}.{task_eligibility_criteria_us_ix}.incarceration_within_3_years_of_tpd_and_life_sentence_materialized`
     WHERE meets_criteria"""
 
-_JSON_CONTENT = """ARRAY_AGG(reason) AS reasons"""
+_JSON_CONTENT = (
+    """ARRAY_AGG(reason ORDER BY JSON_VALUE(reason, "$.criteria_name")) AS reasons"""
+)
 
 _QUERY_TEMPLATE = f"""
 WITH combined_query AS (

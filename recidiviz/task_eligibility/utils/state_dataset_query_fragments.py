@@ -207,12 +207,12 @@ SELECT
     end_date,
     FALSE AS meets_criteria,
     TO_JSON(STRUCT(
-        ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
-        ARRAY_AGG(DISTINCT description) AS ineligible_offenses_descriptions,
+        ARRAY_AGG(DISTINCT statute ORDER BY statute) AS ineligible_offenses,
+        ARRAY_AGG(DISTINCT description ORDER BY description) AS ineligible_offenses_descriptions,
         MAX({start_date_column}) AS {statute_date_name}
     )) AS reason,
-    ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
-    ARRAY_AGG(DISTINCT description) AS ineligible_offenses_descriptions,
+    ARRAY_AGG(DISTINCT statute ORDER BY statute) AS ineligible_offenses,
+    ARRAY_AGG(DISTINCT description ORDER BY description) AS ineligible_offenses_descriptions,
     MAX({start_date_column}) AS {statute_date_name},
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4,5"""
@@ -530,7 +530,10 @@ deduped_sub_sessions_with_attributes AS (
         start_date,
         end_date,
         true AS meets_criteria, -- See only_true_critical_date_spans CTE.
-        ARRAY_AGG(STRUCT(program_id, program_start_date, program_end_date)) AS programs
+        ARRAY_AGG(
+            STRUCT(program_id, program_start_date, program_end_date)
+            ORDER BY program_id, program_start_date, program_end_date
+        ) AS programs
     FROM sub_sessions_with_attributes
     GROUP BY state_code, person_id, start_date, end_date
 )

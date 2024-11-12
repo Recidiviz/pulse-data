@@ -81,7 +81,7 @@ aggregated_modifier_spans AS (
         start_date,
         end_date, 
         False AS meets_criteria,
-        STRING_AGG(Modifier, ', ') AS active_modifiers
+        STRING_AGG(Modifier, ', ' ORDER BY Modifier) AS active_modifiers
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4,5
 )

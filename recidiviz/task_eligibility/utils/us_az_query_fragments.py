@@ -118,7 +118,7 @@ def no_current_or_prior_convictions(
             start_date,
             end_date,
             meets_criteria,
-            TO_JSON(STRUCT( ARRAY_AGG(DISTINCT description) AS {reasons_field_name})) AS reason,
+            TO_JSON(STRUCT( ARRAY_AGG(DISTINCT description ORDER BY description) AS {reasons_field_name})) AS reason,
             ARRAY_AGG(DISTINCT description ORDER BY description) AS {reasons_field_name},
         FROM sub_sessions_with_attributes
         GROUP BY 1,2,3,4,5

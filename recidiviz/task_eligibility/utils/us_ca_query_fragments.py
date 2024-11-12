@@ -82,7 +82,7 @@ critical_date_spans AS (
         DATE_ADD(adj.start_date, INTERVAL {from_x_months} MONTH) AS start_datetime,
         adj.end_date AS end_datetime,
         DATE_ADD(adj.start_date, INTERVAL {to_x_months} MONTH) AS critical_date,
-        ARRAY_AGG(DISTINCT un.status_employer_start_date) AS status_employer_start_date,
+        ARRAY_AGG(DISTINCT un.status_employer_start_date ORDER BY un.status_employer_start_date) AS status_employer_start_date,
     FROM has_employment_agg_adj_spans adj
     LEFT JOIN has_employment_unnested un
     ON adj.state_code = un.state_code

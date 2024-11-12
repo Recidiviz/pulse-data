@@ -60,8 +60,8 @@ SELECT
   start_date,
   end_date,
   TRUE AS meets_criteria,
-  TO_JSON(STRUCT(ARRAY_AGG(DISTINCT status_employer_start_date) AS status_employer_start_date)) AS reason,
-  ARRAY_AGG(DISTINCT status_employer_start_date) AS status_employer_start_date_array,
+  TO_JSON(STRUCT(ARRAY_AGG(DISTINCT status_employer_start_date ORDER BY status_employer_start_date) AS status_employer_start_date)) AS reason,
+  ARRAY_AGG(DISTINCT status_employer_start_date ORDER BY status_employer_start_date) AS status_employer_start_date_array,
 FROM sub_sessions_with_attributes
 WHERE start_date < {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4

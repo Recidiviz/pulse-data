@@ -91,7 +91,7 @@ SELECT
     TRUE AS meets_criteria,
     TO_JSON(STRUCT(
         MAX(registration_start_date) AS latest_registration_requirement,
-        ARRAY_AGG(DISTINCT registration_type) AS registration_types
+        ARRAY_AGG(DISTINCT registration_type ORDER BY registration_type) AS registration_types
     )) AS reason,
     MAX(registration_start_date) AS latest_registration_requirement,
     ARRAY_AGG(DISTINCT registration_type ORDER BY registration_type) AS registration_types,
