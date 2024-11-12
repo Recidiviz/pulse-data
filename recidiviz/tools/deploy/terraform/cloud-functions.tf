@@ -23,123 +23,163 @@ data "google_secret_manager_secret_version" "po_report_cdn_static_ip" {
   secret = "po_report_cdn_static_IP"
 }
 
-# TODO(#33506): Upgrade this function to a 2nd gen function. Docs:
-#  https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloudfunctions2_function
-resource "google_cloudfunctions_function" "trigger_calculation_dag" {
-  name          = "trigger_calculation_dag"
-  runtime       = "python311"
-  max_instances = 3000
+resource "google_cloudfunctions2_function" "trigger_calculation_dag" {
+  name     = "trigger_calculation_dag"
+  location = "us-central1"
+  build_config {
+    runtime     = "python311"
+    entry_point = "trigger_calculation_dag"
+    environment_variables = {
+      # Hacky workaround since source directory option is broken https://issuetracker.google.com/issues/248110968
+      GOOGLE_INTERNAL_REQUIREMENTS_FILES = "recidiviz/cloud_functions/requirements.txt"
+      GOOGLE_FUNCTION_SOURCE             = "recidiviz/cloud_functions/main.py"
+    }
+    source {
+      repo_source {
+        repo_name  = "github_Recidiviz_pulse-data"
+        commit_sha = var.git_hash
+      }
+    }
+  }
 
   labels = {
     "deployment-tool" = "terraform"
   }
 
+  service_config {
+    max_instance_count = 3000
+    ingress_settings   = "ALLOW_INTERNAL_ONLY"
+    environment_variables = {
+      # This is an output variable from the composer environment, relevant docs:
+      # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
+      "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
+      "GCP_PROJECT" = var.project_id
+    }
+  }
+
   event_trigger {
-    event_type = "google.pubsub.topic.publish"
-    resource   = "projects/${var.project_id}/topics/v1.calculator.trigger_calculation_pipelines"
-  }
-  ingress_settings = "ALLOW_INTERNAL_ONLY"
-
-  entry_point = "trigger_calculation_dag"
-  environment_variables = {
-    # This is an output variable from the composer environment, relevant docs:
-    # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
-    "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
-    "GCP_PROJECT" = var.project_id
-  }
-
-  source_repository {
-    url = local.repo_url
+    event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic = "projects/${var.project_id}/topics/v1.calculator.trigger_calculation_pipelines"
   }
 }
 
-# TODO(#33506): Upgrade this function to a 2nd gen function. Docs:
-#  https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloudfunctions2_function
-resource "google_cloudfunctions_function" "trigger_hourly_monitoring_dag" {
-  name          = "trigger_hourly_monitoring_dag"
-  runtime       = "python311"
-  max_instances = 3000
+resource "google_cloudfunctions2_function" "trigger_hourly_monitoring_dag" {
+  name     = "trigger_hourly_monitoring_dag"
+  location = "us-central1"
+  build_config {
+    runtime     = "python311"
+    entry_point = "trigger_hourly_monitoring_dag"
+    environment_variables = {
+      # Hacky workaround since source directory option is broken https://issuetracker.google.com/issues/248110968
+      GOOGLE_INTERNAL_REQUIREMENTS_FILES = "recidiviz/cloud_functions/requirements.txt"
+      GOOGLE_FUNCTION_SOURCE             = "recidiviz/cloud_functions/main.py"
+    }
+    source {
+      repo_source {
+        repo_name  = "github_Recidiviz_pulse-data"
+        commit_sha = var.git_hash
+      }
+    }
+  }
 
   labels = {
     "deployment-tool" = "terraform"
   }
 
+  service_config {
+    max_instance_count = 3000
+    ingress_settings   = "ALLOW_INTERNAL_ONLY"
+    environment_variables = {
+      # This is an output variable from the composer environment, relevant docs:
+      # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
+      "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
+      "GCP_PROJECT" = var.project_id
+    }
+  }
+
   event_trigger {
-    event_type = "google.pubsub.topic.publish"
-    resource   = "projects/${var.project_id}/topics/v1.airflow_monitoring.trigger_hourly_monitoring_dag"
-  }
-  ingress_settings = "ALLOW_INTERNAL_ONLY"
-
-  entry_point = "trigger_hourly_monitoring_dag"
-  environment_variables = {
-    # This is an output variable from the composer environment, relevant docs:
-    # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
-    "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
-    "GCP_PROJECT" = var.project_id
-  }
-
-  source_repository {
-    url = local.repo_url
+    event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic = "projects/${var.project_id}/topics/v1.airflow_monitoring.trigger_hourly_monitoring_dag"
   }
 }
 
-# TODO(#33506): Upgrade this function to a 2nd gen function. Docs:
-#  https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloudfunctions2_function
-resource "google_cloudfunctions_function" "trigger_sftp_dag" {
-  name          = "trigger_sftp_dag"
-  runtime       = "python311"
-  max_instances = 3000
+resource "google_cloudfunctions2_function" "trigger_sftp_dag" {
+  name     = "trigger_sftp_dag"
+  location = "us-central1"
+  build_config {
+    runtime     = "python311"
+    entry_point = "trigger_sftp_dag"
+    environment_variables = {
+      # Hacky workaround since source directory option is broken https://issuetracker.google.com/issues/248110968
+      GOOGLE_INTERNAL_REQUIREMENTS_FILES = "recidiviz/cloud_functions/requirements.txt"
+      GOOGLE_FUNCTION_SOURCE             = "recidiviz/cloud_functions/main.py"
+    }
+    source {
+      repo_source {
+        repo_name  = "github_Recidiviz_pulse-data"
+        commit_sha = var.git_hash
+      }
+    }
+  }
 
   labels = {
     "deployment-tool" = "terraform"
   }
 
   event_trigger {
-    event_type = "google.pubsub.topic.publish"
-    resource   = google_pubsub_topic.sftp_pubsub_topic.id
-  }
-  ingress_settings = "ALLOW_INTERNAL_ONLY"
-
-  entry_point = "trigger_sftp_dag"
-  environment_variables = {
-    # This is an output variable from the composer environment, relevant docs:
-    # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
-    "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
-    "GCP_PROJECT" = var.project_id
+    event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic = google_pubsub_topic.sftp_pubsub_topic.id
   }
 
-  source_repository {
-    url = local.repo_url
+  service_config {
+    max_instance_count = 3000
+    ingress_settings   = "ALLOW_INTERNAL_ONLY"
+    environment_variables = {
+      # This is an output variable from the composer environment, relevant docs:
+      # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
+      "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
+      "GCP_PROJECT" = var.project_id
+    }
   }
 }
 
-# TODO(#33506): Upgrade this function to a 2nd gen function. Docs:
-#  https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloudfunctions2_function
-resource "google_cloudfunctions_function" "trigger_raw_data_import_dag" {
-  name          = "trigger_raw_data_import_dag"
-  runtime       = "python311"
-  max_instances = 3000
+resource "google_cloudfunctions2_function" "trigger_raw_data_import_dag" {
+  name     = "trigger_raw_data_import_dag"
+  location = "us-central1"
+  build_config {
+    runtime     = "python311"
+    entry_point = "trigger_raw_data_import_dag"
+    environment_variables = {
+      # Hacky workaround since source directory option is broken https://issuetracker.google.com/issues/248110968
+      GOOGLE_INTERNAL_REQUIREMENTS_FILES = "recidiviz/cloud_functions/requirements.txt"
+      GOOGLE_FUNCTION_SOURCE             = "recidiviz/cloud_functions/main.py"
+    }
+    source {
+      repo_source {
+        repo_name  = "github_Recidiviz_pulse-data"
+        commit_sha = var.git_hash
+      }
+    }
+  }
 
   labels = {
     "deployment-tool" = "terraform"
   }
 
+  service_config {
+    max_instance_count = 3000
+    ingress_settings   = "ALLOW_INTERNAL_ONLY"
+    environment_variables = {
+      # This is an output variable from the composer environment, relevant docs:
+      # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
+      "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
+      "GCP_PROJECT" = var.project_id
+    }
+  }
+
   event_trigger {
-    event_type = "google.pubsub.topic.publish"
-    resource   = google_pubsub_topic.raw_data_import_dag_pubsub_topic.id
-  }
-  ingress_settings = "ALLOW_INTERNAL_ONLY"
-
-  entry_point = "trigger_raw_data_import_dag"
-  environment_variables = {
-    # This is an output variable from the composer environment, relevant docs:
-    # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
-    "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
-    "GCP_PROJECT" = var.project_id
-  }
-
-  source_repository {
-    url = local.repo_url
+    event_type   = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic = google_pubsub_topic.raw_data_import_dag_pubsub_topic.id
   }
 }
 
