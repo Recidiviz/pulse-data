@@ -534,11 +534,6 @@ state_supervision_period:
       authority for someone on probation, even though the courts are the body with
       the power to make decisions about that person's path through the system.
     custodial_authority_raw_text: The raw text value of the supervision period's custodial authority.
-    legal_authority: >-
-      The type of government entity responsible for making decisions
-      about a person's path through the system. Not necessarily the same entity
-      responsible for the person during this period of time.
-    legal_authority_raw_text: The raw text value of the supervision period legal authority.
     start_date: The date the person began this period of supervision.
     supervising_officer_staff_external_id: >-
       The external id of this person's supervising officer during this period. 

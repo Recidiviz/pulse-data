@@ -205,63 +205,6 @@ _STATE_SUPERVISION_ADMISSION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
 
 
 @unique
-class StateSupervisionPeriodLegalAuthority(StateEntityEnum):
-    """State Legal Authority for a period of supervision"""
-
-    COUNTY = state_enum_strings.state_supervision_period_legal_authority_county
-    COURT = state_enum_strings.state_supervision_period_legal_authority_court
-    FEDERAL = state_enum_strings.state_supervision_period_legal_authority_federal
-    OTHER_COUNTRY = (
-        state_enum_strings.state_supervision_period_legal_authority_other_country
-    )
-    OTHER_STATE = (
-        state_enum_strings.state_supervision_period_legal_authority_other_state
-    )
-    STATE_PRISON = (
-        state_enum_strings.state_supervision_period_legal_authority_state_prison
-    )
-    SUPERVISION_AUTHORITY = (
-        state_enum_strings.state_supervision_period_legal_authority_supervision_authority
-    )
-    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @classmethod
-    def get_enum_description(cls) -> str:
-        return (
-            "The type of government entity responsible for making decisions about "
-            "a person’s path through the system. Not necessarily the same entity  "
-            "responsible for the person during this period of time."
-        )
-
-    @classmethod
-    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
-        return _STATE_SUPERVISION_LEGAL_AUTHORITY_VALUE_DESCRIPTIONS
-
-
-_STATE_SUPERVISION_LEGAL_AUTHORITY_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateSupervisionPeriodLegalAuthority.COUNTY: "Describes a county-level authority, "
-    "usually a county jail entity. This is typically used when a person is under the "
-    "legal authority of a county, though not necessarily in their custody.",
-    StateSupervisionPeriodLegalAuthority.COURT: "Describes a court level authority, "
-    "should be used when the court has legal authority to make decision's about a "
-    "person's path in the system but they are not necessarily in court's custody",
-    StateSupervisionPeriodLegalAuthority.FEDERAL: "Describes a federal level authority, "
-    "usually a federal facility. This is typical used when the legal authority comes from "
-    "the federal level but a person might not necessarily be in federal custody.",
-    StateSupervisionPeriodLegalAuthority.OTHER_COUNTRY: "Indicates that another country "
-    "has legal authority over this person, even if they are in custody or on supervision elsewhere.",
-    StateSupervisionPeriodLegalAuthority.OTHER_STATE: "Indicates that another state "
-    "has legal authority over this person, even if they are in custody or on supervision "
-    "in another state.",
-    StateSupervisionPeriodLegalAuthority.STATE_PRISON: "Indicates that the state prison has "
-    "legal authority over this person even if they are in a facility or on supervision elsewhere.",
-    StateSupervisionPeriodLegalAuthority.SUPERVISION_AUTHORITY: "Indicates that a supervision authority "
-    "has legal authority over this person even if they may be housed elsewhere.",
-}
-
-
-@unique
 class StateSupervisionLevel(StateEntityEnum):
     """Possible supervision levels that a person can be supervised at."""
 

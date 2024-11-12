@@ -281,7 +281,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
             person_id=person_id, entity=entity_3, state_code=StateCode.US_XX
         )
 
-        expected_id_value_3 = 9066562055195085033
+        expected_id_value_3 = 9001590055191408448
         self.assertEqual(expected_id_value_3, entity_3.get_id())
 
 

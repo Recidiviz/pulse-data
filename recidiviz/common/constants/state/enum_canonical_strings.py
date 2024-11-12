@@ -371,13 +371,6 @@ state_supervision_period_supervision_type_dual = "DUAL"
 state_supervision_period_supervision_type_community_confinement = (
     "COMMUNITY_CONFINEMENT"
 )
-state_supervision_period_legal_authority_county = "COUNTY"
-state_supervision_period_legal_authority_court = "COURT"
-state_supervision_period_legal_authority_federal = "FEDERAL"
-state_supervision_period_legal_authority_other_country = "OTHER_COUNTRY"
-state_supervision_period_legal_authority_other_state = "OTHER_STATE"
-state_supervision_period_legal_authority_state_prison = "STATE_PRISON"
-state_supervision_period_legal_authority_supervision_authority = "SUPERVISION_AUTHORITY"
 
 # TODO(#26027): Rename BENCH_WARRANT to something more descriptive to differentiate
 # it from WARRANT_STATUS
