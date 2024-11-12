@@ -27,7 +27,6 @@ PRIORITIZED_SUPERVISION_SESSIONS_VIEW_NAME = "prioritized_supervision_sessions"
 PRIORITIZED_SUPERVISION_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of non-overlapping periods of continuous stay within a supervision type within a supervision legal authority"""
 
 PRIORITIZED_SUPERVISION_SESSIONS_QUERY_TEMPLATE = f"""
-    -- TODO(#30001): Use legal_authority once hydrated
     -- TODO(#30002): Deprecate supervision_super_sessions in favor of this view
     -- TODO(#30815): Consider refactoring this view to not dedup to a single supervision type
     WITH sub_sessions_cte AS

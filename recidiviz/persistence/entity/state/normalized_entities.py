@@ -106,7 +106,6 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodLegalAuthority,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -1771,14 +1770,6 @@ class NormalizedStateSupervisionPeriod(
         default=None, validator=attr_validators.is_opt(StateCustodialAuthority)
     )
     custodial_authority_raw_text: str | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    legal_authority: StateSupervisionPeriodLegalAuthority | None = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt(StateSupervisionPeriodLegalAuthority),
-    )
-    legal_authority_raw_text: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 

@@ -16,8 +16,6 @@
 # =============================================================================
 """Helper fragments to import data for case notes in PA"""
 
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
-
 
 def case_when_special_case() -> str:
     return """CASE WHEN supervision_type_raw_text LIKE '%05%'
@@ -87,37 +85,6 @@ def violations_helper() -> str:
             AND v.violation_date IS NOT NULL
             AND v.violation_date >= DATE_ADD(CURRENT_DATE("US/Pacific"), INTERVAL -1 YEAR)
         """
-
-
-def supervision_legal_authority_sessions_excluding_general_incarceration() -> str:
-    """pulls all periods where someone is under supervision according to the legal authority, but not on general inc
-    (according to PA TTs, supervision should not start until release from general incarceration, even if they're
-    technically serving both)"""
-    # TODO(#31253) - Create a more state-agnostic version of this OR switch to supervision_super_sessions
-    return f"""
-        WITH supervision_periods_excluding_general_incarceration AS (
-        /* this CTE pulls all periods where someone is considered on supervision UNLESS they're concurrently in general incarceration */
-            SELECT 
-                state_code,
-                person_id,
-                start_date,
-                end_date_exclusive,
-            FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
-            WHERE open_supervision_cl2 IS NOT NULL
-                AND compartment_level_2 <> 'GENERAL' 
-                AND state_code = 'US_PA'
-        )
-        /* this aggregates all of the above periods */
-            SELECT
-                person_id,
-                state_code,
-                super_session_id,
-                start_date,
-                end_date_exclusive,
-                FROM ({aggregate_adjacent_spans(table_name='supervision_periods_excluding_general_incarceration',
-                                                session_id_output_name='super_session_id',
-                                                end_date_field_name='end_date_exclusive')})                                                                                    
-    """
 
 
 def statute_is_conspiracy_or_attempt() -> str:
