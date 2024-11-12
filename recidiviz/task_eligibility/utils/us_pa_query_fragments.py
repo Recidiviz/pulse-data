@@ -26,6 +26,8 @@ def case_when_special_case() -> str:
 
 def violations_helper() -> str:
     """pulls all violations within the last 12 months"""
+    # note - we ended up removing this from sidebar due to concerns about carceral impact, but leaving helper here
+    # in case we want to add back in
     return """
         SELECT pei.external_id,
             'Violations in the last 12 months' AS criteria,

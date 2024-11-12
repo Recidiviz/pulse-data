@@ -19,16 +19,13 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
-    array_agg_case_notes_by_external_id,
     join_current_task_eligibility_spans_with_external_id,
-    opportunity_query_final_select_with_case_notes,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.us_pa_query_fragments import violations_helper
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -47,18 +44,16 @@ WITH eligible_and_almost_eligible AS (
     tes_task_query_view='complete_transfer_to_special_circumstances_supervision_request_materialized',
     id_type="'US_PA_PBPP'",
     eligible_and_almost_eligible_only=True,
-)}
-),
+)})
 
-case_notes_cte AS (
-{violations_helper()}
-),
-
-array_case_notes_cte AS (
-{array_agg_case_notes_by_external_id()}
-)
-
-{opportunity_query_final_select_with_case_notes()}
+SELECT
+    external_id,
+    state_code,
+    reasons,
+    is_eligible,
+    is_almost_eligible,
+    ineligible_criteria,
+FROM eligible_and_almost_eligible
 """
 
 US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
