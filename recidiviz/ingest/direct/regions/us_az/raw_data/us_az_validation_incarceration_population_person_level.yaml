@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: validation_incarceration_population_person_level
+file_description: |-
+  This is an external validation dataset that lists each person incarcerated on a given date,
+  their identifying information, location, and custody level. It is sourced from active
+  incarceration population reports run for each office individually in ACIS. Elise can
+  run this process using ACIS. The reports are then consolidated in Google Sheets and 
+  stored in go/arizona -> Validation Data before being uploaded as raw data.
+data_classification: validation
+always_historical_export: False
+primary_key_cols:
+  - REPORT_DATE
+  - ADC_NUMBER
+columns:
+  - name: NAME
+    description: The name of the person incarcerated.
+    is_pii: True
+  - name: ADC_NUMBER
+    description: |-
+      The ADC_NUMBER of the person on incarcerated. FK to PERSON. 
+      Values included here do not always appear in the PERSON table. 
+      TODO(#30383): Figure out why that may be.
+    is_pii: True
+  - name: LOC
+    description: Location
+  - name: REPORT_DATE
+    description: The date the report was generated.
+    field_type: datetime
+  - name: CU
+    description: Custody Level
+  - name: IR
+    description: Internal Risk level.
+  - name: MD
+    description: Medical status
+  - name: MH
+    description: Mental health status
+  - name: ED
+    description: Unknown. May be useful for validation once it is identified, so included here.
+  - name: WB
+    description: Unknown. May be useful for validation once it is identified, so included here.
+  - name: WK
+    description: Unknown. May be useful for validation once it is identified, so included here.
+  - name: SA
+    description: Unknown. May be useful for validation once it is identified, so included here.
+  - name: SX
+    description: Unknown. May be useful for validation once it is identified, so included here.
+  - name: DU
+    description: Unknown. May be useful for validation once it is identified, so included here.
