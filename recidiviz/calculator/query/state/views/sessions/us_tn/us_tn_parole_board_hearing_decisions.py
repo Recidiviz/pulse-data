@@ -51,7 +51,7 @@ WITH decision_tbl AS (
             WHEN BoardAction IN ("EX") THEN "RECUSED"
             ELSE "INTERNAL_UNKNOWN" END AS member_decision,
         BoardAction AS member_decision_raw,
-        STRING_AGG(Comments, "; ") AS member_comments_raw,
+        STRING_AGG(Comments, "; " ORDER BY Comments) AS member_comments_raw,
     FROM
         `{{project_id}}.{{us_tn_raw_dataset}}.BoardAction_latest` a
     INNER JOIN

@@ -25,7 +25,7 @@ US_IX_CASE_NOTES_TEMPLATE = """
         min('') as note_title,
         min(NoteDate) as note_date,
         min(NoteTypeDesc) as note_type,
-        STRING_AGG(ContactModeDesc, ",") as note_mode
+        STRING_AGG(ContactModeDesc, "," ORDER BY ContactModeDesc) as note_mode
     FROM `{project_id}.us_ix_raw_data_up_to_date_views.ind_OffenderNote_latest` notes
     LEFT JOIN `{project_id}.us_ix_raw_data_up_to_date_views.ind_OffenderNoteInfo_latest` noteInfo
      USING(OffenderNoteInfoId)

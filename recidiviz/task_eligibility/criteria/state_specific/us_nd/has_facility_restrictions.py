@@ -68,7 +68,7 @@ SELECT
     FALSE AS meets_criteria,
     TO_JSON(STRUCT(
         MAX(alert_start_date) AS latest_alert_start_date,
-        ARRAY_AGG(DISTINCT alert_code_type) AS alert_code_types
+        ARRAY_AGG(DISTINCT alert_code_type ORDER BY alert_code_type) AS alert_code_types
     )) AS reason,
     MAX(alert_start_date) AS latest_alert_start_date,
     ARRAY_AGG(DISTINCT alert_code_type ORDER BY alert_code_type) AS alert_code_types,

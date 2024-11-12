@@ -76,7 +76,7 @@ sentences AS (
       person_id,
       start_date,
       end_date,
-      ARRAY_AGG(DISTINCT statute IGNORE NULLS) AS statutes_being_served,
+      ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS statutes_being_served,
       LOGICAL_OR(life_sentence) AS any_life_sentence,
       --checks for whether 750.110 and 750.110a are accompanied by a 15 year term 
       LOGICAL_OR(IF((statute LIKE "750.110" OR statute LIKE "750.110A%") AND (term_length_years >= 15),

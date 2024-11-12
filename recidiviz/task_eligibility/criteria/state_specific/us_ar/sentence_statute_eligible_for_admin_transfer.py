@@ -90,9 +90,9 @@ _QUERY_TEMPLATE = f"""
         end_date,
         LOGICAL_AND(eligible_statute) AS meets_criteria,
         LOGICAL_AND(m_or_y_statute) AS meets_criteria_with_positive_statute_match,
-        ARRAY_AGG(statute) AS statutes,
-        ARRAY_AGG(target_group) AS target_groups,
-        TO_JSON(STRUCT(ARRAY_AGG(statute) AS statutes, ARRAY_AGG(target_group) AS target_groups, LOGICAL_AND(m_or_y_statute) AS meets_criteria_with_positive_statute_match)) AS reason,
+        ARRAY_AGG(statute ORDER BY statute) AS statutes,
+        ARRAY_AGG(target_group ORDER BY target_group) AS target_groups,
+        TO_JSON(STRUCT(ARRAY_AGG(statute ORDER BY statute) AS statutes, ARRAY_AGG(target_group ORDER BY target_group) AS target_groups, LOGICAL_AND(m_or_y_statute) AS meets_criteria_with_positive_statute_match)) AS reason,
     FROM statutes_with_eligibility
     GROUP BY 1, 2, 3, 4
 """

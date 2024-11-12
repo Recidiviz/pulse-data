@@ -484,7 +484,7 @@ def merge_permissions_query_str(column_name: str, table_name: str) -> str:
                         '{{{{',
                         STRING_AGG(
                             CONCAT('"', key, '": ', value),
-                            ', '
+                            ', ' ORDER BY key
                         ),
                         '}}}}'
                     ),

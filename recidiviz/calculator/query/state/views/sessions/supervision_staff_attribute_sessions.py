@@ -250,7 +250,7 @@ attribute_arrays AS (
         end_date AS end_date_exclusive,
         {list_to_query_string(
             [
-                f"ARRAY_AGG(DISTINCT {attr} IGNORE NULLS) AS {attr}_array"
+                f"ARRAY_AGG(DISTINCT {attr} IGNORE NULLS ORDER BY {attr}) AS {attr}_array"
                 for attr in _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS
             ]
         )}

@@ -120,7 +120,9 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
         SELECT
             state_code,
             person_id,
-            ARRAY_AGG(criteria_reason) AS person_criteria_reason,
+            ARRAY_AGG(
+                criteria_reason ORDER BY JSON_VALUE(criteria_reason, "$.criteria_name")
+            ) AS person_criteria_reason,
         FROM
             unnested_criteria_reasons
         WHERE

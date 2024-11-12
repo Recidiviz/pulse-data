@@ -155,6 +155,7 @@ FROM (
                     ),
                 NULL
             )
+            ORDER BY b.event_date, b.note_title
         ) AS metadata_violations,
         FROM
             base_query b

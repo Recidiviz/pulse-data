@@ -88,11 +88,11 @@ SELECT
     end_date,
     FALSE AS meets_criteria,
     TO_JSON(STRUCT(
-        STRING_AGG(denied_reason, ' - ') AS denied_reason, 
-        STRING_AGG(denied_comment, ' - ') AS denied_comment)) 
+        STRING_AGG(denied_reason, ' - ' ORDER BY denied_reason) AS denied_reason, 
+        STRING_AGG(denied_comment, ' - ' ORDER BY denied_comment) AS denied_comment)) 
     AS reason,
-    STRING_AGG(denied_reason, ' - ') AS denied_reason,
-    STRING_AGG(denied_comment, ' - ') AS denied_comment
+    STRING_AGG(denied_reason, ' - ' ORDER BY denied_reason) AS denied_reason,
+    STRING_AGG(denied_comment, ' - ' ORDER BY denied_comment) AS denied_comment
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4
 """

@@ -92,8 +92,13 @@ VIOLATION_RESPONSES_QUERY_TEMPLATE = """
             state_code,
             person_id,
             violations.response_date,
-            ARRAY_AGG(CONCAT(violation_type,'-',violation_type_subtype)) AS violations_array,
-            ARRAY_AGG(DISTINCT violations.violation_date IGNORE NULLS) AS violation_dates_array,
+            ARRAY_AGG(
+                CONCAT(violation_type,'-',violation_type_subtype) 
+                ORDER BY violation_type, violation_type_subtype
+            ) AS violations_array,
+            ARRAY_AGG(
+                DISTINCT violations.violation_date IGNORE NULLS ORDER BY violations.violation_date
+            ) AS violation_dates_array,
             -- Any value because most_severe_sanction_level is already unique at the person-response date level
             ANY_VALUE(most_severe_sanction_level) AS most_severe_sanction_level,
             MAX(violations.violation_date) AS most_recent_violation_date,

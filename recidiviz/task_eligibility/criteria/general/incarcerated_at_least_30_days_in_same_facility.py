@@ -64,7 +64,7 @@ loc_sessions_no_duplicates AS (
         person_id,
         start_date,
         end_date,
-        STRING_AGG(facility) AS facility,
+        STRING_AGG(facility ORDER BY facility) AS facility,
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4
 ),

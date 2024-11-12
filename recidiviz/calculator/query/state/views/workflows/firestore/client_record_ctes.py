@@ -695,9 +695,11 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     END,
                     (
                         SELECT 
-                            STRING_AGG(JSON_VALUE(program_reasons, '$.program_id'), ', ')
-                        FROM 
-                            UNNEST(JSON_QUERY_ARRAY(reasons[0], '$.reason')) as program_reasons
+                            STRING_AGG(program_id, ', ' ORDER BY program_id)
+                        FROM (
+                            SELECT JSON_VALUE(program_reasons, '$.program_id') AS program_id
+                            FROM UNNEST(JSON_QUERY_ARRAY(reasons[0], '$.reason')) as program_reasons
+                        )
                     )
                 )
                 as milestone_text,
@@ -726,9 +728,12 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     END,
                     (
                         SELECT 
-                            STRING_AGG(JSON_VALUE(program_reasons, '$.program_id'), ', ')
-                        FROM 
-                            UNNEST(JSON_QUERY_ARRAY(reasons[0], '$.reason')) as program_reasons
+                            STRING_AGG(program_id, ', ' ORDER BY program_id)
+                        FROM (
+                            SELECT JSON_VALUE(program_reasons, '$.program_id') AS program_id
+                            FROM 
+                                UNNEST(JSON_QUERY_ARRAY(reasons[0], '$.reason')) as program_reasons
+                        )
                     )
                 )
                 as milestone_text,

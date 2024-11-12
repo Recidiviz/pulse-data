@@ -107,7 +107,7 @@ class FreshnessValidation:
             SELECT
                 region_code,
                 failed_date,
-                ARRAY_AGG(assertion) as failed_assertions
+                ARRAY_AGG(assertion ORDER BY assertion) as failed_assertions
             FROM assertions, UNNEST(failed_dates) failed_date
             GROUP BY region_code, failed_date
         """

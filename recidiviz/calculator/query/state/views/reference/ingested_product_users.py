@@ -39,10 +39,10 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
         SELECT
             'US_MO' AS state_code,
             LOWER(email) AS email_address,
-            IF(STRING_AGG(DISTINCT district, ',') IS NOT NULL, 'supervision_staff,lantern_user', 'leadership_role,lantern_user') as roles,
+            IF(STRING_AGG(DISTINCT district, ',' ORDER BY district) IS NOT NULL, 'supervision_staff,lantern_user', 'leadership_role,lantern_user') as roles,
             -- the old dashboard_user_restrictions views used an empty string for no district
             -- instead of NULL, so keep that behavior here.
-            IFNULL(STRING_AGG(DISTINCT district, ','), '') AS district,
+            IFNULL(STRING_AGG(DISTINCT district, ',' ORDER BY district), '') AS district,
             emp_info.BDGNO as external_id,
             ARRAY_AGG(first_name ORDER BY record_date DESC)[SAFE_OFFSET(0)] AS first_name,
             ARRAY_AGG(last_name ORDER BY record_date DESC)[SAFE_OFFSET(0)] AS last_name,
@@ -91,7 +91,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
     all_users_with_experiments AS (
         SELECT all_users.* EXCEPT(roles),
         IFNULL(
-            all_users.roles || "," || STRING_AGG(experiment_role),
+            all_users.roles || "," || STRING_AGG(experiment_role ORDER BY experiment_role),
             all_users.roles
         ) as roles,
         FROM all_users

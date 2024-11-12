@@ -298,7 +298,7 @@ _REASON_QUERY = f"""
     {create_sub_sessions_with_attributes('ineligible_spans')},
     dedup_cte AS (
         SELECT * except (description),
-            TO_JSON(STRUCT( ARRAY_AGG(DISTINCT description) AS ineligible_offenses)) AS reason,
+            TO_JSON(STRUCT( ARRAY_AGG(DISTINCT description ORDER BY description) AS ineligible_offenses)) AS reason,
             ARRAY_AGG(DISTINCT description ORDER BY description) AS ineligible_offenses,
         FROM sub_sessions_with_attributes
         GROUP BY 1,2,3,4,5

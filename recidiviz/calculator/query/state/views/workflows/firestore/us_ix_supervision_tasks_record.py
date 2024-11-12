@@ -257,7 +257,7 @@ US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
             person_external_id,
             state_code,
             officer_id,
-            ARRAY_AGG(task IGNORE NULLS) AS tasks,
+            ARRAY_AGG(task IGNORE NULLS ORDER BY JSON_VALUE(task, "$.type")) AS tasks,
             [] AS needs,
         FROM all_supervision_tasks
         WHERE task IS NOT NULL

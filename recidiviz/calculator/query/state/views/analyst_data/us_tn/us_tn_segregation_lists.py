@@ -106,9 +106,9 @@ US_TN_SEGREGATION_LISTS_QUERY_TEMPLATE = f"""
         USING(person_id)
         LEFT JOIN (
             SELECT OffenderID as external_id, 
-                    ARRAY_AGG(DISTINCT SiteID) open_seg_periods_facilities, 
-                    ARRAY_AGG(DISTINCT SegregationType) AS open_seg_periods_types, 
-                    ARRAY_AGG(DISTINCT SegragationReason) AS open_seg_periods_reasons,
+                    ARRAY_AGG(DISTINCT SiteID ORDER BY SiteID) open_seg_periods_facilities, 
+                    ARRAY_AGG(DISTINCT SegregationType ORDER BY SegregationType) AS open_seg_periods_types, 
+                    ARRAY_AGG(DISTINCT SegragationReason ORDER BY SegragationReason) AS open_seg_periods_reasons,
                     MAX(DATE(ScheduleEndDateTime)) AS open_periods_latest_scheduled_end,
                     count(*) AS count_open_periods,
                     count(distinct SiteID) AS count_distinct_facilities_open_periods

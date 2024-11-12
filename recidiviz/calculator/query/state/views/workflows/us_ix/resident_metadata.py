@@ -63,7 +63,7 @@ WITH release_district AS (
 crc_facility AS (
     SELECT 
         rd.person_id,
-        ARRAY_AGG(r.CRC_FACILITY) AS crc_facilities
+        ARRAY_AGG(r.CRC_FACILITY ORDER BY r.CRC_FACILITY) AS crc_facilities
     FROM release_district rd
     LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_release_to_crc_facility_mappings_latest` r
         ON rd.RELEASE_DISTRICT = r.RELEASE_DISTRICT

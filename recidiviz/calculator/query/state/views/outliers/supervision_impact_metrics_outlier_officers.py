@@ -38,7 +38,7 @@ WITH outlier_officers AS (
         officer_id AS officer_external_id,
         full_name AS officer_name,
         email AS officer_email,
-        ARRAY_AGG(DISTINCT metric_id) as outlier_metric_ids,
+        ARRAY_AGG(DISTINCT metric_id ORDER BY metric_id) as outlier_metric_ids,
         EXTRACT(MONTH FROM export_date) AS export_month,
         EXTRACT(YEAR FROM export_date) AS export_year
     FROM `{project_id}.outliers_views.supervision_officer_outlier_status_archive_materialized` outliers

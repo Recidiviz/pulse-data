@@ -47,8 +47,8 @@ PRODUCT_ROSTER_QUERY_TEMPLATE = f"""
     aggregated_permissions AS (
         SELECT
             user_roles.email_address AS email_address,
-            ARRAY_AGG(state_role.routes) AS routes,
-            ARRAY_AGG(state_role.feature_variants) AS feature_variants
+            ARRAY_AGG(state_role.routes ORDER BY state_role.routes) AS routes,
+            ARRAY_AGG(state_role.feature_variants ORDER BY state_role.feature_variants) AS feature_variants
         FROM
             user_roles
         FULL OUTER JOIN

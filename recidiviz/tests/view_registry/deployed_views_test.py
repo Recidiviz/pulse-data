@@ -760,13 +760,43 @@ The following views have less restrictive projects_to_deploy than their parents:
                     f"regex-based parent table inference."
                 )
 
+    def _assert_aggregation_functions_use_order_by(
+        self, view: BigQueryView, tree_expression: sqlglot.exp.Expression
+    ) -> None:
+        """Asserts that all usages of an ARRAY_AGG or STRING_AGG function use an
+        ORDER BY clause so that the results are deterministically sorted.
+
+        For example, raises for `SELECT ARRAY_AGG(a) FROM ...` - expects
+            `SELECT ARRAY_AGG(a ORDER BY a) FROM ..` instead.
+        """
+        for func in tree_expression.find_all(
+            sqlglot.exp.ArrayAgg, sqlglot.exp.GroupConcat
+        ):
+            is_analytic_function = isinstance(func.parent, sqlglot.exp.Window)
+            if is_analytic_function:
+                # Skip usages of ARRAY_AGG and STRING_AGG in the context of window
+                # functions - the ordering will need to be handled by the window
+                # expression.
+                continue
+
+            order_by_clause = func.find(sqlglot.exp.Order)
+            if not order_by_clause:
+                # sqlglot internally treats STRING_AGG as GROUP_CONCAT - translate
+                # back so error message is more decipherable.
+                sql_for_display = func.sql().replace("GROUP_CONCAT", "STRING_AGG")
+                raise ValueError(
+                    f"Found view [{view.address.to_str()}] with aggregation expression "
+                    f"[{sql_for_display}] that does not have an ORDER BY clause. Add "
+                    f"an ORDER BY that will produce deterministically sorted results."
+                )
+
     def test_view_query_format(self) -> None:
         """This test runs a series of checks on the parsed view query"""
         with local_project_id_override("recidiviz-456"):
             views = [
                 vb.build() for vb in self.all_deployed_view_builders_by_address.values()
             ]
-        for view in views:
+        for view in sorted(views, key=lambda v: v.address.to_str()):
             try:
                 tree = sqlglot.parse_one(view.view_query, dialect="bigquery")
             except Exception as e:
@@ -778,6 +808,9 @@ The following views have less restrictive projects_to_deploy than their parents:
                 view=view, tree_expression=tree
             )
             self._assert_valid_column_references(view=view, tree_expression=tree)
+            self._assert_aggregation_functions_use_order_by(
+                view=view, tree_expression=tree
+            )
 
     def test_union_all_big_query_view_parents_valid(self) -> None:
         for view_address, node in self.dag_walker.nodes_by_address.items():

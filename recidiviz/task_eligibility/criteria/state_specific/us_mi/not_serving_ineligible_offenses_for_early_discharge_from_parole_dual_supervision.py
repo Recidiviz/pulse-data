@@ -46,8 +46,8 @@ _QUERY_TEMPLATE = f"""
         span.start_date,
         span.end_date,
         FALSE as meets_criteria,
-        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses)) AS reason,
-        ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
+        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute ORDER BY statute) AS ineligible_offenses)) AS reason,
+        ARRAY_AGG(DISTINCT statute ORDER BY statute) AS ineligible_offenses,
     {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap = ['SUPERVISION'],
                                                  compartment_level_2_to_overlap=['PAROLE', 'DUAL'])}
     WHERE span.state_code = "US_MI"

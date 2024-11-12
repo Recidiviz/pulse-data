@@ -33,7 +33,7 @@ WITH outlier_officers AS (
     SELECT
         officers.state_code,
         supervisor_external_id,
-        ARRAY_AGG(external_id) AS outlier_officers,
+        ARRAY_AGG(external_id ORDER BY external_id) AS outlier_officers,
         EXTRACT(MONTH FROM officers.export_date) AS export_month,
         EXTRACT(YEAR FROM officers.export_date) AS export_year
     FROM `{project_id}.outliers_views.supervision_officers_archive_materialized` officers, UNNEST(supervisor_external_ids) AS supervisor_external_id
@@ -60,7 +60,7 @@ WITH outlier_officers AS (
         state_code,
         supervisor_external_id,
         supervisors.supervisor_pseudonymized_id,
-        ARRAY_AGG(DISTINCT staff_pseudonymized_id IGNORE NULLS) AS staff_pages_viewed,
+        ARRAY_AGG(DISTINCT staff_pseudonymized_id IGNORE NULLS ORDER BY staff_pseudonymized_id) AS staff_pages_viewed,
         export_month,
         export_year
     FROM supervisors
