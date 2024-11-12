@@ -122,15 +122,9 @@ class OutliersMetric:
         The query fragment to use to filter analyst_data.person_events for this metric's events
         """
         return self.aggregated_metric.get_observation_conditions_string_no_newline(
-            # TODO(#29291): Flip this flag once format_state_specific_person_events_filters()
-            #  in recidiviz/calculator/query/state/views/outliers/utils.py pulls from
-            #  the observation-specific table for this metric.
-            filter_by_observation_type=True,
-            # TODO(#34498), TODO(#29291): Flip this flag once
-            #  format_state_specific_person_events_filters() in
-            #  recidiviz/calculator/query/state/views/outliers/utils.py pulls from
-            #  the observation-specific table for this metric AND we've updated
-            #  observation-specific tables to not pack their attributes in JSON.
+            filter_by_observation_type=False,
+            # TODO(#34498): Flip this flag once we've updated observation-specific
+            #  tables to not pack their attributes in JSON.
             read_observation_attributes_from_json=True,
         )
 

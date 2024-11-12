@@ -36,6 +36,7 @@ from recidiviz.outliers.constants import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string_formatting import fix_indent
 
 _VIEW_NAME = "supervision_client_events"
 
@@ -65,7 +66,7 @@ latest_year_time_period AS (
     QUALIFY ROW_NUMBER() OVER (ORDER BY population_start_date DESC) = 1
 ),
 events_with_metric_id AS (
-  {format_state_specific_person_events_filters()}
+{fix_indent(format_state_specific_person_events_filters(), indent_level=4)}
 ),
 violations AS (
   SELECT DISTINCT

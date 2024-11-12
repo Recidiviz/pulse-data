@@ -15,12 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for building Outliers views"""
+from collections import defaultdict
+
+from more_itertools import one
+
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states_for_bigquery,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.observations.event_type import EventType
+from recidiviz.observations.observation_type_utils import (
+    materialized_view_address_for_observation,
+)
 from recidiviz.outliers.constants import TREATMENT_STARTS
 from recidiviz.outliers.outliers_configs import get_outliers_backend_config
-from recidiviz.outliers.types import MetricOutcome
+from recidiviz.outliers.types import MetricOutcome, OutliersMetricConfig
+from recidiviz.utils.types import assert_type
 
 
 def format_state_specific_officer_aggregated_metric_filters() -> str:
@@ -47,33 +58,70 @@ def format_state_specific_officer_aggregated_metric_filters() -> str:
 
 
 def format_state_specific_person_events_filters(years_lookback: int = 2) -> str:
+    """Builds a query that, for each state_code with Insights enabled, tells us every
+    date where an event relevant to any configured metric happened (within the last X
+    years, as defined by |years_lookback|..
+    """
     state_specific_ctes = []
 
+    state_specific_metric_configs_by_metric_name: dict[
+        str, list[OutliersMetricConfig]
+    ] = defaultdict(list)
     for state_code in get_outliers_enabled_states_for_bigquery():
         config = get_outliers_backend_config(state_code)
+
         for metric in config.metrics:
-            state_specific_ctes.append(
-                f"""
-    SELECT 
-        state_code,
-        "{metric.name}" AS metric_id,
-        event_date,
-        person_id,
-        CAST(NULL AS STRING) AS attributes
-    -- TODO(#29291): Refactor so we query only from the observation-specific views for 
-    --   this metric
-    FROM `{{project_id}}.observations__person_event.all_person_events_materialized`
-    WHERE 
-        state_code = '{state_code}' 
-        -- Limit the events lookback to minimize the size of the subqueries
-        AND event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {str(years_lookback)} YEAR)
-        -- TREATMENT_STARTS has custom logic and is handled in a separate cte
-        AND '{metric.name}' != '{TREATMENT_STARTS.name}'
-        {f"AND ({metric.metric_event_conditions_string})" if metric.metric_event_conditions_string else ""}
-"""
+            # TREATMENT_STARTS has custom logic and is handled in a separate cte
+            if metric.name == TREATMENT_STARTS.name:
+                continue
+
+            state_specific_metric_configs_by_metric_name[metric.name].append(metric)
+
+    for (
+        metric_name,
+        state_specific_metric_configs,
+    ) in state_specific_metric_configs_by_metric_name.items():
+        event_observation_type = one(
+            {
+                assert_type(c.event_observation_type, EventType)
+                for c in state_specific_metric_configs
+            }
+        )
+
+        metric_event_conditions_string = one(
+            {c.metric_event_conditions_string for c in state_specific_metric_configs}
+        )
+        if not metric_event_conditions_string:
+            raise ValueError(
+                f"Expected a metric_event_conditions_string to be defined for metric "
+                f"[{metric_name}]"
             )
 
-    return "\n    UNION ALL\n".join(state_specific_ctes)
+        relevant_events_address = materialized_view_address_for_observation(
+            event_observation_type
+        )
+        state_code_strs = sorted(
+            assert_type(config.state_code, StateCode).value
+            for config in state_specific_metric_configs
+        )
+        state_specific_ctes.append(
+            f"""
+SELECT 
+    state_code,
+    "{metric_name}" AS metric_id,
+    event_date,
+    person_id,
+    CAST(NULL AS STRING) AS attributes
+FROM `{{project_id}}.{relevant_events_address.to_str()}`
+WHERE 
+    state_code IN ({list_to_query_string(state_code_strs, quoted=True)})
+    -- Limit the events lookback to minimize the size of the subqueries
+    AND event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {str(years_lookback)} YEAR)
+    AND ({metric_event_conditions_string})
+"""
+        )
+
+    return "\nUNION ALL\n".join(state_specific_ctes)
 
 
 def get_highlight_percentile_value_query() -> str:
