@@ -172,12 +172,19 @@ def get_large_experiment_assignments_source_table_config() -> SourceTableConfig:
 def upload_assignments_to_gbq(
     df: pd.DataFrame,
     unit_type: MetricUnitOfAnalysisType,
+    upload_to_gbq: bool = False,
 ) -> None:
     """
     Appends an experiment assignment DataFrame to the BigQuery table <experiment_assignments_large>
     in the <manually_updated_source_tables> dataset. The final DF must have the same
     columns as defined in the table schema definition in
     experiment_assignments_large.yaml.
+
+    Args:
+        df: DataFrame containing the experiment assignments
+        unit_type: The type of unit that the experiment assignments are associated with
+        upload_to_gbq: If True, the DataFrame will be uploaded to BigQuery. If False, the
+            DataFrame will not be uploaded to BigQuery and the function will only validate df.
     """
     experiments_table_config = get_large_experiment_assignments_source_table_config()
     df_copy = df.copy()
@@ -192,26 +199,29 @@ def upload_assignments_to_gbq(
     _validate_unique_id_and_variant_per_day(df_copy)
 
     num_rows = len(df_copy)
-    for project_id in GCP_PROJECTS:
-        project_specific_address = (
-            experiments_table_config.address.to_project_specific_address(project_id)
-        )
-        print(
-            f"Uploading [{num_rows}] rows to "
-            f"`{project_specific_address.to_str()}`..."
-        )
-        df_copy.to_gbq(
-            destination_table=experiments_table_config.address.to_str(),
-            project_id=project_id,
-            table_schema=[
-                col.to_api_repr() for col in experiments_table_config.schema_fields
-            ],
-            if_exists="append",
-        )
-        print(
-            f"Done uploading [{num_rows}] rows to "
-            f"`{project_specific_address.to_str()}`."
-        )
+    if upload_to_gbq:
+        for project_id in GCP_PROJECTS:
+            project_specific_address = (
+                experiments_table_config.address.to_project_specific_address(project_id)
+            )
+            print(
+                f"Uploading [{num_rows}] rows to "
+                f"`{project_specific_address.to_str()}`..."
+            )
+            df_copy.to_gbq(
+                destination_table=experiments_table_config.address.to_str(),
+                project_id=project_id,
+                table_schema=[
+                    col.to_api_repr() for col in experiments_table_config.schema_fields
+                ],
+                if_exists="append",
+            )
+            print(
+                f"Done uploading [{num_rows}] rows to "
+                f"`{project_specific_address.to_str()}`."
+            )
+    else:
+        print("DataFrame was validated, but not uploaded to BigQuery.")
 
 
 def _convert_df_column_to_type_if_necessary(
