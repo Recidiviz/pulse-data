@@ -51,6 +51,7 @@ WITH all_live_workflows AS (
 SELECT
     a.*,
     b.is_fully_launched,
+    b.launch_date,
 FROM
     all_live_workflows a
 LEFT JOIN
