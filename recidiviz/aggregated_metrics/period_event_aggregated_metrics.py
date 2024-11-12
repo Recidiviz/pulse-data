@@ -46,6 +46,8 @@ from recidiviz.observations.metric_unit_of_observation_type import (
 )
 
 
+# TODO(#29291): This function should become unused once we've migrated over to optimized
+#  aggregated metrics queries.
 def get_period_event_time_specific_cte(
     unit_of_analysis: MetricUnitOfAnalysis,
     population_type: MetricPopulationType,
@@ -75,7 +77,9 @@ def get_period_event_time_specific_cte(
         metric_aggregation_fragment = ",\n".join(
             [
                 metric.generate_aggregation_query_fragment(
-                    event_date_col="events.event_date"
+                    filter_observations_by_type=True,
+                    read_observation_attributes_from_json=True,
+                    event_date_col="events.event_date",
                 )
                 for metric in metrics_for_unit_of_observation
             ]
@@ -126,6 +130,8 @@ GROUP BY
     )
 
 
+# TODO(#29291): This function should become unused once we've migrated over to optimized
+#  aggregated metrics queries.
 def generate_period_event_aggregated_metrics_view_builder(
     unit_of_analysis: MetricUnitOfAnalysis,
     population_type: MetricPopulationType,

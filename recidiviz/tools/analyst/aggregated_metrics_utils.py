@@ -401,6 +401,8 @@ def get_person_events(
                 raise ValueError("Must be an AggregatedMetric.")
             print(metric.name)
 
+            # TODO(#29291): Update this query to use the observation-specific table for
+            #  the metric.
             query = f"""
                     SELECT
                         e.state_code,
@@ -420,7 +422,7 @@ def get_person_events(
                     LEFT JOIN `normalized_state.state_person_external_id` pei
                         ON e.person_id = pei.person_id
                         AND e.state_code = pei.state_code
-                    WHERE ({metric.get_observation_conditions_string()})
+                    WHERE ({metric.get_observation_conditions_string(filter_by_observation_type=True, read_observation_attributes_from_json=True)})
                     {officer_ids_filter}
                     AND e.event_date BETWEEN {min_date_str} AND {max_date_str}
 

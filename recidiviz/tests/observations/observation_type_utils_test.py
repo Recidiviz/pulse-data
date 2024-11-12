@@ -44,7 +44,7 @@ class TestObservationTypeUtils(unittest.TestCase):
         self.assertEqual(
             'JSON_EXTRACT_SCALAR(event_attributes, "$.is_positive_result")',
             observation_attribute_value_clause(
-                EventType.DRUG_SCREEN,
+                observation_type=EventType.DRUG_SCREEN,
                 attribute="is_positive_result",
                 read_attributes_from_json=True,
             ),
@@ -52,7 +52,7 @@ class TestObservationTypeUtils(unittest.TestCase):
         self.assertEqual(
             "is_positive_result",
             observation_attribute_value_clause(
-                EventType.DRUG_SCREEN,
+                observation_type=EventType.DRUG_SCREEN,
                 attribute="is_positive_result",
                 read_attributes_from_json=False,
             ),
@@ -60,7 +60,7 @@ class TestObservationTypeUtils(unittest.TestCase):
         self.assertEqual(
             'JSON_EXTRACT_SCALAR(span_attributes, "$.effective_date")',
             observation_attribute_value_clause(
-                SpanType.SENTENCE_SPAN,
+                observation_type=SpanType.SENTENCE_SPAN,
                 attribute="effective_date",
                 read_attributes_from_json=True,
             ),
@@ -68,7 +68,7 @@ class TestObservationTypeUtils(unittest.TestCase):
         self.assertEqual(
             "effective_date",
             observation_attribute_value_clause(
-                SpanType.SENTENCE_SPAN,
+                observation_type=SpanType.SENTENCE_SPAN,
                 attribute="effective_date",
                 read_attributes_from_json=False,
             ),
