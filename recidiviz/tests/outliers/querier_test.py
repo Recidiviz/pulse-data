@@ -67,39 +67,49 @@ from recidiviz.tests.insights.utils import load_model_from_json_fixture
 TEST_END_DATE = date(year=2023, month=5, day=1)
 TEST_PREV_END_DATE = date(year=2023, month=4, day=1)
 
-TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
-    metric=INCARCERATION_STARTS_AND_INFERRED,
-    title_display_name="Incarceration Rate (CPVs & TPVs)",
-    body_display_name="incarceration rate",
-    event_name="incarcerations",
-    event_name_singular="incarceration",
-    event_name_past_tense="were incarcerated",
-    description_markdown="""Incarceration rate description
+
+def build_test_metric_1(state_code: StateCode) -> OutliersMetricConfig:
+    return OutliersMetricConfig.build_from_metric(
+        state_code=state_code,
+        metric=INCARCERATION_STARTS_AND_INFERRED,
+        title_display_name="Incarceration Rate (CPVs & TPVs)",
+        body_display_name="incarceration rate",
+        event_name="incarcerations",
+        event_name_singular="incarceration",
+        event_name_past_tense="were incarcerated",
+        description_markdown="""Incarceration rate description
 
 <br />
 Incarceration rate denominator description""",
-    list_table_text="""Clients will appear on this list multiple times if they have been incarcerated more than once under this officer in the time period.""",
-)
+        list_table_text="""Clients will appear on this list multiple times if they have been incarcerated more than once under this officer in the time period.""",
+    )
 
-TEST_METRIC_2 = OutliersMetricConfig.build_from_metric(
-    metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
-    title_display_name="Limited Supervision Unit Transfer Rate",
-    body_display_name="Limited Supervision Unit transfer rate(s)",
-    event_name="LSU transfers",
-    event_name_singular="LSU transfer",
-    event_name_past_tense="were transferred to LSU",
-)
 
-TEST_METRIC_3 = OutliersMetricConfig.build_from_metric(
-    metric=ABSCONSIONS_BENCH_WARRANTS,
-    title_display_name="Absconsion Rate",
-    body_display_name="absconsion rate",
-    event_name="absconsions",
-    event_name_singular="absconsion",
-    event_name_past_tense="absconded",
-    is_absconsion_metric=True,
-    list_table_text="""Clients will appear on this list multiple times if they have had more than one absconsion under this officer in the time period.""",
-)
+def build_test_metric_2(state_code: StateCode) -> OutliersMetricConfig:
+    return OutliersMetricConfig.build_from_metric(
+        state_code=state_code,
+        metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+        title_display_name="Limited Supervision Unit Transfer Rate",
+        body_display_name="Limited Supervision Unit transfer rate(s)",
+        event_name="LSU transfers",
+        event_name_singular="LSU transfer",
+        event_name_past_tense="were transferred to LSU",
+    )
+
+
+def build_test_metric_3(state_code: StateCode) -> OutliersMetricConfig:
+    return OutliersMetricConfig.build_from_metric(
+        state_code=state_code,
+        metric=ABSCONSIONS_BENCH_WARRANTS,
+        title_display_name="Absconsion Rate",
+        body_display_name="absconsion rate",
+        event_name="absconsions",
+        event_name_singular="absconsion",
+        event_name_past_tense="absconded",
+        is_absconsion_metric=True,
+        list_table_text="""Clients will appear on this list multiple times if they have had more than one absconsion under this officer in the time period.""",
+    )
+
 
 TEST_CLIENT_EVENT_1 = OutliersClientEventConfig.build(
     event=VIOLATIONS, display_name="violations"
@@ -162,12 +172,13 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def test_get_officer_level_report_data_by_supervisor(
         self, mock_config: MagicMock
     ) -> None:
+        state_code = StateCode.US_PA
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_1, TEST_METRIC_2],
+            metrics=[build_test_metric_1(state_code), build_test_metric_2(state_code)],
         )
 
         actual = OutliersQuerier(
-            StateCode.US_PA
+            state_code
         ).get_officer_level_report_data_for_all_officer_supervisors(
             end_date=TEST_END_DATE
         )
@@ -263,7 +274,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def test_get_events_by_officer(self) -> None:
         # Return matching event
         with SessionFactory.using_database(self.insights_database_key) as session:
-            metric_id = TEST_METRIC_3.name
+            metric_id = build_test_metric_3(StateCode.US_XX).name
             expected = (
                 session.query(SupervisionClientEvent)
                 .filter(SupervisionClientEvent.event_date == "2023-04-01")
@@ -374,12 +385,13 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def test_get_supervision_officer_entity_highlight_in_prev_period_only(
         self, mock_config: MagicMock
     ) -> None:
+        state_code = StateCode.US_PA
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_2],
+            metrics=[build_test_metric_2(state_code)],
         )
 
         # Return matching supervision officer entity where officer is highlighted in a previous period but not the latest
-        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
+        actual = OutliersQuerier(state_code).get_supervision_officer_entity(
             pseudonymized_officer_id="officerhash7",
             category_type_to_compare=InsightsCaseloadCategoryType.ALL,
             include_workflows_info=True,
@@ -493,14 +505,15 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def test_get_events_by_client(self) -> None:
         # Return matching event
         with SessionFactory.using_database(self.insights_database_key) as session:
-            metric_id = TEST_METRIC_3.name
+            state_code = StateCode.US_PA
+            metric_id = build_test_metric_3(state_code).name
             expected = (
                 session.query(SupervisionClientEvent)
                 .filter(SupervisionClientEvent.event_date == "2023-05-01")
                 .first()
             )
 
-            actual = OutliersQuerier(StateCode.US_PA).get_events_by_client(
+            actual = OutliersQuerier(state_code).get_events_by_client(
                 "clienthash1", [metric_id], TEST_END_DATE
             )
             self.assertEqual(len(actual), 1)
@@ -511,7 +524,8 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def test_get_events_by_client_within_lookforward(self) -> None:
         # Return matching event
         with SessionFactory.using_database(self.insights_database_key) as session:
-            metric_id = TEST_METRIC_3.name
+            state_code = StateCode.US_PA
+            metric_id = build_test_metric_3(state_code).name
             expected = (
                 session.query(SupervisionClientEvent)
                 .filter(SupervisionClientEvent.event_date == "2023-05-01")
@@ -519,7 +533,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             )
 
             earlier_end_date = TEST_END_DATE - relativedelta(months=2)
-            actual = OutliersQuerier(StateCode.US_PA).get_events_by_client(
+            actual = OutliersQuerier(state_code).get_events_by_client(
                 "clienthash1", [metric_id], earlier_end_date
             )
             self.assertEqual(len(actual), 1)
@@ -916,8 +930,9 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def test_get_product_configuration_with_specialized_category_type(
         self, mock_config: MagicMock
     ) -> None:
+        state_code = StateCode.US_PA
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_1, TEST_METRIC_2],
+            metrics=[build_test_metric_1(state_code), build_test_metric_2(state_code)],
             available_specialized_caseload_categories={
                 InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY: [
                     CaseloadCategory(
@@ -932,7 +947,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             },
             primary_category_type=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
         )
-        querier = OutliersQuerier(StateCode.US_PA)
+        querier = OutliersQuerier(state_code)
         result = querier.get_product_configuration(user_context=self.test_user_context)
         self.snapshot.assert_match(result, name="test_get_product_configuration_with_specialized_category_type")  # type: ignore[attr-defined]
 
@@ -942,12 +957,13 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def test_get_product_configuration_invalid_primary_category_type(
         self, mock_config: MagicMock
     ) -> None:
+        state_code = StateCode.US_PA
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_1, TEST_METRIC_2],
+            metrics=[build_test_metric_1(state_code), build_test_metric_2(state_code)],
             available_specialized_caseload_categories={},
             primary_category_type=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
         )
-        querier = OutliersQuerier(StateCode.US_PA)
+        querier = OutliersQuerier(state_code)
         with self.assertRaisesRegex(ValueError, "Invalid product configuration"):
             querier.get_product_configuration(user_context=self.test_user_context)
 

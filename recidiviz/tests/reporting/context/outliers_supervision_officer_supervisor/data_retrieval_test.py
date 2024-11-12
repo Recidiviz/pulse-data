@@ -31,10 +31,10 @@ from recidiviz.reporting.context.outliers_supervision_officer_supervisor.data_re
     retrieve_data_for_outliers_supervision_officer_supervisor,
 )
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixtures import (
-    config_fixture,
     create_fixture,
+    get_config_fixture_for_state,
+    get_metric_fixtures_for_state,
     highlighted_officers_fixture_adverse,
-    metric_fixtures,
     other_officers_fixture_adverse,
     target_fixture_adverse,
 )
@@ -73,6 +73,7 @@ class RetrieveDataTest(TestCase):
     def test_exclude_recipients_without_metrics(
         self, config_mock: MagicMock, query_mock: MagicMock
     ) -> None:
+        metric_fixtures = get_metric_fixtures_for_state(StateCode.US_XX)
         report_without_outliers = OfficerSupervisorReportData(
             metrics=[],
             metrics_without_outliers=[
@@ -84,7 +85,7 @@ class RetrieveDataTest(TestCase):
         )
         query_mock.return_value = {"abc": report_without_outliers}
 
-        config_mock.return_value = config_fixture
+        config_mock.return_value = get_config_fixture_for_state(StateCode.US_XX)
 
         test_batch = Batch(
             StateCode.US_XX,
@@ -99,6 +100,7 @@ class RetrieveDataTest(TestCase):
     def test_start(self, config_mock: MagicMock, query_mock: MagicMock) -> None:
         """Test that the start() function succeeds for the recipient."""
 
+        metric_fixtures = get_metric_fixtures_for_state(StateCode.US_IX)
         report_with_outliers = OfficerSupervisorReportData(
             metrics=[
                 create_fixture(
@@ -118,7 +120,7 @@ class RetrieveDataTest(TestCase):
         )
         query_mock.return_value = {"abc": report_with_outliers}
 
-        config_mock.return_value = config_fixture
+        config_mock.return_value = get_config_fixture_for_state(StateCode.US_IX)
 
         test_batch = Batch(
             StateCode.US_IX,

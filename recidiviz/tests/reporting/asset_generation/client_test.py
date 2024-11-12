@@ -27,8 +27,8 @@ from recidiviz.outliers.constants import INCARCERATION_STARTS_TECHNICAL_VIOLATIO
 from recidiviz.reporting.asset_generation.client import AssetGenerationClient
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixtures import (
     create_fixture,
+    get_metric_fixtures_for_state,
     highlighted_officers_fixture_adverse,
-    metric_fixtures,
     other_officers_fixture_adverse,
     target_fixture_adverse,
 )
@@ -76,8 +76,11 @@ class AssetGenerationClientTest(TestCase):
                 )
 
     def test_outliers_supervisor_chart(self) -> None:
+        state_code = StateCode.US_XX
         test_metric = create_fixture(
-            metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
+            get_metric_fixtures_for_state(state_code)[
+                INCARCERATION_STARTS_TECHNICAL_VIOLATION
+            ],
             target_fixture_adverse,
             other_officers_fixture_adverse,
             highlighted_officers_fixture_adverse,
@@ -159,7 +162,7 @@ class AssetGenerationClientTest(TestCase):
             )
 
             response = self.client.generate_outliers_supervisor_chart(
-                state_code=StateCode.US_XX,
+                state_code=state_code,
                 asset_id="test-asset-id",
                 width=400,
                 data=test_metric,
