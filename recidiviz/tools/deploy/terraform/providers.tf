@@ -35,11 +35,17 @@ terraform {
 provider "google" {
   project = var.project_id
   region  = var.region
+  default_labels = {
+    terraform_managed = "true"
+  }
 }
 
 provider "google-beta" {
   project = var.project_id
   region  = var.region
+  default_labels = {
+    terraform_managed = "true"
+  }
 }
 
 provider "pagerduty" {
