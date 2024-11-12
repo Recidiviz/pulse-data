@@ -483,12 +483,15 @@ def get_simulated_power_curve(
     weight_column: Optional[str] = None,
     control_columns: Optional[List[str]] = None,
     compliance: float = 1.0,
-    assumptions: bool = True,
     plot: bool = True,
+    power_level: float = 0.8,
+    verbose: bool = True,
 ) -> pd.DataFrame:
     """
-    Runs a Monte Carlo simulation of many diff-in-diff estimates to produce a power
-    curve.
+
+    Generates a power calculation curve by simulating multiple difference-in-differences
+    or event study estimates. This shows the effect sizes our data can detect based on
+    the chosen post-rollout period (the wait time before launching the tool statewide).
 
     WARNING: this can take a while.
     Complexity ~ len(df) ** 2 * iters * len(post_rollout_periods)
@@ -497,50 +500,41 @@ def get_simulated_power_curve(
     ------
     iters: int
         Number of simulation iterations to run. Should be >1000 for reliable results.
-
     df: pd.DataFrame
         Dataframe with columns as described below
-
     outcome_column : str
-        Column name of numeric outcome variable
-
+        Column name of numeric outcome variable (e.g. primary metric)
     unit_of_analysis_column: str
-        Column with unit of analysis (e.g. district or officer)
-
+        Column with unit of analysis (e.g. district or officer). This refers to the
+        level at which outcomes are observed in our data.
     unit_of_treatment_column: str
         Column name of categorical column with units of treatment (e.g. districts
-        or officers). Note that this can be the same or different than
-        `unit_of_analysis_column`.
-
+        or officers). This refers to the level at which treatment was assigned.
     treatment_column : str, default = "treated"
         Column name of boolean column = True in units that should be considered
-        treated in the simulated periods
-
+        treated in the simulated periods. This column should be True for all units
+        if the simulation is an event study.
     date_column : str, default = "start_date"
         Column name of datetime column with dates of observations
-
     post_rollout_periods : List[int], default = [1, 2, 3]
-        Number of periods of simulated post-rollout observations to add. If multiple
-        values are provided, the simulation will be run for each value and a line
-        for each duration will be plotted.
-
+        Number of periods (e.g. weeks, months) of simulated post-rollout observations to add.
+        If multiple values are provided, the simulation will be run for each value.
     weight_column: Optional[str], default = None
         Column name of numeric column with sample weights (i.e. populations). If None,
-        all units are assumed to have equal weight. These weights affect the DiD
-        estimates by upweighting units with larger weights.
-
+        all units are assumed to have equal weight.
     control_columns: Optional[List[str]], default = None
         List of column names of numeric control variables. If None, no control
-        variables are used.
-
+        variables are used. This could helb reduce our variance and gain statistical power.
     compliance: float, default = 1.0
         Proportion of units that are treated AND respond to treatment. This parameter is
         useful if we are concerned a nontrivial proportion of units will ignore the
         rollout.
-
-    assumptions: bool, default = True
-        If True, print simulation assumptions
-
+    power_level: float, default = 0.8
+        Desired power level for the simulation. This is the probability of detecting an
+        effect if it exists. The default is 0.8, which is a common threshold in social
+        science.
+    verbose: bool, default = True
+        If True, print simulation parameters and progress
     plot: bool, default = True
         If True, plot the power curve
 
@@ -550,31 +544,32 @@ def get_simulated_power_curve(
 
     Example Usage
     -------------
-    >>> df = pd.DataFrame(
-    ...     {
-    ...         "district": ["A", "A", "B", "B"],
-    ...         "treated": [True, True, False, False,]
-    ...         "start_date": [
-    ...             pd.to_datetime("2020-01-01"),
-    ...             pd.to_datetime("2020-02-01"),
-    ...             pd.to_datetime("2020-01-01"),
-    ...             pd.to_datetime("2020-02-01"),
-    ...         ],
-    ...         "outcome": [1, 3, 2, 2],
-    ...     }
-    ... )
-    >>> df = get_simulated_power_curve(
-    ...     iters=1000,
-    ...     df=df,
-    ...     outcome="outcome",
-    ...     unit_of_analysis_column="district",
-    ...     unit_of_treatment_column="district",
-    ...     treatment_column="treated",
-    ...     date_column="date",
-    ...     post_rollout_periods=[1, 2, 3],
-    ...     assumptions=True,
-    ...     plot=True,
-    ... )
+    df = pd.DataFrame(
+        {
+            "district": ["A", "A", "B", "B"],
+            "treated": [True, True, False, False],
+            "start_date": [
+                pd.to_datetime("2020-01-01"),
+                pd.to_datetime("2020-02-01"),
+                pd.to_datetime("2020-01-01"),
+                pd.to_datetime("2020-02-01"),
+            ],
+            "outcome": [1, 300, 2, 2],
+        }
+    )
+    power_df = get_simulated_power_curve(
+        iters=100,
+        df=df,
+        outcome_column="outcome",
+        unit_of_analysis_column="district",
+        unit_of_treatment_column="district",
+        treatment_column="treated",
+        date_column="start_date",
+        post_rollout_periods=[1, 2, 3],
+        power_level = 0.8,
+        verbose = False,
+        plot=True,
+    )
     """
 
     other_columns = [treatment_column]
@@ -582,6 +577,10 @@ def get_simulated_power_curve(
         other_columns.extend(control_columns)
     if unit_of_treatment_column != unit_of_analysis_column:
         other_columns.append(unit_of_treatment_column)
+    if weight_column is None:
+        weight_column = "weight_column"
+        df[weight_column] = 1
+
     df = validate_df(
         df=df,
         outcome_column=outcome_column,
@@ -603,6 +602,8 @@ def get_simulated_power_curve(
     # unit_of_treatment_column
     unit = list(set([unit_of_analysis_column, unit_of_treatment_column]))
     number_of_units = len(df[unit].drop_duplicates())
+    cluster = list(set([unit_of_treatment_column]))
+    number_of_clusters = len(df[cluster].drop_duplicates())
 
     # determine granularity of time in df
     granularity, days_between_periods = detect_date_granularity(
@@ -616,35 +617,59 @@ def get_simulated_power_curve(
     # print weighted baseline mean in treatment group
     dfsub = df.loc[df[treatment_column] & (df[date_column] == df[date_column].max())]
     baseline_mean = np.average(dfsub[outcome_column], weights=dfsub[weight_column])
-    print(f"Baseline (weighted) mean in treatment group: {baseline_mean:0.3g}")
 
-    # print assumptions if True
-    if assumptions:
-        print("Assumptions:")
-        print(
-            f"Analysis strategy: {'Diff-in-Diff' if not event_study else 'Event Study'}"
-        )
-        if clustered:
-            print(f"Treatment clustered at {unit_of_treatment_column}-level")
-        else:
-            print("Treatment not clustered")
-        print(
-            f"Outcomes observed at {unit_of_analysis_column}-level and {granularity}-granularity"
-        )
-        print(f"Number of units: {number_of_units}")
-        print(f"Days between periods: {days_between_periods}")
-        print(f"First pre-treatment {granularity}: {first_period}")
-        print(f"Last pre-treatment {granularity}: {last_period}")
-        print(f"Pre-treatment {granularity}s: {df[date_column].nunique()}")
-        print(f"Treatment {granularity}s: {post_rollout_periods}")
-        print(f"Compliance rate: {compliance}")
-
-    # print total simulation rounds
+    # Total simulation rounds = iters * len(post_rollout_periods)
     if not post_rollout_periods:
         post_rollout_periods = [1, 2, 3]
-    print(
-        f"Starting simulation. Total simulation rounds: {iters * len(post_rollout_periods)}"
-    )
+
+    if verbose:
+        print(
+            f"DATA PARAMETERS:\n"
+            f"Baseline (weighted) mean in treatment group: {baseline_mean:0.3g}\n"
+            f"First pre-treatment {granularity}: {first_period}\n"
+            f"Last pre-treatment {granularity}: {last_period}\n"
+            f"Number of units: {number_of_units}\n"
+            f"Pre-treatment {granularity}s: {df[date_column].nunique()}\n"
+            f"Days between periods: {days_between_periods}\n"
+            f"Outcomes observed at {unit_of_analysis_column}-level and {granularity}-granularity\n"
+            "------------------------------------\n"
+            "SIMULATION ASSUMPTIONS:\n"
+            f"Analysis strategy: {'Diff-in-Diff' if not event_study else 'Event Study'}\n"
+            f"{'Treatment clustered at ' + unit_of_treatment_column + '-level' if clustered else 'Treatment not clustered'}\n"
+            f"Treatment {granularity}s: {post_rollout_periods}\n"
+            f"Compliance rate: {compliance}\n"
+            f"Starting simulation. Total simulation rounds: {iters * len(post_rollout_periods)}\n"
+            "------------------------------------"
+        )
+
+    # DF where we will store our final results
+    outcome_columns = [
+        "outcome",
+        "no_post_rollout_periods",
+        "granularity",
+        "days_between_periods",
+        "baseline_mean",
+        "compliance_rate",
+        "no_units",
+        "no_clusters",
+        "first_period",
+        "last_period",
+        "power_level",
+        "MDE",
+        "MDE_percent",
+    ]
+    outcome_df = pd.DataFrame(index=post_rollout_periods, columns=outcome_columns)
+    outcome_df["outcome"] = outcome_column
+    outcome_df["no_post_rollout_periods"] = post_rollout_periods
+    outcome_df["granularity"] = granularity
+    outcome_df["days_between_periods"] = days_between_periods
+    outcome_df["baseline_mean"] = baseline_mean
+    outcome_df["compliance_rate"] = compliance
+    outcome_df["no_units"] = number_of_units
+    outcome_df["no_clusters"] = number_of_clusters
+    outcome_df["first_period"] = first_period
+    outcome_df["last_period"] = last_period
+    outcome_df["power_level"] = power_level
 
     # loop over post_rollout_periods
     for period_count in post_rollout_periods:
@@ -731,11 +756,18 @@ def get_simulated_power_curve(
             ).min()
 
         # dfpow now saturated
-        # print MDE @ 80% power
-        mde = dfpow.loc[(dfpow.index > 0) & (dfpow.power >= 0.8)].head(1).index[0]
-        print(f"Min. detectable effect @ 80% power: {mde:0.3g}")
-        print(f"Min. detectable effect as %: {100 * mde / baseline_mean:0.3g}%")
+        # print MDE @ {power_level}% power
+        mde = (
+            dfpow.loc[(dfpow.index > 0) & (dfpow.power >= power_level)].head(1).index[0]
+        )
+        if verbose:
+            print(
+                f"Min. detectable effect @ {power_level*100}% power: {mde:0.3g}\n"
+                f"Min. detectable effect as % of baseline mean: {100 * mde / baseline_mean:0.3g}%"
+            )
 
+        outcome_df.loc[period_count, "MDE_percent"] = 100 * mde / baseline_mean
+        outcome_df.loc[period_count, "MDE"] = mde
         # plots, if option selected
         if plot:
             # power curve
@@ -752,4 +784,4 @@ def get_simulated_power_curve(
         plt.legend(loc="center left", bbox_to_anchor=(1, 0.5), title="Power Curves")
         plt.ylim(0, 1.1)
 
-    return dfpow.rename_axis(index="effect_size")
+    return outcome_df
