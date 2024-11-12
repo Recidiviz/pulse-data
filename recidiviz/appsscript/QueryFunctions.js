@@ -36,7 +36,7 @@ function getWauByWeekData(
   const endDate = "end_date";
   const weeklyActiveUsers = "weekly_active_users";
 
-  const wauTable = "justice_involved_state_week_start_on_first_aggregated_metrics_materialized";
+  const wauTable = "justice_involved_state_week_rolling_weekly_aggregated_metrics_materialized";
 
   const queryString = `
     SELECT
@@ -94,7 +94,7 @@ function getMauWauByLocation(
   }
 
   const mauTable = `justice_involved_${location}_month_aggregated_metrics_materialized`;
-  const wauTable = `justice_involved_${location}_week_end_on_first_aggregated_metrics_materialized`;
+  const wauTable = `justice_involved_${location}_week_aggregated_metrics_materialized`;
 
   const queryString = `
     SELECT
@@ -195,7 +195,7 @@ function constructMauAndWauText(
   const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
   const distinctRegisteredUsers = `distinct_registered_users_${system.toLowerCase()}`;
   const mauTable = `justice_involved_state_month_aggregated_metrics_materialized`;
-  const wauTable = `justice_involved_state_week_end_on_first_aggregated_metrics_materialized`;
+  const wauTable = `justice_involved_state_week_aggregated_metrics_materialized`;
 
   const queryStringMonthly = `
     SELECT
