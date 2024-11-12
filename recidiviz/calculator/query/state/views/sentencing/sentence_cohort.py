@@ -30,157 +30,124 @@ This view combines cohorts of people who were sentenced to PROBATION, RIDER, or 
 
 This allows for recidivism and sentence disposition calculations for the purpose of PSI Case Insights.
 
-The query combines 4 different sub-cohorts across 3 different cohorts:
-    * PROBATION cohort:
-        Those in the PROBATION compartment with inflow from LIBERTY or INVESTIGATION
-    * RIDER cohort:
-        * RIDER_TO_PROBATION sub-cohort:
-            Those in the RIDER_TO_PROBATION cohort_sub_group, in TREATMENT_IN_PRISON compartment, with inflow from
-            LIBERTY or INVESTIGATION and outflow to PROBATION
-        * RIDER_TO_TERM sub-cohort:
-            Those in the TREATMENT_IN_PRISON compartment, with inflow from LIBERTY or INVESTIGATION, outflow to GENERAL,
-            and lead_outflow_to_level_1 is LIBERTY or SUPERVISION
-    * GENERAL cohort:
-        Those in the GENERAL compartment, with inflow from LIBERTY or INVESTIGATION, and outflow to SUPERVISION or
-        LIBERTY
+The query starts with a transition from liberty to either incarceration or supervision. This transition can either be
+directly from LIBERTY or INVESTIGATION, or immediately following a TEMPORARY_CUSTODY session which itself follows
+LIBERTY or INVESTIGATION. The person's cohort depends on whether they transitioned to PROBATION (PROBATION cohort),
+TREATMENT_IN_PRISON (RIDER cohort), or GENERAL (TERM cohort).
+
+It then finds the subsequent session when they were released to either SUPERVISION or LIBERTY (this is simply
+the next session for those sentenced directly to PROBATION), the date of which is the beginning of their recidivism
+window.
+
+Once it has all these cohort starts, it joins with sentence_imposed_group_summary_materialized to retrieve attributes of
+the offense (description, category, violent/drug/sex offense) which are used for aggregations downstream.
+"""
+
+TRANSITION_COHORTS_CTE = """
+SELECT
+    sess.state_code,
+    sess.person_id,
+    sess.session_id,
+    sess.gender,
+    sess.assessment_score_end AS assessment_score_upon_admission,
+    CASE
+        WHEN sess.outflow_to_level_2 = "PROBATION" THEN "PROBATION"
+        WHEN sess.outflow_to_level_2 = "TREATMENT_IN_PRISON" THEN "RIDER"
+        WHEN sess.outflow_to_level_2 = "GENERAL" THEN "TERM"
+    END AS cohort_group,
+    release_sess.start_date AS cohort_start_date,
+    sess.end_date_exclusive AS admission_start_date,
+    sess.session_id + 1 AS first_session_of_sentence_id,
+FROM `{project_id}.sessions.compartment_sessions_materialized` sess
+INNER JOIN `{project_id}.sessions.compartment_sessions_materialized` release_sess
+    ON release_sess.state_code = sess.state_code
+    AND release_sess.person_id = sess.person_id
+    AND release_sess.start_date >= sess.end_date_exclusive
+    AND release_sess.compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE", "LIBERTY")
+WHERE
+    sess.outflow_to_level_1 IN ("INCARCERATION", "INCARCERATION_OUT_OF_STATE",
+                                "SUPERVISION", "SUPERVISION_OUT_OF_STATE")
+    AND sess.outflow_to_level_2 IN ("GENERAL", "TREATMENT_IN_PRISON", "PROBATION")
+    AND
+    -- Include the following transitions:
+    --   Liberty/Investigation -> Incarceration temporary custody -> Supervision/Incarceration (not temporary custody)
+    --   Liberty/Investigation -> Supervision/Incarceration (not temporary custody)
+        (
+            (
+                sess.inflow_from_level_1 IN ("LIBERTY", "INVESTIGATION")
+                AND sess.compartment_level_2 = "TEMPORARY_CUSTODY"
+            )
+        OR
+            (
+                sess.compartment_level_1 IN ("LIBERTY", "INVESTIGATION")
+            )
+        )
+-- Pick the first subsequent supervision/liberty session start for the cohort start date
+QUALIFY ROW_NUMBER() OVER (PARTITION BY sess.state_code, sess.person_id, sess.end_date_exclusive ORDER BY release_sess.start_date ASC) = 1
+"""
+
+FIRST_TIMER_COHORTS_CTE = """
+-- Handle cases where the first session for a person is supervision/incarceration without a prior
+-- investigation/temporary custody period
+SELECT
+    sess.state_code,
+    sess.person_id,
+    sess.session_id,
+    sess.gender,
+    sess.assessment_score_start AS assessment_score_upon_admission,
+    CASE
+        WHEN sess.compartment_level_2 = "PROBATION" THEN "PROBATION"
+        WHEN sess.compartment_level_2 = "TREATMENT_IN_PRISON" THEN "RIDER"
+        WHEN sess.compartment_level_2 = "GENERAL" THEN "TERM"
+    END AS cohort_group,
+    release_sess.start_date AS cohort_start_date,
+    sess.start_date AS admission_start_date,
+    sess.session_id AS first_session_of_sentence_id,
+FROM `{project_id}.sessions.compartment_sessions_materialized` sess
+INNER JOIN `{project_id}.sessions.compartment_sessions_materialized` release_sess
+    ON release_sess.state_code = sess.state_code
+    AND release_sess.person_id = sess.person_id
+    AND release_sess.start_date >= sess.end_date_exclusive
+    AND release_sess.compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE", "LIBERTY")
+WHERE
+    sess.session_id = 1
+    AND sess.compartment_level_1 IN ("INCARCERATION", "INCARCERATION_OUT_OF_STATE",
+                                     "SUPERVISION", "SUPERVISION_OUT_OF_STATE")
+    AND sess.compartment_level_2 IN ("GENERAL", "TREATMENT_IN_PRISON", "PROBATION")
+-- Pick the first subsequent supervision/liberty session start for the cohort start date
+QUALIFY ROW_NUMBER() OVER (PARTITION BY sess.state_code, sess.person_id, sess.end_date_exclusive ORDER BY release_sess.start_date ASC) = 1
+"""
+
+ALL_COHORTS_CTE = f"""
+SELECT * FROM ({TRANSITION_COHORTS_CTE})
+
+UNION ALL
+
+SELECT * FROM ({FIRST_TIMER_COHORTS_CTE})
 """
 
 SENTENCE_COHORT_QUERY_TEMPLATE = f"""
-        WITH probation_cte AS
-        (
-        SELECT
-          person_id,
-          state_code,
-          session_id,
-          gender,
-          start_date AS session_start_date,
-          start_date AS cohort_start_date,
-          'PROBATION' AS cohort_group,
-          'PROBATION' AS cohort_sub_group,
-          assessment_score_start AS assessment_score,
-          assessment_score_bucket_start AS assessment_score_bucket,
-        FROM `{{project_id}}.sessions.compartment_sessions_materialized`
-        WHERE compartment_level_1 = 'SUPERVISION'
-          AND compartment_level_2 = 'PROBATION'
-          AND inflow_from_level_1 IN ('LIBERTY','INVESTIGATION')
-        )
-        ,
-        rider_to_probation_cte AS
-        (
-        SELECT
-          person_id,
-          state_code,
-          session_id,
-          gender,
-          start_date AS session_start_date,
-          --end date of this session is the start of the probation period
-          end_date_exclusive AS cohort_start_date,
-          'RIDER' AS cohort_group,
-          'RIDER_TO_PROBATION' AS cohort_sub_group,
-          assessment_score_start AS assessment_score,
-          assessment_score_bucket_start AS assessment_score_bucket,
-        FROM `{{project_id}}.sessions.compartment_sessions_materialized`
-        WHERE compartment_level_1 = 'INCARCERATION'
-          AND compartment_level_2 = 'TREATMENT_IN_PRISON'
-          AND inflow_from_level_1 IN ('LIBERTY','INVESTIGATION')
-          AND outflow_to_level_1 = 'SUPERVISION'
-          AND outflow_to_level_2 = 'PROBATION'
-        )
-        ,
-        rider_to_term_cte AS
-        (
-        SELECT
-          person_id,
-          state_code,
-          session_id,
-          gender,
-          start_date AS session_start_date,
-          --the lead of the end date exclusive will be the start of the superivison or liberty period following general
-          lead_end_date_exclusive AS cohort_start_date,
-          'RIDER' AS cohort_group,
-          'RIDER_TO_TERM' AS cohort_sub_group,
-          assessment_score_start AS assessment_score,
-          assessment_score_bucket_start AS assessment_score_bucket,
-        FROM 
-        (
-            SELECT
-                *,
-                LEAD(compartment_level_1,2) OVER w AS lead_outflow_to_level_1,
-                LEAD(compartment_level_2,2) OVER w AS lead_outflow_to_level_2,
-                LEAD(end_date_exclusive,1) OVER w AS lead_end_date_exclusive,
-            FROM `{{project_id}}.sessions.compartment_sessions_materialized`
-            WINDOW w AS (PARTITION BY person_id ORDER BY session_id)
-        )
-        WHERE compartment_level_1 = 'INCARCERATION'
-          AND compartment_level_2 = 'TREATMENT_IN_PRISON'
-          AND inflow_from_level_1 IN ('LIBERTY','INVESTIGATION')
-          AND outflow_to_level_2 = 'GENERAL'
-          AND lead_outflow_to_level_1 IN ('SUPERVISION','LIBERTY')
-        )
-        ,
-        general_cte AS
-        (
-        SELECT
-          person_id,
-          state_code,
-          session_id,
-          gender,
-          start_date AS session_start_date,
-          end_date_exclusive AS cohort_start_date,
-          'TERM' AS cohort_group,
-          'TERM' AS cohort_sub_group,
-          assessment_score_start AS assessment_score,
-          assessment_score_bucket_start AS assessment_score_bucket,
-        FROM `{{project_id}}.sessions.compartment_sessions_materialized`
-        WHERE compartment_level_1 = 'INCARCERATION'
-          AND compartment_level_2 = 'GENERAL'
-          AND inflow_from_level_1 IN ('LIBERTY','INVESTIGATION')
-          AND outflow_to_level_1 IN ('SUPERVISION','LIBERTY')
-        )
-        ,
-        cohort_start_cte AS
-        (
-        SELECT 
-          *
-        FROM probation_cte
-        UNION ALL
-        SELECT 
-          *
-        FROM rider_to_probation_cte
-        UNION ALL
-        SELECT 
-          *
-        FROM rider_to_term_cte
-        UNION ALL
-        SELECT 
-          *
-        FROM general_cte
-        )
-        SELECT
-          cohort_start_cte.state_code,
-          cohort_start_cte.person_id,
-          cohort_start_cte.gender,
-          cohort_start_cte.assessment_score,
-          cohort_start_cte.cohort_group,
-          cohort_start_cte.cohort_start_date,
-          imposed_summary.most_severe_description,
-          imposed_summary.most_severe_ncic_category_uniform,
-          imposed_summary.any_is_drug_uniform,
-          imposed_summary.any_is_violent_uniform,
-          imposed_summary.any_is_sex_offense,
-
-        FROM cohort_start_cte
-        JOIN `{{project_id}}.sessions.compartment_sessions_closest_sentence_imposed_group` closest_imposed_group
-          ON cohort_start_cte.person_id = closest_imposed_group.person_id
-          AND cohort_start_cte.session_id = closest_imposed_group.session_id
-        LEFT JOIN `{{project_id}}.sessions.sentence_imposed_group_summary_materialized` imposed_summary
-          ON closest_imposed_group.person_id = imposed_summary.person_id
-          AND closest_imposed_group.sentence_imposed_group_id = imposed_summary.sentence_imposed_group_id
-        WHERE EXTRACT(YEAR FROM session_start_date) >= {RECENT_DATA_START_YEAR}
-            # For now, restricting to exact sentencing-to-session matching. We can probably relax this to <=7 or higher.
-            AND DATE_DIFF(imposed_summary.date_imposed, session_start_date, DAY) = 0
-        """
-
+SELECT
+  all_cohorts.state_code,
+  all_cohorts.person_id,
+  all_cohorts.gender,
+  all_cohorts.assessment_score_upon_admission as assessment_score,
+  all_cohorts.cohort_group,
+  all_cohorts.cohort_start_date,
+  imposed_summary.most_severe_description,
+  imposed_summary.most_severe_ncic_category_uniform,
+  imposed_summary.any_is_drug_uniform,
+  imposed_summary.any_is_violent_uniform,
+  imposed_summary.any_is_sex_offense,
+FROM ({ALL_COHORTS_CTE}) all_cohorts
+JOIN `{{project_id}}.sessions.compartment_sessions_closest_sentence_imposed_group` closest_imposed_group
+  ON all_cohorts.person_id = closest_imposed_group.person_id
+  AND all_cohorts.first_session_of_sentence_id = closest_imposed_group.session_id
+LEFT JOIN `{{project_id}}.sessions.sentence_imposed_group_summary_materialized` imposed_summary
+  ON closest_imposed_group.person_id = imposed_summary.person_id
+  AND closest_imposed_group.sentence_imposed_group_id = imposed_summary.sentence_imposed_group_id
+WHERE EXTRACT(YEAR FROM cohort_start_date) >= {RECENT_DATA_START_YEAR}
+"""
 
 SENTENCE_COHORT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SENTENCE_COHORT_VIEW_NAME,
