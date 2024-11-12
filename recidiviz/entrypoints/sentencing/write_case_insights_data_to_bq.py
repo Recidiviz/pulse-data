@@ -531,6 +531,10 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
     recidivism_df.most_severe_ncic_category_uniform = (
         recidivism_df.most_severe_ncic_category_uniform.fillna("INTERNAL_UNKNOWN")
     )
+    # TODO(#34529): Remove drop_duplicates here once it's properly handled in gen_cohort_time_to_first_event
+    recidivism_df = recidivism_df.drop_duplicates(
+        ["state_code", "person_id", "cohort_start_date"]
+    )
 
     all_rollup_levels_df = get_all_rollup_aggregated_df(
         recidivism_df,

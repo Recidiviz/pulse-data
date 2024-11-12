@@ -23,24 +23,37 @@ from recidiviz.utils.metadata import local_project_id_override
 RECIDIVISM_EVENT_VIEW_NAME = "recidivism_event"
 
 RECIDIVISM_EVENT_DESCRIPTION = """
-Events that can count as recidivism -- either INCARCERATION, or PROBATION with inflow from LIBERTY.
+Incarceration to state prison is the definition of a recidivism event for the purposes of Case Insights calculations.
 """
 
-RECIDIVISM_EVENT_QUERY_TEMPLATE = """
+# TODO(#32123): Use state prison incarceration sessions as data source to reduce event counts
+INCARCERATION_EVENT_CTE = """
     SELECT
-      person_id,
       state_code,
-      start_date AS recidivism_date,
-      compartment_level_2
-    FROM `{project_id}.sessions.compartment_sessions_materialized`
-    WHERE
-        (compartment_level_1 = 'INCARCERATION'
-         AND compartment_level_2 = 'GENERAL')
-        OR
-        (compartment_level_1 = 'SUPERVISION'
-         AND compartment_level_2 = 'PROBATION'
-         AND inflow_from_level_1 = 'LIBERTY')
-    """
+      person_id,
+      start_date_inclusive as recidivism_date,
+    FROM `{project_id}.dataflow_metrics_materialized.most_recent_incarceration_population_span_metrics_materialized`
+    WHERE incarceration_type = "STATE_PRISON"
+"""
+
+NEW_SENTENCE_IMPOSED_CTE = """
+    SELECT
+      sigs.state_code,
+      sigs.person_id,
+      sigs.date_imposed as recidivism_date,
+    FROM `{project_id}.sessions.sentence_imposed_group_summary_materialized` sigs
+    JOIN `{project_id}.sessions.sentences_preprocessed_materialized` sp
+      ON sigs.parent_sentence_id = sp.sentence_id
+    WHERE JSON_EXTRACT_SCALAR(sp.sentence_metadata, "$.sentence_event_type") = 'INITIAL'
+"""
+
+RECIDIVISM_EVENT_QUERY_TEMPLATE = f"""
+SELECT * FROM ({INCARCERATION_EVENT_CTE})
+
+UNION ALL
+
+SELECT * FROM ({NEW_SENTENCE_IMPOSED_CTE})
+"""
 
 
 RECIDIVISM_EVENT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
