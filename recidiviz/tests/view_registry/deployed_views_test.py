@@ -19,7 +19,7 @@ import datetime
 import re
 import unittest
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import Callable, Dict, List, Sequence, Set
 from unittest.mock import MagicMock, patch
 
 import sqlglot
@@ -700,118 +700,6 @@ The following views have less restrictive projects_to_deploy than their parents:
                 f"Found overlapping addresses between source tables and views: {overlapping_elements}"
             )
 
-    def _assert_regex_parent_table_parsing_matches_expected(
-        self, view: BigQueryView, tree_expression: sqlglot.exp.Expression
-    ) -> None:
-        """In production code we use an (imperfect) regex mechanism to determine the
-        parent tables of each of our BigQuery views because it is ~800x faster than the
-        more correct alternative. This test makes sure that table references in our
-        BigQuery views are all formatted correctly so that the same set of parents is
-        getting identified as those that would be identified by the slower alternative
-        (sqlglot).
-        """
-
-        sqlglot_addresses = {
-            BigQueryAddress(dataset_id=table.db, table_id=table.name)
-            for table in list(tree_expression.find_all(sqlglot.exp.Table))
-            # If there's no dataset, then the reference is a CTE reference
-            if table.db
-        }
-
-        regex_addresses = view.parent_tables
-
-        if sqlglot_addresses != regex_addresses:
-            if missing_from_regex := sqlglot_addresses - regex_addresses:
-                raise ValueError(
-                    f"Found parent tables for view [{view.address.to_str()}] "
-                    f"identified by the sqlglot library that were not identified "
-                    f"by a regex. This will happen if you have a table that is not "
-                    f"formatted like `{{project_id}}.dataset.table` (surrounded "
-                    f"by backticks). Addresses not parsed by regexes: "
-                    f"{sorted(a.to_str() for a in missing_from_regex)}."
-                )
-            missing_from_sqlglot = regex_addresses - sqlglot_addresses
-            raise ValueError(
-                f"Found parent tables for view [{view.address.to_str()}] that were "
-                f"identified by regex that were not identified by the sqlglot "
-                f"library. This may happen when you have a table reference inside "
-                f"of a commented out piece of SQL code. You can fix this by "
-                f"removing the backticks from the table definitions so the table "
-                f"is not picked up by our regex matcher. Addresses not parsed by "
-                f"sqlglot: {sorted(a.to_str() for a in missing_from_sqlglot)}"
-            )
-
-    def _assert_valid_column_references(
-        self, view: BigQueryView, tree_expression: sqlglot.exp.Expression
-    ) -> None:
-        """Asserts that any column references in the view query are properly formatted."""
-        for column_expression in tree_expression.find_all(sqlglot.exp.Column):
-            if column_expression.catalog in {
-                view.project,
-                GCP_PROJECT_STAGING,
-                GCP_PROJECT_PRODUCTION,
-            }:
-                raise ValueError(
-                    f"Found column [{column_expression}] in view "
-                    f"[{view.address.to_str()}] which uses a fully-qualified reference "
-                    f"to its table. If you want to qualify a column name, use a table "
-                    f"alias. Columns formatted like "
-                    f"`recidiviz-staging.dataset.table`.column interfere with our "
-                    f"regex-based parent table inference."
-                )
-
-    def _assert_aggregation_functions_use_order_by(
-        self, view: BigQueryView, tree_expression: sqlglot.exp.Expression
-    ) -> None:
-        """Asserts that all usages of an ARRAY_AGG or STRING_AGG function use an
-        ORDER BY clause so that the results are deterministically sorted.
-
-        For example, raises for `SELECT ARRAY_AGG(a) FROM ...` - expects
-            `SELECT ARRAY_AGG(a ORDER BY a) FROM ..` instead.
-        """
-        for func in tree_expression.find_all(
-            sqlglot.exp.ArrayAgg, sqlglot.exp.GroupConcat
-        ):
-            is_analytic_function = isinstance(func.parent, sqlglot.exp.Window)
-            if is_analytic_function:
-                # Skip usages of ARRAY_AGG and STRING_AGG in the context of window
-                # functions - the ordering will need to be handled by the window
-                # expression.
-                continue
-
-            order_by_clause = func.find(sqlglot.exp.Order)
-            if not order_by_clause:
-                # sqlglot internally treats STRING_AGG as GROUP_CONCAT - translate
-                # back so error message is more decipherable.
-                sql_for_display = func.sql().replace("GROUP_CONCAT", "STRING_AGG")
-                raise ValueError(
-                    f"Found view [{view.address.to_str()}] with aggregation expression "
-                    f"[{sql_for_display}] that does not have an ORDER BY clause. Add "
-                    f"an ORDER BY that will produce deterministically sorted results."
-                )
-
-    def test_view_query_format(self) -> None:
-        """This test runs a series of checks on the parsed view query"""
-        with local_project_id_override("recidiviz-456"):
-            views = [
-                vb.build() for vb in self.all_deployed_view_builders_by_address.values()
-            ]
-        for view in sorted(views, key=lambda v: v.address.to_str()):
-            try:
-                tree = sqlglot.parse_one(view.view_query, dialect="bigquery")
-            except Exception as e:
-                raise ValueError(
-                    f"Failure to parse view [{view.address.table_id}]"
-                ) from e
-
-            self._assert_regex_parent_table_parsing_matches_expected(
-                view=view, tree_expression=tree
-            )
-            self._assert_valid_column_references(view=view, tree_expression=tree)
-            self._assert_aggregation_functions_use_order_by(
-                view=view, tree_expression=tree
-            )
-
     def test_union_all_big_query_view_parents_valid(self) -> None:
         for view_address, node in self.dag_walker.nodes_by_address.items():
             builder = self.all_deployed_view_builders_by_address[view_address]
@@ -870,3 +758,182 @@ The following views have less restrictive projects_to_deploy than their parents:
                     continue
 
                 raise ValueError(f"Unexpected parent type [{type(parent)}]")
+
+
+class ViewQueryFormatTest(unittest.TestCase):
+    """Tests that use the query syntax tree to enforce certain rules about view query
+    format / correctness.
+    """
+
+    all_deployed_views_by_address: Dict[BigQueryAddress, BigQueryView]
+    all_deployed_parsed_view_trees_by_address: Dict[
+        BigQueryAddress, sqlglot.exp.Expression
+    ]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        # All view builders deployed to any project.
+        all_deployed_builders = all_deployed_view_builders()
+        with local_project_id_override("recidiviz-456"):
+            cls.all_deployed_views_by_address = {
+                vb.address: vb.build() for vb in all_deployed_builders
+            }
+
+        cls.all_deployed_parsed_view_trees_by_address = {}
+        for address in cls.all_deployed_views_by_address:
+            view = cls.all_deployed_views_by_address[address]
+            try:
+                tree = sqlglot.parse_one(view.view_query, dialect="bigquery")
+            except Exception as e:
+                raise ValueError(
+                    f"Failure to parse view [{view.address.table_id}]"
+                ) from e
+            cls.all_deployed_parsed_view_trees_by_address[view.address] = tree
+
+    def _run_query_format_test(
+        self,
+        view_check_fn: Callable[
+            [BigQueryView, sqlglot.exp.Expression], Sequence[Exception]
+        ],
+    ) -> None:
+        """Runs a query format check, raising all errors at once in a single
+        ExceptionGroup.
+        """
+        view_level_exceptions = []
+
+        for address in sorted(
+            self.all_deployed_views_by_address, key=lambda a: a.to_str()
+        ):
+            view = self.all_deployed_views_by_address[address]
+            tree_expression = self.all_deployed_parsed_view_trees_by_address[address]
+            exceptions = view_check_fn(view, tree_expression)
+            if exceptions:
+                view_level_exceptions.append(
+                    ExceptionGroup(
+                        f"Found query format errors for view [{address.to_str()}]",
+                        exceptions,
+                    )
+                )
+
+        if view_level_exceptions:
+            raise ExceptionGroup(
+                "Found view query format errors", view_level_exceptions
+            )
+
+    def test_view_query_format__parent_table_parsing(self) -> None:
+        """In production code we use an (imperfect) regex mechanism to determine the
+        parent tables of each of our BigQuery views because it is ~800x faster than the
+        more correct alternative. This test makes sure that table references in our
+        BigQuery views are all formatted correctly so that the same set of parents is
+        getting identified as those that would be identified by the slower alternative
+        (sqlglot).
+        """
+
+        def _get_view_errors(
+            view: BigQueryView, tree_expression: sqlglot.exp.Expression
+        ) -> list[ValueError]:
+            sqlglot_addresses = {
+                BigQueryAddress(dataset_id=table.db, table_id=table.name)
+                for table in list(tree_expression.find_all(sqlglot.exp.Table))
+                # If there's no dataset, then the reference is a CTE reference
+                if table.db
+            }
+
+            regex_addresses = view.parent_tables
+
+            if sqlglot_addresses == regex_addresses:
+                return []
+
+            if missing_from_regex := sqlglot_addresses - regex_addresses:
+                return [
+                    ValueError(
+                        f"Found parent tables for view [{view.address.to_str()}] "
+                        f"identified by the sqlglot library that were not identified "
+                        f"by a regex. This will happen if you have a table that is not "
+                        f"formatted like `{{project_id}}.dataset.table` (surrounded "
+                        f"by backticks). Addresses not parsed by regexes: "
+                        f"{sorted(a.to_str() for a in missing_from_regex)}."
+                    )
+                ]
+            missing_from_sqlglot = regex_addresses - sqlglot_addresses
+            return [
+                ValueError(
+                    f"Found parent tables for view [{view.address.to_str()}] that were "
+                    f"identified by regex that were not identified by the sqlglot "
+                    f"library. This may happen when you have a table reference inside "
+                    f"of a commented out piece of SQL code. You can fix this by "
+                    f"removing the backticks from the table definitions so the table "
+                    f"is not picked up by our regex matcher. Addresses not parsed by "
+                    f"sqlglot: {sorted(a.to_str() for a in missing_from_sqlglot)}"
+                )
+            ]
+
+        self._run_query_format_test(_get_view_errors)
+
+    def test_view_query_format__valid_column_references(self) -> None:
+        """Asserts that any column references in the view query are properly
+        formatted.
+        """
+
+        def _get_view_errors(
+            view: BigQueryView, tree_expression: sqlglot.exp.Expression
+        ) -> list[ValueError]:
+            exceptions = []
+            for column_expression in tree_expression.find_all(sqlglot.exp.Column):
+                if column_expression.catalog in {
+                    view.project,
+                    GCP_PROJECT_STAGING,
+                    GCP_PROJECT_PRODUCTION,
+                }:
+                    exceptions.append(
+                        ValueError(
+                            f"Found column [{column_expression}] in view "
+                            f"[{view.address.to_str()}] which uses a fully-qualified "
+                            f"reference to its table. If you want to qualify a column "
+                            f"name, use a table alias. Columns formatted like "
+                            f"`recidiviz-staging.dataset.table`.column interfere with "
+                            f"our regex-based parent table inference."
+                        )
+                    )
+            return exceptions
+
+        self._run_query_format_test(_get_view_errors)
+
+    def test_view_query_format__aggregation_functions_use_order_by(self) -> None:
+        """Asserts that all usages of an ARRAY_AGG or STRING_AGG function use an
+        ORDER BY clause so that the results are deterministically sorted.
+
+        For example, raises for `SELECT ARRAY_AGG(a) FROM ...` - expects
+            `SELECT ARRAY_AGG(a ORDER BY a) FROM ..` instead.
+        """
+
+        def _get_view_errors(
+            view: BigQueryView, tree_expression: sqlglot.exp.Expression
+        ) -> list[ValueError]:
+            exceptions = []
+            for func in tree_expression.find_all(
+                sqlglot.exp.ArrayAgg, sqlglot.exp.GroupConcat
+            ):
+                is_analytic_function = isinstance(func.parent, sqlglot.exp.Window)
+                if is_analytic_function:
+                    # Skip usages of ARRAY_AGG and STRING_AGG in the context of window
+                    # functions - the ordering will need to be handled by the window
+                    # expression.
+                    continue
+
+                order_by_clause = func.find(sqlglot.exp.Order)
+                if not order_by_clause:
+                    # sqlglot internally treats STRING_AGG as GROUP_CONCAT - translate
+                    # back so error message is more decipherable.
+                    sql_for_display = func.sql().replace("GROUP_CONCAT", "STRING_AGG")
+                    exceptions.append(
+                        ValueError(
+                            f"Found view [{view.address.to_str()}] with aggregation "
+                            f"expression [{sql_for_display}] that does not have an "
+                            f"ORDER BY clause. Add an ORDER BY that will produce "
+                            f"deterministically sorted results."
+                        )
+                    )
+            return exceptions
+
+        self._run_query_format_test(_get_view_errors)
