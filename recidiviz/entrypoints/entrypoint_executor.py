@@ -136,10 +136,17 @@ def quit_kubernetes_cloud_sql_proxy() -> None:
 
     if cloud_sql_admin_host and cloud_sql_admin_port:
         # Send a request to gracefully shut down the proxy container
-        requests.post(
-            f"http://{cloud_sql_admin_host}:{cloud_sql_admin_port}/quitquitquit",
-            timeout=10,
-        )
+        # if we can't connect to the container assume it's already shutdown
+        try:
+            requests.post(
+                f"http://{cloud_sql_admin_host}:{cloud_sql_admin_port}/quitquitquit",
+                timeout=10,
+            )
+        except requests.exceptions.ConnectionError as e:
+            logging.error(
+                "Failed to send quitquitquit request to Cloud SQL Proxy, container is likely already shutdown. Error: %s",
+                e,
+            )
 
 
 if __name__ == "__main__":
