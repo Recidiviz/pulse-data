@@ -18,9 +18,9 @@
 import base64
 import json
 import os
-from http import HTTPStatus
-from typing import Any, Dict, Optional, Tuple, TypeVar
-from urllib.parse import urlencode
+from typing import Any, Dict
+
+import functions_framework
 
 # Mypy errors "Cannot find implementation or library stub for module named 'xxxx'"
 # ignored here because cloud functions require that imports are declared relative to
@@ -33,48 +33,27 @@ from cloud_function_utils import (  # type: ignore[import]
     cloud_functions_log,
     trigger_dag,
 )
-
-# A stand-in type for google.cloud.functions.Context for which no apparent type is available
-ContextType = TypeVar("ContextType", bound=Any)
+from cloudevents.http import CloudEvent
 
 
-def _build_url(
-    project_id: str,
-    path: str,
-    params: Optional[Dict[str, Any]],
-) -> str:
-    url = f"https://{project_id}.appspot.com{path}"
-    if params is not None:
-        url += f"?{urlencode(params)}"
-    return url
+def _get_json_body(cloud_event: CloudEvent) -> Dict[str, Any]:
+    if "message" in cloud_event.data and "data" in cloud_event.data["message"]:
+        data_str = base64.b64decode(cloud_event.data["message"]["data"]).decode()
+        json_body = json.loads(data_str)
+    else:
+        raise ValueError(f"Could not find data needs in event parameter: {cloud_event}")
+    return json_body
 
 
-def trigger_calculation_dag(
-    event: Dict[str, Any], _context: ContextType
-) -> Tuple[str, HTTPStatus]:
+@functions_framework.cloud_event
+def trigger_calculation_dag(cloud_event: CloudEvent) -> None:
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where
     the calculation pipeline runs.
     """
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY, "")
-    if not project_id:
-        error_str = (
-            "No project id set for call to run the calculation pipelines, returning."
-        )
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
+    project_id = os.environ[GCP_PROJECT_ID_KEY]
+    airflow_uri = os.environ["AIRFLOW_URI"]
 
-    airflow_uri = os.environ.get("AIRFLOW_URI")
-    if not airflow_uri:
-        error_str = "The environment variable 'AIRFLOW_URI' is not set"
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    if "data" in event:
-        json_body = json.loads(base64.b64decode(event["data"]).decode("utf-8"))
-    else:
-        error_str = f"Could not find data needs in event parameter: {event}"
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
+    json_body = _get_json_body(cloud_event)
 
     # The name of the DAG you wish to trigger
     dag_name = f"{project_id}_calculation_dag"
@@ -92,26 +71,17 @@ def trigger_calculation_dag(
         severity="INFO",
         message=f"The monitoring Airflow response is {monitor_response}",
     )
-    return "", HTTPStatus(monitor_response.status_code)
-
-
-def trigger_hourly_monitoring_dag(
-    _event: Dict[str, Any], _context: ContextType
-) -> Tuple[str, HTTPStatus]:
-    """This function is triggered by a Pub/Sub event, triggers an Airflow hourly monitoring DAG"""
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY, "")
-    if not project_id:
-        error_str = (
-            "No project id set for call to run the hourly monitoring DAG, returning."
+    if monitor_response.status_code != 200:
+        raise RuntimeError(
+            f"Airflow monitoring DAG failed with status code {monitor_response.status_code}"
         )
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
 
-    airflow_uri = os.environ.get("AIRFLOW_URI")
-    if not airflow_uri:
-        error_str = "The environment variable 'AIRFLOW_URI' is not set"
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
+
+@functions_framework.cloud_event
+def trigger_hourly_monitoring_dag(_cloud_event: CloudEvent) -> None:
+    """This function is triggered by a Pub/Sub event, triggers an Airflow hourly monitoring DAG"""
+    project_id = os.environ[GCP_PROJECT_ID_KEY]
+    airflow_uri = os.environ["AIRFLOW_URI"]
 
     # The name of the DAG you wish to trigger
     dag_name = f"{project_id}_hourly_monitoring_dag"
@@ -121,25 +91,18 @@ def trigger_hourly_monitoring_dag(
         severity="INFO",
         message=f"The monitoring Airflow response is {monitor_response}",
     )
-    return "", HTTPStatus(monitor_response.status_code)
+    if monitor_response.status_code != 200:
+        raise RuntimeError(
+            f"Airflow monitoring DAG failed with status code {monitor_response.status_code}"
+        )
 
 
-def trigger_sftp_dag(
-    _event: Dict[str, Any], _context: ContextType
-) -> Tuple[str, HTTPStatus]:
+@functions_framework.cloud_event
+def trigger_sftp_dag(_cloud_event: CloudEvent) -> None:
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
     the SFTP downloads for all states run simultaneously."""
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY, "")
-    if not project_id:
-        error_str = "No project id set for call to run the sftp pipelines, returning."
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    airflow_uri = os.environ.get("AIRFLOW_URI")
-    if not airflow_uri:
-        error_str = "The environment variable 'AIRFLOW_URI' is not set"
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
+    project_id = os.environ[GCP_PROJECT_ID_KEY]
+    airflow_uri = os.environ["AIRFLOW_URI"]
 
     # The name of the DAG you wish to trigger
     dag_name = f"{project_id}_sftp_dag"
@@ -149,35 +112,21 @@ def trigger_sftp_dag(
         severity="INFO",
         message=f"The monitoring Airflow response is {monitor_response}",
     )
-    return "", HTTPStatus(monitor_response.status_code)
+    if monitor_response.status_code != 200:
+        raise RuntimeError(
+            f"Airflow monitoring DAG failed with status code {monitor_response.status_code}"
+        )
 
 
-def trigger_raw_data_import_dag(
-    event: Dict[str, Any], _context: ContextType
-) -> Tuple[str, HTTPStatus]:
+@functions_framework.cloud_event
+def trigger_raw_data_import_dag(cloud_event: CloudEvent) -> None:
     """This function is triggered by a Pub/Sub event and in turn triggers the raw data
     import DAG.
     """
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY, "")
-    if not project_id:
-        error_str = (
-            "No project id set for call to run the raw data import dag, returning."
-        )
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
+    project_id = os.environ[GCP_PROJECT_ID_KEY]
+    airflow_uri = os.environ["AIRFLOW_URI"]
 
-    airflow_uri = os.environ.get("AIRFLOW_URI")
-    if not airflow_uri:
-        error_str = "The environment variable 'AIRFLOW_URI' is not set"
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    if "data" in event:
-        json_body = json.loads(base64.b64decode(event["data"]).decode("utf-8"))
-    else:
-        error_str = f"Could not find data needs in event parameter: {event}"
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
+    json_body = _get_json_body(cloud_event)
 
     monitor_response = trigger_dag(
         airflow_uri,
@@ -191,4 +140,7 @@ def trigger_raw_data_import_dag(
         severity="INFO",
         message=f"The monitoring Airflow response is {monitor_response}",
     )
-    return "", HTTPStatus(monitor_response.status_code)
+    if monitor_response.status_code != 200:
+        raise RuntimeError(
+            f"Airflow monitoring DAG failed with status code {monitor_response.status_code}"
+        )
