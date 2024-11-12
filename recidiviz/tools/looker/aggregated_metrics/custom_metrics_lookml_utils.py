@@ -120,6 +120,8 @@ def liquid_wrap_json_field(query_fragment: str, field_name: str, view_name: str)
     return f"""{{% if {view_name}.{field_name}._in_query or {view_name}.{field_name}._is_filtered %}}{query_fragment}{{% endif %}}"""
 
 
+# TODO(#29291): Adapt this LookML generation helper to use optimized aggregated metrics
+#  queries.
 def generate_period_span_metric_view(
     metrics: List[PeriodSpanAggregatedMetric],
     view_name: str,
@@ -129,6 +131,8 @@ def generate_period_span_metric_view(
     """Generates LookMLView with derived table performing logic for a set of PeriodSpanAggregatedMetric objects"""
     metric_aggregation_fragment = (
         AVG_DAILY_POPULATION.generate_aggregation_query_fragment(
+            filter_observations_by_type=True,
+            read_observation_attributes_from_json=True,
             span_start_date_col="ses.start_date",
             span_end_date_col="ses.end_date",
             period_start_date_col="time_period.start_date",
@@ -140,6 +144,8 @@ def generate_period_span_metric_view(
             [
                 liquid_wrap_metric(
                     metric.generate_aggregation_query_fragment(
+                        filter_observations_by_type=True,
+                        read_observation_attributes_from_json=True,
                         span_start_date_col="ses.start_date",
                         span_end_date_col="ses.end_date",
                         period_start_date_col="time_period.start_date",
@@ -265,6 +271,8 @@ def generate_period_span_metric_view(
     )
 
 
+# TODO(#29291): Adapt this LookML generation helper to use optimized aggregated metrics
+#  queries.
 def generate_period_event_metric_view(
     metrics: List[PeriodEventAggregatedMetric],
     view_name: str,
@@ -276,7 +284,9 @@ def generate_period_event_metric_view(
         [
             liquid_wrap_metric(
                 metric.generate_aggregation_query_fragment(
-                    event_date_col="events.event_date"
+                    filter_observations_by_type=True,
+                    read_observation_attributes_from_json=True,
+                    event_date_col="events.event_date",
                 ),
                 metric,
                 view_name,
@@ -356,6 +366,8 @@ def generate_period_event_metric_view(
     )
 
 
+# TODO(#29291): Adapt this LookML generation helper to use optimized aggregated metrics
+#  queries.
 def generate_assignment_span_metric_view(
     metrics: List[AssignmentSpanAggregatedMetric],
     view_name: str,
@@ -373,6 +385,8 @@ def generate_assignment_span_metric_view(
         [
             liquid_wrap_metric(
                 metric.generate_aggregation_query_fragment(
+                    filter_observations_by_type=True,
+                    read_observation_attributes_from_json=True,
                     span_start_date_col="spans.start_date",
                     span_end_date_col="spans.end_date",
                     assignment_date_col="assignments.assignment_date",
@@ -456,6 +470,8 @@ def generate_assignment_span_metric_view(
     )
 
 
+# TODO(#29291): Adapt this LookML generation helper to use optimized aggregated metrics
+#  queries.
 def generate_assignment_event_metric_view(
     metrics: List[AssignmentEventAggregatedMetric],
     view_name: str,
@@ -467,6 +483,8 @@ def generate_assignment_event_metric_view(
         [
             liquid_wrap_metric(
                 metric.generate_aggregation_query_fragment(
+                    filter_observations_by_type=True,
+                    read_observation_attributes_from_json=True,
                     event_date_col="events.event_date",
                     assignment_date_col="assignments.assignment_date",
                 ),

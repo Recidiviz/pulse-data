@@ -52,6 +52,7 @@ def attributes_column_name_for_observation_type(
 #  trivial) once we are only reading from single observation tables and the single
 #  observation tables do not package their attributes into JSON.
 def observation_attribute_value_clause(
+    *,
     observation_type: EventType | SpanType,
     attribute: str,
     read_attributes_from_json: bool,

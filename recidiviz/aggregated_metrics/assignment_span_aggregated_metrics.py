@@ -47,6 +47,8 @@ from recidiviz.observations.metric_unit_of_observation_type import (
 from recidiviz.observations.span_type import SpanType
 
 
+# TODO(#29291): This function should become unused once we've migrated over to optimized
+#  aggregated metrics queries.
 def get_assignment_span_time_specific_cte(
     unit_of_analysis: MetricUnitOfAnalysis,
     population_type: MetricPopulationType,
@@ -85,6 +87,8 @@ def get_assignment_span_time_specific_cte(
         metric_aggregation_fragment_inner = ",\n".join(
             [
                 metric.generate_aggregation_query_fragment(
+                    filter_observations_by_type=True,
+                    read_observation_attributes_from_json=True,
                     span_start_date_col="spans.start_date",
                     span_end_date_col="spans.end_date",
                     assignment_date_col="assign.assignment_date",
@@ -155,6 +159,8 @@ GROUP BY
     )
 
 
+# TODO(#29291): This function should become unused once we've migrated over to optimized
+#  aggregated metrics queries.
 def generate_assignment_span_aggregated_metrics_view_builder(
     unit_of_analysis: MetricUnitOfAnalysis,
     population_type: MetricPopulationType,

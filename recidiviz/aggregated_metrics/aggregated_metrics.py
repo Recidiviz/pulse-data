@@ -89,7 +89,7 @@ def generate_aggregated_metrics_view_builder(
     metrics_query_str = ",\n    ".join([metric.name for metric in included_metrics])
     view_description_metrics = [
         f"|{metric.display_name} (`{metric.name}`)|{metric.description}|{metric.pretty_name()}|"
-        f"`{metric.get_observation_conditions_string_no_newline() if isinstance(metric, MetricConditionsMixin) else 'N/A'}`|"
+        f"`{metric.get_observation_conditions_string_no_newline(filter_by_observation_type=True, read_observation_attributes_from_json=True) if isinstance(metric, MetricConditionsMixin) else 'N/A'}`|"
         for metric in included_metrics
     ]
     view_description_metrics_str = "\n".join(view_description_metrics)

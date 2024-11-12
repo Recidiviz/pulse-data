@@ -118,7 +118,18 @@ class OutliersMetric:
         """
         The query fragment to use to filter analyst_data.person_events for this metric's events
         """
-        return self.aggregated_metric.get_observation_conditions_string_no_newline()
+        return self.aggregated_metric.get_observation_conditions_string_no_newline(
+            # TODO(#29291): Flip this flag once format_state_specific_person_events_filters()
+            #  in recidiviz/calculator/query/state/views/outliers/utils.py pulls from
+            #  the observation-specific table for this metric.
+            filter_by_observation_type=True,
+            # TODO(#34498), TODO(#29291): Flip this flag once
+            #  format_state_specific_person_events_filters() in
+            #  recidiviz/calculator/query/state/views/outliers/utils.py pulls from
+            #  the observation-specific table for this metric AND we've updated
+            #  observation-specific tables to not pack their attributes in JSON.
+            read_observation_attributes_from_json=True,
+        )
 
 
 @attr.s
@@ -135,7 +146,7 @@ class OutliersClientEvent:
         return self.aggregated_metric.name
 
 
-@attr.s(eq=False)
+@attr.s(eq=False, kw_only=True)
 class OutliersMetricConfig:
     """
     Represents all information needed for a single metric in the Outliers products
@@ -195,18 +206,18 @@ class OutliersMetricConfig:
         list_table_text: str | None = None,
     ) -> "OutliersMetricConfig":
         return cls(
-            metric.name,
-            metric.outcome_type,
-            title_display_name,
-            body_display_name,
-            event_name,
-            event_name_singular,
-            event_name_past_tense,
-            description_markdown,
-            metric.metric_event_conditions_string,
-            top_x_pct,
-            is_absconsion_metric,
-            list_table_text,
+            name=metric.name,
+            outcome_type=metric.outcome_type,
+            title_display_name=title_display_name,
+            body_display_name=body_display_name,
+            event_name=event_name,
+            event_name_singular=event_name_singular,
+            event_name_past_tense=event_name_past_tense,
+            description_markdown=description_markdown,
+            metric_event_conditions_string=metric.metric_event_conditions_string,
+            top_x_pct=top_x_pct,
+            is_absconsion_metric=is_absconsion_metric,
+            list_table_text=list_table_text,
         )
 
 
