@@ -44,6 +44,7 @@ SELECT
     c.system_type,
     launches.first_access_date IS NOT NULL AS task_type_is_live,
     IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
+    IFNULL(e.completion_event_date >= launches.launch_date, FALSE) AS is_after_full_state_launch,
 FROM
     `{{project_id}}.task_eligibility.all_completion_events_materialized` e
 INNER JOIN
@@ -99,6 +100,7 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
         "system_type",
         "task_type_is_live",
         "task_type_is_fully_launched",
+        "is_after_full_state_launch",
         "is_eligible",
         "days_eligible",
         "is_almost_eligible",
