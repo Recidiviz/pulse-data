@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_IncarcerationIncident` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - offender_restriction_id
+  - offender_id
+  - location_name
+  - restriction_description
+  - begin_date
+  - end_date
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_id
+          id_type: $literal("US_MI_DOC_ID")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id:
+            $concat:
+              $values:
+                - $literal("RESTRICTION")
+                - offender_restriction_id
+          facility: location_name
+          incarceration_incident_outcomes:
+            - StateIncarcerationIncidentOutcome:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("RESTRICTION")
+                      - offender_restriction_id
+                date_effective: begin_date
+                projected_end_date: end_date
+                outcome_type:
+                  $enum_mapping:
+                    $raw_text: restriction_description
+                    $mappings:
+                      StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
+                        - Detention (DET)
+                      StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                        - Loss of Privilege (LOP)
+                        - Kiosk Restriction (KIOSK)
+                        - Phone Restriction (PH)
+                        - Smoking Loss of Privilege (SLOP)
+                      StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
+                        - Smoking Top Lock (STL)
+                        - Top Lock (TL)
