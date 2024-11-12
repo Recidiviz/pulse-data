@@ -24,6 +24,7 @@ from mock import patch
 from sqlalchemy.engine import Engine
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
@@ -602,6 +603,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         agency = self.session.query(Agency).filter(Agency.name == "Agency Alpha").one()
         agency.is_superagency = True
         self.session.commit()
+        self.session.refresh(agency)
 
         response = self.client.get(f"/admin/agency/{agency.id}")
         self.assertEqual(response.status_code, 200)
@@ -669,6 +671,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 "super_agency_id": None,
                 "child_agency_ids": [self.agency_A_id],
                 "agency_id": agency.id,
+                "agency_url": "foobar",
                 "team": [
                     {"user_account_id": user_B_id, "role": "AGENCY_ADMIN"},
                     {"user_account_id": user_A_id, "role": "JUSTICE_COUNTS_ADMIN"},
@@ -679,6 +682,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response.status_code, 200)
         response_json = assert_type(response.json, dict)
         self.assertEqual(response_json["child_agency_ids"], [self.agency_A_id])
+        self.assertEqual(response_json["agency_url"], "foobar")
         agency = AgencyInterface.get_agency_by_name_state_and_systems(
             session=self.session,
             name="New Agency New Name",
@@ -721,6 +725,8 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 "super_agency_id": None,
                 "child_agency_ids": [],
                 "agency_id": agency.id,
+                "agency_url": "foobar",
+                "agency_description": "hello world",
                 "is_dashboard_enabled": False,
                 "team": [],
             },
@@ -729,6 +735,8 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response.status_code, 200)
         response_json = assert_type(response.json, dict)
         self.assertEqual(response_json["child_agency_ids"], [])
+        self.assertEqual(response_json["agency_url"], "foobar")
+        self.assertEqual(response_json["agency_description"], "hello world")
         agency = AgencyInterface.get_agency_by_name_state_and_systems(
             session=self.session,
             name="New Agency New Name",
@@ -969,11 +977,26 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.commit()
         self.session.refresh(super_agency)
 
+        AgencySettingInterface.create_or_update_agency_setting(
+            session=self.session,
+            agency_id=super_agency.id,
+            setting_type=schema.AgencySettingType.HOMEPAGE_URL,
+            value="barfoo",
+        )
+
         child_agency_A = self.test_schema_objects.test_prison_child_agency_A
         child_agency_B = self.test_schema_objects.test_prison_child_agency_B
         child_agency_A.super_agency_id = super_agency.id
         child_agency_B.super_agency_id = super_agency.id
         self.session.add_all([child_agency_A, child_agency_B])
+        self.session.commit()
+
+        AgencySettingInterface.create_or_update_agency_setting(
+            session=self.session,
+            agency_id=child_agency_A.id,
+            setting_type=schema.AgencySettingType.PURPOSE_AND_FUNCTIONS,
+            value="foobar",
+        )
         self.session.commit()
 
         response = self.client.get("/admin/agency/overview")
@@ -993,6 +1016,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             super_agency_data["child_agency_ids"],
             [child_agency_A.id, child_agency_B.id],
         )
+        self.assertEqual(super_agency_data["agency_url"], "barfoo")
 
         child_agency_A_data = next(
             agency for agency in agencies_data if agency["id"] == child_agency_A.id
@@ -1000,6 +1024,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(child_agency_A_data["id"], child_agency_A.id)
         self.assertEqual(child_agency_A_data["name"], child_agency_A.name)
         self.assertEqual(child_agency_A_data["child_agency_ids"], [])
+        self.assertEqual(child_agency_A_data["agency_description"], "foobar")
 
         child_agency_B_data = next(
             agency for agency in agencies_data if agency["id"] == child_agency_B.id
