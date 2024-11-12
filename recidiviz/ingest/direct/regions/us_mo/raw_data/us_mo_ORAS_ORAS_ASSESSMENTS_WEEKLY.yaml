@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ORAS_ORAS_ASSESSMENTS_WEEKLY
+file_description: |-
+  ORAS assessment scores (updated weekly). Currently being used in place of ORAS_WEEKLY_SUMMARY_UPDATE.
+data_classification: source
+primary_key_cols:
+  - DOC_ID
+  - FOCLIST
+columns:
+  - name: DOC_ID
+    description: |-
+      DOC ID Number
+    is_pii: True
+  - name: ASSESSMENT_TYPE
+    description: |-
+      Assessment Type
+  - name: CREATED_DATE
+    description: |-
+      Date that entry was created in system
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%y-%m-%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d', {col_name})"
+  - name: ASSESSMENT_STATUS
+    description: |-
+      Assessment Status
+  - name: FOCLIST
+    description: |-
+      Assessment sequence number
+  - name: OFFENDER_NAME
+    description: |-
+      Name of individual receiving assessment
+    is_pii: True
+  - name: AGENCY_NAME
+    description: |-
+      Name of agency conducting assessment
+  - name: GENDER
+    description: |-
+      Gender
+  - name: ETHNICITY
+    description: |-
+      Ethnicity
+  - name: RISK_LEVEL
+    description: |-
+      Assessment Level
+  - name: OVERRIDE_RISK_LEVEL
+    description: |-
+      Override Risk Level (not uniform in data)
+  - name: OVERRIDE_RISK_REASON
+    description: |-
+      Override Risk Reason
+  - name: ASSESSMENT_OUTCOME
+    description: |-
+      Assessment Outcome
+  - name: SCORE
+    description: |-
+      Assessment Score
+  - name: RACE
+    description: |-
+      Race of Person receiving assessment
+  - name: USER_CREATED
+    description: |-
+      Full name of the person who administered the assessment
+    is_pii: True
+  - name: BIRTH_DATE
+    description: |-
+      Birth date
+  - name: MAX_CREATED
+    description: |-
+      Unknown
+always_historical_export: True
