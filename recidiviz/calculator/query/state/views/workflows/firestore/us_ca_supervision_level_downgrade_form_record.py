@@ -45,7 +45,18 @@ WITH current_parole_pop_cte AS (
     {join_current_task_eligibility_spans_with_external_id(
         state_code= "'US_CA'", 
         tes_task_query_view = 'supervision_level_downgrade_materialized',
-        id_type = "'US_CA_DOC'")})
+        id_type = "'US_CA_DOC'")}),
+additional_information AS (
+  SELECT 
+    speid.external_id,
+    ssp.supervision_site AS form_information_parole_unit,
+    ssp.supervision_level_raw_text AS form_information_supervision_level,
+    scte.case_type,
+  FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` ssp
+  LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` speid USING (person_id)
+  LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_case_type_entry` scte USING (person_id, supervision_period_id)
+  WHERE ssp.state_code = 'US_CA' AND ssp.termination_date IS NULL
+)
 
 SELECT 
     external_id,
@@ -54,10 +65,14 @@ SELECT
     ineligible_criteria,
     is_eligible,
     is_almost_eligible,
-    pp.Cdcno as form_information_cdcno
+    ai.case_type,
+    pp.Cdcno as form_information_cdcno,
+    ai.form_information_parole_unit,
+    ai.form_information_supervision_level
 FROM current_parole_pop_cte
 LEFT JOIN `{{project_id}}.{{us_ca_raw_data_up_to_date_dataset}}.PersonParole_latest` pp
     ON external_id=pp.OffenderId
+LEFT JOIN additional_information ai using (external_id)
 WHERE is_eligible
 """
 
