@@ -48,13 +48,13 @@ MetricViewExportEntrypoint:
 BigQueryRefreshEntrypoint:
   default_resources:
     limits:
-      cpu: 250m
+      cpu: 500m
       memory: 0.5Gi
 
 ValidationEntrypoint:
   default_resources:
     limits:
-      cpu: 250m
+      cpu: 500m
       memory: 1.5Gi
 
 UpdateAllManagedViewsEntrypoint:
@@ -84,13 +84,13 @@ ReportAirflowEnvironmentAgeEntrypoint:
 IngestPipelineShouldRunInDagEntrypoint:
   default_resources:
     limits:
-      cpu: 250m
+      cpu: 500m
       memory: 500Mi
 
 IngestCheckRawDataFlashingEntrypoint:
   default_resources:
     limits:
-      cpu: 250m
+      cpu: 500m
       memory: 500Mi
 
 RawDataChunkNormalizationEntrypoint:
