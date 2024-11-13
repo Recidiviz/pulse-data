@@ -38,6 +38,7 @@ from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     SSI_NOTE_WHERE_CLAUSE,
     TRAINING_PROGRAMMING_NOTE_TEXT_REGEX,
     WORK_NOTE_TEXT_REGEX,
+    eligible_and_almost_eligible_minus_referrals,
     get_ids_as_case_notes,
     get_infractions_as_case_notes,
     get_offender_case_notes,
@@ -62,6 +63,10 @@ WITH eligible_and_almost_eligible AS (
     tes_task_query_view = 'transfer_to_minimum_facility_form_materialized',
     id_type = "'US_ND_ELITE'",
     eligible_only=True)}
+),
+
+eligible_and_almost_eligible_minus_referrals AS (
+    {eligible_and_almost_eligible_minus_referrals()}
 ),
 
 case_notes_cte AS (
@@ -164,10 +169,10 @@ case_notes_cte AS (
 ), 
 
 array_case_notes_cte AS (
-{array_agg_case_notes_by_external_id()}
+{array_agg_case_notes_by_external_id(from_cte = 'eligible_and_almost_eligible_minus_referrals')}
 )
-
-{opportunity_query_final_select_with_case_notes()}
+{opportunity_query_final_select_with_case_notes(
+    from_cte = 'eligible_and_almost_eligible_minus_referrals')}
 """
 
 US_ND_TRANSFER_TO_MINIMUM_FACILITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(

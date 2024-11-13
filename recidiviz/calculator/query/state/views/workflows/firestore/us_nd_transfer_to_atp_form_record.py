@@ -29,6 +29,7 @@ from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
+    task_eligibility_criteria_state_specific_dataset,
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
@@ -36,6 +37,7 @@ from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     SSI_NOTE_WHERE_CLAUSE,
     TRAINING_PROGRAMMING_NOTE_TEXT_REGEX,
     WORK_NOTE_TEXT_REGEX,
+    eligible_and_almost_eligible_minus_referrals,
     get_ids_as_case_notes,
     get_infractions_as_case_notes,
     get_offender_case_notes,
@@ -61,6 +63,10 @@ WITH eligible_and_almost_eligible AS (
         id_type="'US_ND_ELITE'",
         eligible_and_almost_eligible_only=True,
     )}
+),
+
+eligible_and_almost_eligible_minus_referrals AS (
+    {eligible_and_almost_eligible_minus_referrals()}
 ),
 
 case_notes_cte AS (
@@ -186,10 +192,11 @@ case_notes_cte AS (
 ),
 
 array_case_notes_cte AS (
-{array_agg_case_notes_by_external_id()}
+{array_agg_case_notes_by_external_id(from_cte = 'eligible_and_almost_eligible_minus_referrals')}
 )
 
-{opportunity_query_final_select_with_case_notes()}
+{opportunity_query_final_select_with_case_notes(
+    from_cte = 'eligible_and_almost_eligible_minus_referrals')}
 """
 
 US_ND_TRANSFER_TO_ATP_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -199,6 +206,9 @@ US_ND_TRANSFER_TO_ATP_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_ND_TRANSFER_TO_ATP_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
+        StateCode.US_ND
+    ),
+    task_eligibility_criteria_dataset=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_ND
     ),
     raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
