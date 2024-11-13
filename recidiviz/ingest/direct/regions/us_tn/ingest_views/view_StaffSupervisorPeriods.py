@@ -23,8 +23,9 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH first_reported_supervisor AS 
-    # First, identify the first ever reported surpervisor for each staff member sent to us by TN
+WITH 
+-- First, identify the first ever reported surpervisor for each staff member sent to us by TN
+first_reported_supervisor AS 
     (SELECT
     UPPER(external_id) as StaffID, 
     UPPER(StaffSupervisorID) as StaffSupervisorID,
@@ -36,9 +37,10 @@ FROM
         update_datetime,
         ROW_NUMBER() OVER (PARTITION BY external_id ORDER BY update_datetime ASC) as SEQ
     FROM {RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster@ALL} s
-    WHERE external_id IS NOT NULL AND SupervisorID IS NOT NULL) s 
-WHERE SEQ = 1),
-# Then, determine when the supervisor sent for a given person has changed since the last time TN sent us a roster
+    WHERE external_id IS NOT NULL AND SupervisorID IS NOT NULL AND UPPER(Active) IN ('YES', 'Y', 'ACTIVE')) s 
+WHERE SEQ = 1
+),
+-- Then, determine when the supervisor sent for a given person has changed since the last time TN sent us a roster
 supervisor_change_recorded AS (
   SELECT 
       UPPER(external_id) as StaffID, 
@@ -47,8 +49,9 @@ supervisor_change_recorded AS (
       update_datetime as UpdateDate
   FROM {RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster@ALL}
   WHERE external_id IS NOT NULL
+  AND UPPER(Active) IN ('YES', 'Y', 'ACTIVE')
 ),
-# Start all periods far back in the past, then add any key change dates, to get a list of all dates that a person has changed supervisors
+-- Start all periods far back in the past, then add any key change dates, to get a list of all dates that a person has changed supervisors
 key_supervisor_change_dates AS(
     #arbitrary first period start dates since beginning of time 
     SELECT
@@ -67,12 +70,15 @@ key_supervisor_change_dates AS(
     FROM supervisor_change_recorded
     WHERE CurrentStaffSupervisorID != PreviousStaffSupervisorID
 ),
+-- ranking rows to insure we don't get duplicate information
 ranked_rows AS(
     SELECT 
         *,
         ROW_NUMBER() OVER (PARTITION BY StaffID,StaffSupervisorID,UpdateDate ORDER BY UpdateDate DESC) as RecencyRank
     FROM key_supervisor_change_dates
 ),
+-- making rows unique by staff and updatedate
+-- NOTE: Add a partition by supervisor ID as well when #34976 is implemented
 create_unique_rows AS (
     SELECT 
         StaffID,
@@ -82,6 +88,7 @@ create_unique_rows AS (
     FROM ranked_rows
     WHERE RecencyRank = 1
 ),
+-- creating supervisor periods from key dates
 construct_periods AS (
     SELECT 
         StaffID,
@@ -91,14 +98,49 @@ construct_periods AS (
         SupervisorChangeOrder
     FROM create_unique_rows 
     WINDOW person_sequence AS (PARTITION BY StaffID ORDER BY SupervisorChangeOrder)
+),
+-- Getting the most recent status from Staff to see if an employee is active or inactive
+current_status AS (
+ SELECT 
+    StaffID,
+    Status
+   FROM 
+        {Staff@ALL}
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY update_datetime DESC) = 1
+),
+-- Taking the first update datetime where staff status goes inactive
+inactive_dates AS (
+  SELECT 
+        StaffID,
+        update_datetime AS first_inactive_date,
+    FROM 
+        {Staff@ALL}
+    WHERE 
+        Status = 'I' AND StaffID IN
+                      (SELECT StaffID
+                      FROM current_status
+                      WHERE Status = 'I')
+    QUALIFY 
+       ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY update_datetime) = 1
 )
-SELECT 
-    REGEXP_REPLACE(StaffID, r'[^A-Z0-9]', '') as StaffID, 
+-- Here we are closing the supervisor periods if their latest status in Staff table is inactive,
+-- with the first update_datetime of when they became inactive, if it is after the start date of the period
+SELECT
+    REGEXP_REPLACE(construct_periods.StaffID, r'[^A-Z0-9]', '') AS StaffID,
     REGEXP_REPLACE(StaffSupervisorID, r'[^A-Z0-9]', '') as StaffSupervisorID, 
-    StartDate,
-    EndDate,
-    SupervisorChangeOrder
-FROM construct_periods
+    construct_periods.StartDate,
+    CASE 
+        WHEN 
+            construct_periods.EndDate IS NULL 
+            AND first_inactive_date IS NOT NULL
+            AND id.first_inactive_date > construct_periods.StartDate 
+            THEN id.first_inactive_date
+        ELSE construct_periods.EndDate
+    END AS EndDate,
+   SupervisorChangeOrder
+FROM 
+    construct_periods
+LEFT JOIN inactive_dates id ON construct_periods.StaffID = id.StaffID
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
