@@ -17,6 +17,7 @@
 """Constants used to reference metadata fields in the SFTP DAG"""
 from typing import Dict
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataResourceLockResource,
 )
@@ -35,6 +36,7 @@ UPLOADED_FILE_PATH = "uploaded_file_path"
 START_SFTP = "start_sftp"
 END_SFTP = "end_sftp"
 
+
 # SFTP / SSH errors tend to be transient, so we sometimes need to retry tasks in order
 # to get them to succeed. this should ONLY be applied to fully idempotent tasks.
 TASK_RETRIES = 3
@@ -51,6 +53,15 @@ def scheduler_queues_to_pause(state_code: StateCode) -> Dict[DirectIngestInstanc
         DirectIngestInstance.PRIMARY: scheduler_queue_name,
         DirectIngestInstance.SECONDARY: f"{scheduler_queue_name}-secondary",
     }
+
+
+# yaml config file names and location
+SFTP_ENABLED_YAML_CONFIG = "sftp_enabled_in_airflow_config.yaml"
+SFTP_EXCLUDED_PATHS_YAML_CONFIG = "sftp_excluded_remote_file_paths.yaml"
+
+
+def get_configs_bucket(project_id: str) -> GcsfsBucketPath:
+    return GcsfsBucketPath(f"{project_id}-configs")
 
 
 # metadata for raw data resource locks

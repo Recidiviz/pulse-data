@@ -22,7 +22,6 @@ from typing import Any, Dict, Union
 
 import pytz
 from airflow.models.baseoperator import BaseOperator
-from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.utils.context import Context
 
 from recidiviz.airflow.dags.hooks.sftp_hook import RecidivizSFTPHook
@@ -31,8 +30,8 @@ from recidiviz.airflow.dags.sftp.metadata import (
     REMOTE_FILE_PATH,
     SFTP_TIMESTAMP,
 )
+from recidiviz.airflow.dags.utils.gcsfs_utils import get_gcsfs_from_hook
 from recidiviz.cloud_storage.gcs_file_system import BYTES_CONTENT_TYPE
-from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.io.sftp_file_contents_handle import SftpFileContentsHandle
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
@@ -95,13 +94,12 @@ class RecidivizSftpToGcsOperator(BaseOperator):
 
     # pylint: disable=unused-argument
     def execute(self, context: Context) -> Dict[str, Union[str, int]]:
-        gcs_hook = GCSHook()
         sftp_hook = RecidivizSFTPHook(
             ssh_conn_id=f"{self.region_code.lower()}_sftp_conn_id",
             transport_kwargs=self.delegate.get_transport_kwargs(),
         )
 
-        gcsfs = GCSFileSystemImpl(gcs_hook.get_conn())
+        gcsfs = get_gcsfs_from_hook()
 
         logging.info("Starting to download [%s]", self.remote_file_path)
         gcsfs.upload_from_contents_handle_stream(

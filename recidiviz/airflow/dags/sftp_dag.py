@@ -87,11 +87,14 @@ from recidiviz.airflow.dags.sftp.mark_remote_files_downloaded_sql_query_generato
 )
 from recidiviz.airflow.dags.sftp.metadata import (
     END_SFTP,
+    SFTP_ENABLED_YAML_CONFIG,
+    SFTP_EXCLUDED_PATHS_YAML_CONFIG,
     SFTP_REQUIRED_RESOURCES,
     SFTP_RESOURCE_LOCK_DESCRIPTION,
     SFTP_RESOURCE_LOCK_TTL_SECONDS,
     START_SFTP,
     TASK_RETRIES,
+    get_configs_bucket,
     scheduler_queues_to_pause,
 )
 from recidiviz.airflow.dags.utils.branch_by_bool import create_branch_by_bool
@@ -106,7 +109,7 @@ from recidiviz.airflow.dags.utils.task_queue_helpers import (
     get_running_queue_instances,
     queues_were_unpaused,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataResourceLockResource,
 )
@@ -129,10 +132,6 @@ QUEUE_LOCATION = "us-east1"
 # This is the maximum number of tasks to run in parallel when they are dynamically
 # generated. This prevents the scheduler and all workers from being overloaded.
 MAX_TASKS_TO_RUN_IN_PARALLEL = 15
-
-
-def get_configs_bucket(project_id: str) -> GcsfsBucketPath:
-    return GcsfsBucketPath(f"{project_id}-configs")
 
 
 def sftp_enabled_states(project_id: str) -> List[StateCode]:
@@ -161,7 +160,7 @@ def is_enabled_in_config(state_code_str: str) -> bool:
     config = read_yaml_config(
         GcsfsFilePath.from_directory_and_file_name(
             dir_path=get_configs_bucket(get_project_id()),
-            file_name="sftp_enabled_in_airflow_config.yaml",
+            file_name=SFTP_ENABLED_YAML_CONFIG,
         )
     )
     enabled_states = {
@@ -280,7 +279,7 @@ def sftp_dag() -> None:
                     excluded_remote_files_config_path=(
                         GcsfsFilePath.from_directory_and_file_name(
                             dir_path=get_configs_bucket(project_id),
-                            file_name="sftp_excluded_remote_file_paths.yaml",
+                            file_name=SFTP_EXCLUDED_PATHS_YAML_CONFIG,
                         )
                     ),
                 )

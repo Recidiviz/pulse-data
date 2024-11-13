@@ -25,7 +25,7 @@ from recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator import (
     RecidivizSftpToGcsOperator,
 )
 from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
-    FakeSftpDownloadDelegate,
+    FakeUsXxSftpDownloadDelegate,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
@@ -34,7 +34,7 @@ from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
 
 
 @patch.object(
-    SftpDownloadDelegateFactory, "build", return_value=FakeSftpDownloadDelegate()
+    SftpDownloadDelegateFactory, "build", return_value=FakeUsXxSftpDownloadDelegate()
 )
 class TestSftpToGcsOperator(unittest.TestCase):
     """Tests for the SftpToGcsOperator"""

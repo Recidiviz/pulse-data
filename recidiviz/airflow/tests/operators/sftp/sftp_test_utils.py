@@ -19,14 +19,50 @@ from typing import Any, Dict, List
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
     BaseSftpDownloadDelegate,
+)
+from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
+    SftpDownloadDelegateFactory,
 )
 
 TEST_PROJECT_ID = "recidiviz-testing"
 
 
-class FakeSftpDownloadDelegate(BaseSftpDownloadDelegate):
+class FakeSftpDownloadDelegateFactory(SftpDownloadDelegateFactory):
+    @classmethod
+    def build(cls, *, region_code: str) -> BaseSftpDownloadDelegate:
+        region_code = region_code.upper()
+        if region_code == StateCode.US_XX.value:
+            return FakeUsXxSftpDownloadDelegate()
+        if region_code == StateCode.US_LL.value:
+            return FakeUsLlSftpDownloadDelegate()
+        raise ValueError(f"Unexpected region code provided: {region_code}")
+
+
+class FakeUsXxSftpDownloadDelegate(BaseSftpDownloadDelegate):
+    def root_directory(self, candidate_paths: List[str]) -> str:
+        return "/"
+
+    def filter_paths(self, candidate_paths: List[str]) -> List[str]:
+        return candidate_paths
+
+    def supported_environments(self) -> List[str]:
+        return [TEST_PROJECT_ID]
+
+    def post_process_downloads(
+        self, downloaded_path: GcsfsFilePath, gcsfs: GCSFileSystem
+    ) -> List[str]:
+        if "fail" in downloaded_path.abs_path():
+            return []
+        return [downloaded_path.abs_path()]
+
+    def get_transport_kwargs(self) -> Dict[str, Any]:
+        return {}
+
+
+class FakeUsLlSftpDownloadDelegate(BaseSftpDownloadDelegate):
     def root_directory(self, candidate_paths: List[str]) -> str:
         return "/"
 
