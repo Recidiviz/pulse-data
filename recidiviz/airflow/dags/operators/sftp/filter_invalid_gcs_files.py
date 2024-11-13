@@ -20,7 +20,6 @@ import os
 from typing import Any, Dict, List, Optional, Union
 
 from airflow.models.baseoperator import BaseOperator
-from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.utils.context import Context
 
 from recidiviz.airflow.dags.sftp.metadata import (
@@ -28,10 +27,8 @@ from recidiviz.airflow.dags.sftp.metadata import (
     POST_PROCESSED_FILE_PATH,
     POST_PROCESSED_NORMALIZED_FILE_PATH,
 )
-from recidiviz.cloud_storage.gcs_file_system_impl import (
-    GCSFileSystem,
-    GCSFileSystemImpl,
-)
+from recidiviz.airflow.dags.utils.gcsfs_utils import get_gcsfs_from_hook
+from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils.types import assert_type
 
@@ -61,8 +58,7 @@ class FilterInvalidGcsFilesOperator(BaseOperator):
             task_ids=self.collect_all_post_processed_files_task_id,
         )
         if file_metadatas:
-            gcs_hook = GCSHook()
-            gcsfs = GCSFileSystemImpl(gcs_hook.get_conn())
+            gcsfs = get_gcsfs_from_hook()
             return self.filter_invalid_files(gcsfs, file_metadatas)
 
         return []

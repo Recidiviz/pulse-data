@@ -65,9 +65,7 @@ def fake_failing_operator_constructor(*_args: Any, **kwargs: Any) -> BaseOperato
 
 
 def fake_operator_with_return_value(return_value: Any) -> Callable:
-    """
-    Returns a fake operator that returns a specified value.
-    """
+    """Returns a fake operator that returns a specified value."""
 
     class FakeOperator(BaseOperator):
         def __init__(self, *_args: Any, **kwargs: Any) -> None:

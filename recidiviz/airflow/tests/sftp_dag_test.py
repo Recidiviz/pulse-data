@@ -15,40 +15,51 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit test to test the SFTP DAG."""
-import os
+import datetime
 import re
+from typing import Any
 from unittest.mock import patch
 
-from airflow.models import DagBag
+from airflow.models import DAG, DagBag
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+from airflow.utils.state import DagRunState
 from airflow.utils.trigger_rule import TriggerRule
+from google.cloud.tasks_v2 import Queue
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-import recidiviz
-from recidiviz.airflow.dags.sftp.metadata import END_SFTP, START_SFTP, TASK_RETRIES
-from recidiviz.airflow.tests.test_utils import (
-    AIRFLOW_WORKING_DIRECTORY,
-    DAG_FOLDER,
-    AirflowIntegrationTest,
+from recidiviz.airflow.dags.monitoring.dag_registry import get_sftp_dag_id
+from recidiviz.airflow.dags.sftp.metadata import (
+    END_SFTP,
+    SFTP_ENABLED_YAML_CONFIG,
+    START_SFTP,
+    TASK_RETRIES,
+    get_configs_bucket,
 )
-
-_PROJECT_ID = "recidiviz-staging"
-CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
-    os.path.relpath(
-        os.path.dirname(recidiviz.__file__),
-        start=AIRFLOW_WORKING_DIRECTORY,
-    ),
-    "pipelines/calculation_pipeline_templates.yaml",
+from recidiviz.airflow.dags.utils.cloud_sql import postgres_formatted_datetime_with_tz
+from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
+    FakeSftpDownloadDelegateFactory,
 )
-
-
-@patch(
-    "os.environ",
-    {
-        "GCP_PROJECT": _PROJECT_ID,
-        "CONFIG_FILE": CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH,
-    },
+from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
+from recidiviz.airflow.tests.utils.dag_helper_functions import (
+    fake_operator_from_callable,
+    fake_operator_with_return_value,
 )
-class TestSftpPipelineDag(AirflowIntegrationTest):
-    """Tests the sftp pipeline DAG."""
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.local_file_paths import filepath_relative_to_caller
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.persistence.database.schema.operations.schema import OperationsBase
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.types import assert_type
+
+TESTING_PROJECT_ID = "recidiviz-testing"
+
+
+class TestSftpSequencingDag(AirflowIntegrationTest):
+    """Tests the task sequencing for the SFTP DAG."""
+
+    project_id = GCP_PROJECT_STAGING
+    SFTP_DAG_ID = get_sftp_dag_id(GCP_PROJECT_STAGING)
 
     def setUp(self) -> None:
         self.raw_data_dag_enabled_patcher = patch(
@@ -56,13 +67,17 @@ class TestSftpPipelineDag(AirflowIntegrationTest):
         )
         self.raw_data_dag_enabled_mock = self.raw_data_dag_enabled_patcher.start()
         self.raw_data_dag_enabled_mock.return_value = False
-        super().setUp()
+        self.environment_patcher = patch(
+            "os.environ",
+            {
+                "GCP_PROJECT": GCP_PROJECT_STAGING,
+            },
+        )
+        self.environment_patcher.start()
 
     def tearDown(self) -> None:
         self.raw_data_dag_enabled_patcher.stop()
-        super().tearDown()
-
-    SFTP_DAG_ID = f"{_PROJECT_ID}_sftp_dag"
+        self.environment_patcher.stop()
 
     def test_import(self) -> None:
         """Just tests that the sftp_dag file can be imported"""
@@ -246,3 +261,1111 @@ class TestSftpPipelineDag(AirflowIntegrationTest):
                 f"that have an ALL_DONE trigger rule but are not directly downstream of "
                 f"check_if_ingest_ready_files_have_stabilized: [{missing}]"
             )
+
+
+class TestSFTPIntegrationTests(AirflowIntegrationTest):
+    """Integration tests for the SFTP DAG."""
+
+    metas = [OperationsBase]
+    conn_id = "operations_postgres_conn_id"
+    project_id = TESTING_PROJECT_ID
+    sftp_dag = get_sftp_dag_id(TESTING_PROJECT_ID)
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.raw_data_dag_enabled_patcher = patch(
+            "recidiviz.airflow.dags.utils.dag_orchestration_utils.is_raw_data_import_dag_enabled"
+        )
+        self.raw_data_dag_enabled_mock = self.raw_data_dag_enabled_patcher.start()
+        self.raw_data_dag_enabled_mock.return_value = False
+
+        # env mocks
+
+        self.fake_gcsfs = FakeGCSFileSystem()
+        self.gcsfs_patchers = [
+            patch(
+                call_site,
+                return_value=self.fake_gcsfs,
+            )
+            for call_site in [
+                "recidiviz.airflow.dags.utils.gcsfs_utils.get_gcsfs_from_hook",
+                "recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator.get_gcsfs_from_hook",
+                "recidiviz.airflow.dags.operators.sftp.gcs_transform_file_operator.get_gcsfs_from_hook",
+                "recidiviz.airflow.dags.operators.sftp.filter_invalid_gcs_files.get_gcsfs_from_hook",
+            ]
+        ]
+        for patcher in self.gcsfs_patchers:
+            patcher.start()
+
+        self.delegate_factory_patchers = [
+            patch(call_location, FakeSftpDownloadDelegateFactory)
+            for call_location in [
+                "recidiviz.airflow.dags.sftp_dag.SftpDownloadDelegateFactory",
+                "recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator.SftpDownloadDelegateFactory",
+                "recidiviz.airflow.dags.operators.sftp.find_sftp_files_operator.SftpDownloadDelegateFactory",
+                "recidiviz.airflow.dags.operators.sftp.gcs_transform_file_operator.SftpDownloadDelegateFactory",
+            ]
+        ]
+        for patcher in self.delegate_factory_patchers:  # type: ignore
+            patcher.start()
+
+        self.cloud_sql_db_hook_patcher = patch(
+            "recidiviz.airflow.dags.operators.cloud_sql_query_operator.CloudSQLDatabaseHook"
+        )
+        self.mock_cloud_sql_db_hook = self.cloud_sql_db_hook_patcher.start()
+        self.mock_cloud_sql_db_hook().get_database_hook.return_value = PostgresHook(
+            self.conn_id
+        )
+
+        # external system mocks
+
+        self.find_sftp_files_patcher = patch(
+            "recidiviz.airflow.dags.sftp_dag.FindSftpFilesOperator.execute"
+        )
+        self.find_sftp_files_mock = self.find_sftp_files_patcher.start()
+
+        self.sftp_to_gcs_operator_patcher = patch(
+            "recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator.RecidivizSFTPHook",
+        )
+        self.sftp_to_gcs_operator_patcher.start()
+
+        # mocks the call to super().execute()
+        self.sftp_gcs_to_gcs_patcher = patch(
+            "recidiviz.airflow.dags.operators.sftp.gcs_to_gcs_operator.GCSToGCSOperator.execute"
+        )
+        self.sftp_gcs_to_gcs_patcher.start()
+
+        self.cloud_task_patches = {
+            "get": patch(
+                "recidiviz.airflow.dags.sftp_dag.CloudTasksQueueGetOperator",
+                side_effect=fake_operator_from_callable(self._return_queue_status),
+            ),
+            "pause": patch(
+                "recidiviz.airflow.dags.sftp_dag.CloudTasksQueuePauseOperator",
+                fake_operator_with_return_value(None),
+            ),
+            "resume": patch(
+                "recidiviz.airflow.dags.sftp_dag.CloudTasksQueueResumeOperator",
+                fake_operator_with_return_value(None),
+            ),
+        }
+
+        self.cloud_task_mocks = {
+            action: patcher.start()  # type: ignore
+            for action, patcher in self.cloud_task_patches.items()
+        }
+
+        # datetime mocks
+
+        self.remote_discovery_time_patch = patch(
+            "recidiviz.airflow.dags.sftp.mark_remote_files_discovered_sql_query_generator.postgres_formatted_current_datetime_utc_str"
+        )
+        self.remote_discovery_time_mock = self.remote_discovery_time_patch.start()
+
+        self.remote_download_time_patch = patch(
+            "recidiviz.airflow.dags.sftp.mark_remote_files_downloaded_sql_query_generator.postgres_formatted_current_datetime_utc_str"
+        )
+        self.remote_download_time_mock = self.remote_download_time_patch.start()
+
+        self.ingest_discovery_time_patch = patch(
+            "recidiviz.airflow.dags.sftp.mark_ingest_ready_files_discovered_sql_query_generator.postgres_formatted_current_datetime_utc_str"
+        )
+        self.ingest_discovery_time_mock = self.ingest_discovery_time_patch.start()
+
+        self.ingest_upload_time_patch = patch(
+            "recidiviz.airflow.dags.sftp.mark_ingest_ready_files_uploaded_sql_query_generator.postgres_formatted_current_datetime_utc_str"
+        )
+        self.ingest_upload_time_mock = self.ingest_upload_time_patch.start()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.raw_data_dag_enabled_patcher.stop()
+        for patcher in self.gcsfs_patchers:
+            patcher.stop()
+        for patcher in self.delegate_factory_patchers:  # type: ignore
+            patcher.stop()
+        self.find_sftp_files_patcher.stop()
+        self.cloud_sql_db_hook_patcher.stop()
+        self.sftp_to_gcs_operator_patcher.stop()
+        self.sftp_gcs_to_gcs_patcher.stop()
+        for patcher in self.cloud_task_patches.values():  # type: ignore
+            patcher.stop()
+        self.remote_discovery_time_patch.stop()
+        self.remote_download_time_patch.stop()
+        self.ingest_discovery_time_patch.stop()
+        self.ingest_upload_time_patch.stop()
+
+    def _create_dag(self) -> DAG:
+        # pylint: disable=import-outside-toplevel
+        from recidiviz.airflow.dags.sftp_dag import sftp_dag
+
+        return sftp_dag()
+
+    def _return_queue_status(self, operator: Any, _context: Any) -> dict:
+        name = operator.kwargs["queue_name"]
+        state = self.secondary_queue if "secondary" in name else self.primary_queue
+        return {"state": state, "name": name}
+
+    def _set_up_env(
+        self,
+        *,
+        initial_primary_queue: int | None = None,
+        initial_secondary_queue: int | None = None,
+        sftp_files_to_find: list | None = None,
+        enabled_config: str = "all_enabled_config",
+        remote_discovery_time: datetime.datetime | None = None,
+        remote_download_time: datetime.datetime | None = None,
+        ingest_discovery_time: datetime.datetime | None = None,
+        ingest_upload_time: datetime.datetime | None = None,
+    ) -> None:
+        """Sets values for environment mocks."""
+        self.find_sftp_files_mock.return_value = sftp_files_to_find or []
+
+        self.primary_queue = initial_primary_queue or Queue.State.RUNNING
+        self.secondary_queue = initial_secondary_queue or Queue.State.RUNNING
+
+        self.remote_discovery_time = remote_discovery_time or datetime.datetime(
+            2024, 1, 1, 1, tzinfo=datetime.UTC
+        )
+        self.remote_discovery_time_mock.return_value = (
+            postgres_formatted_datetime_with_tz(self.remote_discovery_time)
+        )
+
+        self.remote_download_time = remote_download_time or datetime.datetime(
+            2024, 1, 1, 2, tzinfo=datetime.UTC
+        )
+        self.remote_download_time_mock.return_value = (
+            postgres_formatted_datetime_with_tz(self.remote_download_time)
+        )
+
+        self.ingest_discovery_time = ingest_discovery_time or datetime.datetime(
+            2024, 1, 1, 3, tzinfo=datetime.UTC
+        )
+
+        self.ingest_discovery_time_mock.return_value = (
+            postgres_formatted_datetime_with_tz(self.ingest_discovery_time)
+        )
+
+        self.ingest_upload_time = ingest_upload_time or datetime.datetime(
+            2024, 1, 1, 4, tzinfo=datetime.UTC
+        )
+
+        self.ingest_upload_time_mock.return_value = postgres_formatted_datetime_with_tz(
+            self.ingest_upload_time
+        )
+
+        self.fake_gcsfs.test_add_path(
+            path=GcsfsFilePath.from_directory_and_file_name(
+                dir_path=get_configs_bucket(TESTING_PROJECT_ID),
+                file_name=SFTP_ENABLED_YAML_CONFIG,
+            ),
+            local_path=filepath_relative_to_caller(
+                f"{enabled_config}.yaml", "fixtures/sftp", caller_depth=2
+            ),
+        )
+
+    def test_no_files_dag_enabled(self) -> None:
+        self.raw_data_dag_enabled_mock.return_value = True
+
+        with Session(bind=self.engine) as session:
+            dag = self._create_dag()
+            self._set_up_env()
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # no files to download, we skip downloading & marking
+                    r"remote_file_download\.download_sftp_files",
+                    r"remote_file_download\.post_process_downloaded_files",
+                    r"remote_file_download\.mark_remote_files_downloaded",
+                    # the entire ingest ready file upload stage
+                    r"ingest_ready_file_upload\..*",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    def test_no_files_dag_not_enabled(self) -> None:
+
+        with Session(bind=self.engine) as session:
+            dag = self._create_dag()
+            self._set_up_env()
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # no files to download, we skip downloading & marking
+                    r"remote_file_download\.download_sftp_files",
+                    r"remote_file_download\.post_process_downloaded_files",
+                    r"remote_file_download\.mark_remote_files_downloaded",
+                    # the entire ingest ready file upload stage
+                    r"ingest_ready_file_upload\..*",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    def test_discover_files_dag_enabled(self) -> None:
+        self.raw_data_dag_enabled_mock.return_value = True
+
+        file_paths = [
+            {
+                "remote_file_path": "/recidiviz/fake-file-1.txt",
+                "sftp_timestamp": 1731283716,
+            },
+            {
+                "remote_file_path": "/recidiviz/fake-file-2.txt",
+                "sftp_timestamp": 1731283717,
+            },
+            {
+                "remote_file_path": "/recidiviz/fake-file-3.txt",
+                "sftp_timestamp": 1731283718,
+            },
+        ]
+
+        with Session(bind=self.engine) as session:
+            dag = self._create_dag()
+            self._set_up_env(sftp_files_to_find=file_paths)
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # we had files to download
+                    r"remote_file_download\.do_not_mark_remote_files_downloaded",
+                    # we found files, but they aren't stable
+                    r"ingest_ready_file_upload\..*",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # validate correct persistence layer
+
+            remote_file_to_expected_post_processed_name = {
+                "/recidiviz/fake-file-1.txt": "2024-11-11T00:08:36:000000/recidiviz/fake-file-1.txt",
+                "/recidiviz/fake-file-2.txt": "2024-11-11T00:08:37:000000/recidiviz/fake-file-2.txt",
+                "/recidiviz/fake-file-3.txt": "2024-11-11T00:08:38:000000/recidiviz/fake-file-3.txt",
+            }
+
+            # we've found & downloaded the files
+            remote_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, sftp_timestamp, file_discovery_time, file_download_time FROM direct_ingest_sftp_remote_file_metadata"
+                    )
+                )
+            }
+
+            for file_path in file_paths:
+                assert file_path["remote_file_path"] in remote_file_metadata
+                file_metadata = remote_file_metadata[file_path["remote_file_path"]]
+                assert file_metadata[1] == file_path["sftp_timestamp"]
+                assert file_metadata[2] == self.remote_discovery_time
+                assert file_metadata[3] == self.remote_download_time
+
+            # they are ingest ready but not yet downloaded
+            ingest_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, post_processed_normalized_file_path, file_discovery_time, file_upload_time FROM direct_ingest_sftp_ingest_ready_file_metadata"
+                    )
+                )
+            }
+
+            for file_path in file_paths:
+                remote_file_path: str = assert_type(file_path["remote_file_path"], str)
+                assert remote_file_path in ingest_file_metadata
+                file_metadata = ingest_file_metadata[remote_file_path]
+                assert (
+                    file_metadata[1]
+                    == remote_file_to_expected_post_processed_name[remote_file_path]
+                )
+                assert file_metadata[2] == self.ingest_discovery_time
+                assert file_metadata[3] is None
+
+            # locks
+            assert not list(
+                session.execute(
+                    text("SELECT * FROM direct_ingest_raw_data_resource_lock")
+                )
+            )
+
+    def test_discover_files_dag_not_enabled(self) -> None:
+        file_paths = [
+            {
+                "remote_file_path": "/recidiviz/fake-file-1.txt",
+                "sftp_timestamp": 1731283716,
+            },
+            {
+                "remote_file_path": "/recidiviz/fake-file-2.txt",
+                "sftp_timestamp": 1731283717,
+            },
+            {
+                "remote_file_path": "/recidiviz/fake-file-3.txt",
+                "sftp_timestamp": 1731283718,
+            },
+        ]
+
+        with Session(bind=self.engine) as session:
+            dag = self._create_dag()
+            self._set_up_env(sftp_files_to_find=file_paths)
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # we had files to download
+                    r"remote_file_download\.do_not_mark_remote_files_downloaded",
+                    # we found files, but they aren't stable
+                    r"ingest_ready_file_upload\..*",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # validate correct persistence layer
+
+            remote_file_to_expected_post_processed_name = {
+                "/recidiviz/fake-file-1.txt": "2024-11-11T00:08:36:000000/recidiviz/fake-file-1.txt",
+                "/recidiviz/fake-file-2.txt": "2024-11-11T00:08:37:000000/recidiviz/fake-file-2.txt",
+                "/recidiviz/fake-file-3.txt": "2024-11-11T00:08:38:000000/recidiviz/fake-file-3.txt",
+            }
+
+            # we've found & downloaded the files
+            remote_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, sftp_timestamp, file_discovery_time, file_download_time FROM direct_ingest_sftp_remote_file_metadata"
+                    )
+                )
+            }
+
+            for file_path in file_paths:
+                assert file_path["remote_file_path"] in remote_file_metadata
+                file_metadata = remote_file_metadata[file_path["remote_file_path"]]
+                assert file_metadata[1] == file_path["sftp_timestamp"]
+                assert file_metadata[2] == self.remote_discovery_time
+                assert file_metadata[3] == self.remote_download_time
+
+            # they are ingest ready but not yet downloaded
+            ingest_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, post_processed_normalized_file_path, file_discovery_time, file_upload_time FROM direct_ingest_sftp_ingest_ready_file_metadata"
+                    )
+                )
+            }
+
+            for file_path in file_paths:
+                remote_file_path: str = assert_type(file_path["remote_file_path"], str)
+                assert remote_file_path in ingest_file_metadata
+                file_metadata = ingest_file_metadata[remote_file_path]
+                assert (
+                    file_metadata[1]
+                    == remote_file_to_expected_post_processed_name[remote_file_path]
+                )
+                assert file_metadata[2] == self.ingest_discovery_time
+                assert file_metadata[3] is None
+
+            # locks
+            assert not list(
+                session.execute(
+                    text("SELECT * FROM direct_ingest_raw_data_resource_lock")
+                )
+            )
+
+    def test_discover_and_download_files_dag_enabled(self) -> None:
+        self.raw_data_dag_enabled_mock.return_value = True
+
+        file_paths = [
+            {
+                "remote_file_path": "/recidiviz/fake-file-1.txt",
+                "sftp_timestamp": 1731283716,
+            },
+            {
+                "remote_file_path": "/recidiviz/fake-file-2.txt",
+                "sftp_timestamp": 1731283717,
+            },
+            {
+                "remote_file_path": "/recidiviz/fake-file-3.txt",
+                "sftp_timestamp": 1731283718,
+            },
+        ]
+
+        remote_file_to_expected_post_processed_name = {
+            "/recidiviz/fake-file-1.txt": "2024-11-11T00:08:36:000000/recidiviz/fake-file-1.txt",
+            "/recidiviz/fake-file-2.txt": "2024-11-11T00:08:37:000000/recidiviz/fake-file-2.txt",
+            "/recidiviz/fake-file-3.txt": "2024-11-11T00:08:38:000000/recidiviz/fake-file-3.txt",
+        }
+
+        with Session(bind=self.engine) as session:
+            dag = self._create_dag()
+            self._set_up_env(sftp_files_to_find=file_paths)
+
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # we had files to download
+                    r"remote_file_download\.do_not_mark_remote_files_downloaded",
+                    # we found files, but they aren't stable
+                    r"ingest_ready_file_upload\..*",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # we've found & downloaded the files
+            remote_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, sftp_timestamp, file_discovery_time, file_download_time FROM direct_ingest_sftp_remote_file_metadata"
+                    )
+                )
+            }
+
+            # they are ingest ready, not yet downloaded
+            ingest_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, post_processed_normalized_file_path, file_discovery_time, file_upload_time FROM direct_ingest_sftp_ingest_ready_file_metadata"
+                    )
+                )
+            }
+
+            for file_path in file_paths:
+                remote_file_path: str = assert_type(file_path["remote_file_path"], str)
+
+                # remote file
+                assert remote_file_path in remote_file_metadata
+                remote_file = remote_file_metadata[remote_file_path]
+                assert remote_file[1] == file_path["sftp_timestamp"]
+                assert remote_file[2] == self.remote_discovery_time
+                assert remote_file[3] == self.remote_download_time
+
+                # ingest ready
+                assert remote_file_path in ingest_file_metadata
+                ingest_file = ingest_file_metadata[remote_file_path]
+                assert (
+                    ingest_file[1]
+                    == remote_file_to_expected_post_processed_name[remote_file_path]
+                )
+                assert ingest_file[2] == self.ingest_discovery_time
+                assert ingest_file[3] is None
+
+            # locks
+            assert not list(
+                session.execute(
+                    text("SELECT * FROM direct_ingest_raw_data_resource_lock")
+                )
+            )
+
+            # here, we run the DAG with the same set of files found -- since we dedup
+            # on remote_file_path and sftp_timestamp, we should not re-download the
+            # files and instead determine we have properly discovered all files and
+            # then move onto the file upload stage of the dag
+            self._set_up_env(sftp_files_to_find=file_paths)
+
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # we had no files to download this time
+                    r"remote_file_download\.download_sftp_files",
+                    r"remote_file_download\.post_process_downloaded_files",
+                    r"remote_file_download\.mark_remote_files_downloaded",
+                    # files are stable!
+                    r"do_not_upload_ingest_ready_files",
+                    # raw data dag enabled, so we skip task queues tasks
+                    r"ingest_ready_file_upload\.acquire_permission_for_ingest_file_upload\.pause_ingest_queues\..*",
+                    r"ingest_ready_file_upload\.release_permission_for_ingest_file_upload\.resume_ingest_queues\..*",
+                    # we uploaded files
+                    r"do_not_mark_ingest_ready_files_uploaded",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # we've found & downloaded the files
+            remote_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, sftp_timestamp, file_discovery_time, file_download_time FROM direct_ingest_sftp_remote_file_metadata"
+                    )
+                )
+            }
+            # we've downloaded them
+            ingest_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, post_processed_normalized_file_path, file_discovery_time, file_upload_time FROM direct_ingest_sftp_ingest_ready_file_metadata"
+                    )
+                )
+            }
+
+            for file_path in file_paths:
+                remote_file_path = assert_type(file_path["remote_file_path"], str)
+
+                # remote files
+                assert remote_file_path in remote_file_metadata
+                remote_file = remote_file_metadata[file_path["remote_file_path"]]
+                assert remote_file[1] == file_path["sftp_timestamp"]
+                assert remote_file[2] == self.remote_discovery_time
+                assert remote_file[3] == self.remote_download_time
+
+                # ingest files
+                assert remote_file_path in ingest_file_metadata
+                ingest_file = ingest_file_metadata[remote_file_path]
+                assert (
+                    ingest_file[1]
+                    == remote_file_to_expected_post_processed_name[remote_file_path]
+                )
+                assert ingest_file[2] == self.ingest_discovery_time
+                assert ingest_file[3] == self.ingest_upload_time
+
+            # locks
+            locks = list(
+                session.execute(
+                    text(
+                        "SELECT lock_actor, lock_resource, released, region_code FROM direct_ingest_raw_data_resource_lock order by region_code"
+                    )
+                )
+            )
+
+            assert locks[0][3] == "US_LL"
+            assert locks[1][3] == "US_XX"
+            for lock in locks:
+                assert lock[0] == "PROCESS"
+                assert lock[1] == "BUCKET"
+                assert lock[2] is True
+
+    def test_discover_and_download_files_dag_not_enabled_all_queues_running(
+        self,
+    ) -> None:
+
+        file_paths = [
+            {
+                "remote_file_path": "/recidiviz/fake-file-1.txt",
+                "sftp_timestamp": 1731283716,
+            },
+            {
+                "remote_file_path": "/recidiviz/fake-file-2.txt",
+                "sftp_timestamp": 1731283717,
+            },
+            {
+                "remote_file_path": "/recidiviz/fake-file-3.txt",
+                "sftp_timestamp": 1731283718,
+            },
+        ]
+
+        remote_file_to_expected_post_processed_name = {
+            "/recidiviz/fake-file-1.txt": "2024-11-11T00:08:36:000000/recidiviz/fake-file-1.txt",
+            "/recidiviz/fake-file-2.txt": "2024-11-11T00:08:37:000000/recidiviz/fake-file-2.txt",
+            "/recidiviz/fake-file-3.txt": "2024-11-11T00:08:38:000000/recidiviz/fake-file-3.txt",
+        }
+
+        with Session(bind=self.engine) as session:
+            dag = self._create_dag()
+
+            self._set_up_env(sftp_files_to_find=file_paths)
+
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # we had files to download
+                    r"remote_file_download\.do_not_mark_remote_files_downloaded",
+                    # we found files, but they aren't stable
+                    r"ingest_ready_file_upload\..*",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # we've found & downloaded the files
+            remote_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, sftp_timestamp, file_discovery_time, file_download_time FROM direct_ingest_sftp_remote_file_metadata"
+                    )
+                )
+            }
+
+            # they are ingest ready, not yet downloaded
+            ingest_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, post_processed_normalized_file_path, file_discovery_time, file_upload_time FROM direct_ingest_sftp_ingest_ready_file_metadata"
+                    )
+                )
+            }
+
+            for file_path in file_paths:
+                remote_file_path: str = assert_type(file_path["remote_file_path"], str)
+
+                # remote file
+                assert remote_file_path in remote_file_metadata
+                remote_file = remote_file_metadata[remote_file_path]
+                assert remote_file[1] == file_path["sftp_timestamp"]
+                assert remote_file[2] == self.remote_discovery_time
+                assert remote_file[3] == self.remote_download_time
+
+                # ingest ready
+                assert remote_file_path in ingest_file_metadata
+                ingest_file = ingest_file_metadata[remote_file_path]
+                assert (
+                    ingest_file[1]
+                    == remote_file_to_expected_post_processed_name[remote_file_path]
+                )
+                assert ingest_file[2] == self.ingest_discovery_time
+                assert ingest_file[3] is None
+
+            # locks
+            assert not list(
+                session.execute(
+                    text("SELECT * FROM direct_ingest_raw_data_resource_lock")
+                )
+            )
+
+            # here, we run the DAG with the same set of files found -- since we dedup
+            # on remote_file_path and sftp_timestamp, we should not re-download the
+            # files and instead determine we have properly discovered all files and
+            # then move onto the file upload stage of the dag
+            self._set_up_env(sftp_files_to_find=file_paths)
+
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # we had no files to download this time
+                    r"remote_file_download\.download_sftp_files",
+                    r"remote_file_download\.post_process_downloaded_files",
+                    r"remote_file_download\.mark_remote_files_downloaded",
+                    # files are stable!
+                    r"do_not_upload_ingest_ready_files",
+                    # raw data dag is NOT enabled, so we skip locking tasks
+                    r"ingest_ready_file_upload\.acquire_permission_for_ingest_file_upload\.acquire_raw_data_resource_locks",
+                    r"ingest_ready_file_upload\.acquire_permission_for_ingest_file_upload\.successfully_acquired_all_locks",
+                    r"ingest_ready_file_upload\.release_permission_for_ingest_file_upload\.release_raw_data_resource_locks",
+                    # we skipped the do_not_resume_scheduler_queues task as we had queues to unpause
+                    r"ingest_ready_file_upload\.release_permission_for_ingest_file_upload\.resume_ingest_queues\.do_not_resume_scheduler_queues",
+                    # we uploaded files
+                    r"do_not_mark_ingest_ready_files_uploaded",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # we've found & downloaded the files
+            remote_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, sftp_timestamp, file_discovery_time, file_download_time FROM direct_ingest_sftp_remote_file_metadata"
+                    )
+                )
+            }
+            # we've downloaded them
+            ingest_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, post_processed_normalized_file_path, file_discovery_time, file_upload_time FROM direct_ingest_sftp_ingest_ready_file_metadata"
+                    )
+                )
+            }
+
+            for file_path in file_paths:
+                remote_file_path = assert_type(file_path["remote_file_path"], str)
+
+                # remote files
+                assert remote_file_path in remote_file_metadata
+                remote_file = remote_file_metadata[file_path["remote_file_path"]]
+                assert remote_file[1] == file_path["sftp_timestamp"]
+                assert remote_file[2] == self.remote_discovery_time
+                assert remote_file[3] == self.remote_download_time
+
+                # ingest files
+                assert remote_file_path in ingest_file_metadata
+                ingest_file = ingest_file_metadata[remote_file_path]
+                assert (
+                    ingest_file[1]
+                    == remote_file_to_expected_post_processed_name[remote_file_path]
+                )
+                assert ingest_file[2] == self.ingest_discovery_time
+                assert ingest_file[3] == self.ingest_upload_time
+
+            # locks
+            locks = list(
+                session.execute(
+                    text(
+                        "SELECT lock_actor, lock_resource, released, region_code FROM direct_ingest_raw_data_resource_lock order by region_code"
+                    )
+                )
+            )
+
+            # we didn't use raw data resource locks
+            assert not locks
+
+    def test_discover_and_download_files_dag_not_enabled_queues_mixed(self) -> None:
+
+        file_paths = [
+            {
+                "remote_file_path": "/recidiviz/fake-file-1.txt",
+                "sftp_timestamp": 1731283716,
+            },
+            {
+                "remote_file_path": "/recidiviz/fake-file-2.txt",
+                "sftp_timestamp": 1731283717,
+            },
+            {
+                "remote_file_path": "/recidiviz/fake-file-3.txt",
+                "sftp_timestamp": 1731283718,
+            },
+        ]
+
+        remote_file_to_expected_post_processed_name = {
+            "/recidiviz/fake-file-1.txt": "2024-11-11T00:08:36:000000/recidiviz/fake-file-1.txt",
+            "/recidiviz/fake-file-2.txt": "2024-11-11T00:08:37:000000/recidiviz/fake-file-2.txt",
+            "/recidiviz/fake-file-3.txt": "2024-11-11T00:08:38:000000/recidiviz/fake-file-3.txt",
+        }
+
+        with Session(bind=self.engine) as session:
+            dag = self._create_dag()
+
+            self._set_up_env(
+                sftp_files_to_find=file_paths, initial_primary_queue=Queue.State.PAUSED
+            )
+
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # we had files to download
+                    r"remote_file_download\.do_not_mark_remote_files_downloaded",
+                    # we found files, but they aren't stable
+                    r"ingest_ready_file_upload\..*",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # we've found & downloaded the files
+            remote_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, sftp_timestamp, file_discovery_time, file_download_time FROM direct_ingest_sftp_remote_file_metadata"
+                    )
+                )
+            }
+
+            # they are ingest ready, not yet downloaded
+            ingest_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, post_processed_normalized_file_path, file_discovery_time, file_upload_time FROM direct_ingest_sftp_ingest_ready_file_metadata"
+                    )
+                )
+            }
+
+            for file_path in file_paths:
+                remote_file_path: str = assert_type(file_path["remote_file_path"], str)
+
+                # remote file
+                assert remote_file_path in remote_file_metadata
+                remote_file = remote_file_metadata[remote_file_path]
+                assert remote_file[1] == file_path["sftp_timestamp"]
+                assert remote_file[2] == self.remote_discovery_time
+                assert remote_file[3] == self.remote_download_time
+
+                # ingest ready
+                assert remote_file_path in ingest_file_metadata
+                ingest_file = ingest_file_metadata[remote_file_path]
+                assert (
+                    ingest_file[1]
+                    == remote_file_to_expected_post_processed_name[remote_file_path]
+                )
+                assert ingest_file[2] == self.ingest_discovery_time
+                assert ingest_file[3] is None
+
+            # locks
+            assert not list(
+                session.execute(
+                    text("SELECT * FROM direct_ingest_raw_data_resource_lock")
+                )
+            )
+
+            # here, we run the DAG with the same set of files found -- since we dedup
+            # on remote_file_path and sftp_timestamp, we should not re-download the
+            # files and instead determine we have properly discovered all files and
+            # then move onto the file upload stage of the dag
+            self._set_up_env(
+                sftp_files_to_find=file_paths, initial_primary_queue=Queue.State.PAUSED
+            )
+
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # we had no files to download this time
+                    r"remote_file_download\.download_sftp_files",
+                    r"remote_file_download\.post_process_downloaded_files",
+                    r"remote_file_download\.mark_remote_files_downloaded",
+                    # files are stable!
+                    r"do_not_upload_ingest_ready_files",
+                    # raw data dag is NOT enabled, so we skip locking tasks
+                    r"ingest_ready_file_upload\.acquire_permission_for_ingest_file_upload\.acquire_raw_data_resource_locks",
+                    r"ingest_ready_file_upload\.acquire_permission_for_ingest_file_upload\.successfully_acquired_all_locks",
+                    r"ingest_ready_file_upload\.release_permission_for_ingest_file_upload\.release_raw_data_resource_locks",
+                    # since we set initial_primary_queue=Queue.State.PAUSED, we skipped resuming the queue
+                    r"ingest_ready_file_upload\.release_permission_for_ingest_file_upload\.resume_ingest_queues\.resume_scheduler_queue_primary",
+                    # we skipped the do_not_resume_scheduler_queues task as we had queues to unpause
+                    r"ingest_ready_file_upload\.release_permission_for_ingest_file_upload\.resume_ingest_queues\.do_not_resume_scheduler_queues",
+                    # we uploaded files
+                    r"do_not_mark_ingest_ready_files_uploaded",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # we've found & downloaded the files
+            remote_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, sftp_timestamp, file_discovery_time, file_download_time FROM direct_ingest_sftp_remote_file_metadata"
+                    )
+                )
+            }
+            # we've downloaded them
+            ingest_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, post_processed_normalized_file_path, file_discovery_time, file_upload_time FROM direct_ingest_sftp_ingest_ready_file_metadata"
+                    )
+                )
+            }
+
+            for file_path in file_paths:
+                remote_file_path = assert_type(file_path["remote_file_path"], str)
+
+                # remote files
+                assert remote_file_path in remote_file_metadata
+                remote_file = remote_file_metadata[file_path["remote_file_path"]]
+                assert remote_file[1] == file_path["sftp_timestamp"]
+                assert remote_file[2] == self.remote_discovery_time
+                assert remote_file[3] == self.remote_download_time
+
+                # ingest files
+                assert remote_file_path in ingest_file_metadata
+                ingest_file = ingest_file_metadata[remote_file_path]
+                assert (
+                    ingest_file[1]
+                    == remote_file_to_expected_post_processed_name[remote_file_path]
+                )
+                assert ingest_file[2] == self.ingest_discovery_time
+                assert ingest_file[3] == self.ingest_upload_time
+
+            # locks
+            locks = list(
+                session.execute(
+                    text(
+                        "SELECT lock_actor, lock_resource, released, region_code FROM direct_ingest_raw_data_resource_lock order by region_code"
+                    )
+                )
+            )
+
+            # we didn't use raw data resource locks
+            assert not locks
+
+    def test_discover_and_download_files_dag_not_enabled_queues_all_paused(
+        self,
+    ) -> None:
+
+        file_paths = [
+            {
+                "remote_file_path": "/recidiviz/fake-file-1.txt",
+                "sftp_timestamp": 1731283716,
+            },
+            {
+                "remote_file_path": "/recidiviz/fake-file-2.txt",
+                "sftp_timestamp": 1731283717,
+            },
+            {
+                "remote_file_path": "/recidiviz/fake-file-3.txt",
+                "sftp_timestamp": 1731283718,
+            },
+        ]
+
+        remote_file_to_expected_post_processed_name = {
+            "/recidiviz/fake-file-1.txt": "2024-11-11T00:08:36:000000/recidiviz/fake-file-1.txt",
+            "/recidiviz/fake-file-2.txt": "2024-11-11T00:08:37:000000/recidiviz/fake-file-2.txt",
+            "/recidiviz/fake-file-3.txt": "2024-11-11T00:08:38:000000/recidiviz/fake-file-3.txt",
+        }
+
+        with Session(bind=self.engine) as session:
+            dag = self._create_dag()
+
+            self._set_up_env(
+                sftp_files_to_find=file_paths,
+                initial_primary_queue=Queue.State.PAUSED,
+                initial_secondary_queue=Queue.State.PAUSED,
+            )
+
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # we had files to download
+                    r"remote_file_download\.do_not_mark_remote_files_downloaded",
+                    # we found files, but they aren't stable
+                    r"ingest_ready_file_upload\..*",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # we've found & downloaded the files
+            remote_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, sftp_timestamp, file_discovery_time, file_download_time FROM direct_ingest_sftp_remote_file_metadata"
+                    )
+                )
+            }
+
+            # they are ingest ready, not yet downloaded
+            ingest_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, post_processed_normalized_file_path, file_discovery_time, file_upload_time FROM direct_ingest_sftp_ingest_ready_file_metadata"
+                    )
+                )
+            }
+
+            for file_path in file_paths:
+                remote_file_path: str = assert_type(file_path["remote_file_path"], str)
+
+                # remote file
+                assert remote_file_path in remote_file_metadata
+                remote_file = remote_file_metadata[remote_file_path]
+                assert remote_file[1] == file_path["sftp_timestamp"]
+                assert remote_file[2] == self.remote_discovery_time
+                assert remote_file[3] == self.remote_download_time
+
+                # ingest ready
+                assert remote_file_path in ingest_file_metadata
+                ingest_file = ingest_file_metadata[remote_file_path]
+                assert (
+                    ingest_file[1]
+                    == remote_file_to_expected_post_processed_name[remote_file_path]
+                )
+                assert ingest_file[2] == self.ingest_discovery_time
+                assert ingest_file[3] is None
+
+            # locks
+            assert not list(
+                session.execute(
+                    text("SELECT * FROM direct_ingest_raw_data_resource_lock")
+                )
+            )
+
+            # here, we run the DAG with the same set of files found -- since we dedup
+            # on remote_file_path and sftp_timestamp, we should not re-download the
+            # files and instead determine we have properly discovered all files and
+            # then move onto the file upload stage of the dag
+            self._set_up_env(
+                sftp_files_to_find=file_paths,
+                initial_primary_queue=Queue.State.PAUSED,
+                initial_secondary_queue=Queue.State.PAUSED,
+            )
+
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_failure_task_id_regexes=[],
+                expected_skipped_task_id_regexes=[
+                    # we had no files to download this time
+                    r"remote_file_download\.download_sftp_files",
+                    r"remote_file_download\.post_process_downloaded_files",
+                    r"remote_file_download\.mark_remote_files_downloaded",
+                    # files are stable!
+                    r"do_not_upload_ingest_ready_files",
+                    # raw data dag is NOT enabled, so we skip locking tasks
+                    r"ingest_ready_file_upload\.acquire_permission_for_ingest_file_upload\.acquire_raw_data_resource_locks",
+                    r"ingest_ready_file_upload\.acquire_permission_for_ingest_file_upload\.successfully_acquired_all_locks",
+                    r"ingest_ready_file_upload\.release_permission_for_ingest_file_upload\.release_raw_data_resource_locks",
+                    # since we set initial_primary_queue=Queue.State.PAUSED, we skipped resuming the queue
+                    r"ingest_ready_file_upload\.release_permission_for_ingest_file_upload\.resume_ingest_queues\.resume_scheduler_queue_primary",
+                    # since we set initial_secondary_queue=Queue.State.PAUSED, we skipped resuming the queue
+                    r"ingest_ready_file_upload\.release_permission_for_ingest_file_upload\.resume_ingest_queues\.resume_scheduler_queue_secondary",
+                    # we uploaded files
+                    r"do_not_mark_ingest_ready_files_uploaded",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+            # we've found & downloaded the files
+            remote_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, sftp_timestamp, file_discovery_time, file_download_time FROM direct_ingest_sftp_remote_file_metadata"
+                    )
+                )
+            }
+            # we've downloaded them
+            ingest_file_metadata = {
+                metadata[0]: metadata
+                for metadata in session.execute(
+                    text(
+                        "SELECT remote_file_path, post_processed_normalized_file_path, file_discovery_time, file_upload_time FROM direct_ingest_sftp_ingest_ready_file_metadata"
+                    )
+                )
+            }
+
+            for file_path in file_paths:
+                remote_file_path = assert_type(file_path["remote_file_path"], str)
+
+                # remote files
+                assert remote_file_path in remote_file_metadata
+                remote_file = remote_file_metadata[file_path["remote_file_path"]]
+                assert remote_file[1] == file_path["sftp_timestamp"]
+                assert remote_file[2] == self.remote_discovery_time
+                assert remote_file[3] == self.remote_download_time
+
+                # ingest files
+                assert remote_file_path in ingest_file_metadata
+                ingest_file = ingest_file_metadata[remote_file_path]
+                assert (
+                    ingest_file[1]
+                    == remote_file_to_expected_post_processed_name[remote_file_path]
+                )
+                assert ingest_file[2] == self.ingest_discovery_time
+                assert ingest_file[3] == self.ingest_upload_time
+
+            # locks
+            locks = list(
+                session.execute(
+                    text(
+                        "SELECT lock_actor, lock_resource, released, region_code FROM direct_ingest_raw_data_resource_lock order by region_code"
+                    )
+                )
+            )
+
+            # we didn't use raw data resource locks
+            assert not locks

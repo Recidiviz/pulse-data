@@ -20,7 +20,6 @@ import logging
 from typing import Any, Dict, List, Union
 
 from airflow.models.baseoperator import BaseOperator
-from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.utils.context import Context
 
 from recidiviz.airflow.dags.sftp.metadata import (
@@ -29,7 +28,7 @@ from recidiviz.airflow.dags.sftp.metadata import (
     REMOTE_FILE_PATH,
     SFTP_TIMESTAMP,
 )
-from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
+from recidiviz.airflow.dags.utils.gcsfs_utils import get_gcsfs_from_hook
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_sftp_download_bucket_path_for_state,
@@ -65,8 +64,7 @@ class RecidivizGcsFileTransformOperator(BaseOperator):
 
     # pylint:disable=unused-argument
     def execute(self, context: Context) -> List[Dict[str, Union[str, float]]]:  # type: ignore
-        gcs_hook = GCSHook()
-        gcs_file_system = GCSFileSystemImpl(client=gcs_hook.get_conn())
+        gcs_file_system = get_gcsfs_from_hook()
 
         logging.info("Starting post-processing of [%s]", self.downloaded_file_path)
         post_processed_paths = self.delegate.post_process_downloads(

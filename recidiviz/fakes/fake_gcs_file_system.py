@@ -47,6 +47,7 @@ from recidiviz.common.io.flask_file_storage_contents_handle import (
     FlaskFileStorageContentsHandle,
 )
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.common.io.sftp_file_contents_handle import SftpFileContentsHandle
 from recidiviz.common.io.zip_file_contents_handle import ZipFileContentsHandle
 
 
@@ -231,6 +232,8 @@ class FakeGCSFileSystem(GCSFileSystem):
             with contents_handle.open() as zip_contents:
                 with open(temp_path, mode="wb") as temp_file:
                     temp_file.write(zip_contents.read())
+        elif isinstance(contents_handle, SftpFileContentsHandle):
+            contents_path = contents_handle.sftp_file_path or ""
         else:
             raise ValueError(
                 f"Unsupported contents handle type: [{type(contents_handle)}]"

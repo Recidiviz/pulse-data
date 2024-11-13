@@ -29,7 +29,7 @@ from recidiviz.airflow.dags.operators.sftp.find_sftp_files_operator import (
     FindSftpFilesOperator,
 )
 from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
-    FakeSftpDownloadDelegate,
+    FakeUsXxSftpDownloadDelegate,
 )
 from recidiviz.airflow.tests.test_utils import execute_task
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -46,7 +46,10 @@ YESTERDAY = TODAY - datetime.timedelta(1)
 TWO_DAYS_AGO = TODAY - datetime.timedelta(2)
 
 
-class FakeFindSftpDownloadDelegate(FakeSftpDownloadDelegate):
+class FakeFindSftpDownloadDelegate(FakeUsXxSftpDownloadDelegate):
+    def supported_environments(self) -> List[str]:
+        return [TEST_PROJECT_ID]
+
     def filter_paths(self, candidate_paths: List[str]) -> List[str]:
         return [path for path in candidate_paths if path.startswith("test")]
 

@@ -20,13 +20,12 @@ import unittest
 from unittest.mock import MagicMock, create_autospec, patch
 
 from airflow import DAG
-from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
 from recidiviz.airflow.dags.operators.sftp.gcs_transform_file_operator import (
     RecidivizGcsFileTransformOperator,
 )
 from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
-    FakeSftpDownloadDelegate,
+    FakeUsXxSftpDownloadDelegate,
 )
 from recidiviz.airflow.tests.test_utils import execute_task
 from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
@@ -38,28 +37,21 @@ TEST_PROJECT_ID = "recidiviz-testing"
 
 
 @patch.object(
-    SftpDownloadDelegateFactory, "build", return_value=FakeSftpDownloadDelegate()
+    SftpDownloadDelegateFactory, "build", return_value=FakeUsXxSftpDownloadDelegate()
 )
 class TestRecidivizGcsFileTransformOperator(unittest.TestCase):
     """Tests for RecidivizGcsFileTransformOperator"""
 
     def setUp(self) -> None:
-        self.mock_gcs_hook = create_autospec(GCSHook)
-        self.mock_gcs_hook_patcher = patch(
-            "recidiviz.airflow.dags.operators.sftp.gcs_transform_file_operator.GCSHook"
-        )
-        self.mock_gcs_hook_patcher.start().return_value = self.mock_gcs_hook
-
         self.mock_gcs_file_system = create_autospec(GCSFileSystemImpl)
         self.mock_gcs_file_system_patcher = patch(
-            "recidiviz.airflow.dags.operators.sftp.gcs_transform_file_operator.GCSFileSystemImpl"
+            "recidiviz.airflow.dags.operators.sftp.gcs_transform_file_operator.get_gcsfs_from_hook"
         )
         self.mock_gcs_file_system_patcher.start().return_value = (
             self.mock_gcs_file_system
         )
 
     def tearDown(self) -> None:
-        self.mock_gcs_hook_patcher.stop()
         self.mock_gcs_file_system_patcher.stop()
 
     def test_execute(self, _mock_sftp_delegate: MagicMock) -> None:
