@@ -28,10 +28,6 @@ columns:
   - name: Supervision_Level
     description: |-
       Supervision level corresponding during this supervision period.
-  - name: Termination_Date
-    description: |-
-      Termination date of data record.
-    field_type: datetime
   - name: Deleted_Flag
     description: |-
       Deleted flag for record.

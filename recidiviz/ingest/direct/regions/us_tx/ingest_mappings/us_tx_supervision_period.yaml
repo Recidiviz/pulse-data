@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_period`
+# to corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - SID_Number
+  - Period_ID_Number
+  - Start_Date
+  - Max_Termination_Date
+  - Custodial_Authority
+  - Supervision_Officer
+  - Supervision_Level
+  - Case_Type
+  - Special_Conditions
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID_Number
+          id_type: $literal("US_TX_SID")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id: Period_ID_Number
+          start_date: Start_Date
+          #Todo(#35059 Consider early release when hydrating termination date)
+          termination_date: Max_Termination_Date
+          supervision_site: Custodial_Authority
+          supervising_officer_staff_external_id: Supervision_Officer
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: Supervision_Officer
+                $then: $literal("US_TX_STAFF_ID")
+          supervision_type: $literal_enum(StateSupervisionPeriodSupervisionType.PAROLE)
+          conditions: Special_Conditions
+          custodial_authority:
+            $enum_mapping:
+              $raw_text: Custodial_Authority
+              $custom_parser: us_tx_custom_enum_parsers.parse_custodial_auth
+          supervision_level:
+            $enum_mapping:
+              $raw_text: Supervision_Level
+              $mappings:
+                StateSupervisionLevel.INTERNAL_UNKNOWN:
+                  # Placing low in internal unknown because there is only one registered record
+                  - Low
+                StateSupervisionLevel.UNASSIGNED:
+                  - Unclassified
+                StateSupervisionLevel.UNSUPERVISED:
+                  - Non-Reporting
+                StateSupervisionLevel.LIMITED:
+                  - Quarterly Reporting
+                  - Annual
+                StateSupervisionLevel.MINIMUM:
+                  - Minimum
+                StateSupervisionLevel.MEDIUM:
+                  - Medium
+                StateSupervisionLevel.HIGH:
+                  - High
+                StateSupervisionLevel.MAXIMUM:
+                  - Maximum
+                  - SI-1
+                  - SI-2
+                  - SI-3
+                  - SI-4
+          case_type_entries:
+            - StateSupervisionCaseTypeEntry:
+                case_type:
+                  $enum_mapping:
+                    $raw_text: Case_Type
+                    $mappings:
+                      StateSupervisionCaseType.GENERAL:
+                        - Regular
+                      StateSupervisionCaseType.SEX_OFFENSE:
+                        - Sex offender
+                      StateSupervisionCaseType.DRUG_COURT:
+                        - Substance abuse
+                      StateSupervisionCaseType.MENTAL_HEALTH_COURT:
+                        - Mentally ill
+                      StateSupervisionCaseType.INTERNAL_UNKNOWN:
+                        - Administrative
+                        - Electronic monitoring
+                        - Annual
+                        - Day/district resource center
+                        - Terminally Ill / Physically Handicapped
+                        - Non-reporting
+                        - Medically recommended intensive supervision
+                        - Super-intensive supervision
+                      StateSupervisionCaseType.EXTERNAL_UNKNOWN:
+                        - Unknown
+                      StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS:
+                        - Intellectually Disabled
