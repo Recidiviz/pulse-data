@@ -30,6 +30,7 @@ from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     RawDataJoinCardinality,
 )
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
+from recidiviz.utils.yaml import get_properly_quoted_yaml_str
 
 
 class RawDataConfigWriter:
@@ -54,9 +55,10 @@ class RawDataConfigWriter:
             known_values_string = "\n    known_values:"
             for enum in column.known_values_nonnull:
                 known_values_string += (
-                    f"\n      - value: {enum.value}"
-                    f"\n        description: {enum.description if enum.description else PLACEHOLDER_TO_DO_STRING}"
+                    f"\n      - value: {get_properly_quoted_yaml_str(enum.value)}"
+                    f"\n        description: {get_properly_quoted_yaml_str(enum.description if enum.description else PLACEHOLDER_TO_DO_STRING)}"
                 )
+
         return known_values_string
 
     def _generate_individual_column_string(self, column: RawTableColumnInfo) -> str:
