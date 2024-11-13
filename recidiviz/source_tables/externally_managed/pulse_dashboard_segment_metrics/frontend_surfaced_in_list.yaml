@@ -2,8 +2,8 @@ address:
   dataset_id: pulse_dashboard_segment_metrics
   table_id: frontend_surfaced_in_list
 description:
-  "TODO(#29155): Add a description as to what this is used for and why
-  it isn't managed in code"
+  "TODO(#29155): Add a description as to what this is used for and why it isn't
+  managed in code"
 schema:
   - name: anonymous_id
     type: STRING
@@ -90,6 +90,15 @@ schema:
     type: STRING
     mode: NULLABLE
   - name: context_timezone
+    type: STRING
+    mode: NULLABLE
+  - name: search_field
+    type: STRING
+    mode: NULLABLE
+  - name: search_id_value
+    type: STRING
+    mode: NULLABLE
+  - name: tab_title
     type: STRING
     mode: NULLABLE
 clustering_fields: null

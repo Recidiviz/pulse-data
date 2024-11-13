@@ -35,7 +35,10 @@ CLIENTS_SURFACED_DESCRIPTION = """
 
 CLIENTS_SURFACED_QUERY_TEMPLATE = f"""
     {user_event_template(
-        "frontend_surfaced_in_list", add_columns=["opportunity_type"]
+        "frontend_surfaced_in_list", 
+        add_columns=[
+            "opportunity_type", "search_field", "search_id_value", "tab_title"
+        ]
     )}
 """
 
