@@ -26,7 +26,7 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     COMPOSER_USER_WORKLOADS,
 )
 
-POD_HISTORY_TTL = timedelta(hours=72)
+POD_HISTORY_TTL = timedelta(hours=36)
 
 
 def get_client() -> client.CoreV1Api:
