@@ -49,13 +49,23 @@ WITH surfaceable_archive_spans AS (
         resident_record.state_code,
         resident_record.person_id,
         opportunity_type,
-        resident_record.officer_id AS caseload_id,
+        CASE search_type.search_field
+            WHEN "officerId" THEN resident_record.officer_id
+            WHEN "facilityId" THEN resident_record.facility_id
+            WHEN "facilityUnitId" THEN resident_record.facility_unit_id
+        END AS caseload_id,
+        search_type.search_field AS caseload_search_type,
         resident_record.facility_id AS location_id,
         resident_record.export_date AS start_date,
         MIN(future_exports.future_export_date) AS end_date_exclusive,
     FROM
         `{{project_id}}.workflows_views.resident_record_archive_materialized` resident_record,
         UNNEST(SPLIT(all_eligible_opportunities)) opportunity_type
+    LEFT JOIN
+        `{{project_id}}.workflows_views.workflows_caseload_search_field_by_state_materialized` search_type
+    ON
+        search_type.state_code = resident_record.state_code
+        AND search_type.system_type = "INCARCERATION"
     LEFT JOIN (
         SELECT DISTINCT
             state_code,
@@ -70,7 +80,7 @@ WITH surfaceable_archive_spans AS (
     WHERE
         NULLIF(all_eligible_opportunities, "") IS NOT NULL
         AND person_id IS NOT NULL
-    GROUP BY 1, 2, 3, 4, 5, 6
+    GROUP BY 1, 2, 3, 4, 5, 6, 7
 
     UNION ALL
     -- client record archive
@@ -78,13 +88,21 @@ WITH surfaceable_archive_spans AS (
         client_record.state_code,
         client_record.person_id,
         opportunity_type,
-        client_record.officer_id AS caseload_id,
+        CASE search_type.search_field
+            WHEN "officerId" THEN client_record.officer_id
+        END AS caseload_id,
+        "officerId" AS caseload_search_type,
         client_record.district AS location_id,
         client_record.export_date AS start_date,
         MIN(future_exports.future_export_date) AS end_date_exclusive,
     FROM
         `{{project_id}}.workflows_views.client_record_archive_materialized` client_record,
         UNNEST(SPLIT(all_eligible_opportunities)) opportunity_type
+    LEFT JOIN
+        `{{project_id}}.workflows_views.workflows_caseload_search_field_by_state_materialized` search_type
+    ON
+        search_type.state_code = client_record.state_code
+        AND search_type.system_type = "SUPERVISION"
     LEFT JOIN (
         SELECT DISTINCT
             state_code,
@@ -99,14 +117,14 @@ WITH surfaceable_archive_spans AS (
     WHERE
         NULLIF(all_eligible_opportunities, "") IS NOT NULL
         AND person_id IS NOT NULL
-    GROUP BY 1, 2, 3, 4, 5, 6
+    GROUP BY 1, 2, 3, 4, 5, 6, 7
 )
 -- For every person and opportunity, aggregate across contiguous periods of assignment
 -- to a caseload and location
 {aggregate_adjacent_spans(
     "surfaceable_archive_spans", 
     index_columns=["state_code", "person_id", "opportunity_type"], 
-    attribute=["caseload_id", "location_id"],
+    attribute=["caseload_id", "caseload_search_type", "location_id"],
     end_date_field_name="end_date_exclusive")
 }
 """

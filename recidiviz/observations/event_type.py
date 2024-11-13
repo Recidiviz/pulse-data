@@ -68,6 +68,7 @@ class EventType(Enum):
     VARIANT_ASSIGNMENT = "VARIANT_ASSIGNMENT"
     VIOLATION = "VIOLATION"
     VIOLATION_RESPONSE = "VIOLATION_RESPONSE"
+    WORKFLOWS_CASELOAD_SURFACED = "WORKFLOWS_CASELOAD_SURFACED"
     WORKFLOWS_PERSON_USAGE_EVENT = "WORKFLOWS_PERSON_USAGE_EVENT"
 
     # The following workflows user enums capture types of usage events in the
@@ -151,6 +152,8 @@ class EventType(Enum):
             return MetricUnitOfObservationType.WORKFLOWS_USER
         if self in [EventType.INSIGHTS_USER_LOGIN]:
             return MetricUnitOfObservationType.INSIGHTS_USER
+        if self in [EventType.WORKFLOWS_CASELOAD_SURFACED]:
+            return MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD
 
         raise ValueError(
             f"No unit_of_observation_type found for EventType {self.value}"
