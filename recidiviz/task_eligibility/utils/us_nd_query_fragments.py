@@ -561,3 +561,26 @@ WHERE chk.CHECK_LIST_CATEGORY IN ("ID'S")
     AND chk.CONFIRMED_FLAG = 'Y'
     AND peid2.id_type = 'US_ND_ELITE'
 """
+
+
+def eligible_and_almost_eligible_minus_referrals() -> str:
+    """
+    Returns a SQL query that retrieves the eligible and almost eligible individuals
+    and removes those that have had referrals to minimum housing.
+    """
+    return f"""
+    SELECT 
+        eae.* EXCEPT (reasons),
+        TO_JSON(ARRAY_CONCAT(
+            JSON_QUERY_ARRAY(eae.reasons),
+            [TO_JSON(STRUCT(
+                "US_ND_NO_RECENT_REFERRALS_TO_MINIMUM_HOUSING" AS criteria_name,
+                nrr.reason AS reason
+            ))]
+        )) AS reasons,
+    FROM eligible_and_almost_eligible eae
+    LEFT JOIN `{{project_id}}.{{task_eligibility_criteria_dataset}}.no_recent_referrals_to_minimum_housing_materialized` nrr
+        ON eae.person_id = nrr.person_id
+            AND eae.state_code = nrr.state_code
+            AND CURRENT_DATE("US/Pacific") BETWEEN nrr.start_date AND {nonnull_end_date_exclusive_clause('nrr.end_date')}
+    WHERE IFNULL(nrr.meets_criteria, True)"""

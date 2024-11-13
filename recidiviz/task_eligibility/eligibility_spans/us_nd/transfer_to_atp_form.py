@@ -35,7 +35,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     has_facility_restrictions,
     incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release,
     no_detainers_or_warrants,
-    no_recent_referrals_to_minimum_housing,
     not_enrolled_in_relevant_program,
     not_serving_ineligible_offense_for_atp_work_release,
     not_within_1_month_of_parole_start_date,
@@ -74,7 +73,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         incarcerated_at_least_30_days_in_same_facility.VIEW_BUILDER,
         no_detainers_or_warrants.VIEW_BUILDER,
         INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD,
-        no_recent_referrals_to_minimum_housing.VIEW_BUILDER,
         no_escape_in_current_incarceration.VIEW_BUILDER,
         not_enrolled_in_relevant_program.VIEW_BUILDER,
         has_facility_restrictions.VIEW_BUILDER,
@@ -93,14 +91,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                     TimeDependentCriteriaCondition(
                         criteria=incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release.VIEW_BUILDER,
                         reasons_date_field="full_term_completion_date",
-                        interval_length=15,
+                        interval_length=15,  # 12 months + 3 months
                         interval_date_part=BigQueryDateInterval.MONTH,
                         description="Within 3 months from eligibility according to the full term completion date",
                     ),
                     TimeDependentCriteriaCondition(
                         criteria=incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release.VIEW_BUILDER,
                         reasons_date_field="parole_review_date",
-                        interval_length=15,
+                        interval_length=15,  # 12 months + 3 months
                         interval_date_part=BigQueryDateInterval.MONTH,
                         description="Within 3 months away from eligibility according to the parole review date",
                     ),
