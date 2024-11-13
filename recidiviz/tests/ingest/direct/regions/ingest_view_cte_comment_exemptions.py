@@ -342,12 +342,6 @@ THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES: Dict[StateCode, Dict[str, List[str]]]
             "key_status_change_dates",
             "ranked_rows",
         ],
-        "StaffSupervisorPeriods": [
-            "construct_periods",
-            "create_unique_rows",
-            "first_reported_supervisor",
-            "ranked_rows",
-        ],
         "SupervisionContacts": ["contact_note_type_view"],
         "ViolationsAndSanctions": ["sanctions_groupings"],
     },
