@@ -73,6 +73,7 @@ def build_state_output_source_table_collection(
     """
     collection = SourceTableCollection(
         dataset_id=state_dataset_for_state_code(state_code),
+        update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[
             DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=state_code),
@@ -95,6 +96,7 @@ def build_normalized_state_output_source_table_collection(
     """
     collection = SourceTableCollection(
         dataset_id=normalized_state_dataset_for_state_code(state_code),
+        update_config=SourceTableCollectionUpdateConfig.regenerable(),
         labels=[
             DataflowPipelineSourceTableLabel(INGEST_PIPELINE_NAME),
             StateSpecificSourceTableLabel(state_code=state_code),
