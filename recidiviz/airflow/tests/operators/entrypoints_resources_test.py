@@ -56,7 +56,7 @@ class TestKubernetesResourceAllocator(unittest.TestCase):
         self.assertEqual(
             allocator.get_resources(argv=["--entrypoint=ValidationEntrypoint"]),
             k8s.V1ResourceRequirements(
-                limits={"cpu": "500m", "memory": "1.5Gi"}, requests=None
+                limits={"cpu": "250m", "memory": "1.5Gi"}, requests=None
             ),
         )
 

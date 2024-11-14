@@ -143,13 +143,3 @@ class V1EnvVar:
     def __init__(
         self, name: Optional[str] = None, value: Optional[str] = None
     ) -> None: ...
-
-class V1Toleration(object):
-    def __init__(
-        self,
-        effect: str | None = None,
-        key: str | None = None,
-        operator: str | None = None,
-        toleration_seconds: int | None = None,
-        value: str | None = None,
-    ) -> None: ...
