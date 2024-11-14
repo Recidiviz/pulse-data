@@ -615,7 +615,7 @@ class OutliersProductConfiguration:
 
     action_strategy_copy: Dict = attr.ib(default=ACTION_STRATEGIES_DEFAULT_COPY)
 
-    vitals_metrics: List[OutliersVitalsMetricConfig] = attr.ib(default=None)
+    vitals_metrics: List[OutliersVitalsMetricConfig] = attr.ib(default=[])
 
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
