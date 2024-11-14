@@ -54,16 +54,16 @@ WITH risk_assessment_eligibility_levels_by_state AS (
 {contact_query_fragment}
 )
 , compliance_metrics AS (
-    -- TODO(#34681) Consider removing the DISTINCT since each person should only have one row per day
-    SELECT DISTINCT
+    SELECT
         state_code,
         person_id,
         date_of_supervision AS start_date,
         DATE_ADD(date_of_supervision, INTERVAL 1 DAY) AS end_date_exclusive,
         supervision_level IN UNNEST(r.supervision_levels) AS assessment_required,
-        IFNULL(next_recommended_assessment_date < date_of_supervision, FALSE) AS assessment_overdue,
+        -- If there are multiple rows for a person on a day and any row says they're overdue, consider them overdue
+        LOGICAL_OR(IFNULL(next_recommended_assessment_date < date_of_supervision, FALSE)) AS assessment_overdue,
         supervision_level IN UNNEST(c.supervision_levels) AS contact_required,
-        IFNULL(next_recommended_face_to_face_date < date_of_supervision, FALSE) AS contact_overdue
+        LOGICAL_OR(IFNULL(next_recommended_face_to_face_date < date_of_supervision, FALSE)) AS contact_overdue
     FROM
         `{{project_id}}.shared_metric_views.supervision_case_compliance_metrics_materialized`
     INNER JOIN
@@ -76,6 +76,7 @@ WITH risk_assessment_eligibility_levels_by_state AS (
     -- avoid needing to do extra processing for data we aren't actually using
     WHERE
         date_of_supervision >= DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 6 MONTH)
+    GROUP BY 1, 2, 3, 4, 5, 7
 )
 , aggregated_compliance_spans AS (
     {aggregate_adjacent_spans(
