@@ -25,79 +25,103 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 WITH 
 -- First, identify the first ever reported surpervisor for each staff member sent to us by TN
-first_reported_supervisor AS 
-    (SELECT
+first_reported_supervisor AS (
+  SELECT
     UPPER(external_id) as StaffID, 
-    UPPER(StaffSupervisorID) as StaffSupervisorID,
-    update_datetime as UpdateDate
-FROM 
-    (SELECT
-        external_id,
-        UPPER(SupervisorID) as StaffSupervisorID,
-        update_datetime,
-        ROW_NUMBER() OVER (PARTITION BY external_id ORDER BY update_datetime ASC) as SEQ
-    FROM {RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster@ALL} s
-    WHERE external_id IS NOT NULL AND SupervisorID IS NOT NULL AND UPPER(Active) IN ('YES', 'Y', 'ACTIVE')) s 
-WHERE SEQ = 1
+    UPPER(SupervisorID) as StaffSupervisorID,
+    update_datetime as UpdateDate,
+    IF(UPPER(CaseloadType) LIKE '%SEX%' OR UPPER(CaseloadType) LIKE'%SCU%', 'Y', 'N') AS SCU_caseload
+  FROM {RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster@ALL}
+  WHERE external_id IS NOT NULL AND SupervisorID IS NOT NULL AND UPPER(Active) IN ('YES', 'Y', 'ACTIVE')
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY external_id ORDER BY update_datetime ASC) = 1
 ),
 -- Then, determine when the supervisor sent for a given person has changed since the last time TN sent us a roster
 supervisor_change_recorded AS (
   SELECT 
       UPPER(external_id) as StaffID, 
       UPPER(SupervisorID) as CurrentStaffSupervisorID,
-      LAG(UPPER(SupervisorID)) OVER (PARTITION BY external_id ORDER BY update_datetime ASC) as PreviousStaffSupervisorID,
-      update_datetime as UpdateDate
+      LAG(UPPER(SupervisorID)) OVER (PARTITION BY external_id ORDER BY update_datetime ASC, SupervisorId) AS PreviousStaffSupervisorID,
+      update_datetime as UpdateDate,
+      IF(UPPER(CaseloadType) LIKE '%SEX%' OR UPPER(CaseloadType) LIKE'%SCU%', 'Y', 'N') AS SCU_caseload
   FROM {RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster@ALL}
   WHERE external_id IS NOT NULL
   AND UPPER(Active) IN ('YES', 'Y', 'ACTIVE')
 ),
 -- Start all periods far back in the past, then add any key change dates, to get a list of all dates that a person has changed supervisors
 key_supervisor_change_dates AS(
-    #arbitrary first period start dates since beginning of time 
-    SELECT
-    DISTINCT StaffID, 
+  --arbitrary first period start dates since beginning of time 
+  SELECT DISTINCT 
+    StaffID, 
     StaffSupervisorID, 
-    CAST('1900-01-01 00:00:00' AS DATETIME) as UpdateDate
-    FROM first_reported_supervisor
-    WHERE StaffID IS NOT NULL
+    CAST('1900-01-01 00:00:00' AS DATETIME) as UpdateDate, 
+    SCU_caseload
+  FROM first_reported_supervisor
+  WHERE StaffID IS NOT NULL
 
-    UNION ALL
+  UNION ALL
     
-    SELECT 
-        StaffID, 
-        CurrentStaffSupervisorID as StaffSupervisorID,
-        UpdateDate
-    FROM supervisor_change_recorded
-    WHERE CurrentStaffSupervisorID != PreviousStaffSupervisorID
+  SELECT 
+    StaffID, 
+    CurrentStaffSupervisorID as StaffSupervisorID,
+    UpdateDate,
+    SCU_caseload
+  FROM supervisor_change_recorded
+  WHERE (CurrentStaffSupervisorID != PreviousStaffSupervisorID)
 ),
--- ranking rows to insure we don't get duplicate information
-ranked_rows AS(
-    SELECT 
-        *,
-        ROW_NUMBER() OVER (PARTITION BY StaffID,StaffSupervisorID,UpdateDate ORDER BY UpdateDate DESC) as RecencyRank
-    FROM key_supervisor_change_dates
-),
--- making rows unique by staff and updatedate
--- NOTE: Add a partition by supervisor ID as well when #34976 is implemented
-create_unique_rows AS (
+-- making rows unique by staff, supervisorid, and updatedate for SCU cases where multiple 
+-- supervisors are expected
+create_unique_rows_scu AS (
     SELECT 
         StaffID,
         StaffSupervisorID,
         UpdateDate, 
-        ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY UpdateDate ASC) AS SupervisorChangeOrder
-    FROM ranked_rows
-    WHERE RecencyRank = 1
+        SCU_caseload,
+    FROM key_supervisor_change_dates
+    WHERE SCU_caseload = 'Y'
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY StaffID,StaffSupervisorID,UpdateDate ORDER BY UpdateDate DESC) = 1
 ),
--- creating supervisor periods from key dates
-construct_periods AS (
+-- creating unique rows for non scu cases where we only want to partitition by staff id
+-- so we don't allow multiple overlapping supervisors periods
+create_unique_rows_non_scu AS (
     SELECT 
         StaffID,
         StaffSupervisorID,
-        UpdateDate as StartDate,
-        LEAD(UpdateDate) OVER person_sequence as EndDate,
-        SupervisorChangeOrder
-    FROM create_unique_rows 
-    WINDOW person_sequence AS (PARTITION BY StaffID ORDER BY SupervisorChangeOrder)
+        UpdateDate, 
+        SCU_caseload,
+    FROM key_supervisor_change_dates
+    WHERE SCU_caseload = 'N'
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY StaffID,UpdateDate ORDER BY UpdateDate DESC) = 1
+), 
+-- unioning together the seperate logic for SCU and non SCU caseloads
+union_scu_and_non AS (
+   SELECT 
+        StaffID,
+        StaffSupervisorID,
+        UpdateDate, 
+        SCU_caseload
+    FROM create_unique_rows_scu
+
+    UNION ALL 
+
+    SELECT 
+        StaffID,
+        StaffSupervisorID,
+        UpdateDate, 
+        SCU_caseload
+    FROM create_unique_rows_non_scu
+),
+-- creating supervisor periods from key dates, using different enddate logic for SCU and non SCU cases
+construct_periods AS (
+  SELECT 
+    StaffID,
+    StaffSupervisorID,
+    UpdateDate as StartDate,
+    IF(SCU_caseload = 'Y', 
+        LEAD(UpdateDate) OVER (PARTITION BY StaffID, StaffSupervisorID ORDER BY UpdateDate ASC), 
+        LEAD(UpdateDate) OVER (PARTITION BY StaffID ORDER BY UpdateDate ASC))
+    AS EndDate,
+    ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY UpdateDate ASC) AS SupervisorChangeOrder
+  FROM union_scu_and_non
 ),
 -- Getting the most recent status from Staff to see if an employee is active or inactive
 current_status AS (
@@ -125,19 +149,30 @@ inactive_dates AS (
 )
 -- Here we are closing the supervisor periods if their latest status in Staff table is inactive,
 -- with the first update_datetime of when they became inactive, if it is after the start date of the period
+-- NOTE: We are not currently closing periods if they don't show up in the latest manual roster
+-- we have made TODO(#35129): to track if this is a change we would like to make in the future
 SELECT
     REGEXP_REPLACE(construct_periods.StaffID, r'[^A-Z0-9]', '') AS StaffID,
-    REGEXP_REPLACE(StaffSupervisorID, r'[^A-Z0-9]', '') as StaffSupervisorID, 
+    REGEXP_REPLACE(StaffSupervisorID, r'[^A-Z0-9]', '') AS StaffSupervisorID, 
     construct_periods.StartDate,
     CASE 
+        -- first_inactive_date is set to only be populated if someone's current status in 
+        -- the Staff table is inactive. If it's not null, they are inactive in Staff but roster 
+        -- information is outdated which is keeping their supervisor periods open.Therefore, 
+        -- we close their open periods with the first date there are inactive in the Staff table. 
         WHEN 
             construct_periods.EndDate IS NULL 
             AND first_inactive_date IS NOT NULL
             AND id.first_inactive_date > construct_periods.StartDate 
             THEN id.first_inactive_date
+        -- However, there are some people who were inactive in Staff before the start date of 
+        -- the roster period information, so in this case, we close their incorrectly open periods 
+        -- with the StartDate of the periods (effectively making them into zero day periods that will be ignored.       
+        WHEN construct_periods.EndDate IS NULL
+            AND first_inactive_date IS NOT NULL THEN construct_periods.StartDate 
         ELSE construct_periods.EndDate
     END AS EndDate,
-   SupervisorChangeOrder
+    SupervisorChangeOrder
 FROM 
     construct_periods
 LEFT JOIN inactive_dates id ON construct_periods.StaffID = id.StaffID
