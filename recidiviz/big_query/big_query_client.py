@@ -180,6 +180,7 @@ class BigQueryClient:
     def create_dataset_if_necessary(
         self,
         dataset_id: str,
+        *,
         default_table_expiration_ms: Optional[int] = None,
     ) -> bigquery.Dataset:
         """Create a BigQuery dataset if it does not exist, with the optional dataset
@@ -210,6 +211,7 @@ class BigQueryClient:
     def delete_dataset(
         self,
         dataset_id: str,
+        *,
         delete_contents: bool = False,
         not_found_ok: bool = False,
     ) -> None:
@@ -282,7 +284,7 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def create_table(
-        self, table: bigquery.Table, overwrite: bool = False
+        self, table: bigquery.Table, *, overwrite: bool = False
     ) -> bigquery.Table:
         """Creates a new table in big query. If |overwrite| is False and the table
         already exists, raises an AlreadyExists error.
@@ -298,7 +300,7 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def create_or_update_view(
-        self, view: BigQueryView, might_exist: bool = True
+        self, view: BigQueryView, *, might_exist: bool = True
     ) -> bigquery.Table:
         """Create a View if it does not exist, or update its query if it does.
 
@@ -324,6 +326,7 @@ class BigQueryClient:
     @abc.abstractmethod
     def load_table_from_cloud_storage_async(
         self,
+        *,
         source_uris: List[str],
         destination_address: BigQueryAddress,
         destination_table_schema: List[bigquery.SchemaField],
@@ -365,6 +368,7 @@ class BigQueryClient:
     @abc.abstractmethod
     def load_into_table_from_dataframe_async(
         self,
+        *,
         source: pd.DataFrame,
         destination_address: BigQueryAddress,
     ) -> bigquery.job.LoadJob:
@@ -388,6 +392,7 @@ class BigQueryClient:
     @abc.abstractmethod
     def load_into_table_from_file_async(
         self,
+        *,
         source: IO,
         destination_address: BigQueryAddress,
         schema: List[bigquery.SchemaField],
@@ -420,6 +425,7 @@ class BigQueryClient:
     @abc.abstractmethod
     def export_table_to_cloud_storage_async(
         self,
+        *,
         source_table_address: BigQueryAddress,
         destination_uri: str,
         destination_format: str,
@@ -506,6 +512,7 @@ class BigQueryClient:
     @abc.abstractmethod
     def paged_read_and_process(
         self,
+        *,
         query_job: bigquery.QueryJob,
         page_size: int,
         process_page_fn: Callable[[List[bigquery.table.Row]], None],
@@ -634,9 +641,9 @@ class BigQueryClient:
     @abc.abstractmethod
     def load_into_table_async(
         self,
+        *,
         address: BigQueryAddress,
         rows: Sequence[Dict[str, Any]],
-        *,
         write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.job.LoadJob:
         """Inserts the provided rows into the specified table.
@@ -655,7 +662,7 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def delete_from_table_async(
-        self, address: BigQueryAddress, filter_clause: Optional[str] = None
+        self, address: BigQueryAddress, *, filter_clause: Optional[str] = None
     ) -> bigquery.QueryJob:
         """Deletes rows from the table at the given address that match the filter
         clause. If no filter is provided, all rows are deleted.
@@ -687,6 +694,7 @@ class BigQueryClient:
     @abc.abstractmethod
     def create_table_with_schema(
         self,
+        *,
         address: BigQueryAddress,
         schema_fields: List[bigquery.SchemaField],
         clustering_fields: Optional[List[str]] = None,
@@ -715,6 +723,7 @@ class BigQueryClient:
     @abc.abstractmethod
     def update_schema(
         self,
+        *,
         address: BigQueryAddress,
         desired_schema_fields: List[bigquery.SchemaField],
         allow_field_deletions: bool = True,
@@ -732,7 +741,7 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def delete_table(
-        self, address: BigQueryAddress, not_found_ok: bool = False
+        self, address: BigQueryAddress, *, not_found_ok: bool = False
     ) -> None:
         """Provided the |dataset_id| and |table_id|, attempts to delete the given table
         from BigQuery.
@@ -756,6 +765,7 @@ class BigQueryClient:
     @abc.abstractmethod
     def copy_dataset_tables_across_regions(
         self,
+        *,
         source_dataset_id: str,
         destination_dataset_id: str,
         overwrite_destination_tables: bool = False,
@@ -774,6 +784,7 @@ class BigQueryClient:
     @abc.abstractmethod
     def copy_dataset_tables(
         self,
+        *,
         source_dataset_id: str,
         destination_dataset_id: str,
         schema_only: bool = False,
@@ -793,6 +804,7 @@ class BigQueryClient:
     @abc.abstractmethod
     def copy_table(
         self,
+        *,
         source_table_address: BigQueryAddress,
         destination_dataset_id: str,
         schema_only: bool = False,
@@ -818,7 +830,7 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def update_datasets_to_match_reference_schema(
-        self, reference_dataset_id: str, stale_schema_dataset_ids: List[str]
+        self, *, reference_dataset_id: str, stale_schema_dataset_ids: List[str]
     ) -> None:
         """Updates the schemas of the datasets in |stale_schema_dataset_ids| to match
         the schema of the reference dataset. This means:
@@ -881,6 +893,7 @@ class BigQueryClientImpl(BigQueryClient):
     def create_dataset_if_necessary(
         self,
         dataset_id: str,
+        *,
         default_table_expiration_ms: Optional[int] = None,
     ) -> bigquery.Dataset:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
@@ -1000,6 +1013,7 @@ class BigQueryClientImpl(BigQueryClient):
     def delete_dataset(
         self,
         dataset_id: str,
+        *,
         delete_contents: bool = False,
         not_found_ok: bool = False,
     ) -> None:
@@ -1244,12 +1258,12 @@ class BigQueryClientImpl(BigQueryClient):
         return self.client.get_table(table_ref)
 
     def create_table(
-        self, table: bigquery.Table, overwrite: bool = False
+        self, table: bigquery.Table, *, overwrite: bool = False
     ) -> bigquery.Table:
         return self.client.create_table(table, exists_ok=overwrite)
 
     def create_or_update_view(
-        self, view: BigQueryView, might_exist: bool = True
+        self, view: BigQueryView, *, might_exist: bool = True
     ) -> bigquery.Table:
         if not view.should_deploy():
             raise ValueError(
@@ -1283,6 +1297,7 @@ class BigQueryClientImpl(BigQueryClient):
 
     def load_table_from_cloud_storage_async(
         self,
+        *,
         source_uris: List[str],
         destination_address: BigQueryAddress,
         destination_table_schema: List[bigquery.SchemaField],
@@ -1324,7 +1339,7 @@ class BigQueryClientImpl(BigQueryClient):
         return load_job
 
     def load_into_table_from_dataframe_async(
-        self, source: pd.DataFrame, destination_address: BigQueryAddress
+        self, *, source: pd.DataFrame, destination_address: BigQueryAddress
     ) -> bigquery.job.LoadJob:
 
         self.create_dataset_if_necessary(destination_address.dataset_id)
@@ -1348,6 +1363,7 @@ class BigQueryClientImpl(BigQueryClient):
 
     def load_into_table_from_file_async(
         self,
+        *,
         source: IO,
         destination_address: BigQueryAddress,
         schema: List[bigquery.SchemaField],
@@ -1382,6 +1398,7 @@ class BigQueryClientImpl(BigQueryClient):
 
     def export_table_to_cloud_storage_async(
         self,
+        *,
         source_table_address: BigQueryAddress,
         destination_uri: str,
         destination_format: str,
@@ -1443,10 +1460,10 @@ class BigQueryClientImpl(BigQueryClient):
             extract_jobs_to_config: Dict[bigquery.ExtractJob, ExportQueryConfig] = {}
             for export_config in export_configs:
                 extract_job = self.export_table_to_cloud_storage_async(
-                    export_config.intermediate_table_address,
-                    export_config.output_uri,
-                    export_config.output_format,
-                    print_header,
+                    source_table_address=export_config.intermediate_table_address,
+                    destination_uri=export_config.output_uri,
+                    destination_format=export_config.output_format,
+                    print_header=print_header,
                 )
                 if extract_job is not None:
                     extract_jobs_to_config[extract_job] = export_config
@@ -1502,7 +1519,7 @@ class BigQueryClientImpl(BigQueryClient):
         return exported_configs_and_paths
 
     def delete_table(
-        self, address: BigQueryAddress, not_found_ok: bool = False
+        self, address: BigQueryAddress, *, not_found_ok: bool = False
     ) -> None:
         table_ref = self._table_ref_for_address(address)
         logging.info("Deleting table/view [%s]", address.to_str())
@@ -1528,6 +1545,7 @@ class BigQueryClientImpl(BigQueryClient):
 
     def paged_read_and_process(
         self,
+        *,
         query_job: bigquery.QueryJob,
         page_size: int,
         process_page_fn: Callable[[List[bigquery.table.Row]], None],
@@ -1789,9 +1807,9 @@ class BigQueryClientImpl(BigQueryClient):
 
     def load_into_table_async(
         self,
+        *,
         address: BigQueryAddress,
         rows: Sequence[Dict],
-        *,
         write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.job.LoadJob:
         logging.info("Inserting %d rows into %s", len(rows), address.to_str())
@@ -1811,7 +1829,7 @@ class BigQueryClientImpl(BigQueryClient):
         )
 
     def delete_from_table_async(
-        self, address: BigQueryAddress, filter_clause: Optional[str] = None
+        self, address: BigQueryAddress, *, filter_clause: Optional[str] = None
     ) -> bigquery.QueryJob:
         if filter_clause and not filter_clause.startswith("WHERE"):
             raise ValueError(
@@ -1864,6 +1882,7 @@ class BigQueryClientImpl(BigQueryClient):
 
     def create_table_with_schema(
         self,
+        *,
         address: BigQueryAddress,
         schema_fields: List[bigquery.SchemaField],
         clustering_fields: Optional[List[str]] = None,
@@ -2061,6 +2080,7 @@ class BigQueryClientImpl(BigQueryClient):
 
     def update_schema(
         self,
+        *,
         address: BigQueryAddress,
         desired_schema_fields: List[bigquery.SchemaField],
         allow_field_deletions: bool = True,
@@ -2107,6 +2127,7 @@ class BigQueryClientImpl(BigQueryClient):
 
     def copy_table(
         self,
+        *,
         source_table_address: BigQueryAddress,
         destination_dataset_id: str,
         schema_only: bool = False,
@@ -2171,6 +2192,7 @@ class BigQueryClientImpl(BigQueryClient):
 
     def copy_dataset_tables(
         self,
+        *,
         source_dataset_id: str,
         destination_dataset_id: str,
         schema_only: bool = False,
@@ -2257,6 +2279,7 @@ class BigQueryClientImpl(BigQueryClient):
 
     def copy_dataset_tables_across_regions(
         self,
+        *,
         source_dataset_id: str,
         destination_dataset_id: str,
         overwrite_destination_tables: bool = False,
@@ -2426,7 +2449,7 @@ class BigQueryClientImpl(BigQueryClient):
             logging.info("Finished deleting transfer config [%s]", transfer_config.name)
 
     def update_datasets_to_match_reference_schema(
-        self, reference_dataset_id: str, stale_schema_dataset_ids: List[str]
+        self, *, reference_dataset_id: str, stale_schema_dataset_ids: List[str]
     ) -> None:
         reference_tables = self.list_tables(reference_dataset_id)
         reference_table_schemas = {
@@ -2453,7 +2476,7 @@ class BigQueryClientImpl(BigQueryClient):
                 )
                 if table_id not in stale_table_schemas:
                     self.create_table_with_schema(
-                        reference_table_address, reference_schema
+                        address=reference_table_address, schema_fields=reference_schema
                     )
 
             for table_id, stale_table_schema in stale_table_schemas.items():
@@ -2468,7 +2491,7 @@ class BigQueryClientImpl(BigQueryClient):
                     continue
 
                 self.update_schema(
-                    stale_table_address,
+                    address=stale_table_address,
                     desired_schema_fields=reference_table_schemas[table_id],
                 )
 

@@ -120,7 +120,7 @@ class ViewManagerTest(unittest.TestCase):
         )
 
         self.mock_client.create_dataset_if_necessary.assert_called_with(
-            _DATASET_NAME, None
+            _DATASET_NAME, default_table_expiration_ms=None
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
@@ -208,7 +208,7 @@ class ViewManagerTest(unittest.TestCase):
         )
 
         self.mock_client.create_dataset_if_necessary.assert_called_with(
-            _DATASET_NAME, None
+            _DATASET_NAME, default_table_expiration_ms=None
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
@@ -319,7 +319,10 @@ class ViewManagerTest(unittest.TestCase):
         )
 
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
-            [mock.call(_DATASET_NAME, None), mock.call(_DATASET_NAME_2, None)],
+            [
+                mock.call(_DATASET_NAME, default_table_expiration_ms=None),
+                mock.call(_DATASET_NAME_2, default_table_expiration_ms=None),
+            ],
             any_order=True,
         )
         self.mock_client.create_or_update_view.assert_has_calls(
@@ -398,7 +401,10 @@ class ViewManagerTest(unittest.TestCase):
         )
 
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
-            [mock.call(_DATASET_NAME, None), mock.call(_DATASET_NAME_2, None)],
+            [
+                mock.call(_DATASET_NAME, default_table_expiration_ms=None),
+                mock.call(_DATASET_NAME_2, default_table_expiration_ms=None),
+            ],
             any_order=True,
         )
         self.mock_client.create_or_update_view.assert_has_calls(
@@ -506,7 +512,7 @@ class ViewManagerTest(unittest.TestCase):
             [
                 mock.call(
                     dataset_id,
-                    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+                    default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 )
                 for dataset_id in dataset_ids
             ],
@@ -601,7 +607,7 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client_constructor.assert_called_with(region_override="us-east1")
         self.mock_client.create_dataset_if_necessary.assert_called_with(
-            _DATASET_NAME, None
+            _DATASET_NAME, default_table_expiration_ms=None
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [mock.call(view, might_exist=True) for view in mock_views], any_order=True

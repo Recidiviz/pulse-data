@@ -256,7 +256,9 @@ def _create_all_datasets_if_necessary(
     """
 
     def create_dataset(dataset_id: str) -> None:
-        bq_client.create_dataset_if_necessary(dataset_id, dataset_table_expiration)
+        bq_client.create_dataset_if_necessary(
+            dataset_id, default_table_expiration_ms=dataset_table_expiration
+        )
 
     with futures.ThreadPoolExecutor(
         # Conservatively allow only half as many workers as allowed connections.

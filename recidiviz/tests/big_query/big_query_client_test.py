@@ -24,7 +24,7 @@ import unittest
 # pylint: disable=unused-argument
 from concurrent import futures
 from typing import Any, Dict, Iterator, List
-from unittest import mock
+from unittest.mock import MagicMock, call, create_autospec, patch
 
 import __main__
 import pandas as pd
@@ -42,7 +42,6 @@ from google.cloud.bigquery_datatransfer import (
     TransferRun,
     TransferState,
 )
-from mock import call, create_autospec
 
 from recidiviz.big_query import big_query_client
 from recidiviz.big_query.big_query_address import (
@@ -79,26 +78,26 @@ class BigQueryClientImplTest(unittest.TestCase):
             )
         ]
 
-        self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.mock_project_id
 
-        self.main_patcher = mock.patch.object(
+        self.main_patcher = patch.object(
             __main__, "__file__", "a/b/fake_script.py", create=True
         )
         self.mock_main = self.main_patcher.start()
 
-        self.client_patcher = mock.patch(
+        self.client_patcher = patch(
             "recidiviz.big_query.big_query_client.bigquery.Client"
         )
         self.client_fn = self.client_patcher.start()
-        self.mock_client = mock.MagicMock()
-        self.other_mock_client = mock.MagicMock()
+        self.mock_client = MagicMock()
+        self.other_mock_client = MagicMock()
         self.client_fn.side_effect = [self.mock_client, self.other_mock_client]
         # Reset client caching
         big_query_client._clients_by_project_id_by_region.clear()
 
-        self.job_config_patcher = mock.patch(
+        self.job_config_patcher = patch(
             "recidiviz.big_query.big_query_client.bigquery.CopyJobConfig"
         )
         self.mock_job_config = self.job_config_patcher.start()
@@ -301,8 +300,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         table_exists = self.bq_client.table_exists(self.mock_table_address)
         self.assertFalse(table_exists)
 
-    @mock.patch("google.cloud.bigquery.QueryJobConfig")
-    def test_get_row_counts_for_tables(self, mock_job_config: mock.MagicMock) -> None:
+    @patch("google.cloud.bigquery.QueryJobConfig")
+    def test_get_row_counts_for_tables(self, mock_job_config: MagicMock) -> None:
         # Arrange
         self.mock_client.query.return_value = [
             {"table_id": "foo", "num_rows": 120},
@@ -347,7 +346,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_get_row_counts_for_tables_empty_dataset(self) -> None:
         # Arrange
-        self.mock_client.get_dataset.return_value = mock.MagicMock()
+        self.mock_client.get_dataset.return_value = MagicMock()
         # list_tables returns no tables so the dataset is considered empty
         self.mock_client.list_tables.return_value = iter([])
 
@@ -527,7 +526,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         bucket = self.mock_project_id + "-bucket"
         query_job: futures.Future = futures.Future()
         query_job.set_result([])
-        extract_job = mock.MagicMock(futures.Future)
+        extract_job = MagicMock(futures.Future)
         extract_job.result.return_value = None
         extract_job.destination_uris = [
             "gs://bucket/export-uri",
@@ -583,7 +582,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         bucket = self.mock_project_id + "-bucket"
         query_job: futures.Future = futures.Future()
         query_job.set_result([])
-        extract_job = mock.MagicMock(futures.Future)
+        extract_job = MagicMock(futures.Future)
         extract_job.result.return_value = None
         extract_job.destination_uris = [
             "gs://bucket/export-uri",
@@ -719,9 +718,9 @@ class BigQueryClientImplTest(unittest.TestCase):
                 use_query_cache=False,
             )
 
-    @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
+    @patch("google.cloud.bigquery.job.QueryJobConfig")
     def test_insert_into_table_from_table_async(
-        self, mock_job_config: mock.MagicMock
+        self, mock_job_config: MagicMock
     ) -> None:
         """Tests that the insert_into_table_from_table_async function runs a query."""
         mock_table = create_autospec(bigquery.Table)
@@ -744,9 +743,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             job_config=mock_job_config(),
         )
 
-    @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
+    @patch("google.cloud.bigquery.job.QueryJobConfig")
     def test_insert_into_table_from_table_async_source_column_mapping(
-        self, mock_job_config: mock.MagicMock
+        self, mock_job_config: MagicMock
     ) -> None:
         """Tests that the insert_into_table_from_table_async function runs a query
         correctly mapping source columns to destination columns."""
@@ -806,9 +805,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             job_config=mock_job_config(),
         )
 
-    @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
+    @patch("google.cloud.bigquery.job.QueryJobConfig")
     def test_insert_into_table_from_table_async_invalid_source_column_mapping(
-        self, mock_job_config: mock.MagicMock
+        self, mock_job_config: MagicMock
     ) -> None:
         """Tests that the insert_into_table_from_table_async throws a ValueError when
         trying to provide a mapping for a column that does not exist."""
@@ -837,9 +836,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             str(context.exception),
         )
 
-    @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
+    @patch("google.cloud.bigquery.job.QueryJobConfig")
     def test_insert_into_table_from_table_async_source_has_too_many_cols(
-        self, mock_job_config: mock.MagicMock
+        self, mock_job_config: MagicMock
     ) -> None:
         """Tests that the insert_into_table_from_table_async function runs a query."""
         mock_table_source = create_autospec(bigquery.Table)
@@ -882,9 +881,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             job_config=mock_job_config(),
         )
 
-    @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
+    @patch("google.cloud.bigquery.job.QueryJobConfig")
     def test_insert_into_table_from_table_different_datasets_async(
-        self, mock_job_config: mock.MagicMock
+        self, mock_job_config: MagicMock
     ) -> None:
         """Tests that the insert_into_table_from_table_async function runs a query with the correct source and
         destination datasets."""
@@ -949,9 +948,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             )
         self.mock_client.query.assert_not_called()
 
-    @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
+    @patch("google.cloud.bigquery.job.QueryJobConfig")
     def test_insert_into_table_from_table_with_filter_clause(
-        self, mock_job_config: mock.MagicMock
+        self, mock_job_config: MagicMock
     ) -> None:
         """Tests that the insert_into_table_from_table_async generates a valid query when given a filter clause."""
         mock_table = create_autospec(bigquery.Table)
@@ -1172,7 +1171,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
         schema_fields = [bigquery.SchemaField("new_schema_field", "STRING")]
 
-        self.bq_client.create_table_with_schema(self.mock_table_address, schema_fields)
+        self.bq_client.create_table_with_schema(
+            address=self.mock_table_address, schema_fields=schema_fields
+        )
         self.mock_client.create_table.assert_called_once()
         table = self.mock_client.create_table.mock_calls[0].args[0]
         self.assertIsInstance(table, bigquery.Table)
@@ -1184,8 +1185,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         schema_fields = [bigquery.SchemaField("new_schema_field", "STRING")]
 
         self.bq_client.create_table_with_schema(
-            self.mock_table_address,
-            schema_fields,
+            address=self.mock_table_address,
+            schema_fields=schema_fields,
             clustering_fields=[],
         )
         self.mock_client.create_table.assert_called_once()
@@ -1203,7 +1204,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             "Trying to create a table that already exists: fake-dataset.test_table.",
         ):
             self.bq_client.create_table_with_schema(
-                self.mock_table_address, schema_fields
+                address=self.mock_table_address, schema_fields=schema_fields
             )
         self.mock_client.create_table.assert_not_called()
 
@@ -1217,8 +1218,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         self.bq_client.create_table_with_schema(
-            self.mock_table_address,
-            schema_fields,
+            address=self.mock_table_address,
+            schema_fields=schema_fields,
             date_partition_field="partition_field",
         )
         self.mock_client.create_table.assert_called_once()
@@ -1243,8 +1244,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             r"Date partition field \[partition_field\] has unsupported type: \[STRING\].",
         ):
             self.bq_client.create_table_with_schema(
-                self.mock_table_address,
-                schema_fields,
+                address=self.mock_table_address,
+                schema_fields=schema_fields,
                 date_partition_field="partition_field",
             )
 
@@ -1268,7 +1269,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             ),
         ]
 
-        self.bq_client.update_schema(self.mock_table_address, new_schema_fields)
+        self.bq_client.update_schema(
+            address=self.mock_table_address, desired_schema_fields=new_schema_fields
+        )
 
         # We should only have to get the table once to update it
         self.mock_client.get_table.assert_called_once()
@@ -1305,7 +1308,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.SchemaField("field_2", "STRING"),
         ]
 
-        self.bq_client.update_schema(self.mock_table_address, new_schema_fields)
+        self.bq_client.update_schema(
+            address=self.mock_table_address, desired_schema_fields=new_schema_fields
+        )
 
         # We should only have to get the table once to update it
         self.mock_client.get_table.assert_called_once()
@@ -1355,7 +1360,9 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.query.side_effect = mock_query
 
-        self.bq_client.update_schema(self.mock_table_address, new_schema_fields)
+        self.bq_client.update_schema(
+            address=self.mock_table_address, desired_schema_fields=new_schema_fields
+        )
 
         # We call get_table() twice - once at the beginning and once after we have
         # removed fields.
@@ -1398,7 +1405,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             "fake-dataset.test_table. Existing field field_2 has type STRING. "
             "Cannot change this type to INT.",
         ):
-            self.bq_client.update_schema(self.mock_table_address, new_schema_fields)
+            self.bq_client.update_schema(
+                address=self.mock_table_address, desired_schema_fields=new_schema_fields
+            )
 
         self.mock_client.get_table.assert_called_once()
         self.mock_client.get_table.assert_called_with(self.mock_table)
@@ -1425,7 +1434,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             ValueError,
             r"Cannot change the mode of field SchemaField\('field_1'.*\) to REQUIRED",
         ):
-            self.bq_client.update_schema(self.mock_table_address, new_schema_fields)
+            self.bq_client.update_schema(
+                address=self.mock_table_address, desired_schema_fields=new_schema_fields
+            )
 
         self.mock_client.get_table.assert_called_once()
         self.mock_client.get_table.assert_called_with(self.mock_table)
@@ -1455,8 +1466,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             "but field deletions is not allowed.",
         ):
             self.bq_client.update_schema(
-                self.mock_table_address,
-                new_schema_fields,
+                address=self.mock_table_address,
+                desired_schema_fields=new_schema_fields,
                 allow_field_deletions=False,
             )
 
@@ -1484,8 +1495,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             r"\[fake-dataset.test_table\].",
         ):
             self.bq_client.update_schema(
-                self.mock_table_address,
-                new_schema_fields,
+                address=self.mock_table_address,
+                desired_schema_fields=new_schema_fields,
                 allow_field_deletions=False,
             )
 
@@ -1510,8 +1521,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             r"characters.",
         ):
             self.bq_client.update_schema(
-                self.mock_table_address,
-                new_schema_fields,
+                address=self.mock_table_address,
+                desired_schema_fields=new_schema_fields,
                 allow_field_deletions=False,
             )
 
@@ -1612,10 +1623,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.bq_client.delete_table(self.mock_table_address)
         self.mock_client.delete_table.assert_called()
 
-    @mock.patch("google.cloud.bigquery.QueryJob")
-    def test_paged_read_single_page_single_row(
-        self, mock_query_job: mock.MagicMock
-    ) -> None:
+    @patch("google.cloud.bigquery.QueryJob")
+    def test_paged_read_single_page_single_row(self, mock_query_job: MagicMock) -> None:
         first_row = bigquery.table.Row(
             ["parole", 15, "10N"],
             {"supervision_type": 0, "revocations": 1, "district": 2},
@@ -1630,14 +1639,16 @@ class BigQueryClientImplTest(unittest.TestCase):
             for row in rows:
                 processed_results.append(dict(row))
 
-        self.bq_client.paged_read_and_process(mock_query_job, 1, _process_fn)
+        self.bq_client.paged_read_and_process(
+            query_job=mock_query_job, page_size=1, process_page_fn=_process_fn
+        )
 
         self.assertEqual([dict(first_row)], processed_results)
         mock_query_job.result.assert_has_calls([call(page_size=1)])
 
-    @mock.patch("google.cloud.bigquery.QueryJob")
+    @patch("google.cloud.bigquery.QueryJob")
     def test_paged_read_single_page_multiple_rows(
-        self, mock_query_job: mock.MagicMock
+        self, mock_query_job: MagicMock
     ) -> None:
         first_row = bigquery.table.Row(
             ["parole", 15, "10N"],
@@ -1657,13 +1668,15 @@ class BigQueryClientImplTest(unittest.TestCase):
             for row in rows:
                 processed_results.append(dict(row))
 
-        self.bq_client.paged_read_and_process(mock_query_job, 10, _process_fn)
+        self.bq_client.paged_read_and_process(
+            query_job=mock_query_job, page_size=10, process_page_fn=_process_fn
+        )
 
         self.assertEqual([dict(first_row), dict(second_row)], processed_results)
         mock_query_job.result.assert_has_calls([call(page_size=10)])
 
-    @mock.patch("google.cloud.bigquery.QueryJob")
-    def test_paged_read_multiple_pages(self, mock_query_job: mock.MagicMock) -> None:
+    @patch("google.cloud.bigquery.QueryJob")
+    def test_paged_read_multiple_pages(self, mock_query_job: MagicMock) -> None:
         p1_r1 = bigquery.table.Row(
             ["parole", 15, "10N"],
             {"supervision_type": 0, "revocations": 1, "district": 2},
@@ -1691,16 +1704,18 @@ class BigQueryClientImplTest(unittest.TestCase):
             for row in rows:
                 processed_results.append(dict(row))
 
-        self.bq_client.paged_read_and_process(mock_query_job, 2, _process_fn)
+        self.bq_client.paged_read_and_process(
+            query_job=mock_query_job, page_size=2, process_page_fn=_process_fn
+        )
 
         self.assertEqual(
             [dict(p1_r1), dict(p1_r2), dict(p2_r1), dict(p2_r2)], processed_results
         )
         mock_query_job.result.assert_has_calls([call(page_size=2)])
 
-    @mock.patch("google.cloud.bigquery.QueryJob")
+    @patch("google.cloud.bigquery.QueryJob")
     def test_paged_read_multiple_pages_loop_and_a_half(
-        self, mock_query_job: mock.MagicMock
+        self, mock_query_job: MagicMock
     ) -> None:
         p1_r1 = bigquery.table.Row(
             ["parole", 15, "10N"],
@@ -1731,7 +1746,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         def _process_fn(rows: List[bigquery.table.Row]) -> None:
             processed_results.append([dict(row) for row in rows])
 
-        self.bq_client.paged_read_and_process(mock_query_job, 3, _process_fn)
+        self.bq_client.paged_read_and_process(
+            query_job=mock_query_job, page_size=3, process_page_fn=_process_fn
+        )
 
         mock_query_job.result.assert_has_calls([call(page_size=3)])
 
@@ -1739,14 +1756,14 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.assertEqual([dict(p1_r1), dict(p1_r2), dict(p1_r3)], processed_results[0])
         self.assertEqual([dict(p2_r1), dict(p2_r2)], processed_results[1])
 
-    @mock.patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
-    @mock.patch(
+    @patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
+    @patch(
         "recidiviz.big_query.big_query_client.CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC",
         0.1,
     )
     def test_copy_dataset_tables_across_regions(
         self,
-        mock_transfer_client_fn: mock.MagicMock,
+        mock_transfer_client_fn: MagicMock,
     ) -> None:
         mock_transfer_client = create_autospec(DataTransferServiceClient)
         mock_transfer_client_fn.return_value = mock_transfer_client
@@ -1837,27 +1854,27 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         self.bq_client.copy_dataset_tables_across_regions(
-            "my_src_dataset", "my_dst_dataset"
+            source_dataset_id="my_src_dataset", destination_dataset_id="my_dst_dataset"
         )
 
         mock_transfer_client.create_transfer_config.assert_called_once()
         self.mock_client.list_tables.assert_has_calls(
             [
-                mock.call("my_src_dataset"),
-                mock.call("my_dst_dataset"),
-                mock.call("my_dst_dataset"),
-                mock.call("my_dst_dataset"),
+                call("my_src_dataset"),
+                call("my_dst_dataset"),
+                call("my_dst_dataset"),
+                call("my_dst_dataset"),
             ]
         )
         mock_transfer_client.delete_transfer_config.assert_called_once()
 
-    @mock.patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
-    @mock.patch(
+    @patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
+    @patch(
         "recidiviz.big_query.big_query_client.CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC",
         0.1,
     )
     def test_copy_dataset_tables_across_regions_nonempty(
-        self, mock_transfer_client_fn: mock.MagicMock
+        self, mock_transfer_client_fn: MagicMock
     ) -> None:
         mock_transfer_client = create_autospec(DataTransferServiceClient)
         mock_transfer_client_fn.return_value = mock_transfer_client
@@ -1914,26 +1931,26 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "not empty"):
             self.bq_client.copy_dataset_tables_across_regions(
-                "my_src_dataset",
-                "my_dst_dataset",
+                source_dataset_id="my_src_dataset",
+                destination_dataset_id="my_dst_dataset",
             )
 
         mock_transfer_client.create_transfer_config.assert_not_called()
         self.mock_client.list_tables.assert_has_calls(
             [
-                mock.call("my_src_dataset"),
-                mock.call("my_dst_dataset"),
+                call("my_src_dataset"),
+                call("my_dst_dataset"),
             ]
         )
 
-    @mock.patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
-    @mock.patch(
+    @patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
+    @patch(
         "recidiviz.big_query.big_query_client.CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC",
         0.1,
     )
     def test_copy_dataset_tables_across_regions_overwrite(
         self,
-        mock_transfer_client_fn: mock.MagicMock,
+        mock_transfer_client_fn: MagicMock,
     ) -> None:
         mock_transfer_client = create_autospec(DataTransferServiceClient)
         mock_transfer_client_fn.return_value = mock_transfer_client
@@ -2028,16 +2045,18 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         self.bq_client.copy_dataset_tables_across_regions(
-            "my_src_dataset", "my_dst_dataset", overwrite_destination_tables=True
+            source_dataset_id="my_src_dataset",
+            destination_dataset_id="my_dst_dataset",
+            overwrite_destination_tables=True,
         )
 
         mock_transfer_client.create_transfer_config.assert_called_once()
         self.mock_client.list_tables.assert_has_calls(
             [
-                mock.call("my_src_dataset"),
-                mock.call("my_dst_dataset"),
-                mock.call("my_dst_dataset"),
-                mock.call("my_dst_dataset"),
+                call("my_src_dataset"),
+                call("my_dst_dataset"),
+                call("my_dst_dataset"),
+                call("my_dst_dataset"),
             ]
         )
         self.mock_client.delete_table.assert_called_with(
@@ -2048,13 +2067,13 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
         mock_transfer_client.delete_transfer_config.assert_called_once()
 
-    @mock.patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
-    @mock.patch(
+    @patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
+    @patch(
         "recidiviz.big_query.big_query_client.CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC",
         0.1,
     )
     def test_copy_dataset_tables_across_regions_timeout(
-        self, mock_transfer_client_fn: mock.MagicMock
+        self, mock_transfer_client_fn: MagicMock
     ) -> None:
         mock_transfer_client = create_autospec(DataTransferServiceClient)
         mock_transfer_client_fn.return_value = mock_transfer_client
@@ -2131,8 +2150,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             TimeoutError, "^Did not complete dataset copy before timeout"
         ):
             self.bq_client.copy_dataset_tables_across_regions(
-                "my_src_dataset",
-                "my_dst_dataset",
+                source_dataset_id="my_src_dataset",
+                destination_dataset_id="my_dst_dataset",
                 overwrite_destination_tables=True,
                 timeout_sec=0.15,
             )
@@ -2140,9 +2159,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_transfer_client.create_transfer_config.assert_called_once()
         self.mock_client.list_tables.assert_has_calls(
             [
-                mock.call("my_src_dataset"),  # Runs immediately
-                mock.call("my_dst_dataset"),  # Runs immediately
-                mock.call("my_dst_dataset"),  # Runs at 10s - timeout after this
+                call("my_src_dataset"),  # Runs immediately
+                call("my_dst_dataset"),  # Runs immediately
+                call("my_dst_dataset"),  # Runs at 10s - timeout after this
             ]
         )
         # Important that we still delete the config
@@ -2157,7 +2176,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_table.table_id = "my_table"
 
         # Destination already exists
-        self.mock_client.get_dataset.return_value = mock.MagicMock()
+        self.mock_client.get_dataset.return_value = MagicMock()
         self.mock_client.get_table.return_value = mock_table
 
         copy_jobs: List[futures.Future] = [futures.Future(), futures.Future()]
@@ -2204,7 +2223,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_table.table_id = "my_table"
 
         # Destination already exists
-        self.mock_client.get_dataset.return_value = mock.MagicMock()
+        self.mock_client.get_dataset.return_value = MagicMock()
         schema1 = [bigquery.schema.SchemaField("foo", "STRING")]
 
         def mock_get_table(table_ref: bigquery.TableReference) -> bigquery.Table:
@@ -2256,7 +2275,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_table.external_data_configuration.source_uris = ["gs://bucket/source.json"]
 
         # Destination already exists
-        self.mock_client.get_dataset.return_value = mock.MagicMock()
+        self.mock_client.get_dataset.return_value = MagicMock()
         schema1 = [bigquery.schema.SchemaField("foo", "STRING")]
 
         def mock_get_table(table_ref: bigquery.TableReference) -> bigquery.Table:
@@ -2313,7 +2332,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_table.external_data_configuration.source_uris = ["gs://bucket/source.json"]
 
         # Destination already exists
-        self.mock_client.get_dataset.return_value = mock.MagicMock()
+        self.mock_client.get_dataset.return_value = MagicMock()
         schema1 = [bigquery.schema.SchemaField("foo", "STRING")]
 
         def mock_get_table(table_ref: bigquery.TableReference) -> bigquery.Table:
@@ -2393,7 +2412,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         dataset_tables = [mock_table, mock_view, mock_table_2]
 
         # Destination already exists
-        self.mock_client.get_dataset.return_value = mock.MagicMock()
+        self.mock_client.get_dataset.return_value = MagicMock()
 
         def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
             if dataset_id == destination_dataset_id:
@@ -2418,7 +2437,10 @@ class BigQueryClientImplTest(unittest.TestCase):
             job.set_result(None)
         self.mock_client.copy_table.side_effect = copy_jobs
 
-        self.bq_client.copy_dataset_tables(source_dataset_id, destination_dataset_id)
+        self.bq_client.copy_dataset_tables(
+            source_dataset_id=source_dataset_id,
+            destination_dataset_id=destination_dataset_id,
+        )
 
         self.assertEqual(
             bigquery.job.WriteDisposition.WRITE_EMPTY, self.job_config.write_disposition
@@ -2496,7 +2518,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_view.table_id = "my_view"
 
         # Destination already exists
-        self.mock_client.get_dataset.return_value = mock.MagicMock()
+        self.mock_client.get_dataset.return_value = MagicMock()
 
         def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
             if dataset_id == destination_dataset_id:
@@ -2529,7 +2551,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = mock_get_table
 
         self.bq_client.copy_dataset_tables(
-            source_dataset_id, destination_dataset_id, schema_only=True
+            source_dataset_id=source_dataset_id,
+            destination_dataset_id=destination_dataset_id,
+            schema_only=True,
         )
 
         self.mock_client.list_tables.assert_has_calls(
@@ -2621,7 +2645,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         dataset_tables = [mock_table, mock_view, mock_table_2]
 
         # Destination already exists
-        self.mock_client.get_dataset.return_value = mock.MagicMock()
+        self.mock_client.get_dataset.return_value = MagicMock()
 
         def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
             if dataset_id == destination_dataset_id:
@@ -2650,7 +2674,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.copy_table.side_effect = copy_jobs
 
         self.bq_client.copy_dataset_tables(
-            source_dataset_id, destination_dataset_id, overwrite_destination_tables=True
+            source_dataset_id=source_dataset_id,
+            destination_dataset_id=destination_dataset_id,
+            overwrite_destination_tables=True,
         )
 
         self.mock_client.list_tables.assert_has_calls(
@@ -2731,12 +2757,12 @@ class BigQueryClientImplTest(unittest.TestCase):
             dataset_ref: bigquery.DatasetReference,
         ) -> bigquery.Dataset:
             if dataset_ref.dataset_id == dataset_to_backup_id:
-                return mock.MagicMock()
+                return MagicMock()
             if dataset_ref.dataset_id == expected_backup_dataset_id:
                 if len(backup_dataset_calls) == 0:
                     backup_dataset_calls.append(True)
                     raise exceptions.NotFound("This exception should be caught")
-                return mock.MagicMock()
+                return MagicMock()
             raise ValueError(f"Unexpected dataset [{dataset_ref.dataset_id}]")
 
         self.mock_client.get_dataset.side_effect = mock_get_dataset

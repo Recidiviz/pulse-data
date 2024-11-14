@@ -464,8 +464,9 @@ class ConvertQueryResultsTest(unittest.TestCase):
         ]
 
         def fake_paged_process_fn(
+            *,
             query_job: bigquery.QueryJob,
-            _page_size: int,
+            page_size: int,  # pylint: disable=unused-argument
             process_page_fn: Callable[[List[bigquery.table.Row]], None],
         ) -> None:
             rows: List[bigquery.table.Row] = []

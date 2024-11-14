@@ -99,7 +99,9 @@ def export_csg_files(
     # create a temp dataset for exports
     client = BigQueryClientImpl(project_id=project_id)
     if not dry_run:
-        client.create_dataset_if_necessary(TEMP_DATASET_NAME, 3600000)
+        client.create_dataset_if_necessary(
+            TEMP_DATASET_NAME, default_table_expiration_ms=3600000
+        )
 
     # now do a bunch of metric exports
     export_configs = []
