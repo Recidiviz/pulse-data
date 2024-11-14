@@ -27,15 +27,15 @@ VIEW_QUERY_TEMPLATE = """
 WITH 
 -- getting information from @ALL roster
 all_periods as (
-  SELECT 
+  SELECT DISTINCT
     external_id, 
     location_district,
-    SupervisorID, 
     UPPER(CaseloadType) AS CaseloadType, 
     UPPER(Active) as Active,
     SpecializedTeam,
     update_datetime, 
     FROM {RECIDIVIZ_REFERENCE_staff_supervisor_and_caseload_roster@ALL}
+    WHERE UPPER(Active) IN ('YES', 'Y', 'ACTIVE')
 ), 
 -- getting rid of roles that aren't considered caseloads
 -- #TODO(#31902): Continue to clarify and refine caseload types 
@@ -137,16 +137,57 @@ construct_periods AS (
         CaseloadChangeOrder
     FROM create_unique_rows 
     WINDOW person_sequence AS (PARTITION BY StaffID ORDER BY CaseloadChangeOrder)
+), 
+-- Getting the most recent status from Staff to see if an employee is active or inactive
+current_status AS (
+ SELECT 
+    StaffID,
+    Status
+   FROM 
+        {Staff@ALL}
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY update_datetime DESC) = 1
+),
+-- Taking the first update datetime where staff status goes inactive
+inactive_dates AS (
+  SELECT 
+        StaffID,
+        update_datetime AS first_inactive_date,
+    FROM 
+        {Staff@ALL}
+    WHERE 
+        Status = 'I' AND StaffID IN
+                      (SELECT StaffID
+                      FROM current_status
+                      WHERE Status = 'I')
+    QUALIFY 
+       ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY update_datetime) = 1
 )
--- doing additional cleaning for output
+-- Here we are closing the supervisor periods if their latest status in Staff table is inactive,
+-- with the first update_datetime of when they became inactive, if it is after the start date of the period.
 SELECT 
-    REGEXP_REPLACE(StaffID, r'[^A-Z0-9]', '') as StaffID, 
+    REGEXP_REPLACE(construct_periods.StaffID, r'[^A-Z0-9]', '') as StaffID, 
     CaseloadType, 
     StartDate,
-    EndDate,
+    CASE 
+        -- first_inactive_date is set to only be populated if someone's current status in 
+        -- the Staff table is inactive. If it's not null, they are inactive in Staff but roster 
+        -- information is outdated which is keeping their supervisor periods open.Therefore, 
+        -- we close their open periods with the first date there are inactive in the Staff table. 
+        WHEN 
+            construct_periods.EndDate IS NULL 
+            AND first_inactive_date IS NOT NULL
+            AND id.first_inactive_date > construct_periods.StartDate 
+            THEN id.first_inactive_date
+        -- However, there are some people who were inactive in Staff before the start date of 
+        -- the roster period information, so in this case, we close their incorrectly open periods 
+        -- with the StartDate of the periods (effectively making them into zero day periods that will be ignored.       
+        WHEN construct_periods.EndDate IS NULL
+            AND first_inactive_date IS NOT NULL THEN construct_periods.StartDate 
+        ELSE construct_periods.EndDate
+    END AS EndDate,
     CaseloadChangeOrder
 FROM construct_periods
-
+LEFT JOIN inactive_dates id ON construct_periods.StaffID = id.StaffID
 
 """
 
