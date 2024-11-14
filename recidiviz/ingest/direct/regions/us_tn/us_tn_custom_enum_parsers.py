@@ -140,7 +140,10 @@ def parse_staff_caseload_type(
     raw_text: str,
 ) -> StateStaffCaseloadType:
     """Assign staff caseload type based on raw text strings"""
-
+    # putting this first because if it comes after all SCU Admin cases would be assigned to Sex Offense caseload
+    if any(keyword in raw_text for keyword in ["ADMIN", "ABSCONDER"]):
+        return StateStaffCaseloadType.TRANSITIONAL
+    ##  this is second because we want to ensure sex offense caseloads will be viewed seperately
     if any(keyword in raw_text for keyword in ["SEX", "SCU"]):
         return StateStaffCaseloadType.SEX_OFFENSE
     if any(keyword in raw_text for keyword in ["ROCS", "RECOVERY COURT"]):
@@ -149,8 +152,6 @@ def parse_staff_caseload_type(
         return StateStaffCaseloadType.ALCOHOL_AND_DRUG
     if "COURT" in raw_text:
         return StateStaffCaseloadType.OTHER_COURT
-    if any(keyword in raw_text for keyword in ["ADMIN", "ABSCONDER"]):
-        return StateStaffCaseloadType.TRANSITIONAL
     if (
         any(keyword in raw_text for keyword in ["COMPLIANT", "TELEPHONE"])
         or raw_text == "IOT"
