@@ -37,7 +37,10 @@ from recidiviz.ingest.views.dataset_config import (
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
-from recidiviz.source_tables.source_table_config import SourceTableCollection
+from recidiviz.source_tables.source_table_config import (
+    SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
+)
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -297,6 +300,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                         address: repository.source_tables[address]
                         for address in list(source_table_addresses)
                     },
+                    update_config=SourceTableCollectionUpdateConfig.static(),
                     description=f"Fake description for dataset {dataset_id}",
                 )
                 for dataset_id, source_table_addresses in groupby(

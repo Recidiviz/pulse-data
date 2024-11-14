@@ -332,10 +332,10 @@ class SourceTableCollection:
     # The description for this collection of tables
     description: str
 
-    # Update configs can be overridden, but default to the most precautionary configuration available
-    update_config: SourceTableCollectionUpdateConfig = attr.ib(
-        factory=SourceTableCollectionUpdateConfig.static
-    )
+    # Configuration object for how we attempt to manage the source tables in this
+    # collection.
+    update_config: SourceTableCollectionUpdateConfig
+
     validation_config: SourceTableCollectionValidationConfig | None = attr.ib(
         default=None
     )
