@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.criteria.general import (
     housing_unit_type_is_not_mental_health_solitary_confinement,
     housing_unit_type_is_not_other_solitary_confinement,
     housing_unit_type_is_solitary_confinement,
+    not_admitted_to_temporary_solitary_confinement_in_the_last_3_days,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     expected_number_of_security_classification_committee_reviews_greater_than_observed,
@@ -69,6 +70,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         housing_unit_type_is_not_other_solitary_confinement.VIEW_BUILDER,
         housing_unit_type_is_not_disciplinary_solitary_confinement.VIEW_BUILDER,
         housing_unit_type_is_not_mental_health_solitary_confinement.VIEW_BUILDER,
+        not_admitted_to_temporary_solitary_confinement_in_the_last_3_days.VIEW_BUILDER,
     ],
     completion_event_builder=security_classification_committee_review.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
