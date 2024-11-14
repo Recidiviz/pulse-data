@@ -163,7 +163,8 @@ def compare_metric_view_output_to_sandbox(
         )
 
     bq_client.create_dataset_if_necessary(
-        sandbox_comparison_output_dataset_id, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+        sandbox_comparison_output_dataset_id,
+        default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
     )
 
     query_jobs: List[Tuple[QueryJob, BigQueryAddress]] = []

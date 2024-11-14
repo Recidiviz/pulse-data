@@ -109,8 +109,11 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         self.assertEqual(
             self.mock_bq_client.create_dataset_if_necessary.mock_calls,
             [
-                mock.call("operations_v2_cloudsql_connection", None),
-                mock.call("operations_regional", None),
+                mock.call(
+                    "operations_v2_cloudsql_connection",
+                    default_table_expiration_ms=None,
+                ),
+                mock.call("operations_regional", default_table_expiration_ms=None),
                 mock.call("operations", default_table_expiration_ms=None),
                 mock.call("cloud_sql_to_bq_refresh"),
             ],
@@ -166,8 +169,14 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         self.assertEqual(
             self.mock_bq_client.create_dataset_if_necessary.mock_calls,
             [
-                mock.call("my_prefix_operations_v2_cloudsql_connection", expiration_ms),
-                mock.call("my_prefix_operations_regional", expiration_ms),
+                mock.call(
+                    "my_prefix_operations_v2_cloudsql_connection",
+                    default_table_expiration_ms=expiration_ms,
+                ),
+                mock.call(
+                    "my_prefix_operations_regional",
+                    default_table_expiration_ms=expiration_ms,
+                ),
                 mock.call(
                     "my_prefix_operations",
                     default_table_expiration_ms=expiration_ms,

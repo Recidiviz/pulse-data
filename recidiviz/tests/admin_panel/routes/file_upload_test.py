@@ -139,10 +139,10 @@ class FileUploadEndpointTests(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
         self.mock_bq_client.load_into_table_from_file_async.assert_called_once()
-        args = self.mock_bq_client.load_into_table_from_file_async.call_args.args
+        kwargs = self.mock_bq_client.load_into_table_from_file_async.call_args.kwargs
         # don't test the contents of the file since the file pointer has already been closed
         self.assertEqual(
-            args[1],
+            kwargs["destination_address"],
             BigQueryAddress(
                 dataset_id="static_reference_tables", table_id="us_tn_standards_due"
             ),

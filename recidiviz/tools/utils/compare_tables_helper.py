@@ -279,7 +279,8 @@ def compare_table_or_view(
     bq_client = BigQueryClientImpl(project_id=output_project_id)
 
     bq_client.create_dataset_if_necessary(
-        comparison_output_dataset_id, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+        comparison_output_dataset_id,
+        default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
     )
 
     columns_df = _get_columns_info_df(address_original)

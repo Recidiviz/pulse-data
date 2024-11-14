@@ -97,7 +97,9 @@ def cluster_table(
     logging.info(
         "Copying `%s` to `%s`...", table_address.to_str(), tmp_table_address.to_str()
     )
-    copy_job = bq_client.copy_table(table_address, tmp_dataset_id)
+    copy_job = bq_client.copy_table(
+        source_table_address=table_address, destination_dataset_id=tmp_dataset_id
+    )
     if copy_job is None:
         raise ValueError("Expected copy job")
     copy_job.result()

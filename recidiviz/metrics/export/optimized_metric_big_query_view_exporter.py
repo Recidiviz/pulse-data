@@ -171,7 +171,9 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
         )
         assemble_manifest_fn = _gen_assemble_manifest(dimension_values_by_key)
         self.bq_client.paged_read_and_process(
-            query_job, QUERY_PAGE_SIZE, assemble_manifest_fn
+            query_job=query_job,
+            page_size=QUERY_PAGE_SIZE,
+            process_page_fn=assemble_manifest_fn,
         )
         logging.info(
             "Produced dictionary-based manifest for view: %s", export_view.view_id
@@ -205,7 +207,9 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
             data_values, value_keys, dimension_manifest
         )
         self.bq_client.paged_read_and_process(
-            query_job, QUERY_PAGE_SIZE, place_value_in_matrix_fn
+            query_job=query_job,
+            page_size=QUERY_PAGE_SIZE,
+            process_page_fn=place_value_in_matrix_fn,
         )
         logging.info(
             "Finished paged read and process for view: %s", export_view.view_id

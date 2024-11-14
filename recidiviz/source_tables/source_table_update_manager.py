@@ -229,8 +229,8 @@ class SourceTableUpdateManager:
                         )
 
                     self.client.update_schema(
-                        source_table_config.address,
-                        source_table_config.schema_fields,
+                        address=source_table_config.address,
+                        desired_schema_fields=source_table_config.schema_fields,
                         allow_field_deletions=update_config.allow_field_deletions,
                     )
                 except ValueError as e:
@@ -251,8 +251,8 @@ class SourceTableUpdateManager:
                     )
             else:
                 self.client.create_table_with_schema(
-                    source_table_config.address,
-                    source_table_config.schema_fields,
+                    address=source_table_config.address,
+                    schema_fields=source_table_config.schema_fields,
                     clustering_fields=source_table_config.clustering_fields,
                 )
         except Exception as e:
