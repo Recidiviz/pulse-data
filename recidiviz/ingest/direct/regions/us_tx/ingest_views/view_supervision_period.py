@@ -55,7 +55,7 @@ lag_cte AS (
         LAG(Custodial_Authority) OVER w AS prev_Custodial_Authority,
         LAG(Case_Type) OVER w AS prev_Case_Type
     FROM clean_cte
-    WHERE rn = 1
+    WHERE rn = 1 AND Start_Date != "0001-01-01 00:00:00"
     WINDOW w AS (PARTITION BY Period_ID_Number ORDER BY update_datetime asc)
 ),
 -- Filters down to the records that contain a change to the supervision period. Also uses
