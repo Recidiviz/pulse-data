@@ -19,7 +19,7 @@
 import datetime
 import unittest
 from datetime import date
-from typing import List
+from typing import Any, Callable, Iterable
 from unittest.mock import MagicMock
 
 import apache_beam as beam
@@ -47,6 +47,7 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
     StateSchemaToEntityConverter,
 )
 from recidiviz.persistence.entity import entity_utils
+from recidiviz.persistence.entity.operations.entities import Entity
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStatePerson,
@@ -65,12 +66,14 @@ from recidiviz.tests.pipelines.calculator_test_utils import (
 from recidiviz.tests.pipelines.fake_bigquery import (
     TEST_REFERENCE_QUERY_NAME,
     TEST_REFERENCE_QUERY_PROVIDER,
+    DataTablesDict,
     FakeReadFromBigQuery,
     FakeReadFromBigQueryFactory,
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     default_data_dict_for_root_schema_classes,
 )
+from recidiviz.utils.types import assert_type
 
 
 class TestExtractDataForPipeline(unittest.TestCase):
@@ -79,7 +82,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
-    def testExtractDataForPipeline(self):
+    # type: ignore[attr-defined]
+    def testExtractDataForPipeline(self) -> None:
         """Tests the extraction of multiple entities with cross-entity
         relationship properties hydrated."""
 
@@ -164,21 +168,31 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_person = entity_converter.convert(
-            schema_person, populate_back_edges=True
+        entity_person = assert_type(
+            entity_converter.convert(schema_person, populate_back_edges=True),
+            entities.StatePerson,
         )
-        entity_ethnicity = entity_converter.convert(
-            schema_ethnicity, populate_back_edges=True
+        entity_ethnicity = assert_type(
+            entity_converter.convert(schema_ethnicity, populate_back_edges=True),
+            entities.StatePersonEthnicity,
         )
-        entity_alias = entity_converter.convert(schema_alias, populate_back_edges=True)
-        entity_external_id = entity_converter.convert(
-            schema_external_id, populate_back_edges=True
+        entity_alias = assert_type(
+            entity_converter.convert(schema_alias, populate_back_edges=True),
+            entities.StatePersonAlias,
         )
-        entity_races = entity_converter.convert_all(
-            [schema_race_1, schema_race_2], populate_back_edges=True
+        entity_external_id = assert_type(
+            entity_converter.convert(schema_external_id, populate_back_edges=True),
+            entities.StatePersonExternalId,
         )
-        entity_assessment = entity_converter.convert(
-            schema_assessment, populate_back_edges=True
+        entity_races = [
+            assert_type(race, entities.StatePersonRace)
+            for race in entity_converter.convert_all(
+                [schema_race_1, schema_race_2], populate_back_edges=True
+            )
+        ]
+        entity_assessment = assert_type(
+            entity_converter.convert(schema_assessment, populate_back_edges=True),
+            entities.StateAssessment,
         )
 
         entity_person.ethnicities = [entity_ethnicity]
@@ -240,7 +254,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             test_pipeline.run()
 
-    def testExtractDataForPipeline_withManyRelationshipTypes(self):
+    def testExtractDataForPipeline_withManyRelationshipTypes(self) -> None:
         """Tests the extraction of multiple entities with cross-entity
         relationship properties hydrated."""
         required_schema_classes = [
@@ -323,11 +337,15 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_person = entity_converter.convert(
-            schema_person, populate_back_edges=True
+        entity_person = assert_type(
+            entity_converter.convert(schema_person, populate_back_edges=True),
+            entities.StatePerson,
         )
-        entity_violation: entities.StateSupervisionViolation = entity_converter.convert(
-            schema_supervision_violation, populate_back_edges=True
+        entity_violation = assert_type(
+            entity_converter.convert(
+                schema_supervision_violation, populate_back_edges=True
+            ),
+            entities.StateSupervisionViolation,
         )
         entity_violation_response = entity_violation.supervision_violation_responses[0]
         entity_violation_types = entity_violation.supervision_violation_types
@@ -336,7 +354,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
             entity_violation_response.supervision_violation_response_decisions
         )
 
-        all_non_person_entities = [
+        all_non_person_entities: list[Entity] = [
             entity_violation,
             entity_violation_response,
         ]
@@ -403,7 +421,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             test_pipeline.run()
 
-    def testExtractDataForPipeline_RootEntityClassNotIncluded(self):
+    def testExtractDataForPipeline_RootEntityClassNotIncluded(self) -> None:
         """Tests the extraction of multiple entities, where the root entity class is
         not a class that's included in the list of required entities."""
 
@@ -540,7 +558,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             test_pipeline.run()
 
-    def testExtractDataForPipeline_withAssociationTables(self):
+    def testExtractDataForPipeline_withAssociationTables(self) -> None:
         """Tests the extraction of multiple entities with cross-entity
         relationship properties hydrated."""
         required_schema_classes = [
@@ -601,14 +619,19 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_person = entity_converter.convert(
-            schema_person, populate_back_edges=True
+        entity_person = assert_type(
+            entity_converter.convert(schema_person, populate_back_edges=True),
+            entities.StatePerson,
         )
-        entity_charges: List[entities.StateCharge] = entity_converter.convert_all(
-            [schema_charge_1, schema_charge_2], populate_back_edges=False
-        )
-        entity_sentence: entities.StateSupervisionSentence = entity_converter.convert(
-            schema_sentence, populate_back_edges=True
+        entity_charges = [
+            assert_type(charge, entities.StateCharge)
+            for charge in entity_converter.convert_all(
+                [schema_charge_1, schema_charge_2], populate_back_edges=False
+            )
+        ]
+        entity_sentence = assert_type(
+            entity_converter.convert(schema_sentence, populate_back_edges=True),
+            entities.StateSupervisionSentence,
         )
 
         entity_charges[0].supervision_sentences = [entity_sentence]
@@ -661,7 +684,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             test_pipeline.run()
 
-    def testExtractDataForPipeline_withAssociationTables_multi_parent_types(self):
+    def testExtractDataForPipeline_withAssociationTables_multi_parent_types(
+        self,
+    ) -> None:
         """Tests the extraction of multiple entities with cross-entity
         relationship properties hydrated."""
         required_schema_classes = [
@@ -734,17 +759,23 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_person = entity_converter.convert(
-            schema_person, populate_back_edges=True
+        entity_person = assert_type(
+            entity_converter.convert(schema_person, populate_back_edges=True),
+            entities.StatePerson,
         )
-        entity_charges: List[entities.StateCharge] = entity_converter.convert_all(
-            [schema_charge_1], populate_back_edges=False
+        entity_charges = [
+            assert_type(charge, entities.StateCharge)
+            for charge in entity_converter.convert_all(
+                [schema_charge_1], populate_back_edges=False
+            )
+        ]
+        entity_inc_sentence = assert_type(
+            entity_converter.convert(schema_inc_sentence, populate_back_edges=True),
+            entities.StateIncarcerationSentence,
         )
-        entity_inc_sentence: entities.StateIncarcerationSentence = (
-            entity_converter.convert(schema_inc_sentence, populate_back_edges=True)
-        )
-        entity_sup_sentence: entities.StateSupervisionSentence = (
-            entity_converter.convert(schema_sup_sentence, populate_back_edges=True)
+        entity_sup_sentence = assert_type(
+            entity_converter.convert(schema_sup_sentence, populate_back_edges=True),
+            entities.StateSupervisionSentence,
         )
 
         entity_charges[0].supervision_sentences = [entity_sup_sentence]
@@ -824,7 +855,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
     @patch(
         "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
     )
-    def testExtractDataForPipeline_withReferenceTables(self):
+    def testExtractDataForPipeline_withReferenceTables(self) -> None:
         """Tests the extraction of multiple entities with cross-entity
         relationship properties hydrated."""
 
@@ -919,21 +950,31 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_person = entity_converter.convert(
-            schema_person, populate_back_edges=True
+        entity_person = assert_type(
+            entity_converter.convert(schema_person, populate_back_edges=True),
+            entities.StatePerson,
         )
-        entity_ethnicity = entity_converter.convert(
-            schema_ethnicity, populate_back_edges=True
+        entity_ethnicity = assert_type(
+            entity_converter.convert(schema_ethnicity, populate_back_edges=True),
+            entities.StatePersonEthnicity,
         )
-        entity_alias = entity_converter.convert(schema_alias, populate_back_edges=True)
-        entity_external_id = entity_converter.convert(
-            schema_external_id, populate_back_edges=True
+        entity_alias = assert_type(
+            entity_converter.convert(schema_alias, populate_back_edges=True),
+            entities.StatePersonAlias,
         )
-        entity_races = entity_converter.convert_all(
-            [schema_race_1, schema_race_2], populate_back_edges=True
+        entity_external_id = assert_type(
+            entity_converter.convert(schema_external_id, populate_back_edges=True),
+            entities.StatePersonExternalId,
         )
-        entity_assessment = entity_converter.convert(
-            schema_assessment, populate_back_edges=True
+        entity_races = [
+            assert_type(race, entities.StatePersonRace)
+            for race in entity_converter.convert_all(
+                [schema_race_1, schema_race_2], populate_back_edges=True
+            )
+        ]
+        entity_assessment = assert_type(
+            entity_converter.convert(schema_assessment, populate_back_edges=True),
+            entities.StateAssessment,
         )
 
         entity_person.ethnicities = [entity_ethnicity]
@@ -998,7 +1039,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             test_pipeline.run()
 
-    def testExtractDataForPipeline_withAssociationTablesAndFilter(self):
+    def testExtractDataForPipeline_withAssociationTablesAndFilter(self) -> None:
         """Tests the extraction of multiple entities with cross-entity
         relationship properties hydrated, where there are required association
         tables, and a root_entity_id_field filter is set."""
@@ -1098,14 +1139,19 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         entity_converter = StateSchemaToEntityConverter()
 
-        entity_person = entity_converter.convert(
-            schema_person_1, populate_back_edges=True
+        entity_person = assert_type(
+            entity_converter.convert(schema_person_1, populate_back_edges=True),
+            entities.StatePerson,
         )
-        entity_charges: List[entities.StateCharge] = entity_converter.convert_all(
-            [schema_charge_1, schema_charge_2], populate_back_edges=False
-        )
-        entity_sentence: entities.StateSupervisionSentence = entity_converter.convert(
-            schema_sentence_1, populate_back_edges=True
+        entity_charges = [
+            assert_type(charge, entities.StateCharge)
+            for charge in entity_converter.convert_all(
+                [schema_charge_1, schema_charge_2], populate_back_edges=False
+            )
+        ]
+        entity_sentence = assert_type(
+            entity_converter.convert(schema_sentence_1, populate_back_edges=True),
+            entities.StateSupervisionSentence,
         )
 
         entity_charges[0].supervision_sentences = [entity_sentence]
@@ -1161,7 +1207,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
     @patch(
         "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
     )
-    def testExtractDataForPipeline_allows_for_empty_entities(self):
+    def testExtractDataForPipeline_allows_for_empty_entities(self) -> None:
         person_id = 12345
         project = "project"
         dataset = "state"
@@ -1174,7 +1220,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = {
+        data_dict: DataTablesDict = {
             TEST_REFERENCE_QUERY_NAME: test_reference_query_data,
         }
 
@@ -1214,7 +1260,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             test_pipeline.run()
 
-    def testExtractDataForPipeline_Normalized(self):
+    def testExtractDataForPipeline_Normalized(self) -> None:
         """Tests the extraction of multiple entities with cross-entity
         relationship properties hydrated."""
 
@@ -1414,7 +1460,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             test_pipeline.run()
 
-    def testExtractDataForPipeline_withManyRelationshipTypes_Normalized(self):
+    def testExtractDataForPipeline_withManyRelationshipTypes_Normalized(self) -> None:
         """Tests the extraction of multiple entities with cross-entity
         relationship properties hydrated."""
         required_schema_classes = [
@@ -1667,7 +1713,7 @@ class TestExtractAssociationValues(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
-    def testExtractAssociationValues(self):
+    def testExtractAssociationValues(self) -> None:
         """Tests extracting values required to associate two entities to each other."""
         charge = database_test_utils.generate_test_charge(person_id=123, charge_id=345)
         incarceration_sentence = (
@@ -1688,7 +1734,7 @@ class TestExtractAssociationValues(unittest.TestCase):
             schema.state_charge_incarceration_sentence_association_table.name
         )
 
-        data_dict = {
+        data_dict: DataTablesDict = {
             incarceration_sentence.__tablename__: [
                 normalized_database_base_dict(incarceration_sentence)
             ],
@@ -1742,7 +1788,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
-    def testExtractAllEntitiesOfType(self):
+    def testExtractAllEntitiesOfType(self) -> None:
         person = remove_relationship_properties(
             database_test_utils.generate_test_person(
                 person_id=123,
@@ -1759,7 +1805,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
 
         person_data = [normalized_database_base_dict(person)]
 
-        data_dict = {person.__tablename__: person_data}
+        data_dict: DataTablesDict = {person.__tablename__: person_data}
 
         output_person_entity = StateSchemaToEntityConverter().convert(
             person, populate_back_edges=True
@@ -1804,7 +1850,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
 class TestShallowHydrateEntity(unittest.TestCase):
     """Tests the ShallowHydrateEntity DoFn."""
 
-    def testShallowHydrateEntity(self):
+    def testShallowHydrateEntity(self) -> None:
         """Tests hydrating a StateSupervisionViolation entity as the root
         entity."""
         supervision_violation = database_test_utils.generate_test_supervision_violation(
@@ -1865,7 +1911,7 @@ class ExtractAssertMatchers:
         root_entity_id: int,
         parent_id: int,
         entity_id: int,
-    ):
+    ) -> Callable[[Iterable[Any]], None]:
         """Validates that the output of _ExtractAssociationValues
         matches the expected format:
 
@@ -1874,7 +1920,9 @@ class ExtractAssertMatchers:
         where the Entity is of the given |class_type|.
         """
 
-        def _validate_extract_relationship_property_entities(output):
+        def _validate_extract_relationship_property_entities(
+            output: Iterable[Any],
+        ) -> None:
             empty = True
             for item in output:
                 empty = False

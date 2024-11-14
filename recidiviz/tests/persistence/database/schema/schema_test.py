@@ -24,6 +24,7 @@ from unittest import TestCase
 
 import sqlalchemy
 
+from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.persistence.database.reserved_words import RESERVED_WORDS
 from recidiviz.persistence.database.schema_utils import get_all_table_classes
 
@@ -31,7 +32,9 @@ from recidiviz.persistence.database.schema_utils import get_all_table_classes
 class TestSchemaEnums(TestCase):
     """Base test class for validating schema enums are defined correctly"""
 
-    def check_persistence_and_schema_enums_match(self, test_mapping, enums_package):
+    def check_persistence_and_schema_enums_match(
+        self, test_mapping: dict[str, type[StateEntityEnum]], enums_package: ModuleType
+    ) -> None:
         schema_enums_by_name = {}
         num_enums = 0
         for attribute_name in dir(enums_package):
@@ -58,7 +61,9 @@ class TestSchemaEnums(TestCase):
     # enum should have values that are excluded from comparison. If a situation
     # like that arises, this test case can be extended to have hard-coded
     # exclusions.
-    def _assert_enum_values_match(self, schema_enum, persistence_enum):
+    def _assert_enum_values_match(
+        self, schema_enum: sqlalchemy.Enum, persistence_enum: type[StateEntityEnum]
+    ) -> None:
         schema_enum_values = set(schema_enum.enums)
         # pylint: disable=protected-access
         persistence_enum_values = set(persistence_enum._member_names_)

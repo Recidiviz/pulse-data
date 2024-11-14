@@ -261,7 +261,9 @@ class TestBaseSchemaEntityConverter(TestCase):
             self.assertEqual(parent.full_name, converted_parent.full_name)
             self.assertEqual(parent.children, converted_parent.children)
 
-    def _check_children(self, parent, expected_children):
+    def _check_children(
+        self, parent: entities.Parent, expected_children: list[entities.Child]
+    ) -> None:
         self.assertEqual(len(expected_children), len(parent.children))
 
         child_names = [child.full_name for child in parent.children]
@@ -269,7 +271,9 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         self.assertEqual(set(expected_child_names), set(child_names))
 
-    def _check_parents(self, child, expected_parents):
+    def _check_parents(
+        self, child: entities.Child, expected_parents: list[entities.Parent]
+    ) -> None:
         self.assertEqual(len(expected_parents), len(child.parents))
 
         parent_names = [child.full_name for child in child.parents]
@@ -277,7 +281,11 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         self.assertEqual(set(expected_parent_names), set(parent_names))
 
-    def _run_nuclear_family_test(self, parent_entities, child_entities):
+    def _run_nuclear_family_test(
+        self,
+        parent_entities: list[entities.Parent],
+        child_entities: list[entities.Child],
+    ) -> None:
         schema_parents = _TestSchemaEntityConverter().convert_all(
             parent_entities, populate_back_edges=True
         )
