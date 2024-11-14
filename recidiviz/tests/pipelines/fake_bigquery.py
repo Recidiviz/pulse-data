@@ -43,7 +43,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_query_provider import (
     BigQueryQueryProvider,
-    SimpleBigQueryQueryProvider,
+    StateFilteredQueryProvider,
 )
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
@@ -60,6 +60,7 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.pipelines.calculator_test_utils import NormalizedDatabaseDict
+from recidiviz.utils.types import assert_type
 
 DatasetStr = str
 QueryStr = str
@@ -102,8 +103,9 @@ ASSOCIATION_VALUES_QUERY_REGEX = re.compile(
 
 
 TEST_REFERENCE_QUERY_NAME = "test_reference_query_name"
-TEST_REFERENCE_QUERY_PROVIDER = SimpleBigQueryQueryProvider(
-    query="SELECT state_code, person_id, a, b FROM UNNEST([])"
+TEST_REFERENCE_QUERY_PROVIDER = StateFilteredQueryProvider(
+    state_code_filter=StateCode.US_XX,
+    original_query="SELECT state_code, person_id, a, b FROM UNNEST([])",
 )
 
 
@@ -261,7 +263,7 @@ class FakeReadFromBigQueryFactory:
                         selected_column_name_to_alias=None,
                     )
 
-        if TEST_REFERENCE_QUERY_PROVIDER.query in query:
+        if assert_type(TEST_REFERENCE_QUERY_PROVIDER.original_query, QueryStr) in query:
             return FakeReadFromBigQueryFactory._get_data_from_table(
                 data_dict=data_dict,
                 table_name=TEST_REFERENCE_QUERY_NAME,

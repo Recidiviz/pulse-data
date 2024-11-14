@@ -48,12 +48,13 @@ from recidiviz.pipelines.utils.shared_constants import (
 from recidiviz.pipelines.utils.supervision_period_utils import (
     standard_date_sort_for_supervision_periods,
 )
+from recidiviz.utils.types import assert_type
 
 
 class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
     """Tests the find_last_terminated_period_on_or_before_date function."""
 
-    def test_find_last_terminated_period_before_date(self):
+    def test_find_last_terminated_period_before_date(self) -> None:
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -79,7 +80,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 
         self.assertEqual(supervision_period_recent, most_recently_terminated_period)
 
-    def test_find_last_terminated_period_before_date_none(self):
+    def test_find_last_terminated_period_before_date_none(self) -> None:
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -105,7 +106,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 
         self.assertIsNone(most_recently_terminated_period)
 
-    def test_find_last_terminated_period_before_date_ends_before_cutoff(self):
+    def test_find_last_terminated_period_before_date_ends_before_cutoff(self) -> None:
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -123,8 +124,8 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
         # Set the admission date to be 1 day after the cut-off for how close a supervision period termination has to be
         # to a revocation admission to be counted as a proximal supervision period
         admission_date = (
-            supervision_period_recent.termination_date
-            + relativedelta(months=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT)
+            assert_type(supervision_period_recent.termination_date, date)
+            + relativedelta(months=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT, days=1)
             + relativedelta(days=1)
         )
 
@@ -139,7 +140,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 
         self.assertIsNone(most_recently_terminated_period)
 
-    def test_find_last_terminated_period_before_date_ends_on_cutoff_date(self):
+    def test_find_last_terminated_period_before_date_ends_on_cutoff_date(self) -> None:
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -156,9 +157,9 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 
         # Set the admission date to be on the last day of the cut-off for how close a supervision period termination
         # has to be to a revocation admission to be counted as a proximal supervision period
-        admission_date = supervision_period_recent.termination_date + relativedelta(
-            days=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT
-        )
+        admission_date = assert_type(
+            supervision_period_recent.termination_date, date
+        ) + relativedelta(days=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT)
 
         most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
             upper_bound_date_inclusive=admission_date,
@@ -171,7 +172,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 
         self.assertEqual(supervision_period_recent, most_recently_terminated_period)
 
-    def test_find_last_terminated_period_before_date_overlapping(self):
+    def test_find_last_terminated_period_before_date_overlapping(self) -> None:
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -200,7 +201,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 
     def test_find_last_terminated_period_before_date_overlapping_no_termination(
         self,
-    ):
+    ) -> None:
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -226,7 +227,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 
         self.assertEqual(supervision_period_older, most_recently_terminated_period)
 
-    def test_find_last_terminated_period_before_date_no_periods(self):
+    def test_find_last_terminated_period_before_date_no_periods(self) -> None:
         most_recently_terminated_period = find_last_terminated_period_on_or_before_date(
             upper_bound_date_inclusive=date(1990, 10, 1),
             periods=[],
@@ -235,7 +236,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 
         self.assertIsNone(most_recently_terminated_period)
 
-    def test_find_last_terminated_period_before_date_month_boundary(self):
+    def test_find_last_terminated_period_before_date_month_boundary(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -253,7 +254,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 
     def test_find_last_terminated_period_before_date_ends_on_admission_date(
         self,
-    ):
+    ) -> None:
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -271,7 +272,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 
     def test_find_last_terminated_period_before_date_starts_on_admission_date(
         self,
-    ):
+    ) -> None:
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -289,7 +290,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 
     def test_find_last_terminated_period_before_date_same_termination_date(
         self,
-    ):
+    ) -> None:
         supervision_period_a = StateSupervisionPeriod.new_with_defaults(
             external_id="a",
             state_code="US_XX",
@@ -314,7 +315,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 
     def test_find_last_terminated_period_before_date_same_termination_date_override(
         self,
-    ):
+    ) -> None:
         """Tests the find_last_terminated_period_on_or_before_date function when a
         same_date_sort_fn function is included.
         """
@@ -365,7 +366,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
 class TestEarliestPeriodEndingInDeath(unittest.TestCase):
     """Tests the find_earliest_period_ending_in_death function."""
 
-    def test_find_earliest_period_ending_in_death_in_sp(self):
+    def test_find_earliest_period_ending_in_death_in_sp(self) -> None:
         supervision_period_death = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -380,13 +381,13 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             admission_date=date(2005, 1, 1),
         )
 
+        periods: list[StateIncarcerationPeriod | StateSupervisionPeriod] = [
+            supervision_period_death,
+            incarceration_period,
+        ]
+
         earliest_date_of_period_ending_in_death = (
-            find_earliest_date_of_period_ending_in_death(
-                periods=[
-                    supervision_period_death,
-                    incarceration_period,
-                ],
-            )
+            find_earliest_date_of_period_ending_in_death(periods=periods)
         )
 
         self.assertEqual(
@@ -394,7 +395,7 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             earliest_date_of_period_ending_in_death,
         )
 
-    def test_find_earliest_period_ending_in_death_multiple_ip_death(self):
+    def test_find_earliest_period_ending_in_death_multiple_ip_death(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -420,14 +421,14 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             )
         )
 
+        periods: list[StateIncarcerationPeriod | StateSupervisionPeriod] = [
+            supervision_period,
+            later_death_incarceration_period,
+            earliest_death_incarceration_period,
+        ]
+
         earliest_date_of_period_ending_in_death = (
-            find_earliest_date_of_period_ending_in_death(
-                periods=[
-                    supervision_period,
-                    later_death_incarceration_period,
-                    earliest_death_incarceration_period,
-                ],
-            )
+            find_earliest_date_of_period_ending_in_death(periods=periods)
         )
 
         self.assertEqual(
@@ -435,7 +436,7 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             earliest_date_of_period_ending_in_death,
         )
 
-    def test_find_earliest_period_ending_in_death_no_deaths(self):
+    def test_find_earliest_period_ending_in_death_no_deaths(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -450,18 +451,18 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             release_date=date(2005, 1, 6),
         )
 
+        periods: list[StateIncarcerationPeriod | StateSupervisionPeriod] = [
+            supervision_period,
+            incarceration_period,
+        ]
+
         earliest_date_of_period_ending_in_death = (
-            find_earliest_date_of_period_ending_in_death(
-                periods=[
-                    supervision_period,
-                    incarceration_period,
-                ],
-            )
+            find_earliest_date_of_period_ending_in_death(periods=periods)
         )
 
         self.assertIsNone(earliest_date_of_period_ending_in_death)
 
-    def test_find_earliest_period_ending_in_death_both_sp_ip_deaths(self):
+    def test_find_earliest_period_ending_in_death_both_sp_ip_deaths(self) -> None:
         supervision_period_death = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -486,14 +487,14 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
         )
 
+        periods: list[StateIncarcerationPeriod | StateSupervisionPeriod] = [
+            supervision_period_death,
+            incarceration_period,
+            incarceration_period_death,
+        ]
+
         earliest_date_of_period_ending_in_death = (
-            find_earliest_date_of_period_ending_in_death(
-                periods=[
-                    supervision_period_death,
-                    incarceration_period,
-                    incarceration_period_death,
-                ],
-            )
+            find_earliest_date_of_period_ending_in_death(periods=periods)
         )
 
         self.assertEqual(
@@ -501,7 +502,7 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             earliest_date_of_period_ending_in_death,
         )
 
-    def test_find_earliest_period_ending_in_death_no_end_date(self):
+    def test_find_earliest_period_ending_in_death_no_end_date(self) -> None:
         supervision_period_death = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -524,12 +525,14 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
         )
 
+        periods: list[StateIncarcerationPeriod | StateSupervisionPeriod] = [
+            supervision_period_death,
+            incarceration_period,
+            incarceration_period_death,
+        ]
+
         earliest_period_ending_in_death = find_earliest_date_of_period_ending_in_death(
-            periods=[
-                supervision_period_death,
-                incarceration_period,
-                incarceration_period_death,
-            ],
+            periods=periods
         )
 
         self.assertIsNone(earliest_period_ending_in_death)
@@ -538,7 +541,7 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
 class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
     """Tests the sort_periods_by_set_dates_and_statuses function."""
 
-    def test_sort_periods_by_set_dates_and_statuses_sps(self):
+    def test_sort_periods_by_set_dates_and_statuses_sps(self) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -572,7 +575,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
                 sps_for_test,
             )
 
-    def test_sort_periods_by_set_dates_and_statuses_ips(self):
+    def test_sort_periods_by_set_dates_and_statuses_ips(self) -> None:
         state_code = "US_XX"
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -714,7 +717,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
 
     def test_sort_periods_by_set_dates_and_statuses_ips_two_same_day_zero_day_periods(
         self,
-    ):
+    ) -> None:
         state_code = "US_XX"
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="XXX-9",
@@ -760,7 +763,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
 
     def test_sort_periods_by_set_dates_and_statuses_ips_two_same_day_zero_day_periods_release(
         self,
-    ):
+    ) -> None:
         state_code = "US_XX"
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="X",
