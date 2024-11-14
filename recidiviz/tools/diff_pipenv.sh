@@ -44,25 +44,25 @@ function process_explicit_exceptions {
   # As of pipenv==2023.7.3, `pipenv requirements` does not try to fetch files from VCS requirements
   # This means its output differs from `pip freeze` which includes metadata about built package wheels
   # Explicitly except any editable VCS packages from the Pipfile
-  echo "$0" | grep -v "opencensus-ext-flask"
+  echo "$1" | grep -v "opencensus-ext-flask"
 }
 
 # Diff returns 1 if there are differences and >1 if an error occurred. We only want to fail here if there was an actual
 # error.
 ORIGINAL_ACCEPTABLE_RETURN_CODES=("${ACCEPTABLE_RETURN_CODES[@]}")
 ACCEPTABLE_RETURN_CODES=(0 1)
-expected=$(process_explicit_exceptions echo "$expected")
-installed=$(process_explicit_exceptions echo "$installed")
+expected=$(process_explicit_exceptions "$expected") || exit_on_fail
+installed=$(process_explicit_exceptions "$installed") || exit_on_fail
 differences=$(diff <(echo "$expected") <(echo "${installed}") --ignore-space-change) || exit_on_fail
 ## Adds explicit exceptions for known differences between pip freeze and pipenv requirements output
-ACCEPTABLE_RETURN_CODES=("${ORIGINAL_ACCEPTABLE_RETURN_CODES[@]}")
+ACCEPTABLE_RETURN_CODES=("${ORIGINAL_ACCEPTABLE_RETURN_CODES[@]}") || exit_on_fail
 
 # If there are packages from the lock file that are not installed, print an error and fail.
 # Note: grep returns 1 if nothing matched
-ORIGINAL_ACCEPTABLE_RETURN_CODES=("${ACCEPTABLE_RETURN_CODES[@]}")
-ACCEPTABLE_RETURN_CODES=(0 1)
+ORIGINAL_ACCEPTABLE_RETURN_CODES=("${ACCEPTABLE_RETURN_CODES[@]}") || exit_on_fail
+ACCEPTABLE_RETURN_CODES=(0 1) || exit_on_fail
 missing=$(echo "$differences" | grep -e '^<' | sed 's/^< //') || exit_on_fail
-ACCEPTABLE_RETURN_CODES=("${ORIGINAL_ACCEPTABLE_RETURN_CODES[@]}")
+ACCEPTABLE_RETURN_CODES=("${ORIGINAL_ACCEPTABLE_RETURN_CODES[@]}") || exit_on_fail
 if [[ -n $missing ]]
 then
     echo "Your environment is missing or has outdated packages, please run 'pipenv sync --dev'."
@@ -73,11 +73,11 @@ fi
 
 # If there are installed packages that are not in the lock file, print a warning and succeed.
 # Note: grep returns 1 if nothing matched
-ORIGINAL_ACCEPTABLE_RETURN_CODES=("${ACCEPTABLE_RETURN_CODES[@]}")
-ACCEPTABLE_RETURN_CODES=(0 1)
+ORIGINAL_ACCEPTABLE_RETURN_CODES=("${ACCEPTABLE_RETURN_CODES[@]}") || exit_on_fail
+ACCEPTABLE_RETURN_CODES=(0 1) || exit_on_fail
 missing=$(echo "$differences" | grep -e '^<' | sed 's/^< //') || exit_on_fail
 extra=$(echo "$differences" | grep -e '^>' | sed 's/^> //') || exit_on_fail
-ACCEPTABLE_RETURN_CODES=("${ORIGINAL_ACCEPTABLE_RETURN_CODES[@]}")
+ACCEPTABLE_RETURN_CODES=("${ORIGINAL_ACCEPTABLE_RETURN_CODES[@]}") || exit_on_fail
 if [[ -n $extra ]]
 then
     echo "Your environment contains extra packages, if these are unexpected 'pip uninstall' them."
