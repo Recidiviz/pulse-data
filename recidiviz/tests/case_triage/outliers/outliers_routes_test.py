@@ -45,6 +45,7 @@ from recidiviz.outliers.types import (
     OutliersBackendConfig,
     OutliersClientEventConfig,
     OutliersProductConfiguration,
+    OutliersVitalsMetricConfig,
     PersonName,
     SupervisionOfficerEntity,
     SupervisionOfficerSupervisorEntity,
@@ -236,6 +237,16 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 CaseloadCategory(
                     id="NOT_SEX_OFFENSE",
                     display_name="General + Other Caseloads",
+                ),
+            ],
+            vitals_metrics=[
+                OutliersVitalsMetricConfig(
+                    metric_id="timely_risk_assessment",
+                    title_display_name="Timely Risk Assessment",
+                ),
+                OutliersVitalsMetricConfig(
+                    metric_id="timely_contact",
+                    title_display_name="Timely Contact",
                 ),
             ],
             action_strategy_copy=ACTION_STRATEGIES_DEFAULT_COPY,

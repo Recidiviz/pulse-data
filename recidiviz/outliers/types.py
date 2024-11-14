@@ -143,6 +143,19 @@ class OutliersClientEvent:
         return self.aggregated_metric.name
 
 
+@attr.s(frozen=True)
+class OutliersVitalsMetricConfig:
+    """
+    Represents all information needed for a single vitals metric in the Outliers products
+    """
+
+    # The id of the metric (e.g. "timely_risk_assessment" | "timely_contact")
+    metric_id: str = attr.ib()
+
+    # The display name of the metric
+    title_display_name: str = attr.ib()
+
+
 @attr.s(frozen=True, kw_only=True)
 class OutliersMetricConfig:
     """
@@ -601,6 +614,8 @@ class OutliersProductConfiguration:
     absconder_label: str = attr.ib(default="absconder")
 
     action_strategy_copy: Dict = attr.ib(default=ACTION_STRATEGIES_DEFAULT_COPY)
+
+    vitals_metrics: List[OutliersVitalsMetricConfig] = attr.ib(default=None)
 
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()

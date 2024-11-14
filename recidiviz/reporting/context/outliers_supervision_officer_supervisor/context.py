@@ -64,6 +64,7 @@ from recidiviz.outliers.types import (
     OfficerSupervisorReportData,
     OutlierMetricInfo,
     OutliersProductConfiguration,
+    OutliersVitalsMetricConfig,
     TargetStatusStrategy,
 )
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
@@ -384,6 +385,16 @@ if __name__ == "__main__":
                 metric_fixtures[TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION],
             ],
             learn_more_url="https://recidiviz.org",
+            vitals_metrics=[
+                OutliersVitalsMetricConfig(
+                    metric_id="timely_risk_assessment",
+                    title_display_name="Timely Risk Assessment",
+                ),
+                OutliersVitalsMetricConfig(
+                    metric_id="timely_contact",
+                    title_display_name="Timely Contact",
+                ),
+            ],
         )
     elif known_args.cmd == "db":
         test_report_date = datetime.datetime.now()

@@ -36,6 +36,7 @@ from recidiviz.outliers.types import (
     OutliersMetric,
     OutliersMetricConfig,
     OutliersProductConfiguration,
+    OutliersVitalsMetricConfig,
     PersonName,
     TargetStatusStrategy,
 )
@@ -127,6 +128,16 @@ def get_config_fixture_for_state(state_code: StateCode) -> OutliersProductConfig
         none_are_outliers_label="are outliers",
         worse_than_rate_label="worse",
         exclusion_reason_description="",
+        vitals_metrics=[
+            OutliersVitalsMetricConfig(
+                metric_id="timely_risk_assessment",
+                title_display_name="Timely Risk Assessment",
+            ),
+            OutliersVitalsMetricConfig(
+                metric_id="timely_contact",
+                title_display_name="Timely Contact",
+            ),
+        ],
     )
 
 

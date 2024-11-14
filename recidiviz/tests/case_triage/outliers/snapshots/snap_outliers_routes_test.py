@@ -558,6 +558,13 @@ Incarceration rate denominator description""",
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "Mon, 01 Jan 2024 00:00:00 GMT",
         "updatedBy": "alexa@recidiviz.org",
+        "vitalsMetrics": [
+            {
+                "metricId": "timely_risk_assessment",
+                "titleDisplayName": "Timely Risk Assessment",
+            },
+            {"metricId": "timely_contact", "titleDisplayName": "Timely Contact"},
+        ],
         "worseThanRateLabel": "label2",
     }
 }
