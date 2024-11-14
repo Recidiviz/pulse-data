@@ -77,9 +77,6 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
         SELECT * FROM mo_users
         UNION ALL
         SELECT * FROM state_staff_users
-        -- Exclude D20 users because we're trying not to make any changes to them
-        -- TODO(#25566): Add them back in
-        WHERE state_code != "US_TN" OR district != "20" OR district IS NULL
     ),
     experiments AS (
         SELECT 

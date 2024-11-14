@@ -34,7 +34,7 @@ import sys
 from datetime import UTC, datetime
 
 from dateutil.relativedelta import relativedelta
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Row
 from sqlalchemy.orm import Session
@@ -126,33 +126,13 @@ def get_existing_users_missing_from_roster_sync(
     Roster+UserOverride merged data so that they still appear in the admin panel once roster sync is
     turned on (since they won't appear in the Roster table then)."""
     roster_users = (
-        session.execute(
-            select(Roster).filter(
-                Roster.state_code == state_code,
-                # Exclude D20 users because we're trying not to make any changes to them
-                # TODO(#25566): Add them back in
-                or_(
-                    Roster.state_code != "US_TN",
-                    Roster.district != "20",
-                    Roster.district.is_(None),
-                ),
-            )
-        )
+        session.execute(select(Roster).filter(Roster.state_code == state_code))
         .scalars()
         .all()
     )
     user_override_users = (
         session.execute(
-            select(UserOverride).filter(
-                UserOverride.state_code == state_code,
-                # Exclude D20 users because we're trying not to make any changes to them
-                # TODO(#25566): Add them back in
-                or_(
-                    UserOverride.state_code != "US_TN",
-                    UserOverride.district != "20",
-                    UserOverride.district.is_(None),
-                ),
-            )
+            select(UserOverride).filter(UserOverride.state_code == state_code)
         )
         .scalars()
         .all()
@@ -409,49 +389,41 @@ def prepare_for_roster_sync(
         ),
         "\n".join(
             [
-                f"{existing_user_entry.email_address}: {existing_user_entry.roles} -> {roster_sync_user['roles']}"
-                for (existing_user_entry, roster_sync_user) in users_with_diffs
+                f"{existing_user_entry.email_address}: {existing_user_entry.roles} -> {override_entry['roles']}"
+                for (existing_user_entry, override_entry) in users_with_diffs
                 # We're actually adding overrides even if they match, but for inspecting diffs it'll
                 # be easier if we only show the ones that don't match
-                if set(existing_user_entry.roles) != set(roster_sync_user["roles"])
+                if set(existing_user_entry.roles) != set(override_entry["roles"])
             ]
         ),
         "\n".join(
             [
-                f"{existing_user_entry.email_address}: {existing_user_entry.first_name} {existing_user_entry.last_name} -> {roster_sync_user.get('first_name', existing_user_entry.first_name)} {roster_sync_user.get('last_name', existing_user_entry.last_name)}"
-                for (existing_user_entry, roster_sync_user) in users_with_diffs
+                f"{existing_user_entry.email_address}: {existing_user_entry.first_name} {existing_user_entry.last_name} -> {override_entry.get('first_name', existing_user_entry.first_name)} {override_entry.get('last_name', existing_user_entry.last_name)}"
+                for (existing_user_entry, override_entry) in users_with_diffs
                 if (
-                    ("first_name" in roster_sync_user)
-                    != (existing_user_entry.first_name is not None)
-                    or (
-                        "first_name" in roster_sync_user
-                        and existing_user_entry.first_name.lower()
-                        != roster_sync_user["first_name"].lower()
-                    )
+                    "first_name" in override_entry
+                    and existing_user_entry.first_name.lower()
+                    != override_entry["first_name"].lower()
                 )
                 or (
-                    ("last_name" in roster_sync_user)
-                    != (existing_user_entry.last_name is not None)
-                    or (
-                        "last_name" in roster_sync_user
-                        and existing_user_entry.last_name.lower()
-                        != roster_sync_user["last_name"].lower()
-                    )
+                    "last_name" in override_entry
+                    and existing_user_entry.last_name.lower()
+                    != override_entry["last_name"].lower()
                 )
             ]
         ),
         "\n".join(
             [
-                f"{existing_user_entry.email_address}: {existing_user_entry.district} -> {roster_sync_user['district']}"
-                for (existing_user_entry, roster_sync_user) in users_with_diffs
-                if "district" in roster_sync_user
+                f"{existing_user_entry.email_address}: {existing_user_entry.district} -> {override_entry['district']}"
+                for (existing_user_entry, override_entry) in users_with_diffs
+                if "district" in override_entry
             ]
         ),
         "\n".join(
             [
-                f"{existing_user_entry.email_address}: {existing_user_entry.external_id} -> {roster_sync_user['external_id']}"
-                for (existing_user_entry, roster_sync_user) in users_with_diffs
-                if "external_id" in roster_sync_user
+                f"{existing_user_entry.email_address}: {existing_user_entry.external_id} -> {override_entry['external_id']}"
+                for (existing_user_entry, override_entry) in users_with_diffs
+                if "external_id" in override_entry
             ]
         ),
     )

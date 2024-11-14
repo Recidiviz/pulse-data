@@ -216,18 +216,6 @@ class PrepRosterSyncTest(TestCase):
             created_datetime=datetime.fromisoformat("2023-01-01"),
         )
 
-        self.tn_d20_user = generate_fake_user_overrides(
-            email="tn_d20_user@testdomain.com",
-            region_code="US_TN",
-            external_id="020",
-            roles=["supervision_line_staff"],
-            district="20",
-            first_name="Test",
-            last_name="User",
-            pseudonymized_id="pseudo-020",
-            created_datetime=datetime.fromisoformat("2023-01-01"),
-        )
-
     def tearDown(self) -> None:
         self.session.__exit__(None, None, None)
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
@@ -505,33 +493,6 @@ class PrepRosterSyncTest(TestCase):
                 emails_of_users_to_keep_unchanged=[
                     "user_to_keep_unchanged@testdomain.com"
                 ],
-            ),
-            (expected_overrides, expected_deletions),
-        )
-
-    @patch(
-        "recidiviz.tools.auth.prep_roster_sync.get_recently_logged_in_users_by_email"
-    )
-    def test_get_missing_users_tn_d20(self, mock_recent_users: MagicMock) -> None:
-        self.session.add_all([self.tn_d20_user])
-
-        # Assuming roster sync returns nobody
-        roster_sync_users: list[Roster] = []
-
-        # And none of these users have logged in recently
-        mock_recent_users.return_value = []
-
-        # Our d20 user should be completely ignored
-        expected_overrides: list[dict] = []
-        expected_deletions: set[str] = set()
-
-        self.assertEqual(
-            get_existing_users_missing_from_roster_sync(
-                session=self.session,
-                auth0_client=mock.ANY,
-                roster_sync_users=roster_sync_users,
-                state_code="US_TN",
-                emails_of_users_to_keep_unchanged=[],
             ),
             (expected_overrides, expected_deletions),
         )
@@ -839,48 +800,6 @@ class PrepRosterSyncTest(TestCase):
         # - the users with other diffs should have the changed values for the fields with diffs
         self.snapshot.assert_match(new_roster, name="test_full_roster")  # type: ignore[attr-defined]
         self.snapshot.assert_match(new_overrides, name="test_full_user_override")  # type: ignore[attr-defined]
-
-    @patch("recidiviz.tools.auth.prep_roster_sync.prompt_for_confirmation")
-    @patch("recidiviz.tools.auth.prep_roster_sync.get_roster_sync_output")
-    @patch(
-        "recidiviz.tools.auth.prep_roster_sync.get_recently_logged_in_users_by_email"
-    )
-    def test_full_tn_d20(
-        self,
-        mock_recent_users: MagicMock,
-        mock_roster_sync_output: MagicMock,
-        mock_prompt: MagicMock,
-    ) -> None:
-        mock_prompt.return_value = True
-        self.session.add_all([self.tn_d20_user])
-
-        # Assuming roster sync does not return the d20 user
-        roster_sync_users: list[Roster] = []
-        mock_roster_sync_output.return_value = roster_sync_users
-
-        # And they have not logged in recently
-        mock_recent_users.return_value = []
-
-        existing_roster = self.session.execute(select(Roster)).scalars().all()
-        existing_overrides = self.session.execute(select(UserOverride)).scalars().all()
-
-        prepare_for_roster_sync(
-            session=self.session,
-            dry_run=False,
-            state_code="US_TN",
-            project_id=mock.ANY,
-            sandbox_prefix=mock.ANY,
-            bq_client=mock.ANY,
-            auth0_client=mock.ANY,
-            emails_of_users_to_keep_unchanged=[],
-        )
-
-        new_roster = self.session.execute(select(Roster)).scalars().all()
-        new_overrides = self.session.execute(select(UserOverride)).scalars().all()
-
-        # Since the only user involed is our TN D20 user, we expect no changes to have been made
-        self.assertEqual(existing_roster, new_roster)
-        self.assertEqual(existing_overrides, new_overrides)
 
     @patch("recidiviz.tools.auth.prep_roster_sync.get_roster_sync_output")
     @patch(
