@@ -1107,6 +1107,7 @@ class RawFileImport(BaseResult):
         historical_diffs_active (bool): whether or not historical diffs were performed
             during the import of this file (or would have been had the import
             successfully made it to that stage)
+        error_message (str | None): error message, populated if import_status is fail-y
         raw_rows (int | None): total number of rows sent by the state across all files
             for this file_id
         net_new_or_updated_rows (int | None): if |historical_diffs_active| is True,
@@ -1122,6 +1123,7 @@ class RawFileImport(BaseResult):
         validator=attr.validators.in_(DirectIngestRawFileImportStatus)
     )
     historical_diffs_active: bool = attr.ib(validator=attr_validators.is_bool)
+    error_message: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
     raw_rows: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1132,6 +1134,9 @@ class RawFileImport(BaseResult):
         default=None, validator=attr_validators.is_opt_int
     )
 
+    def error_message_quote_safe(self) -> Optional[str]:
+        return self.error_message.replace("'", "''") if self.error_message else None
+
     def serialize(self) -> str:
         return json.dumps(
             {
@@ -1141,6 +1146,7 @@ class RawFileImport(BaseResult):
                 "raw_rows": self.raw_rows,
                 "net_new_or_updated_rows": self.net_new_or_updated_rows,
                 "deleted_rows": self.deleted_rows,
+                "error_message": self.error_message,
             }
         )
 
@@ -1154,6 +1160,7 @@ class RawFileImport(BaseResult):
             raw_rows=data["raw_rows"],
             net_new_or_updated_rows=data["net_new_or_updated_rows"],
             deleted_rows=data["deleted_rows"],
+            error_message=data["error_message"],
         )
 
     @classmethod
@@ -1167,6 +1174,7 @@ class RawFileImport(BaseResult):
             net_new_or_updated_rows=append_summary.net_new_or_updated_rows,
             deleted_rows=append_summary.deleted_rows,
             historical_diffs_active=append_summary.historical_diffs_active,
+            error_message=None,
         )
 
 

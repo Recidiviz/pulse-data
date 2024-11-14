@@ -248,7 +248,6 @@ def _filter_load_results_based_on_errors(
         )
     }
 
-    # TODO(#30169) add clean up temp resources for skipped tables
     for successful_load in successful_loads:
         if (
             successful_load.import_ready_file.file_tag
@@ -274,6 +273,7 @@ def _filter_load_results_based_on_errors(
                     update_datetime=successful_load.import_ready_file.update_datetime,
                     file_tag=successful_load.import_ready_file.file_tag,
                     error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_paths}",
+                    error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
                 )
             )
         else:
@@ -371,6 +371,7 @@ def _append_to_raw_data_table_for_file_tag(
                 RawDataAppendImportError(
                     file_id=append_ready_file.import_ready_file.file_id,
                     raw_temp_table=append_ready_file.append_ready_table_address,
+                    error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
                     error_msg=f"Blocked Import: failed due to import-blocking failure from {failures[0].raw_temp_table.to_str()}",
                 )
             )

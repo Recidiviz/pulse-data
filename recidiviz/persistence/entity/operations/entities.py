@@ -347,6 +347,10 @@ class DirectIngestRawFileImport(Entity, BuildableAttr, DefaultableAttr):
     # Number of rows added with is_deleted as True during the diffing process
     deleted_rows: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
 
+    # Error message, typically a stack trace, associated with an import. Will likely
+    # be non-null if import_status is fail-y
+    error_message: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
+
     # RawBigQueryFile object from direct_ingest_raw_big_query_file_metadata table
     bq_file: Optional["DirectIngestRawBigQueryFileMetadata"] = attr.ib(default=None)
     # ImportRun object from direct_ingest_raw_file_import_run table

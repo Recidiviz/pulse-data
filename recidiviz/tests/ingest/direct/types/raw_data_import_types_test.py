@@ -189,6 +189,11 @@ class TestSerialization(unittest.TestCase):
             ],
         )
         self._validate_serialization(with_temp, RawFileProcessingError)
+        with_diff_error_type = attr.evolve(
+            no_temp,
+            error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
+        )
+        self._validate_serialization(with_diff_error_type, RawFileProcessingError)
 
     def test_raw_file_load_and_prep_error(self) -> None:
         no_temp = RawFileLoadAndPrepError(
@@ -470,6 +475,7 @@ class TestSerialization(unittest.TestCase):
             historical_diffs_active=True,
             net_new_or_updated_rows=None,
             deleted_rows=1,
+            error_message="failure!",
         )
         self._validate_serialization(original, RawFileImport)
 

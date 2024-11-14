@@ -41,6 +41,9 @@ from recidiviz.airflow.dags.raw_data.utils import n_evenly_weighted_buckets
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatus,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -299,9 +302,10 @@ def filter_normalization_results_based_on_errors(
             ]
             skipped_files.append(
                 RawFileProcessingError(
-                    # TODO(#33551) create a skipped file error that encapsulates multiple original file paths
+                    # this single file path will link back to file_id downstream
                     original_file_path=import_ready_file.original_file_paths[0],
                     temporary_file_paths=import_ready_file.pre_import_normalized_file_paths,
+                    error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
                     error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_path}",
                 )
             )
@@ -387,6 +391,7 @@ def regroup_normalized_file_chunks(
                 RawFileProcessingError(
                     original_file_path=chunk.input_file_path,
                     temporary_file_paths=[chunk.output_file_path],
+                    error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
                     error_msg=f"Chunk [{chunk.chunk_boundary.chunk_num}] of [{chunk.input_file_path.abs_path()}] skipped due to error encountered with a different chunk with the same input path",
                 )
             )

@@ -40,6 +40,9 @@ class DirectIngestRawFileImportStatus(OperationsEnum):
     FAILED_VALIDATION_STEP = (
         operations_enum_strings.direct_ingest_raw_file_import_status_failed_validation_step
     )
+    FAILED_IMPORT_BLOCKED = (
+        operations_enum_strings.direct_ingest_raw_file_import_status_failed_import_blocked
+    )
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -81,5 +84,12 @@ _DIRECT_INGEST_RAW_FILE_IMPORT_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, s
         "The FAILED_VALIDATION_STEP status means that the import failed during the "
         "validation step, or the step when we run validation queries against the temp "
         "raw table in BigQuery and return any errors."
+    ),
+    DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED: (
+        "The FAILED_IMPORT_BLOCKED status means that the import of this file was blocked "
+        "by a failure for a file with the same file_tag for an earlier update_datetime, "
+        "not necessarily due to an issue with the file itself. This error occurs in order "
+        "to ensure data is always guaranteed to be added to the raw data table in ascending "
+        "update_datetime order."
     ),
 }

@@ -30,6 +30,7 @@ from sqlalchemy import (
     Integer,
     PrimaryKeyConstraint,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeMeta, declarative_base, relationship
@@ -79,6 +80,7 @@ direct_ingest_file_import_status = Enum(
     enum_canonical_strings.direct_ingest_raw_file_import_status_failed_load_step,
     enum_canonical_strings.direct_ingest_raw_file_import_status_failed_pre_import_normalization_step,
     enum_canonical_strings.direct_ingest_raw_file_import_status_failed_validation_step,
+    enum_canonical_strings.direct_ingest_raw_file_import_status_failed_import_blocked,
     name="direct_ingest_file_import_status",
 )
 
@@ -594,6 +596,10 @@ class DirectIngestRawFileImport(OperationsBase):
 
     # Number of rows added with is_deleted as True during the diffing process
     deleted_rows = Column(Integer, nullable=True)
+
+    # Error message, typically a stack trace, associated with an import. Will likely
+    # be non-null if import_status is fail-y
+    error_message = Column(Text, nullable=True)
 
     __table_args__ = (
         CheckConstraint(
