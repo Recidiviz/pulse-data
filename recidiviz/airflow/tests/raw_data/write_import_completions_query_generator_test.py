@@ -55,6 +55,7 @@ FileImport = NamedTuple(
         ("net_new_or_updated_rows", int),
         ("deleted_rows", int),
         ("historical_diffs_active", bool),
+        ("error_message", str),
     ],
 )
 
@@ -161,33 +162,159 @@ class WriteImportCompletionsSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest
                 raw_rows=2,
                 net_new_or_updated_rows=2,
                 deleted_rows=2,
+                error_message=None,
             ),
             RawFileImport(
                 file_id=2,
                 import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
                 historical_diffs_active=False,
                 raw_rows=2,
+                error_message=None,
             ),
             RawFileImport(
                 file_id=3,
                 import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
                 historical_diffs_active=False,
                 raw_rows=1,
+                error_message=None,
             ),
             RawFileImport(
                 file_id=4,
                 import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
                 historical_diffs_active=True,
+                error_message="""FAILED_LOAD_STEP for [tagBasic] for [recidiviz-staging-direct-ingest-state-us-testing/unprocessed_2021-11-29T00:00:00:000000_raw_tagBasic.csv] failed with:
+
+400 Syntax error: Unclosed identifier literal at [4:180]; reason: invalidQuery, location: query, message: Syntax error: Unclosed identifier literal at [4:180]
+
+Location: US
+Job ID: <some-job-id>
+
+Traceback (most recent call last):
+  File "/home/airflow/gcs/dags/recidiviz/airflow/dags/raw_data/bq_load_tasks.py", line 112, in load_and_prep_paths_for_batch
+    succeeded_loads.append(future.result())
+                           ^^^^^^^^^^^^^^^
+  File "/opt/python3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/python3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/python3.11/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/gcs/dags/recidiviz/ingest/direct/raw_data/direct_ingest_raw_file_load_manager.py", line 346, in load_and_prep_paths
+    self.validator.run_raw_data_temp_table_validations(
+  File "/home/airflow/gcs/dags/recidiviz/ingest/direct/raw_data/direct_ingest_raw_table_pre_import_validator.py", line 182, in run_raw_data_temp_table_validations
+    failures = self._execute_validation_queries_concurrently(validations_to_run)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/gcs/dags/recidiviz/ingest/direct/raw_data/direct_ingest_raw_table_pre_import_validator.py", line 160, in _execute_validation_queries_concurrently
+    bq_query_job_result_to_list_of_row_dicts(f.result())
+                                             ^^^^^^^^^^
+  File "/opt/python3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/python3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/python3.11/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/python3.11/lib/python3.11/site-packages/google/cloud/bigquery/job/query.py", line 1590, in result
+    do_get_result()
+  File "/opt/python3.11/lib/python3.11/site-packages/google/api_core/retry/retry_unary.py", line 293, in retry_wrapped_func
+    return retry_target(
+           ^^^^^^^^^^^^^
+  File "/opt/python3.11/lib/python3.11/site-packages/google/api_core/retry/retry_unary.py", line 153, in retry_target
+    _retry_error_helper(
+  File "/opt/python3.11/lib/python3.11/site-packages/google/api_core/retry/retry_base.py", line 212, in _retry_error_helper
+    raise final_exc from source_exc
+  File "/opt/python3.11/lib/python3.11/site-packages/google/api_core/retry/retry_unary.py", line 144, in retry_target
+    result = target()
+             ^^^^^^^^
+  File "/opt/python3.11/lib/python3.11/site-packages/google/cloud/bigquery/job/query.py", line 1579, in do_get_result
+    super(QueryJob, self).result(retry=retry, timeout=timeout)
+  File "/opt/python3.11/lib/python3.11/site-packages/google/cloud/bigquery/job/base.py", line 971, in result
+    return super(_AsyncJob, self).result(timeout=timeout, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/python3.11/lib/python3.11/site-packages/google/api_core/future/polling.py", line 261, in result
+    raise self._exception
+google.api_core.exceptions.BadRequest: 400 Syntax error: Unclosed identifier literal at [4:180]; reason: invalidQuery, location: query, message: Syntax error: Unclosed identifier literal at [4:180]""",
             ),
             RawFileImport(
                 file_id=5,
-                import_status=DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
+                import_status=DirectIngestRawFileImportStatus.FAILED_VALIDATION_STEP,
                 historical_diffs_active=True,
+                error_message="""
+FAILED_VALIDATION_STEP for [tagBasic] for [recidiviz-staging-direct-ingest-state-testing/unprocessed_2022-03-23T12:00:17:064931_raw_tagBasic.csv] failed with:
+
+1 pre-import validation(s) failed for file [tagBasic]. If you wish [tagBasic] to be permanently excluded from any validation,  please add the validation_type and exemption_reason to import_blocking_validation_exemptions for a table-wide exemption or to import_blocking_column_validation_exemptions for a column-specific exemption in the raw file config.
+Error: Found column [COL1] on raw file [tagBasic] with only null values.
+Validation type: NONNULL_VALUES
+Validation query: 
+SELECT COL1
+FROM recidiviz-staging.tagBasic.tagBasic
+WHERE COL1 IS NOT NULL
+LIMIT 1
+""",
             ),
             RawFileImport(
                 file_id=6,
+                import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+                historical_diffs_active=True,
+                error_message="""FAILED_LOAD_STEP for [tagBasic] for [recidiviz-staging-direct-ingest-state-testing/unprocessed_2021-11-29T00:00:00:000000_raw_tagBasic.csv] failed with:
+
+known_values for CustodyLevel must not be empty
+Traceback (most recent call last):
+  File "/home/airflow/gcs/dags/recidiviz/airflow/dags/raw_data/bq_load_tasks.py", line 112, in load_and_prep_paths_for_batch
+    succeeded_loads.append(future.result())
+                           ^^^^^^^^^^^^^^^
+  File "/opt/python3.11/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/python3.11/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/opt/python3.11/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/gcs/dags/recidiviz/ingest/direct/raw_data/direct_ingest_raw_file_load_manager.py", line 346, in load_and_prep_paths
+    self.validator.run_raw_data_temp_table_validations(
+  File "/home/airflow/gcs/dags/recidiviz/ingest/direct/raw_data/direct_ingest_raw_table_pre_import_validator.py", line 178, in run_raw_data_temp_table_validations
+    ] = self._collect_validations_to_run(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/airflow/gcs/dags/recidiviz/ingest/direct/raw_data/direct_ingest_raw_table_pre_import_validator.py", line 126, in _collect_validations_to_run
+    col_validation_cls.create_column_validation(
+  File "/home/airflow/gcs/dags/recidiviz/ingest/direct/raw_data/validations/known_values_column_validation.py", line 65, in create_column_validation
+    raise ValueError(f"known_values for {column.name} must not be empty")
+ValueError: known_values for tagBasic must not be empty""",
+            ),
+            RawFileImport(
+                file_id=7,
                 import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
                 historical_diffs_active=True,
+                error_message=(
+                    "Could not locate a success or failure for this file_id "
+                    "[7] despite it being marked for import. This"
+                    "is likely indicative that there was a DAG-level failure "
+                    "occurred during this import run."
+                ),
+            ),
+            RawFileImport(
+                file_id=8,
+                import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+                historical_diffs_active=True,
+                error_message="""Test here to make sure we are escaping:
+                - double quotes: "
+                - single quotes: '
+                - backticks: `
+                """,
+            ),
+            RawFileImport(
+                file_id=9,
+                import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+                historical_diffs_active=True,
+                error_message="""Test here to make sure we are escaping:
+                - double quotes, twice: "" .... "this is inside of double quotes"
+                - single quotes, twice: '' .... 'this is inside of single quotes'
+                - backticks, twice: ``, `this is inside of backticks`
+                """,
             ),
         ]
 
@@ -222,7 +349,8 @@ class WriteImportCompletionsSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest
                 raw_rows,
                 net_new_or_updated_rows,
                 deleted_rows,
-                historical_diffs_active
+                historical_diffs_active, 
+                error_message
             FROM direct_ingest_raw_file_import
             ORDER BY file_id;"""
                 ),
@@ -240,6 +368,7 @@ class WriteImportCompletionsSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest
                 record.historical_diffs_active
                 == self.file_imports[i].historical_diffs_active
             )
+            assert record.error_message == self.file_imports[i].error_message
 
         import_runs = assert_type(
             self.mock_pg_hook.get_records(
@@ -266,17 +395,20 @@ class WriteImportCompletionsSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest
                 raw_rows=2,
                 net_new_or_updated_rows=2,
                 deleted_rows=2,
+                error_message=None,
             ),
             RawFileImport(
                 file_id=2,
                 import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
                 historical_diffs_active=False,
                 raw_rows=1,
+                error_message=None,
             ),
             RawFileImport(
                 file_id=3,
                 import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
                 historical_diffs_active=True,
+                error_message=None,
             ),
         ]
 
@@ -286,12 +418,14 @@ class WriteImportCompletionsSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest
                 import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
                 historical_diffs_active=True,
                 raw_rows=2,
+                error_message=None,
             ),
             RawFileImport(
                 file_id=5,
                 import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
                 historical_diffs_active=True,
                 raw_rows=2,
+                error_message=None,
             ),
         ]
 
@@ -327,7 +461,8 @@ class WriteImportCompletionsSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest
                 raw_rows,
                 net_new_or_updated_rows,
                 deleted_rows,
-                historical_diffs_active
+                historical_diffs_active,
+                error_message
             FROM direct_ingest_raw_file_import
             ORDER BY file_id;"""
                 ),
@@ -347,6 +482,7 @@ class WriteImportCompletionsSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest
                     record.historical_diffs_active
                     == self.file_imports[i].historical_diffs_active
                 )
+                assert record.error_message == self.file_imports[i].error_message
             # import summaries that were missing that we will just close out w/ FAILED UNKNOWN
             else:
                 assert (
@@ -360,6 +496,11 @@ class WriteImportCompletionsSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest
                 assert record.raw_rows is None
                 assert record.net_new_or_updated_rows is None
                 assert record.deleted_rows is None
+                assert record.error_message == (
+                    "Could not find a RawFileImport object associated with the file_import_id, "
+                    "despite it being marked as STARTED. This likely means that there was a "
+                    "DAG-level failure occurred during this import run."
+                )
 
         import_runs = assert_type(
             self.mock_pg_hook.get_records(

@@ -408,6 +408,55 @@ class DirectIngestRawFileImportManagerTest(TestCase):
 
         assert new_new_import_run.raw_rows == 0
 
+    def test_error_message(self) -> None:
+
+        import_run = self.us_xx_manager.start_import_run(dag_run_id="abc")
+
+        raw_unprocessed_path = _make_unprocessed_raw_data_path("bucket/file_tag.csv")
+
+        file_metadata = self.us_raw_file_xx_manager.mark_raw_gcs_file_as_discovered(
+            raw_unprocessed_path
+        )
+
+        assert file_metadata.file_id is not None
+
+        expected_import = DirectIngestRawFileImport.new_with_defaults(
+            file_id=file_metadata.file_id,
+            import_run_id=import_run.import_run_id,
+            historical_diffs_active=False,
+            import_status=DirectIngestRawFileImportStatus.STARTED,
+            region_code=StateCode.US_XX.value,
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+        )
+
+        started_import = self.us_xx_manager.start_file_import(
+            file_metadata.file_id,
+            import_run.import_run_id,
+            False,
+        )
+
+        self.assertEqual(expected_import, started_import)
+
+        self.us_xx_manager.update_file_import_by_id(
+            started_import.file_import_id,
+            import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            error_message="FAILURE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+        )
+
+        new_import_run = self.us_xx_manager.get_import_by_id(
+            started_import.file_import_id
+        )
+
+        assert (
+            new_import_run.import_status
+            == DirectIngestRawFileImportStatus.FAILED_UNKNOWN
+        )
+
+        assert (
+            new_import_run.error_message
+            == "FAILURE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        )
+
     def test_update_import_historical_diffs(self) -> None:
 
         import_run = self.us_xx_manager.start_import_run(dag_run_id="abc")

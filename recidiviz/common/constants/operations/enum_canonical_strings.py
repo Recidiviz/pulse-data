@@ -55,3 +55,4 @@ direct_ingest_raw_file_import_status_failed_pre_import_normalization_step = (
 )
 direct_ingest_raw_file_import_status_failed_load_step = "FAILED_LOAD_STEP"
 direct_ingest_raw_file_import_status_failed_validation_step = "FAILED_VALIDATION_STEP"
+direct_ingest_raw_file_import_status_failed_import_blocked = "FAILED_IMPORT_BLOCKED"

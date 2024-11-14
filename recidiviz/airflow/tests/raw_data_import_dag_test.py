@@ -58,6 +58,9 @@ from recidiviz.cloud_storage.types import CsvChunkBoundary
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataResourceLockResource,
 )
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatus,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.raw_data.divide_raw_file_into_chunks import (
@@ -1741,6 +1744,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             blob_name="unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey-0.csv",
                         )
                     ],
+                    error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
                 ),
                 RawFileProcessingError(
                     error_msg="Chunk [1] of [testing/unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv] skipped due to error encountered with a different chunk with the same input path",
@@ -1754,6 +1758,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             blob_name="unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey-2.csv",
                         )
                     ],
+                    error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
                 ),
                 RawFileProcessingError(
                     error_msg="Blocked Import: failed due to import-blocking failure from GcsfsFilePath(bucket_name='testing', blob_name='unprocessed_2024-01-25T16:35:33:617135_raw_singlePrimaryKey.csv')",
@@ -1775,6 +1780,7 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
                             blob_name="unprocessed_2024-01-26T16:35:33:617135_raw_singlePrimaryKey-2.csv",
                         ),
                     ],
+                    error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
                 ),
             ]
 
@@ -3476,6 +3482,21 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ("SUCCEEDED", 100),
             ]
 
+            error_messages = session.execute(
+                text(
+                    "select import_status, error_message from direct_ingest_raw_file_import"
+                )
+            )
+
+            error_mes = {
+                ms["import_status"]: ms["error_message"] for ms in error_messages
+            }
+
+            assert error_mes["SUCCEEDED"] is None
+            assert error_mes["FAILED_PRE_IMPORT_NORMALIZATION_STEP"].startswith(
+                "recidiviz-testing-direct-ingest-state-us-xx/unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv: Intentional failure for unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv"
+            )
+
             # (4) resource locks are released
             locks = list(
                 session.execute(
@@ -3806,6 +3827,21 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ("FAILED_PRE_IMPORT_NORMALIZATION_STEP", None),
                 ("SUCCEEDED", 100),
             ]
+
+            error_messages = session.execute(
+                text(
+                    "select import_status, error_message from direct_ingest_raw_file_import"
+                )
+            )
+
+            error_mes = {
+                ms["import_status"]: ms["error_message"] for ms in error_messages
+            }
+
+            assert error_mes["SUCCEEDED"] is None
+            assert error_mes["FAILED_PRE_IMPORT_NORMALIZATION_STEP"].startswith(
+                "Error for file GcsfsFilePath(bucket_name='recidiviz-testing-direct-ingest-state-us-xx', blob_name='unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8.csv') chunk CsvChunkBoundary(start_inclusive=0, end_exclusive=241, chunk_num=0): Intentional failure for tagCustomLineTerminatorNonUTF8\nTraceback"
+            )
 
             # (4) resource locks are released
             locks = list(
@@ -4138,6 +4174,21 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 ("FAILED_LOAD_STEP", None),
                 ("SUCCEEDED", 100),
             ]
+
+            error_messages = session.execute(
+                text(
+                    "select import_status, error_message from direct_ingest_raw_file_import"
+                )
+            )
+
+            error_mes = {
+                ms["import_status"]: ms["error_message"] for ms in error_messages
+            }
+
+            assert error_mes["SUCCEEDED"] is None
+            assert error_mes["FAILED_LOAD_STEP"].startswith(
+                "Intentional failure for ['gs://recidiviz-testing-direct-ingest-temporary-files/temp_unprocessed_2024-01-25T16:35:33:617135_raw_tagCustomLineTerminatorNonUTF8_0.csv']"
+            )
 
             # (4) resource locks are released
             locks = list(

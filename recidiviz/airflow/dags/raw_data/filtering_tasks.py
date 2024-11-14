@@ -21,6 +21,9 @@ from typing import Dict, List, Tuple
 from airflow.decorators import task
 
 from recidiviz.airflow.dags.raw_data.metadata import CHUNKING_ERRORS, CHUNKING_RESULTS
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatus,
+)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     RawBigQueryFileMetadata,
     RawFileProcessingError,
@@ -91,6 +94,7 @@ def filter_chunking_results_by_processing_errors(
                 RawFileProcessingError(
                     original_file_path=result.path,
                     temporary_file_paths=None,
+                    error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
                     error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_path}",
                 )
             )
@@ -135,6 +139,7 @@ def filter_header_results_by_processing_errors(
                     RawFileProcessingError(
                         original_file_path=gcs_file.path,
                         temporary_file_paths=None,
+                        error_type=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
                         error_msg=f"Blocked Import: failed due to import-blocking failure from {blocking_error.original_file_path}",
                     )
                 )

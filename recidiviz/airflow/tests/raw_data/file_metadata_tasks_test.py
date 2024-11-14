@@ -1107,11 +1107,13 @@ class CoalesceResultsAndErrorsTest(TestCase):
                 file_id=1,
                 import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
                 historical_diffs_active=False,
+                error_message=None,
             ),
             2: RawFileImport(
                 file_id=2,
                 import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
                 historical_diffs_active=False,
+                error_message=None,
             ),
         }
 
@@ -1120,6 +1122,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
                 file_id=3,
                 import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
                 historical_diffs_active=False,
+                error_message="failure!",
             )
         }
 
@@ -1204,6 +1207,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
                 file_id=1,
                 import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
                 historical_diffs_active=False,
+                error_message=None,
             ),
         }
 
@@ -1224,3 +1228,10 @@ class CoalesceResultsAndErrorsTest(TestCase):
             one({summary.import_status for summary in missing_file_imports})
             == DirectIngestRawFileImportStatus.FAILED_UNKNOWN
         )
+        for missing_file_import in missing_file_imports:
+            assert missing_file_import.error_message == (
+                f"Could not locate a success or failure for this file_id "
+                f"[{missing_file_import.file_id}] despite it being marked for import. This"
+                f"is likely indicative that a DAG-level failure occurred during"
+                f"this import run."
+            )

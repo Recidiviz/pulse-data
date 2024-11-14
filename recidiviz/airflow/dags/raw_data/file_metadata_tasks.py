@@ -304,6 +304,12 @@ def _reconcile_file_imports_and_bq_metadata(
                     historical_diffs_active=_historical_diffs_active_for_tag(
                         raw_region_config, raw_data_instance, metadata.file_tag
                     ),
+                    error_message=(
+                        f"Could not locate a success or failure for this file_id "
+                        f"[{metadata.file_id}] despite it being marked for import. This"
+                        f"is likely indicative that a DAG-level failure occurred during"
+                        f"this import run."
+                    ),
                 )
             )
 
@@ -338,6 +344,8 @@ def _build_file_imports_for_errors(
 ) -> Dict[int, RawFileImport]:
     """Builds RawFileImport objects for all errors seen during the import process"""
 
+    # TODO(#34937) add logic to better coalesce if we have multiple failures for a single
+    # file_id -- should we just append??
     failed_file_imports: Dict[int, RawFileImport] = {}
 
     # --- simple case: append_errors and load_and_prep_errors have file_id -------------
@@ -349,6 +357,7 @@ def _build_file_imports_for_errors(
             historical_diffs_active=_historical_diffs_active_for_tag(
                 raw_region_config, raw_data_instance, append_error.file_tag
             ),
+            error_message=append_error.error_msg,
         )
 
     for load_and_prep_error in load_and_prep_errors:
@@ -358,6 +367,7 @@ def _build_file_imports_for_errors(
             historical_diffs_active=_historical_diffs_active_for_tag(
                 raw_region_config, raw_data_instance, load_and_prep_error.file_tag
             ),
+            error_message=load_and_prep_error.error_msg,
         )
 
     # --- complex case: map file path back to file_id ----------------------------------
@@ -379,6 +389,7 @@ def _build_file_imports_for_errors(
                 raw_data_instance,
                 processing_error.parts.file_tag,
             ),
+            error_message=processing_error.error_msg,
         )
 
     return failed_file_imports

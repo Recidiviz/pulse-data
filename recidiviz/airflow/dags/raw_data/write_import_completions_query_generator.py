@@ -64,10 +64,11 @@ SET
   historical_diffs_active = v.historical_diffs_active::boolean,
   raw_rows = v.raw_rows::numeric,
   net_new_or_updated_rows = v.net_new_or_updated_rows::numeric,
-  deleted_rows = v.deleted_rows::numeric
+  deleted_rows = v.deleted_rows::numeric,
+  error_message = v.error_message::text
 FROM ( VALUES
   {file_import_rows}
-) AS v(file_import_id, import_status, historical_diffs_active, raw_rows, net_new_or_updated_rows, deleted_rows)
+) AS v(file_import_id, import_status, historical_diffs_active, raw_rows, net_new_or_updated_rows, deleted_rows, error_message)
 WHERE o.file_import_id = v.file_import_id
 RETURNING o.file_import_id, o.import_run_id, o.file_id, o.import_status;"""
 
@@ -132,6 +133,10 @@ class WriteImportCompletionsSqlQueryGenerator(CloudSqlQueryGenerator[List[str]])
             )
         ]
 
+        # TODO(#30169) add validation here that all statuses we are matching to file_imports
+        # are STARTED? so as not to overwrite import statuses? what implications does this
+        # have (if we do or do not do this) for if we retry/clear airflow tasks in the
+        # raw data import DAG?
         existing_file_import_to_file_import_result = (
             self._match_existing_file_import_to_result(
                 existing_file_imports, file_import_results
@@ -172,6 +177,7 @@ class WriteImportCompletionsSqlQueryGenerator(CloudSqlQueryGenerator[List[str]])
         existing_file_import: FileImport,
         file_import_result: Optional[RawFileImport],
     ) -> str:
+        """Builds a row to insert into PG from a file import result."""
         # n.b. the order of the values in this column MUST match the order of the columns
         # specified in UPDATE_FILE_IMPORT_BY_FILE_IMPORT_ID::v
         row = []
@@ -183,6 +189,9 @@ class WriteImportCompletionsSqlQueryGenerator(CloudSqlQueryGenerator[List[str]])
                 None,
                 None,
                 None,
+                "'Could not find a RawFileImport object associated with the file_import_id, "
+                "despite it being marked as STARTED. This likely means that there was a "
+                "DAG-level failure occurred during this import run.'",
             ]
         else:
             row = [
@@ -192,6 +201,11 @@ class WriteImportCompletionsSqlQueryGenerator(CloudSqlQueryGenerator[List[str]])
                 file_import_result.raw_rows,
                 file_import_result.net_new_or_updated_rows,
                 file_import_result.deleted_rows,
+                (
+                    f"'{file_import_result.error_message_quote_safe()}'"
+                    if file_import_result.error_message
+                    else None
+                ),
             ]
         row_as_str = [str(value) if not value is None else "NULL" for value in row]
         return f"({','.join(row_as_str)})"

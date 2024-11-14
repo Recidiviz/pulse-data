@@ -124,6 +124,8 @@ class DirectIngestRawFileImportStatusBuckets(Enum):
                 return cls.FAILED
             case DirectIngestRawFileImportStatus.FAILED_UNKNOWN:
                 return cls.FAILED
+            case DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED:
+                return cls.FAILED
             case _:
                 raise ValueError(
                     f"Unrecognized import status: {status}; please add it to the list "
@@ -263,10 +265,12 @@ class DirectIngestRawFileImportManager:
 
     @staticmethod
     def _get_import_update_dict(
+        *,
         import_status: Optional[DirectIngestRawFileImportStatus],
         raw_rows: Optional[int],
         net_new_or_updated_rows: Optional[int],
         deleted_rows: Optional[int],
+        error_message: Optional[str],
     ) -> Dict[str, Any]:
         """Filters and returns all non-null values as a dictionary."""
         import_update_kwargs = {
@@ -274,6 +278,7 @@ class DirectIngestRawFileImportManager:
             "raw_rows": raw_rows,
             "net_new_or_updated_rows": net_new_or_updated_rows,
             "deleted_rows": deleted_rows,
+            "error_message": error_message,
         }
 
         return {
@@ -285,19 +290,22 @@ class DirectIngestRawFileImportManager:
     def update_file_import_by_id(
         self,
         file_import_id: int,
+        *,
         import_status: Optional[DirectIngestRawFileImportStatus] = None,
         raw_rows: Optional[int] = None,
         net_new_or_updated_rows: Optional[int] = None,
         deleted_rows: Optional[int] = None,
+        error_message: Optional[str] = None,
     ) -> None:
         """Updates the import run info related to the provided |file_import_id| with
         the provided import run information.
         """
         import_update_dict = self._get_import_update_dict(
-            import_status,
-            raw_rows,
-            net_new_or_updated_rows,
-            deleted_rows,
+            import_status=import_status,
+            raw_rows=raw_rows,
+            net_new_or_updated_rows=net_new_or_updated_rows,
+            deleted_rows=deleted_rows,
+            error_message=error_message,
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -320,10 +328,12 @@ class DirectIngestRawFileImportManager:
     def update_most_recent_file_import_for_file_id(
         self,
         file_id: int,
+        *,
         import_status: Optional[DirectIngestRawFileImportStatus] = None,
         raw_rows: Optional[int] = None,
         net_new_or_updated_rows: Optional[int] = None,
         deleted_rows: Optional[int] = None,
+        error_message: Optional[str] = None,
     ) -> None:
         """Updates the import run related to the provided |file_id| with the most
         recent DirectIngestRawFileImportRun::import_run_start associated with
@@ -333,10 +343,11 @@ class DirectIngestRawFileImportManager:
         necessarily the import run you intend it to be.
         """
         import_update_dict = self._get_import_update_dict(
-            import_status,
-            raw_rows,
-            net_new_or_updated_rows,
-            deleted_rows,
+            import_status=import_status,
+            raw_rows=raw_rows,
+            net_new_or_updated_rows=net_new_or_updated_rows,
+            deleted_rows=deleted_rows,
+            error_message=error_message,
         )
 
         with SessionFactory.using_database(self.database_key) as session:
