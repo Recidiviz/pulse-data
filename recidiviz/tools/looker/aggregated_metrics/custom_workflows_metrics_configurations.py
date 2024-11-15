@@ -157,6 +157,18 @@ TASK_COMPLETIONS_AFTER_TOOL_ACTION_LOOKER = EventCountMetric(
     ),
     event_segmentation_columns=["task_type"],
 )
+TASK_COMPLETIONS_WHILE_ALMOST_ELIGIBLE_LOOKER = EventCountMetric(
+    name="task_completions_while_almost_eligible",
+    display_name="Task Completions While Almost Eligible",
+    description="Number of task completions for selected task type occurring while almost eligible for opportunity",
+    event_selector=EventSelector(
+        event_type=EventType.TASK_COMPLETED,
+        event_conditions_dict={
+            "is_almost_eligible": ["true"],
+        },
+    ),
+    event_segmentation_columns=["task_type"],
+)
 TASK_COMPLETIONS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER = EventCountMetric(
     name="task_completions_while_almost_eligible_after_tool_action",
     display_name="Task Completions While Almost Eligible After Tool Action",
