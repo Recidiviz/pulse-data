@@ -25,6 +25,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
 
 _DATASET_1 = "dataset_1"
 _TABLE_1 = "table_1"
@@ -715,3 +716,25 @@ FROM UNNEST([
             self.run_query_test(
                 "SELECT CAST(null AS INTEGER)", expected_result=[{"$col1": None}]
             )
+
+    def test_drop_view(self) -> None:
+        """Ensures we can run DROP VIEW statements on the emulator."""
+        client = self.bq_client.client
+        # We need a created dataset and table before we define a view.
+        client.create_dataset("example_dataset")
+        client.create_table(
+            bigquery.Table(
+                f"{BQ_EMULATOR_PROJECT_ID}.example_dataset.example_table",
+                [
+                    bigquery.SchemaField("string_field", "STRING"),
+                ],
+            )
+        )
+        _view_definition = bigquery.Table(
+            f"{BQ_EMULATOR_PROJECT_ID}.example_dataset.example_view"
+        )
+        _view_definition.view_query = (
+            f"SELECT * FROM `{BQ_EMULATOR_PROJECT_ID}.example_dataset.example_table`"
+        )
+        example_view = client.create_table(_view_definition)
+        client.delete_table(example_view)
