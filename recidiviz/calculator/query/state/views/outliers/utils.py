@@ -42,13 +42,17 @@ def format_state_specific_officer_aggregated_metric_filters() -> str:
         state_specific_ctes.append(
             f"""
     SELECT 
-        m.*
+        m.*,
+        -- flag to demarcate which officer metrics should be included in benchmark
+        -- and outlier calculations
+        include_in_outcomes {config.supervision_officer_metric_exclusions if config.supervision_officer_metric_exclusions else ""} 
+        as include_in_outcomes
     FROM `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized` m
     -- Join on staff product view to ensure staff exclusions are applied
     INNER JOIN `{{project_id}}.outliers_views.supervision_officers_materialized` o
         ON m.state_code = o.state_code AND m.officer_id = o.external_id
     WHERE 
-        m.state_code = '{state_code}' {config.supervision_officer_metric_exclusions if config.supervision_officer_metric_exclusions else ""}
+        m.state_code = '{state_code}'
         -- currently, the Outliers product only references metrics for 12-month periods
         AND m.period = 'YEAR'
 """
@@ -160,6 +164,7 @@ def get_highlight_percentile_value_query() -> str:
         AND metric_id = '{metric.name}'
         AND state_code = '{state_code}'
         AND category_type = 'ALL' -- highlights are done statewide for now
+        AND include_in_outcomes
     GROUP BY 1, 2, 3
 """
             )

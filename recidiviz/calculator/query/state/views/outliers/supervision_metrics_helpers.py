@@ -42,6 +42,13 @@ def supervision_metric_query_template(
     """
     Helper for querying supervision_<unit_of_analysis>_aggregated_metrics views
     """
+    shared_subquery_columns = unit_of_analysis.primary_key_columns + [
+        "period",
+        "end_date",
+    ]
+    if unit_of_analysis.type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
+        shared_subquery_columns.append("include_in_outcomes")
+
     source_table = (
         f"`{{project_id}}.{dataset_id}.supervision_{unit_of_analysis.type.short_name}_aggregated_metrics_materialized`"
         if not cte_source
@@ -54,9 +61,7 @@ def supervision_metric_query_template(
         subqueries.append(
             f"""
 SELECT
-    {list_to_query_string(unit_of_analysis.primary_key_columns)},
-    period,
-    end_date,
+    {list_to_query_string(shared_subquery_columns)},
     "avg_daily_population" AS metric_id,
     avg_daily_population AS metric_value,
     "{OutliersMetricValueType.AVERAGE.value}" AS value_type
@@ -71,9 +76,7 @@ AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
         for metric in config.metrics:
             count_subquery = f"""
 SELECT
-    {list_to_query_string(unit_of_analysis.primary_key_columns)},
-    period,
-    end_date,
+    {list_to_query_string(shared_subquery_columns)},
     "{metric.name}" AS metric_id,
     {metric.name} AS metric_value,
     "{OutliersMetricValueType.COUNT.value}" AS value_type
@@ -82,13 +85,13 @@ WHERE state_code = '{state_code}'
 AND period = "YEAR"
 -- Limit the events lookback to only the necessary periods to minimize the size of the subqueries
 AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
+-- For officers, we only need these metrics if this officer is included in outcomes
+{"AND include_in_outcomes" if unit_of_analysis.type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER else ""}
 """
 
             rate_subquery = f"""
 SELECT
-    {list_to_query_string(unit_of_analysis.primary_key_columns)},
-    period,
-    end_date,
+    {list_to_query_string(shared_subquery_columns)},
     "{metric.name}" AS metric_id,
     {metric.name} / avg_daily_population AS metric_value,
     "{OutliersMetricValueType.RATE.value}" AS value_type
@@ -97,6 +100,8 @@ WHERE state_code = '{state_code}'
 AND period = "YEAR"
 -- Limit the events lookback to only the necessary periods to minimize the size of the subqueries
 AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
+-- For officers, we only need these metrics if this officer is included in outcomes
+{"AND include_in_outcomes" if unit_of_analysis.type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER else ""}
 """
 
             subqueries.extend([rate_subquery, count_subquery])
@@ -111,9 +116,7 @@ AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
             ]:
                 completion_count_subquery = f"""
 SELECT
-    {list_to_query_string(unit_of_analysis.primary_key_columns)},
-    period,
-    end_date,
+    {list_to_query_string(shared_subquery_columns)},
     "task_completions_{opp_config.opportunity_type}" AS metric_id,
     task_completions_{opp_config.task_completion_event.value} AS metric_value,
     "{OutliersMetricValueType.COUNT.value}" AS value_type
@@ -127,9 +130,7 @@ AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)
 
             officer_active_prop_subquery = f"""
 SELECT
-    {list_to_query_string(unit_of_analysis.primary_key_columns)},
-    period,
-    end_date,
+    {list_to_query_string(shared_subquery_columns)},
     "prop_period_with_critical_caseload" AS metric_id,
     prop_period_with_critical_caseload AS metric_value,
     "{OutliersMetricValueType.PROPORTION.value}" AS value_type
