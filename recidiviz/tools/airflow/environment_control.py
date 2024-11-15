@@ -51,6 +51,7 @@ from recidiviz.tools.airflow.utils import (
     get_user_experiment_environment,
     get_user_experiment_environment_name,
 )
+from recidiviz.tools.gsutil_shell_helpers import gcloud_storage_rm
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
@@ -183,15 +184,19 @@ def action_create() -> None:
 
 
 def action_destroy() -> None:
-    """Destroys an existing experiment environment"""
+    """Destroys an existing experiment environment. Deleting the environment won't automatically
+    delete the GCS bucket, so we need to delete it manually."""
     environment = get_user_experiment_environment()
     prompt_for_confirmation(
         f"About to delete the {environment.name} environment, continue?"
     )
-
     client = service.EnvironmentsClient()
     client.delete_environment(
         request=types.DeleteEnvironmentRequest(name=environment.name)
+    )
+
+    gcloud_storage_rm(
+        path=f"gs://{environment.storage_config.bucket}", force_delete_contents=True
     )
 
 

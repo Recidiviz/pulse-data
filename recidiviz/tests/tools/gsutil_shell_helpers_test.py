@@ -18,7 +18,13 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from recidiviz.tools.gsutil_shell_helpers import gsutil_cp, gsutil_ls, gsutil_mv
+from recidiviz.tools.gsutil_shell_helpers import (
+    GSUTIL_DEFAULT_TIMEOUT_SEC,
+    gcloud_storage_rm,
+    gsutil_cp,
+    gsutil_ls,
+    gsutil_mv,
+)
 from recidiviz.tools.utils.script_helpers import RunCommandUnsuccessful
 
 
@@ -78,6 +84,16 @@ class TestGsutilErrorHandling(unittest.TestCase):
                 gsutil_mv("FROM", "TO", allow_empty)
             with self.assertRaises(RuntimeError):
                 gsutil_ls("SOME_PATH", allow_empty=allow_empty)
+
+    @patch("recidiviz.tools.gsutil_shell_helpers.run_command")
+    def test_gcloud_storage_rm(self, mock_run: Mock) -> None:
+        gcloud_storage_rm("gs://some-bucket", force_delete_contents=True)
+
+        mock_run.assert_called_with(
+            'gcloud storage rm "gs://some-bucket" --recursive',
+            assert_success=True,
+            timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC,
+        )
 
 
 if __name__ == "__main__":

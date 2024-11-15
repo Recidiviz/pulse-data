@@ -119,6 +119,43 @@ def gsutil_mv(from_path: str, to_path: str, allow_empty: bool = False) -> None:
             raise e
 
 
+def gcloud_storage_rm(
+    path: str,
+    *,
+    force_delete_contents: bool = False,
+    allow_empty_response: bool = False,
+) -> None:
+    """Deletes an object, folder, or bucket via 'gcloud storage rm'. Delete will fail if the bucket or folder is not empty,
+    unless force_delete_contents is set to True.
+
+    It's recommended going forward to use gcloud storage instead of gsutil
+    https://cloud.google.com/storage/docs/gsutil#should-you-use
+
+    Args:
+        path: The path to the object, folder, or bucket to delete, prefixed with 'gs://'.
+        force_delete_contents: If True, deletes the contents of the folder or bucket before deleting the folder or bucket.
+        allow_empty_response: If True, allows the command to return an empty response without raising an error, for example
+            if the path has already been deleted.
+    """
+
+    command = f'gcloud storage rm "{path}"'
+    command += " --recursive" if force_delete_contents else ""
+
+    logging.debug(command)
+    try:
+        run_command(
+            command, assert_success=True, timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC
+        )
+    except RuntimeError as e:
+        logging.debug(str(e))
+        if (
+            not allow_empty_response
+            or not is_empty_response(e)
+            or isinstance(e, RunCommandUnsuccessful)
+        ):
+            raise e
+
+
 def _date_str_from_date_subdir_path(date_subdir_path: str) -> str:
     """Returns the date in ISO format corresponding to the storage subdir path."""
     parts = date_subdir_path.rstrip("/").split("/")
