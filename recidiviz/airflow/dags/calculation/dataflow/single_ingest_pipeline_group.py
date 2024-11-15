@@ -54,7 +54,18 @@ from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
     build_dataflow_pipeline_task_group,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
+    IngestViewManifestCollector,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    StateSchemaIngestViewManifestCompilerDelegate,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.utils import metadata
 
 # Need a disable pointless statement because Python views the chaining operator ('>>')
 # as a "pointless" statement
@@ -64,34 +75,41 @@ from recidiviz.persistence.database.schema_type import SchemaType
 # pylint: disable=W0106 expression-not-assigned
 
 
-def _ingest_pipeline_should_run_in_dag(state_code: StateCode) -> KubernetesPodOperator:
-    return build_kubernetes_pod_task(
-        task_id="ingest_pipeline_should_run_in_dag",
-        container_name="ingest_pipeline_should_run_in_dag",
-        arguments=[
-            "--entrypoint=IngestPipelineShouldRunInDagEntrypoint",
-            f"--state_code={state_code.value}",
-        ],
-        cloud_sql_connections=[SchemaType.OPERATIONS],
-        do_xcom_push=True,
+def _has_launchable_ingest_views(state_code: StateCode) -> bool:
+    region = direct_ingest_regions.get_direct_ingest_region(
+        region_code=state_code.value.lower()
+    )
+    ingest_manifest_collector = IngestViewManifestCollector(
+        region=region,
+        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
+    )
+    return (
+        len(
+            ingest_manifest_collector.launchable_ingest_views(
+                IngestViewContentsContextImpl.build_for_project(
+                    project_id=metadata.project_id()
+                )
+            )
+        )
+        > 0
     )
 
 
 @task.short_circuit(ignore_downstream_trigger_rules=False)
 # allows skipping of downstream tasks until trigger rule prevents it (like ALL_DONE)
-def handle_ingest_pipeline_should_run_in_dag_check(
-    should_run_ingest_pipeline: bool,
-) -> bool:
-    """Returns True if the DAG should continue, otherwise short circuits."""
-    if not isinstance(should_run_ingest_pipeline, bool):
-        raise ValueError(
-            f"Expected should_run_ingest_pipeline value to be of type bool, found type "
-            f"[{type(should_run_ingest_pipeline)}]: {should_run_ingest_pipeline}"
+def check_region_has_launchable_ingest_views(state_code: StateCode) -> bool:
+    """Returns True if the state has launchable ingest views, otherwise short circuits."""
+    if not _has_launchable_ingest_views(state_code):
+        logging.info(
+            "No launchable views found for [%s] - returning False",
+            state_code.value,
         )
-
-    if not should_run_ingest_pipeline:
-        logging.info("should_run_ingest_pipeline did not return true, do not continue.")
         return False
+
+    logging.info(
+        "State [%s] has launchable ingest views, therefore the ingest pipeline is eligible to run - returning True",
+        state_code.value,
+    )
     return True
 
 
@@ -140,15 +158,13 @@ def _initialize_ingest_pipeline(
 ) -> Tuple[TaskGroup, CloudSqlQueryOperator]:
     """
     Initializes the dataflow pipeline by getting the max update datetimes and watermarks
-    and checking if the pipeline should run. Returns the task group and the
+    and checking if the state has launachable views. Returns the task group and the
     get_max_update_datetimes task for use in downstream tasks.
     """
 
     with TaskGroup("initialize_ingest_pipeline") as initialize_ingest_pipeline:
         check_ingest_pipeline_should_run_in_dag = (
-            handle_ingest_pipeline_should_run_in_dag_check(
-                _ingest_pipeline_should_run_in_dag(state_code).output
-            )
+            check_region_has_launchable_ingest_views(state_code)
         )
 
         get_max_update_datetimes = CloudSqlQueryOperator(

@@ -23,7 +23,6 @@ from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
 import yaml
-from airflow.models import BaseOperator
 from airflow.models.dag import DAG, dag
 from airflow.operators.empty import EmptyOperator
 from airflow.utils.state import DagRunState
@@ -45,9 +44,11 @@ from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_operator_with_return_value,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
+from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.utils.environment import GCPEnvironment
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
@@ -146,22 +147,6 @@ def _fake_failure_execute(*args: Any, **kwargs: Any) -> None:
     raise ValueError("Fake failure")
 
 
-def _fake_pod_operator(*args: Any, **kwargs: Any) -> BaseOperator:
-    if "--entrypoint=IngestPipelineShouldRunInDagEntrypoint" in kwargs["arguments"]:
-        return fake_operator_with_return_value(True)(*args, **kwargs)
-
-    return fake_operator_constructor(*args, **kwargs)
-
-
-def _fake_pod_operator_ingest_pipeline_should_run_in_dag_false(
-    *args: Any, **kwargs: Any
-) -> BaseOperator:
-    if "--entrypoint=IngestPipelineShouldRunInDagEntrypoint" in kwargs["arguments"]:
-        return fake_operator_with_return_value(False)(*args, **kwargs)
-
-    return fake_operator_constructor(*args, **kwargs)
-
-
 @patch.dict(
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
     values={StateCode.US_XX: "us-east1-test"},
@@ -181,7 +166,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
 
         self.kubernetes_pod_operator_patcher = patch(
             "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.build_kubernetes_pod_task",
-            side_effect=_fake_pod_operator,
+            side_effect=fake_operator_constructor,
         )
         self.mock_kubernetes_pod_operator = self.kubernetes_pod_operator_patcher.start()
 
@@ -196,12 +181,29 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             side_effect=fake_operator_constructor,
         )
         self.mock_dataflow_operator = self.recidiviz_dataflow_operator_patcher.start()
+        self.direct_ingest_regions_patcher = patch(
+            "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.direct_ingest_regions",
+            autospec=True,
+        )
+        self.mock_direct_ingest_regions = self.direct_ingest_regions_patcher.start()
+        self.mock_direct_ingest_regions.get_direct_ingest_region.side_effect = (
+            lambda region_code: get_direct_ingest_region(
+                region_code, region_module_override=fake_regions_module
+            )
+        )
+        self.metadata_patcher = patch(
+            "recidiviz.utils.metadata.project_id",
+            return_value=_PROJECT_ID,
+        )
+        self.metadata_patcher.start()
 
     def tearDown(self) -> None:
         self.environment_patcher.stop()
         self.kubernetes_pod_operator_patcher.stop()
         self.cloud_sql_query_operator_patcher.stop()
         self.recidiviz_dataflow_operator_patcher.stop()
+        self.direct_ingest_regions_patcher.stop()
+        self.metadata_patcher.stop()
         super().tearDown()
 
     def test_single_ingest_pipeline_group(self) -> None:
@@ -210,11 +212,13 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             result = self.run_dag_test(test_dag, session)
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-    def test_ingest_pipeline_should_run_in_dag_false(self) -> None:
-        self.mock_kubernetes_pod_operator.side_effect = (
-            _fake_pod_operator_ingest_pipeline_should_run_in_dag_false
-        )
-
+    @patch(
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.IngestViewManifestCollector",
+    )
+    def test_ingest_pipeline_should_run_in_dag_false(
+        self, mock_manifest_collector: MagicMock
+    ) -> None:
+        mock_manifest_collector.return_value.launchable_ingest_views.return_value = []
         test_dag = _create_test_single_ingest_pipeline_group_dag(StateCode.US_XX)
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
