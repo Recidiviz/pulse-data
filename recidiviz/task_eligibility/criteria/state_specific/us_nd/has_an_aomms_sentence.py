@@ -59,21 +59,21 @@ connect_charge_to_sentence AS (
   LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offendersentences_latest` raw_sent
   ON(cleaned_raw_data.OFFENDER_BOOK_ID = {reformat_ids('raw_sent.OFFENDER_BOOK_ID')}
     AND cleaned_raw_data.CHARGE_SEQ = raw_sent.CHARGE_SEQ)
-  LEFT JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` s
-  ON(CONCAT({reformat_ids('raw_sent.OFFENDER_BOOK_ID')}, '-', raw_sent.SENTENCE_SEQ) = s.external_id)
+  LEFT JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` s
+  ON(CONCAT({reformat_ids('raw_sent.OFFENDER_BOOK_ID')}, '-', raw_sent.SENTENCE_SEQ) = s.sentence_external_id)
 )
 SELECT
     span.state_code,
     span.person_id,
     span.start_date,
-    span.end_date,
+    span.end_date_exclusive AS end_date,
     TRUE AS meets_criteria,
     TO_JSON(STRUCT('Minimum Mandatory Sentence' AS ineligible_offenses)) AS reason,
     'Minimum Mandatory Sentence' AS ineligible_offenses,
-FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
+FROM `{{project_id}}.sentence_sessions.overlapping_sentence_serving_periods_materialized` span,
+UNNEST(sentence_id_array) AS sentence_id
 INNER JOIN connect_charge_to_sentence sent
-    USING (state_code, person_id, sentences_preprocessed_id)
+    USING (state_code, person_id, sentence_id)
 INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
     ON span.state_code = sess.state_code
     AND span.person_id = sess.person_id

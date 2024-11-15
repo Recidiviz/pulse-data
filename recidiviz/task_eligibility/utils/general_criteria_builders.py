@@ -28,7 +28,7 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
-    join_sentence_spans_to_compartment_sessions,
+    join_sentence_serving_periods_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -74,11 +74,11 @@ def get_ineligible_offense_type_criteria(
         span.state_code,
         span.person_id,
         span.start_date,
-        span.end_date,
+        span.end_date_exclusive AS end_date,
         FALSE AS meets_criteria,
         TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute ORDER BY statute) AS ineligible_offenses{additional_json_fields_str})) AS reason,
         ARRAY_AGG(DISTINCT statute ORDER BY statute) AS ineligible_offenses{additional_json_fields_str}
-    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=compartment_level_1)}
+    {join_sentence_serving_periods_to_compartment_sessions(compartment_level_1_to_overlap=compartment_level_1)}
     {where_clause}
     GROUP BY 1,2,3,4,5
     """

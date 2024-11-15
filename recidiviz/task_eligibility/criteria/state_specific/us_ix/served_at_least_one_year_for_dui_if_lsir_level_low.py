@@ -20,7 +20,10 @@ that their LSI-R score should be overridden to MODERATE.
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    revert_nonnull_end_date_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -53,21 +56,26 @@ WITH supervision_starts AS (
     AND compartment_level_1 = "SUPERVISION"
 ),
 sentences AS (
-/* This CTE looks at imposed sentences (as opposed to sentence spans) to identify start dates of DUI sentences.
-This way, we don't consider the start date of every unique group of sentences, to be the start of time served for a DUI,
-only the date imposed of each DUI sentence.
+/* This CTE creates active sentence spans for any DUI sentences starting from the sentence imposed date to the latest
+active sentence status session end date.
 */
-  SELECT DISTINCT
+  SELECT
       state_code,
       person_id,
-      date_imposed AS start_date,
-      completion_date AS end_date,
-      statute, 
-  FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+      sentences.imposed_date AS start_date,
+      -- Use the latest active status session end date as the criteria span end date,
+      -- and leave NULL for open/current sessions
+      {revert_nonnull_end_date_clause(f"MAX({nonnull_end_date_clause('serving_periods.end_date_exclusive')})")} AS end_date,
+  FROM `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sentences
+  LEFT JOIN `{{project_id}}.sentence_sessions.sentence_serving_period_materialized` serving_periods
+      USING (state_code, person_id, sentence_id)
   WHERE state_code = "US_IX"
-    AND (lower(description) LIKE '%driving under the influence%' OR lower(description) LIKE '%dui%')
-    #TODO(#24145, #28350) revert once normalization fix is in
-    AND EXTRACT(YEAR FROM date_imposed) < 9999
+    AND (
+        LOWER(sentences.description) LIKE '%driving under the influence%'
+        OR LOWER(sentences.description) LIKE '%dui%'
+    )
+    AND sentences.imposed_date <= CURRENT_DATE("US/Pacific")
+  GROUP BY 1, 2, 3
 ),
 supervision_starts_with_sentences AS (
   SELECT
