@@ -40,6 +40,7 @@ class EventType(Enum):
     INCARCERATION_START = "INCARCERATION_START"
     INCARCERATION_START_AND_INFERRED_START = "INCARCERATION_START_AND_INFERRED_START"
     INCARCERATION_RELEASE = "INCARCERATION_RELEASE"
+    INSIGHTS_ACTIVE_USAGE_EVENT = "INSIGHTS_ACTIVE_USAGE_EVENT"
     INSIGHTS_USER_LOGIN = "INSIGHTS_USER_LOGIN"
     PAROLE_HEARING = "PAROLE_HEARING"
     PENDING_CUSTODY_START = "PENDING_CUSTODY_START"
@@ -150,7 +151,10 @@ class EventType(Enum):
             EventType.WORKFLOWS_USER_PAGE,
         ]:
             return MetricUnitOfObservationType.WORKFLOWS_USER
-        if self in [EventType.INSIGHTS_USER_LOGIN]:
+        if self in [
+            EventType.INSIGHTS_USER_LOGIN,
+            EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
+        ]:
             return MetricUnitOfObservationType.INSIGHTS_USER
         if self in [EventType.WORKFLOWS_CASELOAD_SURFACED]:
             return MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD

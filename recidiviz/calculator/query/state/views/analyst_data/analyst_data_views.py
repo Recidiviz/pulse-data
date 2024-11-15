@@ -63,6 +63,9 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_categ
 from recidiviz.calculator.query.state.views.analyst_data.insights_primary_user_registration_sessions import (
     INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.insights_segment_events import (
+    INSIGHTS_SEGMENT_EVENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.insights_supervision_officer_caseload_category_sessions import (
     INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
 )
@@ -392,4 +395,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ALL_AUTH0_LOGIN_EVENTS_VIEW_BUILDER,
     INSIGHTS_USER_AUTH0_REGISTRATIONS_VIEW_BUILDER,
     WORKFLOWS_USER_AUTH0_REGISTRATIONS_VIEW_BUILDER,
+    INSIGHTS_SEGMENT_EVENTS_VIEW_BUILDER,
 ]
