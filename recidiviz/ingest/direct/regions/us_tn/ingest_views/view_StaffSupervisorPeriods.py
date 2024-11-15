@@ -162,20 +162,32 @@ SELECT
         -- we close their open periods with the first date there are inactive in the Staff table. 
         WHEN 
             construct_periods.EndDate IS NULL 
-            AND first_inactive_date IS NOT NULL
+            AND id.first_inactive_date IS NOT NULL
             AND id.first_inactive_date > construct_periods.StartDate 
             THEN id.first_inactive_date
         -- However, there are some people who were inactive in Staff before the start date of 
         -- the roster period information, so in this case, we close their incorrectly open periods 
         -- with the StartDate of the periods (effectively making them into zero day periods that will be ignored.       
         WHEN construct_periods.EndDate IS NULL
-            AND first_inactive_date IS NOT NULL THEN construct_periods.StartDate 
+            AND id.first_inactive_date IS NOT NULL THEN construct_periods.StartDate 
+        -- Closing open periods where the StaffSupervisor is inactive with first inactive date
+        WHEN 
+            construct_periods.EndDate IS NULL 
+            AND supid.first_inactive_date IS NOT NULL
+            AND supid.first_inactive_date > construct_periods.StartDate 
+            THEN supid.first_inactive_date
+        -- Closing open periods with the startdate where the StaffSupervisor is inactive 
+        -- and inactive_date is before period start date
+        WHEN construct_periods.EndDate IS NULL
+            AND supid.first_inactive_date IS NOT NULL 
+          THEN construct_periods.StartDate 
         ELSE construct_periods.EndDate
     END AS EndDate,
     SupervisorChangeOrder
 FROM 
     construct_periods
 LEFT JOIN inactive_dates id ON construct_periods.StaffID = id.StaffID
+LEFT JOIN inactive_dates supid ON construct_periods.StaffSupervisorID = supid.StaffID
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
