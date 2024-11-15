@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Combines sentence-level eligibility determinations for OR earned discharge"""
+"""Combines sentence-level eligibility determinations for OR earned discharge to
+determine, at the person level, whether someone is eligible (i.e., has at least one
+eligible sentence)."""
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -38,9 +41,9 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_OR_SENTENCE_ELIGIBLE"
 
-_DESCRIPTION = (
-    """Combines sentence-level eligibility determinations for OR earned discharge"""
-)
+_DESCRIPTION = """Combines sentence-level eligibility determinations for OR earned discharge to
+determine, at the person level, whether someone is eligible (i.e., has at least one
+eligible sentence)."""
 
 _QUERY_TEMPLATE = f"""
     WITH sentences AS (
@@ -50,7 +53,8 @@ _QUERY_TEMPLATE = f"""
             start_date AS sentence_start_date,
             end_date as sentence_end_date,
         FROM ({sentence_attributes()})
-        WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
+        WHERE state_code='US_OR'
+            AND sentence_type='SUPERVISION'
     ),
     sentence_eligibility_spans AS (
         SELECT *
@@ -83,7 +87,8 @@ _QUERY_TEMPLATE = f"""
             start_date,
             end_date_exclusive,
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
-        WHERE state_code='US_OR' AND compartment_level_2='ABSCONSION'
+        WHERE state_code='US_OR'
+            AND compartment_level_2='ABSCONSION'
     ),
     absconsions_during_sentence AS (
         /* Here, for each sentence, we pull sessions of absconsion occurring during that

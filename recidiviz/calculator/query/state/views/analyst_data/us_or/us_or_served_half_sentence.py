@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identifies individuals' supervision sentences for which at least half the sentence has been served"""
+"""Identifies individuals' supervision sentences in OR for which at least half the
+sentence has been served."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
@@ -32,37 +33,39 @@ from recidiviz.utils.metadata import local_project_id_override
 
 US_OR_SERVED_HALF_SENTENCE_VIEW_NAME = "us_or_served_half_sentence"
 
-US_OR_SERVED_HALF_SENTENCE_VIEW_DESCRIPTION = """Identifies individuals' supervision sentences for which at least half the sentence has been served"""
+US_OR_SERVED_HALF_SENTENCE_VIEW_DESCRIPTION = """Identifies individuals' supervision
+sentences in OR for which at least half the sentence has been served."""
 
 US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
     WITH sentences AS (
-        /* NB: this query pulls from sentences_preprocessed (not sentence_spans, even
-        though we'll ultimately end up creating spans for eligibility). This has been
-        done because if we start from sentences_preprocessed, we start with a single
-        span and end up with at most two spans per sentence for each subcriterion;
-        however, if we started from sentence_spans, we might start with multiple spans
-        per sentence that we'd then have to work with. Also, we treat each sentence
-        separately when evaluating eligibility for OR earned discharge. If we decide to
-        change this in the future, we can refactor this subcriterion query to rely upon
-        sentence_spans. */
+        /* NB: this query pulls from `sentences_preprocessed` (not `sentence_spans`,
+        even though we'll ultimately end up creating spans for eligibility). This has
+        been done because if we start from `sentences_preprocessed`, we start with a
+        single span and end up with at most two spans per sentence for each
+        subcriterion; however, if we started from `sentence_spans`, we might start with
+        multiple spans per sentence that we'd then have to work with. Also, we treat
+        each sentence separately when evaluating eligibility for OR earned discharge. If
+        we decide to change this in the future, we can refactor this subcriterion query
+        to rely upon `sentence_spans`. */
         SELECT
             *,
-            /* Truncate external_id. (We'll use this to match incarceration sentences to
-            their respective PPS sentences.) We have to truncate it so that we can link
-            sentences that have the same underlying charge. (See OR ingest mappings to
-            see how external_id is constructed.) */
+            /* Truncate `external_id`. (We'll use this to match incarceration sentences
+            to their respective PPS sentences.) We have to truncate it so that we can
+            link sentences that have the same underlying charge. (See OR ingest mappings
+            to see how `external_id` is constructed.) */
             REGEXP_EXTRACT(external_id, '^[0-9]*-[0-9]*-[0-9]*-[0-9]*') AS external_id_truncated,
         FROM ({sentence_attributes()})
-        WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
+        WHERE state_code='US_OR'
+            AND sentence_type='SUPERVISION'
     ),
     /* In cases where a client's incarceration sentence is commuted, the remaining time
     they would have spent in incarceration is spent on supervision but doesn't count as
     time accrued for EDIS. (OR made an agency decision to only count time served after
     the date on which they would have originally been released from incarceration.)
-    Consequently, we can't use max_sentence_length_days_calculated to determine
+    Consequently, we can't use `max_sentence_length_days_calculated` to determine
     time-served requirements for the purposes of EDIS when someone with a commuted
     incarceration sentence is now serving their post-prison sentence, because
-    max_sentence_length_days_calculated reflects the total time that person will spend
+    `max_sentence_length_days_calculated` reflects the total time that person will spend
     on supervision and not the originally imposed PPS sentence length. In this CTE and
     those that follow, we get the original PPS sentence length for those PPS sentences
     associated with commuted incarceration sentences. */
@@ -70,16 +73,18 @@ US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
         SELECT
             state_code,
             person_id,
-            /* Truncate external_id. (We'll use this to match incarceration sentences to
-            their respective PPS sentences.) We have to truncate it so that we can link
-            sentences that have the same underlying charge. (See OR ingest mappings to
-            see how external_id is constructed.) */
+            /* Truncate `external_id`. (We'll use this to match incarceration sentences
+            to their respective PPS sentences.) We have to truncate it so that we can
+            link sentences that have the same underlying charge. (See OR ingest mappings
+            to see how `external_id` is constructed.) */
             REGEXP_EXTRACT(external_id, '^[0-9]*-[0-9]*-[0-9]*-[0-9]*') AS external_id_truncated,
             CAST(JSON_VALUE(sentence_metadata, '$.PPS_SENTENCE_DAYS') AS INT64) AS pps_sentence_days,
             CAST(JSON_VALUE(sentence_metadata, '$.PPS_SENTENCE_MONTHS') AS INT64) AS pps_sentence_months,
             CAST(JSON_VALUE(sentence_metadata, '$.PPS_SENTENCE_YEARS') AS INT64) AS pps_sentence_years,
         FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
-        WHERE state_code='US_OR' AND sentence_type='INCARCERATION' AND status='COMMUTED'
+        WHERE state_code='US_OR'
+            AND sentence_type='INCARCERATION'
+            AND status='COMMUTED'
     ),
     supervision_sentences_with_commuted_incarceration_sentences AS (
         /* Here, we link PPS sentences that were preceded by commuted incarceration
@@ -100,10 +105,10 @@ US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
     ),
     sentences_with_corrected_lengths AS (
         /* Here, we get the correct (for the purpose of EDIS) sentence length (in days)
-        for each supervision sentence. We use max_sentence_length_days_calculated except
-        for when supervision sentences are preceded by commuted incarceration sentences,
-        in which case we use the original PPS sentence length associated with the
-        commuted incarceration sentence. */
+        for each supervision sentence. We use `max_sentence_length_days_calculated`
+        except for when supervision sentences are preceded by commuted incarceration
+        sentences, in which case we use the original PPS sentence length associated with
+        the commuted incarceration sentence. */
         SELECT
             sentences.* EXCEPT (max_sentence_length_days_calculated),
             IF(sswcis.preceded_by_commuted_incarceration_sentence,

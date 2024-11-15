@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identifies individuals' supervision sentences that fall under eligible statutes"""
+"""Identifies individuals' supervision sentences in OR that fall under statutes eligible
+for earned discharge."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import list_to_query_string
@@ -38,22 +39,24 @@ from recidiviz.utils.metadata import local_project_id_override
 
 US_OR_STATUTE_ELIGIBLE_VIEW_NAME = "us_or_statute_eligible"
 
-US_OR_STATUTE_ELIGIBLE_VIEW_DESCRIPTION = """Identifies individuals' supervision sentences that fall under eligible statutes"""
+US_OR_STATUTE_ELIGIBLE_VIEW_DESCRIPTION = """Identifies individuals' supervision
+sentences in OR that fall under statutes eligible for earned discharge."""
 
 US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
     WITH sentences AS (
-        /* NB: this query pulls from sentences_preprocessed (not sentence_spans, even
-        though we'll ultimately end up creating spans for eligibility). This has been
-        done because if we start from sentences_preprocessed, we start with a single
-        span and end up with at most two spans per sentence for each subcriterion;
-        however, if we started from sentence_spans, we might start with multiple spans
-        per sentence that we'd then have to work with. Also, we treat each sentence
-        separately when evaluating eligibility for OR earned discharge. If we decide to
-        change this in the future, we can refactor this subcriterion query to rely upon
-        sentence_spans. */
+        /* NB: this query pulls from `sentences_preprocessed` (not `sentence_spans`,
+        even though we'll ultimately end up creating spans for eligibility). This has
+        been done because if we start from `sentences_preprocessed`, we start with a
+        single span and end up with at most two spans per sentence for each
+        subcriterion; however, if we started from `sentence_spans`, we might start with
+        multiple spans per sentence that we'd then have to work with. Also, we treat
+        each sentence separately when evaluating eligibility for OR earned discharge. If
+        we decide to change this in the future, we can refactor this subcriterion query
+        to rely upon `sentence_spans`. */
         SELECT *
         FROM ({sentence_attributes()})
-        WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
+        WHERE state_code='US_OR'
+            AND sentence_type='SUPERVISION'
     ),
     sentence_supervision_types AS (
         SELECT
@@ -72,7 +75,8 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
             -- the statement below will return FALSE if the 137.635 flag is missing
             JSON_VALUE(sentence_metadata, '$.FLAG_137635')='Y' AS sentenced_under_137635,
         FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
-        WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
+        WHERE state_code='US_OR'
+            AND sentence_type='SUPERVISION'
     ),
     sentence_statute_eligibility AS (
         /* Here, we determine whether sentences fall under eligible statutes (according
@@ -101,8 +105,8 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
         /* While the statute exclusions list has been constant (as far as we know) since
         its introduction, this introduction of these exclusions did happen partway
         through the existence of the EDIS program. Here, we account for these historical
-        changes. NB: here, we're creating spans of INELIGIBILITY (and will flip these to
-        spans of eligibility later). */
+        changes. NB: here, the critical date is the date on which a sentence becomes
+        *ineligible*. */
         SELECT
             state_code,
             person_id,
@@ -119,8 +123,7 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
                 WHEN (sentenced_under_eligible_statute) THEN DATE('9999-12-31')
                 /* The bill (House Bill 2172 [2021]) that expanded EDIS to post-prison
                 sentences was effective 2022-01-01, applied to sentences imposed on or
-                after 2022-01-01, and appears to have introduced the
-                statute exclusions.
+                after 2022-01-01, and appears to have introduced the statute exclusions.
                 This means that if someone was sentenced under an ineligible statute
                 (and that sentence was imposed on or after 2022-01-01), they became
                 ineligible starting on 2022-01-01. (In effect, they will never be
@@ -145,8 +148,9 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
         sentence_id,
         start_date,
         end_date,
-        /* Recall that we created spans of INELIGIBILITY so far, so we need to use the
-        NOT here to flip those around and get spans of eligibility. */
+        /* Because `critical_date_has_passed` indicates whether a sentence has become
+        *ineligible*, we use NOT here to flip it around and create an indicator of
+        eligibility. */
         NOT critical_date_has_passed AS meets_criteria,
     FROM critical_date_has_passed_spans
 """
