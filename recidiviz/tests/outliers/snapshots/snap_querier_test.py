@@ -439,6 +439,12 @@ Incarceration rate denominator description""",
 }
 
 snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier test_get_officer_outcomes_changing_caseload_categories"
+] = GenericRepr(
+    "SupervisionOfficerOutcomes(external_id='01', pseudonymized_id='officerhash1', outlier_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.26, 'caseload_category': 'NOT_SEX_OFFENSE'}, {'status': 'NEAR', 'end_date': '2023-04-01', 'metric_rate': 0.32, 'caseload_category': 'SEX_OFFENSE'}]}], top_x_pct_metrics=[], caseload_category='NOT_SEX_OFFENSE')"
+)
+
+snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_officer_outcomes_for_supervisor"
 ] = [
     GenericRepr(
@@ -465,6 +471,30 @@ snapshots[
         "SupervisionOfficerOutcomes(external_id='06', pseudonymized_id='officerhash6', outlier_metrics=[], top_x_pct_metrics=[], caseload_category='SEX_OFFENSE')"
     ),
 ]
+
+snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier test_get_officer_outcomes_found_match"
+] = GenericRepr(
+    "SupervisionOfficerOutcomes(external_id='03', pseudonymized_id='officerhash3', outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}], caseload_category='ALL')"
+)
+
+snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier test_get_officer_outcomes_found_match_not_top_x_pct"
+] = GenericRepr(
+    "SupervisionOfficerOutcomes(external_id='09', pseudonymized_id='officerhash9', outlier_metrics=[], top_x_pct_metrics=[], caseload_category='ALL')"
+)
+
+snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier test_get_officer_outcomes_found_match_with_highlights"
+] = GenericRepr(
+    "SupervisionOfficerOutcomes(external_id='03', pseudonymized_id='officerhash3', outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8, 'caseload_category': 'ALL'}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}], caseload_category='ALL')"
+)
+
+snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier test_get_officer_outcomes_highlight_in_prev_period_only"
+] = GenericRepr(
+    "SupervisionOfficerOutcomes(external_id='07', pseudonymized_id='officerhash7', outlier_metrics=[], top_x_pct_metrics=[], caseload_category='ALL')"
+)
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_officers_for_supervisor"

@@ -494,6 +494,117 @@ class TestOutliersQuerier(InsightsDbTestCase):
 
         self.assertIsNone(actual)
 
+    def test_get_officer_outcomes_found_match(self) -> None:
+        # Return matching supervision officer outcomes entity
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_outcomes(
+            pseudonymized_officer_id="officerhash3",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            num_lookback_periods=0,
+        )
+        self.snapshot.assert_match(actual, name="test_get_officer_outcomes_found_match")  # type: ignore[attr-defined]
+
+    def test_get_officer_outcomes_found_match_with_highlights(self) -> None:
+        # Return matching outcomes info where officer should be highlighted for a metric in the latest period
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_outcomes(
+            pseudonymized_officer_id="officerhash3",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            num_lookback_periods=0,
+        )
+        self.snapshot.assert_match(actual, name="test_get_officer_outcomes_found_match_with_highlights")  # type: ignore[attr-defined]
+
+    def test_get_officer_outcomes_found_match_not_top_x_pct(self) -> None:
+        # Return matching outcomes info where officer has highlight information, but should not be highlighted
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_outcomes(
+            pseudonymized_officer_id="officerhash9",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            num_lookback_periods=0,
+        )
+        self.snapshot.assert_match(actual, name="test_get_officer_outcomes_found_match_not_top_x_pct")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_officer_outcomes_highlight_in_prev_period_only(
+        self, mock_config: MagicMock
+    ) -> None:
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_2(StateCode.US_PA)],
+        )
+
+        # Return matching outcomes info where officer is highlighted in a previous period but not the latest
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_outcomes(
+            pseudonymized_officer_id="officerhash7",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            num_lookback_periods=1,
+        )
+        self.snapshot.assert_match(actual, name="test_get_officer_outcomes_highlight_in_prev_period_only")  # type: ignore[attr-defined]
+
+    def test_get_officer_outcomes_changing_caseload_categories(self) -> None:
+        # Return matching officer outcomes info where officer has changing caseload categories over time
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_outcomes(
+            pseudonymized_officer_id="officerhash1",
+            category_type_to_compare=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
+            num_lookback_periods=1,
+        )
+        self.snapshot.assert_match(actual, name="test_get_officer_outcomes_changing_caseload_categories")  # type: ignore[attr-defined]
+
+    def test_get_officer_outcomes_conflicting_caseload_categories(
+        self,
+    ) -> None:
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            new_outlier_status_dict = {
+                "state_code": "US_PA",
+                "officer_id": "09",
+                "metric_id": "incarceration_starts_and_inferred",
+                "period": "YEAR",
+                "end_date": "2023-05-01",
+                "metric_rate": "0.333",
+                "target": "0.14",
+                "threshold": "0.21",
+                "status": "FAR",
+                "category_type": "SEX_OFFENSE_BINARY",
+                "caseload_category": "SEX_OFFENSE",
+                "caseload_type": "SEX_OFFENSE",
+            }
+            new_outlier_status_dict_conflicting_category = new_outlier_status_dict | {
+                "metric_id": "absconsions_bench_warrants",
+                "caseload_type": "NOT_SEX_OFFENSE",
+            }
+            session.add(
+                SupervisionOfficerOutlierStatus(**new_outlier_status_dict),
+                SupervisionOfficerOutlierStatus(
+                    **new_outlier_status_dict_conflicting_category
+                ),
+            )
+
+        with self.assertRaises(ValueError):
+            OutliersQuerier(StateCode.US_PA).get_supervision_officer_outcomes(
+                pseudonymized_officer_id="officerhash9",
+                category_type_to_compare=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
+                num_lookback_periods=1,
+            )
+
+    def test_get_officer_outcomes_no_match(self) -> None:
+        # Return None because none found
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_outcomes(
+            pseudonymized_officer_id="invalidhash",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            num_lookback_periods=0,
+        )
+
+        self.assertIsNone(actual)
+
+    def test_get_officer_outcomes_no_metrics(self) -> None:
+        # Return None because none found
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_outcomes(
+            pseudonymized_officer_id="officerhash9",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            num_lookback_periods=0,
+            period_end_date=TEST_PREV_END_DATE,
+        )
+
+        self.assertIsNone(actual)
+
     def test_get_excluded_supervision_officer_entity_found_match(self) -> None:
         # Return matching excluded supervision officer entity
         actual = OutliersQuerier(
@@ -1044,3 +1155,19 @@ class TestOutliersQuerier(InsightsDbTestCase):
         # Insert same event twice should raise error
         with self.assertRaises(IntegrityError):
             querier.insert_action_strategy_surfaced_event(event=event)
+
+    def test_get_officer_from_pseudo_id_found_match(self) -> None:
+        # Return matching officer
+        test_id = "officerhash4"
+        actual = OutliersQuerier(
+            StateCode.US_PA
+        ).get_supervision_officer_from_pseudonymized_id(pseudonymized_id=test_id)
+
+        self.assertEqual(test_id, actual.pseudonymized_id)  # type: ignore[union-attr]
+
+    def test_get_officer_from_pseudo_id_no_match(self) -> None:
+        # If matching officer doesn't exist, return None
+        actual = OutliersQuerier(
+            StateCode.US_PA
+        ).get_supervision_officer_from_pseudonymized_id(pseudonymized_id="doesnotexist")
+        self.assertIsNone(actual)
