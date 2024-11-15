@@ -59,9 +59,12 @@ def query_template() -> str:
         attrs.supervisor_staff_external_id_array[SAFE_OFFSET(0)] AS supervisor_external_id,
         attrs.specialized_caseload_type_primary AS specialized_caseload_type,
         attrs.supervisor_staff_external_id_array AS supervisor_external_ids,
-        assignment.earliest_person_assignment_date
+        assignment.earliest_person_assignment_date,
+        -- The include_in_outcomes flag will demarcate which officers should be included 
+        -- when calculating metric benchmarks and outliers in child product views
+        {f"{config.supervision_staff_exclusions}" if config.supervision_staff_exclusions else "TRUE"} as include_in_outcomes
     FROM (
-        -- A supervision officer in the Outliers product is anyone that has open session 
+        -- A supervision officer in the Insights product is anyone that has open session 
         -- in supervision_officer_sessions, in which they are someone's supervising officer 
         SELECT DISTINCT
             state_code,
@@ -81,8 +84,7 @@ def query_template() -> str:
         GROUP BY 1,2
     ) assignment
         ON attrs.officer_id = assignment.officer_id AND attrs.state_code = assignment.state_code
-    WHERE staff.state_code = '{state}' 
-      {f"AND {config.supervision_staff_exclusions}" if config.supervision_staff_exclusions else ""}
+    WHERE staff.state_code = '{state}'
 """
         )
 
@@ -129,6 +131,7 @@ SUPERVISION_OFFICERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "supervision_district",
         "specialized_caseload_type",
         "earliest_person_assignment_date",
+        "include_in_outcomes",
     ],
 )
 

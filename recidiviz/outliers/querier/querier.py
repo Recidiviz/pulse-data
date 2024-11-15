@@ -554,15 +554,15 @@ class OutliersQuerier:
             officer_status_query = (
                 session.query(SupervisionOfficer)
                 .outerjoin(
-                    SupervisionOfficerMetric,
+                    SupervisionOfficerOutlierStatus,
                     SupervisionOfficer.external_id
-                    == SupervisionOfficerMetric.officer_id,
+                    == SupervisionOfficerOutlierStatus.officer_id,
                 )
                 .filter(
                     SupervisionOfficer.supervisor_external_ids.any(
                         supervisor_external_id
                     ),
-                    SupervisionOfficerMetric.officer_id.is_(None),
+                    SupervisionOfficerOutlierStatus.officer_id.is_(None),
                 )
                 .with_entities(
                     SupervisionOfficer.external_id,
@@ -948,13 +948,13 @@ class OutliersQuerier:
                     SupervisionOfficer.supervision_district,
                 )
                 .outerjoin(
-                    SupervisionOfficerMetric,
+                    SupervisionOfficerOutlierStatus,
                     SupervisionOfficer.external_id
-                    == SupervisionOfficerMetric.officer_id,
+                    == SupervisionOfficerOutlierStatus.officer_id,
                 )
                 .filter(
                     SupervisionOfficer.pseudonymized_id == pseudonymized_officer_id,
-                    SupervisionOfficerMetric.officer_id.is_(None),
+                    SupervisionOfficerOutlierStatus.officer_id.is_(None),
                 )
                 .one_or_none()
             )
