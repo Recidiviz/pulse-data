@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identifies individuals' supervision sentences for which they have served at least 6 months of the sentence"""
+"""Identifies individuals' supervision sentences in OR for which they have served at
+least 6 months of the sentence."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -37,25 +38,28 @@ from recidiviz.utils.metadata import local_project_id_override
 
 US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_NAME = "us_or_served_6_months_supervision"
 
-US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_DESCRIPTION = """Identifies individuals' supervision sentences for which they have served at least 6 months of the sentence"""
+US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_DESCRIPTION = """Identifies individuals'
+supervision sentences in OR for which they have served at least 6 months of the
+sentence."""
 
 US_OR_SERVED_6_MONTHS_SUPERVISION_QUERY_TEMPLATE = f"""
     WITH sentences AS (
-        /* NB: this query pulls from sentences_preprocessed (not sentence_spans, even
-        though we'll ultimately end up creating spans for eligibility). This has been
-        done because if we start from sentences_preprocessed, we start with a single
-        span and end up with at most two spans per sentence for each subcriterion;
-        however, if we started from sentence_spans, we might start with multiple spans
-        per sentence that we'd then have to work with. Also, we treat each sentence
-        separately when evaluating eligibility for OR earned discharge. If we decide to
-        change this in the future, we can refactor this subcriterion query to rely upon
-        sentence_spans. */
+        /* NB: this query pulls from `sentences_preprocessed` (not `sentence_spans`,
+        even though we'll ultimately end up creating spans for eligibility). This has
+        been done because if we start from `sentences_preprocessed`, we start with a
+        single span and end up with at most two spans per sentence for each
+        subcriterion; however, if we started from `sentence_spans`, we might start with
+        multiple spans per sentence that we'd then have to work with. Also, we treat
+        each sentence separately when evaluating eligibility for OR earned discharge. If
+        we decide to change this in the future, we can refactor this subcriterion query
+        to rely upon `sentence_spans`. */
         SELECT
             * EXCEPT (start_date, end_date),
             start_date AS sentence_start_date,
             end_date as sentence_end_date,
         FROM ({sentence_attributes()})
-        WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
+        WHERE state_code='US_OR'
+            AND sentence_type='SUPERVISION'
     ),
     absconsion_sessions AS (
         -- pull all sessions of absconsion in OR

@@ -42,6 +42,8 @@ _DESCRIPTION = """Excludes individuals under ineligible supervision types from e
 
 # TODO(#27325): Try to break this criterion up into multiple reusable criteria (rather than a
 # single, highly-specific-to-EDIS criterion).
+# TODO(#35095): Can we do this via a sentence-level criterion instead of a person-level
+# criterion?
 _QUERY_TEMPLATE = f"""
     WITH supervision_type_spans AS (
         SELECT
