@@ -165,6 +165,9 @@ class TestGetUnionedViewBuilders(unittest.TestCase):
             BigQueryAddress(
                 dataset_id="task_eligibility_spans_us_az", table_id="all_tasks"
             ),
+            BigQueryAddress(
+                dataset_id="task_eligibility_spans_us_ut", table_id="all_tasks"
+            ),
             # ... add addresses here as tasks for new states are added ...
         ]
         self.maxDiff = None
