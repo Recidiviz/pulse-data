@@ -471,6 +471,25 @@ snapshots[
     ]
 }
 
+snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_outcomes_success"] = {
+    "outcomes": {
+        "caseloadCategory": "ALL",
+        "externalId": "123",
+        "outlierMetrics": [
+            {
+                "metricId": "absconsions_bench_warrants",
+                "statusesOverTime": [
+                    {"endDate": "2023-05-01", "metricRate": 0.1, "status": "FAR"}
+                ],
+            }
+        ],
+        "pseudonymizedId": "hashhash",
+        "topXPctMetrics": [
+            {"metricId": "incarceration_starts_and_inferred", "topXPct": 10}
+        ],
+    }
+}
+
 snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_get_state_configuration_success"
 ] = {

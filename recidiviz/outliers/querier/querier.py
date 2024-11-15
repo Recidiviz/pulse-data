@@ -975,6 +975,63 @@ class OutliersQuerier:
                 supervisor_external_ids=excluded_officer.supervisor_external_ids,
             )
 
+    def get_supervision_officer_outcomes(
+        self,
+        pseudonymized_officer_id: str,
+        category_type_to_compare: InsightsCaseloadCategoryType,
+        num_lookback_periods: Optional[int],
+        period_end_date: Optional[date] = None,
+    ) -> Optional[SupervisionOfficerOutcomes]:
+        """
+        Get the SupervisionOfficerOutcomes object for the requested officer, an entity that contains information on the state's metrics that the officer may be an outlier for.
+        If the officer doesn't have metrics for the period, return None.
+
+        :param pseudonymized_officer_id: The pseudonymized id of the officer to get information for.
+        :param category_type_to_compare: The category type to use to determine the officer's caseload category
+        :param num_lookback_periods: The number of previous periods to get benchmark data for, prior to the period with end_date == period_end_date.
+        :param period_end_date: The end date of the period to get outcomes info for. If not provided, use the latest end date available.
+        :rtype: Optional[SupervisionOfficerOutcomes]
+        """
+        with self.insights_database_session() as session:
+            # TODO(#33943): Consider filtering for officers who aren't excluded from outcomes
+            # in this step once the include_in_outcomes flag column has exported. We'll
+            # be able to return early here instead of performing the query that
+            # joins against the SupervisionOfficerOutlierStatus table
+            officer_external_id = (
+                session.query(SupervisionOfficer.external_id)
+                .filter(SupervisionOfficer.pseudonymized_id == pseudonymized_officer_id)
+                .scalar()
+            )
+
+            if officer_external_id is None:
+                logging.info(
+                    "Requested officer with provided pseudonymized_id not found: %s",
+                    pseudonymized_officer_id,
+                )
+                return None
+
+            id_to_entities = self.get_id_to_supervision_officer_outcomes_entities(
+                category_type_to_compare=category_type_to_compare,
+                num_lookback_periods=num_lookback_periods,
+                period_end_date=period_end_date,
+                officer_external_id=officer_external_id,
+            )
+
+            if officer_external_id not in id_to_entities:
+                end_date_str = (
+                    period_end_date.strftime("%Y-%m-%d")
+                    if period_end_date
+                    else self._get_latest_period_end_date(session).strftime("%Y-%m-%d")
+                )
+                logging.info(
+                    "Officer with external id %s does not have outcomes info for the period ending in %s",
+                    officer_external_id,
+                    end_date_str,
+                )
+                return None
+
+            return id_to_entities[officer_external_id]
+
     def get_supervisor_from_external_id(
         self, external_id: str
     ) -> Optional[SupervisionOfficerSupervisor]:
@@ -985,6 +1042,21 @@ class OutliersQuerier:
             supervisor = (
                 session.query(SupervisionOfficerSupervisor)
                 .filter(SupervisionOfficerSupervisor.external_id == external_id)
+                .scalar()
+            )
+
+            return supervisor
+
+    def get_supervision_officer_from_pseudonymized_id(
+        self, pseudonymized_id: str
+    ) -> Optional[SupervisionOfficer]:
+        """
+        Returns the SupervisionOfficer given the pseudonymized_id.
+        """
+        with self.insights_database_session() as session:
+            supervisor = (
+                session.query(SupervisionOfficer)
+                .filter(SupervisionOfficer.pseudonymized_id == pseudonymized_id)
                 .scalar()
             )
 

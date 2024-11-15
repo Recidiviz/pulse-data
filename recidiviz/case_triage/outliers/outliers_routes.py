@@ -312,6 +312,81 @@ def create_outliers_api_blueprint() -> Blueprint:
         ]
         return jsonify({"outcomes": outcomes_list})
 
+    @api.get("/<state>/officer/<pseudonymized_officer_id>/outcomes")
+    def outcomes(state: str, pseudonymized_officer_id: str) -> Response:
+        state_code = StateCode(state.upper())
+
+        try:
+            num_lookback_periods = (
+                int(request.args["num_lookback_periods"])
+                if "num_lookback_periods" in request.args
+                else None
+            )
+
+            period_end_date = (
+                datetime.strptime(request.args["period_end_date"], "%Y-%m-%d")
+                if "period_end_date" in request.args
+                else None
+            )
+        except ValueError as e:
+            return jsonify_response(
+                f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
+            )
+
+        querier = OutliersQuerier(state_code)
+
+        user_context: UserContext = g.user_context
+        category_type_to_compare = querier.get_product_configuration(
+            user_context
+        ).primary_category_type
+
+        # Check officer exists
+        officer = querier.get_supervision_officer_from_pseudonymized_id(
+            pseudonymized_officer_id
+        )
+
+        if officer is None:
+            return jsonify_response(
+                f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
+                HTTPStatus.NOT_FOUND,
+            )
+
+        supervisor = querier.get_supervisor_from_external_id(
+            user_context.user_external_id
+        )
+
+        # If the current user cannot access data about all supervisors, ensure that they supervise the requested officer.
+        if not user_context.can_access_all_supervisors and (
+            not supervisor
+            or supervisor.external_id not in officer.supervisor_external_ids
+        ):
+            return jsonify_response(
+                "User cannot access all supervisors and does not supervise the requested officer.",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        # Retrieve requested outcomes info
+        officer_outcomes = querier.get_supervision_officer_outcomes(
+            pseudonymized_officer_id,
+            category_type_to_compare,
+            num_lookback_periods,
+            period_end_date,
+        )
+        if officer_outcomes is None:
+            return jsonify_response(
+                f"Outcomes info not found for officer with pseudonymized id: {pseudonymized_officer_id}",
+                HTTPStatus.NOT_FOUND,
+            )
+
+        return jsonify(
+            {
+                "outcomes": convert_nested_dictionary_keys(
+                    officer_outcomes.to_json(),
+                    snake_to_camel,
+                )
+            }
+        )
+
     @api.get("/<state>/benchmarks")
     def benchmarks(
         state: str,
