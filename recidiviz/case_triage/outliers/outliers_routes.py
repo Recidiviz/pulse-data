@@ -163,6 +163,17 @@ def create_outliers_api_blueprint() -> Blueprint:
                 f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
             )
 
+        user_context: UserContext = g.user_context
+
+        # If the current user cannot access data about all supervisors, ensure that they are the requested supervisor.
+        if not user_context.can_access_all_supervisors and (
+            supervisor_pseudonymized_id != user_context.pseudonymized_id
+        ):
+            return jsonify_response(
+                f"User with pseudo id [{user_context.pseudonymized_id}] cannot access requested supervisor with pseudo id [{supervisor_pseudonymized_id}].",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
         querier = OutliersQuerier(state_code)
         supervisor = querier.get_supervisor_entity_from_pseudonymized_id(
             supervisor_pseudonymized_id
@@ -173,8 +184,6 @@ def create_outliers_api_blueprint() -> Blueprint:
                 f"Supervisor with pseudonymized_id doesn't exist in DB. Pseudonymized id: {supervisor_pseudonymized_id}",
                 HTTPStatus.NOT_FOUND,
             )
-
-        user_context: UserContext = g.user_context
 
         primary_category_type = querier.get_product_configuration(
             user_context
@@ -203,6 +212,17 @@ def create_outliers_api_blueprint() -> Blueprint:
     ) -> Response:
         state_code = StateCode(state.upper())
 
+        user_context: UserContext = g.user_context
+
+        # If the current user cannot access data about all supervisors, ensure that they are the requested supervisor.
+        if not user_context.can_access_all_supervisors and (
+            supervisor_pseudonymized_id != user_context.pseudonymized_id
+        ):
+            return jsonify_response(
+                f"User with pseudo id [{user_context.pseudonymized_id}] cannot access requested supervisor with pseudo id [{supervisor_pseudonymized_id}].",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
         querier = OutliersQuerier(state_code)
         supervisor = querier.get_supervisor_entity_from_pseudonymized_id(
             supervisor_pseudonymized_id
@@ -226,6 +246,71 @@ def create_outliers_api_blueprint() -> Blueprint:
             for entity in officer_entities
         ]
         return jsonify({"officers": officers})
+
+    @api.get("/<state>/supervisor/<supervisor_pseudonymized_id>/outcomes")
+    def outcomes_for_supervisor(
+        state: str, supervisor_pseudonymized_id: str
+    ) -> Response:
+        state_code = StateCode(state.upper())
+
+        try:
+            num_lookback_periods = (
+                int(request.args["num_lookback_periods"])
+                if "num_lookback_periods" in request.args
+                else None
+            )
+
+            period_end_date = (
+                datetime.strptime(request.args["period_end_date"], "%Y-%m-%d")
+                if "period_end_date" in request.args
+                else None
+            )
+        except ValueError as e:
+            return jsonify_response(
+                f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
+            )
+
+        user_context: UserContext = g.user_context
+
+        # If the current user cannot access data about all supervisors, ensure that they are the requested supervisor.
+        if not user_context.can_access_all_supervisors and (
+            supervisor_pseudonymized_id != user_context.pseudonymized_id
+        ):
+            return jsonify_response(
+                f"User with pseudo id [{user_context.pseudonymized_id}] cannot access requested supervisor with pseudo id [{supervisor_pseudonymized_id}].",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        querier = OutliersQuerier(state_code)
+        supervisor = querier.get_supervisor_entity_from_pseudonymized_id(
+            supervisor_pseudonymized_id
+        )
+
+        if supervisor is None:
+            return jsonify_response(
+                f"Supervisor with pseudonymized_id doesn't exist in DB. Pseudonymized id: {supervisor_pseudonymized_id}",
+                HTTPStatus.NOT_FOUND,
+            )
+
+        primary_category_type = querier.get_product_configuration(
+            user_context
+        ).primary_category_type
+
+        officer_outcomes = querier.get_officer_outcomes_for_supervisor(
+            supervisor.external_id,
+            primary_category_type,
+            num_lookback_periods,
+            period_end_date,
+        )
+
+        outcomes_list = [
+            convert_nested_dictionary_keys(
+                entity.to_json(),
+                snake_to_camel,
+            )
+            for entity in officer_outcomes
+        ]
+        return jsonify({"outcomes": outcomes_list})
 
     @api.get("/<state>/benchmarks")
     def benchmarks(
@@ -330,7 +415,7 @@ def create_outliers_api_blueprint() -> Blueprint:
         )
         if officer_entity is None:
             return jsonify_response(
-                f"Officer with psuedonymized id not found: {pseudonymized_officer_id}",
+                f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
                 HTTPStatus.NOT_FOUND,
             )
 
@@ -468,7 +553,7 @@ def create_outliers_api_blueprint() -> Blueprint:
         )
         if officer_entity is None:
             return jsonify_response(
-                f"Officer with psuedonymized id not found: {pseudonymized_officer_id}",
+                f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
                 HTTPStatus.NOT_FOUND,
             )
 
@@ -508,7 +593,7 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         if excluded_officer_entity is None:
             return jsonify_response(
-                f"Officer with psuedonymized id not found: {pseudonymized_officer_id}",
+                f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
                 HTTPStatus.NOT_FOUND,
             )
 

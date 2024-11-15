@@ -438,6 +438,39 @@ snapshots[
     ]
 }
 
+snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_outcomes_for_supervisor"] = {
+    "message": "User with pseudo id [None] cannot access requested supervisor with pseudo id [hash1]."
+}
+
+snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_get_outcomes_for_supervisor_mismatched_supervisor_can_access_all"
+] = {
+    "outcomes": [
+        {
+            "caseloadCategory": "ALL",
+            "externalId": "123",
+            "outlierMetrics": [
+                {
+                    "metricId": "metric_one",
+                    "statusesOverTime": [
+                        {"endDate": "2023-05-01", "metricRate": 0.1, "status": "FAR"},
+                        {"endDate": "2023-04-01", "metricRate": 0.1, "status": "FAR"},
+                    ],
+                }
+            ],
+            "pseudonymizedId": "hashhash",
+            "topXPctMetrics": [],
+        },
+        {
+            "caseloadCategory": "ALL",
+            "externalId": "456",
+            "outlierMetrics": [],
+            "pseudonymizedId": "hashhashhash",
+            "topXPctMetrics": [],
+        },
+    ]
+}
+
 snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_get_state_configuration_success"
 ] = {
