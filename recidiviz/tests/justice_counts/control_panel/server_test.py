@@ -2835,6 +2835,39 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             "setting_type": AgencySettingType.HOMEPAGE_URL.value,
                             "value": "www.agencyhomepage.com",
                         },
+                        {
+                            "setting_type": "BIOLOGICAL_SEX_RACE_ETHNICITY_DATA_SOURCE",
+                            "value": {
+                                "biological_sex": {
+                                    "source": {
+                                        "value": "OTHER_AGENCY_OR_SYSTEM",
+                                        "other_description": "",
+                                    },
+                                    "modification": {
+                                        "value": "foo",
+                                        "other_description": "bar",
+                                    },
+                                    "collection_method": {
+                                        "value": None,
+                                        "other_description": None,
+                                    },
+                                },
+                                "race_ethnicity": {
+                                    "source": {
+                                        "value": "OTHER",
+                                        "other_description": "Our source for this is Wikipedia and Google",
+                                    },
+                                    "modification": {
+                                        "value": None,
+                                        "other_description": None,
+                                    },
+                                    "collection_method": {
+                                        "value": None,
+                                        "other_description": None,
+                                    },
+                                },
+                            },
+                        },
                     ]
                 },
             )
@@ -2874,6 +2907,39 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                         {
                             "setting_type": AgencySettingType.HOMEPAGE_URL.value,
                             "value": "www.agencyhomepage.com",
+                        },
+                        {
+                            "setting_type": "BIOLOGICAL_SEX_RACE_ETHNICITY_DATA_SOURCE",
+                            "value": {
+                                "biological_sex": {
+                                    "source": {
+                                        "value": "OTHER_AGENCY_OR_SYSTEM",
+                                        "other_description": "",
+                                    },
+                                    "modification": {
+                                        "value": "foo",
+                                        "other_description": "bar",
+                                    },
+                                    "collection_method": {
+                                        "value": None,
+                                        "other_description": None,
+                                    },
+                                },
+                                "race_ethnicity": {
+                                    "source": {
+                                        "value": "OTHER",
+                                        "other_description": "Our source for this is Wikipedia and Google",
+                                    },
+                                    "modification": {
+                                        "value": None,
+                                        "other_description": None,
+                                    },
+                                    "collection_method": {
+                                        "value": None,
+                                        "other_description": None,
+                                    },
+                                },
+                            },
                         },
                     ],
                     "jurisdictions": {"excluded": [], "included": []},
