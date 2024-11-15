@@ -183,7 +183,10 @@ class DirectIngestDocumentationGenerator:
                         table_relationship.cardinality.value.replace("_", " "),
                         table_relationship.join_sql(),
                     ]
-                    for table_relationship in raw_file_config.table_relationships
+                    for table_relationship in sorted(
+                        raw_file_config.table_relationships,
+                        key=lambda x: x.foreign_table,
+                    )
                 ],
                 # Margin values other than 0 have nondeterministic spacing. Do not
                 # change.
