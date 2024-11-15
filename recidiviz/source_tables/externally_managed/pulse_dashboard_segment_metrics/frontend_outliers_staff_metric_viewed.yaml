@@ -60,8 +60,8 @@ schema:
   - name: loaded_at
     type: TIMESTAMP
     mode: NULLABLE
-  - name: num_outlier_metrics
-    type: INTEGER
+  - name: metric_id
+    type: STRING
     mode: NULLABLE
   - name: original_timestamp
     type: TIMESTAMP
