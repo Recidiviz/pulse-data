@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 from google.auth import crypt
-from google.auth.transport.requests import Request
 from google.auth.compute_engine.credentials import Credentials
+from google.auth.transport.requests import Request
 
 class Signer(crypt.Signer):
     def __init__(

@@ -22,14 +22,14 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.case_triage.jii.helpers import (
     ALL_CLOSER,
+    FULLY_ELIGIBLE_EXCEPT_FFR,
     FULLY_ELIGIBLE_TEXT,
     INITIAL_TEXT,
-    FULLY_ELIGIBLE_EXCEPT_FFR,
-    MISSING_NEGATIVE_DA_OR_INCOME,
-    MISSING_NEGATIVE_DA_DOCUMENTATION,
+    LEARN_MORE,
     MISSING_INCOME_DOCUMENTATION,
     MISSING_NEGATIVE_DA_AND_INCOME,
-    LEARN_MORE,
+    MISSING_NEGATIVE_DA_DOCUMENTATION,
+    MISSING_NEGATIVE_DA_OR_INCOME,
     generate_eligibility_text_messages_dict,
     generate_initial_text_messages_dict,
 )

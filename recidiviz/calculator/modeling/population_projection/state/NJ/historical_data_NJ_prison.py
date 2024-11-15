@@ -28,8 +28,9 @@ HIGHEST PRIORITY MISSING DATA: prison LOS data disaggregated by crime-type
 ADDITIONAL NOTES: N/A
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )

@@ -15,10 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 # pylint: skip-file
+import time
+
+import matplotlib as plt
 import numpy as np
 import pandas as pd
-import matplotlib as plt
-import time
+
 from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )

@@ -103,14 +103,12 @@ class CustomGeventWorker(GeventWorker):
         # pylint: disable=import-outside-toplevel
         self.log.error("received signal, dumping threads")
         from datetime import datetime
+
         import gevent
 
-        filename = "/tmp/threads.%d.%s" % (
-            os.getpid(),
-            datetime.now().strftime("%d-%m-%Y_%I-%M-%S_%p"),
-        )
+        filename = f"/tmp/threads.{os.getpid()}.{datetime.now().strftime('%d-%m-%Y_%I-%M-%S_%p')}"
         try:
-            with open(filename, "w") as f:
+            with open(filename, "w", encoding="utf-8") as f:
                 gevent.util.print_run_info(file=f)
             self.log.error("threads dump to %s", filename)
         except Exception as e:
@@ -124,17 +122,14 @@ class CustomGeventWorker(GeventWorker):
         """
         # pylint: disable=import-outside-toplevel
         self.log.error("received signal, dumping memory")
-        from datetime import datetime
         import tracemalloc
+        from datetime import datetime
 
         if not tracemalloc.is_tracing():
             self.log.error("tracemalloc not enabled, will not dump memory")
             return
 
-        filename = "/tmp/memdump.tracemalloc.%d.%s" % (
-            os.getpid(),
-            datetime.now().strftime("%d-%m-%Y_%I-%M-%S_%p"),
-        )
+        filename = f"/tmp/memdump.tracemalloc.{os.getpid()}.{datetime.now().strftime('%d-%m-%Y_%I-%M-%S_%p')}"
         try:
             snapshot = tracemalloc.take_snapshot()
             snapshot.dump(filename)

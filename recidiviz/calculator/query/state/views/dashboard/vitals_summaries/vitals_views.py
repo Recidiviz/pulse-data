@@ -25,7 +25,6 @@ from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_ti
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
-
 VITALS_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     VITALS_SUMMARIES_VIEW_BUILDER,
     VITALS_TIME_SERIES_VIEW_BUILDER,

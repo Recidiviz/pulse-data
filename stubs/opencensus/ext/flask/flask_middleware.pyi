@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import Optional, List
+from typing import List, Optional
 
 from flask import Flask
-from opencensus.trace.samplers import Sampler
 from opencensus.trace.base_exporter import Exporter
 from opencensus.trace.propagation.google_cloud_format import GoogleCloudFormatPropagator
+from opencensus.trace.samplers import Sampler
 
 class FlaskMiddleware:
     def __init__(

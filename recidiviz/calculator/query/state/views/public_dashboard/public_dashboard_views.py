@@ -17,7 +17,6 @@
 """All views that populate the data in the public dashboards."""
 from typing import List
 
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.public_dashboard.incarceration import (
     incarceration_views,
 )
@@ -33,6 +32,7 @@ from recidiviz.calculator.query.state.views.public_dashboard.sentencing import (
 from recidiviz.calculator.query.state.views.public_dashboard.supervision import (
     supervision_views,
 )
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
 PUBLIC_DASHBOARD_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = (
     incarceration_views.INCARCERATION_VIEW_BUILDERS

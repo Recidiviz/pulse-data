@@ -16,8 +16,8 @@
 # =============================================================================
 from typing import Optional
 
-from pandas import DataFrame
 from numpy import ndarray
+from pandas import DataFrame
 
 class ARIMAResults:
     def forecast(self, steps: int) -> ndarray: ...

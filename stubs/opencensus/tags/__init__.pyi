@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from contextvars import ContextVar
 from collections import OrderedDict
-from typing import Optional, List
+from contextvars import ContextVar
+from typing import List, Optional
 
 from opencensus.common.runtime_context import _AsyncRuntimeContext
 from opencensus.tags.tag import Tag
