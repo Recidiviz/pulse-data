@@ -208,7 +208,7 @@ US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
             -- this is listed as a local or permanent address
             AND AddressTypeId IN ('1', '2')
             -- and this address change occurred after the start of supervision
-            AND DATE(StartDate) > supervision_start_date
+            AND DATE(StartDate) > supervision_start_date AND DATE(StartDate) > supervision_level_start
         GROUP BY 1
     ),
     case_compliance_with_next_recommended_recalculated AS (
