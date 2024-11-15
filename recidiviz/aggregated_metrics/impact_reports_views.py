@@ -20,5 +20,4 @@ from recidiviz.aggregated_metrics.impact_reports_aggregated_metrics_view_collect
     get_impact_reports_aggregated_metrics_view_builders,
 )
 
-
 IMPACT_REPORTS_VIEWS = get_impact_reports_aggregated_metrics_view_builders()

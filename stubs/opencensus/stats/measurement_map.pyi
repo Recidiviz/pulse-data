@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import Optional, List
+from typing import List, Optional
 
 from opencensus.stats.measure import BaseMeasure
 from opencensus.tags import TagMap

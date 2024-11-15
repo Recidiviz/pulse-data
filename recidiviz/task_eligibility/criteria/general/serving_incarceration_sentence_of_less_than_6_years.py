@@ -20,11 +20,10 @@ of less than 6 years."""
 
 from google.cloud import bigquery
 
-from recidiviz.task_eligibility.reasons_field import ReasonsField
-
 from recidiviz.calculator.query.sessions_query_fragments import (
     join_sentence_spans_to_compartment_sessions,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )

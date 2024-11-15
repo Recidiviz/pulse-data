@@ -9,12 +9,9 @@
 """Provides necessary context for ease of package resolution from tests."""
 
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from recidiviz import calculator
-from recidiviz import ingest
-from recidiviz import utils
-from recidiviz import reporting
+from recidiviz import calculator, ingest, reporting, utils

@@ -29,9 +29,11 @@ REFERENCE_DATE: 2020
 TIME_STEP: month
 ADDITIONAL NOTES: 
 """
+import numpy as np
+
 # pylint: skip-file
 import pandas as pd
-import numpy as np
+
 from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )

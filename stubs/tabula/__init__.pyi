@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements stubs for the Tabula python library."""
-from typing import Union, List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 

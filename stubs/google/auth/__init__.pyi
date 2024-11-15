@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import Tuple, Optional, List
+from typing import List, Optional, Tuple
 
 from google.auth.compute_engine.credentials import Credentials
 from google.auth.transport.requests import Request

@@ -21,15 +21,15 @@ Script to backfill the JII Firestore DB with newly stored values.
 """
 
 import argparse
-from collections import defaultdict
 import logging
+from collections import defaultdict
 from typing import Dict, List
+
 from google.api_core.retry import Retry
 
-from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.common.constants.states import StateCode
+from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.params import str_to_bool
-
 
 logger = logging.getLogger(__name__)
 

@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import Optional, Type, Any, Dict, List
+from enum import Enum
+from typing import Any, Dict, List, Optional, Type
 
 from marshmallow.fields import Field
-from enum import Enum
 
 class EnumField(Field):
     def __init__(
