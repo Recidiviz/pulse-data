@@ -16,7 +16,7 @@
 # =============================================================================
 """Helper functions for building BQ sessions views."""
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from recidiviz.calculator.query.bq_utils import (
     join_on_columns_fragment,
@@ -291,13 +291,12 @@ def _compartment_where_clause(
     return ""
 
 
-def join_sentence_spans_to_compartment_sessions(
+def _get_sessions_query_strings(
     compartment_level_1_to_overlap: Optional[Union[str, List[str]]] = None,
     compartment_level_2_to_overlap: Optional[Union[str, List[str]]] = None,
-) -> str:
-    """Returns a query fragment to join sentence_spans with all the sentence attributes from
-    sentences_preprocessed to compartment_sessions where sentence_spans overlap with particular
-    kinds of sessions.
+) -> Tuple[str, str, str]:
+    """Helper method for the `join_sentence_X_to_compartment_sessions` functions that
+    determines the sessions view and compartment level 1 & 2 conditions clauses
     """
     if compartment_level_1_to_overlap is None:
         compartment_level_1_to_overlap = ["SUPERVISION"]
@@ -313,6 +312,25 @@ def join_sentence_spans_to_compartment_sessions(
     compartment_level_2_clause = _compartment_where_clause(
         compartment_types_to_overlap=compartment_level_2_to_overlap, level=2
     )
+    return sessions_view, compartment_level_1_clause, compartment_level_2_clause
+
+
+def join_sentence_spans_to_compartment_sessions(
+    compartment_level_1_to_overlap: Optional[Union[str, List[str]]] = None,
+    compartment_level_2_to_overlap: Optional[Union[str, List[str]]] = None,
+) -> str:
+    """Returns a query fragment to join sentence_spans with all the sentence attributes from
+    sentences_preprocessed to compartment_sessions where sentence_spans overlap with particular
+    kinds of sessions.
+    """
+    (
+        sessions_view,
+        compartment_level_1_clause,
+        compartment_level_2_clause,
+    ) = _get_sessions_query_strings(
+        compartment_level_1_to_overlap,
+        compartment_level_2_to_overlap,
+    )
     return f"""
     FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
     UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
@@ -327,6 +345,73 @@ def join_sentence_spans_to_compartment_sessions(
         -- Use strictly less than for exclusive end_dates
         AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
         AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
+"""
+
+
+def join_sentence_serving_periods_to_compartment_sessions(
+    compartment_level_1_to_overlap: Optional[Union[str, List[str]]] = None,
+    compartment_level_2_to_overlap: Optional[Union[str, List[str]]] = None,
+) -> str:
+    """Returns a query fragment to join `overlapping_sentence_serving_periods` with all the sentence attributes from
+    sentences_and_charges to compartment_sessions for serving sentence spans that overlap with particular
+    kinds of sessions.
+    """
+    (
+        sessions_view,
+        compartment_level_1_clause,
+        compartment_level_2_clause,
+    ) = _get_sessions_query_strings(
+        compartment_level_1_to_overlap,
+        compartment_level_2_to_overlap,
+    )
+    return f"""
+    FROM `{{project_id}}.sentence_sessions.overlapping_sentence_serving_periods_materialized` span,
+    UNNEST(sentence_id_array) AS sentence_id
+    INNER JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sent
+      USING (state_code, person_id, sentence_id)
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.{sessions_view}_materialized` sess
+        ON span.state_code = sess.state_code
+        AND span.person_id = sess.person_id
+        -- Restrict to spans that overlap with particular compartment levels
+        {compartment_level_1_clause}
+        {compartment_level_2_clause}
+        -- Use strictly less than for exclusive end_dates
+        AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
+        AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
+"""
+
+
+def join_sentence_status_to_compartment_sessions(
+    compartment_level_1_to_overlap: Optional[Union[str, List[str]]] = None,
+    compartment_level_2_to_overlap: Optional[Union[str, List[str]]] = None,
+) -> str:
+    """Returns a query fragment to join sentence_status_spans with all the sentence attributes from
+    sentences_and_charges to compartment_sessions where SERVING sentence_status_spans overlap with particular
+    kinds of sessions.
+    """
+    (
+        sessions_view,
+        compartment_level_1_clause,
+        compartment_level_2_clause,
+    ) = _get_sessions_query_strings(
+        compartment_level_1_to_overlap,
+        compartment_level_2_to_overlap,
+    )
+    return f"""
+    FROM `{{project_id}}.sentence_sessions.sentence_status_raw_text_sessions_materialized` span
+    INNER JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sent
+        USING (state_code, person_id, sentence_id)
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.{sessions_view}_materialized` sess
+        ON span.state_code = sess.state_code
+        AND span.person_id = sess.person_id
+        -- Restrict to spans that overlap with particular compartment levels
+        {compartment_level_1_clause}
+        {compartment_level_2_clause}
+        -- Use strictly less than for exclusive end_dates
+        AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
+        AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
+        -- Only include sentence sessions while the sentence was marked as being served
+        AND span.is_serving_sentence_status
 """
 
 

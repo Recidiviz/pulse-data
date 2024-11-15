@@ -21,7 +21,7 @@ that are stated in the ATP Work Release policy in ND.
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_sessions,
+    join_sentence_serving_periods_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -50,11 +50,11 @@ _QUERY_TEMPLATE = f"""
         span.state_code,
         span.person_id,
         span.start_date,
-        span.end_date,
+        span.end_date_exclusive AS end_date,
         FALSE AS meets_criteria,
         TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute ORDER BY statute) AS ineligible_offenses)) AS reason,
         ARRAY_AGG(DISTINCT statute ORDER BY statute) AS ineligible_offenses,
-    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap='INCARCERATION')}
+    {join_sentence_serving_periods_to_compartment_sessions(compartment_level_1_to_overlap='INCARCERATION')}
     AND sent.statute IN {tuple(_INELIGIBLE_STATUTES)}
     AND span.state_code = 'US_ND'
     GROUP BY 1,2,3,4,5

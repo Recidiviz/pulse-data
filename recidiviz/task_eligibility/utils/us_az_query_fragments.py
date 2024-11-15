@@ -154,45 +154,17 @@ WHERE release_type = "{release_type}"
 def us_az_sentences_preprocessed_query_template() -> str:
     """Returns the query template used for AZ sentences preprocessed"""
     return """
-    # TODO(#33401): Migrate this to `sentence_sessions.sentence_spans`
-    WITH sentence_status_snapshot AS (
-        # Completed sentences
-        SELECT 
-            state_code,
-            person_id,
-            sentence_id,
-            status,
-            MIN(SAFE_CAST(status_update_datetime AS DATE)) AS status_update_datetime,
-        FROM `{project_id}.normalized_state.state_sentence_status_snapshot`
-        WHERE state_code = 'US_AZ'
-            AND status = 'COMPLETED'
-        GROUP BY 1,2,3,4
-    ),
-    sentence_length AS (
-        SELECT 
-            ssl.state_code,
-            ssl.person_id,
-            ssl.sentence_id,
-            ssl.projected_completion_date_max_external,
-        FROM `{project_id}.normalized_state.state_sentence_length` ssl
-        LEFT JOIN sentence_status_snapshot sss
-            USING(state_code, person_id, sentence_id)
-        WHERE ssl.state_code = 'US_AZ'
-            AND sss.status != 'COMPLETED'
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY ssl.state_code, ssl.person_id, ssl.sentence_id ORDER BY ssl.length_update_datetime DESC) = 1
-    )
     SELECT 
         sent.state_code,
         sent.person_id,
         sent.sentence_group_external_id,
-        sent.imposed_date AS start_date,
-        # Make end_date exclusive
-        DATE_ADD(sl.projected_completion_date_max_external, INTERVAL 1 DAY) AS end_date,
+        serving_sessions.start_date,
+        serving_sessions.end_date_exclusive AS end_date,
         sent.statute,
         sent.description,
-    FROM `{project_id}.sentence_sessions.sentences_and_charges_materialized` sent
-    LEFT JOIN sentence_length sl
-        USING(state_code, person_id, sentence_id)
+    FROM `{project_id}.sentence_sessions.sentence_serving_period_materialized` serving_sessions
+    INNER JOIN `{project_id}.sentence_sessions.sentences_and_charges_materialized` sent
+        USING (state_code, person_id, sentence_id)
     WHERE sentence_type = 'STATE_PRISON'
         AND sent.state_code = 'US_AZ'
 """

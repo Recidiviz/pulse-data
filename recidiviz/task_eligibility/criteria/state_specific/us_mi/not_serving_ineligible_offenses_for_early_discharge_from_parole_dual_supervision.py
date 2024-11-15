@@ -20,7 +20,7 @@ ineligible offenses on parole/dual supervision
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_sessions,
+    join_sentence_serving_periods_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -44,15 +44,15 @@ _QUERY_TEMPLATE = f"""
         span.state_code,
         span.person_id,
         span.start_date,
-        span.end_date,
+        span.end_date_exclusive AS end_date,
         FALSE as meets_criteria,
         TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute ORDER BY statute) AS ineligible_offenses)) AS reason,
         ARRAY_AGG(DISTINCT statute ORDER BY statute) AS ineligible_offenses,
-    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap = ['SUPERVISION'],
-                                                 compartment_level_2_to_overlap=['PAROLE', 'DUAL'])}
+    {join_sentence_serving_periods_to_compartment_sessions(compartment_level_1_to_overlap = ['SUPERVISION'],
+                                                           compartment_level_2_to_overlap=['PAROLE', 'DUAL'])}
     WHERE span.state_code = "US_MI"
     --exclude probation sentences for DUAL clients
-    AND sent.sentence_type = "INCARCERATION" 
+    AND sent.sentence_type = "STATE_PRISON"
     --only include sentence spans with offenses that require registration
     AND sent.statute IN (SELECT statute_code FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
             WHERE (CAST(requires_so_registration AS BOOL) OR CAST(is_excluded_from_parole_ed AS BOOL))

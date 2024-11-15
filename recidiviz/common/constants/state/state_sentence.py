@@ -55,6 +55,10 @@ class StateSentenceStatus(StateEntityEnum):
     def is_terminating_status(self) -> bool:
         return _STATE_SENTENCE_STATUS_VALUE_TERMINATES[self]
 
+    @property
+    def is_considered_serving_status(self) -> bool:
+        return _STATE_SENTENCE_STATUS_VALUE_DESIGNATES_SERVING[self]
+
 
 _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateSentenceStatus.AMENDED: "Describes a sentence that has been amended. This usually"
@@ -98,19 +102,39 @@ _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
 
 # We enumerate every enum option here to ensure all are accounted for and tested.
 _STATE_SENTENCE_STATUS_VALUE_TERMINATES: Dict[StateEntityEnum, bool] = {
+    StateSentenceStatus.COMPLETED: True,
+    StateSentenceStatus.PARDONED: True,
+    StateSentenceStatus.REVOKED: True,
+    StateSentenceStatus.VACATED: True,
+    # These are not terminating statuses
     StateSentenceStatus.AMENDED: False,
     StateSentenceStatus.COMMUTED: False,
-    StateSentenceStatus.COMPLETED: True,
-    StateSentenceStatus.EXTERNAL_UNKNOWN: False,
-    StateSentenceStatus.INTERNAL_UNKNOWN: False,
-    StateSentenceStatus.PARDONED: True,
     StateSentenceStatus.PENDING: False,
     StateSentenceStatus.PRESENT_WITHOUT_INFO: False,
-    StateSentenceStatus.REVOKED: True,
     StateSentenceStatus.SANCTIONED: False,
     StateSentenceStatus.SERVING: False,
     StateSentenceStatus.SUSPENDED: False,
-    StateSentenceStatus.VACATED: True,
+    StateSentenceStatus.EXTERNAL_UNKNOWN: False,
+    StateSentenceStatus.INTERNAL_UNKNOWN: False,
+}
+
+# We enumerate every enum option here to ensure all are accounted for and tested.
+_STATE_SENTENCE_STATUS_VALUE_DESIGNATES_SERVING: Dict[StateEntityEnum, bool] = {
+    StateSentenceStatus.AMENDED: True,
+    StateSentenceStatus.COMMUTED: True,
+    StateSentenceStatus.SANCTIONED: True,
+    StateSentenceStatus.SERVING: True,
+    # We do not consider a sentence as being served while it has one
+    # of these statuses
+    StateSentenceStatus.COMPLETED: False,
+    StateSentenceStatus.PARDONED: False,
+    StateSentenceStatus.REVOKED: False,
+    StateSentenceStatus.VACATED: False,
+    StateSentenceStatus.SUSPENDED: False,
+    StateSentenceStatus.EXTERNAL_UNKNOWN: False,
+    StateSentenceStatus.INTERNAL_UNKNOWN: False,
+    StateSentenceStatus.PRESENT_WITHOUT_INFO: False,
+    StateSentenceStatus.PENDING: False,
 }
 
 

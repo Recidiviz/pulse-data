@@ -20,7 +20,7 @@ for supervision level downgrade
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_sessions,
+    join_sentence_status_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -28,6 +28,8 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = (
     "US_MI_NOT_SERVING_INELIGIBLE_OFFENSES_FOR_DOWNGRADE_FROM_SUPERVISION_LEVEL"
@@ -46,17 +48,17 @@ _QUERY_TEMPLATE = f"""
         span.state_code,
         span.person_id,
         span.start_date,
-        span.end_date,
+        span.end_date_exclusive AS end_date,
         FALSE as meets_criteria,
         TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
-                        ARRAY_AGG(DISTINCT sent.status IGNORE NULLS ORDER BY status) AS sentence_status,
-                         LOGICAL_OR(sent.life_sentence) AS is_life_sentence,
+                        ARRAY_AGG(DISTINCT span.status IGNORE NULLS ORDER BY span.status) AS sentence_status,
+                         LOGICAL_OR(sent.is_life) AS is_life_sentence,
                          LOGICAL_OR(sent.is_sex_offense) AS is_sex_offense )) AS reason,
         ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
-        ARRAY_AGG(DISTINCT sent.status IGNORE NULLS ORDER BY status) AS sentence_status,
-        LOGICAL_OR(sent.life_sentence) AS is_life_sentence,
+        ARRAY_AGG(DISTINCT span.status IGNORE NULLS ORDER BY span.status) AS sentence_status,
+        LOGICAL_OR(sent.is_life) AS is_life_sentence,
         LOGICAL_OR(sent.is_sex_offense) AS is_sex_offense,
-    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
+    {join_sentence_status_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
     WHERE span.state_code = "US_MI"
     AND (sent.is_sex_offense
         --failure to register for sex offense
@@ -65,8 +67,8 @@ _QUERY_TEMPLATE = f"""
         OR sent.statute LIKE '750.411I%'
         --Domestic Violence 3rd 
         OR sent.statute LIKE '750.814%'
-        OR sent.status = 'COMMUTED'
-        OR sent.life_sentence
+        OR span.status = 'COMMUTED'
+        OR IFNULL(sent.is_life, FALSE)
         )
     GROUP BY 1, 2, 3, 4, 5
     """
@@ -103,3 +105,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         ],
     )
 )
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        VIEW_BUILDER.build_and_print()

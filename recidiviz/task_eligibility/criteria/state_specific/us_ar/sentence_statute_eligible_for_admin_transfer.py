@@ -20,7 +20,7 @@ based on the statute ("Target Offenses").
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_sessions,
+    join_sentence_serving_periods_to_compartment_sessions,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -42,9 +42,9 @@ _QUERY_TEMPLATE = f"""
             span.state_code,
             span.person_id,
             span.start_date,
-            span.end_date,
+            span.end_date_exclusive AS end_date,
             statute,
-        {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=["INCARCERATION"])}
+        {join_sentence_serving_periods_to_compartment_sessions(compartment_level_1_to_overlap=["INCARCERATION"])}
     )
     ,
     statute_eligibility AS (
