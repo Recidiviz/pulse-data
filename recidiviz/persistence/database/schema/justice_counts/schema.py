@@ -1096,8 +1096,11 @@ class AgencyJurisdiction(JusticeCountsBase):
     # membership (the jurisdiction is either INCLUDE(d) or EXCLUDE(d) from an agency)
     membership = Column(String, nullable=False)
 
-    # jurisdiction_id (the unique id that identifies a given jurisdiction)
-    jurisdiction_id = Column(String, nullable=False)
+    # FIPS code of the jurisdiction
+    jurisdiction_id = Column(String, nullable=True)
+
+    # GEOID of the jurisdiction
+    geoid = Column(String, nullable=True)
 
     __table_args__ = tuple(
         [
