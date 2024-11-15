@@ -42,6 +42,7 @@ class InferredGroupBuilder:
     An inferred group is created when two sentences:
         - Have the same NormalizedStateSentenceGroup
         - Have the same imposed_date
+        - Have a common NormalizedStateChargeV2
         - Have an overlapping span of time between the first SERVING
           status and terminating status.
     A sentence can only belong to a single inferred group. We infer
@@ -53,6 +54,9 @@ class InferredGroupBuilder:
 
     # Sentences sharing a NormalizedSentenceGroup external_id are in the same inferred group.
     sg_external_ids: set[str] = attr.ib(factory=set)
+
+    # Sentences sharing any NormalizedStateChargeV2 external_id values are in the same inferred group.
+    charge_external_ids: set[str] = attr.ib(factory=set)
 
     # The imposed_date values of all the |sentences| stored above.
     # Sentences sharing an imposed_date are in the same inferred group.
@@ -68,6 +72,9 @@ class InferredGroupBuilder:
             return True
         if sentence.imposed_date in self.imposed_dates:
             return True
+        for charge in sentence.charges:
+            if charge.external_id in self.charge_external_ids:
+                return True
         # status_span is None if a state hasn't hydrated status snapshots
         # This sentence should be in the group if its first status is
         # within the span of other sentences in the group
@@ -91,6 +98,8 @@ class InferredGroupBuilder:
             self.sg_external_ids.add(sentence.sentence_group_external_id)
         if sentence.imposed_date:
             self.imposed_dates.add(sentence.imposed_date)
+        for charge in sentence.charges:
+            self.charge_external_ids.add(charge.external_id)
         # status_span is None if a state hasn't hydrated status snapshots
         # or there is no SERVING status
         if status_span := sentence.first_serving_status_to_terminating_status_dt_range:
@@ -141,6 +150,7 @@ def get_normalized_inferred_sentence_groups(
     A NormalizedStateSentenceGroupInferred is created when two sentences:
         - Have the same NormalizedStateSentenceGroup
         - Have the same imposed_date
+        - Have a common charge
         - Have an overlapping span of time between the first SERVING
           status and terminating status.
     A sentence can only belong to a single inferred group. We infer
