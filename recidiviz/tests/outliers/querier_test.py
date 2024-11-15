@@ -233,6 +233,24 @@ class TestOutliersQuerier(InsightsDbTestCase):
         )
         self.snapshot.assert_match(actual, name="test_get_excluded_officers_for_supervisor")  # type: ignore[attr-defined]
 
+    def test_get_officer_outcomes_for_supervisor(self) -> None:
+        actual = OutliersQuerier(StateCode.US_PA).get_officer_outcomes_for_supervisor(
+            supervisor_external_id="102",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            num_lookback_periods=5,
+        )
+        self.snapshot.assert_match(actual, name="test_get_officer_outcomes_for_supervisor")  # type: ignore[attr-defined]
+
+    def test_get_officer_outcomes_for_supervisor_non_all_category(
+        self,
+    ) -> None:
+        actual = OutliersQuerier(StateCode.US_PA).get_officer_outcomes_for_supervisor(
+            supervisor_external_id="102",
+            category_type_to_compare=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
+            num_lookback_periods=5,
+        )
+        self.snapshot.assert_match(actual, name="test_get_officer_outcomes_for_supervisor_non_all_category")  # type: ignore[attr-defined]
+
     def test_get_supervisor_from_pseudonymized_id_no_match(self) -> None:
         # If matching supervisor doesn't exist, return None
         actual = OutliersQuerier(

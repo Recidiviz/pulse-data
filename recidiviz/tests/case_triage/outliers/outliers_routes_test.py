@@ -48,6 +48,7 @@ from recidiviz.outliers.types import (
     OutliersVitalsMetricConfig,
     PersonName,
     SupervisionOfficerEntity,
+    SupervisionOfficerOutcomes,
     SupervisionOfficerSupervisorEntity,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
@@ -327,6 +328,32 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
 
     @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_officers_unauthorized(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", pseudonymized_id="invalidhash"
+        )
+
+        mock_enabled_states.return_value = ["US_PA"]
+
+        response = self.test_client.get(
+            "/outliers/US_PA/supervisor/hash1/officers",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "User with pseudo id [invalidhash] cannot access requested supervisor with pseudo id [hash1]."
+            },
+        )
+
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
     )
     @patch(
@@ -341,7 +368,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_outliers: MagicMock,
         mock_get_supervisor: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_pa", pseudonymized_id="hash1"
+        )
         mock_enabled_states.return_value = ["US_PA"]
         with SessionFactory.using_database(self.insights_database_key) as session:
             mock_get_supervisor.return_value = (
@@ -428,7 +457,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_excluded_officers: MagicMock,
         mock_get_supervisor: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_pa", pseudonymized_id="hash1"
+        )
         mock_enabled_states.return_value = ["US_PA"]
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -560,13 +591,208 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states: MagicMock,
         mock_get_supervisor: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_pa", pseudonymized_id="hash1"
+        )
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_get_supervisor.return_value = None
 
         response = self.test_client.get(
             "/outliers/US_PA/supervisor/hash1/officers?num_lookback_periods=1&period_end_date=2023-05-01",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "Supervisor with pseudonymized_id doesn't exist in DB. Pseudonymized id: hash1"
+            },
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_outcomes_unauthorized(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", pseudonymized_id="invalidhash"
+        )
+
+        mock_enabled_states.return_value = ["US_PA"]
+
+        response = self.test_client.get(
+            "/outliers/US_PA/supervisor/hash1/outcomes",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "User with pseudo id [invalidhash] cannot access requested supervisor with pseudo id [hash1]."
+            },
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officer_outcomes_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_outcomes_for_supervisor(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_outcomes: MagicMock,
+        mock_get_supervisor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        mock_enabled_states.return_value = ["US_PA"]
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            mock_get_supervisor.return_value = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id == "102")
+                .first()
+            )
+
+            mock_get_outcomes.return_value = [
+                SupervisionOfficerOutcomes(
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-04-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+                SupervisionOfficerOutcomes(
+                    external_id="456",
+                    pseudonymized_id="hashhashhash",
+                    caseload_category="ALL",
+                    outlier_metrics=[],
+                    top_x_pct_metrics=[],
+                ),
+            ]
+
+            response = self.test_client.get(
+                "/outliers/US_PA/supervisor/hash1/outcomes?num_lookback_periods=1&period_end_date=2023-05-01",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            self.snapshot.assert_match(response.json, name="test_get_outcomes_for_supervisor")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officer_outcomes_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_outcomes_for_supervisor_mismatched_supervisor_can_access_all(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_outliers: MagicMock,
+        mock_get_supervisor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_pa", external_id="101", can_access_all_supervisors=True
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            mock_get_supervisor.return_value = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id == "101")
+                .first()
+            )
+
+            mock_get_outliers.return_value = [
+                SupervisionOfficerOutcomes(
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-04-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[],
+                ),
+                SupervisionOfficerOutcomes(
+                    external_id="456",
+                    pseudonymized_id="hashhashhash",
+                    caseload_category="ALL",
+                    outlier_metrics=[],
+                    top_x_pct_metrics=[],
+                ),
+            ]
+
+            response = self.test_client.get(
+                "/outliers/US_PA/supervisor/hash1/outcomes?num_lookback_periods=1&period_end_date=2023-05-01",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            self.snapshot.assert_match(response.json, name="test_get_outcomes_for_supervisor_mismatched_supervisor_can_access_all")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_outcomes_for_supervisor_does_not_exist_failure(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_supervisor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_pa", pseudonymized_id="hash1"
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        mock_get_supervisor.return_value = None
+
+        response = self.test_client.get(
+            "/outliers/US_PA/supervisor/hash1/outcomes?num_lookback_periods=1&period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -1898,7 +2124,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertEqual(
             response.json,
-            {"message": "Officer with psuedonymized id not found: invalidhash"},
+            {"message": "Officer with pseudonymized id not found: invalidhash"},
         )
 
     @patch(
@@ -2550,7 +2776,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertEqual(
             response.json,
-            {"message": "Officer with psuedonymized id not found: invalidhash"},
+            {"message": "Officer with pseudonymized id not found: invalidhash"},
         )
 
     @patch(

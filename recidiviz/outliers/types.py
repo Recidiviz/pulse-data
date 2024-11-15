@@ -484,6 +484,28 @@ class ExcludedSupervisionOfficerEntity(SupervisionOfficerEntityBase):
 
 
 @attr.s
+class SupervisionOfficerOutcomes:
+    """Represents outcomes information for an officer who was included in benchmark
+    and outlier status calculations."""
+
+    # The officer's external id
+    external_id: str = attr.ib()
+    # The officer's pseudonymized id
+    pseudonymized_id: str = attr.ib()
+    # List of objects that represent what metrics the officer is an Outlier for
+    # If the list is empty, then the officer is not an Outlier on any metric.
+    outlier_metrics: list = attr.ib()
+    # List of objects that represent what metrics the officer is in the top x% for the latest period for,
+    # where x can be specified on the OutliersMetricConfig in a state's OutliersBackendConfig
+    top_x_pct_metrics: list = attr.ib()
+    # The caseload category this officer is part of
+    caseload_category: str = attr.ib()
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.s
 class SupervisionOfficerSupervisorEntity:
     # The full name of the supervisor
     full_name: PersonName = attr.ib()
