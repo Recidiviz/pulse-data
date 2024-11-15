@@ -1040,6 +1040,9 @@ class AgencySettingType(enum.Enum):
     TEST = "TEST"
     PURPOSE_AND_FUNCTIONS = "PURPOSE_AND_FUNCTIONS"
     HOMEPAGE_URL = "HOMEPAGE_URL"
+    BIOLOGICAL_SEX_RACE_ETHNICITY_DATA_SOURCE = (
+        "BIOLOGICAL_SEX_RACE_ETHNICITY_DATA_SOURCE"
+    )
 
 
 class AgencySetting(JusticeCountsBase):
