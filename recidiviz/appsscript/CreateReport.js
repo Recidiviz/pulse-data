@@ -351,6 +351,76 @@ function copyAndPopulateTemplateDoc(
 }
 
 /**
+ * For each Workflow, copy the placeholder row and populate with the Workflow name, number of Opportunities Granted, and MAU
+ * @param {Body} child The child table to add rows to
+ * @param {Number} templateRowIdx The number of rows in the table before adding the new rows
+ * @param {map} workflowToOpportunityGrantedAndMauAndWau An object that maps the workflow name to the number of opportunities granted, the number of distinct monthly and weekly active users, and the number of distinct monthly and weekly registered users for that workflow
+ */
+function addWorkflowsRows(
+  child,
+  templateRowIdx,
+  workflowToOpportunityGrantedAndMauAndWau
+) {
+  var newRow = null;
+  var newRowIdx = templateRowIdx + 1;
+
+  for (let [workflow, opportunityGrantedAndMauAndWau] of Object.entries(
+    workflowToOpportunityGrantedAndMauAndWau
+  )) {
+    const rowToCopy = child.getChild(templateRowIdx).copy();
+    newRow = child.insertTableRow(newRowIdx, rowToCopy);
+    newRowIdx += 1;
+    const nameCell = newRow.getCell(0);
+    const opportunityGrantsCell = newRow.getCell(1);
+    const mauCell = newRow.getCell(2);
+    const wauCell = newRow.getCell(3);
+    const nameTextToReplace = nameCell.getChild(0);
+    const opportunityGrantsTextToReplace = opportunityGrantsCell.getChild(0);
+    const mauTextToReplace = mauCell.getChild(0);
+    const wauTextToReplace = wauCell.getChild(0);
+
+    const nameTextCopy = nameTextToReplace.copy();
+    const opportunityGrantsTextCopy = opportunityGrantsTextToReplace.copy();
+    const mauTextCopy = mauTextToReplace.copy();
+    const wauTextCopy = wauTextToReplace.copy();
+
+    nameTextCopy.replaceText("{{workflow_name}}", workflow);
+    opportunityGrantsTextCopy.replaceText(
+      "{{num_grants}}",
+      opportunityGrantedAndMauAndWau.opportunityGranted.toLocaleString()
+    );
+    mauTextCopy.replaceText(
+      "{{mau}}",
+      calculateActiveUsersPercent(
+        opportunityGrantedAndMauAndWau.distinctMonthlyActiveUsers,
+        opportunityGrantedAndMauAndWau.distinctMonthlyRegisteredUsers
+      )
+    );
+    wauTextCopy.replaceText(
+      "{{wau}}",
+      calculateActiveUsersPercent(
+        opportunityGrantedAndMauAndWau.distinctWeeklyActiveUsers,
+        opportunityGrantedAndMauAndWau.distinctWeeklyRegisteredUsers
+      )
+    );
+
+    nameCell.appendParagraph(nameTextCopy);
+    opportunityGrantsCell.appendParagraph(opportunityGrantsTextCopy);
+    mauCell.appendParagraph(mauTextCopy);
+    wauCell.appendParagraph(wauTextCopy);
+
+    // Finally, delete the original element that we copied
+    nameCell.removeChild(nameTextToReplace);
+    opportunityGrantsCell.removeChild(opportunityGrantsTextToReplace);
+    mauCell.removeChild(mauTextToReplace);
+    wauCell.removeChild(wauTextToReplace);
+  }
+
+  // Once we have copied all Workflows rows, we can delete the placeholder row
+  child.removeRow(2);
+}
+
+/**
  * Copy and populate opportunity grants
  * Identifies, copies, and populates the total number of opportunuties granted (over all workflows) as well as the number of opportunities granted for each workflow.
  * @param {Body} body The template document body
@@ -464,106 +534,76 @@ function copyAndPopulateOpportunityGrants(
   Logger.log("numSupervisionWorkflows: %s", numSupervisionWorkflows);
   Logger.log("numFacilitiesWorkflows: %s", numFacilitiesWorkflows);
 
-  // Next, populate the Opportunities Granted for each individual Workflow
-  const childIdx = getIndexOfElementToReplace(
-    body,
-    DocumentApp.ElementType.TABLE,
-    "{{num_grants_pp}}"
-  );
-  const child = body.getChild(childIdx);
-
-  // To start, the table will have 5 rows as a default (rows are zero indexed)
-  var numTableRows = 4;
-
-  if (numSupervisionWorkflows > 0) {
-    body.replaceText("{{num_grants_pp}}", totalSupervisionOpportunitiesGranted);
-    body.replaceText("{{mau_pp}}", totalSupervisionMAU);
-    body.replaceText("{{wau_pp}}", totalSupervisionWAU);
-  } else {
-    // remove P&P rows from table
-    child.removeRow(3);
-    numTableRows -= 1;
-  }
-
-  if (numFacilitiesWorkflows > 0) {
-    body.replaceText(
-      "{{num_grants_facility}}",
-      totalFacilitiesOpportunitiesGranted
+  /**
+   * Filters the workflow map to only include workflows matching the given system
+   * @param {Object} workflowToOpportunityGrantedAndMauAndWau Map of workflow names to their opportunity/MAU/WAU data
+   * @param {Object} workflowToSystem Map of workflow names to their system type ('SUPERVISION' or 'INCARCERATION')
+   * @param {string} system The system type to filter for ('SUPERVISION' or 'INCARCERATION')
+   * @returns {Object} Filtered map containing only workflows matching the system
+   */
+  const filterWorkflowsBySystem = (
+    workflowToOpportunityGrantedAndMauAndWau,
+    workflowToSystem,
+    system
+  ) =>
+    Object.fromEntries(
+      Object.entries(workflowToOpportunityGrantedAndMauAndWau).filter(
+        ([workflow, _data]) => workflowToSystem[workflow] === system
+      )
     );
-    body.replaceText("{{mau_facility}}", totalFacilitiesMAU);
-    body.replaceText("{{wau_facility}}", totalFacilitiesWAU);
-  } else {
-    // remove Facilities rows from table
-    child.removeRow(numTableRows);
-    numTableRows -= 1;
-  }
 
-  // For each Workflow, copy the placeholder row and populate with the Workflow name, number of Opportunities Granted, and MAU
-  Object.entries(workflowToOpportunityGrantedAndMauAndWau).forEach(
-    ([workflow, opportunityGrantedAndMauAndWau]) => {
-      var newRow = null;
-      var newRowIdx = null;
-      const rowToCopy = child.getChild(2).copy();
+  // Next, populate the Opportunities Granted for each individual Workflow
 
-      if (workflowToSystem[workflow] === "SUPERVISION") {
-        // Add new row to table in P&P section
-        newRowIdx = 4;
-      } else if (workflowToSystem[workflow] === "INCARCERATION") {
-        // Add new row to table in Facilities section
-        newRowIdx = numTableRows + 1;
-      }
-
-      newRow = child.insertTableRow(newRowIdx, rowToCopy);
-      numTableRows += 1;
-      const nameCell = newRow.getCell(0);
-      const opportunityGrantsCell = newRow.getCell(1);
-      const mauCell = newRow.getCell(2);
-      const wauCell = newRow.getCell(3);
-      const nameTextToReplace = nameCell.getChild(0);
-      const opportunityGrantsTextToReplace = opportunityGrantsCell.getChild(0);
-      const mauTextToReplace = mauCell.getChild(0);
-      const wauTextToReplace = wauCell.getChild(0);
-
-      const nameTextCopy = nameTextToReplace.copy();
-      const opportunityGrantsTextCopy = opportunityGrantsTextToReplace.copy();
-      const mauTextCopy = mauTextToReplace.copy();
-      const wauTextCopy = wauTextToReplace.copy();
-
-      nameTextCopy.replaceText("{{workflow_name}}", workflow);
-      opportunityGrantsTextCopy.replaceText(
-        "{{num_grants}}",
-        opportunityGrantedAndMauAndWau.opportunityGranted.toLocaleString()
-      );
-      mauTextCopy.replaceText(
-        "{{mau}}",
-        calculateActiveUsersPercent(
-          opportunityGrantedAndMauAndWau.distinctMonthlyActiveUsers,
-          opportunityGrantedAndMauAndWau.distinctMonthlyRegisteredUsers
-        )
-      );
-      wauTextCopy.replaceText(
-        "{{wau}}",
-        calculateActiveUsersPercent(
-          opportunityGrantedAndMauAndWau.distinctWeeklyActiveUsers,
-          opportunityGrantedAndMauAndWau.distinctWeeklyRegisteredUsers
-        )
-      );
-
-      nameCell.appendParagraph(nameTextCopy);
-      opportunityGrantsCell.appendParagraph(opportunityGrantsTextCopy);
-      mauCell.appendParagraph(mauTextCopy);
-      wauCell.appendParagraph(wauTextCopy);
-
-      // Finally, delete the original element that we copied
-      nameCell.removeChild(nameTextToReplace);
-      opportunityGrantsCell.removeChild(opportunityGrantsTextToReplace);
-      mauCell.removeChild(mauTextToReplace);
-      wauCell.removeChild(wauTextToReplace);
-    }
+  const supervisionChild = body.getChild(
+    getIndexOfElementToReplace(
+      body,
+      DocumentApp.ElementType.TABLE,
+      "{{num_grants_pp}}"
+    )
   );
 
-  // Once we have copied all Workflows rows, we can delete the placeholder row
-  child.removeRow(2);
+  // Workflows Template Row Index
+  var templateRowIdx = 2;
+
+  // GET PP ROWS
+  body.replaceText("{{num_grants_pp}}", totalSupervisionOpportunitiesGranted);
+  body.replaceText("{{mau_pp}}", totalSupervisionMAU);
+  body.replaceText("{{wau_pp}}", totalSupervisionWAU);
+
+  addWorkflowsRows(
+    supervisionChild,
+    templateRowIdx,
+    filterWorkflowsBySystem(
+      workflowToOpportunityGrantedAndMauAndWau,
+      workflowToSystem,
+      "SUPERVISION"
+    )
+  );
+
+  const facilitiesChild = body.getChild(
+    getIndexOfElementToReplace(
+      body,
+      DocumentApp.ElementType.TABLE,
+      "{{num_grants_facility}}"
+    )
+  );
+
+  body.replaceText(
+    "{{num_grants_facility}}",
+    totalFacilitiesOpportunitiesGranted
+  );
+  body.replaceText("{{mau_facility}}", totalFacilitiesMAU);
+  body.replaceText("{{wau_facility}}", totalFacilitiesWAU);
+
+  addWorkflowsRows(
+    facilitiesChild,
+    templateRowIdx,
+    filterWorkflowsBySystem(
+      workflowToOpportunityGrantedAndMauAndWau,
+      workflowToSystem,
+      "INCARCERATION"
+    )
+  );
 
   return workflowToMauWauNumAndPercent;
 }
@@ -662,7 +702,7 @@ function copyAndPopulateWorkflowSection(
             img.setWidth(639).setHeight(455);
           }
         } else if (altTitle === "Impact Column Chart by District or Region") {
-          // Replace with generated chart
+          // Replace with generated chartk
           if (workflowToUsageAndImpactChart[workflow]) {
             let img = body.appendImage(workflowToUsageAndImpactChart[workflow]);
             img.setWidth(639).setHeight(455);

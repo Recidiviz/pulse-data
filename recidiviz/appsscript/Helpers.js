@@ -44,15 +44,22 @@ function runQuery(queryString) {
   while (!queryResults.jobComplete) {
     Utilities.sleep(sleepTimeMs);
     sleepTimeMs *= 2;
-    queryResults = BigQuery.Jobs.getQueryResults(projectId, queryResults.jobReference.jobId);
+    queryResults = BigQuery.Jobs.getQueryResults(
+      projectId,
+      queryResults.jobReference.jobId
+    );
   }
 
   // Get all the rows of results.
   let rows = queryResults.rows;
   while (queryResults.pageToken) {
-    queryResults = BigQuery.Jobs.getQueryResults(projectId, queryResults.jobReference.jobId, {
-      pageToken: queryResults.pageToken,
-    });
+    queryResults = BigQuery.Jobs.getQueryResults(
+      projectId,
+      queryResults.jobReference.jobId,
+      {
+        pageToken: queryResults.pageToken,
+      }
+    );
     rows = rows.concat(queryResults.rows);
   }
 
@@ -90,12 +97,12 @@ function createColumnChart(
   title,
   xAxis,
   yAxis,
-  setColors = ['#3697FA'], // default all charts to blue
+  setColors = ["#3697FA"], // default all charts to blue
   stacked = false,
   width = 1278,
   height = 910,
   legend = Charts.Position.NONE,
-  filterOutZero = true,
+  filterOutZero = true
 ) {
   const enCollator = new Intl.Collator("en", { numeric: true });
   let buildChart = false;
