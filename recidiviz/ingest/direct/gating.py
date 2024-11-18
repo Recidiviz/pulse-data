@@ -42,14 +42,19 @@ STAGING_PRIMARY_ENABLED_STATES: Set[StateCode] = {
 STAGING_SECONDARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_AR,
     StateCode.US_AZ,
+    StateCode.US_CA,
     StateCode.US_IA,
     StateCode.US_IX,
+    StateCode.US_MA,
     StateCode.US_ME,
     StateCode.US_MI,
     StateCode.US_MO,
     StateCode.US_ND,
+    StateCode.US_NE,
+    StateCode.US_OR,
     StateCode.US_PA,
     StateCode.US_TN,
+    StateCode.US_TX,
     *STAGING_PRIMARY_ENABLED_STATES,
 }
 
