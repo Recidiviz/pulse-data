@@ -50,7 +50,19 @@ Officer sessions are unique on person_id, and officer_id, and may be overlapping
 """
 
 SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
-    WITH supervision_officer_sessions_lookback AS (
+    WITH prioritized_supervision_sessions AS (
+        SELECT * FROM `{{project_id}}.sessions.prioritized_supervision_sessions_materialized`
+    )
+    ,
+    collapsed_prioritized_supervision_sessions AS (
+        {aggregate_adjacent_spans(
+            table_name="prioritized_supervision_sessions",
+            attribute=["compartment_level_1"],
+            session_id_output_name='prioritized_supervision_session_id',
+            end_date_field_name="end_date_exclusive"
+        )}
+    )
+    , supervision_officer_sessions_lookback AS (
     /* This CTE associates the previous officer within a prioritized_supervision_session for each supervision officer session,
      if the previous officer session has no date gap. */
     SELECT 
@@ -62,7 +74,7 @@ SUPERVISION_OFFICER_TRANSITIONAL_CASELOAD_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
                 ORDER BY so.start_date  ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
                                                                             AS previous_officer_id
     FROM `{{project_id}}.sessions.supervision_officer_sessions_materialized` so
-    INNER JOIN `{{project_id}}.sessions.prioritized_supervision_sessions_materialized` ss
+    INNER JOIN collapsed_prioritized_supervision_sessions ss
         ON so.person_id = ss.person_id 
         AND so.state_code = ss.state_code
         --join all supervision officer sessions that start within the prioritized_supervision_session
