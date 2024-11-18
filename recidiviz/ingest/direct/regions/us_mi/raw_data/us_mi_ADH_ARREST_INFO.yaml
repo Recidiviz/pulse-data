@@ -14,24 +14,36 @@ columns:
     description: Date of the arrest
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
   - name: place_of_custody_id
     # description: TODO(#15325)
   - name: start_date_available
     # description: TODO(#15325)
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
   - name: end_date_available
     # description: TODO(#15325)
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
   - name: date_released_on_bond_bail
     description: Date released on bond/bail
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
   - name: bond_bail_type_id
     description: Reference code for bond/bail type
   - name: bond_bail_amount
@@ -57,5 +69,6 @@ columns:
   - name: last_update_date
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
