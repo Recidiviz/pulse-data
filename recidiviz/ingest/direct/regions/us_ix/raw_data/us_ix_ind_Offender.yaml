@@ -134,6 +134,10 @@ columns:
   - name: EmailAddress
     description: |-
       TODO(#15329): Fill in column description
+    update_history:
+      # TODO(#34963) Ensure this column was intentionally deleted and there are no references to it
+      - update_type: DELETION
+        update_datetime: 2024-02-08T18:26:40Z
     is_pii: True
   - name: LiterateReadSelfReport
     description: |-
