@@ -45,6 +45,7 @@ _QUERY_TEMPLATE = f"""
             span.end_date_exclusive AS end_date,
             statute,
         {join_sentence_serving_periods_to_compartment_sessions(compartment_level_1_to_overlap=["INCARCERATION"])}
+        WHERE span.state_code = 'US_AR'
     )
     ,
     statute_eligibility AS (
