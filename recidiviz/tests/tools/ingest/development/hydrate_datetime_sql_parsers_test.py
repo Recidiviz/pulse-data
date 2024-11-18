@@ -196,5 +196,6 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
             default_no_valid_primary_keys=ANY,
             default_line_terminator=ANY,
             default_update_cadence=ANY,
+            default_infer_columns_from_config=ANY,
             default_import_blocking_validation_exemptions=ANY,
         )
