@@ -19,6 +19,10 @@ columns:
         description: Yes (Y)
       - value: 2
         description: No (N)
+      - value: "N"
+        description: TODO(#34959) Document this field.
+      - value: "Y"
+        description: TODO(#34959) Document this field.
   - name: Condition_Id
     description: The primary key for this table.
   - name: Created_By_Tx
