@@ -42,6 +42,7 @@ from enum import Enum
 from typing import List, Optional, Tuple
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -161,6 +162,7 @@ def source_table_collection_for_paths(
             StateSpecificSourceTableLabel(state_code=state_code),
         ],
         description=f"Sandbox raw data tables from {StateCode.get_state(state_code)} with dataset prefix: {sandbox_dataset_prefix}",
+        default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
     )
 
     if create_tables_ahead_of_time:
@@ -274,7 +276,7 @@ def do_sandbox_raw_file_import(
     # so you will be always be able to see both the table with the schema that matches
     # the file exactly, as well as that schema mapped to the current raw config schema.
     create_tables_ahead_of_time = (
-        infra_type == SandboxImportInfraType.NEW or infer_schema_from_csv
+        infra_type == SandboxImportInfraType.NEW or not infer_schema_from_csv
     )
 
     source_table_collections_for_sandbox = source_table_collection_for_paths(
@@ -443,7 +445,9 @@ if __name__ == "__main__":
             sandbox_dataset_prefix=known_args.sandbox_dataset_prefix,
             source_bucket=GcsfsBucketPath(known_args.source_bucket),
             file_tag_filter_regex=known_args.file_tag_filter_regex,
-            infra_type=SandboxImportInfraType(known_args.infra_type),
+            infra_type=SandboxImportInfraType(known_args.infra_type)
+            if known_args.infra_type
+            else None,
             infer_schema_from_csv=known_args.infer_schema_from_csv,
             skip_blocking_validations=known_args.skip_blocking_validations,
             skip_raw_data_migrations=known_args.skip_raw_data_migrations,
