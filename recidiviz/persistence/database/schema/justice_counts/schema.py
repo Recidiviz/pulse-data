@@ -1043,6 +1043,7 @@ class AgencySettingType(enum.Enum):
     BIOLOGICAL_SEX_RACE_ETHNICITY_DATA_SOURCE = (
         "BIOLOGICAL_SEX_RACE_ETHNICITY_DATA_SOURCE"
     )
+    SECTOR_INCLUDES_EXCLUDES = "SECTOR_INCLUDES_EXCLUDES"
 
 
 class AgencySetting(JusticeCountsBase):
