@@ -74,7 +74,9 @@ columns:
   - name: cos_default_rate
     description: Fee default rate (in dollars)
   - name: cos_default_frequency_id
-    description: Reference code for the unit of frequency for the rate (links with ADH_REFERENCE_CODE)
+    description:
+      Reference code for the unit of frequency for the rate (links with
+      ADH_REFERENCE_CODE)
     known_values:
       - value: "5196"
         description: One Time
@@ -94,7 +96,8 @@ columns:
       - value: "3913"
         description: "No"
   - name: income_sliding_level_id
-    description: Reference code for income sliding scale level (links with ADH_REFERENCE_CODE)
+    description: Reference code for income sliding scale level (links with
+      ADH_REFERENCE_CODE)
     known_values:
       - value: "12004"
         description: Level 5
@@ -122,12 +125,14 @@ columns:
     description: Date fee type is effective
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
   - name: expiration_date
     description: Date fee type expires
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
   - name: multiple_accts_allowed_flag
     description: Flag for whether multiple accounts are allowed
   - name: state_county_fee_id
@@ -146,5 +151,8 @@ columns:
     description: Last update date of record
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M%p', REGEXP_REPLACE({col_name},
+        r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
