@@ -29,6 +29,10 @@ columns:
   - name: IsCustom
     description: |-
       TODO(#15329): Fill in column description
+    update_history:
+      # TODO(#34963) Ensure this column was intentionally deleted and there are no references to it
+      - update_type: DELETION
+        update_datetime: 2024-10-16T00:00:00Z
   - name: Locking
     description: Locking number for record
   - name: InsertUserId
@@ -45,3 +49,7 @@ columns:
     field_type: datetime
   - name: Inactive
     description: Flag for whether record is inactive
+    update_history:
+      # TODO(#34963) Ensure this column was intentionally deleted and there are no references to it
+      - update_type: DELETION
+        update_datetime: 2024-10-16T00:00:00Z

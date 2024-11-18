@@ -25,6 +25,10 @@ columns:
     is_pii: True
   - name: Questionnaire
     description: Questionnaire
+    update_history:
+      # TODO(#34963) Ensure this column was intentionally deleted and there are no references to it
+      - update_type: DELETION
+        update_datetime: 2024-10-16T00:00:00Z
   - name: Approved
     description: Approved boolean
   - name: ApprovedDateTime
@@ -55,6 +59,10 @@ columns:
   - name: ClassificationNextReviewPeriodId
     description: Classification next review period Id
   - name: IsCustom
+    update_history:
+      # TODO(#34963) Ensure this column was intentionally deleted and there are no references to it
+      - update_type: DELETION
+        update_datetime: 2024-10-16T00:00:00Z
   - name: Locking
     description: Locking number for record
   - name: InsertUserId
@@ -69,10 +77,18 @@ columns:
   - name: AuthorizedById
     description: User ID of employee who authorized the classification
     is_pii: True
+    update_history:
+      # TODO(#34963) Ensure this column was intentionally deleted and there are no references to it
+      - update_type: DELETION
+        update_datetime: 2024-10-16T00:00:00Z
   - name: UpdateDate
     description: Record update date
     field_type: datetime
   - name: Inactive
     description: Flag for whether record is inactive
+    update_history:
+      # TODO(#34963) Ensure this column was intentionally deleted and there are no references to it
+      - update_type: DELETION
+        update_datetime: 2024-10-16T00:00:00Z
   - name: NextReviewDate
     description: Next review date
