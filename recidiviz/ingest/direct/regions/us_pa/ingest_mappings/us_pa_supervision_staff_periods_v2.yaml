@@ -77,6 +77,8 @@ output:
                         - "Deputy District Director"
                         - "Dep Sec Reentry"
                         - "Dir Bur Ctrl Srvs Pbtn Prl"
+                        - "Parole Communications Operator"
+                        - "Parole Communications Supervisor"
                       StateStaffRoleType.INTERNAL_UNKNOWN:
                         - "Administrative Assistant 1"
                         - "Administrative Officer 5"
@@ -202,6 +204,8 @@ output:
                         - "Adlt Bas Ed Tchr Corr Ed"
                         - "Clk Typst 2"
                         - "Rgnl Cmy Corr Dir"
+                        - "Parole Communications Operator"
+                        - "Parole Communications Supervisor"
                       StateStaffRoleSubtype.SUPERVISION_OFFICER:
                         - "Parole Agent 1"
                         - "Parole Agent 2"
@@ -302,6 +306,7 @@ output:
                         - FIELD TRAINING AGENT
                         - K9
                         - FTTD
+                        - JUVENILE LIFER/VICTIM WRAPAROUND
                       StateStaffCaseloadType.GENERAL:
                         - GENERAL
     supervisor_periods:
