@@ -41,7 +41,9 @@ WITH
         ON psi.OffenderId = id.external_id and id_type = 'US_IX_DOC'
     LEFT JOIN  `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ref_Employee_latest` e 
         ON psi.AssignedToUserId = e.EmployeeId 
-    WHERE e.Inactive = "0" AND DATE(CompletedDate) > DATE_SUB(CURRENT_DATE, INTERVAL 2 YEAR)
+    WHERE e.Inactive = "0" AND
+    -- Make sure that case is either not completed or completed within the last two years 
+    (DATE(CompletedDate) > DATE_SUB(CURRENT_DATE, INTERVAL 2 YEAR) OR CompletedDate IS NULL)
     ),
     -- this CTE uses the OffenderNote table to infer the type of PSI report requested
     report_type_cte AS (
