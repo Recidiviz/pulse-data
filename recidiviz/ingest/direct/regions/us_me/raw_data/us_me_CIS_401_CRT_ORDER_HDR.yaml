@@ -69,6 +69,8 @@ columns:
         description: Non-Concurrent
       - value: 22
         description: Consecutive
+      - value: 151
+        description: TODO(#34959) Document this field.
   - name: Cis_4009_Cust_Override_Rsn_Cd
     description: |-
       This is a Custody Override Reason code that describes why an incarceration sentence was ended early. The values

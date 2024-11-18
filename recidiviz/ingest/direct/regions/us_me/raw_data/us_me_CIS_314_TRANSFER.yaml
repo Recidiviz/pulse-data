@@ -141,10 +141,12 @@ columns:
         description: "Federal BOP (Federal Board of Parole)"
       - value: 34
         description: "Medical"
-      - value: 36
-        description: "Higher Security"
       - value: 35
         description: "Weekly Transfers – Classification Only"
+      - value: 36
+        description: "Higher Security"
+      - value: 37
+        description: TODO(#34959) Document this field.
   - name: Cis_3142_Tran_Typ_Rsn_Cd
   - name: Cis_319_Term_Cust_Id
     description: The Term ID associated with this transfer
