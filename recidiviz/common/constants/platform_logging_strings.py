@@ -25,6 +25,7 @@ AIRFLOW: str = "airflow"
 DATAFLOW: str = "dataflow"
 KUBERNETES: str = "kubernetes"
 CLOUD_RUN: str = "cloud_run"
+APP_ENGINE: str = "app_engine"
 LOCAL_MACHINE: str = "local_machine"
 
 # -- PLATFORM ORCHESTRATION MECHANISM --
@@ -72,3 +73,4 @@ BIG_QUERY_ADDRESS: str = "big_query_address"
 
 # -- OTHER COMMON VALUES --
 STATE_AGNOSTIC: str = "state_agnostic"
+UNKNOWN = "unknown"

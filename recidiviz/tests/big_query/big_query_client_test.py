@@ -329,6 +329,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                 "fake": "label",
                 "fake2": "label2",
                 "fake3": "label3",
+                "platform_environment": "local_machine",
             },
         )
 
@@ -352,6 +353,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                 "table_id": "state_person",
                 "big_query_address": "us_xx_normalized_state---state_person",
                 "state_code": "us_xx",
+                "platform_environment": "local_machine",
             },
         )
 
@@ -378,7 +380,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
         mock_job_config.assert_called_with(
             use_query_cache=False,
-            labels={"default": "label"},
+            labels={"default": "label", "platform_environment": "local_machine"},
         )
 
     @patch("google.cloud.bigquery.job.QueryJobConfig")
@@ -417,6 +419,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                 "table_id": "state_person",
                 "big_query_address": "normalized_state---state_person",
                 "state_code": "state_agnostic",
+                "platform_environment": "local_machine",
             },
         )
 
@@ -466,7 +469,11 @@ class BigQueryClientImplTest(unittest.TestCase):
             timeout=None,
         )
         mock_job_config.assert_called_with(
-            use_query_cache=False, labels={"dataset_id": "fake-dataset"}
+            use_query_cache=False,
+            labels={
+                "dataset_id": "fake-dataset",
+                "platform_environment": "local_machine",
+            },
         )
 
     def test_get_row_counts_for_tables_no_dataset(self) -> None:
@@ -1208,6 +1215,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                         "table_id": "test_table",
                         "big_query_address": "fake-dataset---test_table",
                         "state_code": "state_agnostic",
+                        "platform_environment": "local_machine",
                     },
                 )
             ]
@@ -1237,6 +1245,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                         "table_id": "test_table",
                         "big_query_address": "fake-dataset---test_table",
                         "state_code": "state_agnostic",
+                        "platform_environment": "local_machine",
                     },
                 )
             ]

@@ -63,6 +63,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_job_labels import (
     BigQueryDatasetIdJobLabel,
     BigQueryJobLabel,
+    PlatformEnvironmentBQLabel,
     coalesce_job_labels,
 )
 from recidiviz.big_query.big_query_utils import get_file_destinations_for_bq_export
@@ -923,11 +924,20 @@ class BigQueryClientImpl(BigQueryClient):
         self._project_id = project_id
         self.region = region_override or self.DEFAULT_REGION
         self.client = client(self._project_id, region=self.region)
-        self._default_job_labels = default_job_labels or []
+        self._default_job_labels = self._build_default_labels(default_job_labels)
 
     @property
     def project_id(self) -> str:
         return self._project_id
+
+    @staticmethod
+    def _build_default_labels(
+        default_job_labels: Optional[list[BigQueryJobLabel]] = None,
+    ) -> list[BigQueryJobLabel]:
+        labels = default_job_labels or []
+        env_label = PlatformEnvironmentBQLabel.for_current_env()
+        labels.append(env_label)
+        return labels
 
     def _build_labels(
         self,
