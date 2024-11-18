@@ -26,6 +26,21 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH 
+-- This subquery changes all instances of the staff ID "13" to NULL, since "13" is a 
+-- Service Account and not a real person. It is only used for system updates and does 
+-- not add anything to our understanding of these assessments.
+filtered_data AS (
+    SELECT  
+        MENTAL_HEALTH_ACTION_ID,
+        PERSON_ID,
+        UPDT_DTM,
+        CREATE_DTM,
+        MH_STATUS_ID,
+        NULLIF(UPDT_USERID, '13') AS UPDT_USERID,
+        NULLIF(CREATE_USERID, '13') AS CREATE_USERID
+    FROM {AZ_INT_MENTAL_HEALTH_ACTION} mh
+)
   SELECT DISTINCT
     mh.MENTAL_HEALTH_ACTION_ID,
     mh.PERSON_ID,
@@ -34,7 +49,7 @@ VIEW_QUERY_TEMPLATE = """
     l.CODE AS mh_code,
     LEFT(l.CODE, 1) AS mh_code_simplified,
     COALESCE(mh.UPDT_USERID, mh.CREATE_USERID) AS RECORD_USERID
-FROM {AZ_INT_MENTAL_HEALTH_ACTION} mh
+FROM filtered_data mh
 INNER JOIN {LOOKUPS} l
     ON (l.LOOKUP_CATEGORY = 'MHSTATUS'
     AND mh.MH_STATUS_ID = l.LOOKUP_ID)
