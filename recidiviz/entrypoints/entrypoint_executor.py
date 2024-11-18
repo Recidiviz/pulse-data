@@ -34,6 +34,9 @@ from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.ingest.check_raw_data_flashing_not_in_progress import (
     IngestCheckRawDataFlashingEntrypoint,
 )
+from recidiviz.entrypoints.ingest.ingest_pipeline_should_run_in_dag import (
+    IngestPipelineShouldRunInDagEntrypoint,
+)
 from recidiviz.entrypoints.metric_export.metric_view_export import (
     MetricViewExportEntrypoint,
 )
@@ -77,6 +80,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     ValidationEntrypoint,
     UpdateAllManagedViewsEntrypoint,
     IngestCheckRawDataFlashingEntrypoint,
+    IngestPipelineShouldRunInDagEntrypoint,
 }
 
 

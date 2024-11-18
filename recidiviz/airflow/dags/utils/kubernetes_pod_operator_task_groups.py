@@ -76,7 +76,6 @@ def kubernetes_pod_operator_mapped_task_with_output(
 ) -> List[str]:
     """Task group that wraps a mapped KubernetesPodOperator task, where the KPO task output is pushed to GCS, then
     read from GCS and pushed to XCom by an Airflow native task so downstream tasks can access the output as normal.
-    If you are using this task group, you must call save_to_gcs_xcom in your KPO task to save the output to GCS.
     """
     group_id = group_id or f"{task_id}_group"
 
@@ -125,7 +124,6 @@ def kubernetes_pod_operator_task_with_output(
 ) -> str:
     """Task group that wraps a KubernetesPodOperator task, where the KPO task output is pushed to GCS, then
     read from GCS and pushed to XCom by an Airflow native task so downstream tasks can access the output as normal.
-    If you are using this task group, you must call save_to_gcs_xcom in your KPO task to save the output to GCS.
     """
     group_id = group_id or f"{task_id}_group"
 
