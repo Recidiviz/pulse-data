@@ -9,13 +9,13 @@ primary_key_cols:
   - PlanType
 columns:
   - name: OffenderID
-    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+    is_pii: True
   - name: PlanStartDate
-    field_type: datetime
     description: |-
       The effective date of a plan of supervision for an offender.
+    field_type: datetime
   - name: PlanType
     description: |-
       The type of plan of supvn. that a person  has agreed to follow.
@@ -29,23 +29,25 @@ columns:
       - value: PROB
         description: PROBATION
   - name: PlanEndDate
-    field_type: datetime
     description: |-
       The END date of a plan of supervision for an offender.
-  - name: StandardStartDate
     field_type: datetime
+  - name: StandardStartDate
     description: |-
       The effective begin date for the standards associated with a plan of supervision.
-  - name: StandardEndDate
     field_type: datetime
+  - name: StandardEndDate
     description: |-
       The effective end date for the standards associated with a plan of supervision.
+    field_type: datetime
   - name: SupervisionLevel
     description: |-
       An abbreviation for the level of supervision required to secure an offender.
     known_values:
       - value: 1D1
         description: SPEC RESTRCT - DRC PHASE 1
+      - value: 1EI
+        description: "TODO(#7424): Document this value."
       - value: 1EN
         description: SPEC RESTRCT - ENHANCED
       - value: 1SA
@@ -60,12 +62,16 @@ columns:
         description: RESTRICTED - POST VIOLATN
       - value: 3D3
         description: ELEVATED - DRC PHASE 3
+      - value: 3EI
+        description: "TODO(#7424): Document this value."
       - value: 3MA
         description: ELEVATED - MAXIMUM
       - value: 3P2
         description: ELEVATED - PSU PHASE TWO
       - value: 3RE
         description: ELEVATED - RESISTIVE
+      - value: 4EI
+        description: "TODO(#7424): Document this value."
       - value: 4ME
         description: STANDARD - MEDIUM
       - value: 4MI
@@ -74,6 +80,12 @@ columns:
         description: STANDARD - PSU PHASE THREE
       - value: 4TR
         description: STANDARD - TELEPHONE RPT
+      - value: 5T1
+        description: "TODO(#7424): Document this value."
+      - value: 5T2
+        description: "TODO(#7424): Document this value."
+      - value: 5T3
+        description: "TODO(#7424): Document this value."
       - value: 6P1
         description: "TODO(#7424): Update with definition."
       - value: 6P2
@@ -82,6 +94,14 @@ columns:
         description: "TODO(#7424): Update with definition."
       - value: 6P4
         description: "TODO(#7424): Update with definition."
+      - value: 7AB
+        description: "TODO(#7424): Document this value."
+      - value: 7IC
+        description: "TODO(#7424): Document this value."
+      - value: 7IN
+        description: "TODO(#7424): Document this value."
+      - value: 7M1
+        description: "TODO(#7424): Document this value."
       - value: 9AB
         description: ADM - ABSCONDED OFFENDER
       - value: 9DP
@@ -132,6 +152,8 @@ columns:
         description: KNOWN SEX MOT NO GPS - EN
       - value: MAX
         description: MAXIMUM OFFENDER
+      - value: MDF
+        description: "TODO(#7424): Document this value."
       - value: MED
         description: MEDIUM OFFENDER
       - value: MIN
@@ -327,8 +349,6 @@ columns:
     description: |-
       The type of condition for which a standard is defined.
     known_values:
-      - value: 049
-        description: "TODO(#7424): Update with definition."
       - value: ARR
         description: ARREST CHECK
       - value: COL
@@ -351,7 +371,7 @@ columns:
         description: INACTIVE - FIRST ARCHIVE
       - value: ISA
         description: INACTIVE - SECOND ARCHIVE
-      - value: OFF
+      - value: "OFF"
         description: OVER 55 YRS
       - value: PER
         description: PERSONAL CONTACT
@@ -361,6 +381,8 @@ columns:
         description: SPECIAL CONDITIONS
       - value: URI
         description: URINALYSIS
+      - value: "049"
+        description: "TODO(#7424): Update with definition."
   - name: ConditionFrequency1
     description: |-
       The number of times a condition is to be met.
@@ -371,8 +393,6 @@ columns:
     description: |-
       The type of condition for which a standard is defined.
     known_values:
-      - value: 049
-        description: "TODO(#7424): Update with definition."
       - value: ARR
         description: "TODO(#7424): Update with definition."
       - value: COL
@@ -398,6 +418,8 @@ columns:
       - value: SPC
         description: "TODO(#7424): Update with definition."
       - value: URI
+        description: "TODO(#7424): Update with definition."
+      - value: "049"
         description: "TODO(#7424): Update with definition."
   - name: ConditionFrequency2
     description: |-
@@ -493,7 +515,7 @@ columns:
         description: "TODO(#7424): Update with definition."
       - value: HOV
         description: "TODO(#7424): Update with definition."
-      - value: OFF
+      - value: "OFF"
         description: "TODO(#7424): Update with definition."
       - value: PER
         description: "TODO(#7424): Update with definition."
@@ -513,25 +535,25 @@ columns:
     description: |-
       This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
   - name: StaffID
-    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
-  - name: PostedByStaffID
     is_pii: True
+  - name: PostedByStaffID
     description: |-
       The staff id of the individual who initially posted information for an offender.
+    is_pii: True
   - name: PostedDate
-    field_type: datetime
     description: |-
       This is the date that data is actually posted to the system.
+    field_type: datetime
   - name: LastUpdateStaffID
-    is_pii: True
     description: |-
       Staff ID of the last person to update a row on a table.
-  - name: LastUpdateUserID
     is_pii: True
+  - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+    is_pii: True
   - name: LastUpdateDate
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
@@ -539,9 +561,9 @@ columns:
     description: |-
       Indicates a person  is to be supervised as a sex person on his plan of supervision.
     known_values:
-      - value: N
+      - value: "N"
         description: "NO - Not to be supervised as a sex person"
-      - value: Y
+      - value: "Y"
         description: "YES - Supervised as a sex person"
   - name: SexOffenderSupervisionType
     description: |-
@@ -557,35 +579,34 @@ columns:
     description: |-
       Indicates a person  is to be supervised using IOT on his plan of supervision.
     known_values:
-      - value: N
+      - value: "N"
         description: "NO - Not supervised using IOT"
-      - value: Y
+      - value: "Y"
         description: "YES - Supervised using IOT"
   - name: RFSupervisionFlag
     description: |-
       Indicates a person  is to be supervised using RF on his plan of supervision.
     known_values:
-      - value: N
+      - value: "N"
         description: "NO - Not supervised using RF"
-      - value: Y
+      - value: "Y"
         description: "YES - Supervised using RF"
   - name: IOTSupervisionFlag
     description: |-
       Indicates a person  is to be supervised using IOT on his plan of supervision.
     known_values:
-      - value: N
+      - value: "N"
         description: "NO - Not supervised using IOT"
-      - value: Y
+      - value: "Y"
         description: "YES - Supervised using IOT"
   - name: WarrantOnBond
     description: |-
       Indicates whether or not a person  is Warrant on Bond.
     known_values:
-      - value: N
+      - value: "N"
         description: "NO - Not Warrant on Bond"
-      - value: Y
+      - value: "Y"
         description: "YES - Is Warrant on Bond"
-
 table_relationships:
   - foreign_table: OffenderName
     join_logic:

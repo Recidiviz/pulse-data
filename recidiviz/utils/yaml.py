@@ -16,7 +16,8 @@
 # =============================================================================
 """Utils for working with YAML files."""
 
-YAML_RESERVED_WORDS = ["y", "yes", "n", "no", "true", "false"]
+# on/off were part of yaml 1.1: https://stackoverflow.com/questions/75853887/yaml-attributeerror-on-for-a-key-named-on-in-yaml-file
+YAML_RESERVED_WORDS = ["y", "yes", "n", "no", "true", "false", "on", "off"]
 
 
 def get_properly_quoted_yaml_str(value: str) -> str:

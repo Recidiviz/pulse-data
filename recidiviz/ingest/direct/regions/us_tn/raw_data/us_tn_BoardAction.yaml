@@ -92,6 +92,8 @@ columns:
     known_values:
       - value: BS
         description: DECL FOR BAL OF SENTD
+      - value: C1
+        description: "TODO(#7424): Update with definition."
       - value: CO
         description: CONTINUED C
       - value: CP
@@ -179,6 +181,8 @@ columns:
         description: "TODO(#7424): Update with definition."
       - value: BV
         description: "TODO(#7424): Update with definition."
+      - value: C1
+        description: "TODO(#7424): Update with definition."
       - value: CB
         description: "TODO(#7424): Update with definition."
       - value: CR
@@ -253,6 +257,8 @@ columns:
         description: REC RELEAS ELIG DATER
       - value: RV
         description: REVOKE D
+      - value: S1
+        description: "TODO(#7424): Update with definition."
       - value: SO
         description: "TODO(#7424): Update with definition."
       - value: SP
@@ -299,6 +305,8 @@ columns:
         description: "TODO(#7424): Update with definition."
       - value: BV
         description: "TODO(#7424): Update with definition."
+      - value: C1
+        description: "TODO(#7424): Update with definition."
       - value: CB
         description: "TODO(#7424): Update with definition."
       - value: CC
@@ -336,6 +344,8 @@ columns:
       - value: LL
         description: "TODO(#7424): Update with definition."
       - value: MF
+        description: "TODO(#7424): Update with definition."
+      - value: M1
         description: "TODO(#7424): Update with definition."
       - value: MI
         description: "TODO(#7424): Update with definition."
@@ -379,6 +389,8 @@ columns:
         description: REC RELEAS ELIG DATER
       - value: RV
         description: REVOKE D
+      - value: S1
+        description: "TODO(#7424): Update with definition."
       - value: SO
         description: "TODO(#7424): Update with definition."
       - value: SP
@@ -479,19 +491,19 @@ columns:
         description: NO WEAPONS
       - value: O0
         description: NO JOB WAIVER
-      - value: O1
+      - value: "O1"
         description: ALCOHOL PROGRAM
-      - value: O2
+      - value: "O2"
         description: "TODO(#7424): Update with definition."
-      - value: O3
+      - value: "O3"
         description: "TODO(#7424): Update with definition."
-      - value: O4
+      - value: "O4"
         description: VOCATIONAL PROGRAM
-      - value: O5
+      - value: "O5"
         description: HALFWAY HOUSE
-      - value: O6
+      - value: "O6"
         description: DETAINER ONLY
-      - value: O8
+      - value: "O8"
         description: MAXIMUM SUPERVISION
       - value: OC
         description: OTHER-SEE COMMENT
@@ -518,6 +530,8 @@ columns:
         description: RANDOM DRUG SCREENS
       - value: RS
         description: RESTITUTION PROGRAM
+      - value: S1
+        description: "TODO(#7424): Update with definition."
       - value: S2
       - value: SA
         description: SUBSTANCE ABUSE TREATMENT/PO DISCRETION

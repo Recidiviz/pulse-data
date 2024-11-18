@@ -289,6 +289,10 @@ columns:
     description: |-
       An alphanumeric identified assigned by the state of Tennessee which uniquely identifies a person.
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/18/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: DeathType
     description: |-
       The abbreviation for the cause of death of a person.
@@ -341,6 +345,10 @@ columns:
     description: |-
       The old FBI number associated with the person.
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 11/18/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
   - name: OldSTGAffiliation
     description: |-
       This code is no longer used.  It was replaced by the STG (Security Threat Group) conversation.
