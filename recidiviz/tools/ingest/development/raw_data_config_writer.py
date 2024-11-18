@@ -58,7 +58,6 @@ class RawDataConfigWriter:
                     f"\n      - value: {get_properly_quoted_yaml_str(enum.value)}"
                     f"\n        description: {get_properly_quoted_yaml_str(enum.description if enum.description else PLACEHOLDER_TO_DO_STRING)}"
                 )
-
         return known_values_string
 
     def _generate_individual_column_string(self, column: RawTableColumnInfo) -> str:
@@ -129,6 +128,7 @@ class RawDataConfigWriter:
         default_no_valid_primary_keys: bool,
         default_line_terminator: Optional[str],
         default_update_cadence: Optional[RawDataFileUpdateCadence],
+        default_infer_columns_from_config: Optional[bool],
         default_import_blocking_validation_exemptions: Optional[
             List[ImportBlockingValidationExemption]
         ],
@@ -159,9 +159,12 @@ class RawDataConfigWriter:
             config += "is_primary_person_table: True\n"
         if raw_file_config.supplemental_order_by_clause:
             config += "supplemental_order_by_clause: True\n"
-        if raw_file_config.infer_columns_from_config:
-            config += "infer_columns_from_config: True\n"
 
+        if (
+            raw_file_config.infer_columns_from_config
+            != default_infer_columns_from_config
+        ):
+            config += "infer_columns_from_config: True\n"
         # If an encoding is not the default, we need to include it in the config
         if raw_file_config.encoding != default_encoding:
             config += f"encoding: {raw_file_config.encoding}\n"
