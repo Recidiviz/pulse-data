@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `state_assessment`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - MENTAL_HEALTH_ACTION_ID
+  - PERSON_ID
+  - RECORD_DATE
+  - RECORD_USERID
+  - mh_score_description
+  - mh_code_simplified
+  - mh_code
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    assessments:
+      - StateAssessment:
+          external_id: MENTAL_HEALTH_ACTION_ID
+          assessment_date: RECORD_DATE
+          assessment_class: $literal_enum(StateAssessmentClass.MENTAL_HEALTH)
+          assessment_type: $literal_enum(StateAssessmentType.INTERNAL_UNKNOWN)
+          conducting_staff_external_id: RECORD_USERID
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: RECORD_USERID
+                $then: $literal("US_AZ_PERSON_ID")
+          assessment_score: mh_code_simplified
+          assessment_metadata:
+            $json_dict:
+              code_description: mh_score_description
+              full_code: mh_code
