@@ -17,11 +17,11 @@
 """Tests for DirectIngestRawFileLoadManager"""
 import datetime
 import os
+import re
 from typing import Any, List, Tuple
 from unittest.mock import MagicMock, create_autospec, patch
 
 import pandas as pd
-from google.api_core.exceptions import InternalServerError
 from google.cloud.bigquery import LoadJob, LoadJobConfig, TableReference
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -853,8 +853,10 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             return_value=self.fake_job,
         ):
             with self.assertRaisesRegex(
-                InternalServerError,
-                r"500 failed to analyze: INVALID_ARGUMENT: Table not found: `recidiviz-bq-emulator-project.us_xx_raw_data.tagBasicData` .*",
+                ValueError,
+                re.escape(
+                    "Destination table [recidiviz-bq-emulator-project.us_xx_raw_data.tagBasicData] does not exist!"
+                ),
             ):
                 _ = self.manager.append_to_raw_data_table(
                     AppendReadyFile(

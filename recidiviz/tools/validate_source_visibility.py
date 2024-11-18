@@ -210,6 +210,7 @@ def main() -> int:
             "recidiviz.big_query.big_query_address",
             "recidiviz.big_query.big_query_query_provider",
             "recidiviz.big_query.big_query_utils",
+            "recidiviz.big_query.big_query_job_labels",
             "recidiviz.big_query.constants",
             "recidiviz.pipelines",
             "recidiviz.cloud_storage",
@@ -267,6 +268,7 @@ def main() -> int:
     valid_calculation_dag_prefixes = {
         "recidiviz.airflow.dags",
         "recidiviz.calculator.query.state.dataset_config",
+        "recidiviz.big_query.big_query_job_labels",
         "recidiviz.big_query.address_overrides",
         "recidiviz.big_query.big_query_address",
         "recidiviz.big_query.big_query_utils",
@@ -323,6 +325,7 @@ def main() -> int:
         "recidiviz.airflow.dags",
         "recidiviz.big_query.address_overrides",
         "recidiviz.big_query.big_query_address",
+        "recidiviz.big_query.big_query_job_labels",
         "recidiviz.big_query.big_query_address_formatter",
         "recidiviz.big_query.big_query_client",
         "recidiviz.big_query.big_query_query_builder",
@@ -435,6 +438,7 @@ def main() -> int:
 
     valid_sftp_dag_prefixes = {
         "recidiviz.airflow.dags",
+        "recidiviz.big_query.big_query_job_labels",
         "recidiviz.big_query.big_query_address",
         "recidiviz.big_query.big_query_utils",
         "recidiviz.big_query.constants",
