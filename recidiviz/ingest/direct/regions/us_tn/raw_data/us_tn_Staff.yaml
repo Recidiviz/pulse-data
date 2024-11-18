@@ -90,6 +90,8 @@ columns:
         description: "TODO(#7424): Update with definition."
       - value: YA
         description: "TODO(#7424): Update with definition."
+      - value: YX
+        description: "TODO(#7424): Update with definition."
       - value: YY
         description: "TODO(#7424): Update with definition."
       - value: YZ

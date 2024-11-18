@@ -32,6 +32,8 @@ columns:
         description: AMERICAN INDIAN OR ALASKAN NATIVE
       - value: W
         description: WHITE
+      - value: U
+        description: Unknown
   - name: Sex
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.

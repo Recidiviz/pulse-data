@@ -48,7 +48,7 @@ columns:
         description: MANDATORY SEGREGATION REVIEW
       - value: NA
         description: NEEDS ASSESSMENT
-      - value: ON
+      - value: "ON"
         description: OFFENSE NARRATIVE
       - value: OR
         description: OVERRIDE REASON
