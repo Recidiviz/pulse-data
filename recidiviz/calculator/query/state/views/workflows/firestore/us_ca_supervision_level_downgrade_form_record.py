@@ -50,7 +50,21 @@ additional_information AS (
   SELECT 
     speid.external_id,
     ssp.supervision_site AS form_information_parole_unit,
-    ssp.supervision_level_raw_text AS form_information_supervision_level,
+    CASE ssp.supervision_level_raw_text 
+        -- Abbreviate SO main categories
+        WHEN "SO CATEGORY A" THEN "SA"
+        WHEN "SO CATEGORY B" THEN "SB"
+        WHEN "SO CATEGORY C" THEN "SC"
+        WHEN "SO CATEGORY D" THEN "SD"
+
+        -- Abbreviate other categories
+        WHEN "CATEGORY A" THEN "CA"
+        WHEN "CATEGORY B" THEN "CB"
+        WHEN "CATEGORY C" THEN "CC"
+        WHEN "CATEGORY D" THEN "CD"
+
+        ELSE ssp.supervision_level_raw_text
+    END AS form_information_supervision_level,
     scte.case_type,
   FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` ssp
   LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` speid USING (person_id)
