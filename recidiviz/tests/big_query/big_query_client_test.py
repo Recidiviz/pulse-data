@@ -49,6 +49,7 @@ from recidiviz.big_query.big_query_address import (
     ProjectSpecificBigQueryAddress,
 )
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.big_query.big_query_job_labels import BigQueryJobLabel
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -97,12 +98,12 @@ class BigQueryClientImplTest(unittest.TestCase):
         # Reset client caching
         big_query_client._clients_by_project_id_by_region.clear()
 
-        self.job_config_patcher = patch(
+        self.copy_job_config_patcher = patch(
             "recidiviz.big_query.big_query_client.bigquery.CopyJobConfig"
         )
-        self.mock_job_config = self.job_config_patcher.start()
-        self.job_config = bigquery.CopyJobConfig()
-        self.mock_job_config.return_value = self.job_config
+        self.mock_copy_job_config = self.copy_job_config_patcher.start()
+        self.copy_job_config = bigquery.CopyJobConfig()
+        self.mock_copy_job_config.return_value = self.copy_job_config
 
         self.mock_view = SimpleBigQueryViewBuilder(
             dataset_id=self.mock_dataset_id,
@@ -118,6 +119,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.client_patcher.stop()
         self.main_patcher.stop()
         self.metadata_patcher.stop()
+        self.copy_job_config_patcher.stop()
 
     def test_create_dataset_if_necessary(self) -> None:
         """Check that a dataset is created if it does not exist."""
@@ -301,6 +303,141 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.assertFalse(table_exists)
 
     @patch("google.cloud.bigquery.QueryJobConfig")
+    def test_run_query_async_with_job_labels(self, mock_job_config: MagicMock) -> None:
+        self.bq_client.run_query_async(
+            query_str="fake query",
+            use_query_cache=False,
+            job_labels=[
+                BigQueryJobLabel(key="fake", value="label"),
+                BigQueryJobLabel(
+                    key="fake2",
+                    value="label2",
+                    parents=[BigQueryJobLabel(key="fake3", value="label3")],
+                ),
+            ],
+        )
+
+        self.mock_client.query.assert_called_with(
+            query="fake query",
+            location=BigQueryClient.DEFAULT_REGION,
+            job_config=mock_job_config.return_value,
+            timeout=None,
+        )
+        mock_job_config.assert_called_with(
+            use_query_cache=False,
+            labels={
+                "fake": "label",
+                "fake2": "label2",
+                "fake3": "label3",
+            },
+        )
+
+    @patch("google.cloud.bigquery.job.QueryJobConfig")
+    def test_address_generates_job_labels(self, mock_job_config: MagicMock) -> None:
+        self.bq_client.create_table_from_query_async(
+            address=BigQueryAddress(
+                dataset_id="us_xx_normalized_state",
+                table_id="state_person",
+            ),
+            query="fake query",
+            use_query_cache=False,
+            job_labels=[BigQueryJobLabel(key="test", value="123")],
+        )
+
+        mock_job_config.assert_called_with(
+            use_query_cache=False,
+            labels={
+                "test": "123",
+                "dataset_id": "us_xx_normalized_state",
+                "table_id": "state_person",
+                "big_query_address": "us_xx_normalized_state---state_person",
+                "state_code": "us_xx",
+            },
+        )
+
+    @patch("google.cloud.bigquery.QueryJobConfig")
+    def test_run_query_async_with_default_labels(
+        self, mock_job_config: MagicMock
+    ) -> None:
+        bq_client_with_default_labels = BigQueryClientImpl(
+            default_job_labels=[
+                BigQueryJobLabel(key="default", value="label"),
+            ]
+        )
+
+        bq_client_with_default_labels.run_query_async(
+            query_str="fake query",
+            use_query_cache=False,
+        )
+
+        self.mock_client.query.assert_called_with(
+            query="fake query",
+            location=BigQueryClient.DEFAULT_REGION,
+            job_config=mock_job_config.return_value,
+            timeout=None,
+        )
+        mock_job_config.assert_called_with(
+            use_query_cache=False,
+            labels={"default": "label"},
+        )
+
+    @patch("google.cloud.bigquery.job.QueryJobConfig")
+    def test_with_default_labels_and_job_labels(
+        self, mock_job_config: MagicMock
+    ) -> None:
+        bq_client_with_default_labels = BigQueryClientImpl(
+            default_job_labels=[
+                BigQueryJobLabel(key="default", value="label"),
+            ]
+        )
+
+        bq_client_with_default_labels.insert_into_table_from_query_async(
+            destination_address=BigQueryAddress(
+                dataset_id="normalized_state", table_id="state_person"
+            ),
+            query="fake query",
+            use_query_cache=False,
+            job_labels=[
+                BigQueryJobLabel(key="fake", value="label"),
+                BigQueryJobLabel(
+                    key="fake2",
+                    value="label2",
+                    parents=[BigQueryJobLabel(key="default", value="label")],
+                ),
+            ],
+        )
+
+        mock_job_config.assert_called_with(
+            use_query_cache=False,
+            labels={
+                "fake": "label",
+                "default": "label",
+                "fake2": "label2",
+                "dataset_id": "normalized_state",
+                "table_id": "state_person",
+                "big_query_address": "normalized_state---state_person",
+                "state_code": "state_agnostic",
+            },
+        )
+
+    @patch("google.cloud.bigquery.QueryJobConfig")
+    def test_run_query_async_labels_conflict(self, mock_job_config: MagicMock) -> None:
+        bq_client_with_default_labels = BigQueryClientImpl(
+            default_job_labels=[
+                BigQueryJobLabel(key="default", value="label"),
+            ]
+        )
+
+        with self.assertRaisesRegex(
+            ValueError, r"Found conflicting labels for key \[default\]: .*"
+        ):
+            bq_client_with_default_labels.run_query_async(
+                query_str="fake query",
+                use_query_cache=False,
+                job_labels=[BigQueryJobLabel(key="default", value="not-label")],
+            )
+
+    @patch("google.cloud.bigquery.QueryJobConfig")
     def test_get_row_counts_for_tables(self, mock_job_config: MagicMock) -> None:
         # Arrange
         self.mock_client.query.return_value = [
@@ -328,7 +465,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             job_config=mock_job_config.return_value,
             timeout=None,
         )
-        mock_job_config.assert_called_with(use_query_cache=False)
+        mock_job_config.assert_called_with(
+            use_query_cache=False, labels={"dataset_id": "fake-dataset"}
+        )
 
     def test_get_row_counts_for_tables_no_dataset(self) -> None:
         # Arrange
@@ -1050,7 +1189,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.assert_called()
         self.mock_client.load_table_from_json.assert_not_called()
 
-    def test_delete_from_table(self) -> None:
+    @patch("google.cloud.bigquery.QueryJobConfig")
+    def test_delete_from_table(self, mock_job_config: MagicMock) -> None:
         """Tests that the delete_from_table function runs a query."""
         self.bq_client.delete_from_table_async(
             self.mock_table_address, filter_clause="WHERE x > y"
@@ -1058,15 +1198,56 @@ class BigQueryClientImplTest(unittest.TestCase):
         expected_query = (
             "DELETE FROM `fake-recidiviz-project.fake-dataset.test_table` WHERE x > y"
         )
-        self.mock_client.query.assert_called_with(expected_query)
 
-    def test_delete_from_table_no_filter(self) -> None:
+        mock_job_config.assert_has_calls(
+            [
+                call(
+                    use_query_cache=False,
+                    labels={
+                        "dataset_id": "fake-dataset",
+                        "table_id": "test_table",
+                        "big_query_address": "fake-dataset---test_table",
+                        "state_code": "state_agnostic",
+                    },
+                )
+            ]
+        )
+
+        self.mock_client.query.assert_called_with(
+            query=expected_query,
+            location="US",
+            job_config=mock_job_config(),
+            timeout=None,
+        )
+
+    @patch("google.cloud.bigquery.QueryJobConfig")
+    def test_delete_from_table_no_filter(self, mock_job_config: MagicMock) -> None:
         """Tests that the delete_from_table function runs a query without a filter."""
         self.bq_client.delete_from_table_async(self.mock_table_address)
         expected_query = (
             "DELETE FROM `fake-recidiviz-project.fake-dataset.test_table` WHERE true"
         )
-        self.mock_client.query.assert_called_with(expected_query)
+
+        mock_job_config.assert_has_calls(
+            [
+                call(
+                    use_query_cache=False,
+                    labels={
+                        "dataset_id": "fake-dataset",
+                        "table_id": "test_table",
+                        "big_query_address": "fake-dataset---test_table",
+                        "state_code": "state_agnostic",
+                    },
+                )
+            ]
+        )
+
+        self.mock_client.query.assert_called_with(
+            query=expected_query,
+            location="US",
+            job_config=mock_job_config(),
+            timeout=None,
+        )
 
     def test_delete_from_table_invalid_filter_clause(self) -> None:
         """Tests that the delete_from_table function does not run a query when the filter clause is invalid."""
@@ -2209,7 +2390,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                         destination_dataset_ref,
                         "my_table",
                     ),
-                    job_config=self.job_config,
+                    job_config=self.copy_job_config,
                 ),
             ]
         )
@@ -2443,7 +2624,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            bigquery.job.WriteDisposition.WRITE_EMPTY, self.job_config.write_disposition
+            bigquery.job.WriteDisposition.WRITE_EMPTY,
+            self.copy_job_config.write_disposition,
         )
         self.mock_client.list_tables.assert_has_calls(
             [call("my_source"), call("my_destination")]
@@ -2466,7 +2648,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                         destination_dataset_ref,
                         "my_table",
                     ),
-                    job_config=self.job_config,
+                    job_config=self.copy_job_config,
                 ),
                 call(
                     bigquery.TableReference(
@@ -2477,7 +2659,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                         destination_dataset_ref,
                         "my_table_2",
                     ),
-                    job_config=self.job_config,
+                    job_config=self.copy_job_config,
                 ),
             ]
         )
@@ -2693,7 +2875,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             not_found_ok=False,
         )
         self.assertEqual(
-            bigquery.WriteDisposition.WRITE_TRUNCATE, self.job_config.write_disposition
+            bigquery.WriteDisposition.WRITE_TRUNCATE,
+            self.copy_job_config.write_disposition,
         )
         self.mock_client.copy_table.assert_has_calls(
             [
@@ -2706,7 +2889,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                         destination_dataset_ref,
                         "my_table",
                     ),
-                    job_config=self.job_config,
+                    job_config=self.copy_job_config,
                 ),
                 call(
                     bigquery.TableReference(
@@ -2717,7 +2900,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                         destination_dataset_ref,
                         "my_table_2",
                     ),
-                    job_config=self.job_config,
+                    job_config=self.copy_job_config,
                 ),
             ]
         )
@@ -2812,7 +2995,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                         destination_dataset_ref,
                         "my_table",
                     ),
-                    job_config=self.job_config,
+                    job_config=self.copy_job_config,
                 ),
             ]
         )

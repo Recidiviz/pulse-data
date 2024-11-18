@@ -24,6 +24,13 @@ from recidiviz.big_query.big_query_address import (
     BigQueryAddress,
     ProjectSpecificBigQueryAddress,
 )
+from recidiviz.big_query.big_query_job_labels import (
+    BigQueryAddressJobLabel,
+    BigQueryDatasetIdJobLabel,
+    BigQueryStateAgnosticJobLabel,
+    BigQueryStateCodeJobLabel,
+    BigQueryTableIdJobLabel,
+)
 from recidiviz.common.constants.states import StateCode
 
 
@@ -283,3 +290,43 @@ class TestBigQueryAddress(unittest.TestCase):
                 indent_level=4,
             ),
         )
+
+    def test_job_labels_for_address(self) -> None:
+        address = BigQueryAddress.from_str("dataset_2.table")
+        print(address.bq_job_labels)
+        assert BigQueryDatasetIdJobLabel(value="dataset_2") in address.bq_job_labels
+        assert BigQueryTableIdJobLabel(value="table") in address.bq_job_labels
+        assert (
+            BigQueryAddressJobLabel(value="dataset_2---table") in address.bq_job_labels
+        )
+
+        address = BigQueryAddress.from_str("dataset 2.TABLE")
+        assert BigQueryDatasetIdJobLabel(value="dataset-2") in address.bq_job_labels
+        assert BigQueryTableIdJobLabel(value="table") in address.bq_job_labels
+        assert (
+            BigQueryAddressJobLabel(value="dataset-2---table") in address.bq_job_labels
+        )
+
+        state_specific_addresses = [
+            BigQueryAddress.from_str("us_xx_raw_data.my_table"),
+            BigQueryAddress.from_str("my_dataset.us_xx_table"),
+            BigQueryAddress.from_str("my_dataset_us_xx.my_table"),
+            BigQueryAddress.from_str("my_dataset.my_table_us_xx"),
+            BigQueryAddress.from_str("US_XX_raw_data.my_table"),
+            BigQueryAddress.from_str("my_dataset.Us_Xx_table"),
+            BigQueryAddress.from_str("my_dataset_Us_Xx.my_table"),
+            BigQueryAddress.from_str("my_dataset.my_table_US_XX"),
+        ]
+
+        for address in state_specific_addresses:
+            assert BigQueryStateCodeJobLabel(value="us_xx") in address.bq_job_labels
+
+        not_state_specific_addresses = [
+            BigQueryAddress.from_str("my_dataset.my_table"),
+            BigQueryAddress.from_str("us_states.my_table"),
+            BigQueryAddress.from_str("my_dataset.us_states"),
+            BigQueryAddress.from_str("my_dataset.US_STATES"),
+        ]
+
+        for address in not_state_specific_addresses:
+            assert BigQueryStateAgnosticJobLabel() in address.bq_job_labels

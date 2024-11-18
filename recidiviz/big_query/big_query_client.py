@@ -22,7 +22,6 @@ import datetime
 import json
 import logging
 import os
-import re
 import time
 from collections import defaultdict
 from concurrent import futures
@@ -61,6 +60,11 @@ from google.protobuf import timestamp_pb2
 from more_itertools import one, peekable
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_job_labels import (
+    BigQueryDatasetIdJobLabel,
+    BigQueryJobLabel,
+    coalesce_job_labels,
+)
 from recidiviz.big_query.big_query_utils import get_file_destinations_for_bq_export
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
@@ -68,6 +72,7 @@ from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.encoding import BIG_QUERY_UTF_8
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.google_cloud.big_query_utils import format_label_for_big_query
 from recidiviz.common.retry_predicate import ssl_error_retry_predicate
 from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -276,7 +281,12 @@ class BigQueryClient:
         """Returns a list of tables (skipping views) in the dataset with the given dataset id."""
 
     @abc.abstractmethod
-    def get_row_counts_for_tables(self, dataset_id: str) -> Dict[str, int]:
+    def get_row_counts_for_tables(
+        self,
+        dataset_id: str,
+        *,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
+    ) -> Dict[str, int]:
         """Returns the row counts for each table in a dataset.
 
         If a table has no rows, it will be omitted from the output. If the dataset does
@@ -335,6 +345,7 @@ class BigQueryClient:
         preserve_ascii_control_characters: bool = False,
         encoding: str = BIG_QUERY_UTF_8,
         field_delimiter: str = ",",
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.job.LoadJob:
         """Loads a table from CSV data in GCS to BigQuery.
 
@@ -361,6 +372,7 @@ class BigQueryClient:
                 file. Defaults to zero
             preserve_ascii_control_characters: Whether to preserve ASCII control characters in the data. Defaults to
                 False. When disabled, we will fail the load if we encounter ASCII control characters in the data.
+            job_labels: Metadata labels to attach to the BigQuery LoadJob, recorded in the JOBS view.
         Returns:
             The LoadJob object containing job details.
         """
@@ -371,6 +383,7 @@ class BigQueryClient:
         *,
         source: pd.DataFrame,
         destination_address: BigQueryAddress,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.job.LoadJob:
         """Loads a table from a pandas DataFrame to the given address in BigQuery.
 
@@ -385,6 +398,7 @@ class BigQueryClient:
             source: A DataFrame containing the contents to load into the table.
             destination_address: The BigQuery address to load the table into. Gets
                 created if it does not already exist.
+            job_labels: Metadata labels to attach to the BigQuery LoadJob, recorded in the JOBS view.
         Returns:
             The LoadJob object containing job details.
         """
@@ -396,6 +410,7 @@ class BigQueryClient:
         source: IO,
         destination_address: BigQueryAddress,
         schema: List[bigquery.SchemaField],
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.job.LoadJob:
         """Loads a table from a file to BigQuery.
 
@@ -417,6 +432,7 @@ class BigQueryClient:
             destination_address: The BigQuery address to load the data into. Gets
                 created if it does not already exist.
             schema: The desired BigQuery schema of the destination table.
+            job_labels: Metadata labels to attach to the BigQuery LoadJob, recorded in the JOBS view.
 
         Returns:
             The LoadJob object containing job details.
@@ -430,6 +446,7 @@ class BigQueryClient:
         destination_uri: str,
         destination_format: str,
         print_header: bool,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> Optional[bigquery.ExtractJob]:
         """Exports the table corresponding to the given address to the path in Google
         Cloud Storage denoted by |destination_uri|.
@@ -446,6 +463,7 @@ class BigQueryClient:
             destination_format: The format the contents of the table should be outputted
                 as (e.g. CSV or NEWLINE_DELIMITED_JSON).
             print_header: Indicates whether to print out a header row in the results.
+            job_labels: Metadata labels to attach to the BigQuery ExtractJob, recorded in the JOBS view.
 
         Returns:
             The ExtractJob object containing job details, or None if the job fails to
@@ -459,6 +477,7 @@ class BigQueryClient:
         export_configs: List[ExportQueryConfig],
         print_header: bool,
         use_query_cache: bool,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> list[tuple[ExportQueryConfig, list[GcsfsFilePath]]]:
         """Exports the queries to cloud storage according to the given configs.
 
@@ -476,6 +495,7 @@ class BigQueryClient:
             print_header: Indicates whether to print out a header row in the results.
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
+            job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
         """
 
     @abc.abstractmethod
@@ -486,6 +506,7 @@ class BigQueryClient:
         use_query_cache: bool,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         http_timeout: Optional[float] = None,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
         """Runs a query in BigQuery asynchronously.
 
@@ -504,6 +525,7 @@ class BigQueryClient:
             query_parameters: Parameters for the query
             http_timeout: The number of seconds to wait for client's underlying HTTP
                 transport before using client.query's ``retry``.
+            job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -532,10 +554,11 @@ class BigQueryClient:
         *,
         address: BigQueryAddress,
         query: str,
+        use_query_cache: bool,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         overwrite: Optional[bool] = False,
         clustering_fields: Optional[List[str]] = None,
-        use_query_cache: bool,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
         """Creates a table at the given address with the output from the given query.
         If overwrite is False, a 'duplicate' error is returned in the job result if the
@@ -550,6 +573,7 @@ class BigQueryClient:
             clustering_fields: Columns by which to cluster the table.
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
+            job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -564,6 +588,7 @@ class BigQueryClient:
         use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
         source_to_destination_column_mapping: Optional[Dict[str, str]] = None,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
         """Appends data from a source table into a destination table using an INSERT
         INTO statement for columns that exist in both tables, with an optional
@@ -584,6 +609,7 @@ class BigQueryClient:
                 with "WHERE".
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
+            job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -595,11 +621,12 @@ class BigQueryClient:
         *,
         destination_address: BigQueryAddress,
         query: str,
+        use_query_cache: bool,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         allow_field_additions: bool = False,
         write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
         clustering_fields: Optional[List[str]] = None,
-        use_query_cache: bool,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
         """Inserts the results of the given query into the table at the given address.
         Creates a table if one does not yet exist. If |allow_field_additions| is set to
@@ -619,6 +646,7 @@ class BigQueryClient:
             clustering_fields: Columns by which to cluster the table.
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
+            job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -645,6 +673,7 @@ class BigQueryClient:
         address: BigQueryAddress,
         rows: Sequence[Dict[str, Any]],
         write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.job.LoadJob:
         """Inserts the provided rows into the specified table.
 
@@ -662,7 +691,11 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def delete_from_table_async(
-        self, address: BigQueryAddress, *, filter_clause: Optional[str] = None
+        self,
+        address: BigQueryAddress,
+        *,
+        filter_clause: Optional[str] = None,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
         """Deletes rows from the table at the given address that match the filter
         clause. If no filter is provided, all rows are deleted.
@@ -672,6 +705,7 @@ class BigQueryClient:
             filter_clause: An optional clause that filters the contents of the table to
                 determine which rows should be deleted. If present, it must start with
                 "WHERE".
+            job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -679,7 +713,10 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def materialize_view_to_table(
-        self, view: BigQueryView, use_query_cache: bool
+        self,
+        view: BigQueryView,
+        use_query_cache: bool,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.Table:
         """Materializes the result of a view's view_query into a table. The view's
         materialized_address must be set. The resulting table is put in the same
@@ -689,6 +726,7 @@ class BigQueryClient:
             view: The BigQueryView to materialize into a table.
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
+            job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
         """
 
     @abc.abstractmethod
@@ -789,6 +827,7 @@ class BigQueryClient:
         destination_dataset_id: str,
         schema_only: bool = False,
         overwrite_destination_tables: bool = False,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> None:
         """Copies all tables in the source dataset to the destination dataset,
         which must be empty if it exists. If the destination dataset does not exist,
@@ -809,6 +848,7 @@ class BigQueryClient:
         destination_dataset_id: str,
         schema_only: bool = False,
         overwrite: bool = False,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> Optional[bigquery.job.CopyJob]:
         """Copies the table at the given address to the destination dataset,
         which must be empty if it exists. If the destination dataset does not
@@ -819,7 +859,12 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def backup_dataset_tables_if_dataset_exists(self, dataset_id: str) -> Optional[str]:
+    def backup_dataset_tables_if_dataset_exists(
+        self,
+        dataset_id: str,
+        *,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
+    ) -> Optional[str]:
         """Creates a backup of all tables (but NOT views) in |dataset_id| in a new
         dataset with the format `my_dataset_backup_yyyy_mm_dd`. For example, the dataset
         `state` might backup to `state_backup_2021_05_06`.
@@ -862,7 +907,10 @@ class BigQueryClientImpl(BigQueryClient):
     """
 
     def __init__(
-        self, project_id: Optional[str] = None, region_override: Optional[str] = None
+        self,
+        project_id: Optional[str] = None,
+        region_override: Optional[str] = None,
+        default_job_labels: Optional[list[BigQueryJobLabel]] = None,
     ):
         if not project_id:
             project_id = metadata.project_id()
@@ -875,10 +923,36 @@ class BigQueryClientImpl(BigQueryClient):
         self._project_id = project_id
         self.region = region_override or self.DEFAULT_REGION
         self.client = client(self._project_id, region=self.region)
+        self._default_job_labels = default_job_labels or []
 
     @property
     def project_id(self) -> str:
         return self._project_id
+
+    def _build_labels(
+        self,
+        job_labels: list[BigQueryJobLabel] | None,
+        *,
+        address: BigQueryAddress | None = None,
+    ) -> dict[str, str]:
+        """Builds a dictionary of BigQuery job labels by combining the provided |job_labels|
+        with labels that can be derived from |address| and the client's default job labels.
+        """
+        if not job_labels:
+            job_labels = []
+
+        if address:
+            job_labels = [*job_labels, *address.bq_job_labels]
+
+        if not job_labels:
+            # TODO(#35122) enforce that all jobs either have job or default labels
+            return coalesce_job_labels(
+                *self._default_job_labels, should_throw_on_conflict=True
+            )
+
+        return coalesce_job_labels(
+            *job_labels, *self._default_job_labels, should_throw_on_conflict=True
+        )
 
     def dataset_ref_for_id(self, dataset_id: str) -> bigquery.DatasetReference:
         return bigquery.DatasetReference.from_string(
@@ -929,10 +1003,10 @@ class BigQueryClientImpl(BigQueryClient):
             owner, description = self._get_owner_and_description(created_dataset)
             dataset_to_update.description = description
             if owner:
-                owner = self._ensure_valid_bigquery_label_value(owner)
+                owner = format_label_for_big_query(owner)
             else:
                 owner = DEFAULT_VANTA_DATASET_OWNER
-            description_label = self._ensure_valid_bigquery_label_value(description)
+            description_label = format_label_for_big_query(description)
             dataset_to_update.labels = {
                 "vanta-owner": owner,
                 "vanta-description": description_label,
@@ -942,20 +1016,6 @@ class BigQueryClientImpl(BigQueryClient):
             )
 
         return dataset
-
-    def _ensure_valid_bigquery_label_value(self, label_value: str) -> str:
-        """Ensures that labels meet BigQuery requirements.
-
-        The requirements for values are that they can contain only lowercase letters, numeric characters, underscores,
-        and dashes, and have a maximum length of 63 characters: https://cloud.google.com/bigquery/docs/labels-intro.
-        This method converts the label string to lowercase, replaces any disallowed characters with a dash, and
-        truncates the length to 63.
-        """
-
-        label_value = re.sub(r"[^\w_-]", "-", label_value.lower())
-        if len(label_value) > 63:
-            label_value = label_value[:63]
-        return label_value
 
     def _get_owner_and_description(
         self, dataset: bigquery.Dataset
@@ -1239,9 +1299,16 @@ class BigQueryClientImpl(BigQueryClient):
             if table.table_type == "TABLE"
         )
 
-    def get_row_counts_for_tables(self, dataset_id: str) -> Dict[str, int]:
+    def get_row_counts_for_tables(
+        self, dataset_id: str, *, job_labels: Optional[list[BigQueryJobLabel]] = None
+    ) -> Dict[str, int]:
         if not self.dataset_exists(dataset_id) or self.dataset_is_empty(dataset_id):
             return {}
+
+        if not job_labels:
+            job_labels = []
+
+        job_labels = [*job_labels, BigQueryDatasetIdJobLabel(value=dataset_id.lower())]
 
         results = self.run_query_async(
             query_str=f"""
@@ -1250,6 +1317,7 @@ class BigQueryClientImpl(BigQueryClient):
                 GROUP BY _TABLE_SUFFIX
                 """,
             use_query_cache=False,
+            job_labels=job_labels,
         )
         return {row["table_id"]: row["num_rows"] for row in results}
 
@@ -1306,6 +1374,7 @@ class BigQueryClientImpl(BigQueryClient):
         preserve_ascii_control_characters: bool = False,
         encoding: str = BIG_QUERY_UTF_8,
         field_delimiter: str = ",",
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.job.LoadJob:
         """Triggers a load job, i.e. a job that will copy all of the data from the given
         Cloud Storage source into the given BigQuery destination. Returns once the job
@@ -1316,7 +1385,9 @@ class BigQueryClientImpl(BigQueryClient):
 
         destination_table_ref = self._table_ref_for_address(destination_address)
 
-        job_config = bigquery.LoadJobConfig()
+        job_config = bigquery.LoadJobConfig(
+            labels=self._build_labels(job_labels, address=destination_address)
+        )
         job_config.schema = destination_table_schema
         job_config.source_format = bigquery.SourceFormat.CSV
         job_config.allow_quoted_newlines = True
@@ -1339,13 +1410,19 @@ class BigQueryClientImpl(BigQueryClient):
         return load_job
 
     def load_into_table_from_dataframe_async(
-        self, *, source: pd.DataFrame, destination_address: BigQueryAddress
+        self,
+        *,
+        source: pd.DataFrame,
+        destination_address: BigQueryAddress,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.job.LoadJob:
 
         self.create_dataset_if_necessary(destination_address.dataset_id)
         destination_table_ref = self._table_ref_for_address(destination_address)
 
-        job_config = bigquery.LoadJobConfig()
+        job_config = bigquery.LoadJobConfig(
+            labels=self._build_labels(job_labels, address=destination_address)
+        )
         job_config.allow_quoted_newlines = True
         job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_APPEND
 
@@ -1367,13 +1444,16 @@ class BigQueryClientImpl(BigQueryClient):
         source: IO,
         destination_address: BigQueryAddress,
         schema: List[bigquery.SchemaField],
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.job.LoadJob:
         self._validate_schema(destination_address, schema)
         self.create_dataset_if_necessary(destination_address.dataset_id)
 
         destination_table_ref = self._table_ref_for_address(destination_address)
 
-        job_config = bigquery.LoadJobConfig()
+        job_config = bigquery.LoadJobConfig(
+            labels=self._build_labels(job_labels, address=destination_address)
+        )
         job_config.allow_quoted_newlines = True
         job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_APPEND
         job_config.schema_update_options = [
@@ -1403,6 +1483,7 @@ class BigQueryClientImpl(BigQueryClient):
         destination_uri: str,
         destination_format: str,
         print_header: bool,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> Optional[bigquery.ExtractJob]:
         if not print_header and destination_format != bigquery.DestinationFormat.CSV:
             raise ValueError(
@@ -1415,7 +1496,9 @@ class BigQueryClientImpl(BigQueryClient):
 
         source_table_ref = self._table_ref_for_address(source_table_address)
 
-        job_config = bigquery.ExtractJobConfig()
+        job_config = bigquery.ExtractJobConfig(
+            labels=self._build_labels(job_labels, address=source_table_address)
+        )
         job_config.destination_format = destination_format
         job_config.print_header = print_header
 
@@ -1433,6 +1516,7 @@ class BigQueryClientImpl(BigQueryClient):
         export_configs: List[ExportQueryConfig],
         print_header: bool,
         use_query_cache: bool,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> list[tuple[ExportQueryConfig, list[GcsfsFilePath]]]:
         exported_configs_and_paths: list[
             tuple[ExportQueryConfig, list[GcsfsFilePath]]
@@ -1447,6 +1531,7 @@ class BigQueryClientImpl(BigQueryClient):
                     query_parameters=export_config.query_parameters,
                     overwrite=True,
                     use_query_cache=use_query_cache,
+                    job_labels=job_labels,
                 )
                 if query_job is not None:
                     query_jobs.append(query_job)
@@ -1464,6 +1549,7 @@ class BigQueryClientImpl(BigQueryClient):
                     destination_uri=export_config.output_uri,
                     destination_format=export_config.output_format,
                     print_header=print_header,
+                    job_labels=job_labels,
                 )
                 if extract_job is not None:
                     extract_jobs_to_config[extract_job] = export_config
@@ -1532,8 +1618,12 @@ class BigQueryClientImpl(BigQueryClient):
         use_query_cache: bool,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         http_timeout: Optional[float] = None,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
-        job_config = bigquery.QueryJobConfig(use_query_cache=use_query_cache)
+        # TODO(#35122): should we parse labels from query str?
+        job_config = bigquery.QueryJobConfig(
+            use_query_cache=use_query_cache, labels=self._build_labels(job_labels)
+        )
         job_config.query_parameters = query_parameters or []
 
         return self.client.query(
@@ -1597,6 +1687,7 @@ class BigQueryClientImpl(BigQueryClient):
         overwrite: Optional[bool] = False,
         clustering_fields: Optional[List[str]] = None,
         use_query_cache: bool,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
         # If overwrite is False, errors if the table already exists and contains data. Else, overwrites the table if
         # it already exists.
@@ -1613,6 +1704,7 @@ class BigQueryClientImpl(BigQueryClient):
             write_disposition=write_disposition,
             clustering_fields=clustering_fields,
             use_query_cache=use_query_cache,
+            job_labels=job_labels,
         )
 
     def _insert_into_table_from_table_async(
@@ -1623,6 +1715,7 @@ class BigQueryClientImpl(BigQueryClient):
         use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
         source_to_destination_column_mapping: Optional[Dict[str, str]] = None,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
         """Appends data from a source table into a destination table using an INSERT INTO
         statement for columns that exist in both tables, with an optional
@@ -1637,7 +1730,10 @@ class BigQueryClientImpl(BigQueryClient):
         fail unless a non-null default is set. For more info, see big query docs:
         https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#insert_statement
         """
-        insert_job_config = bigquery.job.QueryJobConfig(use_query_cache=use_query_cache)
+        insert_job_config = bigquery.job.QueryJobConfig(
+            use_query_cache=use_query_cache,
+            labels=self._build_labels(job_labels, address=destination_address),
+        )
 
         project_specific_source_address = source_address.to_project_specific_address(
             self.project_id
@@ -1724,13 +1820,17 @@ class BigQueryClientImpl(BigQueryClient):
         write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
         clustering_fields: Optional[List[str]] = None,
         use_query_cache: bool,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
 
         destination_table_ref = self._table_ref_for_address(destination_address)
 
         self.create_dataset_if_necessary(destination_address.dataset_id)
 
-        query_job_config = bigquery.job.QueryJobConfig(use_query_cache=use_query_cache)
+        query_job_config = bigquery.job.QueryJobConfig(
+            use_query_cache=use_query_cache,
+            labels=self._build_labels(job_labels, address=destination_address),
+        )
         query_job_config.destination = destination_table_ref
 
         query_job_config.write_disposition = write_disposition
@@ -1780,6 +1880,7 @@ class BigQueryClientImpl(BigQueryClient):
         use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
         source_to_destination_column_mapping: Optional[Dict[str, str]] = None,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
         return self._insert_into_table_from_table_async(
             source_address=source_address,
@@ -1787,6 +1888,7 @@ class BigQueryClientImpl(BigQueryClient):
             source_data_filter_clause=source_data_filter_clause,
             use_query_cache=use_query_cache,
             source_to_destination_column_mapping=source_to_destination_column_mapping,
+            job_labels=job_labels,
         )
 
     def stream_into_table(self, address: BigQueryAddress, rows: Sequence[Dict]) -> None:
@@ -1811,6 +1913,7 @@ class BigQueryClientImpl(BigQueryClient):
         address: BigQueryAddress,
         rows: Sequence[Dict],
         write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.job.LoadJob:
         logging.info("Inserting %d rows into %s", len(rows), address.to_str())
 
@@ -1821,7 +1924,9 @@ class BigQueryClientImpl(BigQueryClient):
             if estimated_size > (100 * 2**10):  # 100 KiB
                 logging.warning("Row is larger than 100 KiB: %s", json_row[:1000])
 
-        job_config = bigquery.LoadJobConfig()
+        job_config = bigquery.LoadJobConfig(
+            labels=self._build_labels(job_labels, address=address)
+        )
         job_config.write_disposition = write_disposition
 
         return self.client.load_table_from_json(
@@ -1829,7 +1934,11 @@ class BigQueryClientImpl(BigQueryClient):
         )
 
     def delete_from_table_async(
-        self, address: BigQueryAddress, *, filter_clause: Optional[str] = None
+        self,
+        address: BigQueryAddress,
+        *,
+        filter_clause: Optional[str] = None,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
         if filter_clause and not filter_clause.startswith("WHERE"):
             raise ValueError(
@@ -1845,10 +1954,19 @@ class BigQueryClientImpl(BigQueryClient):
             "Deleting data from %s matching this filter: %s", address, filter_str
         )
 
-        return self.client.query(delete_query)
+        if not job_labels:
+            job_labels = []
+        job_labels = [*job_labels, *address.bq_job_labels]
+
+        return self.run_query_async(
+            query_str=delete_query, use_query_cache=False, job_labels=job_labels
+        )
 
     def materialize_view_to_table(
-        self, view: BigQueryView, use_query_cache: bool
+        self,
+        view: BigQueryView,
+        use_query_cache: bool,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.Table:
         if view.materialized_address is None:
             raise ValueError(
@@ -1869,6 +1987,7 @@ class BigQueryClientImpl(BigQueryClient):
             overwrite=True,
             clustering_fields=view.clustering_fields,
             use_query_cache=use_query_cache,
+            job_labels=job_labels,
         )
         create_job.result()
 
@@ -2132,6 +2251,7 @@ class BigQueryClientImpl(BigQueryClient):
         destination_dataset_id: str,
         schema_only: bool = False,
         overwrite: bool = False,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> Optional[bigquery.job.CopyJob]:
         source_table = self.get_table(source_table_address)
         destination_table_address = BigQueryAddress(
@@ -2177,7 +2297,9 @@ class BigQueryClientImpl(BigQueryClient):
                 overwrite=overwrite,
             )
         else:
-            job_config = bigquery.CopyJobConfig()
+            job_config = bigquery.CopyJobConfig(
+                labels=self._build_labels(job_labels, address=destination_table_address)
+            )
             job_config.write_disposition = (
                 bigquery.job.WriteDisposition.WRITE_TRUNCATE
                 if overwrite
@@ -2197,6 +2319,7 @@ class BigQueryClientImpl(BigQueryClient):
         destination_dataset_id: str,
         schema_only: bool = False,
         overwrite_destination_tables: bool = False,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> None:
         # Get source tables
         source_table_addresses = [
@@ -2232,6 +2355,7 @@ class BigQueryClientImpl(BigQueryClient):
                 destination_dataset_id=destination_dataset_id,
                 schema_only=schema_only,
                 overwrite=overwrite_destination_tables,
+                job_labels=job_labels,
             )
 
             if copy_job:
@@ -2240,7 +2364,12 @@ class BigQueryClientImpl(BigQueryClient):
         if copy_jobs:
             self.wait_for_big_query_jobs(jobs=copy_jobs)
 
-    def backup_dataset_tables_if_dataset_exists(self, dataset_id: str) -> Optional[str]:
+    def backup_dataset_tables_if_dataset_exists(
+        self,
+        dataset_id: str,
+        *,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
+    ) -> Optional[str]:
         backup_dataset_id = self.add_timestamp_suffix_to_dataset_id(
             f"{dataset_id}_backup"
         )
@@ -2255,6 +2384,7 @@ class BigQueryClientImpl(BigQueryClient):
         self.copy_dataset_tables(
             source_dataset_id=dataset_id,
             destination_dataset_id=backup_dataset_id,
+            job_labels=job_labels,
         )
         return backup_dataset_id
 

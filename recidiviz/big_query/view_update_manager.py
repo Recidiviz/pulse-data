@@ -448,10 +448,7 @@ def _create_or_update_view_and_materialize_if_necessary(
             or not bq_client.table_exists(view.materialized_address)
             or force_materialize
         ):
-            bq_client.materialize_view_to_table(
-                view=view,
-                use_query_cache=True,
-            )
+            bq_client.materialize_view_to_table(view=view, use_query_cache=True)
         else:
             logging.info(
                 "Skipping materialization of view [%s.%s] which has not changed.",
