@@ -7,6 +7,8 @@
 - [recidiviz/ingest/direct/regions, "*/ingest_mappings/*.yaml"]
 - [recidiviz/ingest/direct/ingest_mappings/yaml_schema, "*/schema.json"]
 - [recidiviz/ingest/direct/ingest_mappings/yaml_schema, "*/*/*.json"]
+- [recidiviz/ingest/direct/regions, "*/*_custom_enum_parsers.py"]
+- [recidiviz/ingest/direct/regions, "*/*_custom_parsers.py"]
 - [recidiviz/metrics/export/products, products.yaml]
 - [recidiviz/pipelines, calculation_pipeline_templates.yaml]
 - [recidiviz/pipelines, "*/template_metadata.json"]
