@@ -2868,6 +2868,37 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                                 },
                             },
                         },
+                        {
+                            "setting_type": "SECTOR_INCLUDES_EXCLUDES",
+                            "value": [
+                                {
+                                    "sector": "PAROLE",
+                                    "settings": [
+                                        {
+                                            "key": "BOARD_APPROVED",
+                                            "included": "Yes",
+                                        },
+                                        {
+                                            "key": "CONDITIONALLY_RELEASED",
+                                            "included": "No",
+                                        },
+                                    ],
+                                },
+                                {
+                                    "sector": "PROBATION",
+                                    "settings": [
+                                        {
+                                            "key": "IN_LIEU_OF_INCARCERATION",
+                                            "included": "Yes",
+                                        },
+                                        {
+                                            "key": "AFTER_INCARCERATION",
+                                            "included": "No",
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
                     ]
                 },
             )
@@ -2909,7 +2940,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             "value": "www.agencyhomepage.com",
                         },
                         {
-                            "setting_type": "BIOLOGICAL_SEX_RACE_ETHNICITY_DATA_SOURCE",
+                            "setting_type": AgencySettingType.BIOLOGICAL_SEX_RACE_ETHNICITY_DATA_SOURCE.value,
                             "value": {
                                 "biological_sex": {
                                     "source": {
@@ -2940,6 +2971,37 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                                     },
                                 },
                             },
+                        },
+                        {
+                            "setting_type": AgencySettingType.SECTOR_INCLUDES_EXCLUDES.value,
+                            "value": [
+                                {
+                                    "sector": "PAROLE",
+                                    "settings": [
+                                        {
+                                            "key": "BOARD_APPROVED",
+                                            "included": "Yes",
+                                        },
+                                        {
+                                            "key": "CONDITIONALLY_RELEASED",
+                                            "included": "No",
+                                        },
+                                    ],
+                                },
+                                {
+                                    "sector": "PROBATION",
+                                    "settings": [
+                                        {
+                                            "key": "IN_LIEU_OF_INCARCERATION",
+                                            "included": "Yes",
+                                        },
+                                        {
+                                            "key": "AFTER_INCARCERATION",
+                                            "included": "No",
+                                        },
+                                    ],
+                                },
+                            ],
                         },
                     ],
                     "jurisdictions": {"excluded": [], "included": []},
