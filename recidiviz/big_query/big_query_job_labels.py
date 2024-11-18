@@ -22,6 +22,7 @@ import attrs
 
 from recidiviz.common import attr_validators, big_query_attr_validators
 from recidiviz.common.constants import platform_logging_strings
+from recidiviz.utils import environment
 
 
 @attrs.define(kw_only=True)
@@ -93,10 +94,42 @@ class PlatformEnvironmentBQLabel(Enum):
         key=platform_logging_strings.PLATFORM_ENVIRONMENT,
         value=platform_logging_strings.CLOUD_RUN,
     )
+    APP_ENGINE: BigQueryJobLabel = BigQueryJobLabel(
+        key=platform_logging_strings.PLATFORM_ENVIRONMENT,
+        value=platform_logging_strings.APP_ENGINE,
+    )
     LOCAL_MACHINE: BigQueryJobLabel = BigQueryJobLabel(
         key=platform_logging_strings.PLATFORM_ENVIRONMENT,
         value=platform_logging_strings.LOCAL_MACHINE,
     )
+
+    @classmethod
+    def for_current_env(cls) -> BigQueryJobLabel:
+        """Derives the platform_environment label from the current env, returning
+        "unknown" if we cannot determine the value.
+        """
+        if environment.in_cloud_run():
+            return cls.CLOUD_RUN.value
+
+        if environment.in_dataflow_worker():
+            return cls.DATAFLOW.value
+
+        if environment.in_airflow_kubernetes_pod():
+            return cls.KUBERNETES.value
+
+        if environment.in_airflow():
+            return cls.AIRFLOW.value
+
+        if environment.in_app_engine():
+            return cls.APP_ENGINE.value
+
+        if not environment.in_gcp():
+            return cls.LOCAL_MACHINE.value
+
+        return BigQueryJobLabel(
+            key=platform_logging_strings.PLATFORM_ENVIRONMENT,
+            value=platform_logging_strings.UNKNOWN,
+        )
 
 
 class PlatformOrchestrationBQLabel(Enum):

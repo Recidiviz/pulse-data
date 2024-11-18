@@ -53,6 +53,7 @@ GCP_PROJECTS = [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]
 RECIDIVIZ_ENV = "RECIDIVIZ_ENV"
 GOOGLE_CLOUD_PROJECT = "GOOGLE_CLOUD_PROJECT"
 DATA_PLATFORM_VERSION = "DATA_PLATFORM_VERSION"
+COMPOSER_ENVIRONMENT = "COMPOSER_ENVIRONMENT"
 
 DAG_ID = "DAG_ID"
 RUN_ID = "RUN_ID"
@@ -101,6 +102,10 @@ def in_airflow_kubernetes_pod() -> bool:
         return True
     except NotInAirflowKubernetesPodError:
         return False
+
+
+def in_airflow() -> bool:
+    return os.getenv("COMPOSER_ENVIRONMENT") is not None
 
 
 class NotInCloudRunError(KeyError):
