@@ -32,9 +32,7 @@ VIEW_QUERY_TEMPLATE = """
         sentences.sent_start_date,
         sentences.sent_stop_date,
         sentences.sentcing_cnty,
-        -- Historical offense codes come from offense_code, codes after 9/22/23 come
-        -- are joined to dbo_Senrec from dbo_Senrec_Extended.Crime_Code
-        COALESCE(sentences.offense_code, sentences.Crime_Code) AS offense_code,
+        sentences.offense_code,
         sentences.class_of_sent,         
         sentences.max_cort_sent_yrs,    
         sentences.max_cort_sent_mths,    
@@ -56,7 +54,7 @@ VIEW_QUERY_TEMPLATE = """
             ELSE 
                 sentences.sig_date
         END AS sig_date,
-        COALESCE(sentences.judge, sentences.Judge_Formatted_Name) AS judge,
+        sentences.judge,
         offense_codes.Offense, 
         offense_codes.Category, 
         offense_codes.ASCA_Category___Ranked, 
@@ -66,7 +64,7 @@ VIEW_QUERY_TEMPLATE = """
     FROM 
         {dbo_Senrec} sentences
     LEFT JOIN {offense_codes} offense_codes
-        ON COALESCE(sentences.offense_code, sentences.Crime_Code) = offense_codes.Code
+        ON sentences.offense_code = offense_codes.Code
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
