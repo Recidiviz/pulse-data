@@ -98,6 +98,10 @@ columns:
   - name: Altered_Death_Description_Tx
     description: The death description, if it's been changed at all.
     is_pii: True
+    update_history:
+      # TODO(#34960) Ensure this column was intentionally deleted and is not being used anywhere
+      - update_type: DELETION
+        update_datetime: 2024-08-24T12:02:22Z
   - name: Death_Ind
   - name: Delete_Comment_Tx
     is_pii: True
@@ -107,6 +111,10 @@ columns:
     is_pii: True
   - name: Fbi_Number_Tx
     is_pii: True
+    update_history:
+      # TODO(#34960) Ensure this column was intentionally deleted and is not being used anywhere
+      - update_type: DELETION
+        update_datetime: 2022-07-28T14:00:02Z
   - name: Fingerprint_Classification_Tx
     is_pii: True
   - name: First_Name
@@ -144,8 +152,16 @@ columns:
   - name: Lock_Ind
   - name: Med_Marijuana_Program_Physician_Certificate_Ind
   - name: Medicaid_Elig_Ind
+    update_history:
+      # TODO(#34960) Ensure this column was intentionally deleted and is not being used anywhere
+      - update_type: DELETION
+        update_datetime: 2024-08-24T12:02:22Z
   - name: Medicare_Number_Tx
     is_pii: True
+    update_history:
+      # TODO(#34960) Ensure this column was intentionally deleted and is not being used anywhere
+      - update_type: DELETION
+        update_datetime: 2024-08-24T12:02:22Z
   - name: Middle_Name
     description: |-
       This is the middle name of a person.
@@ -170,8 +186,16 @@ columns:
   - name: Sex_Off_Reg_Ind
   - name: Sid_Number_Tx
     is_pii: True
+    update_history:
+      # TODO(#34960) Ensure this column was intentionally deleted and is not being used anywhere
+      - update_type: DELETION
+        update_datetime: 2022-07-28T14:00:02Z
   - name: Sin_Number_Tx
     is_pii: True
+    update_history:
+      # TODO(#34960) Ensure this column was intentionally deleted and is not being used anywhere
+      - update_type: DELETION
+        update_datetime: 2022-05-19T12:01:00Z
   - name: Single_Room_Ind
   - name: Soundex_First_Name
     is_pii: True
@@ -181,6 +205,10 @@ columns:
     is_pii: True
   - name: Ssn_Number_Tx
     is_pii: True
+    update_history:
+      # TODO(#34960) Ensure this column was intentionally deleted and is not being used anywhere
+      - update_type: DELETION
+        update_datetime: 2022-07-28T14:00:02Z
   - name: Upper_First_Name
     is_pii: True
   - name: Upper_Last_Name

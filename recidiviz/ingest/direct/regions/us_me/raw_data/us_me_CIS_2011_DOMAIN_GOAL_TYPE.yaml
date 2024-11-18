@@ -17,6 +17,10 @@ columns:
   - name: Juv_Comm_Ind
   - name: Juv_Insti_Ind
   - name: Locking_Tsp
+    update_history:
+      # TODO(#34960) Ensure this column was intentionally deleted and is not being used anywhere
+      - update_type: DELETION
+        update_datetime: 2023-02-06T00:00:00Z
   - name: Logical_Delete_Ind
     description: |-
       'Y' if this row should be considered deleted.

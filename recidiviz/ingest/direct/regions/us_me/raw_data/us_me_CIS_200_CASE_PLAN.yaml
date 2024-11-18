@@ -25,6 +25,10 @@ columns:
     is_pii: True
   - name: Created_On_Date
   - name: Locking_Tsp
+    update_history:
+      # TODO(#34960) Ensure this column was intentionally deleted and is not being used anywhere
+      - update_type: DELETION
+        update_datetime: 2023-02-06T00:00:00Z
   - name: Message_Ind
   - name: Modified_By_Tx
     is_pii: True
