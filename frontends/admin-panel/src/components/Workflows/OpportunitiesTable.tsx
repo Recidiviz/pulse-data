@@ -20,9 +20,11 @@ import { observer } from "mobx-react-lite";
 import { Link } from "react-router-dom";
 import styled from "styled-components/macro";
 
-import { Opportunity } from "../../WorkflowsStore/models/Opportunity";
+import {
+  Opportunity,
+  updatedStringForOpportunity,
+} from "../../WorkflowsStore/models/Opportunity";
 import OpportunityPresenter from "../../WorkflowsStore/presenters/OpportunityPresenter";
-import { updatedStringForOpportunity } from "./OpportunityView";
 import { buildColumns, buildRoute } from "./utils";
 
 const TableContainer = styled.div`

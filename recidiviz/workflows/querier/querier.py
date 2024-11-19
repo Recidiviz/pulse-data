@@ -21,7 +21,8 @@ from functools import cached_property
 from typing import Any, Dict, List, Optional, Set, Union
 
 import attr
-from sqlalchemy import insert, update
+from sqlalchemy import update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import sessionmaker
 
 from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states import (
@@ -266,6 +267,46 @@ class WorkflowsQuerier:
                 return None
 
             return FullOpportunityConfig.from_db_entry(config)
+
+    def update_opportunity(
+        self,
+        opportunity_type: str,
+        updated_by: str,
+        updated_at: datetime.datetime,
+        gating_feature_variant: Optional[str],
+        homepage_position: int,
+    ) -> None:
+        """
+        Updates the opportunity record itself, creating it if it doesn't yet exist.
+        """
+        with self.database_session() as session:
+            known_types = [o.opportunity_type for o in get_configs()]
+            if opportunity_type not in known_types:
+                raise ValueError(
+                    "Opportunity type does not exist in WORKFLOWS_OPPORTUNITY_CONFIGS"
+                )
+
+            session.execute(
+                insert(Opportunity)
+                .values(
+                    state_code=self.state_code.value,
+                    opportunity_type=opportunity_type,
+                    updated_by=updated_by,
+                    updated_at=updated_at,
+                    gating_feature_variant=gating_feature_variant,
+                    homepage_position=homepage_position,
+                )
+                .on_conflict_do_update(
+                    index_elements=["state_code", "opportunity_type"],
+                    set_={
+                        "updated_by": updated_by,
+                        "updated_at": updated_at,
+                        "gating_feature_variant": gating_feature_variant,
+                        "homepage_position": homepage_position,
+                    },
+                )
+            )
+            session.commit()
 
     def add_config(
         self,

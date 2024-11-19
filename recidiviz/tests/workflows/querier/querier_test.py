@@ -199,6 +199,10 @@ MOCK_CONFIGS = [
 ]
 
 
+def lookup_type(opps: List[FullOpportunityInfo], opp_type: str) -> FullOpportunityInfo:
+    return next(opp for opp in opps if opp.opportunity_type == opp_type)
+
+
 @pytest.mark.uses_db
 @pytest.mark.usefixtures("snapshottest_snapshot")
 class TestWorkflowsQuerier(TestCase):
@@ -503,6 +507,57 @@ class TestWorkflowsQuerier(TestCase):
         )
 
         self.assertIsNone(actual)
+
+    def test_update_opportunity_creates_new_opportunity(self) -> None:
+        querier = WorkflowsQuerier(StateCode.US_ID)
+
+        opp = lookup_type(querier.get_opportunities(), "usIdNewOpp")
+
+        # Make sure we're actually unprovisioned
+        self.assertEqual(None, opp.last_updated_by)
+
+        querier.update_opportunity(
+            opportunity_type="usIdNewOpp",
+            updated_by="testerZZZ",
+            updated_at=datetime.datetime(2024, 11, 12),
+            gating_feature_variant="test_fv",
+            homepage_position=423,
+        )
+
+        opp = lookup_type(querier.get_opportunities(), "usIdNewOpp")
+        self.assertEqual("testerZZZ", opp.last_updated_by)
+        self.assertEqual(datetime.datetime(2024, 11, 12), opp.last_updated_at)
+        self.assertEqual("test_fv", opp.gating_feature_variant)
+        self.assertEqual(423, opp.homepage_position)
+
+    def test_update_opportunity_updates_existing_opportunity(self) -> None:
+        querier = WorkflowsQuerier(StateCode.US_ID)
+
+        querier.update_opportunity(
+            opportunity_type="usIdSupervisionLevelDowngrade",
+            updated_by="testerZZZ",
+            updated_at=datetime.datetime(2024, 11, 12),
+            gating_feature_variant=None,
+            homepage_position=423,
+        )
+
+        opp = lookup_type(querier.get_opportunities(), "usIdSupervisionLevelDowngrade")
+        self.assertEqual("testerZZZ", opp.last_updated_by)
+        self.assertEqual(datetime.datetime(2024, 11, 12), opp.last_updated_at)
+        self.assertEqual(None, opp.gating_feature_variant)
+        self.assertEqual(423, opp.homepage_position)
+
+    def test_update_opportunity_fails_on_bad_opportunity_type(self) -> None:
+        querier = WorkflowsQuerier(StateCode.US_ID)
+
+        with pytest.raises(ValueError):
+            querier.update_opportunity(
+                opportunity_type="badType",
+                updated_by="testerZZZ",
+                updated_at=datetime.datetime(2024, 11, 12),
+                gating_feature_variant=None,
+                homepage_position=423,
+            )
 
     def test_add_config_increments_id(self) -> None:
         new_id = WorkflowsQuerier(StateCode.US_ID).add_config(**make_add_config_arguments("usIdSupervisionLevelDowngrade"))  # type: ignore
