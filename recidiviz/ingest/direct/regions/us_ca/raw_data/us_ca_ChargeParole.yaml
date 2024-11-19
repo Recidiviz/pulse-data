@@ -19,6 +19,9 @@ columns:
   - name: ORTGID
     description: |-
       ORTGID identifies the Incarceration period associated with the case/offense. This stopped being sent on 12/7/2022 and was replaced with tcid (which is different).
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2022-12-07T00:00:00Z
   - name: CommitmentPrefix
     description: |-
       The first character indicates the numbers of CDCNOs a person has. Second character means one of 2 things: either to uniquely identify case or the judgement, if there were multiple judgements.

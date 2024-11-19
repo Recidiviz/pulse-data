@@ -2,6 +2,8 @@
 file_tag: SupervisionContact
 file_description: |-
   Information about contacts between parole agents and people on parole.
+  TODO(#35309) Ensure the deleted columns were intentionally deleted.
+  Also there is a note that column Cdcno was deleted, but we are still receiving it.
 data_classification: source
 primary_key_cols: []
 columns:
@@ -20,10 +22,28 @@ columns:
   - name: ContactSource
   - name: EmploymentStatus
   - name: EmploymentStatusDesc # Added 2023-03-29
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-04-26T00:00:00Z
   - name: ContactSourceDesc # Added 2023-03-29
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-04-26T00:00:00Z
   - name: CONTACTTIME # Added 2023-03-29
   - name: ContactTypeDesc # Added 2023-03-29
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-04-26T00:00:00Z
   - name: in_date # Added 2023-03-29
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-04-26T00:00:00Z
   - name: out_date # Added 2023-03-29
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-04-26T00:00:00Z
   - name: ParoleEndDate # Added 2023-03-29
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-04-26T00:00:00Z
   - name: DrugTestResult # Added 2023-07-19

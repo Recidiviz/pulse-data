@@ -223,5 +223,9 @@ columns:
       The date the most recent suspension was ended.
   - name: SUPVEVNTDATE # added 2023-07-19
     field_type: datetime
+    update_history:
+      # TODO(#35309) Ensure this column was intentionally removed.
+      - update_type: DELETION
+        update_datetime: 2024-02-07T00:00:00Z
   - name: LastCCRDate # Added 2023-08-14, formerly SUPVEVNTDATE added 2023-07-19
     field_type: datetime
