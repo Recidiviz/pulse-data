@@ -33,7 +33,14 @@ class StateCodeSchema(CamelCaseSchema):
     name = fields.Str(required=True)
 
 
-class OpportunitySchema(CamelCaseSchema):
+class OpportunityRequestSchema(CamelCaseSchema):
+    """Schema representing the editable fields on an opportunity"""
+
+    homepage_position = fields.Int(required=True)
+    gating_feature_variant = fields.Str(required=False)
+
+
+class OpportunitySchema(OpportunityRequestSchema):
     """Schema representing the base information about an opportunity."""
 
     state_code = fields.Str(required=True)
@@ -44,9 +51,6 @@ class OpportunitySchema(CamelCaseSchema):
     experiment_id = fields.Str(required=True)
     last_updated_at = fields.Str(required=False)
     last_updated_by = fields.Str(required=False)
-
-    homepage_position = fields.Int(required=False)
-    gating_feature_variant = fields.Str(required=False)
 
 
 class OpportunityConfigurationRequestSchema(WorkflowsConfigSchema):

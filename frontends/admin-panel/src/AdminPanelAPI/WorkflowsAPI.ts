@@ -16,6 +16,7 @@
 // =============================================================================
 import { StateCodeInfo } from "../components/general/constants";
 import {
+  BabyOpportunity,
   Opportunity,
   opportunitySchema,
 } from "../WorkflowsStore/models/Opportunity";
@@ -36,6 +37,17 @@ export const getOpportunities = async (
 ): Promise<Opportunity[]> => {
   const response = await get(`/admin/workflows/${stateCode}/opportunities`);
   return opportunitySchema.array().parse(response);
+};
+
+export const postOpportunity = async (
+  stateCode: string,
+  opportunityType: string,
+  opportunity: BabyOpportunity
+): Promise<Response> => {
+  return post(
+    `/admin/workflows/${stateCode}/opportunities/${opportunityType}`,
+    opportunity
+  );
 };
 
 export const getOpportunityConfigurations = async (

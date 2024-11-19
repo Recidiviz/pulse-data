@@ -15,57 +15,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Button, Form } from "antd";
+import { Button } from "antd";
 import { observer } from "mobx-react-lite";
 import { useHistory } from "react-router-dom";
 
-import { Opportunity } from "../../WorkflowsStore/models/Opportunity";
-import OpportunityPresenter from "../../WorkflowsStore/presenters/OpportunityPresenter";
 import { useWorkflowsStore } from "../StoreProvider";
 import HydrationWrapper from "./HydrationWrapper";
 import OpportunityConfigurationsTable from "./OpportunityConfigurationsTable";
+import OpportunitySettings from "./OpportunitySettings";
 import { buildRoute } from "./utils";
-
-export const updatedStringForOpportunity = (opp: Opportunity) =>
-  opp.lastUpdatedAt
-    ? `${opp.lastUpdatedAt.toLocaleString()} by ${opp.lastUpdatedBy}`
-    : "Not yet provisioned";
-
-const OpportunitySettings = ({
-  presenter,
-}: {
-  presenter: OpportunityPresenter;
-}) => {
-  const opportunity = presenter?.selectedOpportunity;
-  if (!opportunity) return <div />;
-
-  return (
-    <Form>
-      <Form.Item label="System">
-        <span className="ant-form-text">{opportunity.systemType}</span>
-      </Form.Item>
-      <Form.Item label="Gating Feature Variant">
-        <span className="ant-form-text">
-          {opportunity.gatingFeatureVariant ?? <i>None</i>}
-        </span>
-      </Form.Item>
-      <Form.Item label="URL Section">
-        <span className="ant-form-text">{opportunity.urlSection}</span>
-      </Form.Item>
-      <Form.Item label="Completion Event">
-        <span className="ant-form-text">{opportunity.completionEvent}</span>
-      </Form.Item>{" "}
-      <Form.Item label="Experiment ID">
-        <span className="ant-form-text">{opportunity.experimentId}</span>
-      </Form.Item>
-      <Form.Item label="Last Updated">
-        <span className="ant-form-text">
-          {updatedStringForOpportunity(opportunity)}
-        </span>
-      </Form.Item>
-    </Form>
-  );
-};
 
 const OpportunityView = (): JSX.Element => {
   const {
@@ -77,28 +35,36 @@ const OpportunityView = (): JSX.Element => {
 
   const history = useHistory();
 
+  const isOpportunityProvisioned =
+    !!opportunityPresenter?.selectedOpportunity?.lastUpdatedAt;
+
   return (
     <>
-      <h2>Settings</h2>
       <HydrationWrapper
         presenter={opportunityPresenter}
         component={OpportunitySettings}
       />
       <h2>Configurations</h2>
-      <Button
-        onClick={() =>
-          history.push(
-            buildRoute(stateCode ?? "", selectedOpportunityType, "new")
-          )
-        }
-        disabled={!opportunityPresenter?.selectedOpportunity?.lastUpdatedAt}
-      >
-        New Configuration
-      </Button>
-      <HydrationWrapper
-        presenter={opportunityConfigurationPresenter}
-        component={OpportunityConfigurationsTable}
-      />
+      {isOpportunityProvisioned ? (
+        <>
+          <Button
+            onClick={() =>
+              history.push(
+                buildRoute(stateCode ?? "", selectedOpportunityType, "new")
+              )
+            }
+            disabled={!isOpportunityProvisioned}
+          >
+            New Configuration
+          </Button>
+          <HydrationWrapper
+            presenter={opportunityConfigurationPresenter}
+            component={OpportunityConfigurationsTable}
+          />
+        </>
+      ) : (
+        "Set up the opportunity above before creating a configuration."
+      )}
     </>
   );
 };

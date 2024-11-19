@@ -15,9 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { message } from "antd";
 import { autorun, flowResult, makeAutoObservable } from "mobx";
 
+import { postOpportunity } from "../../AdminPanelAPI/WorkflowsAPI";
 import { Hydratable, HydrationState } from "../../InsightsStore/types";
+import { BabyOpportunity } from "../models/Opportunity";
 import { WorkflowsStore } from "../WorkflowsStore";
 
 export default class OpportunityPresenter implements Hydratable {
@@ -48,6 +51,24 @@ export default class OpportunityPresenter implements Hydratable {
 
   get opportunities() {
     return this.workflowsStore.opportunities;
+  }
+
+  async postOpportunity(opp: BabyOpportunity): Promise<boolean> {
+    const { selectedOpportunityType } = this.workflowsStore;
+    if (!selectedOpportunityType) return false;
+    try {
+      await postOpportunity(this.stateCode, selectedOpportunityType, opp);
+      message.success("Opportunity Updated!");
+      this.hydrationState.status = "needs hydration";
+      return true;
+    } catch (e) {
+      message.error(
+        `Error updating opportunity:
+        \n${e}`,
+        10
+      );
+      return false;
+    }
   }
 
   get selectedOpportunity() {

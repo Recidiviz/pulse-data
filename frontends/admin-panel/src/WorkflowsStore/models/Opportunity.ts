@@ -24,7 +24,14 @@ function unEnum(raw: string) {
   return splat[splat.length - 1];
 }
 
-export const opportunitySchema = z.object({
+export const babyOpportunitySchema = z.object({
+  gatingFeatureVariant: nullishAsUndefined(z.string()),
+  homepagePosition: nullishAsUndefined(z.number()),
+});
+
+export type BabyOpportunity = z.infer<typeof babyOpportunitySchema>;
+
+export const opportunitySchema = babyOpportunitySchema.extend({
   stateCode: z.string(),
   opportunityType: z.string(),
   systemType: z.string().transform(unEnum),
@@ -35,7 +42,11 @@ export const opportunitySchema = z.object({
     (r) => r && parseISO(r)
   ),
   lastUpdatedBy: nullishAsUndefined(z.string()),
-  gatingFeatureVariant: nullishAsUndefined(z.string()),
 });
 
 export type Opportunity = z.infer<typeof opportunitySchema>;
+
+export const updatedStringForOpportunity = (opp: Opportunity) =>
+  opp.lastUpdatedAt
+    ? `${opp.lastUpdatedAt.toLocaleString()} by ${opp.lastUpdatedBy}`
+    : "Not yet provisioned";

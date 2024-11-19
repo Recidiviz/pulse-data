@@ -29,6 +29,7 @@ from recidiviz.admin_panel.line_staff_tools.workflows_api_schemas import (
     OpportunityConfigurationRequestSchema,
     OpportunityConfigurationResponseSchema,
     OpportunityConfigurationsQueryArgs,
+    OpportunityRequestSchema,
     OpportunitySchema,
     StateCodeSchema,
 )
@@ -80,6 +81,37 @@ class OpportunitiesAPI(MethodView):
         state_code = refine_state_code(state_code_str)
         opportunities = WorkflowsQuerier(state_code).get_opportunities()
         return opportunities
+
+
+@workflows_blueprint.route("<state_code_str>/opportunities/<opportunity_type>")
+class OpportunityAPI(MethodView):
+    """Endpoint to to create or update an opportunity."""
+
+    @workflows_blueprint.arguments(
+        OpportunityRequestSchema,
+        location="json",
+        error_status_code=HTTPStatus.BAD_REQUEST,
+    )
+    @workflows_blueprint.response(HTTPStatus.OK)
+    def post(
+        self,
+        body_args: Dict[str, Any],
+        state_code_str: str,
+        opportunity_type: str,
+    ) -> None:
+        state_code = refine_state_code(state_code_str)
+        updated_by, error_str = get_authenticated_user_email()
+        if error_str:
+            logging.error("Error determining logged-in user: %s", error_str)
+            abort(HTTPStatus.BAD_REQUEST, message=error_str)
+
+        WorkflowsQuerier(state_code).update_opportunity(
+            opportunity_type=opportunity_type,
+            updated_by=updated_by,
+            updated_at=datetime.datetime.now(),
+            gating_feature_variant=body_args.get("gating_feature_variant"),
+            homepage_position=body_args["homepage_position"],
+        )
 
 
 @workflows_blueprint.route(
