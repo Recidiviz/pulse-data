@@ -43,7 +43,7 @@ WITH
         ON psi.AssignedToUserId = e.EmployeeId 
     WHERE e.Inactive = "0" AND
     -- Make sure that case is either not completed or completed within the last two years 
-    (DATE(CompletedDate) > DATE_SUB(CURRENT_DATE, INTERVAL 2 YEAR) OR CompletedDate IS NULL)
+    (DATE(CompletedDate) > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH) OR CompletedDate IS NULL)
     ),
     -- this CTE uses the OffenderNote table to infer the type of PSI report requested
     report_type_cte AS (
