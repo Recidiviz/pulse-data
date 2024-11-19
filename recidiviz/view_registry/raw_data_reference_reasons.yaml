@@ -767,11 +767,14 @@ US_ME:
   CIS_400_CHARGE:
     analyst_data.us_me_early_discharge_sessions_preprocessing: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  CIS_4010_CRT_ORDER_STATUS:
+    analyst_data.us_me_sentence_term: |-
+      Should eventually remove this table. See TODO(#30761)
   CIS_401_CRT_ORDER_HDR:
     analyst_data.us_me_early_discharge_sessions_preprocessing: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     analyst_data.us_me_sentence_term: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Should eventually remove this table. See TODO(#30761)
     workflows_views.us_me_complete_early_termination_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   CIS_4030_CONDITION_TYPE:
