@@ -67,6 +67,9 @@ WITH state_assessment AS (
                 OR assessment_type LIKE "ORAS%"
             )
         )
+
+        -- TODO(#35297) In AZ, we care about mental health assessments
+        OR (state_code = 'US_AZ' AND assessment_type = 'INTERNAL_UNKNOWN' AND assessment_class = 'MENTAL_HEALTH')
         AND assessment_date IS NOT NULL
     -- keep only assessments with scores or levels
         AND (
