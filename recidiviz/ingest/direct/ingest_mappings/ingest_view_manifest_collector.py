@@ -47,20 +47,20 @@ class IngestViewManifestCollector:
     ) -> None:
         self.region = region
         self._manifest_compiler = IngestViewManifestCompiler(delegate)
-        self._ingest_view_to_manifest: Dict[
-            str, IngestViewManifest
-        ] = self._load_ingest_view_to_manifest()
-
-    def _load_ingest_view_to_manifest(self) -> Dict[str, IngestViewManifest]:
-        ingest_view_to_manifest = {}
-        paths = self._get_manifest_paths(self.region)
-        for manifest_path in paths:
-            ingest_view_name = self._parse_ingest_view_name(manifest_path)
-            manifest = self._manifest_compiler.compile_manifest(
+        self._ingest_view_to_manifest_path: Dict[str, str] = {
+            self._parse_ingest_view_name(manifest_path): manifest_path
+            for manifest_path in self._get_manifest_paths(self.region)
+        }
+        self._ingest_view_to_manifest: Dict[str, IngestViewManifest] = {
+            ingest_view_name: self._manifest_compiler.compile_manifest(
                 ingest_view_name=ingest_view_name
             )
-            ingest_view_to_manifest[ingest_view_name] = manifest
-        return ingest_view_to_manifest
+            for ingest_view_name in self._ingest_view_to_manifest_path.keys()
+        }
+
+    @property
+    def ingest_view_to_manifest_path(self) -> Dict[str, str]:
+        return self._ingest_view_to_manifest_path
 
     @property
     def ingest_view_to_manifest(self) -> Dict[str, IngestViewManifest]:
