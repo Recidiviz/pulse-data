@@ -17,22 +17,30 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-This file contains a script to output information regarding undelivered text messages
-relating to the Idaho LSU JII Text Message Pilot.
+This file contains a script to output information regarding replies and undelivered text messages
+relating to the JII Text Message Pilot.
 
 Usage:
 python -m recidiviz.case_triage.jii.id_lsu_undelivered_messages \
-    --batch-id mm_dd_YYYY_HH_MM_SS \
-    --bigquery-view recidiviz-staging.hsalas_scratch.ix_lsu_jii_pilot_2_POs
+    --dry-run True \
+    --initial-batch-id 10_21_2024_11_30_00 \
+    --eligibility-batch-id 10_22_2024_11_01_36 \
+    --initial-batch-id-redelivery 10_28_2024_11_01_25 \
+    --eligibility-batch-id-redelivery 10_29_2024_10_58_26 \
+    --launch-name D1/5/7 \
+    --credentials-path
 """
 import argparse
-
-from google.cloud.firestore_v1 import FieldFilter
+import logging
+import pandas as pd
 from twilio.rest import Client as TwilioClient
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.case_triage.workflows.utils import TwilioStatus
+from google.oauth2.service_account import Credentials
+from google.cloud.firestore_v1 import FieldFilter
+
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
+from recidiviz.justice_counts.control_panel.utils import write_data_to_spreadsheet
+from recidiviz.utils.params import str_to_bool
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.secrets import get_secret
@@ -42,115 +50,251 @@ def create_parser() -> argparse.ArgumentParser:
     """Returns an argument parser for the script."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--batch-id",
-        help="A string representing a datetime of a previous run of the send_id_lsu_texts.py script.",
+        "--initial-batch-id",
+        help="A string representing a datetime of the initial texts run of the send_id_lsu_texts.py script.",
         required=True,
     )
     parser.add_argument(
-        "--bigquery-view",
-        help="Name of the BigQuery view that we will use to map external_ids to JII names.",
+        "--eligibility-batch-id",
+        help="A string representing a datetime of the eligibility texts of the send_id_lsu_texts.py script.",
         required=True,
+    )
+    parser.add_argument(
+        "--initial-batch-id-redelivery",
+        help="A string representing a datetime of the initial texts redelivery run of the send_id_lsu_texts.py script.",
+        required=True,
+    )
+    parser.add_argument(
+        "--eligibility-batch-id-redelivery",
+        help="A string representing a datetime of the eligibility texts redelivery run of the send_id_lsu_texts.py script.",
+        required=True,
+    )
+    parser.add_argument(
+        "--launch-name",
+        help="A string representing the name of the given launch (that encompasses all 4 batches). This will be used in the Sheet Name.",
+        required=True,
+    )
+    parser.add_argument(
+        "--dry-run",
+        default=True,
+        type=str_to_bool,
+        help="Runs script in dry-run mode. Only prints the operations it would perform.",
+    )
+    parser.add_argument(
+        "--credentials-path",
+        help="Used to point to path of JSON file with Google Cloud credentials.",
+        required=False,
     )
     return parser
 
 
-def get_undelivered_message_info(batch_id: str, bigquery_view: str) -> None:
+# Spreadsheet Name: LSU Texting Pilot Replies and Undelivered Texts
+# https://docs.google.com/spreadsheets/d/12ZhNDb0eP46si66z7aGc1iDp_xn0myIuFD26Z9M6GHg/edit?gid=944970904#gid=944970904
+SPREADSHEET_ID = "12ZhNDb0eP46si66z7aGc1iDp_xn0myIuFD26Z9M6GHg"
+firestore_client = FirestoreClientImpl(project_id="jii-pilots")
+logger = logging.getLogger(__name__)
+
+
+def get_undelivered_messages(
+    initial_batch_id: str,
+    eligibility_batch_id: str,
+    initial_batch_id_redelivery: str,
+    eligibility_batch_id_redelivery: str,
+    launch_name: str,
+    credentials: Credentials,
+    dry_run: bool,
+) -> None:
     """
-    Given a batch_id, prints out JII names, external_ids, phone_numbers, and messages for all undelivered text messages
-    in that batch. A batch_id is a string representing a datetime of a previous run of the send_id_lsu_texts.py script.
+    Given 4 batch_ids related to a launch of the LSU Texting Pilot, grabs documents for all undelivered text messages in those batches.
+    Writes a sheet containing one row per undelivered text document to a google sheet.
+
+    Note: a batch_id is a string representing a datetime of a previous run of the send_id_lsu_texts.py script.
     """
-    firestore_client = FirestoreClientImpl(project_id="jii-pilots")
+    undelivered_message_df = pd.DataFrame()
 
-    account_sid = get_secret("twilio_sid")
-    auth_token = get_secret("twilio_auth_token")
-    twilio_client = TwilioClient(account_sid, auth_token)
-    batch_id_split = batch_id.split("_")
-    date_sent = f"{batch_id_split[2]}-{batch_id_split[0]}-{batch_id_split[1]}"
-
-    # Query Twilio for message attempts
-    all_attempted_messages = twilio_client.messages.list(
-        from_=get_secret("jii_twilio_phone_number"), date_sent=date_sent
-    )
-
-    print("-------------------------------------------------------------")
-    print(f"The following messages from batch {batch_id} were undelivered")
-    print("-------------------------------------------------------------")
-    undelivered_message_list = []
-    undelivered_external_ids = []
-    undelivered_message_sids = []
-    for attempted_message in all_attempted_messages:
-        message_status = attempted_message.status
-        message_sid = attempted_message.sid
-
-        if message_status == TwilioStatus.UNDELIVERED.value:
-            undelivered_message_sids.append(message_sid)
-
-    # Query the Firestore database for the messages
-    # Need to do this to get the external_ids
+    # Query the Firestore database for all undelivered messages in the given batch
     jii_messages_ref = firestore_client.get_collection_group(
         collection_path="lsu_eligibility_messages"
     )
     firestore_query = jii_messages_ref.where(
-        filter=FieldFilter("message_sid", "in", undelivered_message_sids)
-    )
-    jii_text_docs = firestore_query.stream()
+        filter=FieldFilter(
+            "batch_id",
+            "in",
+            [
+                initial_batch_id,
+                eligibility_batch_id,
+                initial_batch_id_redelivery,
+                eligibility_batch_id_redelivery,
+            ],
+        )
+    ).where(filter=FieldFilter("raw_status", "==", "undelivered"))
+    undelivered_text_docs = firestore_query.stream()
 
-    for jii_text_doc in jii_text_docs:
-        jii_reply_doc_dict = jii_text_doc.to_dict()
-        if jii_reply_doc_dict is None:
+    for undelivered_text_doc in undelivered_text_docs:
+        undelivered_text_dict = undelivered_text_doc.to_dict()
+        if undelivered_text_dict is None:
             continue
 
-        individual_undelivered_message_dict = {}
-        # We store external_ids pre-pended with us_id_ in Firestore
-        # We need to slice this string to get the actual external_id
-        external_id = jii_text_doc.reference.path.split("/")[1][6:]
-        undelivered_external_ids.append(external_id)
-        individual_undelivered_message_dict["external_id"] = external_id
-        individual_undelivered_message_dict["phone_number"] = jii_reply_doc_dict[
-            "phone_number"
-        ]
-        individual_undelivered_message_dict["text_body"] = jii_reply_doc_dict["body"]
-        undelivered_message_list.append(individual_undelivered_message_dict)
+        doc_path = undelivered_text_doc.reference.path
+        text_df = pd.DataFrame(undelivered_text_dict, index=[0])
+        text_df["document_path"] = doc_path
+        # Store undelivered message level document as row in df
+        undelivered_message_df = pd.concat([undelivered_message_df, text_df])
 
-    # Query BigQuery for JII and PO Names
-    external_id_to_names_dict = {}
-    bq_query = f"SELECT external_id, person_name, po_name FROM {bigquery_view} WHERE external_id IN {tuple(undelivered_external_ids)}"
-    query_job = BigQueryClientImpl().run_query_async(
-        query_str=bq_query,
-        use_query_cache=True,
+    # Export df of text documents to google sheet
+    num_rows, num_cols = undelivered_message_df.shape
+    if dry_run is True:
+        print(
+            f"Would write dataframe with {num_rows} rows and {num_cols} columns to Google Sheets."
+        )
+    else:
+        new_sheet_title = f"{launch_name} Undelivered Texts"
+        write_data_to_spreadsheet(
+            google_credentials=credentials,
+            df=undelivered_message_df,
+            columns=list(undelivered_message_df.columns),
+            new_sheet_title=new_sheet_title,
+            spreadsheet_id=SPREADSHEET_ID,
+            logger=logger,
+            index=1,
+        )
+        print(
+            f"Wrote dataframe with {num_rows} rows and {num_cols} columns to {new_sheet_title} Sheet."
+        )
+
+
+def get_replies(
+    initial_batch_id: str,
+    eligibility_batch_id: str,
+    initial_batch_id_redelivery: str,
+    eligibility_batch_id_redelivery: str,
+    launch_name: str,
+    credentials: Credentials,
+    dry_run: bool,
+) -> None:
+    """
+    Given an initial_batch_id associated with a launch of the LSU Texting Pilot, grabs all reply text
+    messages received after the date of the initial batch.
+
+    Joins the reply text to information related to the jii with that reply phone number.
+
+    Writes a sheet containing one row per reply text to a google sheet.
+    """
+    account_sid = get_secret("twilio_sid")
+    auth_token = get_secret("twilio_auth_token")
+    twilio_client = TwilioClient(account_sid, auth_token)
+    initial_batch_id_split = initial_batch_id.split("_")
+    # We need to subtract 1 day from the date_sent since the date_sent_after arg below is > rather than >=
+    date_sent = f"{initial_batch_id_split[2]}-{initial_batch_id_split[0]}-{int(initial_batch_id_split[1]) - 1}"
+
+    # This will be a list of dictionaries that we will export to the Google Sheet
+    replies_list = []
+
+    # Query Twilio for all replies
+    all_replies = twilio_client.messages.list(
+        to=get_secret("jii_twilio_phone_number"), date_sent_after=date_sent
     )
-    for individual in query_job:
-        external_id = str(individual["external_id"])
-        person_name = str(individual["person_name"])
-        po_name = str(individual["po_name"])
-        external_id_to_names_dict[external_id] = {
-            "person_name": person_name,
-            "po_name": po_name,
+
+    for reply in all_replies:
+        from_phone_num = reply.from_[2:]
+        reply_dict = {
+            "From": from_phone_num,
+            "To": reply.to[2:],
+            "Body": reply.body,
+            "SendDate": reply.date_sent,
         }
 
-    for undelivered_message_dict in undelivered_message_list:
-        external_id = undelivered_message_dict["external_id"]
-        names_dict = external_id_to_names_dict.get(external_id)
-        if names_dict is not None:
-            person_name = names_dict.get("person_name", "UNKNOWN")
-            po_name = names_dict.get("po_name", "UNKNOWN")
-        else:
-            person_name = "UNKNOWN"
-            po_name = "UNKNOWN"
-        print(f"JII Name: {person_name}")
-        print(f"PO Name: {po_name}")
-        for key, value in undelivered_message_dict.items():
-            print(f"{key}: {value}")
-        print("-------------------------------------------------------------")
-    print(
-        f"Total undelivered messages from batch_id={batch_id}: {len(undelivered_message_list)}"
-    )
-    print("-------------------------------------------------------------")
+        # Query Firestore for the jii (individual) level docs that have replies
+        # We need to do this in order to grab external_id, state_code, districts, po_names
+        jii_ref = firestore_client.get_collection_group(
+            collection_path="twilio_messages"
+        )
+        firestore_query = jii_ref.where(
+            filter=FieldFilter("phone_numbers", "array_contains", from_phone_num)
+        )
+        jii_level_docs = firestore_query.stream()
+        doc_count = 0
+
+        for jii_level_doc in jii_level_docs:
+            jii_level_dict = jii_level_doc.to_dict()
+            if jii_level_dict is None:
+                continue
+
+            # Check that this particular jii was included in at least 1 of the batches
+            if (
+                len(
+                    set(jii_level_dict.get("batch_ids"))
+                    & set(
+                        [
+                            initial_batch_id,
+                            eligibility_batch_id,
+                            initial_batch_id_redelivery,
+                            eligibility_batch_id_redelivery,
+                        ]
+                    )
+                )
+                == 0
+            ):
+                continue
+            doc_count += 1
+
+            reply_dict["external_id"] = jii_level_dict["external_id"]
+            reply_dict["state_code"] = jii_level_dict["state_code"]
+            reply_dict["districts"] = jii_level_dict["districts"]
+            reply_dict["po_names"] = jii_level_dict["po_names"]
+            # We only expect 1 individual per phone_number
+            if doc_count > 1:
+                raise SystemError(
+                    f"{doc_count} documents with phone number {from_phone_num} found. We only expect 1 jii level document per phone number."
+                )
+
+        replies_list.append(reply_dict)
+
+    replies_df = pd.DataFrame(replies_list)
+    num_rows, num_cols = replies_df.shape
+
+    # Export df of replies to google sheet
+    if dry_run is True:
+        print(
+            f"Would write dataframe with {num_rows} rows and {num_cols} columns to Google Sheets."
+        )
+    else:
+        new_sheet_title = f"{launch_name} All Replies"
+        write_data_to_spreadsheet(
+            google_credentials=credentials,
+            df=replies_df,
+            columns=list(replies_df.columns),
+            new_sheet_title=new_sheet_title,
+            spreadsheet_id=SPREADSHEET_ID,
+            logger=logger,
+            index=1,
+        )
+        print(
+            f"Wrote dataframe with {num_rows} rows and {num_cols} columns to {new_sheet_title} Sheet."
+        )
 
 
 if __name__ == "__main__":
     args = create_parser().parse_args()
+    # When running locally, point to JSON file with service account credentials.
+    # The service account has access to the spreadsheet with editor permissions.
+    glocal_credentials = Credentials.from_service_account_file(args.credentials_path)
+    get_undelivered_messages(
+        dry_run=args.dry_run,
+        initial_batch_id=args.initial_batch_id,
+        eligibility_batch_id=args.eligibility_batch_id,
+        initial_batch_id_redelivery=args.initial_batch_id_redelivery,
+        eligibility_batch_id_redelivery=args.eligibility_batch_id_redelivery,
+        launch_name=args.launch_name,
+        credentials=glocal_credentials,
+    )
     with local_project_id_override(GCP_PROJECT_STAGING):
-        get_undelivered_message_info(
-            batch_id=args.batch_id, bigquery_view=args.bigquery_view
+        get_replies(
+            dry_run=args.dry_run,
+            initial_batch_id=args.initial_batch_id,
+            eligibility_batch_id=args.eligibility_batch_id,
+            initial_batch_id_redelivery=args.initial_batch_id_redelivery,
+            eligibility_batch_id_redelivery=args.eligibility_batch_id_redelivery,
+            launch_name=args.launch_name,
+            credentials=glocal_credentials,
         )
