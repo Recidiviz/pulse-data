@@ -41,8 +41,8 @@ serving_periods AS (
       statuses.start_date,
       statuses.end_date_exclusive,
     FROM
-        `{{project_id}}.sentence_sessions.sentence_serving_period_materialized` statuses
-    LEFT JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sentences
+        `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_period_materialized` statuses
+    LEFT JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sentences
         USING (state_code, person_id, sentence_id)
     WHERE
         -- Drop any status sessions that end before the sentence imposed date
@@ -71,6 +71,7 @@ OVERLAPPING_SENTENCE_SERVING_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=__doc__,
     should_materialize=True,
     clustering_fields=["state_code", "person_id"],
+    sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
 )
 
 if __name__ == "__main__":

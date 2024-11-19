@@ -39,7 +39,7 @@ WITH raw_text_sessions AS (
       {list_to_query_string(_INDEX_COLUMNS)},
       start_date,
       end_date_exclusive,
-  FROM `{{project_id}}.sentence_sessions.sentence_status_raw_text_sessions_materialized`
+  FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_status_raw_text_sessions_materialized`
   WHERE is_serving_sentence_status
 )
 {aggregate_adjacent_spans(
@@ -57,6 +57,7 @@ SENTENCE_SERVING_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=__doc__,
     should_materialize=True,
     clustering_fields=_INDEX_COLUMNS,
+    sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
 )
 
 if __name__ == "__main__":

@@ -22,7 +22,10 @@ from google.cloud import bigquery
 from recidiviz.calculator.query.sessions_query_fragments import (
     join_sentence_serving_periods_to_compartment_sessions,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    SENTENCE_SESSIONS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -68,6 +71,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     criteria_spans_query_template=_QUERY_TEMPLATE,
     state_code=StateCode.US_MI,
     sessions_dataset=SESSIONS_DATASET,
+    sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
     meets_criteria_default=True,
     raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MI,

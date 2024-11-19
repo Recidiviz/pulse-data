@@ -101,6 +101,9 @@ from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_not
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_to_consecutive_parent_sentence import (
     CONSECUTIVE_SENTENCES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentence_sessions_v2_all.sentence_sessions_v2_all_views import (
+    SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
     RECIDIVISM_EVENT_VIEW_BUILDER,
 )
@@ -195,6 +198,13 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
             "referenced by any downstream view (Anna Geiduschek, 2024-09-18)"
         )
         for table_id in get_bq_schema_for_entities_module(state_entities)
+    },
+    **{
+        VIEW_BUILDER.address: (
+            "These views mirror the views in the `sentence_sessions` dataset, but without any exclusion of states based on migration status. They will be used for validation and development work but"
+            "are not yet referenced by any downstream views (Andrew Gaidus, 2024-11-19)"
+        )
+        for VIEW_BUILDER in SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS
     },
     BigQueryAddress(
         dataset_id=NORMALIZED_STATE_VIEWS_DATASET,

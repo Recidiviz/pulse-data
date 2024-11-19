@@ -56,6 +56,9 @@ SESSIONS_DATASET: str = "sessions"
 # Where sentence sessions data lives
 SENTENCE_SESSIONS_DATASET: str = "sentence_sessions"
 
+# # Mirrored version of `sentence_sessions` only using v2 sentence entities
+SENTENCE_SESSIONS_V2_ALL_DATASET: str = "sentence_sessions_v2_all"
+
 # Where the population projection simulation views live
 POPULATION_PROJECTION_DATASET: str = "population_projection_data"
 

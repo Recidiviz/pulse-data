@@ -23,7 +23,10 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.sessions_query_fragments import (
     join_sentence_spans_to_compartment_sessions,
 )
-from recidiviz.calculator.query.state.dataset_config import WORKFLOWS_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    SESSIONS_DATASET,
+    WORKFLOWS_VIEWS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -179,7 +182,7 @@ US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_AR_RESIDENT_METADATA_VIEW_NAME,
     view_query_template=US_AR_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE,
     description=US_AR_RESIDENT_METADATA_VIEW_DESCRIPTION,
-    sessions_dataset="sessions",
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 

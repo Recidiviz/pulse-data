@@ -30,7 +30,10 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
     join_sentence_serving_periods_to_compartment_sessions,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    SENTENCE_SESSIONS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -88,6 +91,7 @@ def get_ineligible_offense_type_criteria(
         criteria_spans_query_template=criteria_query,
         description=description,
         sessions_dataset=SESSIONS_DATASET,
+        sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
         meets_criteria_default=True,
         reasons_fields=[
             ReasonsField(

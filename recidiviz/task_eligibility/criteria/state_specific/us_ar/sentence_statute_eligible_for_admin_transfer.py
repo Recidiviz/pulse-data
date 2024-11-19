@@ -22,6 +22,10 @@ from google.cloud import bigquery
 from recidiviz.calculator.query.sessions_query_fragments import (
     join_sentence_serving_periods_to_compartment_sessions,
 )
+from recidiviz.calculator.query.state.dataset_config import (
+    SENTENCE_SESSIONS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -121,7 +125,8 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     state_code=StateCode.US_AR,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     meets_criteria_default=True,
-    sessions_dataset="sessions",
+    sessions_dataset=SESSIONS_DATASET,
+    sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
 )
 
 if __name__ == "__main__":

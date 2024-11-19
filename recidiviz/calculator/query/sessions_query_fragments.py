@@ -365,9 +365,9 @@ def join_sentence_serving_periods_to_compartment_sessions(
         compartment_level_2_to_overlap,
     )
     return f"""
-    FROM `{{project_id}}.sentence_sessions.overlapping_sentence_serving_periods_materialized` span,
+    FROM `{{project_id}}.{{sentence_sessions_dataset}}.overlapping_sentence_serving_periods_materialized` span,
     UNNEST(sentence_id_array) AS sentence_id
-    INNER JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sent
+    INNER JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sent
       USING (state_code, person_id, sentence_id)
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.{sessions_view}_materialized` sess
         ON span.state_code = sess.state_code
@@ -398,8 +398,8 @@ def join_sentence_status_to_compartment_sessions(
         compartment_level_2_to_overlap,
     )
     return f"""
-    FROM `{{project_id}}.sentence_sessions.sentence_status_raw_text_sessions_materialized` span
-    INNER JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sent
+    FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_status_raw_text_sessions_materialized` span
+    INNER JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sent
         USING (state_code, person_id, sentence_id)
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.{sessions_view}_materialized` sess
         ON span.state_code = sess.state_code
