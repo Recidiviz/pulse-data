@@ -19,13 +19,13 @@ from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
 from recidiviz.observations.event_type import EventType
-from recidiviz.observations.views.events.workflows_user.workflows_user_action import (
+from recidiviz.observations.views.events.workflows_primary_user.workflows_user_action import (
     VIEW_BUILDER as WORKFLOWS_USER_ACTION_VIEW_BUILDER,
 )
-from recidiviz.observations.views.events.workflows_user.workflows_user_client_status_update import (
+from recidiviz.observations.views.events.workflows_primary_user.workflows_user_client_status_update import (
     VIEW_BUILDER as WORKFLOWS_USER_CLIENT_STATUS_UPDATE_VIEW_BUILDER,
 )
-from recidiviz.observations.views.events.workflows_user.workflows_user_page import (
+from recidiviz.observations.views.events.workflows_primary_user.workflows_user_page import (
     VIEW_BUILDER as WORKFLOWS_USER_PAGE_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

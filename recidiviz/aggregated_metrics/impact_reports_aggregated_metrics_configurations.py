@@ -249,7 +249,7 @@ DISTINCT_REGISTERED_USERS_SUPERVISION = SpanDistinctUnitCountMetric(
     display_name="Distinct Total Registered Users",
     description="Number of distinct Workflows users who have signed up/logged into Workflows at least once",
     span_selector=SpanSelector(
-        span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+        span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
         span_conditions_dict={"system_type": ["SUPERVISION"]},
     ),
 )
@@ -259,7 +259,7 @@ DISTINCT_REGISTERED_USERS_INCARCERATION = SpanDistinctUnitCountMetric(
     display_name="Distinct Total Registered Users",
     description="Number of distinct Workflows users who have signed up/logged into Workflows at least once",
     span_selector=SpanSelector(
-        span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+        span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
         span_conditions_dict={"system_type": ["INCARCERATION"]},
     ),
 )

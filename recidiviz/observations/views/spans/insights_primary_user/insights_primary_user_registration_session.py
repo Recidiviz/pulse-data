@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View with spans of time over which a primary workflows user is a registered user of
-the workflows tool.
+"""View with spans of time over which a primary insights user is a registered user of
+the insights tool.
 """
 
 from recidiviz.observations.span_observation_big_query_view_builder import (
@@ -25,42 +25,26 @@ from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_DESCRIPTION = "Spans of time over which a primary workflows user is a registered user of the workflows tool"
+_VIEW_DESCRIPTION = "Spans of time over which a primary insights user is a registered user of the insights tool"
 
 _SOURCE_DATA_QUERY_TEMPLATE = """
 SELECT
     state_code,
-    sessions.workflows_user_email_address AS email_address,
-    metadata.completion_event_type AS task_type,
-    system_type,
-    launches.first_access_date IS NOT NULL AS task_type_is_live,
-    IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
+    insights_user_email_address AS email_address,
     start_date,
-    end_date_exclusive
+    end_date_exclusive,
 FROM
-    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized` sessions
-# Join with completion event metadata on system_type to get all task types that a user
-# could theoretically access based on their system type access (supervision vs. incarceration)
-LEFT JOIN
-    `{project_id}.reference_views.completion_event_type_metadata_materialized` metadata
-USING
-    (system_type)
-LEFT JOIN
-    `{project_id}.analyst_data.workflows_live_completion_event_types_by_state_materialized` launches
-USING
-    (state_code, completion_event_type)
+    `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+WHERE
+    is_registered
+    AND is_primary_user
 """
 
 VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBuilder(
-    span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+    span_type=SpanType.INSIGHTS_PRIMARY_USER_REGISTRATION_SESSION,
     description=_VIEW_DESCRIPTION,
     sql_source=_SOURCE_DATA_QUERY_TEMPLATE,
-    attribute_cols=[
-        "task_type",
-        "system_type",
-        "task_type_is_live",
-        "task_type_is_fully_launched",
-    ],
+    attribute_cols=[],
     span_start_date_col="start_date",
     span_end_date_col="end_date_exclusive",
 )

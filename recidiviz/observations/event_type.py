@@ -150,12 +150,12 @@ class EventType(Enum):
             EventType.WORKFLOWS_USER_LOGIN,
             EventType.WORKFLOWS_USER_PAGE,
         ]:
-            return MetricUnitOfObservationType.WORKFLOWS_USER
+            return MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER
         if self in [
             EventType.INSIGHTS_USER_LOGIN,
             EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
         ]:
-            return MetricUnitOfObservationType.INSIGHTS_USER
+            return MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER
         if self in [EventType.WORKFLOWS_CASELOAD_SURFACED]:
             return MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD
 

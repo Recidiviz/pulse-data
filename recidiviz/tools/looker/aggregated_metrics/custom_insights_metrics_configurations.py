@@ -34,7 +34,7 @@ DISTINCT_REGISTERED_USERS_LOOKER = SpanDistinctUnitCountMetric(
     display_name="Distinct Total Registered Primary Users (Insights)",
     description="Number of distinct primary (supervisor) Insights users who have signed up/logged into Insights at least once",
     span_selector=SpanSelector(
-        span_type=SpanType.INSIGHTS_USER_REGISTRATION_SESSION,
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_REGISTRATION_SESSION,
         span_conditions_dict={},
     ),
 )

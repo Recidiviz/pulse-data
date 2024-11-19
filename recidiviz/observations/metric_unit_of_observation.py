@@ -52,11 +52,15 @@ class MetricUnitOfObservation:
                 return frozenset(["state_code", "person_id"])
             case MetricUnitOfObservationType.SUPERVISION_OFFICER:
                 return frozenset(["state_code", "officer_id"])
-            case MetricUnitOfObservationType.WORKFLOWS_USER:
+            case MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER:
+                return frozenset(["state_code", "email_address"])
+            case MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER:
                 return frozenset(["state_code", "email_address"])
             case MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD:
                 return frozenset(["state_code", "caseload_id"])
-            case MetricUnitOfObservationType.INSIGHTS_USER:
+            case MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER:
+                return frozenset(["state_code", "email_address"])
+            case MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER:
                 return frozenset(["state_code", "email_address"])
 
     @property

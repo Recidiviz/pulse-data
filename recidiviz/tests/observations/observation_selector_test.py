@@ -97,12 +97,12 @@ class TestObservationSelector(unittest.TestCase):
         self,
     ) -> None:
         selector = SpanSelector(
-            span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+            span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
             span_conditions_dict={"system_type": ["SUPERVISION"]},
         )
 
         self.assertEqual(
-            'span = "WORKFLOWS_USER_REGISTRATION_SESSION"\n'
+            'span = "WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION"\n'
             '        AND JSON_EXTRACT_SCALAR(span_attributes, "$.system_type") IN ("SUPERVISION")',
             selector.generate_observation_conditions_query_fragment(
                 filter_by_observation_type=True,

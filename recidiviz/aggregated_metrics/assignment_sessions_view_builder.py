@@ -160,7 +160,7 @@ SELECT * FROM `{project_id}.sessions.supervision_staff_attribute_sessions_materi
 WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
 """,
     (
-        MetricUnitOfObservationType.WORKFLOWS_USER,
+        MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
         MetricUnitOfAnalysisType.STATE_CODE,
     ): """SELECT
     state_code,
@@ -168,9 +168,12 @@ WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
     start_date,
     end_date_exclusive, 
 FROM
-    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`""",
+    `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+WHERE
+    is_registered
+    AND is_primary_user""",
     (
-        MetricUnitOfObservationType.WORKFLOWS_USER,
+        MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
     ): """SELECT
         state_code,
@@ -179,12 +182,14 @@ FROM
         end_date_exclusive,
         location_id AS district,
     FROM
-        `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`
+        `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
     WHERE
         system_type = "SUPERVISION"
+        AND is_registered
+        AND is_primary_user
 """,
     (
-        MetricUnitOfObservationType.WORKFLOWS_USER,
+        MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
         MetricUnitOfAnalysisType.FACILITY,
     ): """SELECT
         state_code,
@@ -193,12 +198,14 @@ FROM
         end_date_exclusive,
         location_id AS facility,
     FROM
-        `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`
+        `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
     WHERE
         system_type = "INCARCERATION"
+        AND is_registered
+        AND is_primary_user
 """,
     (
-        MetricUnitOfObservationType.WORKFLOWS_USER,
+        MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
         MetricUnitOfAnalysisType.LOCATION,
     ): """SELECT
     state_code,
@@ -207,13 +214,67 @@ FROM
     end_date_exclusive,
     location_name,
 FROM
-    `{project_id}.analyst_data.workflows_primary_user_registration_sessions_materialized`""",
+    `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+WHERE
+    is_registered
+    AND is_primary_user""",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ): """SELECT
+    state_code,
+    workflows_user_email_address AS email_address,
+    start_date,
+    end_date_exclusive, 
+FROM
+    `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ): """SELECT
+        state_code,
+        workflows_user_email_address AS email_address,
+        start_date,
+        end_date_exclusive,
+        location_id AS district,
+    FROM
+        `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+    WHERE
+        system_type = "SUPERVISION"
+""",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.FACILITY,
+    ): """SELECT
+        state_code,
+        workflows_user_email_address AS email_address,
+        start_date,
+        end_date_exclusive,
+        location_id AS facility,
+    FROM
+        `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+    WHERE
+        system_type = "INCARCERATION"
+""",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.LOCATION,
+    ): """SELECT
+    state_code,
+    workflows_user_email_address AS email_address,
+    start_date,
+    end_date_exclusive,
+    location_name,
+FROM
+    `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+""",
     (
         MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD,
         MetricUnitOfAnalysisType.STATE_CODE,
     ): "SELECT * FROM `{project_id}.analyst_data.workflows_record_archive_surfaceable_caseload_sessions_materialized`",
     (
-        MetricUnitOfObservationType.INSIGHTS_USER,
+        MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER,
         MetricUnitOfAnalysisType.STATE_CODE,
     ): """SELECT
     state_code,
@@ -221,7 +282,48 @@ FROM
     start_date,
     end_date_exclusive, 
 FROM
-    `{project_id}.analyst_data.insights_primary_user_registration_sessions_materialized`""",
+    `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+WHERE
+    is_registered
+    AND is_primary_user""",
+    (
+        MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ): """SELECT
+        state_code,
+        insights_user_email_address AS email_address,
+        start_date,
+        end_date_exclusive,
+        location_id AS district,
+    FROM
+        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+    WHERE
+        is_registered
+        AND is_primary_user
+""",
+    (
+        MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ): """SELECT
+    state_code,
+    insights_user_email_address AS email_address,
+    start_date,
+    end_date_exclusive, 
+FROM
+    `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ): """SELECT
+        state_code,
+        insights_user_email_address AS email_address,
+        start_date,
+        end_date_exclusive,
+        location_id AS district,
+    FROM
+        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+""",
 }
 
 
