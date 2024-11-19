@@ -50,7 +50,7 @@ _STABLE_HISTORICAL_RAW_DATA_COUNTS_VALIDATION_CONFIG_YAML = (
 _STABLE_HISTORICAL_RAW_DATA_COUNTS_VALIDATION_CONFIG_SPEC = (
     "stable_historical_raw_data_counts_validation_config_spec.json"
 )
-_VIEW_ID_TEMPLATE = "_stable_historical_raw_data_counts"
+VIEW_ID_TEMPLATE = "_stable_historical_raw_data_counts"
 _DESCRIPTION_TEMPLATE = (
     f"Validation view that compares historical counts of raw data in {{state_code}}. All "
     f"raw data tables that are (1) marked as always_historical_export=True and (2) not "
@@ -287,7 +287,7 @@ def collect_stable_historical_raw_data_counts_view_builders() -> (
         if query_builder.has_historical_files():
             view_builder = SimpleBigQueryViewBuilder(
                 dataset_id=dataset_config.VIEWS_DATASET,
-                view_id=f"{state_code.value.lower()}{_VIEW_ID_TEMPLATE}",
+                view_id=f"{state_code.value.lower()}{VIEW_ID_TEMPLATE}",
                 description=StrictStringFormatter().format(
                     _DESCRIPTION_TEMPLATE, state_code=state_code.value
                 ),

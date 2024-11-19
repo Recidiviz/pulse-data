@@ -92,6 +92,7 @@ from recidiviz.observations.views.spans.person.task_eligibility_session import (
     VIEW_BUILDER as TASK_ELIGIBILITY_SESSION_OBSERVATIONS_VIEW_BUILDER,
 )
 from recidiviz.source_tables.collect_all_source_table_configs import (
+    build_source_table_repository_for_collected_schemata,
     get_all_source_table_addresses,
     get_source_table_datasets,
 )
@@ -102,15 +103,22 @@ from recidiviz.utils.environment import (
     GCP_PROJECTS,
 )
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.types import assert_type
 from recidiviz.validation.views.dataset_config import (
     METADATA_DATASET as VALIDATION_METADATA_DATASET,
 )
 from recidiviz.validation.views.dataset_config import (
     VIEWS_DATASET as VALIDATION_VIEWS_DATASET,
 )
+from recidiviz.view_registry.address_to_complexity_score_mapping import (
+    ParentAddressComplexityScoreMapper,
+)
 from recidiviz.view_registry.deployed_views import (
     all_deployed_view_builders,
     deployed_view_builders,
+)
+from recidiviz.view_registry.query_complexity_score_2025 import (
+    get_query_complexity_score_2025,
 )
 
 
@@ -765,18 +773,17 @@ class ViewQueryFormatTest(unittest.TestCase):
     format / correctness.
     """
 
+    all_deployed_builders: list[BigQueryViewBuilder]
     all_deployed_views_by_address: Dict[BigQueryAddress, BigQueryView]
-    all_deployed_parsed_view_trees_by_address: Dict[
-        BigQueryAddress, sqlglot.exp.Expression
-    ]
+    all_deployed_parsed_view_trees_by_address: Dict[BigQueryAddress, sqlglot.exp.Query]
 
     @classmethod
     def setUpClass(cls) -> None:
         # All view builders deployed to any project.
-        all_deployed_builders = all_deployed_view_builders()
+        cls.all_deployed_builders = all_deployed_view_builders()
         with local_project_id_override("recidiviz-456"):
             cls.all_deployed_views_by_address = {
-                vb.address: vb.build() for vb in all_deployed_builders
+                vb.address: vb.build() for vb in cls.all_deployed_builders
             }
 
         cls.all_deployed_parsed_view_trees_by_address = {}
@@ -788,13 +795,13 @@ class ViewQueryFormatTest(unittest.TestCase):
                 raise ValueError(
                     f"Failure to parse view [{view.address.table_id}]"
                 ) from e
-            cls.all_deployed_parsed_view_trees_by_address[view.address] = tree
+            cls.all_deployed_parsed_view_trees_by_address[view.address] = assert_type(
+                tree, sqlglot.expressions.Query
+            )
 
     def _run_query_format_test(
         self,
-        view_check_fn: Callable[
-            [BigQueryView, sqlglot.exp.Expression], Sequence[Exception]
-        ],
+        view_check_fn: Callable[[BigQueryView, sqlglot.exp.Query], Sequence[Exception]],
     ) -> None:
         """Runs a query format check, raising all errors at once in a single
         ExceptionGroup.
@@ -830,11 +837,11 @@ class ViewQueryFormatTest(unittest.TestCase):
         """
 
         def _get_view_errors(
-            view: BigQueryView, tree_expression: sqlglot.exp.Expression
+            view: BigQueryView, query_expression: sqlglot.exp.Query
         ) -> list[ValueError]:
             sqlglot_addresses = {
                 BigQueryAddress(dataset_id=table.db, table_id=table.name)
-                for table in list(tree_expression.find_all(sqlglot.exp.Table))
+                for table in list(query_expression.find_all(sqlglot.exp.Table))
                 # If there's no dataset, then the reference is a CTE reference
                 if table.db
             }
@@ -876,10 +883,10 @@ class ViewQueryFormatTest(unittest.TestCase):
         """
 
         def _get_view_errors(
-            view: BigQueryView, tree_expression: sqlglot.exp.Expression
+            view: BigQueryView, query_expression: sqlglot.exp.Query
         ) -> list[ValueError]:
             exceptions = []
-            for column_expression in tree_expression.find_all(sqlglot.exp.Column):
+            for column_expression in query_expression.find_all(sqlglot.exp.Column):
                 if column_expression.catalog in {
                     view.project,
                     GCP_PROJECT_STAGING,
@@ -908,10 +915,10 @@ class ViewQueryFormatTest(unittest.TestCase):
         """
 
         def _get_view_errors(
-            view: BigQueryView, tree_expression: sqlglot.exp.Expression
+            view: BigQueryView, query_expression: sqlglot.exp.Query
         ) -> list[ValueError]:
             exceptions = []
-            for func in tree_expression.find_all(
+            for func in query_expression.find_all(
                 sqlglot.exp.ArrayAgg, sqlglot.exp.GroupConcat
             ):
                 is_analytic_function = isinstance(func.parent, sqlglot.exp.Window)
@@ -934,6 +941,34 @@ class ViewQueryFormatTest(unittest.TestCase):
                             f"deterministically sorted results."
                         )
                     )
+            return exceptions
+
+        self._run_query_format_test(_get_view_errors)
+
+    def test_view_query_format__can_compute_complexity_score(self) -> None:
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            repository = build_source_table_repository_for_collected_schemata(
+                project_id=metadata.project_id()
+            )
+
+        address_to_table_complexity_score_mapper = ParentAddressComplexityScoreMapper(
+            source_table_repository=repository,
+            all_view_builders=self.all_deployed_builders,
+        )
+
+        def _get_view_errors(
+            view: BigQueryView, query_expression: sqlglot.exp.Query
+        ) -> list[ValueError]:
+            exceptions = []
+            try:
+                get_query_complexity_score_2025(
+                    query_expression,
+                    address_to_table_complexity_score_mapper.get_parent_complexity_map_for_view_2025(
+                        view.address
+                    ),
+                )
+            except ValueError as e:
+                exceptions.append(e)
             return exceptions
 
         self._run_query_format_test(_get_view_errors)
