@@ -32,7 +32,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.common.date import DateRange
+from recidiviz.common.date import DateRange, current_date_us_eastern
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
@@ -428,7 +428,11 @@ def _get_commitment_from_supervision_supervision_period(
             # (False sorts before True)
             e.termination_reason != StateSupervisionPeriodTerminationReason.REVOCATION,
             # Prioritize termination_date closest to the admission_date
-            abs(((e.termination_date or datetime.date.today()) - admission_date).days),
+            abs(
+                (
+                    (e.termination_date or current_date_us_eastern()) - admission_date
+                ).days
+            ),
             # Deterministically sort by external_id in the case where there
             # are two REVOKED periods with the same termination_date
             e.external_id,

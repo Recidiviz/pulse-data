@@ -16,8 +16,6 @@
 # =============================================================================
 """Helper function to create view builders for vitals single day aggregated metrics"""
 
-import datetime
-
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
@@ -35,6 +33,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.common.date import current_datetime_us_eastern
 from recidiviz.tools.analyst.aggregated_metrics_utils import (
     get_custom_aggregated_metrics_query_template,
 )
@@ -44,6 +43,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 def get_view_builders() -> list[SimpleBigQueryViewBuilder]:
     """Creates view builders for single day aggregated metrics"""
+    current_datetime = current_datetime_us_eastern()
     view_builders = []
     for unit_of_analysis_type in [
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
@@ -62,8 +62,8 @@ def get_view_builders() -> list[SimpleBigQueryViewBuilder]:
             population_type=MetricPopulationType.SUPERVISION,
             time_interval_unit=MetricTimePeriod.DAY,
             time_interval_length=1,
-            min_end_date=datetime.datetime.today() - relativedelta(days=30),
-            max_end_date=datetime.datetime.today(),
+            min_end_date=current_datetime - relativedelta(days=30),
+            max_end_date=current_datetime,
         )
         view_id = (
             f"supervision_{unit_of_analysis_type.short_name}_day_aggregated_metrics"

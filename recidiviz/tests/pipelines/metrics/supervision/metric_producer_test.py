@@ -595,7 +595,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             )
         )
 
-    @freeze_time("2020-02-01")
+    @freeze_time("2020-02-01 00:00:00-05:00")
     def test_produce_supervision_metrics_supervision_with_district_officer(
         self,
     ) -> None:
@@ -1203,7 +1203,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             if isinstance(metric, SupervisionTerminationMetric)
         )
 
-    @freeze_time("2010-12-01")
+    @freeze_time("2010-12-01 00:00:00-05:00")
     def test_produce_supervision_metrics_only_terminations(self) -> None:
         person = NormalizedStatePerson(
             state_code="US_XX",
@@ -1266,7 +1266,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    @freeze_time("2010-12-01")
+    @freeze_time("2010-12-01 00:00:00-05:00")
     def test_produce_supervision_metrics_only_success(self) -> None:
         person = NormalizedStatePerson(
             state_code="US_XX",
@@ -1327,7 +1327,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    @freeze_time("2010-12-01")
+    @freeze_time("2010-12-01 00:00:00-05:00")
     def test_produce_supervision_metrics_only_population(self) -> None:
         person = NormalizedStatePerson(
             state_code="US_XX",
@@ -1384,7 +1384,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             isinstance(metric, SupervisionPopulationMetric) for metric in metrics
         )
 
-    @freeze_time("2010-12-01")
+    @freeze_time("2010-12-01 00:00:00-05:00")
     def test_produce_supervision_metrics_only_population_extra_events(self) -> None:
         person = NormalizedStatePerson(
             state_code="US_XX",
@@ -1522,7 +1522,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    @freeze_time("2010-12-01")
+    @freeze_time("2010-12-01 00:00:00-05:00")
     def test_produce_supervision_metrics_US_IX_supervision_out_of_state_population_metrics_is_out_of_state(
         self,
     ) -> None:
@@ -1587,7 +1587,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    @freeze_time("2010-12-01")
+    @freeze_time("2010-12-01 00:00:00-05:00")
     def test_produce_supervision_metrics_US_IX_supervision_out_of_state_population_metrics_is_out_of_state_by_authority(
         self,
     ) -> None:
@@ -1652,7 +1652,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    @freeze_time("2010-12-01")
+    @freeze_time("2010-12-01 00:00:00-05:00")
     def test_produce_supervision_metrics_US_IX_supervision_out_of_state_population_metrics_not_out_of_state(
         self,
     ) -> None:
@@ -1705,7 +1705,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    @freeze_time("2010-12-01")
+    @freeze_time("2010-12-01 00:00:00-05:00")
     def test_produce_supervision_metrics_US_IX_supervision_out_of_state_population_metrics_not_out_of_state_by_authority(
         self,
     ) -> None:

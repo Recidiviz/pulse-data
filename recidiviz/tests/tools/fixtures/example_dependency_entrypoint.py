@@ -18,7 +18,7 @@
 
 import requests
 
-from recidiviz.common.date import today_in_iso
+from recidiviz.common.date import current_date_us_eastern_in_iso
 from recidiviz.utils import secrets
 
 
@@ -35,7 +35,7 @@ def main(usefile: bool) -> None:
             file.write(request.content)
 
     else:
-        print(today_in_iso())
+        print(current_date_us_eastern_in_iso())
         print(request.text)
 
 

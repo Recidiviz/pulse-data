@@ -22,10 +22,11 @@ import attr
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.common.date import (
+    current_date_us_eastern,
     first_day_of_month,
     last_day_of_month,
     split_range_by_birthdate,
-    year_and_month_for_today,
+    year_and_month_for_today_us_eastern,
 )
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
@@ -178,7 +179,7 @@ def include_in_output(
 def get_calculation_month_upper_bound_date() -> datetime.date:
     """Returns returns the last day of the current month. String must be in the format
     YYYY-MM."""
-    year, month = year_and_month_for_today()
+    year, month = year_and_month_for_today_us_eastern()
     return last_day_of_month(datetime.date(year, month, 1))
 
 
@@ -350,7 +351,7 @@ def build_metric(
 
     # Set pipeline attributes
     setattr(metric_cls_builder, "job_id", pipeline_job_id)
-    setattr(metric_cls_builder, "created_on", datetime.date.today())
+    setattr(metric_cls_builder, "created_on", current_date_us_eastern())
 
     # Add all demographic and person-level dimensions
     for attribute, value in person_attributes.items():

@@ -21,6 +21,7 @@ from typing import Optional
 
 import attr
 import pandas as pd
+import pytz
 from freezegun import freeze_time
 from parameterized import parameterized
 
@@ -34,12 +35,19 @@ from recidiviz.common.date import (
     PotentiallyOpenDateTimeRange,
     calendar_unit_date_diff,
     convert_critical_dates_to_time_spans,
+    current_date_us_eastern,
+    current_date_us_eastern_in_iso,
+    current_date_utc,
+    first_day_of_month,
+    first_day_of_next_month,
+    first_day_of_next_year,
+    first_day_of_week,
     is_date_str,
+    last_day_of_month,
     merge_sorted_date_ranges,
     munge_date_string,
     safe_strptime,
     split_range_by_birthdate,
-    today_in_iso,
 )
 
 
@@ -143,8 +151,22 @@ class TestMungeDateString(unittest.TestCase):
         self.assertEqual(munge_date_string(given_string), expected_result)
 
 
-def test_today_in_iso() -> None:
-    assert is_date_str(today_in_iso())
+def test_current_date_utc() -> None:
+    assert current_date_us_eastern().isoformat() <= current_date_utc().isoformat()
+
+    with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1, tzinfo=pytz.UTC)):
+        assert current_date_utc().isoformat() == "2020-01-01"
+
+
+def test_current_date_us_eastern() -> None:
+    assert current_date_us_eastern().isoformat() <= current_date_utc().isoformat()
+
+    with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1, tzinfo=pytz.UTC)):
+        assert current_date_us_eastern().isoformat() == "2019-12-31"
+
+
+def test_current_date_us_eastern_in_iso() -> None:
+    assert is_date_str(current_date_us_eastern_in_iso())
 
 
 class TestDateRange(unittest.TestCase):
@@ -392,7 +414,7 @@ class TestSplitRangeByBirthdate(unittest.TestCase):
         )
         self.assertListEqual(expected_results, results)
 
-    @freeze_time("2020-05-01")
+    @freeze_time("2020-05-01 00:00:00-05:00")
     def test_split_range_by_birthdate_open_today(self) -> None:
         expected_results = [
             (datetime.date(2019, 1, 1), datetime.date(2019, 5, 1)),
@@ -1205,3 +1227,112 @@ class TestPotentiallyOpenDateTimeRange(unittest.TestCase):
         span = PotentiallyOpenDateTimeRange(self.TIME_2, None)
         assert self.TIME_1.date() not in span
         assert self.TIME_4.date() in span
+
+
+class TestFirstLastDayOfHelpers(unittest.TestCase):
+    """Tests for helpers related to getting dates relative to a given date."""
+
+    def test_simple_date(self) -> None:
+        # Tuesday, Nov 12, 2024
+        d = datetime.date(2024, 11, 12)
+
+        self.assertEqual(datetime.date(2024, 11, 11), first_day_of_week(d))
+        self.assertEqual(datetime.date(2024, 11, 1), first_day_of_month(d))
+        self.assertEqual(datetime.date(2024, 11, 30), last_day_of_month(d))
+        self.assertEqual(datetime.date(2024, 12, 1), first_day_of_next_month(d))
+        self.assertEqual(datetime.date(2025, 1, 1), first_day_of_next_year(d))
+
+        # Tuesday, Nov 12, 2024 (datetime)
+        dt = datetime.datetime(
+            2024, 11, 12, 1, 2, 3, 4, tzinfo=pytz.timezone("US/Eastern")
+        )
+
+        self.assertEqual(
+            datetime.datetime(2024, 11, 11, tzinfo=pytz.timezone("US/Eastern")),
+            first_day_of_week(dt),
+        )
+        self.assertEqual(
+            datetime.datetime(2024, 11, 1, tzinfo=pytz.timezone("US/Eastern")),
+            first_day_of_month(dt),
+        )
+        self.assertEqual(
+            datetime.datetime(2024, 11, 30, tzinfo=pytz.timezone("US/Eastern")),
+            last_day_of_month(dt),
+        )
+        self.assertEqual(
+            datetime.datetime(2024, 12, 1, tzinfo=pytz.timezone("US/Eastern")),
+            first_day_of_next_month(dt),
+        )
+        self.assertEqual(
+            datetime.datetime(2025, 1, 1, tzinfo=pytz.timezone("US/Eastern")),
+            first_day_of_next_year(dt),
+        )
+
+    def test_date_is_monday(self) -> None:
+        # Monday, Nov 11, 2024
+        d = datetime.date(2024, 11, 11)
+
+        self.assertEqual(datetime.date(2024, 11, 11), first_day_of_week(d))
+        self.assertEqual(datetime.date(2024, 11, 1), first_day_of_month(d))
+        self.assertEqual(datetime.date(2024, 11, 30), last_day_of_month(d))
+        self.assertEqual(datetime.date(2024, 12, 1), first_day_of_next_month(d))
+        self.assertEqual(datetime.date(2025, 1, 1), first_day_of_next_year(d))
+
+    def test_date_is_last_day_of_month(self) -> None:
+        # Saturday, Nov 30, 2024
+        d = datetime.date(2024, 11, 30)
+
+        self.assertEqual(datetime.date(2024, 11, 25), first_day_of_week(d))
+        self.assertEqual(datetime.date(2024, 11, 1), first_day_of_month(d))
+        self.assertEqual(datetime.date(2024, 11, 30), last_day_of_month(d))
+        self.assertEqual(datetime.date(2024, 12, 1), first_day_of_next_month(d))
+        self.assertEqual(datetime.date(2025, 1, 1), first_day_of_next_year(d))
+
+    def test_date_is_first_day_of_year(self) -> None:
+        # Sunday, Jan 1, 2023
+        d = datetime.date(2023, 1, 1)
+
+        self.assertEqual(datetime.date(2022, 12, 26), first_day_of_week(d))
+        self.assertEqual(datetime.date(2023, 1, 1), first_day_of_month(d))
+        self.assertEqual(datetime.date(2023, 1, 31), last_day_of_month(d))
+        self.assertEqual(datetime.date(2023, 2, 1), first_day_of_next_month(d))
+        self.assertEqual(datetime.date(2024, 1, 1), first_day_of_next_year(d))
+
+    def test_date_is_last_day_of_year(self) -> None:
+        # Tuesday, Dec 31, 2024
+        d = datetime.date(2024, 12, 31)
+
+        self.assertEqual(datetime.date(2024, 12, 30), first_day_of_week(d))
+        self.assertEqual(datetime.date(2024, 12, 1), first_day_of_month(d))
+        self.assertEqual(datetime.date(2024, 12, 31), last_day_of_month(d))
+        self.assertEqual(datetime.date(2025, 1, 1), first_day_of_next_month(d))
+        self.assertEqual(datetime.date(2025, 1, 1), first_day_of_next_year(d))
+
+    def test_date_is_feb_28(self) -> None:
+        # Wednesday, Feb 28, 2024 (in a leap year)
+        d = datetime.date(2024, 2, 28)
+
+        self.assertEqual(datetime.date(2024, 2, 26), first_day_of_week(d))
+        self.assertEqual(datetime.date(2024, 2, 1), first_day_of_month(d))
+        self.assertEqual(datetime.date(2024, 2, 29), last_day_of_month(d))
+        self.assertEqual(datetime.date(2024, 3, 1), first_day_of_next_month(d))
+        self.assertEqual(datetime.date(2025, 1, 1), first_day_of_next_year(d))
+
+        # Tuesday, Feb 28, 2023 (in a leap year)
+        d = datetime.date(2023, 2, 28)
+
+        self.assertEqual(datetime.date(2023, 2, 27), first_day_of_week(d))
+        self.assertEqual(datetime.date(2023, 2, 1), first_day_of_month(d))
+        self.assertEqual(datetime.date(2023, 2, 28), last_day_of_month(d))
+        self.assertEqual(datetime.date(2023, 3, 1), first_day_of_next_month(d))
+        self.assertEqual(datetime.date(2024, 1, 1), first_day_of_next_year(d))
+
+    def test_date_is_feb_29(self) -> None:
+        # Thursday, Feb 29, 2024
+        d = datetime.date(2024, 2, 29)
+
+        self.assertEqual(datetime.date(2024, 2, 26), first_day_of_week(d))
+        self.assertEqual(datetime.date(2024, 2, 1), first_day_of_month(d))
+        self.assertEqual(datetime.date(2024, 2, 29), last_day_of_month(d))
+        self.assertEqual(datetime.date(2024, 3, 1), first_day_of_next_month(d))
+        self.assertEqual(datetime.date(2025, 1, 1), first_day_of_next_year(d))

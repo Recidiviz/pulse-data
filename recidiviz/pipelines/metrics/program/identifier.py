@@ -16,7 +16,6 @@
 # =============================================================================
 """Identifies instances of interaction with a program."""
 import logging
-from datetime import date
 from typing import List, Set, Type
 
 from dateutil.relativedelta import relativedelta
@@ -24,6 +23,7 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
+from recidiviz.common.date import current_date_us_eastern
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
@@ -177,7 +177,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
 
             # This person is actively participating in this program. Set the
             # discharge_date for tomorrow.
-            discharge_date = date.today() + relativedelta(days=1)
+            discharge_date = current_date_us_eastern() + relativedelta(days=1)
 
         program_id = (
             program_assignment.program_id

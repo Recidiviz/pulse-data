@@ -706,7 +706,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
         self.state_specific_metrics_producer_delegate_patcher.stop()
 
     # TODO(#4813): This fails on dates after 2020-12-03 - is this a bug in the pipeline or in the test code?
-    @freeze_time("2020-12-03")
+    @freeze_time("2020-12-03 00:00:00-05:00")
     def testProduceRecidivismMetrics(self) -> None:
         """Tests the ProduceRecidivismMetrics DoFn in the pipeline."""
         fake_person = NormalizedStatePerson(

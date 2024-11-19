@@ -21,6 +21,7 @@ from datetime import date, timedelta
 
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.date import current_date_us_eastern
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import StateStaffRolePeriod
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_staff_role_period_normalization_delegate import (
@@ -38,6 +39,9 @@ class TestUsMoStaffRolePeriodDelegate(unittest.TestCase):
         self,
     ) -> None:
         """Assert that improperly entered role period dates are invalidated."""
+
+        todays_date_eastern = current_date_us_eastern()
+
         rp_start_date_too_far_in_past = StateStaffRolePeriod.new_with_defaults(
             state_code=StateCode.US_MO.value,
             role_type=StateStaffRoleType.INTERNAL_UNKNOWN,
@@ -54,7 +58,7 @@ class TestUsMoStaffRolePeriodDelegate(unittest.TestCase):
             role_type=StateStaffRoleType.INTERNAL_UNKNOWN,
             role_type_raw_text="OTHER",
             start_date=date(2010, 1, 1),
-            end_date=date.today()
+            end_date=todays_date_eastern
             + timedelta(
                 days=5
             ),  # This end date is in the future and should be invalidated.
@@ -65,8 +69,8 @@ class TestUsMoStaffRolePeriodDelegate(unittest.TestCase):
             state_code=StateCode.US_MO.value,
             role_type=StateStaffRoleType.INTERNAL_UNKNOWN,
             role_type_raw_text="OTHER",
-            start_date=date.today() + timedelta(days=5),
-            end_date=date.today()
+            start_date=todays_date_eastern + timedelta(days=5),
+            end_date=todays_date_eastern
             + timedelta(
                 days=365
             ),  # Both of these dates are in the future and should be invalidated.
@@ -120,7 +124,7 @@ class TestUsMoStaffRolePeriodDelegate(unittest.TestCase):
         )
         expected_rp_both_dates_in_future = deep_entity_update(
             copy.deepcopy(rp_both_dates_in_future),
-            start_date=date.today(),
+            start_date=todays_date_eastern,
             end_date=None,
         )
         # The expected versions of these 2 periods post-normalization are just copies of

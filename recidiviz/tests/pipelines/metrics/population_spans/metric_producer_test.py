@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for population_spans/metric_producer.py."""
 import unittest
-from datetime import date
+from datetime import date, datetime
 from typing import Dict
 
 import attr
@@ -72,7 +72,7 @@ from recidiviz.tests.pipelines.metrics.utils.calculator_utils_test import (
 ALL_METRICS_INCLUSIONS = set(PopulationSpanMetricType)
 
 PIPELINE_JOB_ID = "TEST_JOB_ID"
-CURRENT_DATE = date(2020, 1, 1)
+CURRENT_DATETIME = datetime.fromisoformat("2020-01-01 00:00:00-05:00")
 
 
 class TestProducePopulationSpanMetrics(unittest.TestCase):
@@ -119,7 +119,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegateForTests(),
         }
 
-    @freeze_time(CURRENT_DATE)
+    @freeze_time(CURRENT_DATETIME)
     def test_produce_incarceration_span_metrics(self) -> None:
         incarceration_span = IncarcerationPopulationSpan(
             state_code="US_XX",
@@ -155,7 +155,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=17,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2000, 3, 12),
                     end_date_exclusive=date(2000, 7, 2),
                     included_in_state_population=True,
@@ -173,7 +173,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             ],
         )
 
-    @freeze_time(CURRENT_DATE)
+    @freeze_time(CURRENT_DATETIME)
     def test_produce_incarceration_span_metrics_split_into_age_spans(self) -> None:
         incarceration_span = IncarcerationPopulationSpan(
             state_code="US_XX",
@@ -204,7 +204,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=17,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2000, 3, 12),
                     end_date_exclusive=date(2000, 8, 31),
                     included_in_state_population=True,
@@ -221,7 +221,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=18,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2000, 8, 31),
                     end_date_exclusive=date(2001, 8, 31),
                     included_in_state_population=True,
@@ -238,7 +238,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=19,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2001, 8, 31),
                     end_date_exclusive=date(2002, 1, 2),
                     included_in_state_population=True,
@@ -251,7 +251,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             ],
         )
 
-    @freeze_time(CURRENT_DATE)
+    @freeze_time(CURRENT_DATETIME)
     def test_produce_incarceration_span_metrics_no_birthdate(self) -> None:
         person_with_no_birthday = attr.evolve(self.person, birthdate=None)
 
@@ -283,7 +283,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2000, 3, 12),
                     end_date_exclusive=date(2002, 7, 2),
                     included_in_state_population=True,
@@ -296,7 +296,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             ],
         )
 
-    @freeze_time(CURRENT_DATE)
+    @freeze_time(CURRENT_DATETIME)
     def test_produce_incarceration_span_metrics_open_span(self) -> None:
         incarceration_span = IncarcerationPopulationSpan(
             state_code="US_XX",
@@ -327,7 +327,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=36,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2019, 3, 12),
                     end_date_exclusive=date(2019, 8, 31),
                     included_in_state_population=True,
@@ -344,7 +344,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=37,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2019, 8, 31),
                     end_date_exclusive=None,
                     included_in_state_population=True,
@@ -357,7 +357,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             ],
         )
 
-    @freeze_time(CURRENT_DATE)
+    @freeze_time(CURRENT_DATETIME)
     def test_produce_supervision_span_metrics(self) -> None:
         supervision_span = SupervisionPopulationSpan(
             state_code="US_XX",
@@ -391,7 +391,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=17,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2000, 3, 12),
                     end_date_exclusive=date(2000, 7, 12),
                     included_in_state_population=True,
@@ -406,7 +406,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             ],
         )
 
-    @freeze_time(CURRENT_DATE)
+    @freeze_time(CURRENT_DATETIME)
     def test_produce_supervision_span_metrics_split_into_age_spans(self) -> None:
         supervision_span = SupervisionPopulationSpan(
             state_code="US_XX",
@@ -440,7 +440,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=17,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2000, 3, 12),
                     end_date_exclusive=date(2000, 8, 31),
                     included_in_state_population=True,
@@ -459,7 +459,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=18,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2000, 8, 31),
                     end_date_exclusive=date(2001, 8, 31),
                     included_in_state_population=True,
@@ -478,7 +478,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=19,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2001, 8, 31),
                     end_date_exclusive=date(2002, 1, 2),
                     included_in_state_population=True,
@@ -493,7 +493,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             ],
         )
 
-    @freeze_time(CURRENT_DATE)
+    @freeze_time(CURRENT_DATETIME)
     def test_produce_supervision_span_metrics_no_birthdate(self) -> None:
         person_with_no_birthday = attr.evolve(self.person, birthdate=None)
 
@@ -528,7 +528,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2000, 3, 12),
                     end_date_exclusive=date(2002, 7, 2),
                     included_in_state_population=True,
@@ -543,7 +543,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             ],
         )
 
-    @freeze_time(CURRENT_DATE)
+    @freeze_time(CURRENT_DATETIME)
     def test_produce_supervision_span_metrics_open_span(self) -> None:
         supervision_span = SupervisionPopulationSpan(
             state_code="US_XX",
@@ -576,7 +576,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     age=36,
                     start_date_inclusive=date(2019, 3, 12),
                     end_date_exclusive=date(2019, 8, 31),
@@ -595,7 +595,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     age=37,
                     start_date_inclusive=date(2019, 8, 31),
                     end_date_exclusive=None,
@@ -611,7 +611,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             ],
         )
 
-    @freeze_time(CURRENT_DATE)
+    @freeze_time(CURRENT_DATETIME)
     def test_produce_all_spans(self) -> None:
         incarceration_span = IncarcerationPopulationSpan(
             state_code="US_XX",
@@ -655,7 +655,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=32,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2015, 3, 1),
                     end_date_exclusive=date(2015, 8, 31),
                     included_in_state_population=True,
@@ -672,7 +672,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=33,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2015, 8, 31),
                     end_date_exclusive=date(2016, 8, 31),
                     included_in_state_population=True,
@@ -689,7 +689,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     state_code="US_XX",
                     age=34,
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     start_date_inclusive=date(2016, 8, 31),
                     end_date_exclusive=date(2017, 3, 1),
                     included_in_state_population=True,
@@ -705,7 +705,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     age=34,
                     start_date_inclusive=date(2017, 3, 2),
                     end_date_exclusive=date(2017, 8, 31),
@@ -724,7 +724,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     age=35,
                     start_date_inclusive=date(2017, 8, 31),
                     end_date_exclusive=date(2018, 8, 31),
@@ -743,7 +743,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     age=36,
                     start_date_inclusive=date(2018, 8, 31),
                     end_date_exclusive=date(2019, 8, 31),
@@ -762,7 +762,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     gender=StateGender.FEMALE,
-                    created_on=CURRENT_DATE,
+                    created_on=CURRENT_DATETIME,
                     age=37,
                     start_date_inclusive=date(2019, 8, 31),
                     end_date_exclusive=None,

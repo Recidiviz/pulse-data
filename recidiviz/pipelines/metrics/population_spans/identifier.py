@@ -32,7 +32,7 @@ from recidiviz.common.date import (
     PotentiallyOpenDateRange,
     convert_critical_dates_to_time_spans,
     merge_sorted_date_ranges,
-    tomorrow,
+    tomorrow_us_eastern,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
@@ -265,7 +265,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                 )
                 end_date_exclusive = (
                     sp_duration.upper_bound_exclusive_date
-                    if sp_duration.upper_bound_exclusive_date != tomorrow()
+                    if sp_duration.upper_bound_exclusive_date != tomorrow_us_eastern()
                     else None
                 )
                 span = SupervisionPopulationSpan(

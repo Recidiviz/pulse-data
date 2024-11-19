@@ -1196,7 +1196,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([period_copy], validated_incarceration_periods)
 
-    @freeze_time("2000-01-01")
+    @freeze_time("2000-01-01 00:00:00-05:00")
     def test_normalized_incarceration_periods_for_calculations_dates_in_future(
         self,
     ) -> None:
@@ -1700,7 +1700,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
         self.assertEqual([], updated_periods)
 
-    @freeze_time("2000-01-01")
+    @freeze_time("2000-01-01 00:00:00-05:00")
     def test_sort_and_infer_missing_dates_and_statuses_invalid_admission_date_in_future(
         self,
     ) -> None:
@@ -1723,7 +1723,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
 
         self.assertEqual([], updated_periods)
 
-    @freeze_time("2000-01-01")
+    @freeze_time("2000-01-01 00:00:00-05:00")
     def test_sort_and_infer_missing_dates_and_statuses_invalid_release_date_in_future(
         self,
     ) -> None:

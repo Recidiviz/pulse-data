@@ -340,7 +340,7 @@ class TestProduceMetrics(unittest.TestCase):
 
         return expected_rate_metrics
 
-    @freeze_time("2100-01-01")
+    @freeze_time("2100-01-01 00:00:00-05:00")
     def test_produce_recidivism_metrics(self) -> None:
         """Tests the produce_recidivism_metrics function where there is
         recidivism."""
@@ -612,7 +612,7 @@ class TestProduceMetrics(unittest.TestCase):
                 else:
                     self.assertTrue(metric.did_recidivate)
 
-    @freeze_time("2100-01-01")
+    @freeze_time("2100-01-01 00:00:00-05:00")
     def test_produce_recidivism_metrics_multiple_releases_same_reincarceration(
         self,
     ) -> None:
@@ -686,7 +686,7 @@ class TestProduceMetrics(unittest.TestCase):
                 else:
                     self.assertTrue(metric.did_recidivate)
 
-    @freeze_time("2100-01-01")
+    @freeze_time("2100-01-01 00:00:00-05:00")
     def test_produce_recidivism_metrics_return_one_year_later(self) -> None:
         """Tests the produce_recidivism_metrics function where the person returned to prison exactly one year after
         they were released."""
@@ -1287,7 +1287,7 @@ class TestProduceMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    @freeze_time("2100-01-01")
+    @freeze_time("2100-01-01 00:00:00-05:00")
     def test_produce_recidivism_metrics_external_id(self) -> None:
         """Tests the produce_recidivism_metrics function where there is
         recidivism."""
@@ -1407,7 +1407,7 @@ class TestReincarcerationsByPeriod(unittest.TestCase):
 
         self.assertEqual(expected_output, reincarcerations_by_period)
 
-    @freeze_time("2000-01-01")
+    @freeze_time("2000-01-01 00:00:00-05:00")
     def test_reincarcerations_by_period_only_two_periods(self) -> None:
         first_return = RecidivismReleaseEvent(
             state_code="US_XX",

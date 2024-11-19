@@ -528,7 +528,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
         self.assertFalse(include)
 
 
-@freeze_time("2009-01-03")
+@freeze_time("2009-01-03 00:00:00-05:00")
 class TestGetCalculationMonthUpperBoundDate(unittest.TestCase):
     """Tests the get_calculation_month_upper_bound_date function."""
 

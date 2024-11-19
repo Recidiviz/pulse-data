@@ -169,7 +169,7 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
             ),
         )
 
-    @freeze_time("2023-04-20")
+    @freeze_time("2023-04-20 00:00:00-05:00")
     def test_supervision_level_override_with_external_unknown_for_null_termination_date_within_31_days(
         self,
     ) -> None:

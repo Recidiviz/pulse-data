@@ -23,11 +23,15 @@ from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Type, TypeVa
 
 import attr
 import pandas as pd
+import pytz
 
 from recidiviz.common import attr_validators
 from recidiviz.utils.types import assert_type
 
 DateOrDateTime = Union[datetime.date, datetime.datetime]
+
+DateOrDateTimeT = TypeVar("DateOrDateTimeT", datetime.datetime, datetime.date)
+
 # Date Parsing
 
 
@@ -82,50 +86,101 @@ def _date_component_match(match: re.Match) -> str:
 # Date Manipulation
 
 
-def year_and_month_for_today() -> Tuple[int, int]:
+def year_and_month_for_today_us_eastern() -> Tuple[int, int]:
     """Returns the year and month of today's date."""
-    today = datetime.date.today()
+    today = current_date_us_eastern()
 
     return today.year, today.month
 
 
-def tomorrow() -> datetime.date:
-    """Returns tomorrow's date."""
-    return datetime.date.today() + datetime.timedelta(days=1)
+def tomorrow_us_eastern() -> datetime.date:
+    """Returns tomorrow's date in the US/Eastern timezone."""
+    return current_date_us_eastern() + datetime.timedelta(days=1)
 
 
-def date_or_tomorrow(date: Optional[datetime.date]) -> datetime.date:
-    """Returns the date if set, otherwise tomorrow"""
-    return date if date else tomorrow()
+def date_or_tomorrow_us_eastern(date: Optional[datetime.date]) -> datetime.date:
+    """Returns the date (in US/Eastern timezone) if set, otherwise tomorrow."""
+    return date if date else tomorrow_us_eastern()
 
 
-def first_day_of_month(date: datetime.date) -> datetime.date:
+def reset_to_midnight(dt: datetime.datetime) -> datetime.datetime:
+    """Zeroes out the time info on the given datetime object, retaining timezone info."""
+    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def first_day_of_week(date: datetime.date) -> datetime.date:
+    """Returns the first day of the week the provided date falls in (i.e. the Monday).
+    Returns the same day if it is a Monday.
+    """
+    if isinstance(date, datetime.datetime):
+        date = reset_to_midnight(date)
+
+    # The weekday() returns the day of the week as an integer value, with Monday = 0,
+    # Tuesday = 1, etc.
+    return date - datetime.timedelta(days=date.weekday())
+
+
+def first_day_of_month(date: DateOrDateTimeT) -> DateOrDateTimeT:
     """Returns the date corresponding to the first day of the month for the given date."""
-    year = date.year
-    month = date.month
+    if isinstance(date, datetime.datetime):
+        date = reset_to_midnight(date)
 
-    return datetime.date(year, month, 1)
+    return date.replace(day=1)
 
 
-def last_day_of_month(date: datetime.date) -> datetime.date:
-    """Returns the date corresponding to the last day of the month for the given date."""
+def last_day_of_month(date: DateOrDateTimeT) -> DateOrDateTimeT:
+    """Returns the date corresponding to the last day of the month for the given date.
+
+    If a datetime is provided, returns a datetime representing midnight on the desired
+    day, with timezone information retained.
+    """
     first_of_next_month = first_day_of_next_month(date)
     return first_of_next_month - datetime.timedelta(days=1)
 
 
-def first_day_of_next_month(date: datetime.date) -> datetime.date:
-    """Returns the date corresponding to the first day of the next month for the given date."""
+def first_day_of_next_month(date: DateOrDateTimeT) -> DateOrDateTimeT:
+    """Returns the date corresponding to the first day of the next month for the given
+    date.
+
+    If a datetime is provided, returns a datetime representing midnight on the desired
+    day, with timezone information retained.
+    """
+    if isinstance(date, datetime.datetime):
+        date = reset_to_midnight(date)
     next_month_date = date.replace(day=28) + datetime.timedelta(days=4)
     return next_month_date.replace(day=1)
 
 
-def first_day_of_next_year(date: datetime.date) -> datetime.date:
-    """Returns the date corresponding to the first day of the first month of the next year for the given date."""
+def first_day_of_next_year(date: DateOrDateTimeT) -> DateOrDateTimeT:
+    """Returns the date corresponding to the first day of the first month of the next
+    year for the given date.
+
+    If a datetime is provided, returns a datetime representing midnight on the desired
+    day, with timezone information retained.
+    """
     return first_day_of_next_month(date.replace(month=12))
 
 
-def today_in_iso() -> str:
-    return datetime.date.today().strftime("%Y-%m-%d")
+def current_datetime_us_eastern() -> datetime.datetime:
+    """Returns the current datetime in the US/Eastern timezone."""
+    return datetime.datetime.now(tz=pytz.timezone("US/Eastern"))
+
+
+def current_date_us_eastern() -> datetime.date:
+    """Returns the current date in the US/Eastern timezone."""
+    return datetime.datetime.now(tz=pytz.timezone("US/Eastern")).date()
+
+
+def current_date_utc() -> datetime.date:
+    """Returns the current date in the UTC timezone."""
+    return datetime.datetime.now(tz=pytz.UTC).date()
+
+
+def current_date_us_eastern_in_iso() -> str:
+    """Returns the current date in the US/Eastern timezone, formatted as a string in
+    ISO format.
+    """
+    return current_date_us_eastern().isoformat()
 
 
 # helper function for getting days, months, or years between dates
@@ -327,7 +382,7 @@ class DateRange(PotentiallyOpenDateRange):
     def from_maybe_open_range(
         cls, start_date: datetime.date, end_date: Optional[datetime.date]
     ) -> "DateRange":
-        return cls(start_date, date_or_tomorrow(end_date))
+        return cls(start_date, date_or_tomorrow_us_eastern(end_date))
 
     def portion_overlapping_with_month(
         self, year: int, month: int
@@ -737,10 +792,10 @@ def split_range_by_birthdate(
             birthdate, year=(start_date.year + 1)
         )
 
-    split_date = min(first_birthdate_after_start, date_or_tomorrow(end_date))
+    split_date = min(first_birthdate_after_start, date_or_tomorrow_us_eastern(end_date))
 
     # Keep splitting until we get to the end of the range
-    while split_date < date_or_tomorrow(end_date):
+    while split_date < date_or_tomorrow_us_eastern(end_date):
         yield (start_date, split_date)
 
         start_date = split_date

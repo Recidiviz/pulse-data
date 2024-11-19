@@ -77,7 +77,7 @@ class TestFindProgramEvents(unittest.TestCase):
             included_result_classes={ProgramParticipationEvent},
         )
 
-    @freeze_time("2020-01-02")
+    @freeze_time("2020-01-02 00:00:00-05:00")
     def test_find_program_events(self) -> None:
         program_assignment = NormalizedStateProgramAssignment(
             program_assignment_id=1,
@@ -171,7 +171,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
     def setUp(self) -> None:
         self.identifier = identifier.ProgramIdentifier()
 
-    @freeze_time("2000-01-01")
+    @freeze_time("2000-01-01 00:00:00-05:00")
     def test_find_program_participation_events(self) -> None:
         program_assignment = NormalizedStateProgramAssignment(
             program_assignment_id=1,
