@@ -205,6 +205,10 @@ columns:
     description: |-
       Comments for sentence component
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
   - name: OFFICIALVERSIONOFCRIME
     description: |-
       Official version of crime associated with sentence
@@ -237,6 +241,10 @@ columns:
   - name: SENTENCECOUNT
     description: |-
       Sentence count
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
   - name: ORIGSTATUTE
     description: |-
       Original statute

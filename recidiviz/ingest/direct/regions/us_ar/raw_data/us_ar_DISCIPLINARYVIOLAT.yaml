@@ -358,6 +358,10 @@ columns:
   - name: DISCSENTCOND3
     description: |-
       Sentence condition 3
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#34878) Confirm we expect this field to be null
   - name: DISCVIOLPLEACODE4
     description: |-
       Plea code 4
