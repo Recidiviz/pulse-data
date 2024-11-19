@@ -1329,7 +1329,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
 
     def test_parse_yaml(self) -> None:
         region_config = self.us_xx_region_config
-        self.assertEqual(27, len(region_config.raw_file_configs))
+        self.assertEqual(28, len(region_config.raw_file_configs))
         self.assertEqual(
             {
                 "file_tag_first",
@@ -1359,6 +1359,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 "singlePrimaryKey",
                 "multipleColPrimaryKeyHistorical",
                 "tagColumnRenamed",
+                "tagPipeSeparatedWindows",
             },
             set(region_config.raw_file_configs.keys()),
         )

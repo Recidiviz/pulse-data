@@ -1017,3 +1017,76 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
         assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
         assert len(list(self.bq_client.list_tables("us_xx_raw_data"))) == 1
+
+    def test_windows_file_no_migrations_single_file_starts_empty(
+        self,
+    ) -> None:
+        """Tests loading a single windows file with no migrations.
+        The file uses a pipe separator, which is non-standard but BQ compliant
+        so it will not be replaced."""
+        (
+            file_tag,
+            input_paths,
+            prep_output,
+            append_output,
+            raw_data_table,
+        ) = self._prep_test("no_migrations_windows_file")
+        irf = ImportReadyFile(
+            file_id=1,
+            file_tag=file_tag,
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+            original_file_paths=input_paths,
+            pre_import_normalized_file_paths=None,
+            bq_load_config=RawFileBigQueryLoadConfig.from_raw_file_config(
+                raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
+            ),
+        )
+        append_ready_file = self.manager.load_and_prep_paths(irf)
+
+        assert append_ready_file.import_ready_file == irf
+        assert append_ready_file.raw_rows_count == 2
+        assert (
+            append_ready_file.append_ready_table_address.to_str()
+            == "us_xx_primary_raw_data_temp_load.tagPipeSeparatedWindows__1__transformed"
+        )
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                BigQueryAddress(
+                    dataset_id="us_xx_primary_raw_data_temp_load",
+                    table_id="tagPipeSeparatedWindows__1",
+                )
+            )
+        )
+
+        self.assertTrue(len(self.fs.all_paths) == 1)
+
+        self.compare_output_against_expected(
+            append_ready_file.append_ready_table_address, prep_output
+        )
+
+        _ = self.manager.append_to_raw_data_table(append_ready_file)
+
+        self.compare_output_against_expected(raw_data_table, append_output)
+
+        # make sure we cleaned up properly
+
+        self.assertFalse(
+            self.bq_client.table_exists(
+                BigQueryAddress(
+                    dataset_id="us_xx_primary_raw_data_temp_load",
+                    table_id="tagPipeSeparatedWindows__1__transformed",
+                )
+            )
+        )
+
+        self.assertFalse(
+            self.bq_client.dataset_exists("pruning_us_xx_raw_data_diff_results_primary")
+        )
+
+        self.assertFalse(
+            self.bq_client.dataset_exists("pruning_us_xx_new_raw_data_primary")
+        )
+
+        assert not list(self.bq_client.list_tables("us_xx_primary_raw_data_temp_load"))
+        assert len(list(self.bq_client.list_tables("us_xx_raw_data"))) == 1
