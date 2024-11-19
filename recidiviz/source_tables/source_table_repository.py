@@ -82,6 +82,19 @@ class SourceTableRepository:
             if any(isinstance(label, label_type) for label in collection.labels)
         ]
 
+    def tables_labeled_with(
+        self, label_type: type[SourceTableLabel]
+    ) -> list[SourceTableConfig]:
+        collections = [
+            collection
+            for collection in self.source_table_collections
+            if any(isinstance(label, label_type) for label in collection.labels)
+        ]
+
+        return [
+            config for collection in collections for config in collection.source_tables
+        ]
+
     def build_config(self, address: BigQueryAddress) -> SourceTableConfig:
         try:
             return self.source_tables[address]

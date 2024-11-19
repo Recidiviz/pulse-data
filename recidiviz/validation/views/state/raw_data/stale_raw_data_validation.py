@@ -36,7 +36,7 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.validation.views import dataset_config
 
-_VIEW_ID_TEMPLATE = "_stale_raw_data_tables"
+VIEW_ID_TEMPLATE = "_stale_raw_data_tables"
 _DESCRIPTION_TEMPLATE = (
     "Validation view that shows one row per stale raw data table in "
 )
@@ -117,7 +117,7 @@ def collect_stale_raw_data_view_builders() -> List[SimpleBigQueryViewBuilder]:
         if any(region_config.get_configs_with_regularly_updated_data()):
             view_builder = SimpleBigQueryViewBuilder(
                 dataset_id=dataset_config.VIEWS_DATASET,
-                view_id=f"{state_code.value.lower()}{_VIEW_ID_TEMPLATE}",
+                view_id=f"{state_code.value.lower()}{VIEW_ID_TEMPLATE}",
                 description=f"{_DESCRIPTION_TEMPLATE}{state_code.value}",
                 view_query_template=StaleRawDataQueryBuilder(
                     region_config
