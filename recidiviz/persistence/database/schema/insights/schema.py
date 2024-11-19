@@ -134,7 +134,7 @@ class MetricBase:
     # The name of the metric, which corresponds to a column in the supervision_x_aggregated_metrics_materialized table
     metric_id = Column(String, primary_key=True)
     # The value of the given metric
-    metric_value = Column(Float, nullable=False)
+    metric_value = Column(Float)
     # The end date for the period
     end_date = Column(Date, primary_key=True)
     # The period that this metric applies to (see recidiviz.aggregated_metrics.metric_time_periods.py)
