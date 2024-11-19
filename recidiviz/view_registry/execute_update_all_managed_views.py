@@ -102,6 +102,7 @@ def execute_update_all_managed_views(sandbox_prefix: str | None) -> None:
             parent_address_formatter_provider=None,
         )
 
+    # TODO(#34767): Return summary and per-view results from here so we can write to BQ.
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
         view_builders_to_update=view_builders,
@@ -119,4 +120,6 @@ def execute_update_all_managed_views(sandbox_prefix: str | None) -> None:
         dataset_override_prefix=sandbox_prefix,
         runtime_sec=runtime_sec,
     )
+    # TODO(#34767): Write per-view stats to view_update_tracker.per_view_update_stats
+    #  here.
     logging.info("All managed views successfully updated and materialized.")
