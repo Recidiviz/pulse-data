@@ -134,7 +134,7 @@ def parse_employment_status(
         "SOCIAL SECURITY OFFICE",
         "SOCIAL SECURITY ADMINISTRATION",
     ):
-        return StateEmploymentPeriodEmploymentStatus.EMPLOYED
+        return StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT
 
     is_general_relief = "GENERAL RELIEF" in raw_text or "GENERALRELIEF" in raw_text
     is_benefits = "BENEFITS" in raw_text
@@ -153,4 +153,4 @@ def parse_employment_status(
     if is_general_relief or is_benefits or is_general_assistance or is_ssi:
         return StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE
 
-    return StateEmploymentPeriodEmploymentStatus.EMPLOYED
+    return StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT

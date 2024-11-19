@@ -27,12 +27,14 @@ class StateEmploymentPeriodEmploymentStatus(StateEntityEnum):
     ALTERNATE_INCOME_SOURCE = (
         state_enum_strings.state_employment_period_employment_status_alternate_income_source
     )
-    EMPLOYED = state_enum_strings.state_employment_period_employment_status_employed
     EMPLOYED_FULL_TIME = (
         state_enum_strings.state_employment_period_employment_status_employed_full_time
     )
     EMPLOYED_PART_TIME = (
         state_enum_strings.state_employment_period_employment_status_employed_part_time
+    )
+    EMPLOYED_UNKNOWN_AMOUNT = (
+        state_enum_strings.state_employment_period_employment_status_employed_unknown_amount
     )
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
@@ -55,18 +57,20 @@ _STATE_EMPLOYMENT_PERIOD_EMPLOYMENT_STATUS_VALUE_DESCRIPTIONS: Dict[
     StateEntityEnum, str
 ] = {
     StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE: (
-        "This person is unemployed, but has an alternate source of income (such as "
-        "Social Security benefits) that allows them to remain unemployed."
-    ),
-    StateEmploymentPeriodEmploymentStatus.EMPLOYED: (
-        "This person is employed by the specified employer, but we are unable to "
-        "determine whether they are employed full-time or part-time."
+        "This person is unemployed, but has an alternate source of income that allows "
+        "them to remain unemployed. Examples may include someone who is retired and "
+        "receiving Social Security benefits or someone who works in the home and is "
+        "supported financially by a partner."
     ),
     StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME: (
         "This person is employed by the specified employer full-time."
     ),
     StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME: (
         "This person is employed by the specified employer part-time."
+    ),
+    StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT: (
+        "This person is employed by the specified employer, but we are unable to "
+        "determine whether they are employed full-time or part-time."
     ),
     StateEmploymentPeriodEmploymentStatus.STUDENT: (
         "This person is a student so they are not working. If this value is set, the "

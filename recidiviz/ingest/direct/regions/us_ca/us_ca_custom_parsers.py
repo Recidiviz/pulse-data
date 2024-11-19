@@ -38,7 +38,7 @@ def is_employed(employer_name: str) -> bool:
     parsed_employment_status = parse_employment_status(employer_name)
 
     if parsed_employment_status in (
-        StateEmploymentPeriodEmploymentStatus.EMPLOYED,
+        StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT,
         StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME,
         StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME,
     ):

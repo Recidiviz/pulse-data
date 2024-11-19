@@ -24,7 +24,7 @@ output:
             $enum_mapping:
               $raw_text: EmploymentStatusDesc
               $mappings:
-                StateEmploymentPeriodEmploymentStatus.EMPLOYED:
+                StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT:
                   - Employed
                   - Self Employed
                 StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME:

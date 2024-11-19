@@ -586,9 +586,11 @@ state_supervision_contact_location_alternative_place_of_employment = (
 state_employment_period_employment_status_alternate_income_source = (
     "ALTERNATE_INCOME_SOURCE"
 )
-state_employment_period_employment_status_employed = "EMPLOYED"
 state_employment_period_employment_status_employed_full_time = "EMPLOYED_FULL_TIME"
 state_employment_period_employment_status_employed_part_time = "EMPLOYED_PART_TIME"
+state_employment_period_employment_status_employed_unknown_amount = (
+    "EMPLOYED_UNKNOWN_AMOUNT"
+)
 state_employment_period_employment_status_student = "STUDENT"
 state_employment_period_employment_status_unable_to_work = "UNABLE_TO_WORK"
 state_employment_period_employment_status_unemployed = "UNEMPLOYED"

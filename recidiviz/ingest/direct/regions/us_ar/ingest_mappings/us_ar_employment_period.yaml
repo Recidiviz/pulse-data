@@ -83,7 +83,7 @@ output:
                         - F # Full Time Employment (>= 30 hrs/wk)
                       StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME:
                         - P # Part Time Employment (< 30 hrs/wk)
-                      StateEmploymentPeriodEmploymentStatus.EMPLOYED:
+                      StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT:
                         - S # Seasonal
                         - W # Work Release
                       StateEmploymentPeriodEmploymentStatus.EXTERNAL_UNKNOWN:
