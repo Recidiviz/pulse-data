@@ -44,6 +44,7 @@ class V1VolumeMount:
 
 class V1PodSpec:
     containers: Optional[List[V1Container]]
+    init_containers: Optional[List[V1Container]]
     volumes: Optional[List[V1Volume]]
     volume_mounts: Optional[List[V1VolumeMount]]
     env: Optional[List[V1EnvVar]]
@@ -103,9 +104,11 @@ class V1Container:
     args: Optional[List[str]]
     env: Optional[List[V1EnvVar]]
     volume_mounts: Optional[List[V1VolumeMount]]
+    restart_policy: Optional[str]
     security_context: Optional[V1SecurityContext]
     startup_probe: Optional[V1Probe]
     lifecycle: Optional[V1Lifecycle]
+    resources: Optional[V1ResourceRequirements]
 
     def __init__(
         self,
@@ -114,9 +117,11 @@ class V1Container:
         command: Optional[List[str]] = None,
         args: Optional[List[str]] = None,
         volume_mounts: Optional[List[V1VolumeMount]] = None,
+        restart_policy: Optional[str] = None,
         security_context: Optional[V1SecurityContext] = None,
         startup_probe: Optional[V1Probe] = None,
         lifecycle: Optional[V1Lifecycle] = None,
+        resources: Optional[V1ResourceRequirements] = None,
     ) -> None: ...
 
 class V1Pod:
@@ -133,7 +138,9 @@ class V1PodList:
 
 class V1ResourceRequirements:
     def __init__(
-        self, limits: Optional[Dict[str, str]], requests: Optional[Dict[str, str]]
+        self,
+        limits: Optional[Dict[str, str]] = None,
+        requests: Optional[Dict[str, str]] = None,
     ) -> None: ...
 
 class V1EnvVar:
@@ -142,4 +149,14 @@ class V1EnvVar:
 
     def __init__(
         self, name: Optional[str] = None, value: Optional[str] = None
+    ) -> None: ...
+
+class V1Toleration(object):
+    def __init__(
+        self,
+        effect: str | None = None,
+        key: str | None = None,
+        operator: str | None = None,
+        toleration_seconds: int | None = None,
+        value: str | None = None,
     ) -> None: ...

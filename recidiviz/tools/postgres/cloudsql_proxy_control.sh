@@ -177,9 +177,11 @@ function control_start {
     --user 0 \
     -p "$DATABASE_HOST":"$DATABASE_PORT":"$DATABASE_PORT" \
     -v ~/.config/gcloud:/config \
-    "$CLOUDSQL_PROXY_IMAGE" /cloud_sql_proxy \
-    -instances="${DATABASE_CONNECTION_STRING}"=tcp:0.0.0.0:"$DATABASE_PORT" \
-    -credential_file=/config/application_default_credentials.json > /dev/null 2>&1
+    "$CLOUDSQL_PROXY_IMAGE" \
+    "${DATABASE_CONNECTION_STRING}" \
+    --address 0.0.0.0 \
+    --port "${DATABASE_PORT}" \
+    --credentials-file=/config/application_default_credentials.json > /dev/null 2>&1
 
   CONTAINER_NAME=$(get_container_name "$DATABASE_PORT")
 

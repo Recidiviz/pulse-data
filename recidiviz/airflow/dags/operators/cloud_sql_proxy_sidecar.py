@@ -24,12 +24,10 @@ from kubernetes.client.models import (
     V1Container,
     V1EmptyDirVolumeSource,
     V1EnvVar,
-    V1ExecAction,
     V1HTTPGetAction,
-    V1Lifecycle,
-    V1LifecycleHandler,
     V1Pod,
     V1Probe,
+    V1ResourceRequirements,
     V1SecurityContext,
     V1Volume,
     V1VolumeMount,
@@ -97,8 +95,7 @@ def configure_cloud_sql_proxy_for_pod(
 
     sidecar = V1Container(
         name="cloud-sql-proxy",
-        # The Alpine image is required so that we can use `wget` in the lifecycle hook
-        image="gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.7.2-alpine",
+        image="gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.0",
         args=[
             "--structured-logs",
             # Expose both health check and admin control services to other containers in the pod
@@ -115,6 +112,10 @@ def configure_cloud_sql_proxy_for_pod(
             # This option enables the quitquitquit endpoint on the admin control service
             # Sending a POST request to /quitquitquit shuts down the proxy
             "--quitquitquit",
+            # Verify the proxy can reach the Cloud SQL instance on startup
+            "--run-connection-test",
+            # Enable debug logging
+            "--debug-logs",
             # --- Mount unix sockets in the shared volume
             "--unix-socket",
             SHARED_CLOUD_SQL_PROXY_VOLUME_MOUNT.mount_path,
@@ -134,26 +135,18 @@ def configure_cloud_sql_proxy_for_pod(
             success_threshold=1,
             timeout_seconds=10,
         ),
-        # Add a lifecycle hook that delays starting the next container until the proxy is accepting connections
-        lifecycle=V1Lifecycle(
-            post_start=V1LifecycleHandler(
-                _exec=V1ExecAction(
-                    command=[
-                        "sh",
-                        "-c",
-                        f"""until [ "$(wget --server-response 'http://{CLOUD_SQL_PROXY_HTTP_HOST}:{CLOUD_SQL_PROXY_HTTP_PORT}/startup' -O - 2>&1 | grep -c 'HTTP/1.1 200 OK')" -eq 1 ]; do
-                              echo "Waiting for Cloud SQL Proxy to be ready";
-                              sleep 5;
-                          done
-                        """,
-                    ]
-                )
-            )
+        resources=V1ResourceRequirements(
+            limits={
+                "cpu": "500m",
+                "memory": "500Mi",
+            },
         ),
+        restart_policy="Always",
     )
 
     # Handle pod startup sequencing. Pods are started serially in order
     # https://medium.com/@marko.luksa/delaying-application-start-until-sidecar-is-ready-2ec2d21a7b74
-    pod.spec.containers.insert(0, sidecar)
+    pod.spec.init_containers = pod.spec.init_containers or []
+    pod.spec.init_containers.insert(0, sidecar)
 
     return pod
