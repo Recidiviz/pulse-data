@@ -66,6 +66,10 @@ ENTRYPOINT_ARGUMENTS = [
     "recidiviz.entrypoints.entrypoint_executor",
 ]
 
+# Used for workload separation
+# https://cloud.google.com/kubernetes-engine/docs/how-to/workload-separation#separate-workloads-autopilot
+RECIDIVIZ_POD_ANNOTATION = "recidiviz-pod-node"
+
 
 class KubernetesEntrypointResourceAllocator:
     """Class for allocating resources to our entrypoint tasks"""
@@ -134,6 +138,18 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
             # requirements. In this case, a new compute engine VM is started and the pod will not run until the node
             # fully starts. Anecdotally this happens in about 10 minutes.
             startup_timeout_seconds=12 * 60,
+            # In order to prevent preemption from Cloud Composer's internal pods, configure our tasks to run on a
+            # separate node that will only schedule pods with the `recidiviz-pod-node: true` annotation
+            # https://cloud.google.com/kubernetes-engine/docs/how-to/workload-separation#separate-workloads-autopilot
+            tolerations=[
+                k8s.V1Toleration(
+                    key=RECIDIVIZ_POD_ANNOTATION,
+                    operator="Equal",
+                    value="true",
+                    effect="NoSchedule",
+                )
+            ],
+            node_selector={RECIDIVIZ_POD_ANNOTATION: "true"},
             env_vars=[
                 k8s.V1EnvVar(name="NAMESPACE", value="composer-user-workloads"),
                 # TODO(census-instrumentation/opencensus-python#796)
