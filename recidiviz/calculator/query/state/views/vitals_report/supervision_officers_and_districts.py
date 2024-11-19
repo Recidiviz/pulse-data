@@ -91,6 +91,8 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
         AND rp.role_type = 'SUPERVISION_OFFICER'
         AND rp.start_date < {nonnull_end_date_exclusive_clause('sup_pop.end_date_exclusive')}
         AND {nonnull_end_date_exclusive_clause('rp.end_date')} > sup_pop.start_date_inclusive
+        -- Exclude pretrial officers/offices in ND
+        AND NOT (sup_pop.state_code = "US_ND" AND locations.level_1_supervision_location_name LIKE "%PRETRIAL%")
    GROUP BY 1,2,3,4,5
 """
 
