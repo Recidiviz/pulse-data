@@ -368,6 +368,7 @@ class DirectIngestRawDataTableLatestViewCollectorTest(unittest.TestCase):
                 "tagNormalizationConflict_latest",
                 "tagPipeSeparatedNonUTF8_latest",
                 "tagColumnRenamed_latest",
+                "tagPipeSeparatedWindows_latest",
             ],
             [b.view_id for b in builders],
         )
@@ -410,6 +411,7 @@ class DirectIngestRawDataTableLatestViewCollectorTest(unittest.TestCase):
                 "tagColumnsMissing_latest",
                 "tagFileConfigHeadersUnexpectedHeader_latest",
                 "tagFileConfigCustomDatetimeSql_latest",
+                "tagPipeSeparatedWindows_latest",
             ],
             [b.view_id for b in builders],
         )

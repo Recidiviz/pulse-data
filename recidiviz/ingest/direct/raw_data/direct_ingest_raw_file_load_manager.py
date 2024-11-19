@@ -55,6 +55,7 @@ from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
     AppendSummary,
     ImportReadyFile,
+    PreImportNormalizationType,
 )
 from recidiviz.ingest.direct.views.raw_data_diff_query_builder import (
     RawDataDiffQueryBuilder,
@@ -264,14 +265,21 @@ class DirectIngestRawFileLoadManager:
 
     @staticmethod
     def _get_encoding_and_separator(
-        raw_file_config: DirectIngestRawFileConfig, file_was_normalized: bool
+        raw_file_config: DirectIngestRawFileConfig,
     ) -> Tuple[str, str]:
         """Returns the encoding and separator to use for loading a raw file into BigQuery."""
-        if file_was_normalized:
-            return (
-                DEFAULT_CSV_ENCODING,
-                DEFAULT_CSV_SEPARATOR,
+        normalization_type = (
+            PreImportNormalizationType.required_pre_import_normalization_type(
+                raw_file_config
             )
+        )
+        if (
+            normalization_type
+            == PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE
+        ):
+            return DEFAULT_CSV_ENCODING, DEFAULT_CSV_SEPARATOR
+        if normalization_type == PreImportNormalizationType.ENCODING_UPDATE_ONLY:
+            return DEFAULT_CSV_ENCODING, raw_file_config.separator
 
         return (
             to_big_query_valid_encoding(raw_file_config.encoding),
@@ -316,7 +324,6 @@ class DirectIngestRawFileLoadManager:
 
         encoding, separator = self._get_encoding_and_separator(
             self.region_raw_file_config.raw_file_configs[file.file_tag],
-            bool(file.pre_import_normalized_file_paths),
         )
 
         raw_rows_count = self._load_paths_to_temp_table(
