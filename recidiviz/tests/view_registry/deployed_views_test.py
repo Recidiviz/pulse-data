@@ -414,7 +414,7 @@ class ViewDagInvariantTests(unittest.TestCase):
             #  the all_person_events view.
             SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address,
             # TODO(#29291): Refactor to query observation-specific views rather than
-            #  the all_workflows_user_events view.
+            #  the all_workflows_primary_user_events view.
             WORKFLOWS_PERSON_EVENTS_VIEW_BUILDER.address,
             # These views produce generic analysis based on all TES spans.
             CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,

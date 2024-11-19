@@ -360,15 +360,15 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "surfaceable caseloads (see #32152) (Mayuka Sarukkai 10/11/2024)"
     ),
     BigQueryAddress(
-        dataset_id="observations__insights_user_span",
-        table_id="all_insights_user_spans",
+        dataset_id="observations__insights_primary_user_span",
+        table_id="all_insights_primary_user_spans",
     ): (
         "This view will eventually be referenced by impact metrics related to "
         "insights usage (see #34100) (Mayuka Sarukkai 10/11/2024)"
     ),
     BigQueryAddress(
-        dataset_id="observations__insights_user_event",
-        table_id="all_insights_user_events",
+        dataset_id="observations__insights_primary_user_event",
+        table_id="all_insights_primary_user_events",
     ): (
         "This view will eventually be referenced by impact metrics related to "
         "insights usage (see #34100) (Mayuka Sarukkai 10/11/2024)"
@@ -398,6 +398,20 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ): (
         "This view will eventually be referenced in looker explore "
         "(see #34100) (Mayuka Sarukkai 10/11/2024)"
+    ),
+    BigQueryAddress(
+        dataset_id="observations__workflows_provisioned_user_span",
+        table_id="all_workflows_provisioned_user_spans",
+    ): (
+        "This view will eventually be referenced by impact metrics related to "
+        "workflows early adoption funnel usage (Mayuka Sarukkai 10/11/2024)"
+    ),
+    BigQueryAddress(
+        dataset_id="observations__insights_provisioned_user_span",
+        table_id="all_insights_provisioned_user_spans",
+    ): (
+        "This view will eventually be referenced by impact metrics related to "
+        "insights early adoption funnel usage (Mayuka Sarukkai 10/11/2024)"
     ),
 }
 

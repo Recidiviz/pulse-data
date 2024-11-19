@@ -60,8 +60,8 @@ from recidiviz.calculator.query.state.views.analyst_data.incarceration_incidents
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     INSIGHTS_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.insights_primary_user_registration_sessions import (
-    INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.analyst_data.insights_provisioned_user_registration_sessions import (
+    INSIGHTS_PROVISIONED_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.insights_segment_events import (
     INSIGHTS_SEGMENT_EVENTS_VIEW_BUILDER,
@@ -288,8 +288,8 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.workflows_primary_user_registration_sessions import (
-    WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.analyst_data.workflows_provisioned_user_registration_sessions import (
+    WORKFLOWS_PROVISIONED_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.workflows_record_archive_surfaceable_caseload_sessions import (
     WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_CASELOAD_SESSIONS_VIEW_BUILDER,
@@ -390,11 +390,11 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INSIGHTS_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
     INSIGHTS_SUPERVISION_OFFICER_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_LIVE_COMPLETION_EVENT_TYPES_BY_STATE_VIEW_BUILDER,
-    WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
+    WORKFLOWS_PROVISIONED_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_PERSON_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_RECORD_ARCHIVE_SURFACEABLE_CASELOAD_SESSIONS_VIEW_BUILDER,
     PRODUCT_ROSTER_ARCHIVE_SESSIONS_VIEW_BUILDER,
-    INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
+    INSIGHTS_PROVISIONED_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
     ALL_AUTH0_SIGNUP_EVENTS_VIEW_BUILDER,
     ALL_AUTH0_LOGIN_EVENTS_VIEW_BUILDER,
     INSIGHTS_USER_AUTH0_REGISTRATIONS_VIEW_BUILDER,

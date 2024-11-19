@@ -111,7 +111,7 @@ FROM `{project_id}.another_dataset.table`;
 
         self.assertEqual(
             BigQueryAddress.from_str(
-                "observations__workflows_user_event.workflows_user_action"
+                "observations__workflows_primary_user_event.workflows_user_action"
             ),
             view.address,
         )

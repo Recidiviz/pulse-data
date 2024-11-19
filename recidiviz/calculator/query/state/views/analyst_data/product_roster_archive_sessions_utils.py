@@ -27,7 +27,10 @@ from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
     nonnull_end_date_clause,
 )
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_intersection_spans,
+)
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.workflows.types import WorkflowsSystemType
 
@@ -53,7 +56,7 @@ def get_query_fragment_for_role_types_by_system_type(
         END"""
 
 
-def get_primary_user_registration_sessions_view_builder(
+def get_provisioned_user_registration_sessions_view_builder(
     product_name: str,
     first_validated_roster_date: datetime,
     role_types_by_system_type_dict: Dict[WorkflowsSystemType, List[str]],
@@ -73,7 +76,7 @@ def get_primary_user_registration_sessions_view_builder(
     first_validated_roster_date_str = first_validated_roster_date.strftime("%Y-%m-%d")
     role_types = sorted(set().union(*role_types_by_system_type_dict.values()))
 
-    view_name = f"{product_name.lower()}_primary_user_registration_sessions"
+    view_name = f"{product_name.lower()}_provisioned_user_registration_sessions"
 
     view_description = f"""View that represents attributes about every primary user
 of the {product_name.title()} tool, with spans reflecting historical product roster
@@ -87,7 +90,11 @@ WITH product_roster_sessions AS (
         * EXCEPT(email_address), email_address AS {product_name_str}_user_email_address
     FROM
         `{{project_id}}.analyst_data.product_roster_archive_sessions_materialized`
-    WHERE has_{product_name_str}_access
+    WHERE
+        has_{product_name_str}_access
+        #TODO(#32772): Once we use validation for flagging null email addresses to clean
+        # up product roster, this condition can be removed
+        AND email_address IS NOT NULL
 )
 ,
 backfilled_product_roster_sessions AS (
@@ -133,8 +140,8 @@ unioned_roster_sessions AS (
         {nonnull_end_date_clause("end_date_exclusive")} > "{first_validated_roster_date_str}"
 )
 ,
-# Filter to specified role types and pull out a system_type flag based on role type
-primary_user_roster_sessions AS (
+# Pull out flags for system_type and is_primary_user based on role type
+roster_sessions_with_role_flags AS (
     SELECT
         state_code,
         {product_name_str}_user_email_address,
@@ -142,46 +149,53 @@ primary_user_roster_sessions AS (
         end_date_exclusive,
         {get_query_fragment_for_role_types_by_system_type(role_types_by_system_type_dict)} AS system_type,
         location_id,
+        LOGICAL_OR(role IN ({list_to_query_string(role_types, quoted = True)})) AS is_primary_user,
     FROM
         unioned_roster_sessions,
-    UNNEST(SPLIT(roles_as_string, ",")) AS role
-    # Filter to only primary user types
-    WHERE
-        role IN ({list_to_query_string(role_types, quoted = True)})
+        UNNEST(SPLIT(roles_as_string, ",")) AS role
+    GROUP BY 1, 2, 3, 4, 5, 6
 )
 ,
 aggregated_roster_sessions AS (
     {aggregate_adjacent_spans(
-        table_name='primary_user_roster_sessions',
+        table_name='roster_sessions_with_role_flags',
         index_columns=["state_code", f"{product_name_str}_user_email_address"],
-        attribute=['system_type', 'location_id'],
+        attribute=['system_type', 'location_id', 'is_primary_user'],
         session_id_output_name='registration_session_id',
         end_date_field_name='end_date_exclusive'
     )}
 )
 ,
-registration_sessions AS (
-    -- Truncate all registration sessions to start after the first signup/login event
+auth0_registration_spans AS (
     SELECT
-        a.state_code,
-        a.{product_name_str}_user_email_address,
-        GREATEST(a.start_date, DATE(b.{product_name_str}_registration_date)) AS start_date,
-        a.end_date_exclusive,
-        a.registration_session_id,
-        a.system_type,
-        a.location_id,
+        state_code,
+        {product_name_str}_user_email_address,
+        DATE({product_name_str}_registration_date) AS start_date,
+        CAST(NULL AS DATE) AS end_date_exclusive,
+        TRUE AS is_registered,
     FROM
-        aggregated_roster_sessions a
-    # Only include roster sessions that overlap with the period following auth0 registration
-    INNER JOIN
-        `{{project_id}}.analyst_data.{product_name_str}_user_auth0_registrations_materialized` b
-    ON
-        a.state_code = b.state_code
-        AND a.{product_name_str}_user_email_address = b.{product_name_str}_user_email_address
-        AND b.{product_name_str}_registration_date < {nonnull_end_date_clause("a.end_date_exclusive")}
+        `{{project_id}}.analyst_data.{product_name_str}_user_auth0_registrations_materialized`
+)
+,
+registration_sessions AS (
+    {create_intersection_spans(
+        table_1_name="aggregated_roster_sessions",
+        table_2_name="auth0_registration_spans",
+        index_columns=["state_code", f"{product_name_str}_user_email_address"],
+        use_left_join=True,
+        table_1_columns=["system_type", "location_id", "is_primary_user"],
+        table_2_columns=["is_registered"]
+    )}
 )
 SELECT
-    registration_sessions.*,
+    registration_sessions.state_code,
+    registration_sessions.{f"{product_name_str}_user_email_address"},
+    start_date,
+    end_date_exclusive,
+    system_type,
+    location_id,
+    IFNULL(is_registered, FALSE) AS is_registered,
+    is_primary_user,
     ANY_VALUE(
         CASE system_type 
         WHEN "SUPERVISION" THEN supervision_district_name 
@@ -212,7 +226,7 @@ ON
             AND location_id = facility
         )
     )
-GROUP BY 1, 2, 3, 4, 5, 6, 7
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
     """
     return SimpleBigQueryViewBuilder(
         dataset_id=ANALYST_VIEWS_DATASET,

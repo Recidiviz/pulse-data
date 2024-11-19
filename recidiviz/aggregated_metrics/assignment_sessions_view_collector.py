@@ -144,11 +144,11 @@ def _get_person_population_selector(
             )
 
 
-def _get_workflows_user_population_selector(
+def _get_workflows_primary_user_population_selector(
     population_type: MetricPopulationType,
 ) -> SpanSelector | None:
     """Returns the population SpanSelector for the
-    MetricUnitOfObservationType.WORKFLOWS_USER population of the given population type.
+    MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER population of the given population type.
     """
     match population_type:
         case MetricPopulationType.CUSTOM:
@@ -157,17 +157,17 @@ def _get_workflows_user_population_selector(
             )
         case MetricPopulationType.INCARCERATION:
             return SpanSelector(
-                span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+                span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
                 span_conditions_dict={"system_type": ["INCARCERATION"]},
             )
         case MetricPopulationType.SUPERVISION:
             return SpanSelector(
-                span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+                span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
                 span_conditions_dict={"system_type": ["SUPERVISION"]},
             )
         case MetricPopulationType.JUSTICE_INVOLVED:
             return SpanSelector(
-                span_type=SpanType.WORKFLOWS_USER_REGISTRATION_SESSION,
+                span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
                 span_conditions_dict={},
             )
 
@@ -199,7 +199,7 @@ def _get_workflows_surfaceable_caseload_population_selector(
     population_type: MetricPopulationType,
 ) -> SpanSelector | None:
     """Returns the population SpanSelector for the
-    MetricUnitOfObservationType.SUPERVISION_OFFICER population of the given population
+    MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD population of the given population
     type.
     """
     match population_type:
@@ -224,11 +224,11 @@ def _get_workflows_surfaceable_caseload_population_selector(
             )
 
 
-def _get_insights_user_population_selector(
+def _get_insights_primary_user_population_selector(
     population_type: MetricPopulationType,
 ) -> SpanSelector | None:
     """Returns the population SpanSelector for the
-    MetricUnitOfObservationType.SUPERVISION_OFFICER population of the given population
+    MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER population of the given population
     type.
     """
     match population_type:
@@ -240,12 +240,67 @@ def _get_insights_user_population_selector(
             return None
         case MetricPopulationType.SUPERVISION:
             return SpanSelector(
-                span_type=SpanType.INSIGHTS_USER_REGISTRATION_SESSION,
+                span_type=SpanType.INSIGHTS_PRIMARY_USER_REGISTRATION_SESSION,
                 span_conditions_dict={},
             )
         case MetricPopulationType.JUSTICE_INVOLVED:
             return SpanSelector(
-                span_type=SpanType.INSIGHTS_USER_REGISTRATION_SESSION,
+                span_type=SpanType.INSIGHTS_PRIMARY_USER_REGISTRATION_SESSION,
+                span_conditions_dict={},
+            )
+
+
+def _get_workflows_provisioned_user_population_selector(
+    population_type: MetricPopulationType,
+) -> SpanSelector | None:
+    """Returns the population SpanSelector for the
+    MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER population of the given population
+    type.
+    """
+    match population_type:
+        case MetricPopulationType.CUSTOM:
+            raise ValueError(
+                "Cannot get standard population selector for CUSTOM population type."
+            )
+        case MetricPopulationType.INCARCERATION:
+            return SpanSelector(
+                span_type=SpanType.WORKFLOWS_PROVISIONED_USER_SESSION,
+                span_conditions_dict={"system_type": ["INCARCERATION"]},
+            )
+        case MetricPopulationType.SUPERVISION:
+            return SpanSelector(
+                span_type=SpanType.WORKFLOWS_PROVISIONED_USER_SESSION,
+                span_conditions_dict={"system_type": ["SUPERVISION"]},
+            )
+        case MetricPopulationType.JUSTICE_INVOLVED:
+            return SpanSelector(
+                span_type=SpanType.WORKFLOWS_PROVISIONED_USER_SESSION,
+                span_conditions_dict={},
+            )
+
+
+def _get_insights_provisioned_user_population_selector(
+    population_type: MetricPopulationType,
+) -> SpanSelector | None:
+    """Returns the population SpanSelector for the
+    MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER population of the given population
+    type.
+    """
+    match population_type:
+        case MetricPopulationType.CUSTOM:
+            raise ValueError(
+                "Cannot get standard population selector for CUSTOM population type."
+            )
+        case MetricPopulationType.INCARCERATION:
+            return None
+        case MetricPopulationType.SUPERVISION:
+            return SpanSelector(
+                span_type=SpanType.INSIGHTS_PROVISIONED_USER_SESSION,
+                span_conditions_dict={},
+            )
+        case MetricPopulationType.JUSTICE_INVOLVED:
+            return SpanSelector(
+                span_type=SpanType.INSIGHTS_PROVISIONED_USER_SESSION,
                 span_conditions_dict={},
             )
 
@@ -260,16 +315,20 @@ def get_standard_population_selector_for_unit_of_observation(
     match unit_of_observation_type:
         case MetricUnitOfObservationType.PERSON_ID:
             return _get_person_population_selector(population_type)
-        case MetricUnitOfObservationType.WORKFLOWS_USER:
-            return _get_workflows_user_population_selector(population_type)
+        case MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER:
+            return _get_workflows_primary_user_population_selector(population_type)
         case MetricUnitOfObservationType.SUPERVISION_OFFICER:
             return _get_supervision_officer_population_selector(population_type)
         case MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD:
             return _get_workflows_surfaceable_caseload_population_selector(
                 population_type
             )
-        case MetricUnitOfObservationType.INSIGHTS_USER:
-            return _get_insights_user_population_selector(population_type)
+        case MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER:
+            return _get_insights_primary_user_population_selector(population_type)
+        case MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER:
+            return _get_workflows_provisioned_user_population_selector(population_type)
+        case MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER:
+            return _get_insights_provisioned_user_population_selector(population_type)
 
 
 def collect_assignment_sessions_view_builders() -> list[SimpleBigQueryViewBuilder]:

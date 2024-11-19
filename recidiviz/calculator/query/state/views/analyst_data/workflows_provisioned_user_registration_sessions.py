@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View that represents attributes about every primary user (supervisor) 
-of the Insights tool, with spans reflecting historical product roster
+"""View that represents attributes about every primary user (line staff) 
+of the Workflows tool, with spans reflecting historical product roster
 information where available"""
 
 
@@ -23,28 +23,37 @@ from datetime import datetime
 from typing import Dict, List
 
 from recidiviz.calculator.query.state.views.analyst_data.product_roster_archive_sessions_utils import (
-    get_primary_user_registration_sessions_view_builder,
+    get_provisioned_user_registration_sessions_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.types import WorkflowsSystemType
 
-PRIMARY_USER_ROLE_TYPES = ["supervision_officer_supervisor"]
-
 PRIMARY_USER_ROLE_TYPES_BY_SYSTEM_TYPE: Dict[WorkflowsSystemType, List[str]] = {
+    WorkflowsSystemType.INCARCERATION: [
+        "facilities_line_staff",
+        "facilities_staff",
+    ],
     WorkflowsSystemType.SUPERVISION: [
-        "supervision_officer_supervisor",
+        "supervision_line_staff",
+        "supervision_officer",
+        "supervision_staff",
     ],
 }
 
-INSIGHTS_PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE = datetime(2024, 10, 16)
+# Date after which we consider product roster archive to reflect validated
+# role and location information. We will backfill information starting at a user's
+# first signup date and ending on this date, for users present in the roster on this
+# date.
+WORKFLOWS_PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE = datetime(2024, 9, 26)
 
-INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER = get_primary_user_registration_sessions_view_builder(
-    product_name="INSIGHTS",
-    first_validated_roster_date=INSIGHTS_PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE,
+
+WORKFLOWS_PROVISIONED_USER_REGISTRATION_SESSIONS_VIEW_BUILDER = get_provisioned_user_registration_sessions_view_builder(
+    product_name="WORKFLOWS",
+    first_validated_roster_date=WORKFLOWS_PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE,
     role_types_by_system_type_dict=PRIMARY_USER_ROLE_TYPES_BY_SYSTEM_TYPE,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        INSIGHTS_PRIMARY_USER_REGISTRATION_SESSIONS_VIEW_BUILDER.build_and_print()
+        WORKFLOWS_PROVISIONED_USER_REGISTRATION_SESSIONS_VIEW_BUILDER.build_and_print()
