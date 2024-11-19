@@ -48,7 +48,7 @@ output:
             $conditional:
               - $if:
                   $is_null: EmployerName
-                $then: $literal_enum(StateEmploymentPeriodEmploymentStatus.EMPLOYED)
+                $then: $literal_enum(StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT)
               - $else:
                   $enum_mapping:
                     $raw_text: EmployerName

@@ -742,7 +742,7 @@ state_supervision_contact_method = Enum(
 
 state_employment_period_employment_status = Enum(
     state_enum_strings.state_employment_period_employment_status_alternate_income_source,
-    state_enum_strings.state_employment_period_employment_status_employed,
+    state_enum_strings.state_employment_period_employment_status_employed_unknown_amount,
     state_enum_strings.state_employment_period_employment_status_employed_full_time,
     state_enum_strings.state_employment_period_employment_status_employed_part_time,
     state_enum_strings.state_employment_period_employment_status_student,
