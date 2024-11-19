@@ -171,8 +171,9 @@ LEFT JOIN (
       Cis_400_Cis_100_Client_Id,
       Cis_319_Term_Id,
       SAFE_CAST(LEFT(Court_Order_Sent_Date, 10) AS DATE) AS crt_order_sent_date,
-      MAX(SAFE_CAST(Detention_Days_Num AS INT64)) AS days_spent_in_county,
-    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_401_CRT_ORDER_HDR_latest`
+      ARRAY_AGG(SAFE_CAST(Detention_Days_Num AS INT64) ORDER BY cost.Crt_Order_Status_Cd = "Committed", Curr_Cust_Rel_Date DESC NULLS LAST)[SAFE_OFFSET(0)] AS days_spent_in_county,
+    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_401_CRT_ORDER_HDR_latest` co
+    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_4010_CRT_ORDER_STATUS_latest` cost on cost.Crt_Order_Status_Cd = co.Cis_4010_Crt_Order_Status_Cd
     -- only include days in county if the person was sentenced to county jail
     WHERE Apply_Det_Days_Ind = 'Y'
     GROUP BY 1,2,3
