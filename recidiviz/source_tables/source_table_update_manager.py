@@ -310,8 +310,9 @@ class SourceTableUpdateManager:
                 progress_bar_message="Creating datasets if necessary...",
             )
             if exceptions:
-                raise ValueError(
-                    f"Failed to create datasets, encountered the following exceptions: {exceptions}"
+                raise ExceptionGroup(
+                    "Failed to create datasets, encountered the following exception(s)",
+                    [exception for (exception, _task_kwargs) in exceptions],
                 )
 
             successes, exceptions = map_fn_with_progress_bar_results(
@@ -330,8 +331,9 @@ class SourceTableUpdateManager:
             )
 
             if exceptions:
-                raise ValueError(
-                    f"Failed to update table schemas, encountered the following exceptions: {exceptions}"
+                raise ExceptionGroup(
+                    "Failed to update table schemas, encountered the following exceptions",
+                    [exception for (exception, _task_kwargs) in exceptions],
                 )
 
         if log_output:
