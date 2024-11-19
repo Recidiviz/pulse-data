@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_TN implementation of the StateSpecificSupervisionNormalizationDelegate."""
-import datetime
 from typing import List, Optional
 
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -25,6 +24,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.date import current_date_us_eastern
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
@@ -60,7 +60,7 @@ class UsTnSupervisionNormalizationDelegate(
 
         previous_period = sorted_supervision_periods[supervision_period_list_index - 1]
         date_difference = abs(
-            (sp.termination_date or datetime.date.today()) - sp.start_date
+            (sp.termination_date or current_date_us_eastern()) - sp.start_date
         ).days
 
         if (

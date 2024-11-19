@@ -16,7 +16,6 @@
 # =============================================================================
 """Returns all aggregated metric view builders for specified populations and units of analysis related to impact reports"""
 
-import datetime
 from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
@@ -51,6 +50,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.common.date import current_datetime_us_eastern, first_day_of_month
 from recidiviz.tools.analyst.aggregated_metrics_utils import (
     get_custom_aggregated_metrics_query_template,
 )
@@ -136,11 +136,11 @@ METRICS_BY_UNIT_OF_ANALYSIS_TYPE: dict[
 }
 
 # today is the current datetime
-today = datetime.datetime.today()
+today = current_datetime_us_eastern()
 # Most of our metrics will use time periods that end on the most recent first of the month.
 # We generate two months worth of report data by default, so set our default end dates to cover two
 # months
-most_recent_first_of_month = datetime.datetime(today.year, today.month, 1)
+most_recent_first_of_month = first_day_of_month(today)
 MIN_END_DATE = most_recent_first_of_month - relativedelta(months=1)
 MAX_END_DATE = most_recent_first_of_month
 

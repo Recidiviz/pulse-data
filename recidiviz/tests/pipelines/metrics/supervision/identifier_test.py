@@ -2434,7 +2434,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    @freeze_time("2019-09-04")
+    @freeze_time("2019-09-04 00:00:00-05:00")
     def test_find_supervision_events_admission_today(self) -> None:
         """Tests the find_population_events_for_supervision_period function when there
         is an incarceration period with a revocation admission today, where there is
@@ -2949,7 +2949,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    @freeze_time("2019-11-03")
+    @freeze_time("2019-11-03 00:00:00-05:00")
     def test_find_population_events_for_supervision_period_nested_revocation_no_termination(
         self,
     ) -> None:

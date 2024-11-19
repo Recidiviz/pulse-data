@@ -29,7 +29,7 @@ import msal  # type: ignore
 import requests
 from progress.spinner import Spinner  # type: ignore
 
-from recidiviz.common.date import today_in_iso
+from recidiviz.common.date import current_date_us_eastern_in_iso
 from recidiviz.utils import secrets
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -210,7 +210,7 @@ def scrape_azure_active_directory() -> None:
     next_link = config.endpoint
 
     total_entries = 0
-    filename = f"id_roster_{today_in_iso()}.csv"
+    filename = f"id_roster_{current_date_us_eastern_in_iso()}.csv"
 
     with open(filename, "w", newline="", encoding="utf-8") as roster_file:
         writer = csv.DictWriter(roster_file, ROSTER_FIELD_NAMES)

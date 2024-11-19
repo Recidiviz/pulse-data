@@ -28,6 +28,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.date import current_date_us_eastern
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -274,7 +275,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                         sp.termination_reason_raw_text,
                     )
 
-            elif sp.termination_date > datetime.date.today():
+            elif sp.termination_date > current_date_us_eastern():
                 # This is an erroneous termination_date in the future. For the purpose
                 # of calculations, clear the termination_date and the termination_reason.
                 sp.termination_date = None
@@ -283,7 +284,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             if sp.start_date is None:
                 logging.info("Dropping supervision period without start_date: [%s]", sp)
                 continue
-            if sp.start_date > datetime.date.today():
+            if sp.start_date > current_date_us_eastern():
                 logging.info(
                     "Dropping supervision period with start_date in the future: [%s]",
                     sp,

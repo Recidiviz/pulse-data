@@ -244,7 +244,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         mock_move_metrics.assert_called()
 
     # pylint: disable=protected-access
-    @freeze_time("2020-01-02 00:00")
+    @freeze_time("2020-01-02 00:00:00-05:00")
     def test_delete_empty_or_temp_datasets(self) -> None:
         """Test that _delete_empty_or_temp_datasets deletes a dataset if it has no tables in it."""
         empty_dataset = MockDataset(
@@ -264,7 +264,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.delete_dataset.assert_called_with(self.mock_view_dataset_name)
 
     # pylint: disable=protected-access
-    @freeze_time("2020-01-02 00:00")
+    @freeze_time("2020-01-02 00:00:00-05:00")
     def test_delete_empty_or_temp_datasets_dataset_not_empty(self) -> None:
         """Test that _delete_empty_or_temp_datasets does not delete a dataset if it has tables in it."""
         non_empty_dataset = MockDataset(
@@ -284,7 +284,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.delete_dataset.assert_not_called()
 
     # pylint: disable=protected-access
-    @freeze_time("2020-01-02 00:30")
+    @freeze_time("2020-01-02 00:30:00-05:00")
     def test_delete_empty_or_temp_datasets_new_dataset(self) -> None:
         """Test that _delete_empty_or_temp_datasets deletes a dataset if it has no tables in it."""
         # Created 30 minutes ago, should not be deleted
@@ -305,7 +305,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.delete_dataset.assert_not_called()
 
     # pylint: disable=protected-access
-    @freeze_time("2020-01-03 00:30")
+    @freeze_time("2020-01-03 00:30:00-05:00")
     def test_delete_empty_or_temp_datasets_terraform_managed_dataset(self) -> None:
         """Test that _delete_empty_or_temp_datasets does not delete an empty dataset if it has a label identifying it as a
         Terraform managed dataset."""
@@ -329,7 +329,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.delete_dataset.assert_not_called()
 
     # pylint: disable=protected-access
-    @freeze_time("2020-01-03 00:30")
+    @freeze_time("2020-01-03 00:30:00-05:00")
     def test_delete_empty_or_temp_datasets_terraform_managed_dataset_and_not(
         self,
     ) -> None:
@@ -373,7 +373,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.delete_dataset.assert_called_with(empty_dataset_name)
 
     # pylint: disable=protected-access
-    @freeze_time("2020-01-03 00:30")
+    @freeze_time("2020-01-03 00:30:00-05:00")
     def test_delete_empty_or_temp_datasets_beam_created_datasets(self) -> None:
         """Test that _delete_empty_or_temp_datasets deletes a non-empty dataset if it was created
         by a Beam pipeline more than 24 hours ago."""
@@ -425,7 +425,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         )
 
     # pylint: disable=protected-access
-    @freeze_time("2020-01-02 00:00")
+    @freeze_time("2020-01-02 00:00:00-05:00")
     def test_delete_empty_or_temp_datasets_pruning_dataset(self) -> None:
         """Test that _delete_empty_or_temp_datasets does not delete raw data pruning
         datasets we expect to be empty sometimes.
@@ -476,7 +476,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
         # pylint: disable=protected-access
 
-    @freeze_time("2020-01-02 00:00")
+    @freeze_time("2020-01-02 00:00:00-05:00")
     def test_delete_empty_or_temp_datasets_temp_load_dataset(self) -> None:
         """Test that _delete_empty_or_temp_datasets does not delete raw data temp load
         datasets we expect to be empty sometimes.

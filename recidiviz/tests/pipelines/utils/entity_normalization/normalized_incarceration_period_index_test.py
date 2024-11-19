@@ -38,7 +38,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
-from recidiviz.common.date import DateRange, date_or_tomorrow
+from recidiviz.common.date import DateRange, date_or_tomorrow_us_eastern
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
@@ -446,7 +446,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             index.month_to_overlapping_ips_not_under_supervision_authority, expected
         )
 
-    @freeze_time("2008-04-01")
+    @freeze_time("2008-04-01 00:00:00-05:00")
     def test_period_no_termination(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod(
             sequence_num=0,
@@ -717,7 +717,9 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
         if not period_range_start:
             raise ValueError("Expected admission date")
 
-        period_range_end = date_or_tomorrow(incarceration_periods[-1].release_date)
+        period_range_end = date_or_tomorrow_us_eastern(
+            incarceration_periods[-1].release_date
+        )
 
         lower_bound_inclusive = period_range_start + timedelta(
             days=range_start_num_days_from_periods_start
@@ -779,7 +781,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
             )
         )
 
-    @freeze_time("2008-07-18")
+    @freeze_time("2008-07-18 00:00:00-05:00")
     def test_one_period_ranges_do_not_overlap(self) -> None:
         self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
@@ -823,7 +825,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
             is_excluded_from_supervision_population=False,
         )
 
-    @freeze_time("2008-07-18")
+    @freeze_time("2008-07-18 00:00:00-05:00")
     def test_one_period_ranges_overlap_partially(self) -> None:
         self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,

@@ -56,7 +56,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
         self.metric_producer = metric_producer.ProgramMetricProducer()
         self.pipeline_class = pipeline.ProgramMetricsPipeline
 
-    @freeze_time("2030-11-02")
+    @freeze_time("2030-11-02 00:00:00-05:00")
     def test_produce_program_metrics(self) -> None:
         person = NormalizedStatePerson(
             state_code="US_ND",
@@ -98,7 +98,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    @freeze_time("2009-10-01")
+    @freeze_time("2009-10-01 00:00:00-05:00")
     def test_produce_program_metrics_full_info(self) -> None:
         person = NormalizedStatePerson(
             state_code="US_ND",

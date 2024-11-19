@@ -366,7 +366,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         return data_dict
 
-    @freeze_time("2017-01-31")
+    @freeze_time("2017-01-31 00:00:00-05:00")
     def testSupervisionPipeline(self) -> None:
         fake_person_id = 12345
         fake_supervision_period_id = 1111
@@ -409,7 +409,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             expected_metric_types=expected_metric_types,
         )
 
-    @freeze_time("2017-01-31")
+    @freeze_time("2017-01-31 00:00:00-05:00")
     def testSupervisionPipelineWithPersonIdFilterSet(self) -> None:
         fake_person_id = 12345
         fake_supervision_period_id = 1111
@@ -472,7 +472,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             metric_types_filter=metric_types_filter,
         )
 
-    @freeze_time("2017-01-31")
+    @freeze_time("2017-01-31 00:00:00-05:00")
     def testSupervisionPipeline_withMetricTypesFilter(self) -> None:
         fake_person_id = 12345
         fake_svr_id = 56789
@@ -688,7 +688,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             metric_types_filter=metric_types_filter,
         )
 
-    @freeze_time("2019-11-26")
+    @freeze_time("2019-11-26 00:00:00-05:00")
     def testSupervisionPipelineNoSupervision(self) -> None:
         """Tests the supervision pipeline when a person doesn't have any supervision periods."""
         fake_person_id_1 = 12345

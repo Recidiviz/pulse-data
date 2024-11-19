@@ -92,7 +92,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
 
         self.assertEqual([expected_period], updated_periods)
 
-    @freeze_time("2000-01-01")
+    @freeze_time("2000-01-01 00:00:00-05:00")
     def test_prepare_supervision_periods_for_calculations_drop_future_dates(
         self,
     ) -> None:
@@ -110,7 +110,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
 
         self.assertEqual([], updated_periods)
 
-    @freeze_time("2000-01-01")
+    @freeze_time("2000-01-01 00:00:00-05:00")
     def test_prepare_supervision_periods_for_calculations_unset_future_release_dates(
         self,
     ) -> None:

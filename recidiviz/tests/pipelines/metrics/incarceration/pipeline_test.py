@@ -325,7 +325,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         data_dict.update(data_dict_overrides)
         return data_dict
 
-    @freeze_time("2015-01-31")
+    @freeze_time("2015-01-31 00:00:00-05:00")
     def testIncarcerationPipeline(self) -> None:
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict(

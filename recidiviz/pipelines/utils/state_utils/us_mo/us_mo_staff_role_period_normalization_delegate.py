@@ -18,6 +18,7 @@
 import datetime
 from typing import List, Optional
 
+from recidiviz.common.date import current_date_us_eastern
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import StateStaffRolePeriod
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.staff_role_period_normalization_manager import (
@@ -61,7 +62,7 @@ class UsMoStaffRolePeriodNormalizationDelegate(
         or the distant past. Any dates before 1900 are treated as invalid, and dates in
         the future are removed as well to indicate open periods."""
         return not date_bound or (
-            date_bound.year >= 1900 and date_bound <= datetime.date.today()
+            date_bound.year >= 1900 and date_bound <= current_date_us_eastern()
         )
 
     @staticmethod
@@ -71,6 +72,6 @@ class UsMoStaffRolePeriodNormalizationDelegate(
         1900 are set to 1900-01-01, and dates in the future are set to the current date."""
         if start_date.year <= 1900:
             return datetime.date(1900, 1, 1)
-        if start_date > datetime.date.today():
-            return datetime.date.today()
+        if start_date > current_date_us_eastern():
+            return current_date_us_eastern()
         return start_date

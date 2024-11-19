@@ -80,7 +80,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         self.metric_producer = metric_producer.IncarcerationMetricProducer()
         self.pipeline_class = pipeline.IncarcerationMetricsPipeline
 
-    @freeze_time("2000-03-01")
+    @freeze_time("2000-03-01 00:00:00-05:00")
     def test_produce_incarceration_metrics(self) -> None:
         person = NormalizedStatePerson(
             state_code="US_XX",
@@ -361,7 +361,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    @freeze_time("2000-03-30")
+    @freeze_time("2000-03-30 00:00:00-05:00")
     def test_produce_incarceration_metrics_calculation_month_count(self) -> None:
         person = NormalizedStatePerson(
             state_code="US_XX",
@@ -410,7 +410,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         for metric in metrics:
             assert metric.year == 2000
 
-    @freeze_time("2000-03-30")
+    @freeze_time("2000-03-30 00:00:00-05:00")
     def test_produce_incarceration_metrics_calculation_month_count_exclude(
         self,
     ) -> None:
@@ -456,7 +456,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         self.assertEqual(0, len(metrics))
 
-    @freeze_time("2000-03-30")
+    @freeze_time("2000-03-30 00:00:00-05:00")
     def test_produce_incarceration_metrics_calculation_month_count_include_one(
         self,
     ) -> None:
@@ -516,7 +516,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         for metric in metrics:
             assert metric.year == 2000
 
-    @freeze_time("2010-12-31")
+    @freeze_time("2010-12-31 00:00:00-05:00")
     def test_produce_incarceration_metrics_calculation_month_count_include_monthly(
         self,
     ) -> None:

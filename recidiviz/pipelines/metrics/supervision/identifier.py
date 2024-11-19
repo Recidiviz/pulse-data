@@ -36,7 +36,12 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.date import DateRange, DateRangeDiff, last_day_of_month
+from recidiviz.common.date import (
+    DateRange,
+    DateRangeDiff,
+    current_date_us_eastern,
+    last_day_of_month,
+)
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
 )
@@ -353,7 +358,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         end_date = (
             termination_date
             if termination_date
-            else date.today() + relativedelta(days=1)
+            else current_date_us_eastern() + relativedelta(days=1)
         )
 
         while event_date < end_date:
@@ -754,7 +759,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             if (
                 not sentence_effective_date
                 or not sentence_completion_date
-                or sentence_effective_date > date.today()
+                or sentence_effective_date > current_date_us_eastern()
             ):
                 continue
 
@@ -789,7 +794,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             # Only include sentences that are projected to have already ended
             if (
                 not projected_completion_date
-                or projected_completion_date > date.today()
+                or projected_completion_date > current_date_us_eastern()
             ):
                 continue
 

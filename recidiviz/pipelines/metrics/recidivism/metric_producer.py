@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional, Set, Type
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.common.date import current_date_us_eastern
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
 from recidiviz.pipelines.metrics.recidivism.events import (
@@ -149,7 +150,7 @@ class RecidivismMetricProducer(
             reincarceration admissions during that period.
         """
         relevant_periods = self.relevant_follow_up_periods(
-            release_date, date.today(), FOLLOW_UP_PERIODS
+            release_date, current_date_us_eastern(), FOLLOW_UP_PERIODS
         )
 
         reincarcerations_by_follow_up_period: Dict[

@@ -83,7 +83,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
         self.metric_producer = metric_producer.ViolationMetricProducer()
         self.pipeline_class = pipeline.ViolationMetricsPipeline
 
-    @freeze_time("2030-11-02")
+    @freeze_time("2030-11-02 00:00:00-05:00")
     def test_produce_violation_metrics(self) -> None:
         violation_events: List[ViolationEvent] = [
             ViolationWithResponseEvent(
@@ -111,7 +111,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
 
         self.assertEqual(1, len(metrics))
 
-    @freeze_time("2020-05-30")
+    @freeze_time("2020-05-30 00:00:00-05:00")
     def test_produce_violation_metrics_calculation_month_count_1(self) -> None:
         included_event = ViolationWithResponseEvent(
             state_code=self.state_code,
@@ -154,7 +154,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
             metric.supervision_violation_id, included_event.supervision_violation_id
         )
 
-    @freeze_time("2020-05-30")
+    @freeze_time("2020-05-30 00:00:00-05:00")
     def test_produce_violation_metrics_calculation_month_count_36(self) -> None:
         included_event = ViolationWithResponseEvent(
             state_code=self.state_code,

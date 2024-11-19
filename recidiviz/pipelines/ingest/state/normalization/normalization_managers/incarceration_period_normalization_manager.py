@@ -34,6 +34,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
+from recidiviz.common.date import current_date_us_eastern
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -586,7 +587,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                         ip.release_reason = (
                             StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
                         )
-            elif ip.release_date > date.today():
+            elif ip.release_date > current_date_us_eastern():
                 # This is an erroneous release_date in the future. For the purpose of
                 # calculations, clear the release_date and the release_reason.
                 ip.release_date = None
@@ -622,7 +623,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                     ip.admission_reason = (
                         StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN
                     )
-            elif ip.admission_date > date.today():
+            elif ip.admission_date > current_date_us_eastern():
                 logging.info(
                     "Dropping incarceration period with admission_date in the future: [%s]",
                     ip,

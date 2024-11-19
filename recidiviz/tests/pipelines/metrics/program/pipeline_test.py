@@ -420,7 +420,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         self.identifier = identifier.ProgramIdentifier()
         self.pipeline_class = pipeline.ProgramMetricsPipeline
 
-    @freeze_time("2009-10-19")
+    @freeze_time("2009-10-19 00:00:00-05:00")
     def testClassifyProgramAssignments(self) -> None:
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
@@ -506,7 +506,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         test_pipeline.run()
 
-    @freeze_time("2009-10-19")
+    @freeze_time("2009-10-19 00:00:00-05:00")
     def testClassifyProgramAssignments_us_nd(self) -> None:
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
