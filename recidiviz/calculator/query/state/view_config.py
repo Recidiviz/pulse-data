@@ -56,6 +56,9 @@ from recidiviz.calculator.query.state.views.reference.reference_views import (
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_sessions_views import (
     SENTENCE_SESSIONS_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.sentence_sessions_v2_all.sentence_sessions_v2_all_views import (
+    SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.sentencing.sentencing_views import (
     CASE_INSIGHTS_VIEW_BUILDERS,
     SENTENCING_VIEW_BUILDERS,
@@ -95,6 +98,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             CASE_NOTE_SEARCH_VIEW_BUILDERS,
             IMPACT_REPORTS_VIEWS,
             SENTENCE_SESSIONS_VIEW_BUILDERS,
+            SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS,
         )
     )
 )

@@ -144,6 +144,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "observations__insights_provisioned_user_span",
     "sessions",
     "sentence_sessions",
+    "sentence_sessions_v2_all",
     "sentencing_views",
     "spark_public_output_data_most_recent",
     "state",

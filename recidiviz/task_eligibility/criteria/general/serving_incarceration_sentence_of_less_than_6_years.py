@@ -23,6 +23,7 @@ from google.cloud import bigquery
 from recidiviz.calculator.query.sessions_query_fragments import (
     join_sentence_spans_to_compartment_sessions,
 )
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -53,7 +54,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        sessions_dataset="sessions",
+        sessions_dataset=SESSIONS_DATASET,
         reasons_fields=[
             ReasonsField(
                 name="length_of_longest_sentence_in_days",
