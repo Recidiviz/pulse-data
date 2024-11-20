@@ -35,7 +35,7 @@ columns:
       Date of when employment was last verified. Has not been verified if date is '0001-01-01'
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%y-%m-%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d', {col_name})"
   - name: Face_to_Face_Flag
     description: |-
       Flag indicating whether contact was done face to face.
