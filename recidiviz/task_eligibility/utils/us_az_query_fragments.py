@@ -35,44 +35,53 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 
 
 def no_current_or_prior_convictions(
-    statute: Optional[str] | Optional[list] = None,
-    description: Optional[list] = None,
-    additional_where_clause: Optional[str] = None,
-    or_where_clause: Optional[bool] = False,
-    negate_statute: bool = False,
+    statutes_list: Optional[list] = None,
+    exclude_statutes: bool = False,
+    additional_where_clauses: Optional[str] = None,
     reasons_field_name: str = "ineligible_offenses",
+    past_convictions_cause_ineligibility: bool = True,
 ) -> str:
-    """Helper function for a denial reason for a current or prior conviction.
-    Requires a state specific jargon due to charge_v2 change.
+    """
+    Returns a query template that describes spans of time when someone is ineligible due to a current or
+    past conviction for a specific offense.
 
     Args:
-        statute (str | list): The statute(s) to be included in the exclusion
-        description (list): The charge descriptions to be included in the exclusion, typically specified in regex
-        additional_where_clause (str): Any additional logic not captured by a statute or description filter
-        or_where_clause (bool): Used in specific scenarios where someone wants all included statutes/descriptions with
-            additional caveats in the where clause (for example, sent.is_violent does not include KIDNAPPING, so
-            need to add that as an additional caveat)
-        negate_statute (bool): Whether there are exceptions to certain statutes or descriptions
+        statutes_list (list): The statute(s) to be included in the where clause
+        additional_where_clauses (str): Any additional logic not captured by a statutes filter
+        exclude_statutes (bool): If True, the statutes in statutes_list will be excluded from the query.
+            This means they will be not be marked ineligible and their eligibility will be
+            determined by the meets_criteria_default clause in the view builder.
+        reasons_field_name (str): The name of the field in the output that contains the reasons
+        past_convictions_cause_ineligibility (bool): If True, past convictions will cause
+            someone to become ineligible forever. If False, only convictions when
+            served will cause ineligibility.
     """
-    if statute is None:
-        statute = []
-    if description is None:
-        description = []
-    negate_statute_string = ""
-    if negate_statute:
-        negate_statute_string = "NOT"
-    assert isinstance(description, list), "description must be of type list"
-    if not statute and not description and not additional_where_clause:
+    if additional_where_clauses:
+        if not (
+            additional_where_clauses.startswith("AND")
+            or additional_where_clauses.startswith("OR")
+        ):
+            raise ValueError(
+                "additional_where_clauses must start with 'AND' or 'OR' to ensure proper SQL syntax"
+            )
+    # If statutes_list is None, we will not filter on statutes
+    if statutes_list is None:
+        statutes_list = []
+    assert isinstance(statutes_list, list), "statutes_list must be of type list"
+    # If exclude_statutes_list is True, we will exclude the statutes in the list
+    not_clause = ""
+    if exclude_statutes:
+        not_clause = "NOT"
+    # If neither statutes_list nor additional_where_clause are provided, raise an error
+    if not statutes_list and not additional_where_clauses:
         raise ValueError(
-            "Either 'statute', 'description' or 'additional_where_clause' must be provided."
+            "Either 'statutes_list' or 'additional_where_clause' must be provided."
         )
-    # If you want the additional logic to use 'OR', then we must ensure a statute or description have been included
-    if or_where_clause and not statute and not description:
-        raise ValueError(
-            "If or_where_clause is to be included, one of statute and description must be included."
-        )
-
-    pre_clause = "OR" if or_where_clause else "AND"
+    # If no_past_convictions is True, we will only look at current convictions
+    if past_convictions_cause_ineligibility:
+        end_date = "CAST(NULL AS DATE)"
+    else:
+        end_date = "span.end_date"
 
     return f"""
     WITH
@@ -81,7 +90,7 @@ def no_current_or_prior_convictions(
             span.state_code,
             span.person_id,
             span.start_date,
-            CAST(NULL AS DATE) AS end_date,
+            {end_date} AS end_date,
             charge.description,
             FALSE AS meets_criteria,
           FROM
@@ -105,23 +114,23 @@ def no_current_or_prior_convictions(
               AND charge.charge_v2_id = assoc.charge_v2_id
           WHERE
             span.state_code = 'US_AZ'
-            {f"AND {negate_statute_string} charge.statute LIKE '%{statute}%'" if isinstance(statute, str) else
-    f"AND {negate_statute_string} (" + " OR ".join([f"charge.statute LIKE '%{s}%'" for s in statute]) + ")" if statute
-    else ""}
-            {"AND (" + " OR ".join([f"charge.description LIKE '%{d}%'" for d in description]) + ")" if description
-    else ""}
-            {f"{pre_clause} {additional_where_clause}" if additional_where_clause else ""}),
-      {create_sub_sessions_with_attributes('ineligible_spans')}
-        SELECT
-            state_code,
-            person_id,
-            start_date,
-            end_date,
-            meets_criteria,
-            TO_JSON(STRUCT( ARRAY_AGG(DISTINCT description ORDER BY description) AS {reasons_field_name})) AS reason,
-            ARRAY_AGG(DISTINCT description ORDER BY description) AS {reasons_field_name},
-        FROM sub_sessions_with_attributes
-        GROUP BY 1,2,3,4,5
+            -- Statutes filter
+            {f"AND {not_clause} (" + " OR ".join([f"charge.statute LIKE '%{s}%'" for s in statutes_list]) + ")" if statutes_list else ""}
+            -- Additional where clauses
+            {f"{additional_where_clauses}" if additional_where_clauses else ""}),
+
+    {create_sub_sessions_with_attributes('ineligible_spans')}
+
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        LOGICAL_AND(meets_criteria) AS meets_criteria,
+        TO_JSON(STRUCT( ARRAY_AGG(DISTINCT description ORDER BY description) AS {reasons_field_name})) AS reason,
+        ARRAY_AGG(DISTINCT description ORDER BY description) AS {reasons_field_name},
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4
     """
 
 
@@ -489,3 +498,33 @@ def meets_mandatory_literacy(opp_name: str) -> str:
     -- Ensuring for every row, we grab the latest data location and latest date of meeting literacy
     QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id, start_date, meets_criteria ORDER BY latest_functional_literacy_date DESC) = 1
     """
+
+
+ARSON_STATUTES = [
+    "13-231-NONE",  # ARSON FIRST DEGREE
+    "13-1705-NONE",  # ARSON OF OCCUPD JAIL/PRSN
+    "13-1704-9",  # ARSON OF OCCUPD STRUCTURE
+    "13-1704-E",  # ARSON OF OCCUPD STRUCTURE
+    "13-1704-1",  # ARSON OF OCCUPD STRUCTURE
+    "13-1704-NONE",  # ARSON OF OCCUPD STRUCTURE
+    "13-1704-A",  # ARSON OF OCCUPD STRUCTURE
+    "13-1703-2",  # ARSON OF STRUCTURE/PROPRTY
+    "13-1703-1",  # ARSON OF STRUCTURE/PROPRTY
+    "13-1703-NONE",  # ARSON OF STRUCTURE/PROPRTY
+    "13-232-NONE",  # ARSON SECOND DEGREE
+    "13-233-NONE",  # ARSON THIRD DEGREE
+    "13-236-NONE",  # ARSON UNOCCUPIED STRUCTURE
+]
+
+DOMESTIC_VIOLENCE_STATUTES = [
+    "13-36",  # DOMESTIC VIOLENCE
+]
+
+HOMICIDE_AND_MURDER_STATUTES = [
+    "13-1102",  # NEGLIGENT HOMICIDE
+    "13-1104",  # MURDER 2ND DEGREE
+    "13-1105",  # MURDER 1ST DEGREE
+    "13-452",  # MURDER
+    "13-453",  # MURDER
+    "13-710",  # MURDER SECOND DEGREE
+]

@@ -81,9 +81,9 @@ _ELIGIBLE_STATUTES = [
 ]
 
 _QUERY_TEMPLATE = no_current_or_prior_convictions(
-    statute=_ELIGIBLE_STATUTES,
-    negate_statute=True,
-    additional_where_clause="sent.is_violent",
+    statutes_list=_ELIGIBLE_STATUTES,
+    exclude_statutes=True,
+    additional_where_clauses="AND sent.is_violent",
 )
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -91,7 +91,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     criteria_name=_CRITERIA_NAME,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
-    description=_DESCRIPTION,
+    description=__doc__,
     meets_criteria_default=True,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     reasons_fields=[

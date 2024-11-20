@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     mental_health_score_3_or_below,
+    not_serving_ineligible_offense_for_admin_supervision,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -44,6 +45,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_supervision_violation_within_15_months.VIEW_BUILDER,
         on_supervision_at_least_15_months.VIEW_BUILDER,
         mental_health_score_3_or_below.VIEW_BUILDER,
+        not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )

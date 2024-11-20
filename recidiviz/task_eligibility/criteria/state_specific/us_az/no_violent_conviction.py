@@ -34,18 +34,14 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_AZ_NO_VIOLENT_CONVICTION"
 
-_DESCRIPTION = """Describes spans of time when someone is ineligible due to a current or
-past conviction a violent offense"""
-
 _INELIGIBLE_STATUTES = [
     "13-1304",  # KIDNAPPING
     "13-1211",  # FIREARM OFFENSES
 ]
 
 _QUERY_TEMPLATE = no_current_or_prior_convictions(
-    statute=_INELIGIBLE_STATUTES,
-    additional_where_clause="sent.is_violent",
-    or_where_clause=True,
+    statutes_list=_INELIGIBLE_STATUTES,
+    additional_where_clauses="OR (sent.is_violent AND span.state_code = 'US_AZ')",
 )
 
 _REASONS_FIELDS = [
@@ -59,7 +55,7 @@ _REASONS_FIELDS = [
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_AZ,
