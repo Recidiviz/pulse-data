@@ -67,6 +67,19 @@ filtered_term AS
     OR FtrdApprovedDate IS DISTINCT FROM prev_FtrdApprovedDate 
     OR TentativeParoleDate IS DISTINCT FROM prev_TentativeParoleDate 
     OR InitialParoleHearingDate IS DISTINCT FROM prev_InitialParoleHearingDate
+),
+
+-- We exclude empty (not having an imposed date) sentences from being created 
+-- so we make sure that we also filter out the terms that are only connected to empty sentences
+non_empty_terms_cte AS (
+    SELECT 
+        sent.TermId
+    FROM {scl_Sentence} sent
+    LEFT JOIN {scl_SentenceLink} link ON sent.SentenceId = link.SentenceId
+    LEFT JOIN {scl_SentenceLinkOffense} linkoffense on link.SentenceLinkId = linkoffense.SentenceLinkId
+    LEFT JOIN {scl_Offense} off ON linkoffense.OffenseId = off.OffenseId
+    LEFT JOIN {scl_SentenceOrder} ord ON off.SentenceOrderId = ord.SentenceOrderId
+    WHERE SentenceDate IS NOT NULL OR CorrectionsCompactStartDate IS NOT NULL
 )
 
 -- Final SELECT to get the rows ordered by update_datetime
@@ -80,6 +93,7 @@ SELECT
     ROW_NUMBER() OVER(PARTITION BY TermId ORDER BY update_datetime) as rn
 FROM
     filtered_term
+WHERE TermId IN (SELECT * FROM non_empty_terms_cte)
 """
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ix",
