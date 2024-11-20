@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,28 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Fixture container for monitoring tests"""
-import csv
-import os
-from typing import Iterator
+"""Utils for the monitoring DAG"""
+from typing import Any
+
+from recidiviz.airflow.dags.monitoring.dag_registry import (
+    get_discrete_configuration_parameters,
+)
+from recidiviz.airflow.dags.utils.environment import get_project_id
 
 
-def read_csv_fixture(file: str) -> Iterator[dict]:
-    with open(
-        os.path.join(os.path.dirname(__file__), file), encoding="utf-8"
-    ) as fixture_file:
-        reader = csv.reader(fixture_file)
-        try:
-            header = next(reader)
-        except StopIteration:
-            return
-
-        for row in reader:
-            yield dict(zip(header, row))
-
-
-def write_fixture(file: str, contents: str) -> None:
-    with open(
-        os.path.join(os.path.dirname(__file__), file), "w", encoding="utf-8"
-    ) as fixture_file:
-        fixture_file.write(contents)
+def filter_params_to_discrete(
+    dag_config_json: dict[str, Any], dag_id: str
+) -> dict[str, Any]:
+    """Filters the parameter keys in |dag_config_json| down to it's DAG's known
+    discrete parameters.
+    """
+    discrete_dag_conf_json = {
+        key: value
+        for key, value in dag_config_json.items()
+        if key
+        in get_discrete_configuration_parameters(
+            project_id=get_project_id(), dag_id=dag_id
+        )
+    }
+    return discrete_dag_conf_json

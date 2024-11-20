@@ -41,9 +41,8 @@ def get_sftp_dag_id(project: str) -> str:
 
 
 def get_all_dag_ids(project_id: str) -> List[str]:
-    """A list of all DAGs that are deployed in the given project.
-    Each should have a corresponding DAG definition in a
-    recidiviz/airflow/dags/*_dag.py file.
+    """A list of all DAGs that are deployed in the given project. Each should have a
+    corresponding DAG definition in a recidiviz/airflow/dags/*_dag.py file.
     """
     return [
         get_monitoring_dag_id(project_id),
@@ -53,13 +52,11 @@ def get_all_dag_ids(project_id: str) -> List[str]:
     ]
 
 
-# If a new parameter is being added, add it here and review the values returned for the
-# given dag in get_discrete_configuration_parameters() list
 def get_known_configuration_parameters(project_id: str, dag_id: str) -> Set[str]:
     """Returns the set of parameters that are valid for the DAG with the given name.
 
     NOTE: If a new parameter is being added, add it here and review the values returned
-    for the given dag in get_discrete_configuration_parameters() list.
+    for the given DAG in get_discrete_configuration_parameters() list.
     """
     if dag_id == get_calculation_dag_id(project_id):
         return {

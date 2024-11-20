@@ -110,7 +110,7 @@ class TestDagIntegrity(AirflowIntegrationTest):
                     AirflowAlertingIncident(
                         dag_id=dag.dag_id,
                         conf="{}",
-                        task_id=task_id,
+                        job_id=task_id,
                         failed_execution_dates=[datetime.now(tz=timezone.utc)],
                     )
                 )

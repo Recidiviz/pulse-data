@@ -1,8 +1,0 @@
-                                     execution_date                      state
-dag_id   conf task_id                                                         
-test_dag {}   child_task  2023-07-06 00:00:00+00:00  TaskInstanceState.success
-              child_task  2023-07-07 00:00:00+00:00   TaskInstanceState.failed
-              child_task  2023-07-08 00:00:00+00:00   TaskInstanceState.failed
-              parent_task 2023-07-06 00:00:00+00:00  TaskInstanceState.success
-              parent_task 2023-07-07 00:00:00+00:00  TaskInstanceState.success
-              parent_task 2023-07-08 00:00:00+00:00  TaskInstanceState.success

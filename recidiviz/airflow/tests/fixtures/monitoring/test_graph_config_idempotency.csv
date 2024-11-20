@@ -1,0 +1,10 @@
+dag_id,conf,job_id,execution_date,state
+test_dag,{"instance": "PRIMARY"},parent_task,2023-07-06 12:00:00+00:00,0
+test_dag,{"instance": "PRIMARY"},parent_task,2023-07-07 12:00:00+00:00,0
+test_dag,{"instance": "PRIMARY"},parent_task,2023-07-08 12:00:00+00:00,0
+test_dag,{"instance": "SECONDARY"},parent_task,2023-07-06 12:01:00+00:00,0
+test_dag,{"instance": "SECONDARY"},parent_task,2023-07-07 12:01:00+00:00,3
+test_dag,{"instance": "SECONDARY"},parent_task,2023-07-08 12:01:00+00:00,3
+test_dag,{"instance": "TERTIARY"},parent_task,2023-07-06 12:02:00+00:00,0
+test_dag,{"instance": "TERTIARY"},parent_task,2023-07-07 12:02:00+00:00,3
+test_dag,{"instance": "TERTIARY"},parent_task,2023-07-08 12:02:00+00:00,0

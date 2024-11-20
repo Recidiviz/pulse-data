@@ -39,7 +39,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_calculation_dag",
             conf=json.dumps({"ingest_instance": "PRIMARY"}),
-            task_id="update_managed_views_all.execute_entrypoint_operator",
+            job_id="update_managed_views_all.execute_entrypoint_operator",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
         )
 
@@ -50,7 +50,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_sftp_dag",
             conf="{}",
-            task_id="US_IX.remote_file_download.download_sftp_files",
+            job_id="US_IX.remote_file_download.download_sftp_files",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
         )
 
@@ -74,7 +74,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_calculation_dag",
             conf="{}",
-            task_id=f"post_ingest_pipelines.{BRANCH_END_TASK_NAME}",
+            job_id=f"post_ingest_pipelines.{BRANCH_END_TASK_NAME}",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
         )
 
@@ -85,7 +85,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_another_dag",
             conf="{}",
-            task_id=f"post_ingest_pipelines.{BRANCH_END_TASK_NAME}",
+            job_id=f"post_ingest_pipelines.{BRANCH_END_TASK_NAME}",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
         )
 
@@ -97,7 +97,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_calculation_dag",
             conf=json.dumps({"ingest_instance": "SECONDARY"}),
-            task_id="update_managed_views_all.execute_entrypoint_operator",
+            job_id="update_managed_views_all.execute_entrypoint_operator",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
         )
 
@@ -109,7 +109,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_calculation_dag",
             conf=json.dumps({"ingest_instance": "PRIMARY"}),
-            task_id="update_managed_views_all.execute_entrypoint_operator",
+            job_id="update_managed_views_all.execute_entrypoint_operator",
             failed_execution_dates=[datetime.now(tz=timezone.utc) - timedelta(days=14)],
         )
 
