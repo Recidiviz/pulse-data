@@ -1,4 +1,4 @@
-FROM ubuntu:mantic AS recidiviz-init
+FROM ubuntu:noble AS recidiviz-init
 ENV DEBIAN_FRONTEND noninteractive
 # NOTE: It is is extremely important that we do not delete this
 # variable. One of our dependencies, dateparser, seems to require
@@ -7,15 +7,20 @@ ENV DEBIAN_FRONTEND noninteractive
 # return None in a large set of circumstances which is of course,
 # unideal.
 ENV TZ America/New_York
-RUN apt update -y && \
-    apt install -y \
+# Add a package repo to get archived python versions.
+RUN apt update -y && apt upgrade -y && \
+    apt install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa
+RUN apt install -y \
     locales \
     git \
     libxml2-dev libxslt1-dev \
     default-jre \
     libpq-dev \
-    python3.11-dev pipenv/mantic \
-    curl
+    build-essential \
+    python3.11-dev \
+    curl && rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
 RUN locale-gen en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 ENV LC_CTYPE en_US.UTF-8
@@ -31,9 +36,15 @@ ENV PYTHONUNBUFFERED 1
 # The main effect of this variable is to create the pipenv environment in the `.venv` folder in the
 # root of the project.
 ENV PIPENV_VENV_IN_PROJECT="1"
+RUN adduser recidiviz
+USER recidiviz
+RUN curl -s https://bootstrap.pypa.io/get-pip.py 2>&1 | python3.11
+ENV PATH=/home/recidiviz/.local/bin/:$PATH
+RUN pip install pipenv --user
 WORKDIR /app
 
 FROM recidiviz-init AS recidiviz-dev
+USER root
 RUN apt update -y &&    \
     apt install -y      \
     apt-transport-https \
@@ -56,7 +67,7 @@ RUN wget -O /dev/stdout https://apt.releases.hashicorp.com/gpg             | \
     # Note: this verison number should be kept in sync with the ones in .github/workflows/ci.yml,
     # .devcontainer/devcontainer.json, recidiviz/tools/deploy/terraform/terraform.tf, and
     # recidiviz/tools/deploy/deploy_helpers.sh
-    apt-get update -y && apt-get install terraform=1.7.0 -y &&               \
+    apt-get update -y && apt-get install terraform -y &&               \
     apt-mark hold terraform
 # Install postgres to be used by tests that need to write to a database from multiple threads.
 ARG PG_VERSION=13
@@ -65,6 +76,7 @@ RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-k
     apt-get update && apt-get install postgresql-${PG_VERSION} -y
 ENV PATH=/usr/lib/postgresql/${PG_VERSION}/bin/:$PATH
 RUN apt-get update -y && apt-get upgrade -y
+USER recidiviz
 RUN npm install prettier
 COPY Pipfile /app/
 COPY Pipfile.lock /app/
@@ -95,8 +107,6 @@ COPY --from=admin-panel-build /usr/admin-panel/build /app/frontends/admin-panel/
 # Add the current commit SHA as an env variable
 ARG CURRENT_GIT_SHA=""
 ENV CURRENT_GIT_SHA=${CURRENT_GIT_SHA}
-# Install security patches
-RUN apt-get update && apt-get -y upgrade
 EXPOSE 8080
 CMD pipenv run gunicorn -c gunicorn.gthread.conf.py --log-file=- -b :8080 recidiviz.server:app
 # This makes docker not report that our container is healthy until the flask workers are
@@ -104,5 +114,3 @@ CMD pipenv run gunicorn -c gunicorn.gthread.conf.py --log-file=- -b :8080 recidi
 # our docker-test Github Action.
 HEALTHCHECK --interval=5s --timeout=3s \
     CMD curl -f http://localhost:8080/health || exit 1
-RUN rm -rf /var/lib/apt/lists/*; \
-    apt-get clean;
