@@ -67,7 +67,7 @@ export const SnoozeInput: React.FC<SnoozeInputProps> = ({
           onChange={changeSnoozeType}
           optionType="button"
         >
-          <Radio value="none">None</Radio>
+          <Radio value="none">None (Indefinite Denial)</Radio>
           <Radio value="adjustable">Adjustable</Radio>
           <Radio value="automatic">Automatic</Radio>
         </Radio.Group>

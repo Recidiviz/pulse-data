@@ -38,6 +38,11 @@ const OpportunityView = (): JSX.Element => {
   const isOpportunityProvisioned =
     !!opportunityPresenter?.selectedOpportunity?.lastUpdatedAt;
 
+  // Use this as a template when creating a new variant
+  const defaultConfigId =
+    opportunityConfigurationPresenter
+      ?.activeDefaultConfigurationForSelectedOpportunity?.id;
+
   return (
     <>
       <HydrationWrapper
@@ -48,14 +53,16 @@ const OpportunityView = (): JSX.Element => {
       {isOpportunityProvisioned ? (
         <>
           <Button
-            onClick={() =>
+            onClick={() => {
+              let url = "new?freshVariant=true";
+              if (defaultConfigId) url += `&from=${defaultConfigId}`;
               history.push(
-                buildRoute(stateCode ?? "", selectedOpportunityType, "new")
-              )
-            }
+                buildRoute(stateCode ?? "", selectedOpportunityType, url)
+              );
+            }}
             disabled={!isOpportunityProvisioned}
           >
-            New Configuration
+            New Variant
           </Button>
           <HydrationWrapper
             presenter={opportunityConfigurationPresenter}

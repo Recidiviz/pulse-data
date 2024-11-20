@@ -65,6 +65,12 @@ export default class OpportunityConfigurationPresenter implements Hydratable {
     return this.workflowsStore.opportunityConfigurations;
   }
 
+  get activeDefaultConfigurationForSelectedOpportunity() {
+    return this.opportunityConfigurations?.find(
+      (c) => c.featureVariant === undefined && c.status === "ACTIVE"
+    );
+  }
+
   get selectedOpportunityConfiguration() {
     return this.opportunityConfigurations?.find(
       (c) => c.id === this.workflowsStore.selectedConfigurationId

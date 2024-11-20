@@ -97,13 +97,13 @@ const OpportunitiesHeaderView = (): JSX.Element => {
 
   if (configId) {
     breadcrumbs.push(title);
-    if (configId === "new") {
-      title = "New Configuration";
-    } else {
-      title =
-        store.opportunityConfigurationPresenter
-          ?.selectedOpportunityConfiguration?.displayName ?? "";
-    }
+    const freshVariant = new URLSearchParams(document.location.search).get(
+      "freshVariant"
+    );
+    title = freshVariant
+      ? "New Configuration"
+      : store.opportunityConfigurationPresenter
+          ?.selectedOpportunityConfiguration?.variantDescription ?? "";
   }
 
   return (

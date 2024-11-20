@@ -27,7 +27,10 @@ export function buildColumns<T>(
     dataIndex: k,
     key: k,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    sorter: (a: any, b: any) => a[k].localeCompare(b[k]),
+    sorter: (a: any, b: any) =>
+      a[k]?.localeCompare ? a[k].localeCompare(b[k]) : a[k] - b[k],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onFilter: (value, record: any) => record[k] === value,
     ...(col as Partial<ColumnType<T>>), // I'm not sure why this isn't inferred
   }));
 }

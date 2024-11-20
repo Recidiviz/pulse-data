@@ -15,13 +15,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Button, Form, Space } from "antd";
+import { Button, Divider, Form, Space } from "antd";
 import { observer } from "mobx-react-lite";
 import { useHistory } from "react-router-dom";
 
 import OpportunityConfigurationPresenter from "../../WorkflowsStore/presenters/OpportunityConfigurationPresenter";
 import { useWorkflowsStore } from "../StoreProvider";
 import HydrationWrapper from "./HydrationWrapper";
+import { CompareByView } from "./OpportunityConfigurationForm/CompareBy";
+import { CriteriaCopyView } from "./OpportunityConfigurationForm/CriteriaCopy";
+import { DenialReasonsView } from "./OpportunityConfigurationForm/DenialReasons";
+import { StaticValue } from "./OpportunityConfigurationForm/formSpec";
+import { MultiEntry } from "./OpportunityConfigurationForm/MultiEntry";
+import { NotificationsView } from "./OpportunityConfigurationForm/Notifications";
+import { SidebarComponentsView } from "./OpportunityConfigurationForm/SidebarComponents";
+import { TabGroupsView } from "./OpportunityConfigurationForm/TabGroups";
 
 const OpportunityConfigurationSettings = ({
   presenter,
@@ -37,17 +45,19 @@ const OpportunityConfigurationSettings = ({
     <>
       <Space>
         <Button onClick={() => history.push(`new?from=${config.id}`)}>
-          Duplicate
+          Edit
         </Button>
         {config.status === "ACTIVE" && (
           <>
-            <Button
-              onClick={() =>
-                presenter.deactivateOpportunityConfiguration(config.id)
-              }
-            >
-              Deactivate
-            </Button>
+            {config.featureVariant && (
+              <Button
+                onClick={() =>
+                  presenter.deactivateOpportunityConfiguration(config.id)
+                }
+              >
+                Deactivate
+              </Button>
+            )}
             <Button
               onClick={() =>
                 // eslint-disable-next-line no-alert
@@ -70,98 +80,109 @@ const OpportunityConfigurationSettings = ({
           </Button>
         )}
       </Space>
-      <Form>
-        <Form.Item label="Name">
-          <span className="ant-form-text">{config.displayName}</span>
+      <Form
+        labelCol={{ span: 4 }}
+        wrapperCol={{ span: 10 }}
+        labelWrap
+        initialValues={config}
+      >
+        <Form.Item label="Feature Variant" name="featureVariant">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Description">
-          <span className="ant-form-text">{config.description}</span>
+        <Form.Item name="revisionDescription" label="Revision Description">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Feature Variant">
-          <span className="ant-form-text">
-            {config.featureVariant ?? <i>None</i>}
-          </span>
+        <Divider />
+        <Form.Item name="displayName" label="Opportunity Name">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Dynamic Eligibility Text">
-          <span className="ant-form-text">{config.dynamicEligibilityText}</span>
+        <Form.Item
+          name="dynamicEligibilityText"
+          label="Dynamic Eligibility Text"
+        >
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Eligibility Date Text">
-          <span className="ant-form-text">{config.eligibilityDateText}</span>
+        <Form.Item name="eligibilityDateText" label="Eligibility Date Text">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Hide Denial Revert?">
-          <span className="ant-form-text">
-            {JSON.stringify(config.hideDenialRevert)}
-          </span>
+        <Form.Item name="hideDenialRevert" label="Hide Denial Revert?">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Tooltip Eligibility Text">
-          <span className="ant-form-text">{config.tooltipEligibilityText}</span>
+        <Form.Item
+          name="tooltipEligibilityText"
+          label="Tooltip Eligibility Text"
+        >
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Zero Grants Tooltip">
-          <span className="ant-form-text">{config.zeroGrantsTooltip}</span>
+        <Form.Item name="zeroGrantsTooltip" label="Zero Grants Tooltip">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Call To Action">
-          <span className="ant-form-text">{config.callToAction}</span>
+        <Form.Item name="callToAction" label="Call To Action">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Subheading">
-          <span className="ant-form-text">{config.subheading}</span>
+        <Form.Item name="subheading" label="Subheading">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Denial Reasons">
-          <span className="ant-form-text">
-            {JSON.stringify(config.denialReasons)}
-          </span>
+        <MultiEntry
+          label="Denial Reasons"
+          name="denialReasons"
+          readonly
+          child={DenialReasonsView}
+        />
+        <Form.Item name="denialText" label="Denial Text">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Denial Text">
-          <span className="ant-form-text">{config.denialText}</span>
+        <Form.Item name="initialHeader" label="Initial Header">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Initial Header">
-          <span className="ant-form-text">{config.initialHeader}</span>
-        </Form.Item>
-        <Form.Item label="Eligibile Criteria Copy">
-          <span className="ant-form-text">
-            {JSON.stringify(config.eligibleCriteriaCopy)}
-          </span>
-        </Form.Item>
-        <Form.Item label="Ineligible Eligibility Text">
-          <span className="ant-form-text">
-            {JSON.stringify(config.ineligibleCriteriaCopy)}
-          </span>
-        </Form.Item>
+        <MultiEntry
+          label="Eligible Criteria Copy"
+          name="eligibleCriteriaCopy"
+          child={CriteriaCopyView}
+          readonly
+        />
+        <MultiEntry
+          label="Almost Eligible Criteria Copy"
+          name="ineligibleCriteriaCopy"
+          child={CriteriaCopyView}
+          readonly
+        />
         <Form.Item label="Snooze">
           <span className="ant-form-text">{JSON.stringify(config.snooze)}</span>
         </Form.Item>
-        <Form.Item label="Sidebar Components">
-          <span className="ant-form-text">
-            {JSON.stringify(config.sidebarComponents)}
-          </span>
+        <MultiEntry
+          label="Sidebar Components"
+          name="sidebarComponents"
+          child={SidebarComponentsView}
+          readonly
+        />
+        <Form.Item name="methodologyUrl" label="Methodology URL">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Methodology URL">
-          <span className="ant-form-text">{config.methodologyUrl}</span>
+        <Form.Item name="isAlert" label="Alert?">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Alert?">
-          <span className="ant-form-text">
-            {JSON.stringify(config.isAlert)}
-          </span>
+        <Form.Item name="priority" label="Priority">
+          <StaticValue />
         </Form.Item>
-        <Form.Item label="Priority">
-          <span className="ant-form-text">
-            {JSON.stringify(config.priority)}
-          </span>
-        </Form.Item>
-        <Form.Item label="Tab Groups">
-          <span className="ant-form-text">
-            {JSON.stringify(config.tabGroups)}
-          </span>
-        </Form.Item>
-        <Form.Item label="Compare By">
-          <span className="ant-form-text">
-            {JSON.stringify(config.compareBy)}
-          </span>
-        </Form.Item>
-        <Form.Item label="Notifications">
-          <span className="ant-form-text">
-            {JSON.stringify(config.notifications)}
-          </span>
-        </Form.Item>
+        <MultiEntry
+          label="Tab Groups"
+          name="tabGroups"
+          child={TabGroupsView}
+          readonly
+        />
+        <MultiEntry
+          label="Compare By"
+          name="compareBy"
+          child={CompareByView}
+          readonly
+        />
+        <MultiEntry
+          label="Notifications"
+          name="notifications"
+          child={NotificationsView}
+          readonly
+        />
       </Form>
     </>
   );

@@ -16,46 +16,44 @@
 // =============================================================================
 
 import { Form, Input } from "antd";
-import TextArea from "antd/lib/input/TextArea";
 
 import { StaticValue } from "./formSpec";
-import { MultiEntryChild } from "./MultiEntry";
+import { MultiEntry, MultiEntryChild } from "./MultiEntry";
 
-export const CriteriaCopyView: MultiEntryChild = ({ name }) => (
+const TabsView: MultiEntryChild = ({ name }) => (
+  <Form.Item name={name} noStyle>
+    <StaticValue />
+  </Form.Item>
+);
+
+export const TabGroupsView: MultiEntryChild = ({ name }) => (
   <>
     <Form.Item noStyle name={[name, "key"]}>
       <StaticValue />
     </Form.Item>
-    :
-    <Form.Item noStyle name={[name, "text"]}>
-      <StaticValue />
-    </Form.Item>
-    <Form.Item noStyle name={[name, "tooltip"]}>
-      <StaticValue />
-    </Form.Item>
+    <MultiEntry label="Tabs" name={[name, "tabs"]} child={TabsView} readonly />
   </>
 );
 
-export const CriteriaCopyEdit: MultiEntryChild = ({ name }) => (
-  <div style={{ width: "100%", marginBottom: "0.25em" }}>
+const TabsEdit: MultiEntryChild = ({ name }) => (
+  <Form.Item
+    noStyle
+    name={name}
+    rules={[{ required: true, message: "'title' is required" }]}
+  >
+    <Input placeholder="Title" />
+  </Form.Item>
+);
+
+export const TabGroupsEdit: MultiEntryChild = ({ name }) => (
+  <>
     <Form.Item
       noStyle
       name={[name, "key"]}
-      rules={[{ required: true, message: "'criteria' is required" }]}
+      rules={[{ required: true, message: "'group' is required" }]}
     >
-      <Input placeholder="Criteria" />
+      <Input placeholder="Group" />
     </Form.Item>
-    <div style={{ marginTop: "0.25em", display: "flex", gap: "0.25em" }}>
-      <Form.Item
-        noStyle
-        name={[name, "text"]}
-        rules={[{ required: true, message: "'text' is required" }]}
-      >
-        <TextArea placeholder="Text" />
-      </Form.Item>
-      <Form.Item noStyle name={[name, "tooltip"]}>
-        <TextArea placeholder="Tooltip" />
-      </Form.Item>
-    </div>
-  </div>
+    <MultiEntry label="Tab Groups" name={[name, "tabs"]} child={TabsEdit} />
+  </>
 );

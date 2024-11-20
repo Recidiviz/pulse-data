@@ -93,7 +93,8 @@ def make_add_config_arguments(
         "opportunity_type": opportunity_type,
         "created_by": "Maria",
         "created_at": datetime.datetime(2024, 5, 12),
-        "description": "description",
+        "variant_description": "variant_description",
+        "revision_description": "revision_description",
         "display_name": "display_name",
         "methodology_url": "methodology_url",
         "initial_header": "initial_header",
@@ -468,15 +469,15 @@ class TestWorkflowsQuerier(TestCase):
 
         self.assertEqual(1, len(actual_active))
         self.assertEqual(datetime.datetime(2023, 5, 3), actual_active[0].created_at)
-        self.assertEqual("base config", actual_active[0].description)
+        self.assertEqual("base config", actual_active[0].variant_description)
 
         actual_inactive = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
             "usIdCRCWorkRelease", status=OpportunityStatus.INACTIVE
         )
 
         self.assertEqual(2, len(actual_inactive))
-        self.assertEqual("experimental config", actual_inactive[0].description)
-        self.assertEqual("base config", actual_inactive[1].description)
+        self.assertEqual("experimental config", actual_inactive[0].variant_description)
+        self.assertEqual("base config", actual_inactive[1].variant_description)
 
     def test_get_configs_for_type_respects_offset_and_status(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
@@ -484,7 +485,7 @@ class TestWorkflowsQuerier(TestCase):
         )
 
         self.assertEqual(1, len(actual))
-        self.assertEqual("base config", actual[0].description)
+        self.assertEqual("base config", actual[0].variant_description)
 
     def test_get_config_for_id(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_config_for_id(
@@ -671,7 +672,8 @@ class TestWorkflowsQuerier(TestCase):
         # assert all the other activate config data is identical as the deactivate config
         self.assertEqual(actual.created_by, deactivated.created_by)  # type: ignore
         self.assertEqual(actual.created_at, deactivated.created_at)  # type: ignore
-        self.assertEqual(actual.description, deactivated.description)  # type: ignore
+        self.assertEqual(actual.variant_description, deactivated.variant_description)  # type: ignore
+        self.assertEqual(actual.revision_description, deactivated.revision_description)  # type: ignore
         self.assertEqual(actual.feature_variant, deactivated.feature_variant)  # type: ignore
         self.assertEqual(actual.display_name, deactivated.display_name)  # type: ignore
         self.assertEqual(actual.methodology_url, deactivated.methodology_url)  # type: ignore

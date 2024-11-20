@@ -16,12 +16,11 @@
 // =============================================================================
 
 import { Form, Input } from "antd";
-import TextArea from "antd/lib/input/TextArea";
 
 import { StaticValue } from "./formSpec";
 import { MultiEntryChild } from "./MultiEntry";
 
-export const CriteriaCopyView: MultiEntryChild = ({ name }) => (
+export const DenialReasonsView: MultiEntryChild = ({ name }) => (
   <>
     <Form.Item noStyle name={[name, "key"]}>
       <StaticValue />
@@ -30,32 +29,25 @@ export const CriteriaCopyView: MultiEntryChild = ({ name }) => (
     <Form.Item noStyle name={[name, "text"]}>
       <StaticValue />
     </Form.Item>
-    <Form.Item noStyle name={[name, "tooltip"]}>
-      <StaticValue />
-    </Form.Item>
   </>
 );
 
-export const CriteriaCopyEdit: MultiEntryChild = ({ name }) => (
-  <div style={{ width: "100%", marginBottom: "0.25em" }}>
+export const DenialReasonsEdit: MultiEntryChild = ({ name }) => (
+  <>
     <Form.Item
       noStyle
       name={[name, "key"]}
-      rules={[{ required: true, message: "'criteria' is required" }]}
+      rules={[{ required: true, message: "'code' is required" }]}
     >
-      <Input placeholder="Criteria" />
+      <Input placeholder="Code" />
     </Form.Item>
-    <div style={{ marginTop: "0.25em", display: "flex", gap: "0.25em" }}>
-      <Form.Item
-        noStyle
-        name={[name, "text"]}
-        rules={[{ required: true, message: "'text' is required" }]}
-      >
-        <TextArea placeholder="Text" />
-      </Form.Item>
-      <Form.Item noStyle name={[name, "tooltip"]}>
-        <TextArea placeholder="Tooltip" />
-      </Form.Item>
-    </div>
-  </div>
+    :
+    <Form.Item
+      noStyle
+      name={[name, "text"]}
+      rules={[{ required: true, message: "'text' is required" }]}
+    >
+      <Input placeholder="Text" />
+    </Form.Item>
+  </>
 );

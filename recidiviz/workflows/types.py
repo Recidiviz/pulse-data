@@ -132,7 +132,8 @@ class FullOpportunityConfig(OpportunityConfig):
     id: int = attr.ib()
     created_by: str = attr.ib()
     created_at: datetime = attr.ib()
-    description: str = attr.ib()
+    variant_description: str = attr.ib()
+    revision_description: str = attr.ib()
     status: OpportunityStatus = attr.ib()
     feature_variant: str = attr.ib(default=None)
     staging_id: int = attr.ib(default=None)
@@ -148,7 +149,8 @@ class FullOpportunityConfig(OpportunityConfig):
             opportunity_type=config.opportunity_type,
             created_by=config.created_by,
             created_at=config.created_at,
-            description=config.description,
+            variant_description=config.variant_description,
+            revision_description=config.revision_description,
             status=config.status,
             display_name=config.display_name,
             methodology_url=config.methodology_url,

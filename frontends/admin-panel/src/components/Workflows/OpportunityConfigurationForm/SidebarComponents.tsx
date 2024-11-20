@@ -17,7 +17,8 @@
 
 import { Form, Select } from "antd";
 
-import { MultiEntry } from "./MultiEntry";
+import { StaticValue } from "./formSpec";
+import { MultiEntryChild } from "./MultiEntry";
 
 const sidebarComponentNames = [
   "CaseNotes",
@@ -45,20 +46,22 @@ const sidebarComponentNames = [
   "ClientProfileDetails",
 ];
 
-export const SidebarComponents = () => (
-  <MultiEntry label="Sidebar Components" name="sidebarComponents">
-    {(field) => (
-      <Form.Item {...field} noStyle>
-        <Select
-          style={{
-            width: 300,
-          }}
-          options={sidebarComponentNames.map((v) => ({
-            value: v,
-            label: v,
-          }))}
-        />
-      </Form.Item>
-    )}
-  </MultiEntry>
+export const SidebarComponentsView: MultiEntryChild = ({ name, ...field }) => (
+  <Form.Item {...field} noStyle name={[name]}>
+    <StaticValue />
+  </Form.Item>
+);
+
+export const SidebarComponentsEdit: MultiEntryChild = ({ name }) => (
+  <Form.Item name={name} noStyle>
+    <Select
+      style={{
+        width: 300,
+      }}
+      options={sidebarComponentNames.map((v) => ({
+        value: v,
+        label: v,
+      }))}
+    />
+  </Form.Item>
 );
