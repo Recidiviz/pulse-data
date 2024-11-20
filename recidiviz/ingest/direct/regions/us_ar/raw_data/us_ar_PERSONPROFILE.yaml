@@ -32,6 +32,8 @@ columns:
     known_values:
       - value: "&&"
         description: special value
+      - value: Dr
+        description: Dr
       - value: I
         description: I
       - value: II
@@ -42,8 +44,14 @@ columns:
         description: IV
       - value: Jr
         description: Jr
+      - value: JR
+        description: TODO(#34880) Ensure uses of this col are not case sensitive
+      - value: Mrs
+        description: Mrs
       - value: Sr
         description: Sr
+      - value: SR
+        description: TODO(#34880) Ensure uses of this col are not case sensitive
       - value: V
         description: V
       - value: VI
@@ -60,12 +68,24 @@ columns:
         description: Asian
       - value: B
         description: Black
+      - value: C
+        description: TODO(#34880) Document this value.
+      - value: H
+        description: TODO(#34880) Document this value.
       - value: I
         description: NA Indian
+      - value: M
+        description: TODO(#34880) Document this value.
+      - value: "N"
+        description: TODO(#34880) Document this value.
+      - value: O
+        description: TODO(#34880) Document this value.
       - value: U
         description: Unknown
       - value: W
         description: Caucasian
+      - value: X
+        description: TODO(#34880) Document this value.
   - name: PERSONETHNIC
     description: |-
       Ethnicity
@@ -150,6 +170,8 @@ columns:
         description: Male
       - value: U
         description: Unknown
+      - value: "?"
+        description: Unknown
   - name: PERSONDATEOFBIRTH
     description: |-
       DOB
@@ -165,6 +187,10 @@ columns:
     known_values:
       - value: A
         description: Active
+      - value: C
+        description: TODO(#34880) Document this value.
+      - value: D
+        description: TODO(#34880) Document this value.
       - value: I
         description: Inactive/Terminated
       - value: P
