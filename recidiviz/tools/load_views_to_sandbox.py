@@ -469,6 +469,7 @@ class SandboxChangedAddresses:
 
     changed_datasets_to_include: set[str] | None
     changed_datasets_to_ignore: set[str] | None
+    state_code_filter: StateCode | None
 
     changed_source_table_addresses: set[BigQueryAddress]
 
@@ -494,6 +495,11 @@ class SandboxChangedAddresses:
             or (
                 self.changed_datasets_to_include
                 and address.dataset_id not in self.changed_datasets_to_include
+            )
+            or (
+                self.state_code_filter is not None
+                and address.state_code_for_address() is not None
+                and address.state_code_for_address() != self.state_code_filter
             )
         }
 
@@ -639,6 +645,7 @@ def get_sandbox_changed_addresses(
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     changed_datasets_to_include: list[str] | None,
     changed_datasets_to_ignore: list[str] | None,
+    state_code_filter: StateCode | None,
 ) -> SandboxChangedAddresses:
     logging.info("Checking for changes against [%s] BigQuery...", project_id())
     address_to_change_type = _get_all_views_changed_on_branch(full_dag_walker)
@@ -661,6 +668,7 @@ def get_sandbox_changed_addresses(
         changed_datasets_to_ignore=(
             set(changed_datasets_to_ignore) if changed_datasets_to_ignore else None
         ),
+        state_code_filter=state_code_filter,
         changed_source_table_addresses=changed_source_table_addresses,
     )
 
@@ -670,6 +678,7 @@ def collect_changed_views_and_descendants_to_load(
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     changed_datasets_to_include: list[str] | None,
     changed_datasets_to_ignore: list[str] | None,
+    state_code_filter: StateCode | None,
     load_up_to_addresses: list[BigQueryAddress] | None,
     load_up_to_datasets: list[str] | None,
     load_changed_views_only: bool,
@@ -709,6 +718,7 @@ def collect_changed_views_and_descendants_to_load(
         input_source_table_dataset_overrides_dict=input_source_table_dataset_overrides_dict,
         changed_datasets_to_ignore=changed_datasets_to_ignore,
         changed_datasets_to_include=changed_datasets_to_include,
+        state_code_filter=state_code_filter,
     )
 
     if changed_addresses_info.has_changes_to_load:
@@ -787,6 +797,7 @@ def load_views_changed_on_branch_to_sandbox(
         ),
         changed_datasets_to_ignore=changed_datasets_to_ignore,
         changed_datasets_to_include=changed_datasets_to_include,
+        state_code_filter=state_code_filter,
         load_changed_views_only=load_changed_views_only,
         load_up_to_addresses=load_up_to_addresses,
         load_up_to_datasets=load_up_to_datasets,
@@ -930,7 +941,8 @@ def parse_arguments() -> argparse.Namespace:
         "--state_code_filter",
         dest="state_code_filter",
         help="If provided, all table references in any loaded view queries will be "
-        "modified to only return rows for the given state.",
+        "modified to only return rows for the given state. If running in `auto` mode, "
+        "changes in state-specific views that do not match this filter will be ignored.",
         type=StateCode,
         choices=list(StateCode),
         required=False,
