@@ -22,7 +22,7 @@ from recidiviz.aggregated_metrics.aggregated_metrics_utils import (
     get_joined_metrics_by_observation_type_query,
 )
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
-from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
+from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodSpanAggregatedMetric,
 )

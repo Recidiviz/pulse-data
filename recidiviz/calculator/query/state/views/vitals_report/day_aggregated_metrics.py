@@ -18,7 +18,7 @@
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
+from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE,
     AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED,

@@ -34,7 +34,10 @@ from recidiviz.aggregated_metrics.assignment_event_aggregated_metrics import (
 from recidiviz.aggregated_metrics.assignment_span_aggregated_metrics import (
     get_assignment_span_time_specific_cte,
 )
-from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
+from recidiviz.aggregated_metrics.metric_time_period_config import (
+    MetricTimePeriod,
+    MetricTimePeriodConfig,
+)
 from recidiviz.aggregated_metrics.models import aggregated_metric_configurations as amc
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
@@ -62,6 +65,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
     MetricUnitOfAnalysisType,
     get_static_attributes_query_for_unit_of_analysis,
 )
+from recidiviz.utils.string_formatting import fix_indent
 
 
 def get_time_period_cte(
@@ -72,64 +76,41 @@ def get_time_period_cte(
     rolling_period_unit: Optional[MetricTimePeriod] = None,
     rolling_period_length: Optional[int] = None,
 ) -> str:
-    """Returns query template for generating time periods at custom intervals falling between the min and max dates.
-    If no max date is provided, use current date."""
+    """Returns query template for generating time periods at custom intervals falling
+    between the min and max dates. If no max date is provided, use current date.
+    """
 
-    # Both rolling_period_unit and rolling_period_length must be provided together
-    if (rolling_period_unit and not rolling_period_length) or (
-        rolling_period_length and not rolling_period_unit
-    ):
+    if not min_end_date.tzinfo:
         raise ValueError(
-            "Both rolling_period_unit and rolling_period_length must be provided together."
+            f"Building a time period CTE with a min_end_date [{min_end_date}] that is "
+            f"not timezone-aware. Consider using helpers like "
+            f"current_datetime_us_eastern() to build this date."
         )
 
-    # If any rolling period parameter is not provided, default them to interval_unit and interval_length
-    if not rolling_period_length or not rolling_period_unit:
-        rolling_period_length = interval_length
-        rolling_period_unit = interval_unit
-
-    # Validate interval_unit and rolling_period_unit
-    valid_periods = [
-        MetricTimePeriod.DAY,
-        MetricTimePeriod.WEEK,
-        MetricTimePeriod.MONTH,
-        MetricTimePeriod.QUARTER,
-        MetricTimePeriod.YEAR,
-    ]
-    if interval_unit not in valid_periods:
+    if max_end_date and not min_end_date.tzinfo:
         raise ValueError(
-            f"Interval type {interval_unit.value} is not a valid interval type"
-        )
-    if rolling_period_unit not in valid_periods:
-        raise ValueError(
-            f"Rolling period type {rolling_period_unit.value} is not a valid type"
+            f"Building a time period CTE with a min_end_date [{min_end_date}] that is "
+            f"not timezone-aware. Consider using helpers like "
+            f"current_date_us_eastern() to build this date."
         )
 
-    rolling_interval_str = (
-        f"INTERVAL {rolling_period_length} {rolling_period_unit.value}"
+    metric_time_period_config = MetricTimePeriodConfig(
+        interval_unit=interval_unit,
+        interval_length=interval_length,
+        min_period_end_date=min_end_date.date(),
+        max_period_end_date=max_end_date.date() if max_end_date else None,
+        rolling_period_unit=rolling_period_unit,
+        rolling_period_length=rolling_period_length,
     )
-    period_str = f'"{MetricTimePeriod.CUSTOM.value}"'
-    interval_str = f"INTERVAL {interval_length} {interval_unit.value}"
-    min_end_date_str = f'"{min_end_date.strftime("%Y-%m-%d")}"'
-    max_end_date_str = (
-        f'"{max_end_date.strftime("%Y-%m-%d")}"'
-        if max_end_date
-        else 'CURRENT_DATE("US/Eastern")'
-    )
+
     return f"""
 SELECT
-    DATE_SUB(population_end_date, {interval_str}) AS population_start_date,
-    population_end_date,
-    {period_str} as period,
-FROM
-    UNNEST(GENERATE_DATE_ARRAY(
-        {min_end_date_str},
-        {max_end_date_str},
-        {rolling_interval_str}
-    )) AS population_end_date
-WHERE
-    population_end_date <= CURRENT_DATE("US/Eastern")
-    AND population_end_date <= {max_end_date_str}
+    metric_period_start_date AS population_start_date,
+    metric_period_end_date_exclusive AS population_end_date,
+    "CUSTOM" AS period
+FROM (
+{fix_indent(metric_time_period_config.build_query(), indent_level=4)}
+)
 """
 
 

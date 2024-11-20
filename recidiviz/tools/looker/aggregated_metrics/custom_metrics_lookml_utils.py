@@ -25,7 +25,7 @@ from recidiviz.aggregated_metrics.assignment_sessions_view_builder import (
     get_metric_assignment_sessions_materialized_table_address,
     has_configured_assignment_query,
 )
-from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
+from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
     AssignmentEventAggregatedMetric,

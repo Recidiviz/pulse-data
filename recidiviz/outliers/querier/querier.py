@@ -28,7 +28,7 @@ from sqlalchemy import and_, case, func
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
 from sqlalchemy.orm import Session, aliased, sessionmaker
 
-from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
+from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     InsightsCaseloadCategoryType,
 )
