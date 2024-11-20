@@ -19,7 +19,7 @@ datasets. Used during development to test updates to views.
 
 To load all views that have changed since the last view deploy, run:
     python -m recidiviz.tools.load_views_to_sandbox \
-       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] --prompt auto \
        --load_changed_views_only
 
 To load all views that have changed since the last view deploy but only load rows for a
@@ -160,6 +160,7 @@ def load_all_views_to_sandbox(
     state_code_filter: StateCode | None,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     allow_slow_views: bool,
+    materialize_changed_views_only: bool,
 ) -> None:
     """Loads ALL views to sandbox datasets with prefix |sandbox_dataset_prefix|."""
     prompt_for_confirmation(
@@ -184,6 +185,7 @@ def load_all_views_to_sandbox(
             input_source_table_dataset_overrides_dict
         ),
         allow_slow_views=allow_slow_views,
+        materialize_changed_views_only=materialize_changed_views_only,
     )
 
 
@@ -194,6 +196,7 @@ def _load_manually_filtered_views_to_sandbox(
     state_code_filter: StateCode | None,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     allow_slow_views: bool,
+    materialize_changed_views_only: bool,
     view_ids_to_load: Optional[List[BigQueryAddress]],
     dataset_ids_to_load: Optional[List[str]],
     update_ancestors: bool,
@@ -291,6 +294,7 @@ Are you sure you still want to continue with `manual` mode?
         ),
         collected_builders=collected_builders,
         allow_slow_views=allow_slow_views,
+        materialize_changed_views_only=materialize_changed_views_only,
     )
 
 
@@ -781,6 +785,7 @@ def load_views_changed_on_branch_to_sandbox(
     state_code_filter: StateCode | None,
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     allow_slow_views: bool,
+    materialize_changed_views_only: bool,
     changed_datasets_to_include: Optional[List[str]],
     changed_datasets_to_ignore: Optional[List[str]],
     load_up_to_addresses: Optional[List[BigQueryAddress]],
@@ -810,6 +815,7 @@ def load_views_changed_on_branch_to_sandbox(
             input_source_table_dataset_overrides_dict
         ),
         allow_slow_views=allow_slow_views,
+        materialize_changed_views_only=materialize_changed_views_only,
         collected_builders=collected_builders,
     )
 
@@ -864,6 +870,7 @@ def load_collected_views_to_sandbox(
     collected_builders: List[BigQueryViewBuilder],
     input_source_table_dataset_overrides_dict: dict[str, str] | None,
     allow_slow_views: bool,
+    materialize_changed_views_only: bool,
 ) -> None:
     """Loads the provided list of builders to a sandbox dataset."""
     if not collected_builders:
@@ -912,6 +919,7 @@ def load_collected_views_to_sandbox(
         # Don't clean up datasets when running a sandbox script
         historically_managed_datasets_to_clean=None,
         allow_slow_views=allow_slow_views,
+        materialize_changed_views_only=materialize_changed_views_only,
     )
 
 
@@ -946,6 +954,17 @@ def parse_arguments() -> argparse.Namespace:
         type=StateCode,
         choices=list(StateCode),
         required=False,
+    )
+
+    parser.add_argument(
+        "--materialize_changed_views_only",
+        dest="materialize_changed_views_only",
+        action="store_true",
+        default=False,
+        help="If true, any given view will only be rematerialized as part of this "
+        "sandbox run if it has changed (e.g. query change, clustering fields "
+        "change) or any of its parent views have changed. Can be used to optimize "
+        "subsequent sandbox runs if you're iterating on views later in the graph.",
     )
 
     parser.add_argument(
@@ -1133,6 +1152,7 @@ if __name__ == "__main__":
                     )
                 ),
                 allow_slow_views=args.allow_slow_views,
+                materialize_changed_views_only=args.materialize_changed_views_only,
             )
         elif args.chosen_mode == "manual":
             _load_manually_filtered_views_to_sandbox(
@@ -1145,6 +1165,7 @@ if __name__ == "__main__":
                     )
                 ),
                 allow_slow_views=args.allow_slow_views,
+                materialize_changed_views_only=args.materialize_changed_views_only,
                 view_ids_to_load=args.view_ids_to_load,
                 dataset_ids_to_load=args.dataset_ids_to_load,
                 update_ancestors=args.update_ancestors,
@@ -1161,6 +1182,7 @@ if __name__ == "__main__":
                     )
                 ),
                 allow_slow_views=args.allow_slow_views,
+                materialize_changed_views_only=args.materialize_changed_views_only,
                 changed_datasets_to_include=args.changed_datasets_to_include,
                 changed_datasets_to_ignore=args.changed_datasets_to_ignore,
                 load_up_to_addresses=args.load_up_to_addresses,

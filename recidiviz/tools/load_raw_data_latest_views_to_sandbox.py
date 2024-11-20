@@ -23,12 +23,12 @@ enough to document the column so that you can use it in a downstream view.
 
 Basic usage:
 python -m recidiviz.tools.load_raw_data_latest_views_to_sandbox \
-   --sandbox_dataset_prefix ageiduschek \
+   --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
    --state_code US_OZ
 
 To load what will actually be loaded as part of our normal view deploy:
 python -m recidiviz.tools.load_raw_data_latest_views_to_sandbox \
-   --sandbox_dataset_prefix ageiduschek \
+   --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
    --state_code US_OZ \
    --exclude_undocumented_views_and_columns
 """
@@ -124,6 +124,7 @@ def _load_raw_data_latest_views_to_sandbox(
         input_source_table_dataset_overrides_dict=None,
         # We don't expect any of the latest views to be slow
         allow_slow_views=False,
+        materialize_changed_views_only=False,
     )
 
 

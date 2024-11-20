@@ -117,6 +117,7 @@ class ViewManagerTest(unittest.TestCase):
             view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
+            materialize_changed_views_only=True,
         )
 
         self.mock_client.create_dataset_if_necessary.assert_called_with(
@@ -205,6 +206,7 @@ class ViewManagerTest(unittest.TestCase):
             view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
+            materialize_changed_views_only=True,
         )
 
         self.mock_client.create_dataset_if_necessary.assert_called_with(
@@ -316,6 +318,7 @@ class ViewManagerTest(unittest.TestCase):
             view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=None,
+            materialize_changed_views_only=True,
         )
 
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
@@ -398,6 +401,7 @@ class ViewManagerTest(unittest.TestCase):
             view_builders_to_update=mock_view_builders,
             view_source_table_datasets=self.view_source_table_datasets,
             historically_managed_datasets_to_clean=None,
+            materialize_changed_views_only=True,
         )
 
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
@@ -505,6 +509,7 @@ class ViewManagerTest(unittest.TestCase):
                 parent_address_formatter_provider=None,
             ),
             historically_managed_datasets_to_clean=None,
+            materialize_changed_views_only=True,
         )
 
         dataset_ids = [override_dataset_id, override_materialized_dataset_id]
@@ -602,7 +607,9 @@ class ViewManagerTest(unittest.TestCase):
 
         # pylint: disable=protected-access
         view_update_manager._create_managed_dataset_and_deploy_views(
-            mock_views, bq_region_override="us-east1", force_materialize=False
+            views_to_update=mock_views,
+            bq_region_override="us-east1",
+            materialize_changed_views_only=True,
         )
 
         self.mock_client_constructor.assert_called_with(region_override="us-east1")
@@ -759,6 +766,7 @@ class ViewManagerTest(unittest.TestCase):
             view_source_table_datasets=self.view_source_table_datasets,
             view_builders_to_update=mock_view_builders,
             historically_managed_datasets_to_clean=historically_managed_datasets,
+            materialize_changed_views_only=True,
         )
         self.mock_client.delete_dataset.assert_not_called()
         self.mock_client.list_tables.assert_called()

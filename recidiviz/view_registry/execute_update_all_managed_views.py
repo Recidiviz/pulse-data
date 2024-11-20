@@ -108,7 +108,7 @@ def execute_update_all_managed_views(sandbox_prefix: str | None) -> None:
         view_builders_to_update=view_builders,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         view_update_sandbox_context=view_update_sandbox_context,
-        force_materialize=True,
+        materialize_changed_views_only=False,
         allow_slow_views=False,
     )
     end = datetime.datetime.now()

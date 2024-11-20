@@ -96,17 +96,17 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     view_source_table_datasets: Set[str],
     view_builders_to_update: Sequence[BigQueryViewBuilder],
     historically_managed_datasets_to_clean: Optional[Set[str]],
+    materialize_changed_views_only: bool,
     view_update_sandbox_context: BigQueryViewUpdateSandboxContext | None = None,
     bq_region_override: Optional[str] = None,
-    force_materialize: bool = False,
     default_table_expiration_for_new_datasets: Optional[int] = None,
     views_might_exist: bool = True,
     allow_slow_views: bool = False,
 ) -> None:
     """Creates or updates all the views in the provided list with the view query in the
-    provided view builder list. If any materialized view has been updated (or if an
-    ancestor view has been updated) or the force_materialize flag is set, the view
-    will be re-materialized to ensure the schemas remain consistent.
+    provided view builder list. The view will be re-materialized if it is configured
+    with a materialized address unless |materialize_changed_views_only| is True and the
+    view and all of its ancestor views have not been updated.
 
     If a `historically_managed_datasets_to_clean` set is provided,
     then cleans up unmanaged views and datasets by deleting them from BigQuery.
@@ -155,9 +155,9 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
         )
 
         _create_managed_dataset_and_deploy_views(
-            views_to_update,
-            bq_region_override,
-            force_materialize,
+            views_to_update=views_to_update,
+            bq_region_override=bq_region_override,
+            materialize_changed_views_only=materialize_changed_views_only,
             historically_managed_datasets_to_clean=historically_managed_datasets_to_clean,
             default_table_expiration_for_new_datasets=default_table_expiration_for_new_datasets,
             views_might_exist=views_might_exist,
@@ -284,9 +284,10 @@ class CreateOrUpdateViewStatus(Enum):
 
 
 def _create_managed_dataset_and_deploy_views(
+    *,
     views_to_update: Iterable[BigQueryView],
     bq_region_override: Optional[str],
-    force_materialize: bool,
+    materialize_changed_views_only: bool,
     historically_managed_datasets_to_clean: Optional[Set[str]] = None,
     default_table_expiration_for_new_datasets: Optional[int] = None,
     views_might_exist: bool = True,
@@ -346,10 +347,10 @@ def _create_managed_dataset_and_deploy_views(
         """Returns True if this view or any of its parents were updated."""
         try:
             return _create_or_update_view_and_materialize_if_necessary(
-                bq_client,
-                v,
-                parent_results,
-                force_materialize,
+                bq_client=bq_client,
+                view=v,
+                parent_results=parent_results,
+                materialize_changed_views_only=materialize_changed_views_only,
                 might_exist=views_might_exist,
             )
         except Exception as e:
@@ -367,10 +368,11 @@ def _create_managed_dataset_and_deploy_views(
 
 
 def _create_or_update_view_and_materialize_if_necessary(
+    *,
     bq_client: BigQueryClient,
     view: BigQueryView,
     parent_results: Dict[BigQueryView, CreateOrUpdateViewStatus],
-    force_materialize: bool,
+    materialize_changed_views_only: bool,
     might_exist: bool,
 ) -> CreateOrUpdateViewStatus:
     """Creates or updates the provided view in BigQuery and materializes that view into
@@ -404,58 +406,60 @@ def _create_or_update_view_and_materialize_if_necessary(
     parent_changed = (
         CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES in parent_results.values()
     )
-    view_changed = False
 
-    try:
-        if not might_exist:
-            view_changed = True
-            old_schema = None
-        else:
+    existing_view = None
+    if might_exist:
+        try:
             existing_view = bq_client.get_table(view.address)
-            if (
-                existing_view.view_query != view.view_query
-                or existing_view.clustering_fields != view.clustering_fields
-            ):
-                # If the view query has changed, the view has changed
-                # Also update the view if clustering fields have changed
-                view_changed = True
-            old_schema = existing_view.schema
-    except exceptions.NotFound:
-        view_changed = True
-        old_schema = None
+        except exceptions.NotFound:
+            pass
 
     # TODO(https://issuetracker.google.com/issues/180636362): Currently we have to
     # delete and recreate the view for changes from underlying tables to be reflected in
     # its schema.
     # TODO(#30446): Once `parent_changed` reflects changes to the schemas of source
-    # tables as well, only delete this `if old_schema is not None and parent_changed`.
-    if old_schema is not None:
+    # tables as well, only delete this `if existing_view is not None and parent_changed`.
+    if existing_view is not None:
         # If there is a network blip and this delete retries, we still want it to
         # succeed so as to not halt the view update, so we set `not_found_ok=True`. If
         # for some reason someone else deleted it out from under us, it is also okay to
         # just proceed with the view update.
         bq_client.delete_table(view.address, not_found_ok=True)
+
     updated_view = bq_client.create_or_update_view(view, might_exist=might_exist)
 
-    if updated_view.schema != old_schema:
-        # We also check for schema changes, just in case a parent view or table has added a column
-        view_changed = True
+    view_changed = (
+        existing_view is None
+        or (
+            # If the view query has changed, the view has changed
+            existing_view.view_query != updated_view.view_query
+            # Also update the view if clustering fields have changed
+            or existing_view.clustering_fields != updated_view.clustering_fields
+            # We also check for schema changes, just in case a parent view or table has
+            # added a column
+            or existing_view.schema != updated_view.schema
+        )
+        or parent_changed
+    )
 
+    materialization_result = None
     if view.materialized_address:
         if (
-            view_changed
-            or parent_changed
+            not materialize_changed_views_only
+            or view_changed
             or not bq_client.table_exists(view.materialized_address)
-            or force_materialize
         ):
-            bq_client.materialize_view_to_table(view=view, use_query_cache=True)
+            materialization_result = bq_client.materialize_view_to_table(
+                view=view, use_query_cache=True
+            )
         else:
             logging.info(
                 "Skipping materialization of view [%s.%s] which has not changed.",
                 view.dataset_id,
                 view.view_id,
             )
-    has_changes = view_changed or parent_changed or force_materialize
+    # View has changes if the view was updated or newly materialized
+    has_changes = view_changed or materialization_result is not None
     return (
         CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES
         if has_changes

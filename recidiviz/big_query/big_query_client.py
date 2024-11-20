@@ -39,6 +39,7 @@ from typing import (
 )
 
 import __main__
+import attr
 import google
 import pandas as pd
 import pytz
@@ -84,6 +85,7 @@ from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import in_test
 from recidiviz.utils.size import total_size
 from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.types import assert_type
 
 _clients_by_project_id_by_region: Dict[str, Dict[str, bigquery.Client]] = defaultdict(
     dict
@@ -167,6 +169,42 @@ CROSS_REGION_COPY_DATA_SOURCE_ID = "cross_region_copy"
 CROSS_REGION_COPY_DISPLAY_NAME_TEMPLATE = (
     "Cross-region copy {source_dataset_id} -> {destination_dataset_id} [{ts}]"
 )
+
+
+@attr.define
+class BigQueryViewMaterializationResult:
+    """Class storing information about the results of a view materialization job."""
+
+    # The address of the view that was materialized
+    view_address: BigQueryAddress
+
+    # The table results of view materialization
+    materialized_table: bigquery.Table
+
+    # The completed QueryJob for the view materialization.
+    completed_materialization_job: bigquery.QueryJob
+
+    @property
+    def materialized_table_num_rows(self) -> int:
+        return assert_type(self.materialized_table.num_rows, int)
+
+    @property
+    def materialized_table_size_bytes(self) -> int:
+        return assert_type(self.materialized_table.num_bytes, int)
+
+    @property
+    def slot_millis(self) -> int:
+        return assert_type(self.completed_materialization_job.slot_millis, int)
+
+    @property
+    def total_bytes_processed(self) -> int:
+        return assert_type(
+            self.completed_materialization_job.total_bytes_processed, int
+        )
+
+    @property
+    def total_bytes_billed(self) -> int:
+        return assert_type(self.completed_materialization_job.total_bytes_billed, int)
 
 
 class BigQueryClient:
@@ -718,10 +756,13 @@ class BigQueryClient:
         view: BigQueryView,
         use_query_cache: bool,
         job_labels: Optional[list[BigQueryJobLabel]] = None,
-    ) -> bigquery.Table:
+    ) -> BigQueryViewMaterializationResult:
         """Materializes the result of a view's view_query into a table. The view's
         materialized_address must be set. The resulting table is put in the same
         project as the view, and it overwrites any previous materialization of the view.
+
+        Returns a BigQueryViewMaterializationResult with information about the completed
+        materialization job.
 
         Args:
             view: The BigQueryView to materialize into a table.
@@ -1977,7 +2018,7 @@ class BigQueryClientImpl(BigQueryClient):
         view: BigQueryView,
         use_query_cache: bool,
         job_labels: Optional[list[BigQueryJobLabel]] = None,
-    ) -> bigquery.Table:
+    ) -> BigQueryViewMaterializationResult:
         if view.materialized_address is None:
             raise ValueError(
                 "Trying to materialize a view that does not have a set "
@@ -2004,10 +2045,19 @@ class BigQueryClientImpl(BigQueryClient):
         description = view.materialized_table_bq_description
         table = self.get_table(destination_address)
         if description == table.description:
-            return table
+            return BigQueryViewMaterializationResult(
+                view_address=view.address,
+                materialized_table=table,
+                completed_materialization_job=create_job,
+            )
 
         table.description = description
-        return self.client.update_table(table, ["description"])
+        updated_table = self.client.update_table(table, ["description"])
+        return BigQueryViewMaterializationResult(
+            view_address=view.address,
+            materialized_table=updated_table,
+            completed_materialization_job=create_job,
+        )
 
     def create_table_with_schema(
         self,
