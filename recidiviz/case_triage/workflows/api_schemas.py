@@ -182,8 +182,17 @@ class WorkflowsConfigSchema(CamelCaseSchema):
                     raise ValidationError("Snooze is missing a required field")
 
     class CriteriaCopySchema(CamelCaseSchema):
+        key = fields.Str()
         text = fields.Str()
         tooltip = fields.Str(required=False)
+
+    class DenialReasonsSchema(CamelCaseSchema):
+        key = fields.Str()
+        text = fields.Str()
+
+    class TabGroupsSchema(CamelCaseSchema):
+        key = fields.Str()
+        tabs = fields.List(fields.Str())
 
     class SortParamSchema(CamelCaseSchema):
         field = fields.Str()
@@ -206,20 +215,16 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     call_to_action = fields.Str()
     subheading = fields.Str(required=False)
     snooze = fields.Nested(SnoozeConfigSchema(), required=False)
-    denial_reasons = fields.Dict(fields.Str(), fields.Str())
+    denial_reasons = fields.List(fields.Nested(DenialReasonsSchema()))
     denial_text = fields.Str(required=False)
     initial_header = fields.Str(required=False)
-    eligible_criteria_copy = fields.Dict(
-        fields.Str(), fields.Nested(CriteriaCopySchema())
-    )
-    ineligible_criteria_copy = fields.Dict(
-        fields.Str(), fields.Nested(CriteriaCopySchema())
-    )
+    eligible_criteria_copy = fields.List(fields.Nested(CriteriaCopySchema()))
+    ineligible_criteria_copy = fields.List(fields.Nested(CriteriaCopySchema()))
     sidebar_components = fields.List(fields.Str())
     methodology_url = fields.Str()
     is_alert = fields.Bool()
     priority = fields.Str()
-    tab_groups = fields.Dict(fields.Str(), fields.List(fields.Str()), required=False)
+    tab_groups = fields.List(fields.Nested(TabGroupsSchema()), required=False)
     compare_by = fields.List(fields.Nested(SortParamSchema()), required=False)
     notifications = fields.List(fields.Nested(NotificationSchema()))
     zero_grants_tooltip = fields.Str(required=False)

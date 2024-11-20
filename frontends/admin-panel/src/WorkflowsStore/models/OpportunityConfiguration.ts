@@ -38,59 +38,65 @@ const snoozeConfigurationSchema = z
     })
   );
 
-const criteriaCopySchema = z.record(
+const criteriaCopySchema = z.array(
   z.object({
+    key: z.string(),
     text: z.string(),
-    tooltip: z.string().optional(),
+    tooltip: nullishAsUndefined(z.string()),
   })
 );
 
 export const notificationsSchema = z.array(
   z.object({
     id: z.string(),
-    title: z.string().optional(),
+    title: nullishAsUndefined(z.string()),
     body: z.string(),
-    cta: z.string().optional(),
+    cta: nullishAsUndefined(z.string()),
   })
 );
 
 // A BabyOpportunityConfigurationSchema just contains the parts
 // that are set in the form, not those that are set by the backend
 // or presenter
-export const babyOpportunityConfigurationSchema = z.object({
-  displayName: z.string(),
-  featureVariant: nullishAsUndefined(z.string()),
-  dynamicEligibilityText: z.string(),
-  callToAction: z.string(),
-  subheading: nullishAsUndefined(z.string()),
-  snooze: nullishAsUndefined(snoozeConfigurationSchema),
-  denialReasons: z.record(z.string()),
-  denialText: nullishAsUndefined(z.string()),
-  initialHeader: nullishAsUndefined(z.string()),
-  eligibleCriteriaCopy: criteriaCopySchema,
-  ineligibleCriteriaCopy: criteriaCopySchema,
-  sidebarComponents: z.array(z.string()),
-  methodologyUrl: z.string(),
-  isAlert: z.boolean(),
-  priority: z.enum(["HIGH", "NORMAL"]),
-  eligibilityDateText: nullishAsUndefined(z.string()),
-  hideDenialRevert: z.boolean(),
-  tooltipEligibilityText: nullishAsUndefined(z.string()),
-  tabGroups: nullishAsUndefined(z.record(z.string().array())),
-  notifications: notificationsSchema,
-  compareBy: nullishAsUndefined(
-    z.array(
-      z.object({
-        field: z.string(),
-        sortDirection: z.string().optional(),
-        undefinedBehavior: z.string().optional(),
-      })
-    )
-  ),
-
-  description: z.string(),
-  zeroGrantsTooltip: nullishAsUndefined(z.string()),
-});
+export const babyOpportunityConfigurationSchema = z
+  .object({
+    displayName: z.string(),
+    featureVariant: nullishAsUndefined(z.string()),
+    dynamicEligibilityText: z.string(),
+    callToAction: z.string(),
+    subheading: nullishAsUndefined(z.string()),
+    snooze: nullishAsUndefined(snoozeConfigurationSchema),
+    denialReasons: z.array(z.object({ key: z.string(), text: z.string() })),
+    denialText: nullishAsUndefined(z.string()),
+    initialHeader: nullishAsUndefined(z.string()),
+    eligibleCriteriaCopy: criteriaCopySchema,
+    ineligibleCriteriaCopy: criteriaCopySchema,
+    sidebarComponents: z.array(z.string()),
+    methodologyUrl: z.string(),
+    isAlert: z.boolean(),
+    priority: z.enum(["HIGH", "NORMAL"]),
+    eligibilityDateText: nullishAsUndefined(z.string()),
+    hideDenialRevert: z.boolean(),
+    tooltipEligibilityText: nullishAsUndefined(z.string()),
+    tabGroups: nullishAsUndefined(
+      z.array(z.object({ key: z.string(), tabs: z.string().array() }))
+    ),
+    notifications: notificationsSchema,
+    compareBy: nullishAsUndefined(
+      z.array(
+        z.object({
+          field: z.string(),
+          sortDirection: z.string().optional(),
+          undefinedBehavior: z.string().optional(),
+        })
+      )
+    ),
+    description: z.string(),
+    zeroGrantsTooltip: nullishAsUndefined(z.string()),
+    stagingId: nullishAsUndefined(z.number()),
+  })
+  .strict();
+// strict() prevents us from accidentally dropping fields the frontend doesn't know about
 
 export type BabyOpportunityConfiguration = z.infer<
   typeof babyOpportunityConfigurationSchema

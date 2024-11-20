@@ -1837,14 +1837,15 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 is_alert=False,
                 priority="NORMAL",
                 denial_text=None,
-                eligible_criteria_copy={
-                    "criteria": {
+                eligible_criteria_copy=[
+                    {
+                        "key": "criteria",
                         "text": "baz",
                         "tooltip": "fill this:{{opportunity.client.goop}}",
                     }
-                },
-                ineligible_criteria_copy={},
-                denial_reasons={"DENY": "Denied"},
+                ],
+                ineligible_criteria_copy=[],
+                denial_reasons=[{"key": "DENY", "text": "Denied"}],
                 sidebar_components=["someComponent", "someOtherComponent"],
                 eligibility_date_text=None,
                 hide_denial_revert=True,
@@ -1885,21 +1886,22 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                                 "undefinedBehavior": "undefinedFirst",
                             }
                         ],
-                        "denialReasons": {"DENY": "Denied"},
+                        "denialReasons": [{"key": "DENY", "text": "Denied"}],
                         "denialText": None,
                         "displayName": "Opportunity",
                         "dynamicEligibilityText": "dynamic text[|s]",
                         "eligibilityDateText": None,
-                        "eligibleCriteriaCopy": {
-                            "criteria": {
+                        "eligibleCriteriaCopy": [
+                            {
+                                "key": "criteria",
                                 "text": "baz",
                                 "tooltip": "fill this:{{opportunity.client.goop}}",
                             }
-                        },
+                        ],
                         "firestoreCollection": "firestoreCollection",
                         "hideDenialRevert": True,
                         "homepagePosition": 1,
-                        "ineligibleCriteriaCopy": {},
+                        "ineligibleCriteriaCopy": [],
                         "initialHeader": "header",
                         "isAlert": False,
                         "methodologyUrl": "example.com",

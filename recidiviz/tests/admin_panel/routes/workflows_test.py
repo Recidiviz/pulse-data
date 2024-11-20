@@ -51,9 +51,9 @@ def generate_config(
         display_name="display",
         methodology_url="url",
         initial_header="header",
-        denial_reasons={"DENY": "Denied"},
-        eligible_criteria_copy={},
-        ineligible_criteria_copy={},
+        denial_reasons=[{"key": "DENY", "text": "Denied"}],
+        eligible_criteria_copy=[],
+        ineligible_criteria_copy=[],
         dynamic_eligibility_text="text",
         call_to_action="do something",
         subheading="this is what the policy does",
@@ -70,7 +70,7 @@ def generate_config(
         eligibility_date_text="date text",
         hide_denial_revert=True,
         tooltip_eligibility_text="Eligible",
-        tab_groups={},
+        tab_groups=[],
         compare_by=[
             {
                 "field": "eligibilityDate",
@@ -570,9 +570,9 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                             "displayName": "display",
                             "methodologyUrl": "url",
                             "initialHeader": "header",
-                            "denialReasons": {"DENY": "Denied"},
-                            "eligibleCriteriaCopy": {},
-                            "ineligibleCriteriaCopy": {},
+                            "denialReasons": [{"key": "DENY", "text": "Denied"}],
+                            "eligibleCriteriaCopy": [],
+                            "ineligibleCriteriaCopy": [],
                             "dynamicEligibilityText": "text",
                             "eligibilityDateText": "date text",
                             "hideDenialRevert": True,
@@ -584,7 +584,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                             "priority": "NORMAL",
                             "sidebarComponents": ["someComponent"],
                             "denialText": "Deny",
-                            "tabGroups": {},
+                            "tabGroups": [],
                             "compareBy": [
                                 {
                                     "field": "eligibilityDate",

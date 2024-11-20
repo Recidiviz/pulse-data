@@ -33,7 +33,7 @@ export const CriteriaCopy = ({
         <Form.Item
           {...field}
           noStyle
-          name={[name, 0]}
+          name={[name, "key"]}
           rules={[{ required: true, message: "'criteria' is required" }]}
         >
           <Input placeholder="Criteria" />
@@ -45,7 +45,7 @@ export const CriteriaCopy = ({
             // style={{
             //   width: "40%",
             // }}
-            name={[name, 1, "text"]}
+            name={[name, "text"]}
             rules={[{ required: true, message: "'text' is required" }]}
           >
             <TextArea placeholder="Text" />
@@ -56,7 +56,7 @@ export const CriteriaCopy = ({
             // style={{
             //   width: "40%",
             // }}
-            name={[name, 1, "tooltip"]}
+            name={[name, "tooltip"]}
           >
             <TextArea placeholder="Tooltip" />
           </Form.Item>

@@ -61,9 +61,6 @@ _STATIC_FOLDER = os.path.abspath(
 
 app = Flask(__name__)
 
-# TODO(#33956) Remove this once workflows no longer depends on key order
-app.json.sort_keys = False  # type: ignore[attr-defined]
-
 # Set up instrumentation libraries prior to initializing our various clients (i.e. gRPC, SQLAlchemy, etc)
 instrument_flask_app(app=app)
 
