@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes spans of time when someone is ineligible due to a current or
-past conviction a sexual offense"""
+"""Describes spans of time when someone is serving an offense that's ineligible
+for administrative supervision"""
 
 from google.cloud import bigquery
 
@@ -27,23 +27,29 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    ARSON_STATUTES,
+    DOMESTIC_VIOLENCE_STATUTES,
+    HOMICIDE_AND_MURDER_STATUTES,
     no_current_or_prior_convictions,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_AZ_NO_SEXUAL_OFFENSE_CONVICTION"
+_CRITERIA_NAME = "US_AZ_NOT_SERVING_INELIGIBLE_OFFENSE_FOR_ADMIN_SUPERVISION"
 
 _QUERY_TEMPLATE = no_current_or_prior_convictions(
-    additional_where_clauses="AND sent.is_sex_offense",
-    reasons_field_name="ineligible_offenses_sexual",
+    statutes_list=ARSON_STATUTES
+    + DOMESTIC_VIOLENCE_STATUTES
+    + HOMICIDE_AND_MURDER_STATUTES,
+    additional_where_clauses="OR (sent.is_sex_offense AND span.state_code = 'US_AZ')",
+    past_convictions_cause_ineligibility=False,
 )
 
 _REASONS_FIELDS = [
     ReasonsField(
-        name="ineligible_offenses_sexual",
+        name="ineligible_offenses",
         type=bigquery.enums.StandardSqlTypeNames.ARRAY,
-        description="A list of ineligible offenses related to sexual offenses",
+        description="A list of ineligible offenses related to administrative supervision",
     )
 ]
 

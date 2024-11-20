@@ -26,6 +26,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    DOMESTIC_VIOLENCE_STATUTES,
     no_current_or_prior_convictions,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -33,14 +34,9 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_AZ_NO_DOMESTIC_VIOLENCE_CONVICTION"
 
-_DESCRIPTION = """Describes spans of time when someone is ineligible due to a current or
-    past conviction for domestic violence"""
-
-_DV_STATUTE = [
-    "13-36",  # DOMESTIC VIOLENCE
-]
-
-_QUERY_TEMPLATE = no_current_or_prior_convictions(statute=_DV_STATUTE)
+_QUERY_TEMPLATE = no_current_or_prior_convictions(
+    statutes_list=DOMESTIC_VIOLENCE_STATUTES
+)
 
 _REASONS_FIELDS = [
     ReasonsField(
@@ -53,7 +49,7 @@ _REASONS_FIELDS = [
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_AZ,
