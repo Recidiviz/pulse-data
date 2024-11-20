@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helpers for routing Airflow task failures to the correct service."""
+"""Helpers for routing Airflow job failures to the correct service."""
 
 import re
 from typing import Optional
@@ -48,8 +48,8 @@ _STATE_CODE_END_REGEX = re.compile(r".*_(?P<state_code>US_[A-Z]{2})$")
 _STATE_CODE_MIDDLE_REGEX = re.compile(r"_(?P<state_code>US_[A-Z]{2})_")
 
 
-def _state_code_from_task_id_part(task_id_part: str) -> Optional[StateCode]:
-    normalized_part = task_id_part.upper().replace("-", "_")
+def _state_code_from_job_id_part(job_id_part: str) -> Optional[StateCode]:
+    normalized_part = job_id_part.upper().replace("-", "_")
     matches = [
         re.match(_STATE_CODE_BEGINNING_REGEX, normalized_part),
         re.match(_STATE_CODE_END_REGEX, normalized_part),
@@ -60,49 +60,49 @@ def _state_code_from_task_id_part(task_id_part: str) -> Optional[StateCode]:
         return None
     if len(state_codes) > 1:
         raise ValueError(
-            f"Task id part [{task_id_part}] references more than one state code: "
-            f"{sorted(state_codes)}. Each task should only reference at most one state code."
+            f"Job id part [{job_id_part}] references more than one state code: "
+            f"{sorted(state_codes)}. Each job should only reference at most one state code."
         )
     state_code_str = one(state_codes)
     return StateCode(state_code_str)
 
 
-def _state_code_from_task_id(task_id: str) -> Optional[StateCode]:
-    """Returns the single state code that the provided task_id should be attributed to.
-    Throws if more than one state code is referenced in the task_id.
+def _state_code_from_job_id(job_id: str) -> Optional[StateCode]:
+    """Returns the single state code that the provided job_id should be attributed to.
+    Throws if more than one state code is referenced in the job_id.
     """
     state_code: Optional[StateCode] = None
-    for part in task_id.split("."):
-        if part_state_code := _state_code_from_task_id_part(part):
+    for part in job_id.split("."):
+        if part_state_code := _state_code_from_job_id_part(part):
             if state_code and state_code != part_state_code:
                 raise ValueError(
-                    f"Found task_id [{task_id}] referencing more than one state code. "
+                    f"Found job_id [{job_id}] referencing more than one state code. "
                     f"References [{state_code.value}] and [{part_state_code.value}]"
                 )
             state_code = part_state_code
     return state_code
 
 
-def _task_id_part_matches(*, task_id: str, regex: str) -> bool:
-    """Returns True if any part of a task id matches the regex. Task id parts are
+def _job_id_part_matches(*, job_id: str, regex: str) -> bool:
+    """Returns True if any part of a job_id matches the regex. Job id parts are
     separated by periods.
     """
-    return any(re.match(regex, part) for part in task_id.split("."))
+    return any(re.match(regex, part) for part in job_id.split("."))
 
 
-def _task_is_in_group(*, task_id: str, group_id: str) -> bool:
-    """Returns True if the task with the given task_id is a component task or group in
+def _job_is_in_group(*, job_id: str, group_id: str) -> bool:
+    """Returns True if the job with the given job_id is a component job or group in
     the provided group_id.
     """
-    all_but_last_task_parts = task_id.split(".")[:-1]
-    return any(re.match(group_id, part) for part in all_but_last_task_parts)
+    all_but_last_job_parts = job_id.split(".")[:-1]
+    return any(re.match(group_id, part) for part in all_but_last_job_parts)
 
 
-def _task_is_branching_start_or_end(task_id: str) -> bool:
-    """Returns True if this task is the state-agnostic start or end node of a set of
-    state-specific branches.
+def _job_is_task_branching_start_or_end(job_id: str) -> bool:
+    """Returns True if this job is the state-agnostic Airflow task start or end node of
+    a set of state-specific branches.
     """
-    return task_id.endswith(f".{BRANCH_START_TASK_NAME}") or task_id.endswith(
+    return job_id.endswith(f".{BRANCH_START_TASK_NAME}") or job_id.endswith(
         f".{BRANCH_END_TASK_NAME}"
     )
 
@@ -110,15 +110,15 @@ def _task_is_branching_start_or_end(task_id: str) -> bool:
 def get_alerting_service_for_incident(
     incident: AirflowAlertingIncident,
 ) -> RecidivizPagerDutyService:
-    """Returns the service that the given Airflow task should be attributed to. A
-    PagerDuty alert will be triggered for the given service when that task fails.
+    """Returns the service that the given alerting incident should be attributed to. A
+    PagerDuty alert will be triggered for the given service when that job fails.
     """
     project_id = get_project_id()
     dag_id = incident.dag_id
-    task_id = incident.task_id
+    job_id = incident.job_id
 
     if dag_id == get_sftp_dag_id(project_id):
-        if not (state_code := _state_code_from_task_id(task_id)):
+        if not (state_code := _state_code_from_job_id(job_id)):
             return RecidivizPagerDutyService.data_platform_airflow_service(
                 project_id=project_id
             )
@@ -126,24 +126,24 @@ def get_alerting_service_for_incident(
             project_id=project_id, state_code=state_code
         )
 
-    if _task_id_part_matches(task_id=task_id, regex=DATAFLOW_OPERATOR_TASK_ID):
-        state_code = assert_type(_state_code_from_task_id(task_id), StateCode)
+    if _job_id_part_matches(job_id=job_id, regex=DATAFLOW_OPERATOR_TASK_ID):
+        state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
         return RecidivizPagerDutyService.airflow_service_for_state_code(
             project_id=project_id, state_code=state_code
         )
 
-    # Failures in this task indicate that raw data has been removed or operations tables
+    # Failures in this job indicate that raw data has been removed or operations tables
     # haven't been properly managed, so route the failure to state-specific on-calls.
-    if _task_id_part_matches(task_id=task_id, regex=CHECK_FOR_VALID_WATERMARKS_TASK_ID):
-        state_code = assert_type(_state_code_from_task_id(task_id), StateCode)
+    if _job_id_part_matches(job_id=job_id, regex=CHECK_FOR_VALID_WATERMARKS_TASK_ID):
+        state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
         return RecidivizPagerDutyService.airflow_service_for_state_code(
             project_id=project_id, state_code=state_code
         )
 
-    if _task_is_in_group(
-        task_id=task_id, group_id=STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID
-    ) and not _task_is_branching_start_or_end(task_id):
-        state_code = assert_type(_state_code_from_task_id(task_id), StateCode)
+    if _job_is_in_group(
+        job_id=job_id, group_id=STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID
+    ) and not _job_is_task_branching_start_or_end(job_id):
+        state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
         return RecidivizPagerDutyService.airflow_service_for_state_code(
             project_id=project_id, state_code=state_code
         )

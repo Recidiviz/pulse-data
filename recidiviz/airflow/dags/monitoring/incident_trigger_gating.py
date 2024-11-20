@@ -51,10 +51,12 @@ class AlertingIncidentTriggerPredicate:
 
 
 def _incident_has_been_updated_recently(incident: AirflowAlertingIncident) -> bool:
-    """Incidents are only reported to PagerDuty if they are "active" (opened, still occurring, or resolved) within
-    the last two days.
-    This has no intentional functional difference and is only done to save on SendGrid email quota.
-    edge case: if the monitoring DAG is down for more than 2 days, some auto-resolve emails will be missed
+    """Incidents are only reported to PagerDuty if they are "active" (opened, still
+    occurring, or resolved) within the last two days. This has no intentional functional
+    difference and is only done to save on SendGrid email quota.
+
+    [!!] edge case: if the monitoring DAG is down for more than 2 days, some auto-resolve
+    emails will be missed
     """
     now_utc = datetime.now(tz=timezone.utc)
     most_recent_update = max(
@@ -85,14 +87,14 @@ def _get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
         ),
         AlertingIncidentTriggerPredicate(
             method=TriggerPredicateMethod.SILENCE,
-            condition=lambda incident: incident.task_id.endswith(BRANCH_END_TASK_NAME),
+            condition=lambda incident: incident.job_id.endswith(BRANCH_END_TASK_NAME),
             failure_message="branch_end is not an actionable failure",
         ),
         AlertingIncidentTriggerPredicate(
             method=TriggerPredicateMethod.SILENCE,
             dag_id=get_sftp_dag_id(project_id),
             condition=lambda incident: (
-                incident.task_id == "US_IX.remote_file_download.download_sftp_files"
+                incident.job_id == "US_IX.remote_file_download.download_sftp_files"
                 and len(incident.failed_execution_dates) == 1
             ),
             failure_message="must fail at least twice",
@@ -102,7 +104,7 @@ def _get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
             method=TriggerPredicateMethod.SILENCE,
             dag_id=get_raw_data_import_dag_id(project_id),
             condition=lambda _: True,
-            failure_message="raw data import dag is still in development",
+            failure_message="raw data import DAG is still in development",
         ),
     ]
 

@@ -20,21 +20,33 @@ from functools import cached_property
 from typing import Any, Dict, List, Optional
 
 import attr
+import pandas as pd
+from pandas.api.typing import NaTType
+
+from recidiviz.common import attr_validators
 
 
 @attr.s(auto_attribs=True)
 class AirflowAlertingIncident:
-    """Representation of an alerting incident"""
+    """Representation of something distinct that went wrong during a series of
+    consecutive DAG runs.
+    """
 
-    dag_id: str
-    conf: str
-    task_id: str
-    failed_execution_dates: List[datetime] = attr.ib()
+    dag_id: str = attr.ib(validator=attr_validators.is_str)
+    conf: str = attr.ib(validator=attr_validators.is_str)
+    job_id: str = attr.ib(validator=attr_validators.is_str)
+    failed_execution_dates: List[datetime] = attr.ib(
+        validator=attr_validators.is_list_of(datetime)
+    )
 
     # This value will never be more than INCIDENT_START_DATE_LOOKBACK ago,
     # even if it started failing before then.
-    previous_success_date: Optional[datetime] = attr.ib(default=None)
-    next_success_date: Optional[datetime] = attr.ib(default=None)
+    previous_success_date: Optional[datetime] = attr.ib(
+        default=None, validator=attr_validators.is_opt_datetime
+    )
+    next_success_date: Optional[datetime] = attr.ib(
+        default=None, validator=attr_validators.is_opt_datetime
+    )
 
     @property
     def incident_start_date(self) -> datetime:
@@ -50,12 +62,37 @@ class AirflowAlertingIncident:
 
     @property
     def unique_incident_id(self) -> str:
-        """
-        The PagerDuty email integration is configured to group incidents by their subject.
+        """The PagerDuty email integration is configured to group incidents by their subject.
         Incidents can only be resolved once. Afterward, any new alerts will not re-open the incident.
-        The unique incident id includes the last successful task run in order to group incidents by distinct sets of
+        The unique incident id includes the last successful job run in order to group incidents by distinct sets of
         consecutive failures.
         """
         conf_string = f"{self.conf} " if self.conf != "{}" else ""
         start_date = self.incident_start_date.strftime("%Y-%m-%d %H:%M %Z")
-        return f"{conf_string}{self.dag_id}.{self.task_id}, started: {start_date}"
+        return f"{conf_string}{self.dag_id}.{self.job_id}, started: {start_date}"
+
+    @classmethod
+    def build(
+        cls,
+        *,
+        dag_id: str,
+        conf: str,
+        job_id: str,
+        execution_dates: list[datetime],
+        previous_success: pd.Timestamp | NaTType,
+        next_success: pd.Timestamp | NaTType,
+    ) -> "AirflowAlertingIncident":
+        return AirflowAlertingIncident(
+            dag_id=dag_id,
+            conf=conf,
+            job_id=job_id,
+            failed_execution_dates=execution_dates,
+            previous_success_date=(
+                previous_success.to_pydatetime()
+                if not pd.isna(previous_success)
+                else None
+            ),
+            next_success_date=(
+                next_success.to_pydatetime() if not pd.isna(next_success) else None
+            ),
+        )

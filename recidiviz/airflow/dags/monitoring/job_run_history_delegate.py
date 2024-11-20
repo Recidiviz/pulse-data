@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,28 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Fixture container for monitoring tests"""
-import csv
-import os
-from typing import Iterator
+"""Delegate interface for constructing JobRun history."""
+import abc
+import datetime
+
+from recidiviz.airflow.dags.monitoring.job_run import JobRun
 
 
-def read_csv_fixture(file: str) -> Iterator[dict]:
-    with open(
-        os.path.join(os.path.dirname(__file__), file), encoding="utf-8"
-    ) as fixture_file:
-        reader = csv.reader(fixture_file)
-        try:
-            header = next(reader)
-        except StopIteration:
-            return
+class JobRunHistoryDelegate(abc.ABC):
+    """Contains functionality for constructing JobRun history for a specific Airflow
+    DAG.
+    """
 
-        for row in reader:
-            yield dict(zip(header, row))
-
-
-def write_fixture(file: str, contents: str) -> None:
-    with open(
-        os.path.join(os.path.dirname(__file__), file), "w", encoding="utf-8"
-    ) as fixture_file:
-        fixture_file.write(contents)
+    @abc.abstractmethod
+    def fetch_job_runs(self, *, lookback: datetime.timedelta) -> list[JobRun]:
+        """Builds a list of |JobRun| objects for the the previous |lookback| period."""

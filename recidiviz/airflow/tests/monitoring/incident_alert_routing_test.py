@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for task_failure_routing.py"""
+"""Tests for incident_alert_routing.py"""
 import os
 import unittest
 from datetime import datetime, timezone
@@ -39,15 +39,15 @@ _PROJECT_ID = "recidiviz-456"
 
 
 @patch.dict(os.environ, {"GCP_PROJECT": _PROJECT_ID})
-class TestGetAlertingServiceFromTask(unittest.TestCase):
-    """Tests for task_failure_routing.py"""
+class TestGetAlertingServiceForIncident(unittest.TestCase):
+    """Tests for incident_alert_routing.py"""
 
     @staticmethod
-    def _make_incident(dag_id: str, task_id: str) -> AirflowAlertingIncident:
+    def _make_incident(dag_id: str, job_id: str) -> AirflowAlertingIncident:
         return AirflowAlertingIncident(
             dag_id=dag_id,
             conf="{}",
-            task_id=task_id,
+            job_id=job_id,
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
         )
 
@@ -59,7 +59,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
-                    task_id="initialize_dag.verify_parameters",
+                    job_id="initialize_dag.verify_parameters",
                 )
             ),
         )
@@ -70,7 +70,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
-                    task_id="update_state",
+                    job_id="update_state",
                 )
             ),
         )
@@ -83,7 +83,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
-                    task_id=(
+                    job_id=(
                         "metric_exports.state_specific_metric_exports.US_PA_metric_exports."
                         "export_product_user_import_us_pa_metric_view_data"
                     ),
@@ -99,7 +99,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
-                    task_id=("metric_exports.state_specific_metric_exports"),
+                    job_id=("metric_exports.state_specific_metric_exports"),
                 )
             ),
         )
@@ -110,7 +110,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
-                    task_id=(
+                    job_id=(
                         "metric_exports.state_specific_metric_exports.branch_start"
                     ),
                 )
@@ -123,7 +123,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
-                    task_id="metric_exports.state_specific_metric_exports.branch_end",
+                    job_id="metric_exports.state_specific_metric_exports.branch_end",
                 )
             ),
         )
@@ -136,7 +136,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
-                    task_id=(
+                    job_id=(
                         "post_ingest_pipelines.US_ND_dataflow_pipelines."
                         "full-us-nd-supervision-metrics.run_pipeline"
                     ),
@@ -154,7 +154,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
-                    task_id=(
+                    job_id=(
                         "ingest.us_nd_dataflow.initialize_ingest_pipeline."
                         "check_for_valid_watermarks"
                     ),
@@ -170,7 +170,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
-                    task_id=(
+                    job_id=(
                         "post_ingest_pipelines.US_ND_dataflow_pipelines."
                         "full-us-nd-supervision-metrics.create_flex_template"
                     ),
@@ -187,7 +187,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
-                    task_id="validations.execute_validations_US_AR",
+                    job_id="validations.execute_validations_US_AR",
                 )
             ),
         )
@@ -200,7 +200,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_sftp_dag_id(_PROJECT_ID),
-                    task_id="start_sftp",
+                    job_id="start_sftp",
                 )
             ),
         )
@@ -213,7 +213,7 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_sftp_dag_id(_PROJECT_ID),
-                    task_id="US_AR.check_config",
+                    job_id="US_AR.check_config",
                 )
             ),
         )
@@ -221,13 +221,13 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
     def test_get_alerting_service_for_incident_two_different_state_codes(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"Found task_id \[.*\] referencing more than one state code. "
+            r"Found job_id \[.*\] referencing more than one state code. "
             r"References \[US_CA\] and \[US_ND\]",
         ):
             get_alerting_service_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
-                    task_id=(
+                    job_id=(
                         "post_ingest_pipelines.US_CA_dataflow_pipelines."
                         "full-us-nd-supervision-metrics.run_pipeline"
                     ),
@@ -246,12 +246,12 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
         for bad_task_id in bad_task_ids:
             with self.assertRaisesRegex(
                 ValueError,
-                r"Task id part \[.*\] references more than one "
+                r"Job id part \[.*\] references more than one "
                 r"state code: \['US_CA', 'US_ND'\].",
             ):
                 get_alerting_service_for_incident(
                     self._make_incident(
                         dag_id=get_calculation_dag_id(_PROJECT_ID),
-                        task_id=bad_task_id,
+                        job_id=bad_task_id,
                     )
                 )
