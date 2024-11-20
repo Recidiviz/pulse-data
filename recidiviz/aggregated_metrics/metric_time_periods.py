@@ -14,118 +14,66 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""End-date exclusive time ranges at month, quarter, and year intervals, starting on the provided date."""
-import enum
+"""End-date exclusive time ranges at month, quarter, and year intervals, starting on the
+provided date.
+
+TODO(#29291): Deprecate this view entirely, instead using optimized aggregated metrics
+ queries that are built off of MetricTimePeriodConfig.
+"""
 
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
+from recidiviz.aggregated_metrics.metric_time_period_config import (
+    MetricTimePeriodConfig,
+)
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-
-class MetricTimePeriod(enum.Enum):
-    CUSTOM = "CUSTOM"
-    DAY = "DAY"
-    WEEK = "WEEK"
-    MONTH = "MONTH"
-    QUARTER = "QUARTER"
-    YEAR = "YEAR"
-
-
 _VIEW_NAME = "metric_time_periods"
 _METRICS_YEARS_TRACKED = 7
 _METRIC_YEARS_TRACKED_WEEK_OVERRIDE = 2
-_METRIC_WEEK_START_DAY = "MONDAY"
 
 _VIEW_DESCRIPTION = (
-    "End-date exclusive time ranges at month, quarter, and year intervals over the "
-    f"past {_METRICS_YEARS_TRACKED} years."
+    f"End-date exclusive time ranges at month, quarter, and year intervals over "
+    f"the past {_METRICS_YEARS_TRACKED} years. End-date exclusive time ranges at week "
+    f"intervals over the past {_METRIC_YEARS_TRACKED_WEEK_OVERRIDE} years."
 )
+
+
+_YEAR_PERIODS_QUERY = MetricTimePeriodConfig.monthly_year_periods(
+    lookback_months=_METRICS_YEARS_TRACKED * 12
+).build_query()
+
+_QUARTER_PERIODS_QUERY = MetricTimePeriodConfig.monthly_quarter_periods(
+    lookback_months=_METRICS_YEARS_TRACKED * 12
+).build_query()
+
+_MONTH_PERIODS_QUERY = MetricTimePeriodConfig.month_periods(
+    lookback_months=_METRICS_YEARS_TRACKED * 12
+).build_query()
+
+_WEEK_PERIODS_QUERY = MetricTimePeriodConfig.week_periods(
+    lookback_weeks=_METRIC_YEARS_TRACKED_WEEK_OVERRIDE * 52
+).build_query()
+
 
 _QUERY_TEMPLATE = f"""
-WITH date_array AS (
-    SELECT
-        month,
-    FROM
-        UNNEST(GENERATE_DATE_ARRAY(
-            DATE_SUB(
-                DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY), MONTH),
-                INTERVAL {_METRICS_YEARS_TRACKED} YEAR
-            ),
-            DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY), MONTH),
-            INTERVAL 1 MONTH
-        )) AS month
-)
+WITH periods AS (
 
--- get week start dates where the week starts on {_METRIC_WEEK_START_DAY}
-, week_array AS (
-    SELECT
-        week,
-    FROM
-        UNNEST(GENERATE_DATE_ARRAY(
-            -- 2 years before yesterday, week starting {_METRIC_WEEK_START_DAY}
-            -- we limit how far back we go for query materialization time reasons
-            DATE_TRUNC(
-                DATE_SUB(
-                    DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY),
-                    INTERVAL {_METRIC_YEARS_TRACKED_WEEK_OVERRIDE} YEAR
-                ), WEEK({_METRIC_WEEK_START_DAY})
-            ),
-            -- most recent complete week starting {_METRIC_WEEK_START_DAY}
-            DATE_TRUNC(
-                DATE_SUB(
-                    DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY),
-                    INTERVAL 1 WEEK
-                ), WEEK({_METRIC_WEEK_START_DAY})
-            ), INTERVAL 1 WEEK
-        )) AS week
-)
-
--- Define week, month, quarter, and year end-date-exclusive periods
-SELECT
-    *
-FROM (
-
-SELECT
-    "{MetricTimePeriod.WEEK.value}" AS period,
-    week AS population_start_date,
-    DATE_ADD(week, INTERVAL 1 WEEK) AS population_end_date,
-FROM
-    week_array
-
+{_YEAR_PERIODS_QUERY}
 UNION ALL
-
-SELECT
-    "{MetricTimePeriod.MONTH.value}" AS period,
-    month AS population_start_date,
-    DATE_ADD(month, INTERVAL 1 MONTH) AS population_end_date,
-FROM
-    date_array
-
+{_QUARTER_PERIODS_QUERY}
 UNION ALL
-
--- we repeat the quarter period monthly to allow greater flexibility downstream
-SELECT
-    "{MetricTimePeriod.QUARTER.value}" AS period,
-    month AS population_start_date,
-    DATE_ADD(month, INTERVAL 1 QUARTER) AS population_end_date,
-FROM
-    date_array
-
+{_MONTH_PERIODS_QUERY}
 UNION ALL
+{_WEEK_PERIODS_QUERY}
 
--- we repeat the year period monthly to allow greater flexibility downstream
-SELECT
-    "{MetricTimePeriod.YEAR.value}" AS period,
-    month AS population_start_date,
-    DATE_ADD(month, INTERVAL 1 YEAR) AS population_end_date,
-FROM
-    date_array
 )
--- keep completed periods only
-WHERE
-    -- OK if = current date since exclusive
-    population_end_date <= CURRENT_DATE("US/Eastern")
+SELECT 
+    period,
+    metric_period_start_date AS population_start_date,
+    metric_period_end_date_exclusive AS population_end_date
+FROM periods
 """
 
 METRIC_TIME_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

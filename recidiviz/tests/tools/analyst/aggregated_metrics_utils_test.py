@@ -19,7 +19,9 @@
 import unittest
 from datetime import datetime
 
-from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
+import pytz
+
+from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     CONTACTS_ATTEMPTED,
     DAYS_EMPLOYED_365,
@@ -44,105 +46,125 @@ class TestAggregatedMetricsUtils(unittest.TestCase):
         my_time_periods_cte = get_time_period_cte(
             interval_unit=MetricTimePeriod.WEEK,
             interval_length=19,
-            min_end_date=datetime(2020, 1, 4),
-            max_end_date=datetime(2022, 8, 3),
+            min_end_date=datetime(2020, 1, 4, tzinfo=pytz.timezone("US/Eastern")),
+            max_end_date=datetime(2022, 8, 3, tzinfo=pytz.timezone("US/Eastern")),
             rolling_period_unit=MetricTimePeriod.WEEK,
             rolling_period_length=19,
         )
         expected_time_periods_cte = """
 SELECT
-    DATE_SUB(population_end_date, INTERVAL 19 WEEK) AS population_start_date,
-    population_end_date,
-    "CUSTOM" as period,
-FROM
-    UNNEST(GENERATE_DATE_ARRAY(
-        "2020-01-04",
-        "2022-08-03",
-        INTERVAL 19 WEEK
-    )) AS population_end_date
-WHERE
-    population_end_date <= CURRENT_DATE("US/Eastern")
-    AND population_end_date <= "2022-08-03"
+    metric_period_start_date AS population_start_date,
+    metric_period_end_date_exclusive AS population_end_date,
+    "CUSTOM" AS period
+FROM (
+    SELECT
+        DATE_SUB(
+            metric_period_end_date_exclusive, INTERVAL 19 WEEK
+        ) AS metric_period_start_date,
+        metric_period_end_date_exclusive,
+        "CUSTOM" as period,
+    FROM
+        UNNEST(GENERATE_DATE_ARRAY(
+            "2020-01-04",
+            "2022-08-03",
+            INTERVAL 19 WEEK
+        )) AS metric_period_end_date_exclusive
+)
 """
-        self.assertEqual(my_time_periods_cte, expected_time_periods_cte)
+        self.assertEqual(expected_time_periods_cte, my_time_periods_cte)
 
     # tests time periods creation when no max date is provided
     def test_get_time_period_cte_no_max_date(self) -> None:
         my_time_periods_cte = get_time_period_cte(
             interval_unit=MetricTimePeriod.QUARTER,
             interval_length=1,
-            min_end_date=datetime(2020, 1, 4),
+            min_end_date=datetime(2020, 1, 4, tzinfo=pytz.timezone("US/Eastern")),
             max_end_date=None,
             rolling_period_unit=MetricTimePeriod.QUARTER,
             rolling_period_length=1,
         )
         expected_time_periods_cte = """
 SELECT
-    DATE_SUB(population_end_date, INTERVAL 1 QUARTER) AS population_start_date,
-    population_end_date,
-    "CUSTOM" as period,
-FROM
-    UNNEST(GENERATE_DATE_ARRAY(
-        "2020-01-04",
-        CURRENT_DATE("US/Eastern"),
-        INTERVAL 1 QUARTER
-    )) AS population_end_date
-WHERE
-    population_end_date <= CURRENT_DATE("US/Eastern")
-    AND population_end_date <= CURRENT_DATE("US/Eastern")
+    metric_period_start_date AS population_start_date,
+    metric_period_end_date_exclusive AS population_end_date,
+    "CUSTOM" AS period
+FROM (
+    SELECT
+        DATE_SUB(
+            metric_period_end_date_exclusive, INTERVAL 1 QUARTER
+        ) AS metric_period_start_date,
+        metric_period_end_date_exclusive,
+        "CUSTOM" as period,
+    FROM
+        UNNEST(GENERATE_DATE_ARRAY(
+            "2020-01-04",
+            CURRENT_DATE("US/Eastern"),
+            INTERVAL 1 QUARTER
+        )) AS metric_period_end_date_exclusive
+)
 """
-        self.assertEqual(my_time_periods_cte, expected_time_periods_cte)
+        self.assertEqual(expected_time_periods_cte, my_time_periods_cte)
 
     # tests time periods creation when rolling periods are different than interval periods
     def test_get_time_period_monthly_metrics_yearly_intervals(self) -> None:
         my_time_periods_cte = get_time_period_cte(
             interval_unit=MetricTimePeriod.MONTH,
             interval_length=1,
-            min_end_date=datetime(2020, 1, 4),
+            min_end_date=datetime(2020, 1, 4, tzinfo=pytz.timezone("US/Eastern")),
             max_end_date=None,
             rolling_period_unit=MetricTimePeriod.YEAR,
             rolling_period_length=1,
         )
         expected_time_periods_cte = """
 SELECT
-    DATE_SUB(population_end_date, INTERVAL 1 MONTH) AS population_start_date,
-    population_end_date,
-    "CUSTOM" as period,
-FROM
-    UNNEST(GENERATE_DATE_ARRAY(
-        "2020-01-04",
-        CURRENT_DATE("US/Eastern"),
-        INTERVAL 1 YEAR
-    )) AS population_end_date
-WHERE
-    population_end_date <= CURRENT_DATE("US/Eastern")
-    AND population_end_date <= CURRENT_DATE("US/Eastern")
+    metric_period_start_date AS population_start_date,
+    metric_period_end_date_exclusive AS population_end_date,
+    "CUSTOM" AS period
+FROM (
+    SELECT
+        DATE_SUB(
+            metric_period_end_date_exclusive, INTERVAL 1 MONTH
+        ) AS metric_period_start_date,
+        metric_period_end_date_exclusive,
+        "CUSTOM" as period,
+    FROM
+        UNNEST(GENERATE_DATE_ARRAY(
+            "2020-01-04",
+            CURRENT_DATE("US/Eastern"),
+            INTERVAL 1 YEAR
+        )) AS metric_period_end_date_exclusive
+)
 """
-        self.assertEqual(my_time_periods_cte, expected_time_periods_cte)
+        self.assertEqual(expected_time_periods_cte, my_time_periods_cte)
 
     def test_get_time_period_call_without_rolling_params(self) -> None:
         my_time_periods_cte = get_time_period_cte(
             interval_unit=MetricTimePeriod.MONTH,
             interval_length=1,
-            min_end_date=datetime(2020, 1, 4),
+            min_end_date=datetime(2020, 1, 4, tzinfo=pytz.timezone("US/Eastern")),
             max_end_date=None,
         )
         expected_time_periods_cte = """
 SELECT
-    DATE_SUB(population_end_date, INTERVAL 1 MONTH) AS population_start_date,
-    population_end_date,
-    "CUSTOM" as period,
-FROM
-    UNNEST(GENERATE_DATE_ARRAY(
-        "2020-01-04",
-        CURRENT_DATE("US/Eastern"),
-        INTERVAL 1 MONTH
-    )) AS population_end_date
-WHERE
-    population_end_date <= CURRENT_DATE("US/Eastern")
-    AND population_end_date <= CURRENT_DATE("US/Eastern")
+    metric_period_start_date AS population_start_date,
+    metric_period_end_date_exclusive AS population_end_date,
+    "CUSTOM" AS period
+FROM (
+    SELECT
+        DATE_SUB(
+            metric_period_end_date_exclusive, INTERVAL 1 MONTH
+        ) AS metric_period_start_date,
+        metric_period_end_date_exclusive,
+        "CUSTOM" as period,
+    FROM
+        UNNEST(GENERATE_DATE_ARRAY(
+            "2020-01-04",
+            CURRENT_DATE("US/Eastern"),
+            INTERVAL 1 MONTH
+        )) AS metric_period_end_date_exclusive
+)
 """
-        self.assertEqual(my_time_periods_cte, expected_time_periods_cte)
+        self.assertEqual(expected_time_periods_cte, my_time_periods_cte)
 
     # TODO(#26436): Add more rigorous unit testing for query output
     def test_get_custom_aggregated_metrics_query_template(self) -> None:
@@ -158,8 +180,8 @@ WHERE
             time_interval_length=2,
             rolling_period_unit=MetricTimePeriod.WEEK,
             rolling_period_length=2,
-            min_end_date=datetime(2023, 1, 1),
-            max_end_date=datetime(2023, 5, 1),
+            min_end_date=datetime(2023, 1, 1, tzinfo=pytz.timezone("US/Eastern")),
+            max_end_date=datetime(2023, 5, 1, tzinfo=pytz.timezone("US/Eastern")),
         )
         _ = get_custom_aggregated_metrics_query_template(
             metrics=[
@@ -170,6 +192,6 @@ WHERE
             population_type=MetricPopulationType.INCARCERATION,
             time_interval_unit=MetricTimePeriod.WEEK,
             time_interval_length=2,
-            min_end_date=datetime(2023, 1, 1),
-            max_end_date=datetime(2023, 5, 1),
+            min_end_date=datetime(2023, 1, 1, tzinfo=pytz.timezone("US/Eastern")),
+            max_end_date=datetime(2023, 5, 1, tzinfo=pytz.timezone("US/Eastern")),
         )
