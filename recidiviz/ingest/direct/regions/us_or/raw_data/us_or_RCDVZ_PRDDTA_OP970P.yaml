@@ -20,6 +20,10 @@ columns:
   - name: TIME_LAST_UPDATED
     description: |-
       Time when information was last entered.
+    update_history:
+      # TODO(#35364) Verify this column was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2022-12-27T00:00:00Z
   - name: CUSTODY_NUMBER
     description: |-
       Number signifying order of custody.
@@ -90,6 +94,10 @@ columns:
   - name: FLAG_137635
   - name: NEXT_EXPI_DATE
   - name: MINIMUM_DATE
+    update_history:
+      # TODO(#35364) Verify this column was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2022-12-27T00:00:00Z
   - name: LIFE_OR_DEATH
   - name: PROGRAM_ASSIGNMENT_NAME
   - name: PRGSTRDT
