@@ -24,6 +24,10 @@ columns:
   - name: TIME_LAST_UPDATED
     description: |-
       Time record was last updated.
+    update_history:
+      # TODO(#35364) Verify this column was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2023-01-13T00:00:00Z
   - name: DATE_LAST_UPDATED
     field_type: datetime
     description: |-
@@ -31,6 +35,10 @@ columns:
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+    update_history:
+      # TODO(#35364) Verify this column was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2023-01-13T00:00:00Z
   - name: LAST_UPDATED_WHEN
     field_type: datetime
     description: |-

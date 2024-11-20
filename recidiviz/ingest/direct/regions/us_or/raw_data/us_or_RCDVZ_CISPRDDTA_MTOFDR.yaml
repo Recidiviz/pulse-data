@@ -127,6 +127,9 @@ columns:
   - name: DESEGREGATION_USER
     description: |-
       TODO(#17148): Fill in with answer from OR
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-03-10T00:00:00Z
   - name: DESEG_USER_TITLE
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -137,12 +140,21 @@ columns:
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-03-10T00:00:00Z
   - name: DESEGREGATION_APPROVED_USER
     description: |-
       TODO(#17148): Fill in with answer from OR
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-03-10T00:00:00Z
   - name: DESEGREGATION_APPROVED_YN
     description: |-
       TODO(#17148): Fill in with answer from OR
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2023-03-10T00:00:00Z
   - name: REVIEW_SUPERVISOR
     description: |-
       TODO(#17148): Fill in with answer from OR

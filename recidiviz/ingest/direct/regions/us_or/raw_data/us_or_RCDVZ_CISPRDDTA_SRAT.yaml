@@ -4,6 +4,7 @@ file_description: |-
   This file contains information on suicide risk.
 data_classification: source
 primary_key_cols:
+  # TODO(#35364) update primary keys
   - RECORD_ADD_TIME
   - RECORD_ADD_DATE
   - RECORD_KEY
@@ -26,12 +27,24 @@ columns:
   - name: CALCULATED_RISK_MODEL
   - name: SRAT_CALCULATED_RISK
   - name: DSU_RISK_LOCK_DATE
+    update_history:
+      # TODO(#35364) Verify this column was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2023-01-13T00:00:00Z
   - name: RECORD_ADD_TIME
     description: |-
       Time record was added.
+    update_history:
+      # TODO(#35364) Verify this column was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2023-01-13T00:00:00Z
   - name: RECORD_ADD_DATE
     description: |-
       Date record was added.
+    update_history:
+      # TODO(#35364) Verify this column was intentionally deleted
+      - update_type: DELETION
+        update_datetime: 2023-01-13T00:00:00Z
   - name: MHR_SWITCH
   - name: MH3_SWITCH
   - name: MH2_SWITCH
