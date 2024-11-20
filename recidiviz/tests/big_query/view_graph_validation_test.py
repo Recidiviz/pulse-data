@@ -339,6 +339,8 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
             # are being rate-limited?), because it does not indicate that overall
             # view materialization has gotten too expensive for that view.
             allow_slow_views=True,
+            # None of the tables exist already, so always materialize
+            materialize_changed_views_only=False,
         )
 
         self._check_for_missing_state_code_column_views()

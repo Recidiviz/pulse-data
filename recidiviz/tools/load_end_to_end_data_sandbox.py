@@ -489,6 +489,9 @@ def load_end_to_end_sandbox(
                     view_update_input_dataset_overrides_dict
                 ),
                 allow_slow_views=True,
+                # Source table data may have changed so we always want to materialize
+                # everything.
+                materialize_changed_views_only=False,
                 collected_builders=view_builders_to_load,
             )
 
