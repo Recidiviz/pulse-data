@@ -20,6 +20,7 @@ for supervision level downgrade
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
     join_sentence_status_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import (
@@ -47,20 +48,16 @@ _DESCRIPTION = """Defines a criteria span view that shows spans of time during w
 """
 
 _QUERY_TEMPLATE = f"""
- SELECT
+WITH ineligible_sentences AS (
+    SELECT
         span.state_code,
         span.person_id,
         span.start_date,
         span.end_date_exclusive AS end_date,
-        FALSE as meets_criteria,
-        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
-                        ARRAY_AGG(DISTINCT span.status IGNORE NULLS ORDER BY span.status) AS sentence_status,
-                         LOGICAL_OR(sent.is_life) AS is_life_sentence,
-                         LOGICAL_OR(sent.is_sex_offense) AS is_sex_offense )) AS reason,
-        ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
-        ARRAY_AGG(DISTINCT span.status IGNORE NULLS ORDER BY span.status) AS sentence_status,
-        LOGICAL_OR(sent.is_life) AS is_life_sentence,
-        LOGICAL_OR(sent.is_sex_offense) AS is_sex_offense,
+        sent.statute,
+        span.status,
+        sent.is_life,
+        sent.is_sex_offense,
     {join_sentence_status_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
     WHERE span.state_code = "US_MI"
     AND (sent.is_sex_offense
@@ -73,8 +70,30 @@ _QUERY_TEMPLATE = f"""
         OR span.status = 'COMMUTED'
         OR IFNULL(sent.is_life, FALSE)
         )
-    GROUP BY 1, 2, 3, 4, 5
-    """
+),
+{create_sub_sessions_with_attributes(
+    table_name="ineligible_sentences",
+    index_columns=["state_code", "person_id"],
+)}
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    FALSE as meets_criteria,
+    TO_JSON(STRUCT(
+        ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
+        ARRAY_AGG(DISTINCT status IGNORE NULLS ORDER BY status) AS sentence_status,
+        LOGICAL_OR(is_life) AS is_life_sentence,
+        LOGICAL_OR(is_sex_offense) AS is_sex_offense
+    )) AS reason,
+    ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
+    ARRAY_AGG(DISTINCT status IGNORE NULLS ORDER BY status) AS sentence_status,
+    LOGICAL_OR(is_life) AS is_life_sentence,
+    LOGICAL_OR(is_sex_offense) AS is_sex_offense,
+FROM sub_sessions_with_attributes
+GROUP BY 1, 2, 3, 4, 5
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
