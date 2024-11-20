@@ -16,46 +16,40 @@
 // =============================================================================
 
 import { Form, Input } from "antd";
-import TextArea from "antd/lib/input/TextArea";
 
 import { StaticValue } from "./formSpec";
 import { MultiEntryChild } from "./MultiEntry";
 
-export const CriteriaCopyView: MultiEntryChild = ({ name }) => (
+export const NotificationsView: MultiEntryChild = ({ name }) => (
   <>
-    <Form.Item noStyle name={[name, "key"]}>
+    <Form.Item noStyle name={[name, "title"]}>
       <StaticValue />
     </Form.Item>
-    :
-    <Form.Item noStyle name={[name, "text"]}>
+    <Form.Item noStyle name={[name, "body"]}>
       <StaticValue />
     </Form.Item>
-    <Form.Item noStyle name={[name, "tooltip"]}>
+    <Form.Item noStyle name={[name, "cta"]}>
       <StaticValue />
     </Form.Item>
   </>
 );
 
-export const CriteriaCopyEdit: MultiEntryChild = ({ name }) => (
-  <div style={{ width: "100%", marginBottom: "0.25em" }}>
+export const NotificationsEdit: MultiEntryChild = ({ name }) => (
+  <>
+    <Form.Item noStyle name={[name, "title"]} rules={[{ required: false }]}>
+      <Input placeholder="Title (optional)" />
+    </Form.Item>
+    :
     <Form.Item
       noStyle
-      name={[name, "key"]}
-      rules={[{ required: true, message: "'criteria' is required" }]}
+      name={[name, "body"]}
+      rules={[{ required: true, message: "Notification body is required" }]}
     >
-      <Input placeholder="Criteria" />
+      <Input placeholder="Body" />
     </Form.Item>
-    <div style={{ marginTop: "0.25em", display: "flex", gap: "0.25em" }}>
-      <Form.Item
-        noStyle
-        name={[name, "text"]}
-        rules={[{ required: true, message: "'text' is required" }]}
-      >
-        <TextArea placeholder="Text" />
-      </Form.Item>
-      <Form.Item noStyle name={[name, "tooltip"]}>
-        <TextArea placeholder="Tooltip" />
-      </Form.Item>
-    </div>
-  </div>
+    :
+    <Form.Item noStyle name={[name, "cta"]}>
+      <Input placeholder="CTA (optional)" />
+    </Form.Item>
+  </>
 );

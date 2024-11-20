@@ -40,25 +40,36 @@ const OpportunityConfigurationsTable = ({
   if (!opportunityConfigurations) return null;
 
   const columns = buildColumns<OpportunityConfiguration>({
-    displayName: {
-      title: "Name",
-      render: (displayName, { stateCode, id }) => (
+    variantDescription: {
+      title: "",
+      render: (variantDescription, { stateCode, id }) => (
         <Link to={buildRoute(stateCode, store.selectedOpportunityType, id)}>
-          {displayName}
+          {variantDescription}
         </Link>
       ),
-    },
-    description: {
-      title: "Description",
     },
     featureVariant: {
       title: "Feature Variant",
     },
     status: {
       title: "Status",
+      filters: [
+        {
+          text: "ACTIVE",
+          value: "ACTIVE",
+        },
+        {
+          text: "INACTIVE",
+          value: "INACTIVE",
+        },
+      ],
+      defaultFilteredValue: ["ACTIVE"],
+    },
+    revisionDescription: {
+      title: "Revision",
     },
     createdAt: {
-      title: "Created",
+      title: "Updated",
       dataIndex: undefined,
       sorter: (a, b) => compareAsc(a.createdAt, b.createdAt),
       render: (opp) => `${opp.createdAt.toLocaleString()} by ${opp.createdBy}`,

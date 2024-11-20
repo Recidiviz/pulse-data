@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Button, Checkbox, Form, Input, Select } from "antd";
+import { Button, Checkbox, Divider, Form, Input, Select } from "antd";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { useHistory } from "react-router-dom";
@@ -28,10 +28,14 @@ import {
 import OpportunityConfigurationPresenter from "../../../WorkflowsStore/presenters/OpportunityConfigurationPresenter";
 import { useWorkflowsStore } from "../../StoreProvider";
 import HydrationWrapper from "../HydrationWrapper";
-import { CriteriaCopy } from "./CriteriaCopy";
+import { CompareByEdit } from "./CompareBy";
+import { CriteriaCopyEdit } from "./CriteriaCopy";
+import { DenialReasonsEdit } from "./DenialReasons";
 import { MultiEntry } from "./MultiEntry";
-import { SidebarComponents } from "./SidebarComponents";
+import { NotificationsEdit } from "./Notifications";
+import { SidebarComponentsEdit } from "./SidebarComponents";
 import { SnoozeInput } from "./SnoozeInput";
+import { TabGroupsEdit } from "./TabGroups";
 
 const OPTIONAL_FIELDS: (keyof z.input<
   typeof babyOpportunityConfigurationSchema
@@ -54,11 +58,25 @@ const OpportunityConfigurationForm = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const urlParams = new URLSearchParams(document.location.search);
+
+  const freshVariant = !!urlParams.get("freshVariant");
+  const freshNonDefault = !!(freshVariant && urlParams.get("from"));
+
+  let variantDescription = template?.variantDescription;
+  if (freshNonDefault) {
+    variantDescription = undefined;
+  } else if (freshVariant) {
+    variantDescription = "Default Config";
+  }
   const initial = {
     ...template,
     isAlert: template?.isAlert ?? false,
     hideDenialRevert: template?.hideDenialRevert ?? false,
     priority: template?.priority ?? "NORMAL",
+    revisionDescription: undefined,
+    variantDescription,
+    featureVariant: freshVariant ? undefined : template?.featureVariant,
   };
 
   // Add notification UUIDs to newly created notifications
@@ -78,6 +96,9 @@ const OpportunityConfigurationForm = ({
 
   return (
     <Form
+      labelCol={{ span: 4 }}
+      wrapperCol={{ span: 12 }}
+      labelWrap
       onFinish={async (values) => {
         setIsSubmitting(true);
         const config = babyOpportunityConfigurationSchema.parse({
@@ -101,40 +122,32 @@ const OpportunityConfigurationForm = ({
       autoComplete="off"
       initialValues={initial}
     >
-      <Form.Item label="Name" name="displayName" rules={[{ required: true }]}>
-        <Input />
-      </Form.Item>
       <Form.Item
-        label="Configuration Description"
-        name="description"
+        label="Variant Description"
+        name="variantDescription"
         rules={[{ required: true }]}
       >
         <Input />
       </Form.Item>
-      <Form.Item label="Feature Variant" name="featureVariant">
-        <Input />
-      </Form.Item>
       <Form.Item
-        label="Dynamic Eligibility Text"
-        name="dynamicEligibilityText"
+        label="Feature Variant"
+        name="featureVariant"
+        rules={[{ required: freshNonDefault }]}
+      >
+        <Input disabled={!freshNonDefault} />
+      </Form.Item>
+      <Divider />
+      <Form.Item
+        label="Opportunity Name"
+        name="displayName"
         rules={[{ required: true }]}
       >
         <Input />
       </Form.Item>
-      <Form.Item label="Eligibility Date Text" name="eligibilityDateText">
+      <Form.Item label="Initial Header" name="initialHeader">
         <Input />
       </Form.Item>
-      <Form.Item
-        label="Hide Denial Revert?"
-        name="hideDenialRevert"
-        valuePropName="checked"
-      >
-        <Checkbox />
-      </Form.Item>
-      <Form.Item label="Tooltip Eligibility Text" name="tooltipEligibilityText">
-        <Input />
-      </Form.Item>
-      <Form.Item label="Zero Grants Tooltip" name="zeroGrantsTooltip">
+      <Form.Item label="Subheading" name="subheading">
         <Input />
       </Form.Item>
       <Form.Item
@@ -144,50 +157,36 @@ const OpportunityConfigurationForm = ({
       >
         <Input />
       </Form.Item>
-      <Form.Item label="Subheading" name="subheading">
+      <Form.Item
+        label="Dynamic Eligibility Text"
+        name="dynamicEligibilityText"
+        rules={[{ required: true }]}
+      >
         <Input />
       </Form.Item>
-      <MultiEntry label="Denial Reasons" name="denialReasons">
-        {({ name, ...field }) => (
-          <>
-            <Form.Item
-              {...field}
-              noStyle
-              name={[name, "key"]}
-              rules={[{ required: true, message: "'code' is required" }]}
-            >
-              <Input placeholder="Code" />
-            </Form.Item>
-            :
-            <Form.Item
-              {...field}
-              noStyle
-              name={[name, "text"]}
-              rules={[{ required: true, message: "'text' is required" }]}
-            >
-              <Input placeholder="Text" />
-            </Form.Item>
-          </>
-        )}
-      </MultiEntry>
-      <Form.Item label="Denial Text" name="denialText">
-        <Input />
-      </Form.Item>
-      <Form.Item label="Initial Header" name="initialHeader">
-        <Input />
-      </Form.Item>
-      <CriteriaCopy
+      <Divider orientation="left">Criteria</Divider>
+      <MultiEntry
         label="Eligible Criteria Copy"
         name="eligibleCriteriaCopy"
+        child={CriteriaCopyEdit}
       />
-      <CriteriaCopy
-        label="Ineligible Criteria Copy"
+      <MultiEntry
+        label="Almost Eligible Criteria Copy"
         name="ineligibleCriteriaCopy"
+        child={CriteriaCopyEdit}
       />
-      <Form.Item label="Snooze" name="snooze">
-        <SnoozeInput />
+      <Divider orientation="left">Sidebar</Divider>
+      <Form.Item label="Alert?" name="isAlert" valuePropName="checked">
+        <Checkbox />
       </Form.Item>
-      <SidebarComponents />
+      <MultiEntry
+        label="Sidebar Components"
+        name="sidebarComponents"
+        child={SidebarComponentsEdit}
+      />
+      <Form.Item label="Eligibility Date Text" name="eligibilityDateText">
+        <Input />
+      </Form.Item>
       <Form.Item
         label="Methodology URL"
         name="methodologyUrl"
@@ -195,113 +194,62 @@ const OpportunityConfigurationForm = ({
       >
         <Input />
       </Form.Item>
-      <Form.Item label="Alert?" name="isAlert" valuePropName="checked">
+      <Divider orientation="left">Denial/Snooze</Divider>
+      <MultiEntry
+        label="Denial Reasons"
+        name="denialReasons"
+        child={DenialReasonsEdit}
+      />
+      <Form.Item label="Snooze" name="snooze">
+        <SnoozeInput />
+      </Form.Item>
+      <Form.Item label="Denial Text" name="denialText">
+        <Input />
+      </Form.Item>
+      <Form.Item
+        label="Hide Denial Revert?"
+        name="hideDenialRevert"
+        valuePropName="checked"
+      >
         <Checkbox />
       </Form.Item>
+      <Divider orientation="left">Supervisor Homepage</Divider>
       <Form.Item label="Priority" name="priority" rules={[{ required: true }]}>
         <Select>
           <Select.Option value="NORMAL">NORMAL</Select.Option>
           <Select.Option value="HIGH">HIGH</Select.Option>
         </Select>
       </Form.Item>
-      <MultiEntry label="Tab Groups" name="tabGroups">
-        {({ name, ...field }) => (
-          <>
-            <Form.Item
-              {...field}
-              noStyle
-              name={[name, "key"]}
-              rules={[{ required: true, message: "'group' is required" }]}
-            >
-              <Input placeholder="Group" />
-            </Form.Item>
-            <MultiEntry label="Tab Groups" name={[name, "tabs"]}>
-              {({ name: innerName, ...innerField }) => (
-                <Form.Item
-                  {...innerField}
-                  noStyle
-                  name={innerName}
-                  rules={[{ required: true, message: "'title' is required" }]}
-                >
-                  <Input placeholder="Title" />
-                </Form.Item>
-              )}
-            </MultiEntry>
-          </>
-        )}
-      </MultiEntry>
-      <MultiEntry label="Compare By" name="compareBy">
-        {({ name, ...field }) => (
-          <>
-            <Form.Item
-              {...field}
-              noStyle
-              name={[name, "field"]}
-              rules={[{ required: true, message: "'field' is required" }]}
-            >
-              <Input placeholder="Field" />
-            </Form.Item>
-            <Form.Item
-              noStyle
-              label="Sort Direction"
-              name="sortDirection"
-              rules={[{ required: false }]}
-            >
-              <Select>
-                <Select.Option value="asc">Ascending</Select.Option>
-                <Select.Option value="desc">Descending</Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item
-              noStyle
-              label="Missing Values Position"
-              name="undefinedBehavior"
-              rules={[{ required: false }]}
-            >
-              <Select>
-                <Select.Option value="undefinedFirst">First</Select.Option>
-                <Select.Option value="undefinedLast">Last</Select.Option>
-              </Select>
-            </Form.Item>
-          </>
-        )}
-      </MultiEntry>
-      <MultiEntry label="Notifications" name="notifications">
-        {({ name, ...field }) => {
-          return (
-            <>
-              <Form.Item
-                {...field}
-                noStyle
-                name={[name, "title"]}
-                rules={[{ required: false }]}
-              >
-                <Input placeholder="Title (optional)" />
-              </Form.Item>
-              :
-              <Form.Item
-                {...field}
-                noStyle
-                name={[name, "body"]}
-                rules={[
-                  { required: true, message: "Notification body is required" },
-                ]}
-              >
-                <Input placeholder="Body" />
-              </Form.Item>
-              :
-              <Form.Item
-                {...field}
-                noStyle
-                name={[name, "cta"]}
-                rules={[{ required: true }]}
-              >
-                <Input placeholder="CTA (optional)" />
-              </Form.Item>
-            </>
-          );
-        }}
-      </MultiEntry>
+      <Form.Item label="Zero Grants Tooltip" name="zeroGrantsTooltip">
+        <Input />
+      </Form.Item>
+      <Divider />
+      <Form.Item label="Tooltip Eligibility Text" name="tooltipEligibilityText">
+        <Input />
+      </Form.Item>
+      <MultiEntry
+        label="Notifications"
+        name="notifications"
+        child={NotificationsEdit}
+      />
+      <Divider orientation="left">Danger Zone</Divider>
+      <Form.Item>
+        <i>Consult with Polaris before editing these fields.</i>
+      </Form.Item>
+      <MultiEntry label="Tab Groups" name="tabGroups" child={TabGroupsEdit} />
+      <MultiEntry
+        label="Caseload Sorting"
+        name="compareBy"
+        child={CompareByEdit}
+      />
+      <Divider />
+      <Form.Item
+        label="Revision Description"
+        name="revisionDescription"
+        rules={[{ required: true }]}
+      >
+        <Input />
+      </Form.Item>
       <Button type="primary" htmlType="submit" disabled={isSubmitting}>
         Save And Apply Configuration
       </Button>

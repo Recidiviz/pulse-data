@@ -21,17 +21,20 @@ import {
   PlusOutlined,
   UpCircleOutlined,
 } from "@ant-design/icons";
-import { Button, Form, FormListFieldData } from "antd";
-import { ReactNode } from "react";
+import { Button, Form } from "antd";
+
+export type MultiEntryChild = React.FC<{ name: number }>;
 
 export const MultiEntry = ({
   name,
   label,
-  children,
+  readonly,
+  child,
 }: {
   name: string | number | (string | number)[];
   label: string;
-  children: (field: FormListFieldData) => ReactNode;
+  readonly?: boolean;
+  child: MultiEntryChild;
 }) => (
   <Form.Item label={label}>
     <Form.List name={name}>
@@ -48,28 +51,36 @@ export const MultiEntry = ({
                 marginBottom: "0.5em",
               }}
             >
-              {children(field)}{" "}
-              <div
-                style={{
-                  width: "20%",
-                  display: "flex",
-                  justifyContent: "flex-start",
-                  gap: "0.25em",
-                }}
-              >
-                <MinusCircleOutlined onClick={() => remove(field.name)} />
-                {i > 0 && <UpCircleOutlined onClick={() => move(i, i - 1)} />}
-                {i < fields.length - 1 && (
-                  <DownCircleOutlined onClick={() => move(i, i + 1)} />
-                )}
-              </div>
+              {child(field)}{" "}
+              {!readonly && (
+                <div
+                  style={{
+                    width: "20%",
+                    display: "flex",
+                    justifyContent: "flex-start",
+                    gap: "0.25em",
+                  }}
+                >
+                  <MinusCircleOutlined onClick={() => remove(field.name)} />
+                  {i > 0 && <UpCircleOutlined onClick={() => move(i, i - 1)} />}
+                  {i < fields.length - 1 && (
+                    <DownCircleOutlined onClick={() => move(i, i + 1)} />
+                  )}
+                </div>
+              )}
             </div>
           ))}
-          <Form.Item>
-            <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />}>
-              Add
-            </Button>
-          </Form.Item>
+          {!readonly && (
+            <Form.Item>
+              <Button
+                type="dashed"
+                onClick={() => add()}
+                icon={<PlusOutlined />}
+              >
+                Add
+              </Button>
+            </Form.Item>
+          )}
         </>
       )}
     </Form.List>

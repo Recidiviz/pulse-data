@@ -53,24 +53,15 @@ const OpportunitiesTable = ({
     systemType: {
       title: "System Type",
     },
+    homepagePosition: {
+      title: "Homepage Position",
+    },
     lastUpdatedAt: {
       title: "Last Updated",
       dataIndex: undefined,
       sorter: (a, b) => compareAsc(a.lastUpdatedAt ?? 0, b.lastUpdatedAt ?? 0),
       render: updatedStringForOpportunity,
     },
-    // gatingFeatureVariant: {
-    //   title: "Gating Feature Variant",
-    // },
-    // urlSection: {
-    //   title: "URL Section",
-    // },
-    // completionEvent: {
-    //   title: "Completion Event",
-    // },
-    // experimentId: {
-    //   title: "Experiment ID",
-    // },
   });
 
   return (

@@ -138,8 +138,11 @@ class OpportunityConfiguration(WorkflowsBase):
     created_by = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False)
 
-    # A short description of the config
-    description = Column(String, nullable=False)
+    # A short description of the config variant
+    variant_description = Column(String, nullable=False)
+
+    # A short description of the config revision: what was changed?
+    revision_description = Column(String, nullable=False)
 
     # ACTIVE, INACTIVE, or some other future option
     status = Column(Enum(OpportunityStatus), nullable=False)

@@ -60,6 +60,8 @@ export const notificationsSchema = z.array(
 // or presenter
 export const babyOpportunityConfigurationSchema = z
   .object({
+    variantDescription: z.string(),
+    revisionDescription: z.string(),
     displayName: z.string(),
     featureVariant: nullishAsUndefined(z.string()),
     dynamicEligibilityText: z.string(),
@@ -91,7 +93,6 @@ export const babyOpportunityConfigurationSchema = z
         })
       )
     ),
-    description: z.string(),
     zeroGrantsTooltip: nullishAsUndefined(z.string()),
     stagingId: nullishAsUndefined(z.number()),
   })

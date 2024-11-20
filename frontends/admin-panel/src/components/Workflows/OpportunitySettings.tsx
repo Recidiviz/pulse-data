@@ -26,8 +26,8 @@ import {
 import OpportunityPresenter from "../../WorkflowsStore/presenters/OpportunityPresenter";
 
 const layout = {
-  labelCol: { span: 3 },
-  wrapperCol: { span: 8 },
+  labelCol: { span: 4 },
+  wrapperCol: { span: 10 },
   labelWrap: true,
 };
 

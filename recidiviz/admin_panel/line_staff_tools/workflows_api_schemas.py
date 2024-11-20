@@ -59,7 +59,8 @@ class OpportunityConfigurationRequestSchema(WorkflowsConfigSchema):
     Contains additional metadata not shown in the tool.
     """
 
-    description = fields.Str(required=True)
+    variant_description = fields.Str(required=True)
+    revision_description = fields.Str(required=True)
     created_by = fields.Str(allow_none=True)
     staging_id = fields.Int(allow_none=True)
 

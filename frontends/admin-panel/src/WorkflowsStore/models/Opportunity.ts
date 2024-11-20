@@ -49,4 +49,4 @@ export type Opportunity = z.infer<typeof opportunitySchema>;
 export const updatedStringForOpportunity = (opp: Opportunity) =>
   opp.lastUpdatedAt
     ? `${opp.lastUpdatedAt.toLocaleString()} by ${opp.lastUpdatedBy}`
-    : "Not yet provisioned";
+    : "Not yet set up";
