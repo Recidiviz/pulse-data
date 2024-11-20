@@ -398,6 +398,7 @@ def load_end_to_end_sandbox(
             ),
             changed_datasets_to_include=changed_datasets_to_include,
             changed_datasets_to_ignore=changed_datasets_to_ignore,
+            state_code_filter=state_code,
             load_changed_views_only=False,
             load_up_to_addresses=load_up_to_addresses,
             load_up_to_datasets=load_up_to_datasets,
