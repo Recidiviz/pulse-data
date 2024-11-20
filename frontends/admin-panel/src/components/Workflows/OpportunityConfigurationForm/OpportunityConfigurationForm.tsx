@@ -56,11 +56,6 @@ const OpportunityConfigurationForm = ({
 
   const initial = {
     ...template,
-    denialReasons: template && Object.entries(template.denialReasons),
-    eligibleCriteriaCopy:
-      template && Object.entries(template.eligibleCriteriaCopy),
-    ineligibleCriteriaCopy:
-      template && Object.entries(template.ineligibleCriteriaCopy),
     isAlert: template?.isAlert ?? false,
     hideDenialRevert: template?.hideDenialRevert ?? false,
     priority: template?.priority ?? "NORMAL",
@@ -93,13 +88,9 @@ const OpportunityConfigurationForm = ({
               values[f]?.length ? values[f] : undefined,
             ])
           ),
-          denialReasons: Object.fromEntries(values.denialReasons ?? []),
-          eligibleCriteriaCopy: Object.fromEntries(
-            values.eligibleCriteriaCopy ?? []
-          ),
-          ineligibleCriteriaCopy: Object.fromEntries(
-            values.ineligibleCriteriaCopy ?? []
-          ),
+          denialReasons: values.denialReasons ?? [],
+          eligibleCriteriaCopy: values.eligibleCriteriaCopy ?? [],
+          ineligibleCriteriaCopy: values.ineligibleCriteriaCopy ?? [],
           sidebarComponents: values.sidebarComponents ?? [],
           notifications: addNotificationIds(values.notifications) ?? [],
         });
@@ -162,7 +153,7 @@ const OpportunityConfigurationForm = ({
             <Form.Item
               {...field}
               noStyle
-              name={[name, 0]}
+              name={[name, "key"]}
               rules={[{ required: true, message: "'code' is required" }]}
             >
               <Input placeholder="Code" />
@@ -171,7 +162,7 @@ const OpportunityConfigurationForm = ({
             <Form.Item
               {...field}
               noStyle
-              name={[name, 1]}
+              name={[name, "text"]}
               rules={[{ required: true, message: "'text' is required" }]}
             >
               <Input placeholder="Text" />
@@ -213,12 +204,68 @@ const OpportunityConfigurationForm = ({
           <Select.Option value="HIGH">HIGH</Select.Option>
         </Select>
       </Form.Item>
-      <Form.Item label="Tab Groups" name="tabGroups">
-        <Input />
-      </Form.Item>
-      <Form.Item label="Compare By" name="compareBy">
-        <Input />
-      </Form.Item>
+      <MultiEntry label="Tab Groups" name="tabGroups">
+        {({ name, ...field }) => (
+          <>
+            <Form.Item
+              {...field}
+              noStyle
+              name={[name, "key"]}
+              rules={[{ required: true, message: "'group' is required" }]}
+            >
+              <Input placeholder="Group" />
+            </Form.Item>
+            <MultiEntry label="Tab Groups" name={[name, "tabs"]}>
+              {({ name: innerName, ...innerField }) => (
+                <Form.Item
+                  {...innerField}
+                  noStyle
+                  name={innerName}
+                  rules={[{ required: true, message: "'title' is required" }]}
+                >
+                  <Input placeholder="Title" />
+                </Form.Item>
+              )}
+            </MultiEntry>
+          </>
+        )}
+      </MultiEntry>
+      <MultiEntry label="Compare By" name="compareBy">
+        {({ name, ...field }) => (
+          <>
+            <Form.Item
+              {...field}
+              noStyle
+              name={[name, "field"]}
+              rules={[{ required: true, message: "'field' is required" }]}
+            >
+              <Input placeholder="Field" />
+            </Form.Item>
+            <Form.Item
+              noStyle
+              label="Sort Direction"
+              name="sortDirection"
+              rules={[{ required: false }]}
+            >
+              <Select>
+                <Select.Option value="asc">Ascending</Select.Option>
+                <Select.Option value="desc">Descending</Select.Option>
+              </Select>
+            </Form.Item>
+            <Form.Item
+              noStyle
+              label="Missing Values Position"
+              name="undefinedBehavior"
+              rules={[{ required: false }]}
+            >
+              <Select>
+                <Select.Option value="undefinedFirst">First</Select.Option>
+                <Select.Option value="undefinedLast">Last</Select.Option>
+              </Select>
+            </Form.Item>
+          </>
+        )}
+      </MultiEntry>
       <MultiEntry label="Notifications" name="notifications">
         {({ name, ...field }) => {
           return (

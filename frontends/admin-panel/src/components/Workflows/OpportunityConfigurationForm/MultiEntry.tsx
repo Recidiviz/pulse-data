@@ -29,7 +29,7 @@ export const MultiEntry = ({
   label,
   children,
 }: {
-  name: string;
+  name: string | number | (string | number)[];
   label: string;
   children: (field: FormListFieldData) => ReactNode;
 }) => (
