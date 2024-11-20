@@ -380,6 +380,30 @@ output:
                           - reporting_station_name
                           - wing_name
                     $custom_parser: us_mi_custom_enum_parsers.map_housing_unit_type_START
+              # If the person is in one of the designated observation cells in WHV, hard code them to MENTAL_HEALTH_SOLITARY_CONFINEMENT
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - location_code
+                        - $literal("WHV")
+                    - $equal:
+                        - reporting_station_name
+                        - $literal("INF Bed")
+                    - $in:
+                        $value: cell_lock
+                        $options:
+                          - $literal("013")
+                          - $literal("014")
+                          - $literal("015")
+                          - $literal("016")
+                          - $literal("017")
+                          - $literal("018")
+                          - $literal("019")
+                          - $literal("020")
+                          - $literal("021")
+                          - $literal("022")
+                          - $literal("023")
+                $then: $literal_enum(StateIncarcerationPeriodHousingUnitType.MENTAL_HEALTH_SOLITARY_CONFINEMENT)
               # If offender designation is not missing, then use that to map housing unit type
               - $else_if:
                   $not_null: offender_designation_code_id
