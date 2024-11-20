@@ -9,10 +9,13 @@ data_classification: source
 primary_key_cols:
   - CRC_FACILITY
   - RELEASE_DISTRICT
+  - GENDER
 columns:
   - name: CRC_FACILITY
-    description: CRC request district
+    description: CRC request facility
   - name: RELEASE_DISTRICT
     description: Release district
+  - name: GENDER
+    description: Contains the gender of the clients eligible for the facility
 is_code_file: True
 update_cadence: IRREGULAR
