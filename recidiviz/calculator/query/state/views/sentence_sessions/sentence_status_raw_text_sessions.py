@@ -21,7 +21,10 @@ Includes v1 sentence status sessions translated from sentences_preprocessed TODO
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
+    nonnull_end_date_clause,
+)
 from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_sessions_query_utils import (
     convert_normalized_ledger_data_to_sessions_query,
@@ -112,6 +115,7 @@ FROM `{{project_id}}.sessions.sentences_preprocessed_materialized`
 WHERE state_code IN ({{v2_non_migrated_states}})
     -- Drop rows with imposed date in the future
     AND date_imposed <= CURRENT_DATE("US/Eastern")
+    AND date_imposed != {nonnull_end_date_clause("completion_date")}
 
 UNION ALL
 

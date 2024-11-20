@@ -20,6 +20,7 @@ someone is not serving ineligible offenses on supervision for downgrade to minim
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
     join_sentence_status_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import (
@@ -48,20 +49,16 @@ someone is not serving ineligible offenses (below) for downgrade to minimum tele
 """
 
 _QUERY_TEMPLATE = f"""
- SELECT
+WITH ineligible_sentences AS (
+    SELECT
         span.state_code,
         span.person_id,
         span.start_date,
         span.end_date_exclusive AS end_date,
-        FALSE as meets_criteria,
-        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
-                        ARRAY_AGG(DISTINCT span.status IGNORE NULLS ORDER BY span.status) AS sentence_status,
-                         LOGICAL_OR(sent.is_life) AS is_life_sentence,
-                         ARRAY_AGG(DISTINCT ref.description IGNORE NULLS ORDER BY ref.description) AS sentence_status_raw_text)) AS reason,
-        ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
-        ARRAY_AGG(DISTINCT span.status IGNORE NULLS ORDER BY span.status) AS sentence_status,
-        LOGICAL_OR(sent.is_life) AS is_life_sentence,
-        ARRAY_AGG(DISTINCT ref.description IGNORE NULLS ORDER BY ref.description) AS sentence_status_raw_text,
+        sent.statute,
+        span.status,
+        sent.is_life,
+        ref.description,
     {join_sentence_status_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
     LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ADH_REFERENCE_CODE_latest` ref 
         ON span.status_raw_text = ref.reference_code_id
@@ -76,8 +73,30 @@ _QUERY_TEMPLATE = f"""
         --serving probation with delay of sentence
         OR LOWER(ref.description) like '%delay%'
         )
-    GROUP BY 1, 2, 3, 4, 5
-    """
+),
+{create_sub_sessions_with_attributes(
+    table_name="ineligible_sentences",
+    index_columns=["state_code", "person_id"],
+)}
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    FALSE as meets_criteria,
+    TO_JSON(STRUCT(
+        ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
+        ARRAY_AGG(DISTINCT status IGNORE NULLS ORDER BY status) AS sentence_status,
+        LOGICAL_OR(is_life) AS is_life_sentence,
+        ARRAY_AGG(DISTINCT description IGNORE NULLS ORDER BY description) AS sentence_status_raw_text
+    )) AS reason,
+    ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
+    ARRAY_AGG(DISTINCT status IGNORE NULLS ORDER BY status) AS sentence_status,
+    LOGICAL_OR(is_life) AS is_life_sentence,
+    ARRAY_AGG(DISTINCT description IGNORE NULLS ORDER BY description) AS sentence_status_raw_text,
+FROM sub_sessions_with_attributes
+GROUP BY 1, 2, 3, 4, 5
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
