@@ -55,6 +55,14 @@ WITH attrs AS (
         staff.email,
         COALESCE(attrs.supervision_district_name,attrs.supervision_district_name_inferred) AS supervision_district,
         IF(attrs.state_code = 'US_CA', attrs.supervision_office_name, attrs.supervision_unit_name) AS supervision_unit,
+        CASE attrs.state_code
+            WHEN "US_ND" THEN attrs.supervision_office_name
+            ELSE COALESCE(attrs.supervision_district_name,attrs.supervision_district_name_inferred)
+        END AS supervision_location_for_list_page,
+        CASE 
+            WHEN attrs.state_code IN ("US_CA", "US_ND") THEN attrs.supervision_office_name
+            ELSE COALESCE(attrs.supervision_district_name,attrs.supervision_district_name_inferred)
+        END AS supervision_location_for_supervisor_page,
     FROM (
         -- A supervision supervisor in the Outliers product is anyone that has an open supervisor period as a  
         -- supervisor. 
@@ -87,6 +95,8 @@ SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilde
         "supervision_district",
         "supervision_unit",
         "email",
+        "supervision_location_for_list_page",
+        "supervision_location_for_supervisor_page",
     ],
 )
 
