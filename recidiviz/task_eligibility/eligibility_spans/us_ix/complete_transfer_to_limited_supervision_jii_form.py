@@ -29,6 +29,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     income_verified_within_3_months,
     lsir_level_low_for_90_days,
     no_active_nco,
+    no_recent_marked_ineligible_unless_ffr,
     supervision_level_raw_text_is_not_so_or_soto,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -68,6 +69,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_not_limited.VIEW_BUILDER,
         supervision_level_raw_text_is_not_so_or_soto.VIEW_BUILDER,
         not_serving_for_sexual_offense.VIEW_BUILDER,
+        no_recent_marked_ineligible_unless_ffr.VIEW_BUILDER,
     ],
     completion_event_builder=COMPLETE_TRANSFER_TO_LSU_LINE_STAFF_VERSION.completion_event_builder,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
