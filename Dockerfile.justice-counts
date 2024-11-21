@@ -24,20 +24,17 @@ FROM us-central1-docker.pkg.dev/justice-counts-staging/recidiviz-base-images/rec
 WORKDIR /app/recidiviz
 
 # Add the rest of the application code once all dependencies are installed
-COPY . /app
-COPY gunicorn.justice-counts.conf.py /app/gunicorn.conf.py
+COPY --chown=recidiviz . /app
+COPY --chown=recidiviz gunicorn.justice-counts.conf.py /app/gunicorn.conf.py
 
 WORKDIR /app
 
 # Add both built Justice Counts frontends to the image
-COPY --from=justice-counts-build /justice-counts/publisher/build /app/frontends/justice-counts/publisher/build
-COPY --from=justice-counts-build /justice-counts/agency-dashboard/build /app/frontends/justice-counts/agency-dashboard/build
+COPY --chown=recidiviz --from=justice-counts-build /justice-counts/publisher/build /app/frontends/justice-counts/publisher/build
+COPY --chown=recidiviz --from=justice-counts-build /justice-counts/agency-dashboard/build /app/frontends/justice-counts/agency-dashboard/build
 
 # This makes docker not report that our container is healthy until the flask workers are
 # started and returning 200 on the `/health` endpoint. This is initially only used by
 # our docker-test Github Action.
 HEALTHCHECK --interval=5s --timeout=3s \
     CMD curl -f http://localhost:8080/health || exit 1
-
-RUN rm -rf /var/lib/apt/lists/*; \
-    apt-get clean;
