@@ -463,3 +463,79 @@ class TestInferredSentenceGroups(unittest.TestCase):
         )
         assert actual_inferred_groups == [inferred_group]
         assert inferred_group.external_id == "sentence-001@#@sentence-002"
+
+    def test_groups_merge_by_offense_date(self) -> None:
+        """
+        If two sentences have charges with shared offense_dates, they are in the same inferred group.
+
+        A practical example of this being useful arises when a state DOC has disparate
+        systems for incarceration and supervision aspects of sentences that are imposed
+        together, with distinct identifiers used in each system.
+        """
+        charge_with_common_date_1 = NormalizedStateChargeV2(
+            state_code=self.STATE_CODE_VALUE,
+            external_id="TEST-CHARGE-1",
+            charge_v2_id=hash("TEST-CHARGE-1"),
+            offense_date=datetime.date(2024, 1, 1),
+            status=StateChargeV2Status.CONVICTED,
+        )
+        charge_with_common_date_2 = NormalizedStateChargeV2(
+            state_code=self.STATE_CODE_VALUE,
+            external_id="TEST-CHARGE-2",
+            charge_v2_id=hash("TEST-CHARGE-2"),
+            offense_date=datetime.date(2024, 1, 1),
+            status=StateChargeV2Status.CONVICTED,
+        )
+        incarceration_sentence = NormalizedStateSentence(
+            state_code=self.STATE_CODE_VALUE,
+            external_id=self.SENTENCE_1_EXTERNAL_ID,
+            sentence_id=hash(self.SENTENCE_1_EXTERNAL_ID),
+            sentence_group_external_id=None,
+            sentence_inferred_group_id=None,
+            imposed_date=self.JAN_01,
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            charges=[charge_with_common_date_1],
+            sentence_status_snapshots=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE_VALUE,
+                    status_update_datetime=as_datetime(self.JAN_01),
+                    status_end_datetime=as_datetime(self.MAR_01),
+                    sequence_num=1,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=1,
+                ),
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE_VALUE,
+                    status_update_datetime=as_datetime(self.MAR_01),
+                    status_end_datetime=None,
+                    sequence_num=2,
+                    status=StateSentenceStatus.COMPLETED,
+                    sentence_status_snapshot_id=2,
+                ),
+            ],
+        )
+        parole_sentence = NormalizedStateSentence(
+            state_code=self.STATE_CODE_VALUE,
+            external_id=self.SENTENCE_2_EXTERNAL_ID,
+            sentence_id=hash(self.SENTENCE_2_EXTERNAL_ID),
+            sentence_group_external_id=None,
+            sentence_inferred_group_id=None,
+            # This could happen in state provided data if they treat
+            # parole as a separate sentence, where "imposition" is actually
+            # when parole starts.
+            imposed_date=self.MAR_01,
+            sentencing_authority=StateSentencingAuthority.STATE,
+            sentence_type=StateSentenceType.PAROLE,
+            charges=[charge_with_common_date_2],
+            sentence_status_snapshots=[],
+        )
+        actual_inferred_groups = get_normalized_inferred_sentence_groups(
+            normalized_sentences=[incarceration_sentence, parole_sentence],
+        )
+        sentences = [incarceration_sentence, parole_sentence]
+        inferred_group = InferredGroupBuilder.build_inferred_group_from_sentences(
+            sentences
+        )
+        assert actual_inferred_groups == [inferred_group]
+        assert inferred_group.external_id == "sentence-001@#@sentence-002"

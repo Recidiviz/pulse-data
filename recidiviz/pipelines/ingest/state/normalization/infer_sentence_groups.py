@@ -43,6 +43,7 @@ class InferredGroupBuilder:
         - Have the same NormalizedStateSentenceGroup
         - Have the same imposed_date
         - Have a common NormalizedStateChargeV2
+        - Have charges with the same offense_date
         - Have an overlapping span of time between the first SERVING
           status and terminating status.
     A sentence can only belong to a single inferred group. We infer
@@ -62,6 +63,10 @@ class InferredGroupBuilder:
     # Sentences sharing an imposed_date are in the same inferred group.
     imposed_dates: set[datetime.date] = attr.ib(factory=set)
 
+    # The offense_date values of all the |charges| stored above.
+    # Sentences with charges sharing an offense_date are in the same inferred group.
+    charge_dates: set[datetime.date] = attr.ib(factory=set)
+
     # Sentences that have an overlapping span of time from the first SERVING status
     # to the terminating status are in the same inferred group.
     dt_spans: set[PotentiallyOpenDateTimeRange] = attr.ib(factory=set)
@@ -74,6 +79,8 @@ class InferredGroupBuilder:
             return True
         for charge in sentence.charges:
             if charge.external_id in self.charge_external_ids:
+                return True
+            if charge.offense_date in self.charge_dates:
                 return True
         # status_span is None if a state hasn't hydrated status snapshots
         # This sentence should be in the group if its first status is
@@ -100,6 +107,8 @@ class InferredGroupBuilder:
             self.imposed_dates.add(sentence.imposed_date)
         for charge in sentence.charges:
             self.charge_external_ids.add(charge.external_id)
+            if charge.offense_date:
+                self.charge_dates.add(charge.offense_date)
         # status_span is None if a state hasn't hydrated status snapshots
         # or there is no SERVING status
         if status_span := sentence.first_serving_status_to_terminating_status_dt_range:
@@ -151,6 +160,7 @@ def get_normalized_inferred_sentence_groups(
         - Have the same NormalizedStateSentenceGroup
         - Have the same imposed_date
         - Have a common charge
+        - Have charges with a common offense_date
         - Have an overlapping span of time between the first SERVING
           status and terminating status.
     A sentence can only belong to a single inferred group. We infer
