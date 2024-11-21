@@ -639,98 +639,121 @@ def violations_within_time_interval_criteria_builder(
     )
 
 
-def incarceration_violations_within_time_interval_criteria_builder(
+def incarceration_incidents_within_time_interval_criteria_builder(
     *,
     criteria_name: str,
     description: str,
-    incident_type: str = "",
-    where_clause: str = "",
-    bool_column: str = "False AS meets_criteria,",
-    date_interval: int = 12,
-    date_part: str = "MONTH",
-    violation_date_name_in_reason_blob: str = "latest_violations",
-    display_single_violation_date: bool = False,
-    state_code: Optional[StateCode] = None,
-) -> TaskCriteriaBigQueryViewBuilder:
+    date_interval: int,
+    date_part: str,
+    where_clause_addition: Optional[str] = None,
+    incident_date_name_in_reason_blob: str = "latest_incidents",
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
-    Returns a criteria query that has spans of time when incarceration violations that meet
-    certain conditions set by the user (<violation_type> and <where clause>) occurred.
+    Returns a TES criterion view builder that has spans of time where incidents that
+    meet certain conditions set by the user have occurred within some specified window
+    of time (e.g., within the past 6 months).
     Args:
-        criteria_name (str): Name of the criteria
-        description (str): Description of the criteria
-        incident_type (str, optional): Specifies the violation types that should be
-            counted towards the criteria. Should only include values inside the
-            StateIncarcerationIncidentType enum. Example: "AND sii.incident_type = 'VIOLENCE' "
-            Defaults to ''.
-        where_clause (str, optional): _description_. Defaults to ''.
-        bool_column (str, optional): _description_. Defaults to "False AS meets_criteria,".
-        date_interval (int, optional): Number of <date_part> when the violation
-            will be counted as valid. Defaults to 12 (e.g. it could be 12 months).
-        date_part (str, optional): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK", "MONTH", "QUARTER", "YEAR". Defaults to "MONTH".
-        violation_date_name_in_reason_blob (str, optional): Name of the violation_date
-            field in the reason blob. Defaults to "latest_convictions".
-        display_single_violation_date (bool, optional): Show only the latest violation in
-            the reason blob. Defaults to False, showing all violations in the given time
-            period.
-        state_code (str, optional): State code for which to return a state-specific view
-            builder. Defaults to None, returning a state-agnostic view builder.
+        criteria_name (str): Name of the criterion.
+        description (str): Description of the criterion.
+        date_interval (int): Number of <date_part> when the incident will be counted as
+            valid.
+        date_part (str): Supports any of the BigQuery <date_part> values: "DAY", "WEEK",
+            "MONTH", "QUARTER", or "YEAR".
+        where_clause_addition (str, optional): Any additional WHERE-clause filters for
+            selecting incidents. Example: "AND sii.incident_type='VIOLENCE'". Defaults
+            to "".
+        incident_date_name_in_reason_blob (str, optional): Name of the `incident_date`
+            field in the reason blob. Defaults to "latest_incidents".
     Returns:
-        TaskCriteriaBigQueryViewBuilder: CTE query that shows the spans of
-            time when the violations that meet certain conditions set by the user
-            (<incident_type> and <where clause>) occurred. The span of time for the validity of
-            each violation starts at incident_date and ends after a period specified by
-            the user (in <date_interval> and <date_part>)
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: View builder for a state-agnostic
+            TES criterion view that shows the spans of time where the incidents that
+            meet any condition(s) set by the user (<where_clause_addition>) occurred.
+            The span of time for the validity of each incident starts at `incident_date`
+            and ends after a period specified by the user (<date_interval> and
+            <date_part>).
     """
 
-    violation_date_content_in_reason_blob = (
-        "ARRAY_AGG(violation_date IGNORE NULLS ORDER BY violation_date DESC)"
-    )
-    if display_single_violation_date:
-        violation_date_content_in_reason_blob += "[OFFSET(0)]"
+    # check validity of input
+    if date_part not in ["DAY", "WEEK", "MONTH", "QUARTER", "YEAR"]:
+        raise ValueError("Invalid value specified for `date_part`.")
+    if where_clause_addition and not where_clause_addition.startswith("AND "):
+        raise ValueError(
+            "Additional WHERE-clause filter(s) in `where_clause_addition` must start with 'AND '."
+        )
 
     criteria_query = f"""
-    WITH incarceration_violations AS (
+    WITH incarceration_incidents AS (
+        /* Select incidents that we want to count for this criterion. Incidents are
+        filtered based on any specified incident-level attributes and any aggregated
+        attributes of incident outcomes (since there can be multiple outcomes per
+        incident). */
         SELECT
-            sii.state_code,
-            sii.person_id,
+            state_code,
+            person_id,
+            incarceration_incident_id,
+            sii.incident_date,
+        FROM `{{project_id}}.normalized_state.state_incarceration_incident` sii
+        /* NB: there can be multiple outcomes per incident, so this LEFT JOIN can create
+        multiple rows per incident (where each row is a unique incident outcome). */
+        LEFT JOIN `{{project_id}}.normalized_state.state_incarceration_incident_outcome` siio
+            USING (state_code, person_id, incarceration_incident_id)
+        /* NB: the WHERE clause is typically evaluated after the FROM clause but before
+        GROUP BY and aggregation, per BigQuery documentation. This means that any
+        filtering applied in this WHERE clause will apply to the pre-grouped data. */
+        /* By default, we'll exclude from consideration any incidents with an
+        `incident_type` of 'POSITIVE', as these incidents reflect reports of good
+        behavior; as such, we don't want these to count as disqualifying incidents in
+        this criterion. */
+        WHERE COALESCE(sii.incident_type, 'NO_INCIDENT_TYPE') NOT IN ('POSITIVE')
+            {where_clause_addition if where_clause_addition else ""}
+        /* Group by incident, so that we get one row per incident coming out of this
+        CTE. */
+        GROUP BY 1, 2, 3, 4
+        /* Drop incidents with excluded `outcome_type` values. Note that not all
+        incidents necessarily have outcomes (and even those that do may have a NULL
+        `outcome_type`). We exclude any incidents where every non-null `outcome_type` is
+        either 'DISMISSED' or 'NOT_GUILTY'. We use COALESCE in the statement below to
+        ensure that we don't accidentally drop incidents that have no recorded
+        outcome(s) (type[s]), as the LOGICAL_AND will return NULL if `outcome_type` is
+        NULL for every row going into the aggregation. */
+        /* TODO(#35258): Ensure that we're correctly handling incidents with multiple
+        outcome types. ND currently has incidents with multiple non-null outcome types
+        where at least one of the types is 'DISMISSED' or 'NOT_GUILTY'. Note that these
+        incidents will still be considered disqualifying for now. We may want to change
+        this after learning more about whether these particular ND incidents should be
+        considered wholly dismissed or not-guilty. */
+        HAVING (NOT COALESCE(LOGICAL_AND(siio.outcome_type IN ('DISMISSED', 'NOT_GUILTY')), FALSE))
+    ),
+    incarceration_incident_ineligibility_spans AS (
+        /* With our selected incidents, we create spans of *ineligibility*, covering the
+        periods of time during which someone will not meet this criterion due to
+        still-relevant incidents. */
+        SELECT
+            state_code,
+            person_id,
             incident_date AS start_date,
             DATE_ADD(incident_date, INTERVAL {date_interval} {date_part}) AS end_date,
-            incident_date AS violation_date,
-            {bool_column}
-        FROM `{{project_id}}.normalized_state.state_incarceration_incident` sii
-        {incident_type}
-        {where_clause}
-    ), 
-    {create_sub_sessions_with_attributes('incarceration_violations')}
+            incident_date,
+            FALSE AS meets_criteria,
+        FROM incarceration_incidents
+    ),
+    /* We sub-sessionize to handle overlapping spans, which arise when residents have
+    more than one incident within the given time period of incident relevance (as
+    specified by <date_interval> and <date_part>). */
+    {create_sub_sessions_with_attributes('incarceration_incident_ineligibility_spans')}
     SELECT 
         state_code,
         person_id,
         start_date,
         end_date,
         LOGICAL_AND(meets_criteria) AS meets_criteria,
-        TO_JSON(STRUCT({violation_date_content_in_reason_blob} AS {violation_date_name_in_reason_blob})) AS reason,
-        {violation_date_content_in_reason_blob} AS {violation_date_name_in_reason_blob},
+        TO_JSON(STRUCT(
+            ARRAY_AGG(incident_date IGNORE NULLS ORDER BY incident_date DESC) AS {incident_date_name_in_reason_blob}
+        )) AS reason,
+        ARRAY_AGG(incident_date IGNORE NULLS ORDER BY incident_date DESC) AS {incident_date_name_in_reason_blob},
     FROM sub_sessions_with_attributes
-    GROUP BY 1,2,3,4
+    GROUP BY 1, 2, 3, 4
     """
-
-    if state_code:
-        # TODO(#26803): Remove this once Oregon fits within state-agnostic logic
-        return StateSpecificTaskCriteriaBigQueryViewBuilder(
-            criteria_name=criteria_name,
-            description=description,
-            criteria_spans_query_template=criteria_query,
-            state_code=state_code,
-            meets_criteria_default=True,
-            reasons_fields=[
-                ReasonsField(
-                    name=violation_date_name_in_reason_blob,
-                    type=bigquery.enums.StandardSqlTypeNames.DATE,
-                    description="Date when the violation occurred",
-                ),
-            ],
-        )
 
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=criteria_name,
@@ -739,9 +762,9 @@ def incarceration_violations_within_time_interval_criteria_builder(
         meets_criteria_default=True,
         reasons_fields=[
             ReasonsField(
-                name=violation_date_name_in_reason_blob,
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date when the violation occurred",
+                name=incident_date_name_in_reason_blob,
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description="Date(s) when the incident(s) occurred",
             ),
         ],
     )
