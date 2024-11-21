@@ -1,4 +1,4 @@
-FROM ubuntu:mantic-20231011
+FROM ubuntu:noble
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -10,15 +10,20 @@ ENV DEBIAN_FRONTEND noninteractive
 # unideal.
 ENV TZ America/New_York
 
-RUN apt update -y && \
+RUN apt update -y && apt upgrade -y && \
+    apt install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
     apt install -y \
-    locales \
-    git \
-    libxml2-dev libxslt1-dev \
-    python3.11-dev pipenv/mantic \
-    default-jre \
-    libpq-dev \
-    curl
+		locales \
+		git \
+		libxml2-dev libxslt1-dev \
+		default-jre \
+		libpq-dev \
+		build-essential \
+		python3.11-dev \
+		curl && \
+	rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
 
 RUN locale-gen en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
@@ -58,22 +63,30 @@ ENV PATH="$PATH_PREFIX$PATH"
 # root of the project.
 ENV PIPENV_VENV_IN_PROJECT="1"
 
+RUN adduser recidiviz && mkdir /app && chown recidiviz /app/
+USER recidiviz
+RUN curl -s https://bootstrap.pypa.io/get-pip.py 2>&1 | python3.11
+ENV PATH=/home/recidiviz/.local/bin:$PATH
+RUN pip install pipenv --user
+
 # Add only the Pipfiles first to ensure we cache `pipenv sync` when application code is updated but not the Pipfiles
-COPY Pipfile /app/
-COPY Pipfile.lock /app/
+COPY --chown=recidiviz Pipfile /app/
+COPY --chown=recidiviz Pipfile.lock /app/
 
 WORKDIR /app
 
-RUN if [ "$DEV_MODE" = "True" ]; \
-    then pipenv sync --dev --verbose; \
-    else pipenv sync --verbose; \
-    fi
+RUN pipenv \
+    # Include user-level site-packages (namely pipenv) in our new virtual environment
+    --site-packages \
+    --python 3.11 && \
+    pipenv install \
+    # This will fail a build if the Pipfile.lock _meta hash is out of date from the Pipfile contents.
+    --deploy \
+    --verbose \
+    $(if [ "$DEV_MODE" = "True" ]; then echo "--dev"; fi)
 
 # Add the current commit SHA as an env variable
 ARG CURRENT_GIT_SHA=""
 ENV CURRENT_GIT_SHA=${CURRENT_GIT_SHA}
-
-# Install security patches
-RUN apt-get update && apt-get -y upgrade
 
 EXPOSE 8080

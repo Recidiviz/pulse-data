@@ -2,7 +2,7 @@ FROM us-docker.pkg.dev/recidiviz-staging/recidiviz-base/default:latest
 
 WORKDIR /app/recidiviz
 
-COPY . /app
+COPY --chown=recidiviz . /app
 
 WORKDIR /app
 
@@ -12,6 +12,3 @@ CMD pipenv run hypercorn recidiviz.prototypes.app:app --bind :8080
 # started and returning 200 on the `/health` endpoint.
 HEALTHCHECK --interval=5s --timeout=3s \
     CMD curl -f http://localhost:8080/health || exit 1
-
-RUN rm -rf /var/lib/apt/lists/*; \
-    apt-get clean;
