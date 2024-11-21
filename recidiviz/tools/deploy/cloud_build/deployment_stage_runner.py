@@ -21,7 +21,7 @@ This script currently relies on bash for:
 - generation of the version tag
 
 python -m recidiviz.tools.deploy.cloud_build.deployment_stage_runner \
-    --project_id {recidiviz-staging|recidiviz-123} \
+    --project-id {recidiviz-staging|recidiviz-123} \
     --commit-ref {commit_ref_to_deploy} \
     --version-tag {version_tag} \
     --stage {RunMigrations|TagImages|BuildImages|DeployAppEngine}

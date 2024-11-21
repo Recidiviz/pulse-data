@@ -78,6 +78,7 @@ ENV PATH=/usr/lib/postgresql/${PG_VERSION}/bin/:$PATH
 RUN apt-get update -y && apt-get upgrade -y
 USER recidiviz
 RUN npm install prettier
+RUN chown recidiviz /app/
 COPY Pipfile /app/
 COPY Pipfile.lock /app/
 RUN pipenv sync --dev --verbose
@@ -99,7 +100,15 @@ FROM recidiviz-init AS recidiviz-app
 # Add only the Pipfiles first to ensure we cache `pipenv sync` when application code is updated but not the Pipfiles
 COPY Pipfile /app/
 COPY Pipfile.lock /app/
-RUN pipenv sync --verbose
+
+RUN pipenv \
+    # Include user-level site-packages (namely pipenv) in our new virtual environment
+    --site-packages \
+    --python 3.11 && \
+    pipenv install \
+    # This will fail a build if the Pipfile.lock _meta hash is out of date from the Pipfile contents.
+    --deploy \
+    --verbose
 # Add the rest of the application code once all dependencies are installed
 COPY . /app
 # Add the built Admin Panel frontend to the image
