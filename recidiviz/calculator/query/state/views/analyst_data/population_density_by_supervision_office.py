@@ -22,7 +22,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
-from recidiviz.source_tables.yaml_managed.datasets import VERA_DATASET
+from recidiviz.source_tables.externally_managed.datasets import VERA_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

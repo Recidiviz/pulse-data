@@ -15,17 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Functionality for collecting configs for all externally managed source tables."""
+import glob
 import os
 from functools import cache
+from itertools import groupby
 
 from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_EVENTS,
     AUTH0_PROD_ACTION_LOGS,
     EXPORT_ARCHIVES_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
-)
-from recidiviz.source_tables.collect_source_tables_from_yamls import (
-    collect_source_tables_from_yamls_by_dataset,
 )
 from recidiviz.source_tables.externally_managed.datasets import (
     EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS,
@@ -34,6 +33,7 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
     SourceTableCollectionValidationConfig,
+    SourceTableConfig,
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 
@@ -43,19 +43,24 @@ def collect_externally_managed_source_table_collections(
     project_id: str | None,
 ) -> list[SourceTableCollection]:
     """
-    Collects configuration for source tables that are managed outside of our standard
-    table update process (e.g. via Terraform or via an external process that writes to
-    BQ).
-
-    Some of these datasets are created by processes that change the schema frequently.
-    In order to avoid updating our YAMLs over and over again, for these datasets we
-    validate that only a subset of the fields that we actually use are present.
+    Collects all externally managed source tables.
+    We declare datasets here where we are only interested in validating a subset of
+    fields.
 
     If project_id is None, returns all source tables that exist in any project.
     Otherwise, only returns the collections that are deployed to the given project.
     """
-    source_tables_by_dataset = collect_source_tables_from_yamls_by_dataset(
-        yamls_root_path=os.path.dirname(__file__)
+    yaml_paths = glob.glob(os.path.join(os.path.dirname(__file__), "**/*.yaml"))
+
+    def _source_table_sorter(source_table: SourceTableConfig) -> str:
+        return source_table.address.dataset_id
+
+    source_tables_by_dataset = groupby(
+        sorted(
+            [SourceTableConfig.from_file(yaml_path) for yaml_path in yaml_paths],
+            key=_source_table_sorter,
+        ),
+        key=_source_table_sorter,
     )
 
     # "required" columns here means they are required by the view graph and should be
@@ -89,7 +94,7 @@ def collect_externally_managed_source_table_collections(
             },
             description=EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS[dataset_id],
         )
-        for dataset_id, source_tables in source_tables_by_dataset.items()
+        for dataset_id, source_tables in source_tables_by_dataset
     ]
 
 

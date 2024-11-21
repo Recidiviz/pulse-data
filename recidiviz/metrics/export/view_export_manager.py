@@ -64,10 +64,12 @@ from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import
 )
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
-from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
-    build_source_table_repository_for_yaml_managed_tables,
+from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
+    build_source_table_repository_for_externally_managed_tables,
 )
-from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_DATASET
+from recidiviz.source_tables.externally_managed.datasets import (
+    VIEW_UPDATE_METADATA_DATASET,
+)
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, gcp_only
 from recidiviz.view_registry.address_overrides_factory import (
@@ -89,8 +91,10 @@ class MetricViewDataExportSuccessPersister(BigQueryRowStreamer):
     """Class that persists runtime of successful export of metric view data."""
 
     def __init__(self, bq_client: BigQueryClient):
-        source_table_repository = build_source_table_repository_for_yaml_managed_tables(
-            metadata.project_id()
+        source_table_repository = (
+            build_source_table_repository_for_externally_managed_tables(
+                metadata.project_id()
+            )
         )
         source_table_config = source_table_repository.build_config(
             METRIC_VIEW_DATA_EXPORT_TRACKER_ADDRESS

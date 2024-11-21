@@ -119,7 +119,6 @@ class SourceTableConfig:
             "schema": [
                 {
                     "name": field.name,
-                    "description": field.description,
                     "type": field.field_type,
                     "mode": field.mode,
                 }

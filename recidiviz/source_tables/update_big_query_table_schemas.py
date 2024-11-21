@@ -26,7 +26,7 @@ python -m recidiviz.source_tables.update_big_query_table_schemas \
 
 # To perform a dry run of all source table schema updates
 python -m recidiviz.source_tables.update_big_query_table_schemas \
-  --project-id recidiviz-staging \
+  --project-id [project_id] \
   --action dry_run
 """
 import argparse
