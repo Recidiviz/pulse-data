@@ -109,18 +109,42 @@ columns:
     description: Used to join to CIS_2082.
   - name: adult_ind
     description: Likely unused.
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-08-24T00:00:00Z
   - name: adult_medicaid_ind
     description: Likely unused.
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-08-24T00:00:00Z
   - name: juvenile_ind
     description: Likely unused.
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-08-24T00:00:00Z
   - name: juvenile_medicaid_ind
     description: Likely unused.
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-08-24T00:00:00Z
   - name: person_contacted_cd
     description: Likely unused.
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-08-24T00:00:00Z
   - name: person_contacted_desc
     description: Likely unused.
     is_pii: True
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-08-24T00:00:00Z
   - name: system_ref_comments_tx
     is_pii: True
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-08-24T00:00:00Z
   - name: system_ref_tx
     is_pii: True
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2024-08-24T00:00:00Z
