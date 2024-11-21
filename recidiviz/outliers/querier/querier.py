@@ -443,7 +443,7 @@ class OutliersQuerier:
                         == SupervisionOfficerOutlierStatus.officer_id,
                         SupervisionOfficerOutlierStatus.end_date == end_date,
                         # TODO(#24998): Account for comparing benchmarks by caseload type
-                        SupervisionOfficerOutlierStatus.caseload_type == "ALL",
+                        SupervisionOfficerOutlierStatus.caseload_category == "ALL",
                     ),
                 )
                 .filter(SupervisionOfficerSupervisor.full_name.is_not(None))
@@ -637,7 +637,7 @@ class OutliersQuerier:
         Each item in the returned list adheres to the below format:
             {
               "metric_id": str,
-              "caseload_type": str,
+              "caseload_category": str,
               "benchmarks": [  # a list of benchmark values for each period in window
                 {
                   "target": float
@@ -676,12 +676,12 @@ class OutliersQuerier:
                 )
                 .group_by(
                     MetricBenchmark.metric_id,
-                    MetricBenchmark.caseload_type,
+                    MetricBenchmark.caseload_category,
                     MetricBenchmark.period,
                 )
                 .with_entities(
                     MetricBenchmark.metric_id,
-                    MetricBenchmark.caseload_type,
+                    MetricBenchmark.caseload_category,
                     MetricBenchmark.period,
                     # Get an array of JSON objects for the metric's targets and thresholds in the selected periods
                     func.array_agg(
@@ -707,13 +707,13 @@ class OutliersQuerier:
                     SupervisionOfficerOutlierStatus.end_date == end_date,
                 )
                 .group_by(
-                    SupervisionOfficerOutlierStatus.caseload_type,
+                    SupervisionOfficerOutlierStatus.caseload_category,
                     SupervisionOfficerOutlierStatus.metric_id,
                     SupervisionOfficerOutlierStatus.period,
                     SupervisionOfficerOutlierStatus.status,
                 )
                 .with_entities(
-                    SupervisionOfficerOutlierStatus.caseload_type,
+                    SupervisionOfficerOutlierStatus.caseload_category,
                     SupervisionOfficerOutlierStatus.metric_id,
                     SupervisionOfficerOutlierStatus.period,
                     SupervisionOfficerOutlierStatus.status,
@@ -739,8 +739,8 @@ class OutliersQuerier:
                 .join(
                     latest_period_rates_far,
                     and_(
-                        benchmarks_cte.c.caseload_type
-                        == latest_period_rates_far.c.caseload_type,
+                        benchmarks_cte.c.caseload_category
+                        == latest_period_rates_far.c.caseload_category,
                         benchmarks_cte.c.metric_id
                         == latest_period_rates_far.c.metric_id,
                         benchmarks_cte.c.period == latest_period_rates_far.c.period,
@@ -751,8 +751,8 @@ class OutliersQuerier:
                 .join(
                     latest_period_rates_near,
                     and_(
-                        benchmarks_cte.c.caseload_type
-                        == latest_period_rates_near.c.caseload_type,
+                        benchmarks_cte.c.caseload_category
+                        == latest_period_rates_near.c.caseload_category,
                         benchmarks_cte.c.metric_id
                         == latest_period_rates_near.c.metric_id,
                         benchmarks_cte.c.period == latest_period_rates_near.c.period,
@@ -763,8 +763,8 @@ class OutliersQuerier:
                 .join(
                     latest_period_rates_met,
                     and_(
-                        benchmarks_cte.c.caseload_type
-                        == latest_period_rates_met.c.caseload_type,
+                        benchmarks_cte.c.caseload_category
+                        == latest_period_rates_met.c.caseload_category,
                         benchmarks_cte.c.metric_id
                         == latest_period_rates_met.c.metric_id,
                         benchmarks_cte.c.period == latest_period_rates_met.c.period,
@@ -773,7 +773,7 @@ class OutliersQuerier:
                     isouter=True,
                 )
                 .with_entities(
-                    benchmarks_cte.c.caseload_type,
+                    benchmarks_cte.c.caseload_category,
                     benchmarks_cte.c.metric_id,
                     benchmarks_cte.c.benchmarks_over_time,
                     func.coalesce(latest_period_rates_far.c.rates, []).label("far"),
@@ -786,7 +786,7 @@ class OutliersQuerier:
             return [
                 {
                     "metric_id": record.metric_id,
-                    "caseload_category": record.caseload_type,
+                    "caseload_category": record.caseload_category,
                     "benchmarks": record.benchmarks_over_time,
                     "latest_period_values": {
                         "far": record.far,
@@ -1142,7 +1142,7 @@ class OutliersQuerier:
                             "status",
                             SupervisionOfficerOutlierStatus.status,
                             "caseload_category",
-                            SupervisionOfficerOutlierStatus.caseload_type,
+                            SupervisionOfficerOutlierStatus.caseload_category,
                         ),
                         SupervisionOfficerOutlierStatus.end_date.desc(),
                     )
@@ -1355,12 +1355,14 @@ class OutliersQuerier:
                         earliest_person_assignment_date=record.earliest_person_assignment_date,
                         caseload_category=latest_period_caseload_category,
                         avg_daily_population=record.avg_daily_population,
-                        zero_grant_opportunities=[
-                            x.replace("task_completions_", "")
-                            for x in record.zero_grant_opportunities or []
-                        ]
-                        if include_workflows_info
-                        else None,
+                        zero_grant_opportunities=(
+                            [
+                                x.replace("task_completions_", "")
+                                for x in record.zero_grant_opportunities or []
+                            ]
+                            if include_workflows_info
+                            else None
+                        ),
                         outlier_metrics=(
                             [
                                 {
@@ -1459,7 +1461,7 @@ class OutliersQuerier:
                                 "status",
                                 SupervisionOfficerOutlierStatus.status,
                                 "caseload_category",
-                                SupervisionOfficerOutlierStatus.caseload_type,
+                                SupervisionOfficerOutlierStatus.caseload_category,
                             ),
                             SupervisionOfficerOutlierStatus.end_date.desc(),
                         )
