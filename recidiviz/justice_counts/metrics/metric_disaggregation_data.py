@@ -27,7 +27,10 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
-from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
+from recidiviz.justice_counts.dimensions.person import (
+    CONSOLIDATED_RACE_AND_ETHNICITY_DEFINITIONS,
+    RaceAndEthnicity,
+)
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics.metric_context_data import MetricContextData
 from recidiviz.justice_counts.metrics.metric_definition import (
@@ -310,9 +313,10 @@ class MetricAggregatedDimensionData:
         dimension_member_to_datapoints_json: Optional[
             DefaultDict[str, List[DatapointJson]]
         ] = None,
-    ) -> Dict[str, Dict[str, int]]:
+    ) -> Dict[str, Dict[str, Any]]:
         """
-        Aggregates and groups datapoints by consolidated race/ethnicity into a JSON-compatible dictionary.
+        Aggregates and groups datapoints by consolidated race/ethnicity into a JSON-compatible dictionary,
+        with descriptions of consolidated race and ethnicity groups.
 
         Args:
             dimension_member_to_datapoints_json (Optional[DefaultDict[str, List[DatapointJson]]], optional):
@@ -320,8 +324,11 @@ class MetricAggregatedDimensionData:
                 Each datapoint contains time range and value data. Defaults to None.
 
         Returns:
-            Dict[str, Dict[str, int]]: A dictionary mapping each consolidated race/ethnicity to a time range,
-            with the corresponding aggregated total value for each time range.
+            Dict[str, Union[Dict[str, Dict[str, int]], Dict[str, str]]]: A dictionary with two keys:
+                - "data": A dictionary mapping each consolidated race/ethnicity to time ranges,
+                with the corresponding aggregated total value for each time range.
+                - "descriptions": A dictionary providing human-readable definitions of the consolidated
+                race and ethnicity groups.
 
         Notes:
             - Consolidates race and ethnicity based on the `RaceAndEthnicity` dimension:
@@ -337,11 +344,18 @@ class MetricAggregatedDimensionData:
                 `NOT_HISPANIC_BLACK`: [DatapointJson, DatapointJson...]
 
             into `consolidated_race_ethnicity_json` in this format:
-                `HISPANIC`: {June 1 datetime - July 1 datetime: <total for hispanic ethnicity over time frame>, ...},
-                `WHITE`: {June 1 datetime - July 1 datetime: <total for white, not/unknown hispanic ethnicity over time frame>, ...},
-                `BLACK`: {June 1 datetime - July 1 datetime: <total for black, not/unknown hispanic ethnicity over time frame>, ...}
+                - "data": {
+                    `HISPANIC`: {June 1 datetime - July 1 datetime: <total for Hispanic ethnicity over time frame>, ...},
+                    `WHITE`: {June 1 datetime - July 1 datetime: <total for White, not/unknown Hispanic ethnicity over time frame>, ...},
+                    ...
+                }
+                - "descriptions": {
+                    `HISPANIC`: "Includes all individuals who self-identify as Hispanic or Latino, regardless of race.",
+                    `WHITE`: "Includes individuals who self-identify as White and are not of Hispanic or Latino ethnicity.",
+                    ...
+                }
         """
-        consolidated_race_ethnicity_json: Dict[str, Dict[str, int]] = {}
+        consolidated_race_ethnicity_json: Dict[str, Dict[str, Any]] = {}
 
         if dimension_member_to_datapoints_json is None:
             return consolidated_race_ethnicity_json
@@ -372,6 +386,8 @@ class MetricAggregatedDimensionData:
                     ] += datapoint_json[
                         "value"
                     ]
+        consolidated_race_ethnicity_data_json: Dict[str, Dict[str, int]] = {}
+
         # 2) Format consolidated race/ethnicity into a JSON response
         for (
             consolidated_race_ethnicity,
@@ -381,12 +397,22 @@ class MetricAggregatedDimensionData:
                 time_range,
                 aggregate_total,
             ) in time_range_to_aggregate_total.items():
-                if consolidated_race_ethnicity not in consolidated_race_ethnicity_json:
-                    consolidated_race_ethnicity_json[consolidated_race_ethnicity] = {}
+                if (
+                    consolidated_race_ethnicity
+                    not in consolidated_race_ethnicity_data_json
+                ):
+                    consolidated_race_ethnicity_data_json[
+                        consolidated_race_ethnicity
+                    ] = {}
 
-                consolidated_race_ethnicity_json[consolidated_race_ethnicity][
+                consolidated_race_ethnicity_data_json[consolidated_race_ethnicity][
                     f"{time_range[0]} - {time_range[1]}"
                 ] = aggregate_total
+
+        consolidated_race_ethnicity_json["data"] = consolidated_race_ethnicity_data_json
+        consolidated_race_ethnicity_json[
+            "descriptions"
+        ] = CONSOLIDATED_RACE_AND_ETHNICITY_DEFINITIONS
 
         return consolidated_race_ethnicity_json
 

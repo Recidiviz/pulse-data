@@ -28,6 +28,7 @@ from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
+    CONSOLIDATED_RACE_AND_ETHNICITY_DEFINITIONS,
     GenderRestricted,
     RaceAndEthnicity,
 )
@@ -3549,32 +3550,35 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 for dim in RaceAndEthnicity
             ],
             "consolidated_race_ethnicity": {
-                "Hispanic or Latino": {
-                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 80
-                },
-                "American Indian or Alaska Native": {
-                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
-                },
-                "Asian": {
-                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
-                },
-                "Black": {
-                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
-                },
-                "More than one race": {
-                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
-                },
-                "Native Hawaiian or Pacific Islander": {
-                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
-                },
-                "White": {
-                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
-                },
-                "Other": {
-                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
-                },
-                "Unknown": {
-                    "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                "descriptions": CONSOLIDATED_RACE_AND_ETHNICITY_DEFINITIONS,
+                "data": {
+                    "Hispanic or Latino": {
+                        "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 80
+                    },
+                    "American Indian or Alaska Native": {
+                        "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                    },
+                    "Asian": {
+                        "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                    },
+                    "Black": {
+                        "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                    },
+                    "More than one race": {
+                        "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                    },
+                    "Native Hawaiian or Pacific Islander": {
+                        "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                    },
+                    "White": {
+                        "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                    },
+                    "Other": {
+                        "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                    },
+                    "Unknown": {
+                        "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 20
+                    },
                 },
             },
         }
@@ -3658,6 +3662,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                     },
                 ),
                 {
+                    "additional_description": None,
                     "category": "Operations and Dynamics",
                     "contexts": [
                         {
