@@ -36,7 +36,7 @@ ENV PYTHONUNBUFFERED 1
 # The main effect of this variable is to create the pipenv environment in the `.venv` folder in the
 # root of the project.
 ENV PIPENV_VENV_IN_PROJECT="1"
-RUN adduser recidiviz
+RUN adduser recidiviz && mkdir /app && chown recidiviz /app/
 USER recidiviz
 RUN curl -s https://bootstrap.pypa.io/get-pip.py 2>&1 | python3.11
 ENV PATH=/home/recidiviz/.local/bin:$PATH
@@ -78,7 +78,6 @@ ENV PATH=/usr/lib/postgresql/${PG_VERSION}/bin/:$PATH
 RUN apt-get update -y && apt-get upgrade -y
 USER recidiviz
 RUN npm install prettier
-RUN chown recidiviz /app/
 COPY Pipfile /app/
 COPY Pipfile.lock /app/
 RUN pipenv sync --dev --verbose
@@ -98,8 +97,8 @@ RUN yarn build
 
 FROM recidiviz-init AS recidiviz-app
 # Add only the Pipfiles first to ensure we cache `pipenv install` when application code is updated but not the Pipfiles
-COPY Pipfile /app/
-COPY Pipfile.lock /app/
+COPY --chown=recidiviz Pipfile /app/
+COPY --chown=recidiviz Pipfile.lock /app/
 RUN pipenv \
     # Include user-level site-packages (namely pipenv) in our new virtual environment
     --site-packages \
@@ -109,9 +108,9 @@ RUN pipenv \
     --deploy \
     --verbose
 # Add the rest of the application code once all dependencies are installed
-COPY . /app
+COPY --chown=recidiviz . /app
 # Add the built Admin Panel frontend to the image
-COPY --from=admin-panel-build /usr/admin-panel/build /app/frontends/admin-panel/build
+COPY --chown=recidiviz --from=admin-panel-build /usr/admin-panel/build /app/frontends/admin-panel/build
 # Add the current commit SHA as an env variable
 ARG CURRENT_GIT_SHA=""
 ENV CURRENT_GIT_SHA=${CURRENT_GIT_SHA}
