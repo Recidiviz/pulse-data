@@ -82,8 +82,6 @@ class DirectIngestRawFileHeaderReader:
         Returns:
             List[str]: the first row of the CSV file as a list of strings.
         """
-        csv_reader_kwargs = self._get_csv_reader_kwargs()
-
         try:
             with self.fs.open(
                 gcs_file_path,
@@ -98,7 +96,7 @@ class DirectIngestRawFileHeaderReader:
                     if self.file_config.custom_line_terminator
                     else f
                 )
-                reader = csv.reader(updated_f, **csv_reader_kwargs)
+                reader = csv.reader(updated_f, **self._get_csv_reader_kwargs())
                 csv_first_row = next(reader, [])
         except UnicodeDecodeError as e:
             raise ValueError(
@@ -223,7 +221,8 @@ class DirectIngestRawFileHeaderReader:
         """Python csv reader is hard-coded to recognise either '\r' or '\n' as end-of-line
         https://docs.python.org/3/library/csv.html#csv.Dialect.lineterminator
 
-        So if there is a custom line terminator manually parse until we encounter it or EOF
+        So if there is a custom line terminator manually parse until we encounter it or EOF,
+        and replace any newlines with spaces to avoid parsing issues.
         """
         line = ""
         while True:
@@ -233,7 +232,10 @@ class DirectIngestRawFileHeaderReader:
             line += char
             if line.endswith(line_terminator):
                 break
-        return [line.rstrip(line_terminator)]
+        line_without_terminator = line.rstrip(line_terminator)
+        # For files with custom terminated lines they may have newlines in unquoted fields
+        # so we need to replace them in order to properly parse the csv
+        return [line_without_terminator.replace("\n", " ").replace("\r", " ")]
 
     def _get_csv_reader_kwargs(self) -> Dict[str, Any]:
         return {
