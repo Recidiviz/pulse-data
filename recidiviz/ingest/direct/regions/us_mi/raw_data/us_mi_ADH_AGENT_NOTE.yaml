@@ -21,9 +21,6 @@ columns:
     description: TODO(#19675)
   - name: last_update_node
     description: TODO(#19675)
-    field_type: datetime
-    datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
 table_relationships:
   - foreign_table: ADH_OFFENDER_BOOKING
     join_logic:

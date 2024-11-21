@@ -76,10 +76,6 @@ columns:
         r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
     description: TODO(#19675)
-    field_type: datetime
-    datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
-        r'\\:\\d\\d\\d', ''))"
   - name: web_publish_flag
     description: TODO(#19675)
   - name: record_source_id
