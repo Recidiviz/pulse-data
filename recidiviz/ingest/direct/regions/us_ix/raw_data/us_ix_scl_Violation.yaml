@@ -13,13 +13,17 @@ columns:
     description: |-
       TODO(#15329): Fill in column description
     known_values:
-      - value: 1
+      - value: "1"
         description: Pending
-      - value: 2
+      - value: "2"
         description: Submitted
-      - value: 5
+      - value: "3"
+        description: TODO(#34964) Document this value.
+      - value: "4"
+        description: TODO(#34964) Document this value.
+      - value: "5"
         description: Completed w/o Sanctions
-      - value: 6
+      - value: "6"
         description: No Report
   - name: ReportSubmissionDate
     description: |-
@@ -63,16 +67,24 @@ columns:
     description: |-
       TODO(#15329): Fill in column description
     known_values:
-      - value: 1
+      - value: "1"
         description: Non-Technical - New Conviction
-      - value: 2
+      - value: "2"
         description: Technical
+      - value: "17"
+        description: TODO(#34964) Document this value.
+      - value: "20"
+        description: TODO(#34964) Document this value.
   - name: ViolationOutcomeId
     description: |-
       TODO(#15329): Fill in column description
     known_values:
-      - value: 7
+      - value: "7"
         description: Found in Violation
+      - value: "8"
+        description: TODO(#34964) Document this value.
+      - value: "13"
+        description: TODO(#34964) Document this value.
   - name: OtherOutcome
     description: |-
       TODO(#15329): Fill in column description
@@ -86,9 +98,9 @@ columns:
   - name: OffenderId
     description: |-
       Name of the person who violated.
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_IX_DOC
+    is_pii: True
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description
@@ -118,7 +130,6 @@ columns:
   - name: ViolationDispositionTypeId
     description: |-
       The ID for the violation disposition type. Added 2024-03-07.
-
 table_relationships:
   - foreign_table: ind_Offender
     join_logic:

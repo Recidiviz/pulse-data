@@ -22,26 +22,58 @@ columns:
       Identifier for the type of investigation conducted. Can be joined to
       `com_InvestigationType.InvestigationTypeId`.
     known_values:
-      - value: 158
-        description: SUD Assessment Investigation
-      - value: 19
-        description: Home Plan Investigation
-      - value: 237
-        description: Firearm Applicant
-      - value: 250
-        description: Release Date Request
-      - value: 251
-        description: Parole- DOR
-      - value: 253
-        description: Transfer - District to District
-      - value: 254
-        description: Transfer to LSU
-      - value: 255
-        description: Transfer - District Officer to Officer
-      - value: 31
-        description: PSI_investigation_Converted
-      - value: 8
+      - value: "8"
         description: Pardon Investigation
+      - value: "15"
+        description: TODO(#34964) Document this value.
+      - value: "19"
+        description: Home Plan Investigation
+      - value: "31"
+        description: PSI_investigation_Converted
+      - value: "153"
+        description: TODO(#34964) Document this value.
+      - value: "158"
+        description: SUD Assessment Investigation
+      - value: "237"
+        description: Firearm Applicant
+      - value: "249"
+        description: TODO(#34964) Document this value.
+      - value: "250"
+        description: Release Date Request
+      - value: "251"
+        description: Parole- DOR
+      - value: "253"
+        description: Transfer - District to District
+      - value: "254"
+        description: Transfer to LSU
+      - value: "255"
+        description: Transfer - District Officer to Officer
+      - value: "1000"
+        description: TODO(#34964) Document this value.
+      - value: "1001"
+        description: TODO(#34964) Document this value.
+      - value: "1002"
+        description: TODO(#34964) Document this value.
+      - value: "1003"
+        description: TODO(#34964) Document this value.
+      - value: "1004"
+        description: TODO(#34964) Document this value.
+      - value: "1005"
+        description: TODO(#34964) Document this value.
+      - value: "1006"
+        description: TODO(#34964) Document this value.
+      - value: "1008"
+        description: TODO(#34964) Document this value.
+      - value: "1009"
+        description: TODO(#34964) Document this value.
+      - value: "1010"
+        description: TODO(#34964) Document this value.
+      - value: "1011"
+        description: TODO(#34964) Document this value.
+      - value: "1012"
+        description: TODO(#34964) Document this value.
+      - value: "1013"
+        description: TODO(#34964) Document this value.
   - name: RequestingStaffId
     description: |-
       Identifier for the staff requesting the investigation.
@@ -132,11 +164,13 @@ columns:
     description: |-
       TODO(#15329): Fill in column description
     known_values:
-      - value: 1
+      - value: "1"
         description: Pending
-      - value: 2
+      - value: "2"
         description: Completed
-      - value: 3
+      - value: "3"
         description: Accepted
-      - value: 4
+      - value: "4"
         description: Denied
+      - value: "5"
+        description: TODO(#34964) Document this value.

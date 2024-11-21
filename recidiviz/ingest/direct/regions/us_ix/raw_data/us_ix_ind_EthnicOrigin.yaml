@@ -10,9 +10,9 @@ columns:
     description: |-
       The reference code for the ethnicity type
     known_values:
-      - value: 0
+      - value: "0"
         description: Other
-      - value: 1
+      - value: "1"
         description: Hispanic
   - name: EthnicOriginDesc
     description: |-

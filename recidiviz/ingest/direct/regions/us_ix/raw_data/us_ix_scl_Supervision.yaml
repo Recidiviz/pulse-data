@@ -18,12 +18,14 @@ columns:
       ID for the supervision type. Can be joined to 
       `scl_SupervisionType.SupervisionTypeId`.
     known_values:
-      - value: 3
+      - value: "3"
         description: Parole
-      - value: 31
-        description: Probation
-      - value: 4
+      - value: "4"
         description: Interstate
+      - value: "6"
+        description: TODO(#34964) Document this value.
+      - value: "31"
+        description: Probation
   - name: ImposedDate
     description: |-
       The date the supervision term was imposed.
@@ -47,10 +49,20 @@ columns:
       ID for the supervision status. Can be joined to 
       `scl_SupervisionStatus.SupervisionStatusId`.
     known_values:
-      - value: 1
+      - value: "1"
         description: Active
-      - value: 2
+      - value: "2"
         description: Closed
+      - value: "4"
+        description: TODO(#34964) Document this value.
+      - value: "5"
+        description: TODO(#34964) Document this value.
+      - value: "6"
+        description: TODO(#34964) Document this value.
+      - value: "7"
+        description: TODO(#34964) Document this value.
+      - value: "8"
+        description: TODO(#34964) Document this value.
   - name: AliasNameId
     description: |-
       ID for the alias name of the supervisee. Can be joined to 
@@ -95,10 +107,9 @@ columns:
     description: |-
       ID for the offender under supervision. Can be joined with 
       `ind_Offender.OffenderId`.
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_IX_DOC
-
+    is_pii: True
 table_relationships:
   - foreign_table: ind_Offender
     join_logic:

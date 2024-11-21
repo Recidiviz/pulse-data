@@ -14,26 +14,60 @@ columns:
     description: |-
       Code for this legal status, joins to ind_LegalStatus.LegalStatusId.
     known_values:
-      - value: 26
+      - value: "1"
+        description: TODO(#34964) Document this value.
+      - value: "26"
         description: Parole Violator
-      - value: 75
+      - value: "75"
         description: Termer
-      - value: 76
+      - value: "76"
         description: Rider
-      - value: 77
+      - value: "77"
         description: Probation
-      - value: 78
+      - value: "78"
         description: Parole
-      - value: 79
+      - value: "79"
         description: Non Idaho Commitment
+      - value: "1000"
+        description: TODO(#34964) Document this value.
+      - value: "1001"
+        description: TODO(#34964) Document this value.
+      - value: "1004"
+        description: TODO(#34964) Document this value.
   - name: LegalStatusChangeReasonId
     description: |-
       Code for the reason why the legal status changed, joins to ind_LegalStatusChangeReason.LegalStatusChangeReasonId.
     known_values:
-      - value: 343
-        description: Conversion
-      - value: 71
+      - value: "15"
+        description: TODO(#34964) Document this value.
+      - value: "71"
         description: Initial
+      - value: "77"
+        description: TODO(#34964) Document this value.
+      - value: "83"
+        description: TODO(#34964) Document this value.
+      - value: "85"
+        description: TODO(#34964) Document this value.
+      - value: "88"
+        description: TODO(#34964) Document this value.
+      - value: "89"
+        description: TODO(#34964) Document this value.
+      - value: "91"
+        description: TODO(#34964) Document this value.
+      - value: "94"
+        description: TODO(#34964) Document this value.
+      - value: "95"
+        description: TODO(#34964) Document this value.
+      - value: "98"
+        description: TODO(#34964) Document this value.
+      - value: "343"
+        description: Conversion
+      - value: "1000"
+        description: TODO(#34964) Document this value.
+      - value: "1001"
+        description: TODO(#34964) Document this value.
+      - value: "1002"
+        description: TODO(#34964) Document this value.
   - name: PreviousEndDate
     description: |-
       End date of previous legal status period.
@@ -83,10 +117,10 @@ columns:
       TODO(#15329): Fill in column description
 table_relationships:
   - foreign_table: ind_LegalStatus
+    cardinality: MANY_TO_ONE
     join_logic:
       - ind_OffenderLegalStatus.LegalStatusId = ind_LegalStatus.LegalStatusId
-    cardinality: MANY_TO_ONE
   - foreign_table: ind_LegalStatusChangeReason
+    cardinality: MANY_TO_ONE
     join_logic:
       - ind_OffenderLegalStatus.LegalStatusChangeReasonId = ind_LegalStatusChangeReason.LegalStatusChangeReasonId
-    cardinality: MANY_TO_ONE

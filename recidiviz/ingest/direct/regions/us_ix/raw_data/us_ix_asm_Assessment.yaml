@@ -13,26 +13,26 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the ATLAS system. 
       Can be joined to `ind_Offender.OffenderId`.
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_IX_DOC
+    is_pii: True
   - name: AssessmentTypeId
     description: |-
       Integer values corresponding to the type of assessment used in a given 
       observation, ranging from 1-7 (though a type of 2 is never used in the data).
       Can be joined to `asm_AssessmentType.AssessmentTypeId`.
     known_values:
-      - value: 1
+      - value: "1"
         description: Substance Abuse
-      - value: 3
+      - value: "3"
         description: Academic
-      - value: 4
+      - value: "4"
         description: Risk/Need
-      - value: 5
+      - value: "5"
         description: Sex Offender
-      - value: 6
+      - value: "6"
         description: Polygraph
-      - value: 7
+      - value: "7"
         description: Vocational
   - name: AssessmentToolId
     description: |-
@@ -45,25 +45,139 @@ columns:
       values along with a null option. Can be joined to
       `asm_AssessmentDegree.AssessmentDegreeId`.
     known_values:
-      - value: 1
+      - value: "1"
         description: Minimum Needs
-      - value: 15
-        description: Low
-      - value: 266
-        description: 1 - Outpatient Treatment
-      - value: 4
+      - value: "4"
         description: Low Risk
-      - value: 5
+      - value: "5"
         description: Moderate Risk
-      - value: 7
+      - value: "7"
         description: High Risk
+      - value: "10"
+        description: TODO(#34964) Document this value.
+      - value: "15"
+        description: Low
+      - value: "22"
+        description: TODO(#34964) Document this value.
+      - value: "67"
+        description: TODO(#34964) Document this value.
+      - value: "197"
+        description: TODO(#34964) Document this value.
+      - value: "200"
+        description: TODO(#34964) Document this value.
+      - value: "205"
+        description: TODO(#34964) Document this value.
+      - value: "206"
+        description: TODO(#34964) Document this value.
+      - value: "214"
+        description: TODO(#34964) Document this value.
+      - value: "246"
+        description: TODO(#34964) Document this value.
+      - value: "247"
+        description: TODO(#34964) Document this value.
+      - value: "248"
+        description: TODO(#34964) Document this value.
+      - value: "259"
+        description: TODO(#34964) Document this value.
+      - value: "260"
+        description: TODO(#34964) Document this value.
+      - value: "261"
+        description: TODO(#34964) Document this value.
+      - value: "262"
+        description: TODO(#34964) Document this value.
+      - value: "263"
+        description: TODO(#34964) Document this value.
+      - value: "266"
+        description: 1 - Outpatient Treatment
+      - value: "267"
+        description: TODO(#34964) Document this value.
+      - value: "268"
+        description: TODO(#34964) Document this value.
+      - value: "269"
+        description: TODO(#34964) Document this value.
+      - value: "270"
+        description: TODO(#34964) Document this value.
+      - value: "272"
+        description: TODO(#34964) Document this value.
+      - value: "273"
+        description: TODO(#34964) Document this value.
+      - value: "274"
+        description: TODO(#34964) Document this value.
+      - value: "275"
+        description: TODO(#34964) Document this value.
+      - value: "276"
+        description: TODO(#34964) Document this value.
+      - value: "277"
+        description: TODO(#34964) Document this value.
+      - value: "278"
+        description: TODO(#34964) Document this value.
+      - value: "279"
+        description: TODO(#34964) Document this value.
+      - value: "280"
+        description: TODO(#34964) Document this value.
+      - value: "281"
+        description: TODO(#34964) Document this value.
+      - value: "282"
+        description: TODO(#34964) Document this value.
+      - value: "283"
+        description: TODO(#34964) Document this value.
+      - value: "284"
+        description: TODO(#34964) Document this value.
+      - value: "285"
+        description: TODO(#34964) Document this value.
+      - value: "286"
+        description: TODO(#34964) Document this value.
+      - value: "291"
+        description: TODO(#34964) Document this value.
+      - value: "293"
+        description: TODO(#34964) Document this value.
+      - value: "294"
+        description: TODO(#34964) Document this value.
+      - value: "295"
+        description: TODO(#34964) Document this value.
+      - value: "296"
+        description: TODO(#34964) Document this value.
+      - value: "297"
+        description: TODO(#34964) Document this value.
+      - value: "298"
+        description: TODO(#34964) Document this value.
+      - value: "300"
+        description: TODO(#34964) Document this value.
+      - value: "301"
+        description: TODO(#34964) Document this value.
+      - value: "302"
+        description: TODO(#34964) Document this value.
+      - value: "303"
+        description: TODO(#34964) Document this value.
+      - value: "304"
+        description: TODO(#34964) Document this value.
+      - value: "305"
+        description: TODO(#34964) Document this value.
+      - value: "306"
+        description: TODO(#34964) Document this value.
+      - value: "307"
+        description: TODO(#34964) Document this value.
+      - value: "308"
+        description: TODO(#34964) Document this value.
+      - value: "309"
+        description: TODO(#34964) Document this value.
+      - value: "310"
+        description: TODO(#34964) Document this value.
+      - value: "311"
+        description: TODO(#34964) Document this value.
+      - value: "312"
+        description: TODO(#34964) Document this value.
+      - value: "313"
+        description: TODO(#34964) Document this value.
+      - value: "314"
+        description: TODO(#34964) Document this value.
   - name: AssessorTypeId
     description: |-
       Integer values corresponding to the type of assessor conducting the assessment.
     known_values:
-      - value: 1
+      - value: "1"
         description: EMPLOYEE
-      - value: 2
+      - value: "2"
         description: SERVICE PROVIDER
   - name: ServiceProviderId
     description: |-
@@ -151,38 +265,45 @@ columns:
       ID value (integer) corresponding to the assessment's status. Can be joined to
       `asm_AssessmentStatus.AssessmentStatusId`.
     known_values:
-      - value: 3
+      - value: "1"
+        description: TODO(#34964) Document this value.
+      - value: "3"
         description: Completed
-      - value: 5
+      - value: "4"
+        description: TODO(#34964) Document this value.
+      - value: "5"
         description: Pending
-      - value: 6
+      - value: "6"
         description: In Progress
-      - value: 7
+      - value: "7"
         description: Scheduled
   - name: AssessmentTypeResultId
     description: |-
       ID value (integer) corresponding to the assessment type result. Can be joined to
       `asm_AssessmentTypeResult.AssessmentTypeResultId`.
     known_values:
-      - value: 1
+      - value: "1"
         description: No Deception Indicated
-      - value: 2
+      - value: "2"
         description: Deception Indicated
-      - value: 3
+      - value: "3"
         description: Inconclusive
-      - value: 4
+      - value: "4"
         description: Comment
-      - value: 40
-        description: Low
-      - value: 46
-        description: Non-Dependent
-      - value: 6
+      - value: "6"
         description: Chemically Dependent
-      - value: 7
+      - value: "7"
         description: Code 01
-      - value: 8
+      - value: "8"
         description: Code 02
-
+      - value: "35"
+        description: TODO(#34964) Document this value.
+      - value: "40"
+        description: Low
+      - value: "45"
+        description: TODO(#34964) Document this value.
+      - value: "46"
+        description: Non-Dependent
 table_relationships:
   - foreign_table: ind_Offender
     join_logic:

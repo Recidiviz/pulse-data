@@ -135,9 +135,9 @@ columns:
   - name: OffenderId
     description: |-
       ID for the offender. Can be joined to `ind_Offender.OffenderId`.
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_IX_DOC
+    is_pii: True
   - name: ConsecSentenceId
     description: |-
       TODO(#15329): Fill in column description
@@ -152,19 +152,21 @@ columns:
     description: |-
       ID for the sentence type. Can be joined to `scl_SentenceType.SentenceTypeId`.
     known_values:
-      - value: 524
+      - value: "524"
         description: Custodial
-      - value: 525
+      - value: "525"
         description: Community
-      - value: 526
+      - value: "526"
         description: Non-Idaho Custodial
+      - value: "527"
+        description: TODO(#34964) Document this value.
   - name: SentenceStatusId
     description: |-
       ID for the sentence status. Can be joined to `scl_SentenceStatus.SentenceStatusId`.
     known_values:
-      - value: 531
+      - value: "531"
         description: Active
-      - value: 535
+      - value: "535"
         description: Satisfied
   - name: SentenceRelationshipId
     description: |-
@@ -247,7 +249,6 @@ columns:
     description: |-
       TODO(#15329): Fill in column description
     is_pii: True
-
 table_relationships:
   - foreign_table: ind_Offender
     join_logic:

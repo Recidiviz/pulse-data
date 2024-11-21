@@ -13,26 +13,28 @@ columns:
     description: |-
       The reference code for the type of alias this record pertains to (reference table: ind_AliasNameType)
     known_values:
-      - value: 0
+      - value: "0"
         description: Default
-      - value: 1
+      - value: "1"
         description: Maiden Name
-      - value: 13
-        description: Married Name
-      - value: 3
+      - value: "3"
         description: Monicker
-      - value: 5
+      - value: "5"
         description: Legal Name
-      - value: 6
+      - value: "6"
         description: Alias
-      - value: 7
+      - value: "7"
         description: Name of Record
+      - value: "11"
+        description: TODO(#34964) Document this value.
+      - value: "13"
+        description: Married Name
   - name: OffenderId
     description: |-
       The ID of the person that this alias is associated with
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_IX_DOC
+    is_pii: True
   - name: FirstName
     description: |-
       First name
@@ -49,15 +51,19 @@ columns:
     description: |-
       The reference code for the name suffix for this alias record (reference table: ref_NameSuffixType)
     known_values:
-      - value: 1
+      - value: "1"
         description: Jr.
-      - value: 4
+      - value: "2"
+        description: TODO(#34964) Document this value.
+      - value: "3"
+        description: TODO(#34964) Document this value.
+      - value: "4"
         description: II
-      - value: 5
+      - value: "5"
         description: III
-      - value: 6
+      - value: "6"
         description: IV
-      - value: 7
+      - value: "7"
         description: V
   - name: SoundexFirstName
     description: |-
@@ -101,7 +107,6 @@ columns:
   - name: OrganizationalUnitId
     description: |-
       TODO(#15329): Fill in column description
-
 table_relationships:
   - foreign_table: ind_Offender
     join_logic:
