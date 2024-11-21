@@ -192,8 +192,8 @@ def get_api_blueprint(
                 AgencyJurisdictionInterface.create_or_update_agency_jurisdictions(
                     session=current_session,
                     agency_id=agency_id,
-                    included_jurisdiction_ids=jurisdictions["included"],
-                    excluded_jurisdiction_ids=jurisdictions["excluded"],
+                    included_geoids=jurisdictions["included"],
+                    excluded_geoids=jurisdictions["excluded"],
                 )
             current_session.commit()
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
@@ -2248,8 +2248,6 @@ def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
         agency_json["jurisdictions"] = AgencyJurisdictionInterface.to_json(
             session=current_session,
             agency_id=agency_id,
-            is_v2=is_v2,
-            fips_code_to_geoid=fips_code_to_geoid,
         )
         if schema.System.PRISONS.value in set(agency.systems):
             # Surface populations data for prisons agencies
