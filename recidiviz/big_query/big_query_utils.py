@@ -175,10 +175,19 @@ def schema_for_sqlalchemy_table(table: sqlalchemy.Table) -> List[bigquery.Schema
 
 
 def normalize_column_name_for_bq(column_name: str) -> str:
+    """Normalizes a column name to be compatible with BigQuery's column naming rules."""
+    if not column_name:
+        raise ValueError("Column name cannot be empty")
+
     column_name = _remove_non_printable_characters(column_name)
     # Strip whitespace from head/tail of column names
     column_name = column_name.strip()
     column_name = _make_bq_compatible_column_name(column_name)
+
+    if not column_name:
+        raise ValueError(
+            "Column name cannot contain only whitespace and/or unprintable characters"
+        )
 
     # BQ doesn't allow column names to begin with a number.
     # Also doesn't allow for column names to be reserved words.

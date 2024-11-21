@@ -207,7 +207,11 @@ class DirectIngestRawFileHeaderReader:
         for possible_column_name in csv_first_row:
             if not possible_column_name:
                 continue
-            normalized_col = normalize_column_name_for_bq(possible_column_name)
+            try:
+                normalized_col = normalize_column_name_for_bq(possible_column_name)
+            except ValueError:
+                # If we are unable to normalize the column name, we can assume that this is not a header value
+                continue
 
             if normalized_col.lower() in lowercase_col_name_to_expected_col_name:
                 raise ValueError(

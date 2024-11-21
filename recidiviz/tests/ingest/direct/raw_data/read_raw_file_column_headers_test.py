@@ -160,6 +160,18 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
             str(context.exception),
         )
 
+    def test_infer_columns_invalid_bq_header_chars(self) -> None:
+        file_tag = "tagInvalidBQHeaderChars"
+        file_config = self.region_raw_file_config.raw_file_configs[
+            "tagFileConfigHeadersUnexpectedHeader"
+        ]
+        file_path = self._get_and_register_csv_gcs_path(file_tag)
+
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
+        result = header_reader.read_and_validate_column_headers(file_path)
+
+        self.assertEqual(result, ["COL1", "COL2", "COL3"])
+
     def test_headers_normalized_for_bq(self) -> None:
         file_tag = "tagInvalidCharacters"
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]

@@ -59,6 +59,22 @@ class BigQueryUtilsTest(unittest.TestCase):
         # Handles digits correctly
         self.assertEqual("_123_COLUMN", normalize_column_name_for_bq("123_COLUMN"))
 
+        self.assertRaisesRegex(
+            ValueError, "Column name cannot be empty", normalize_column_name_for_bq, ""
+        )
+        self.assertRaisesRegex(
+            ValueError,
+            "Column name cannot contain only whitespace and/or unprintable characters",
+            normalize_column_name_for_bq,
+            " ",
+        )
+        self.assertRaisesRegex(
+            ValueError,
+            "Column name cannot contain only whitespace and/or unprintable characters",
+            normalize_column_name_for_bq,
+            "  αα",
+        )
+
     def test_is_big_query_valid_encoding(self) -> None:
         for valid_encoding in ["utf_8", "latin", "utf-16-be"]:
             assert is_big_query_valid_encoding(valid_encoding) is True
