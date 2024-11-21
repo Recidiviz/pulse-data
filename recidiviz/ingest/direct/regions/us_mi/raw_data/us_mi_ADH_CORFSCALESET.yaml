@@ -16,6 +16,11 @@ columns:
     description: Description of assessment scale set
   - name: Disclaimer
     description: Disclaimer
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: FkCoSyNormSet
   - name: FkShSyCodeSex
   - name: FkShSyCodeIncarceratedLanguage
@@ -23,6 +28,11 @@ columns:
   - name: IsTypology
   - name: SortOrder
   - name: RefString
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: IsDefault
   - name: IsActive
     description: Flag for whether the assessment scale set is active
@@ -56,13 +66,33 @@ columns:
   - name: NoStaticData
   - name: IsEbrv
   - name: FkShSyCodeLevelType
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: IsHideScaleNames
   - name: FkCoRfDataSheets
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: CurrentChargeDirections
   - name: ResultsDisplayOption
   - name: LockAfterCalc
   - name: DaysToLock
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: IsOpioidUsedForRecSupLvl
   - name: IsOpioidUsedForSubUseScale
   - name: FkCoSyCourtSummary
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: SupervisionLevelOutput

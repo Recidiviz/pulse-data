@@ -14,6 +14,11 @@ columns:
     description: description of misconduct offense
   - name: list_seq
     description: list sequence of misconduct offense record
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect tis column to be null and are not using it anywhere
   - name: effective_date
     description: effective date of misconduct offense record
     field_type: datetime

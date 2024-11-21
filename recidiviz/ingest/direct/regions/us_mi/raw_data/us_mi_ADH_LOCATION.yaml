@@ -23,6 +23,11 @@ columns:
     description: The human readable name for the location.
   - name: abbreviation
     description: An abbreviated form of the name.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: bail_office_flag
   - name: address1
   - name: address2
@@ -36,6 +41,11 @@ columns:
   - name: business_phone_extension
   - name: business_fax_number
   - name: termination_date
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: active_flag
   - name: county_id
     description: |-
@@ -211,8 +221,23 @@ columns:
       - value: "1311"
         description: Wexford County
   - name: notification_phone_number
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: notification_s_phone_number
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: mailing_name
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: last_update_user
   - name: last_update_date
   - name: last_update_node
