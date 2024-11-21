@@ -116,6 +116,7 @@ class RunMigrations(DeploymentStageInterface):
                 wait_for=[copy_proxy_step.id, prefetch_image_step.id],
                 name=app_engine_image,
                 dir_="/app/",
+                env=["HOME=/home/recidiviz"],
                 command=(
                     # Run the Cloud SQL Proxy and wait for it to be healthy
                     f"/workspace/cloud-sql-proxy {instance_string} --port {CLOUDSQL_PROXY_MIGRATION_PORT} "

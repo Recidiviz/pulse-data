@@ -166,6 +166,7 @@ class CreateTerraformPlan(DeploymentStageInterface):
                 "--dry-run False"
             ),
             volumes=[RECIDIVIZ_SOURCE_VOLUME],
+            env=["HOME=/home/recidiviz"],
             wait_for=[copy_git_source_to_volume.id],
         )
 

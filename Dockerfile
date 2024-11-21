@@ -39,7 +39,7 @@ ENV PIPENV_VENV_IN_PROJECT="1"
 RUN adduser recidiviz
 USER recidiviz
 RUN curl -s https://bootstrap.pypa.io/get-pip.py 2>&1 | python3.11
-ENV PATH=/home/recidiviz/.local/bin/:$PATH
+ENV PATH=/home/recidiviz/.local/bin:$PATH
 RUN pip install pipenv --user
 WORKDIR /app
 
@@ -97,10 +97,9 @@ COPY ./frontends/admin-panel/public /usr/admin-panel/public
 RUN yarn build
 
 FROM recidiviz-init AS recidiviz-app
-# Add only the Pipfiles first to ensure we cache `pipenv sync` when application code is updated but not the Pipfiles
+# Add only the Pipfiles first to ensure we cache `pipenv install` when application code is updated but not the Pipfiles
 COPY Pipfile /app/
 COPY Pipfile.lock /app/
-
 RUN pipenv \
     # Include user-level site-packages (namely pipenv) in our new virtual environment
     --site-packages \
