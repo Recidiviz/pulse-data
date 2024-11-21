@@ -122,7 +122,17 @@ def create_deployment_build_api_obj(
         )
     )
     builder.update_args(
-        steps=build_configuration.steps,
+        steps=[
+            # Without this step, read/write access to /workspace/ would be forbidden for non-root users
+            # https://cloud.google.com/build/docs/troubleshooting#timeout_issues_when_pulling_images_from_docker_registry
+            BuildStep(
+                name="gcr.io/cloud-builders/docker",
+                id="Give non-root users access to /workspace/ volume",
+                args=["a+w", "/workspace"],
+                entrypoint="chmod",
+            ),
+            *build_configuration.steps,
+        ],
         options=BuildOptions(machine_type=build_configuration.machine_type),
     )
 
