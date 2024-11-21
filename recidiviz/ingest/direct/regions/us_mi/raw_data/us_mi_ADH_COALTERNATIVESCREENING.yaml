@@ -51,15 +51,45 @@ columns:
   - name: Comments
     is_pii: True
   - name: FkShRfCodeNonComplete
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: FkCoAlternativeScreeningParent
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: DateOfScreeningAsString
   - name: DateUpdatedAsString
   - name: DateCreatedAsString
   - name: DateComputedAsString
   - name: FkShSyCodeMatrixType
   - name: FkPtMaster
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: OldRecId
   - name: IsQa
   - name: FkCoRfAlternativeScreeningStatus
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: FkCoRfScreeningQuestionSet
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: FkShRfCodeScreeningOverride
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere

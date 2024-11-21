@@ -32,6 +32,11 @@ columns:
   - name: report_phone
   - name: loan
   - name: loan_instrctions
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: medication
   - name: clothing
   - name: restitution
@@ -47,6 +52,11 @@ columns:
   - name: notification_sent
   - name: termination_date
   - name: termination_reason
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: pba_type
   - name: del_flag
 
