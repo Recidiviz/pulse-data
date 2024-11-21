@@ -106,6 +106,12 @@ columns:
         description: Lifetime Registrant
       - value: 137
         description: Sex Offender
+      - value: 154
+        description: TODO(#34959) Document this field.
+      - value: 155
+        description: TODO(#34959) Document this field.
+      - value: 156
+        description: TODO(#34959) Document this field.
   - name: Cis_4009_Trial_Type_Cd
     description: This code describes the trial type.
     known_values:
