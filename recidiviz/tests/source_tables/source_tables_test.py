@@ -37,7 +37,6 @@ COMMON_VESTIGES = [
     "view_update_metadata.refresh_bq_dataset_tracker",
     "view_update_metadata.rematerialization_tracker",
     "view_update_metadata.view_update_tracker",
-    "view_update_metadata.per_view_update_stats",
     # Validation results are referenced outside the view graph via the Admin Panel
     "validation_results.validation_results",
     # It is Polaris-convention to archive all exports for historical reference, even when the archive isn't used

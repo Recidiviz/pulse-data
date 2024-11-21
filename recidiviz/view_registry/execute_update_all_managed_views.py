@@ -32,10 +32,12 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_source_table_datasets,
 )
-from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
-    build_source_table_repository_for_yaml_managed_tables,
+from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
+    build_source_table_repository_for_externally_managed_tables,
 )
-from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_DATASET
+from recidiviz.source_tables.externally_managed.datasets import (
+    VIEW_UPDATE_METADATA_DATASET,
+)
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import gcp_only
 from recidiviz.view_registry.deployed_views import (
@@ -53,8 +55,10 @@ class AllViewsUpdateSuccessPersister(BigQueryRowStreamer):
     """Class that persists runtime of successful updated view jobs to BQ"""
 
     def __init__(self, bq_client: BigQueryClient):
-        source_table_repository = build_source_table_repository_for_yaml_managed_tables(
-            metadata.project_id()
+        source_table_repository = (
+            build_source_table_repository_for_externally_managed_tables(
+                metadata.project_id()
+            )
         )
         source_table_config = source_table_repository.build_config(
             VIEW_UPDATE_TRACKER_TABLE_ADDRESS
@@ -98,7 +102,6 @@ def execute_update_all_managed_views(sandbox_prefix: str | None) -> None:
             parent_address_formatter_provider=None,
         )
 
-    # TODO(#34767): Return summary and per-view results from here so we can write to BQ.
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
         view_builders_to_update=view_builders,
@@ -116,6 +119,4 @@ def execute_update_all_managed_views(sandbox_prefix: str | None) -> None:
         dataset_override_prefix=sandbox_prefix,
         runtime_sec=runtime_sec,
     )
-    # TODO(#34767): Write per-view stats to view_update_tracker.per_view_update_stats
-    #  here.
     logging.info("All managed views successfully updated and materialized.")
