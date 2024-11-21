@@ -13,9 +13,9 @@ columns:
     description: |-
       ID for the offender receiving the charge. Can be joined to 
       `ind_Offender.OffenderId`.
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_IX_DOC
+    is_pii: True
   - name: Docket
     description: |-
       Identifies the docket containing the charge. A docket can contain multiple 
@@ -38,7 +38,83 @@ columns:
     description: |-
       The state where the charge was brought from (or where the alleged crime occurred?)
       Can be joined to `ref_Location.LocationId`.
-    known_values: []
+    known_values:
+      - value: "1000"
+        description: TODO(#34964) Document this value.
+      - value: "1001"
+        description: TODO(#34964) Document this value.
+      - value: "1002"
+        description: TODO(#34964) Document this value.
+      - value: "1003"
+        description: TODO(#34964) Document this value.
+      - value: "1004"
+        description: TODO(#34964) Document this value.
+      - value: "1005"
+        description: TODO(#34964) Document this value.
+      - value: "1006"
+        description: TODO(#34964) Document this value.
+      - value: "1009"
+        description: TODO(#34964) Document this value.
+      - value: "1010"
+        description: TODO(#34964) Document this value.
+      - value: "1011"
+        description: TODO(#34964) Document this value.
+      - value: "1012"
+        description: TODO(#34964) Document this value.
+      - value: "1013"
+        description: TODO(#34964) Document this value.
+      - value: "1014"
+        description: TODO(#34964) Document this value.
+      - value: "1016"
+        description: TODO(#34964) Document this value.
+      - value: "1017"
+        description: TODO(#34964) Document this value.
+      - value: "1021"
+        description: TODO(#34964) Document this value.
+      - value: "1022"
+        description: TODO(#34964) Document this value.
+      - value: "1023"
+        description: TODO(#34964) Document this value.
+      - value: "1025"
+        description: TODO(#34964) Document this value.
+      - value: "1026"
+        description: TODO(#34964) Document this value.
+      - value: "1027"
+        description: TODO(#34964) Document this value.
+      - value: "1028"
+        description: TODO(#34964) Document this value.
+      - value: "1030"
+        description: TODO(#34964) Document this value.
+      - value: "1031"
+        description: TODO(#34964) Document this value.
+      - value: "1034"
+        description: TODO(#34964) Document this value.
+      - value: "1035"
+        description: TODO(#34964) Document this value.
+      - value: "1036"
+        description: TODO(#34964) Document this value.
+      - value: "1037"
+        description: TODO(#34964) Document this value.
+      - value: "1038"
+        description: TODO(#34964) Document this value.
+      - value: "1041"
+        description: TODO(#34964) Document this value.
+      - value: "1042"
+        description: TODO(#34964) Document this value.
+      - value: "1043"
+        description: TODO(#34964) Document this value.
+      - value: "1044"
+        description: TODO(#34964) Document this value.
+      - value: "1045"
+        description: TODO(#34964) Document this value.
+      - value: "1047"
+        description: TODO(#34964) Document this value.
+      - value: "1048"
+        description: TODO(#34964) Document this value.
+      - value: "1050"
+        description: TODO(#34964) Document this value.
+      - value: "1051"
+        description: TODO(#34964) Document this value.
   - name: OtherCourt
     description: |-
       TODO(#15329): Fill in column description
@@ -78,10 +154,48 @@ columns:
     description: |-
       ID for the type of charge outcome.
     known_values:
-      - value: 32
+      - value: "1"
+        description: TODO(#34964) Document this value.
+      - value: "2"
+        description: TODO(#34964) Document this value.
+      - value: "4"
+        description: TODO(#34964) Document this value.
+      - value: "32"
         description: Court Retains Jurisdiction
-      - value: 37
+      - value: "33"
+        description: TODO(#34964) Document this value.
+      - value: "34"
+        description: TODO(#34964) Document this value.
+      - value: "35"
+        description: TODO(#34964) Document this value.
+      - value: "36"
+        description: TODO(#34964) Document this value.
+      - value: "37"
         description: Commuted Sentence
+      - value: "38"
+        description: TODO(#34964) Document this value.
+      - value: "39"
+        description: TODO(#34964) Document this value.
+      - value: "40"
+        description: TODO(#34964) Document this value.
+      - value: "41"
+        description: TODO(#34964) Document this value.
+      - value: "42"
+        description: TODO(#34964) Document this value.
+      - value: "43"
+        description: TODO(#34964) Document this value.
+      - value: "50"
+        description: TODO(#34964) Document this value.
+      - value: "52"
+        description: TODO(#34964) Document this value.
+      - value: "53"
+        description: TODO(#34964) Document this value.
+      - value: "54"
+        description: TODO(#34964) Document this value.
+      - value: "55"
+        description: TODO(#34964) Document this value.
+      - value: "56"
+        description: TODO(#34964) Document this value.
   - name: OtherOutcomeType
     description: |-
       TODO(#15329): Fill in column description
@@ -113,7 +227,6 @@ columns:
     description: |-
       Timestamp for record modification.
     field_type: datetime
-
 table_relationships:
   - foreign_table: ind_Offender
     join_logic:

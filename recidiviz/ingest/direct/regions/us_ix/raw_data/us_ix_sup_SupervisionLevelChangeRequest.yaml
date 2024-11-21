@@ -37,10 +37,14 @@ columns:
     description: |-
       TODO(#15329): Fill in column description
     known_values:
-      - value: 1
+      - value: "1"
         description: Pending
-      - value: 3
+      - value: "2"
+        description: TODO(#34964) Document this value.
+      - value: "3"
         description: Approved
+      - value: "4"
+        description: TODO(#34964) Document this value.
   - name: DecisionDate
     description: |-
       TODO(#15329): Fill in column description

@@ -34,78 +34,84 @@ columns:
     description: |-
       The region the location belongs to. Can be joined with `ref_Region.RegionId`.
     known_values:
-      - value: 10
+      - value: "10"
         description: Headquarters
-      - value: 11
+      - value: "11"
         description: Central
-      - value: 14
+      - value: "12"
+        description: TODO(#34964) Document this value.
+      - value: "13"
+        description: TODO(#34964) Document this value.
+      - value: "14"
         description: Outside Idaho
   - name: LocationTypeId
     description: |-
       ID for the type of location. Can be joined with 
       `ref_LocationType.ref_LocationTypeId.`
     known_values:
-      - value: 13
-        description: City/County Jurisdiction
-      - value: 14
-        description: Country
-      - value: 15
-        description: Headquarters
-      - value: 16
-        description: Federal Facility
-      - value: 17
-        description: Juvenile Facility
-      - value: 22
-        description: Other
-      - value: 23
-        description: System
-      - value: 25
-        description: Postal Cities
-      - value: 3
+      - value: "3"
         description: Court
-      - value: 4
+      - value: "4"
         description: Adult Facility/Institution
-      - value: 6
+      - value: "6"
         description: District Office
-      - value: 7
+      - value: "7"
         description: Jail
-      - value: 8
+      - value: "8"
         description: State
-      - value: 9
+      - value: "9"
         description: Hospital
+      - value: "11"
+        description: TODO(#34964) Document this value.
+      - value: "13"
+        description: City/County Jurisdiction
+      - value: "14"
+        description: Country
+      - value: "15"
+        description: Headquarters
+      - value: "16"
+        description: Federal Facility
+      - value: "17"
+        description: Juvenile Facility
+      - value: "22"
+        description: Other
+      - value: "23"
+        description: System
+      - value: "25"
+        description: Postal Cities
   - name: LocationSubTypeId
     description: |-
       ID for the subtype of location. Can be joined with 
       `ref_LocationSubType.ref_LocationSubTypeId.`
     known_values:
-      - value: 120
-        description: Mexico State
-      - value: 126
-        description: PC - Virtual Meeting
-      - value: 32
+      - value: "32"
         description: Circuit Court
-      - value: 36
+      - value: "36"
         description: Canadian Province
-      - value: 37
+      - value: "37"
         description: US State
-      - value: 38
+      - value: "38"
         description: City
-      - value: 39
+      - value: "39"
         description: County
-      - value: 43
+      - value: "43"
         description: Fugitive Unit
-      - value: 45
+      - value: "45"
         description: Administrative P&P
-      - value: 46
+      - value: "46"
         description: P&P
-      - value: 50
+      - value: "50"
         description: Major Institution
-      - value: 52
+      - value: "52"
         description: Work Center
-      - value: 53
+      - value: "53"
         description: Other
-      - value: 67
+      - value: "67"
         description: Magistrate
+      - value: "120"
+        description: Mexico State
+      - value: "126"
+        description: PC - Virtual Meeting
   - name: SYSTEM_REF_TX
     description: |-
       TODO(#15329): Fill in column description

@@ -34,9 +34,11 @@ columns:
       ID for the type of supervision assignment. Can be joined to 
       `sup_SupervisionAssignmentType.SupervisionAssignmentTypeId`.
     known_values:
-      - value: 1
+      - value: "1"
         description: Primary
-      - value: 3
+      - value: "2"
+        description: TODO(#34964) Document this value.
+      - value: "3"
         description: Temporary
   - name: Locking
     description: |-
