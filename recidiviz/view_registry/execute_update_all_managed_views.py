@@ -32,12 +32,10 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_source_table_datasets,
 )
-from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
-    build_source_table_repository_for_externally_managed_tables,
+from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
+    build_source_table_repository_for_yaml_managed_tables,
 )
-from recidiviz.source_tables.externally_managed.datasets import (
-    VIEW_UPDATE_METADATA_DATASET,
-)
+from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_DATASET
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import gcp_only
 from recidiviz.view_registry.deployed_views import (
@@ -55,10 +53,8 @@ class AllViewsUpdateSuccessPersister(BigQueryRowStreamer):
     """Class that persists runtime of successful updated view jobs to BQ"""
 
     def __init__(self, bq_client: BigQueryClient):
-        source_table_repository = (
-            build_source_table_repository_for_externally_managed_tables(
-                metadata.project_id()
-            )
+        source_table_repository = build_source_table_repository_for_yaml_managed_tables(
+            metadata.project_id()
         )
         source_table_config = source_table_repository.build_config(
             VIEW_UPDATE_TRACKER_TABLE_ADDRESS

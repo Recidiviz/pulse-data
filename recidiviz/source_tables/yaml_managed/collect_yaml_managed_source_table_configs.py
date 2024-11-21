@@ -14,72 +14,46 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Functionality for collecting configs for all externally managed source tables."""
+"""Functionality for collecting configs for all source tables whose schemas are managed
+by our standard source table update process, with schemas defined in a YAML file in this
+directory.
+"""
 import os
 from functools import cache
 
-from recidiviz.calculator.query.state.dataset_config import (
-    AUTH0_EVENTS,
-    AUTH0_PROD_ACTION_LOGS,
-    EXPORT_ARCHIVES_DATASET,
-    PULSE_DASHBOARD_SEGMENT_DATASET,
-)
 from recidiviz.source_tables.collect_source_tables_from_yamls import (
     collect_source_tables_from_yamls_by_dataset,
-)
-from recidiviz.source_tables.externally_managed.datasets import (
-    EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS,
 )
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
     SourceTableCollectionUpdateConfig,
-    SourceTableCollectionValidationConfig,
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
+from recidiviz.source_tables.yaml_managed.datasets import (
+    YAML_MANAGED_DATASETS_TO_DESCRIPTIONS,
+)
 
 
 @cache
-def collect_externally_managed_source_table_collections(
+def collect_yaml_managed_source_table_collections(
     project_id: str | None,
 ) -> list[SourceTableCollection]:
     """
-    Collects configuration for source tables that are managed outside of our standard
-    table update process (e.g. via Terraform or via an external process that writes to
-    BQ).
-
-    Some of these datasets are created by processes that change the schema frequently.
-    In order to avoid updating our YAMLs over and over again, for these datasets we
-    validate that only a subset of the fields that we actually use are present.
+    Collects configuration for source tables whose schemas are managed by our standard
+    source table update process, with schemas defined in a YAML file in this directory.
 
     If project_id is None, returns all source tables that exist in any project.
     Otherwise, only returns the collections that are deployed to the given project.
     """
+
     source_tables_by_dataset = collect_source_tables_from_yamls_by_dataset(
         yamls_root_path=os.path.dirname(__file__)
     )
 
-    # "required" columns here means they are required by the view graph and should be
-    # validated that the fields exist in BigQuery, not the column mode (REQUIRED vs NULLABLE)
-    datasets_to_validation_config = {
-        AUTH0_EVENTS: SourceTableCollectionValidationConfig(
-            only_check_required_columns=True,
-        ),
-        AUTH0_PROD_ACTION_LOGS: SourceTableCollectionValidationConfig(
-            only_check_required_columns=True,
-        ),
-        PULSE_DASHBOARD_SEGMENT_DATASET: SourceTableCollectionValidationConfig(
-            only_check_required_columns=True,
-        ),
-        EXPORT_ARCHIVES_DATASET: SourceTableCollectionValidationConfig(
-            only_check_required_columns=True,
-        ),
-    }
-
     return [
         SourceTableCollection(
             dataset_id=dataset_id,
-            update_config=SourceTableCollectionUpdateConfig.unmanaged(),
-            validation_config=datasets_to_validation_config.get(dataset_id, None),
+            update_config=SourceTableCollectionUpdateConfig.static(),
             source_tables_by_address={
                 source_table.address: source_table
                 for source_table in source_tables
@@ -87,18 +61,18 @@ def collect_externally_managed_source_table_collections(
                 if (not project_id or not source_table.deployed_projects)
                 or (project_id in source_table.deployed_projects)
             },
-            description=EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS[dataset_id],
+            description=YAML_MANAGED_DATASETS_TO_DESCRIPTIONS[dataset_id],
         )
         for dataset_id, source_tables in source_tables_by_dataset.items()
     ]
 
 
 @cache
-def build_source_table_repository_for_externally_managed_tables(
+def build_source_table_repository_for_yaml_managed_tables(
     project_id: str | None,
 ) -> SourceTableRepository:
     return SourceTableRepository(
         source_table_collections=[
-            *collect_externally_managed_source_table_collections(project_id=project_id),
+            *collect_yaml_managed_source_table_collections(project_id=project_id),
         ],
     )

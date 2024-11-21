@@ -31,12 +31,10 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh
     federated_bq_schema_refresh,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
-    build_source_table_repository_for_externally_managed_tables,
+from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
+    build_source_table_repository_for_yaml_managed_tables,
 )
-from recidiviz.source_tables.externally_managed.datasets import (
-    VIEW_UPDATE_METADATA_DATASET,
-)
+from recidiviz.source_tables.yaml_managed.datasets import VIEW_UPDATE_METADATA_DATASET
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import gcp_only
 
@@ -53,10 +51,8 @@ class RefreshBQDatasetSuccessPersister(BigQueryRowStreamer):
     """Class that persists runtime of successful refresh of BQ datasets."""
 
     def __init__(self, bq_client: BigQueryClient):
-        source_table_repository = (
-            build_source_table_repository_for_externally_managed_tables(
-                metadata.project_id()
-            )
+        source_table_repository = build_source_table_repository_for_yaml_managed_tables(
+            metadata.project_id()
         )
         source_table_config = source_table_repository.build_config(
             REFRESH_BQ_DATASET_TRACKER_ADDRESS

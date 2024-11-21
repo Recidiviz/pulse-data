@@ -22,17 +22,17 @@ from google.cloud.bigquery.enums import StandardSqlTypeNames as BigQueryFieldTyp
 from scipy import stats
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.calculator.query.state.dataset_config import (
-    MANUALLY_UPDATED_SOURCE_TABLES_DATASET,
-)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
-from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
-    build_source_table_repository_for_externally_managed_tables,
-)
 from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
+from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
+    build_source_table_repository_for_yaml_managed_tables,
+)
+from recidiviz.source_tables.yaml_managed.datasets import (
+    MANUALLY_UPDATED_SOURCE_TABLES_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.types import assert_type
 
@@ -157,7 +157,7 @@ def get_large_experiment_assignments_source_table_config() -> SourceTableConfig:
     )
 
     source_table_repository: SourceTableRepository = (
-        build_source_table_repository_for_externally_managed_tables(project_id=None)
+        build_source_table_repository_for_yaml_managed_tables(project_id=None)
     )
 
     config = source_table_repository.build_config(table_address)
