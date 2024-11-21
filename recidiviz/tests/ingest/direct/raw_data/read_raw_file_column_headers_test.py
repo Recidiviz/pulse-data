@@ -136,6 +136,20 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
 
         self.assertEqual(result, ["PRIMARY_COL1", "COL2", "COL3", "COL4"])
 
+    def test_alternate_separator_and_encoding_containing_newline(self) -> None:
+        """This file does not have a header row and has a \n character in the first row"""
+        file_tag = "tagDoubleDaggerWINDOWS1252InferCols"
+        file_config = self.region_raw_file_config.raw_file_configs[
+            "tagDoubleDaggerWINDOWS1252"
+        ]
+        file_config = attr.evolve(file_config, infer_columns_from_config=True)
+        file_path = self._get_and_register_csv_gcs_path(file_tag)
+
+        header_reader = DirectIngestRawFileHeaderReader(self.fs, file_config)
+        result = header_reader.read_and_validate_column_headers(file_path)
+
+        self.assertEqual(result, ["PRIMARY_COL1", "COL2", "COL3", "COL4"])
+
     def test_column_capitalization_doesnt_match_config(self) -> None:
         file_tag = "tagColCapsDoNotMatchConfig"
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
