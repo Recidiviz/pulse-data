@@ -34,7 +34,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     crc_resident_worker_time_based_criteria,
-    in_crc_facility,
+    in_crc_facility_or_pwcc_unit_1,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_detainers_for_xcrc_and_crc,
     no_sex_offender_alert,
@@ -57,7 +57,7 @@ for a transfer to a Community Reentry Center (CRC) as a resident worker.
 """
 
 US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
-    sub_criteria=in_crc_facility.VIEW_BUILDER,
+    sub_criteria=in_crc_facility_or_pwcc_unit_1.VIEW_BUILDER,
 )
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
