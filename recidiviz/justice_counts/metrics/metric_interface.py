@@ -494,6 +494,7 @@ class MetricInterface:
             response["reporting_agency_name"] = reporting_agency_name
             response["reporting_agency_url"] = reporting_agency_url
             response["reporting_agency_category"] = reporting_agency_category
+            response["additional_description"] = None
             return response
 
         response["system"] = system_value

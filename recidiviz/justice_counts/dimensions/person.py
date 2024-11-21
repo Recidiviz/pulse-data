@@ -40,6 +40,21 @@ class Race(DimensionBase):
         return self.value
 
 
+# TODO(#35386): Add descriptions for Consolidated Race and Ethnicity categories to the API response.
+# Populate CONSOLIDATED_RACE_AND_ETHNICITY_DEFINITIONS with meaningful descriptions for each category.
+CONSOLIDATED_RACE_AND_ETHNICITY_DEFINITIONS = {
+    "American Indian or Alaska Native": None,
+    "Asian": None,
+    "Black": None,
+    "More than one race": None,
+    "Native Hawaiian or Pacific Islander": None,
+    "Other": None,
+    "White": None,
+    "Unknown": None,
+    "Hispanic or Latino": None,
+}
+
+
 class RaceAndEthnicity(DimensionBase, enum.Enum):
     """Class for Justice Counts Race and Ethnicity breakdowns"""
 
