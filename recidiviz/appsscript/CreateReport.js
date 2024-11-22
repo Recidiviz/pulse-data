@@ -328,12 +328,14 @@ function copyAndPopulateTemplateDoc(
 
   const workflowToMauWauNumAndPercent = copyAndPopulateOpportunityGrants(
     body,
+    timePeriod,
     workflowToOpportunityGrantedAndMauAndWau,
     workflowToSystem
   );
 
   copyAndPopulateWorkflowSection(
     body,
+    workflowToSystem,
     workflowsToInclude,
     workflowToDistrictOrFacilitiesColumnChart,
     workflowToOpportunityGrantedAndMauAndWau,
@@ -348,6 +350,8 @@ function copyAndPopulateTemplateDoc(
     workflowToMaxMauWauLocation,
     workflowToWauByWeekChart
   );
+
+  insertPageBreaks(doc.getBody());
 }
 
 /**
@@ -430,6 +434,7 @@ function addWorkflowsRows(
  */
 function copyAndPopulateOpportunityGrants(
   body,
+  timePeriod,
   workflowToOpportunityGrantedAndMauAndWau,
   workflowToSystem
 ) {
@@ -613,6 +618,7 @@ function copyAndPopulateOpportunityGrants(
  * The copyAndPopulateWorkflowSection identifies all elements we want to copy for each Workflow.
  * It then copies each element and replaces relevant text and images.
  * @param {Body} body The template document body
+ * @param {map} workflowToSystem An object that maps the workflow name to its system ('SUPERVISION' or 'INCARCERATION')
  * @param {array} workflowsToInclude A list of Workflows to be included in the report
  * @param {map} workflowToDistrictOrFacilitiesColumnChart An object that maps the workflow name to its districtOrFacilitiesColumnChart
  * @param {map} workflowToOpportunityGrantedAndMauAndWau An object that maps the workflow name to the number of opportunities granted, the number of distinct monthly and weekly active users, and the number of distinct monthly and weekly registered users for that workflow
@@ -629,6 +635,7 @@ function copyAndPopulateOpportunityGrants(
  */
 function copyAndPopulateWorkflowSection(
   body,
+  workflowToSystem,
   workflowsToInclude,
   workflowToDistrictOrFacilitiesColumnChart,
   workflowToOpportunityGrantedAndMauAndWau,
@@ -646,7 +653,7 @@ function copyAndPopulateWorkflowSection(
   const childIdx = getIndexOfElementToReplace(
     body,
     DocumentApp.ElementType.PARAGRAPH,
-    "{{workflow_name}} | Usage & Impact Report"
+    "{{workflow_system}} Assistant | {{workflow_name}}"
   );
 
   const totalChildren = body.getNumChildren();
@@ -719,6 +726,11 @@ function copyAndPopulateWorkflowSection(
         }
       } else {
         // Replace text
+        const workflowSystem =
+          workflowToSystem[workflow] === "INCARCERATION"
+            ? "Facilities"
+            : "Supervision";
+        elementCopy.replaceText("{{workflow_system}}", workflowSystem);
         elementCopy.replaceText("{{workflow_name}}", workflow);
         elementCopy.replaceText("{{start_date}}", startDate);
         elementCopy.replaceText("{{end_date}}", endDateClean);
@@ -883,4 +895,20 @@ function copyAndPopulateWorkflowSection(
   elementsToCopy.forEach((element) => {
     body.removeChild(element);
   });
+}
+
+/**
+ * Insert page breaks after each "{{page_break}}" text element
+ * @param {Body} body the document body
+ */
+function insertPageBreaks(body) {
+  let pageBreakText = body.findText("{{page_break}}").getElement();
+
+  while (pageBreakText) {
+    const pageBreakContainer = pageBreakText.getParent().asParagraph();
+    const pageBreakContainerIndex = body.getChildIndex(pageBreakContainer);
+    body.removeChild(pageBreakContainer);
+    body.insertPageBreak(pageBreakContainerIndex);
+    pageBreakText = body.findText("{{page_break}}")?.getElement();
+  }
 }
