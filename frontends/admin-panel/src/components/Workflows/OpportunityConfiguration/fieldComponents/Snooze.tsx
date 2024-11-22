@@ -17,7 +17,7 @@
 
 import { Form, InputNumber, Radio, RadioChangeEvent, Select } from "antd";
 
-import { BabyOpportunityConfiguration } from "../../../WorkflowsStore/models/OpportunityConfiguration";
+import { BabyOpportunityConfiguration } from "../../../../WorkflowsStore/models/OpportunityConfiguration";
 
 const WEEKDAYS = [
   "Sunday",
@@ -31,12 +31,28 @@ const WEEKDAYS = [
 
 type SnoozeValue = BabyOpportunityConfiguration["snooze"];
 
-type SnoozeInputProps = {
+type SnoozeProps = {
   value?: SnoozeValue;
   onChange?: (value: SnoozeValue) => void;
 };
 
-export const SnoozeInput: React.FC<SnoozeInputProps> = ({
+export const SnoozeView: React.FC<SnoozeProps> = ({ value }) => {
+  let text = "None (Indefinite Denial)";
+  if (value && "defaultSnoozeDays" in value) {
+    text = `Up to ${value.maxSnoozeDays} days, ${value.defaultSnoozeDays} by default`;
+  } else if (value && "autoSnoozeParams" in value) {
+    if (value.autoSnoozeParams.type === "snoozeDays") {
+      text = `${value.autoSnoozeParams.params.days} days, non-adjustable`;
+    } else if (value.autoSnoozeParams.type === "snoozeUntil") {
+      text = `Until the next ${value.autoSnoozeParams.params.weekday}`;
+    } else {
+      text = JSON.stringify(value.autoSnoozeParams);
+    }
+  }
+  return <span className="ant-form-text">{text}</span>;
+};
+
+export const SnoozeEdit: React.FC<SnoozeProps> = ({
   value,
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   onChange = () => {},

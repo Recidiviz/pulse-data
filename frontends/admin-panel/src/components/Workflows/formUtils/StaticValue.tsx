@@ -15,36 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-// import { OpportunityConfiguration } from "../../../WorkflowsStore/models/OpportunityConfiguration";
-
-export const StaticValue = ({ value }: { value?: string }) => (
+export const StaticValue = ({
+  value,
+}: {
+  value?: string | number | boolean;
+}) => (
   <span className="ant-form-text">{value?.toString() ?? <i>Default</i>}</span>
 );
-
-// type FormSpec<T> = {
-//   sectionHeading?: string;
-//   sectionSubhead?: string;
-//   fields: Partial<
-//     Record<
-//       keyof T,
-//       {
-//         label: string;
-//         required?: boolean;
-//         multiple?: boolean;
-//         View?: React.FC;
-//         Edit?: React.FC;
-//       }
-//     >
-//   >;
-// }[];
-
-// const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
-//   {
-//     fields: {
-//       variantDescription: {
-//         label: "Variant Description",
-//         required: true,
-//       },
-//     },
-//   },
-// ];

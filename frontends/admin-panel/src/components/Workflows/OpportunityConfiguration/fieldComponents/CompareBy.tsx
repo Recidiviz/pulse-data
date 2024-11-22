@@ -17,8 +17,8 @@
 
 import { Form, Input, Select } from "antd";
 
-import { StaticValue } from "./formSpec";
-import { MultiEntryChild } from "./MultiEntry";
+import { MultiEntryChild } from "../../formUtils/MultiEntry";
+import { StaticValue } from "../../formUtils/StaticValue";
 
 export const CompareByView: MultiEntryChild = ({ name }) => (
   <Form.Item noStyle name={[name, "field"]}>
