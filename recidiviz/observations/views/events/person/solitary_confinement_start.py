@@ -35,7 +35,7 @@ WITH solitary_starts AS (
         person_id,
         start_date,
         DATE_DIFF({nonnull_end_date_exclusive_clause('end_date_exclusive')}, start_date, DAY) AS length_of_stay,
-        end_date_exclusive IS NOT NULL AS is_active,
+        end_date_exclusive IS NULL AS is_active,
         start_date AS event_date
     FROM `{{project_id}}.sessions.housing_unit_type_collapsed_solitary_sessions_materialized`
     WHERE housing_unit_type_collapsed_solitary = "SOLITARY_CONFINEMENT"
