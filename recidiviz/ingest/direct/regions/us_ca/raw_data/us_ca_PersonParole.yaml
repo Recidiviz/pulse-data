@@ -1,78 +1,105 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: PersonParole
-file_description: >-
-  Information about people currently on parole in California. The best way to identify
-  if someone has absconded is by using the OffenderGroup field -- do not rely on
-  AddressType.
+file_description: |-
+  Information about people currently on parole in California. The best way to identify if someone has absconded is by using the OffenderGroup field -- do not rely on AddressType.
 data_classification: source
 primary_key_cols:
   - OffenderId
 columns:
   - name: Cdcno
-    is_pii: True
-    description: >-
+    description: |-
       This has the latest CDCNO for each person. See CDCNOParole for more.
+    is_pii: True
   - name: OffenderId
+    description: |-
+      TODO(#15297) An ID to reference a specific individual in who is in custody or under supervision of CDCR.
     is_pii: True
-    description: >-
-      TODO(#15297) An ID to reference a specific individual in who is in custody or
-      under supervision of CDCR.
   - name: FirstName
-    is_pii: True
-    description: >-
+    description: |-
       The client's first name.
+    is_pii: True
   - name: MiddleName
-    is_pii: True
-    description: >-
+    description: |-
       The client's middle name.
+    is_pii: True
   - name: LastName
-    is_pii: True
-    description: >-
+    description: |-
       The client's last name.
+    is_pii: True
   - name: NameSuffix
-    is_pii: True
-    description: >-
+    description: |-
       The suffix appended to an client's name.
-  - name: Birthday
     is_pii: True
-    field_type: datetime
-    description: >-
+  - name: Birthday
+    description: |-
       The client's date of birth.
+    field_type: datetime
+    is_pii: True
   - name: Sex
-    description: >-
-      The client's sex. This field is either M or F. We're currently unclear how this is
-      handled in the case of transgender or non-binary clients.
+    description: |-
+      The client's sex. This field is either M or F. We're currently unclear how this is handled in the case of transgender or non-binary clients.
     known_values:
       - value: F
         description: Female
       - value: M
         description: Male
   - name: Race
-    description: >-
+    description: |-
       The client's reported race.
     known_values:
+      - value: A
+        description: TODO(#35313) Document this value.
       - value: American Indian/Alaskan Native
+      - value: Asian
+        description: TODO(#35313) Document this value.
       - value: Asian or Pacific Islander
+      - value: B
+        description: TODO(#35313) Document this value.
       - value: Black
+      - value: C
+        description: TODO(#35313) Document this value.
       - value: Cuban
+      - value: D
+        description: TODO(#35313) Document this value.
+      - value: H
+        description: TODO(#35313) Document this value.
       - value: Hispanic
+      - value: I
+        description: TODO(#35313) Document this value.
+      - value: M
+        description: TODO(#35313) Document this value.
       - value: Mexican
+      - value: O
+        description: TODO(#35313) Document this value.
       - value: Other
+      - value: Pacific Islander
+        description: TODO(#35313) Document this value.
+      - value: U
+        description: TODO(#35313) Document this value.
       - value: Unknown
+      - value: W
+        description: TODO(#35313) Document this value.
       - value: White
   - name: Ethnic
-    description: The client's reported ethnic background.
+    description: |-
+      The client's reported ethnic background.
     known_values:
       - value: American Indian
       - value: Black
       - value: Cambodian
+      - value: Chinese
+        description: TODO(#35313) Document this value.
       - value: Columbian
       - value: Cuban
       - value: Filipino
       - value: Guamanian
       - value: Guatemalan
+      - value: Hawaiian
+        description: TODO(#35313) Document this value.
       - value: Hispanic
       - value: Indian
+      - value: Jamaican
+        description: TODO(#35313) Document this value.
       - value: Japanese
       - value: Korean
       - value: Laotian
@@ -80,152 +107,127 @@ columns:
       - value: Nicaraguan
       - value: Other
       - value: Other Asian
+      - value: Other Asian Not Listed
+        description: TODO(#35313) Document this value.
+      - value: Other Pacific Islander Not Listed
+        description: TODO(#35313) Document this value.
+      - value: Other Paciific Islander Not Listed
+        description: TODO(#35313) Document this value.
+      - value: Pacific Islander
+        description: TODO(#35313) Document this value.
       - value: Puerto Rican
       - value: Salvadorian
       - value: Samoan
+      - value: Thai
+        description: TODO(#35313) Document this value.
+      - value: Tongan
+        description: TODO(#35313) Document this value.
       - value: Unknown
       - value: Vietnamese
       - value: White
   - name: ParoleRegion
-    description: >-
+    description: |-
       The region the parolee is paroled in.
   - name: ParoleDistrict
-    description: >-
+    description: |-
       The district the parolee is paroled in.
   - name: ParoleUnit
-    description: >-
-      The unit the parolee is paroled in. Sometimes this is null for a week or two, then
-      a unit appears here. This may be a transition period. I'm not sure what that means
-      yet, or how ingest handles these currently. See TODO(#28585).
-
-      This may be outdated 4/1: We need this information in addition to  BadgeNumber
-      because some agents are active in multiple units, and this allows  us to
-      understand which unit this individual is being supervised under (needs to be
-      confirmed that this information is accurate). This is sometimes null as
-      well.  This is being investigated here:
-      https://docs.google.com/document/d/1btF1k4KotghdKkAxjUNQOY9mYZcNnk1NL_t4XJyLm9w/edit#bookmark=id.vgjp81eb5voo
+    description: |-
+      The unit the parolee is paroled in. Sometimes this is null for a week or two, then a unit appears here. This may be a transition period. I'm not sure what that means yet, or how ingest handles these currently. See TODO(#28585).
+      This may be outdated 4/1: We need this information in addition to  BadgeNumber because some agents are active in multiple units, and this allows  us to understand which unit this individual is being supervised under (needs to be confirmed that this information is accurate). This is sometimes null as well.  This is being investigated here: https://docs.google.com/document/d/1btF1k4KotghdKkAxjUNQOY9mYZcNnk1NL_t4XJyLm9w/edit#bookmark=id.vgjp81eb5voo
   - name: ParoleAgentName
-    is_pii: True
-    description: >-
+    description: |-
       The name of the parole agent.
+    is_pii: True
   - name: BadgeNumber
-    description: >-
+    description: |-
       The badge number of the parole agent.
     is_pii: True
   - name: LastParoleDate
-    description: >-
-      The most recent time this person went onto parole. This often (perhaps always)
-      matches IncarcerationParole.OUTDATE.
+    description: |-
+      The most recent time this person went onto parole. This often (perhaps always) matches IncarcerationParole.OUTDATE.
     field_type: datetime
   - name: ControllingDischargeDate
-    description: >-
-      Maximum date at which a person must legally be discharged. When a parolee has
-      absconded, their Controlling Discharge Date is suspended until apprehended and may
-      be in the past.
+    description: |-
+      Maximum date at which a person must legally be discharged. When a parolee has absconded, their Controlling Discharge Date is suspended until apprehended and may be in the past.
     field_type: datetime
   - name: EarnedDischargeDate
-    description: >-
-      Date at which a person should be eligible for discharge. Typically reflecting
-      policies that target different populations (i.e. parole caps).
+    description: |-
+      Date at which a person should be eligible for discharge. Typically reflecting policies that target different populations (i.e. parole caps).
     field_type: datetime
   - name: SentenceInMonths
-    description: >-
+    description: |-
       This is related to the incarceration sentence, not the parole sentence.
   - name: OffenderGroup
-    description: >-
+    description: |-
       The group the offender belongs to.
     known_values:
-      - value: PAROLE
-      - value: MCRP
-        description: >-
-          Male Community Reentry Program. More information can be found here:
-          https://www.cdcr.ca.gov/adult-operations/fops/reentry-services/
+      - value: ACP
+        description: "Alternative Custody Program. More information can be found here: https://www.cdcr.ca.gov/adult-operations/fops/reentry-services/"
+      - value: CCTRP
+        description: "Custody to Community Transitional Reentry Program. More information can be found here: https://www.cdcr.ca.gov/adult-operations/fops/reentry-services/"
       - value: ICOOP
         description: Interstate cooperative cases
-      - value: MDPAR
-      - value: CCTRP
-        description: >-
-          Custody to Community Transitional Reentry Program. More information can be
-          found here: https://www.cdcr.ca.gov/adult-operations/fops/reentry-services/
-      - value: PAL
-        description: Identifies someone who has absconded.
-      - value: ACP
-        description: >-
-          Alternative Custody Program. More information can be found here:
-          https://www.cdcr.ca.gov/adult-operations/fops/reentry-services/
       - value: ISPU
         description: Interstate Parole Unit
       - value: ISPU_PAL
-        description: >-
-          Describes an individual on interstate parole who has absconded
+        description: Describes an individual on interstate parole who has absconded
+      - value: MCRP
+        description: "Male Community Reentry Program. More information can be found here: https://www.cdcr.ca.gov/adult-operations/fops/reentry-services/"
+      - value: MDPAR
       - value: MRP
+      - value: PAL
+        description: Identifies someone who has absconded.
+      - value: PAROLE
   - name: AddressType
-    description: >-
-      The general category of someone's residence. More information about these address
-      types can be found in the DOM, section 81090.7.1. A link to the DOM is available
-      in the main US_CA documentation. Most of these descriptions are sourced from this.
+    description: |-
+      The general category of someone's residence. More information about these address types can be found in the DOM, section 81090.7.1. A link to the DOM is available in the main US_CA documentation. Most of these descriptions are sourced from this.
     known_values:
-      - value: Custody Program
-        description: >-
-          An inpatient treatment program in a custody setting.
       - value: Community Program
-        description: >-
-          A residential treatment program.
+        description: A residential treatment program.
+      - value: Conversion
+      - value: Custody Program
+        description: An inpatient treatment program in a custody setting.
+      - value: Federal Custody
+        description: An offender under DAPO's supervision currently in custody for federal charges  in a federal facility or federal contract bed.
+      - value: Local Jail
+        description: An offender incarcerated in a county jail within the state of California  pending local or revocation charges, or serving a revocation sentence.
+      - value: Mailing
+      - value: Out-of-State Custody
+      - value: PAL Report Submitted
+        description: Don't rely on this value for identifying absconsions -- use OffenderGroup = PAL instead.
       - value: Physical (Home)
-      - value: Transient - Homeless
+      - value: Planned (after ISC Transfer)
+        description: The address in California where an offender from another state proposes to  reside, if the offender's interstate transfer request is granted.
       - value: Planned (after release)
         description: The proposed address from the RPS.
-      - value: Mailing
-      - value: PAL Report Submitted
-        description:
-          Don't rely on this value for identifying absconsions -- use OffenderGroup =
-          PAL instead.
-      - value: Local Jail
-        description: >-
-          An offender incarcerated in a county jail within the state of
-          California  pending local or revocation charges, or serving a revocation
-          sentence.
       - value: Shelter Transient
-      - value: Out-of-State Custody
       - value: Temporary
-      - value: Planned (after ISC Transfer)
-        description: >-
-          The address in California where an offender from another state proposes
-          to  reside, if the offender's interstate transfer request is granted.
-      - value: Federal Custody
-        description: >-
-          An offender under DAPO's supervision currently in custody for federal
-          charges  in a federal facility or federal contract bed.
-      - value: Conversion
-  - name: PALAgentName # Added 2023-07-19
+      - value: Transient - Homeless
+  - name: PALAgentName
+    description: |-
+      Name of the agent assigned to this person due to the fact that this person has absconded.
     is_pii: True
-    description: >-
-      Name of the agent assigned to this person due to the fact that this person has
-      absconded.
-  - name: PALAgentBadge # Added 2023-07-19
+  - name: PALAgentBadge
+    description: |-
+      Badge of the agent assigned to this person due to the fact that this person has absconded.
     is_pii: True
-    description: >-
-      Badge of the agent assigned to this person due to the fact that this person has
-      absconded.
-  - name: AbscondFlag # Added 2023-07-19
-    description: >-
-      Whether or not this person is absconded. Not used in ingest right now, though
-      perhaps should be. TODO(#22503)
-  - name: LATESTSUSPENDEDDATE # Added 2023-07-19
+  - name: AbscondFlag
+    description: |-
+      Whether or not this person is absconded. Not used in ingest right now, though perhaps should be. TODO(#22503)
+  - name: LATESTSUSPENDEDDATE
+    description: |-
+      The date the person was last suspended. Suspended is a specific status that I think is intended to indicate the last time this person was suspended for an absconsion, though I think individuals can be suspended for other things as well.
     field_type: datetime
-    description: >-
-      The date the person was last suspended. Suspended is a specific status that I
-      think is intended to indicate the last time this person was suspended for an
-      absconsion, though I think individuals can be suspended for other things as well.
-  - name: ReinstateDate # Added 2023-07-19
-    field_type: datetime
-    description: >-
+  - name: ReinstateDate
+    description: |-
       The date the most recent suspension was ended.
-  - name: SUPVEVNTDATE # added 2023-07-19
+    field_type: datetime
+  - name: SUPVEVNTDATE
     field_type: datetime
     update_history:
-      # TODO(#35309) Ensure this column was intentionally removed.
       - update_type: DELETION
-        update_datetime: 2024-02-07T00:00:00Z
-  - name: LastCCRDate # Added 2023-08-14, formerly SUPVEVNTDATE added 2023-07-19
+        update_datetime: 2024-02-07T00:00:00+00:00
+  - name: LastCCRDate
     field_type: datetime
+infer_columns_from_config: True
