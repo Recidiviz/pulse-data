@@ -9,17 +9,17 @@ columns:
   - name: RECORD_KEY
     description: |-
       Unique identifier for each row.
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_OR_RECORD_KEY
+    is_pii: True
   - name: SEX
     description: |-
       Sex information for the Adult in Custody (AIC).
     known_values:
-      - value: M
-        description: Male
       - value: F
         description: Female
+      - value: M
+        description: Male
   - name: RACE
     description: |-
       Race information for the Adult in Custody (AIC).
@@ -38,6 +38,8 @@ columns:
         description: Unknown
       - value: W
         description: Caucasian
+      - value: "2"
+        description: TODO(#35462) Document this value.
   - name: HEIGHT
   - name: WEIGHT
   - name: HAIR
@@ -46,10 +48,30 @@ columns:
   - name: IMPAIRMENT_SIGHT
   - name: IMPAIRMENT_HEARING
   - name: IMPAIRMENT_SPEECH
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#35364) Verify this column isn't meant to be populated
   - name: IMPAIRMENT_MOVEMENT
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#35364) Verify this column isn't meant to be populated
   - name: IMPAIRMENT_INTELL
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#35364) Verify this column isn't meant to be populated
   - name: IMPAIRMENT_EMOTIONAL
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#35364) Verify this column isn't meant to be populated
   - name: IMPAIRMENT_OTHER
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#35364) Verify this column isn't meant to be populated
   - name: IMPAIRMENT_COMMENT
   - name: CITIZEN
   - name: BIRTHPLACE
@@ -69,7 +91,6 @@ columns:
   - name: JOB_CODE
   - name: COUNTY
   - name: END_TRAIN_DATE
-
 table_relationships:
   - foreign_table: RCDVZ_PRDDTA_OP970P
     join_logic:
