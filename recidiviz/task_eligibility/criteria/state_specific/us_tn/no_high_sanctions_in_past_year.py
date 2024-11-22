@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a TN client has not had a sanction for 12 months."""
+"""Describes the spans of time when a TN client has not had a sanction higher than Level
+1 in the past 12 months."""
+
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -34,8 +36,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_NO_HIGH_SANCTIONS_IN_PAST_YEAR"
 
-_DESCRIPTION = """Describes the spans of time when a TN client has not had a sanction for 12 months.
-"""
+_DESCRIPTION = """Describes the spans of time when a TN client has not had a sanction
+higher than Level 1 in the past 12 months."""
 
 _REASON_QUERY = f"""
     WITH sanction_sessions_cte AS
@@ -45,8 +47,9 @@ _REASON_QUERY = f"""
         "US_TN" AS state_code,
         CAST(CAST(ProposedDate AS DATETIME) AS DATE) AS start_date,
         DATE_ADD(CAST(CAST(ProposedDate AS DATETIME) AS DATE), INTERVAL 12 MONTH) AS end_date,
-        --create this field to keep track of the actual sanction date even after we sub-sessionize to handle overlapping
-        --periods (cases when a person has more than sanction in a 12 month period)
+        /* Create this field to keep track of the actual sanction date even after we
+        sub-sessionize to handle overlapping periods (cases when a person has more than
+        1 relevant sanction in a 12-month period). */
         CAST(CAST(ProposedDate AS DATETIME) AS DATE) AS latest_high_sanction_date,
         FALSE as meets_criteria,
     FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.Violations_latest` a
@@ -55,21 +58,25 @@ _REASON_QUERY = f"""
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON pei.external_id = a.OffenderID
         AND id_type = "US_TN_DOC"
+    -- here, we're only interested in sanctions with `SanctionLevel` greater than 1
     WHERE CAST(SanctionLevel AS INT64) > 1
     )
     ,
     /*
-    If a person has more than 1 sanction in a 12 month period, they will have overlapping sessions created in the above
-    CTE. Therefore we use `create_sub_sessions_with_attributes` to break these up
+    If a person has more than 1 sanction in a 12-month period, they will have
+    overlapping sessions created in the above CTE. Therefore, we use
+    `create_sub_sessions_with_attributes` to break these up.
     */
     {create_sub_sessions_with_attributes('sanction_sessions_cte')}
     ,
     dedup_cte AS
     /*
-    If a person has more than 1 sanction in a 12 month period, they will have duplicate sub-sessions for the period of
-    time where there were more than 1 sanction. For example, if a person has a sanction on Jan 1 and March 1
-    there would be duplicate sessions for the period March 1 - Dec 31 because both sanctions are relevant at that time.
-    We deduplicate below so that we surface the most-recent sanction that as relevant at each time. 
+    If a person has more than 1 sanction in a 12-month period, they will have duplicate
+    sub-sessions for the period of time where there was more than 1 relevant sanction.
+    For example, if a person has a sanction on January 1 and another on March 1, there
+    would be duplicate sessions for the period from March 1 to December 31 because both
+    sanctions are relevant at that time. We deduplicate below so that we surface the
+    most recent sanction that is relevant at each time. 
     */
     (
     SELECT
@@ -81,16 +88,17 @@ _REASON_QUERY = f"""
     ,
     sessionized_cte AS 
     /*
-    Sessionize so that we have continuous periods of time for which a person is not eligible due to a high sanction. A
-    new session exists either when a person becomes eligible, or if a person has an additional sanction within a 12-month
-    period which changes the "latest_high_sanction_date" value.
+    Sessionize so that we have continuous periods of time during which a person is not
+    eligible due to a high sanction. A new session starts either when a person becomes
+    eligible or when a person has an additional sanction within a 12-month period, which
+    changes the `latest_high_sanction_date` value.
     */
     (
     {aggregate_adjacent_spans(table_name='dedup_cte',
                        attribute=['latest_high_sanction_date','meets_criteria'],
                        end_date_field_name='end_date')}
     )
-    SELECT 
+    SELECT
         state_code,
         person_id,
         start_date,
