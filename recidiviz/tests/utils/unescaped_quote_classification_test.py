@@ -42,8 +42,6 @@ class TestUnescapedQuote(unittest.TestCase):
     def test_invalid(self) -> None:
 
         invalid_tests = [
-            [b"\n", b"\n"],
-            [b"\r\n", b"\r\n"],
             [b"n\n", b"\r\n"],
             [b"n\n", b"\n"],
         ]
@@ -51,7 +49,30 @@ class TestUnescapedQuote(unittest.TestCase):
 
             with self.assertRaisesRegex(
                 ValueError,
-                r"If you are specifying multiple line terminators, the line terminators MUST be the newline \[\\n\] and carriage return \[\\r\\n\]. Instead, found:.*",
+                r"If you are specifying multiple line terminators, the line terminators MUST be identical except for the newline \[\\n\] and carriage return \[\\r\\n\]. Instead, found:.*",
+            ):
+                UnescapedQuote(
+                    index=0,
+                    quote_char=self.quote_char,
+                    prev_chars=b"",
+                    next_chars=b"",
+                    quote_count=1,
+                ).get_quote_state(
+                    separator=self.separator,
+                    encoding="utf-8",
+                    line_terminators=line_terminators,
+                )
+
+    def test_invalid_identical(self) -> None:
+        invalid_tests = [
+            [b"\n", b"\n"],
+            [b"\r\n", b"\r\n"],
+        ]
+        for line_terminators in invalid_tests:
+
+            with self.assertRaisesRegex(
+                ValueError,
+                r"If you are specifying multiple line terminators, they must not be identical. Instead, found:.*",
             ):
                 UnescapedQuote(
                     index=0,

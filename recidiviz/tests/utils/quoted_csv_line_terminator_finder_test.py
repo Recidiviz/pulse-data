@@ -164,17 +164,34 @@ class TestDetermineQuotingStateForBuffer(unittest.TestCase):
     separator = DEFAULT_CSV_SEPARATOR.encode()
     two_line_terms = [DEFAULT_CSV_LINE_TERMINATOR.encode(), CARRIAGE_RETURN.encode()]
 
-    def test_invalid(self) -> None:
+    def test_invalid_identical(self) -> None:
         invalid_tests = [
             ("\n", "\n"),
             ("\r\n", "\r\n"),
+        ]
+        for line_term, alt_line_term in invalid_tests:
+            with self.assertRaisesRegex(
+                ValueError,
+                r"If you are specifying multiple line terminators, they must not be identical. Instead, found:.*",
+            ):
+                determine_quoting_state_for_buffer(
+                    buffer=b"",
+                    buffer_byte_start=0,
+                    quote_char=self.quote_char,
+                    separator=self.separator,
+                    encoding="utf-8",
+                    line_terminators=[line_term.encode(), alt_line_term.encode()],
+                )
+
+    def test_invalid(self) -> None:
+        invalid_tests = [
             ("‡\n", "\r\n"),
             ("‡\n", "\n"),
         ]
         for line_term, alt_line_term in invalid_tests:
             with self.assertRaisesRegex(
                 ValueError,
-                r"If you are specifying multiple line terminators, the line terminators MUST be the newline \[\\n\] and carriage return \[\\r\\n\]. Instead, found:.*",
+                r"If you are specifying multiple line terminators, the line terminators MUST be identical except for the newline \[\\n\] and carriage return \[\\r\\n\]. Instead, found:.*",
             ):
                 determine_quoting_state_for_buffer(
                     buffer=b"",
@@ -301,19 +318,36 @@ class TestFindEndOfLineForQuotedCSV(unittest.TestCase):
     newline = [DEFAULT_CSV_LINE_TERMINATOR.encode()]
     separator = DEFAULT_CSV_SEPARATOR.encode()
 
-    def test_invalid(self) -> None:
+    def test_invalid_identical(self) -> None:
         invalid_tests = [
             ("\n", "\n"),
             ("\r\n", "\r\n"),
+        ]
+        for line_term, alt_line_term in invalid_tests:
+            with self.assertRaisesRegex(
+                ValueError,
+                r"If you are specifying multiple line terminators, they must not be identical. Instead, found:.*",
+            ):
+                determine_quoting_state_for_buffer(
+                    buffer=b"",
+                    buffer_byte_start=0,
+                    quote_char=self.quote_char,
+                    separator=self.separator,
+                    encoding="utf-8",
+                    line_terminators=[line_term.encode(), alt_line_term.encode()],
+                )
+
+    def test_invalid(self) -> None:
+        invalid_tests = [
             ("‡\n", "\r\n"),
             ("‡\n", "\n"),
         ]
         for line_term, alt_line_term in invalid_tests:
             with self.assertRaisesRegex(
                 ValueError,
-                r"If you are specifying multiple line terminators, the line terminators MUST be the newline \[\\n\] and carriage return \[\\r\\n\]. Instead, found:.*",
+                r"If you are specifying multiple line terminators, the line terminators MUST be identical except for the newline \[\\n\] and carriage return \[\\r\\n\]. Instead, found:.*",
             ):
-                find_end_of_line_for_quoted_csv(
+                determine_quoting_state_for_buffer(
                     buffer=b"",
                     buffer_byte_start=0,
                     quote_char=self.quote_char,
