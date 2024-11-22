@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Identifies individuals' supervision sentences in OR for which at least half the
-sentence has been served."""
+sentence has been served.
+"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
@@ -33,9 +34,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 US_OR_SERVED_HALF_SENTENCE_VIEW_NAME = "us_or_served_half_sentence"
 
-US_OR_SERVED_HALF_SENTENCE_VIEW_DESCRIPTION = """Identifies individuals' supervision
-sentences in OR for which at least half the sentence has been served."""
-
 US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
     WITH sentences AS (
         /* NB: this query pulls from `sentences_preprocessed` (not `sentence_spans`,
@@ -49,10 +47,13 @@ US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
         to rely upon `sentence_spans`. */
         SELECT
             *,
-            /* Truncate `external_id`. (We'll use this to match incarceration sentences
-            to their respective PPS sentences.) We have to truncate it so that we can
-            link sentences that have the same underlying charge. (See OR ingest mappings
-            to see how `external_id` is constructed.) */
+            /* Truncate `external_id` so that we can use it to identify sentences that
+            have the same underlying charge. The `external_id` in OR is composed of five
+            numbers separated by hyphens (see OR ingest mappings for more info re: how
+            `external_id` is constructed); for sentences for the same underlying charge,
+            the first four numbers of the `external_id` will be the same across
+            sentences. The `REGEXP_EXTRACT` statement below pulls out the first four
+            numbers from the `external_id` (preserving the hyphenation between them). */
             REGEXP_EXTRACT(external_id, '^[0-9]*-[0-9]*-[0-9]*-[0-9]*') AS external_id_truncated,
         FROM ({sentence_attributes()})
         WHERE state_code='US_OR'
@@ -73,10 +74,13 @@ US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
         SELECT
             state_code,
             person_id,
-            /* Truncate `external_id`. (We'll use this to match incarceration sentences
-            to their respective PPS sentences.) We have to truncate it so that we can
-            link sentences that have the same underlying charge. (See OR ingest mappings
-            to see how `external_id` is constructed.) */
+            /* Truncate `external_id` so that we can use it to identify sentences that
+            have the same underlying charge. The `external_id` in OR is composed of five
+            numbers separated by hyphens (see OR ingest mappings for more info re: how
+            `external_id` is constructed); for sentences for the same underlying charge,
+            the first four numbers of the `external_id` will be the same across
+            sentences. The `REGEXP_EXTRACT` statement below pulls out the first four
+            numbers from the `external_id` (preserving the hyphenation between them). */
             REGEXP_EXTRACT(external_id, '^[0-9]*-[0-9]*-[0-9]*-[0-9]*') AS external_id_truncated,
             CAST(JSON_VALUE(sentence_metadata, '$.PPS_SENTENCE_DAYS') AS INT64) AS pps_sentence_days,
             CAST(JSON_VALUE(sentence_metadata, '$.PPS_SENTENCE_MONTHS') AS INT64) AS pps_sentence_months,
@@ -151,7 +155,7 @@ US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
 US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     view_id=US_OR_SERVED_HALF_SENTENCE_VIEW_NAME,
-    description=US_OR_SERVED_HALF_SENTENCE_VIEW_DESCRIPTION,
+    description=__doc__,
     view_query_template=US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,
