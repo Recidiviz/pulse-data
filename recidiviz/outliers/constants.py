@@ -17,7 +17,12 @@
 """Outliers-related constants"""
 
 import recidiviz.aggregated_metrics.models.aggregated_metric_configurations as metric_config
-from recidiviz.outliers.types import MetricOutcome, OutliersClientEvent, OutliersMetric
+from recidiviz.outliers.types import (
+    MetricOutcome,
+    OutliersClientEvent,
+    OutliersMetric,
+    OutliersVitalsMetricConfig,
+)
 
 DEFAULT_NUM_LOOKBACK_PERIODS = 5
 
@@ -101,6 +106,16 @@ VIOLATIONS_ABSCONSION = OutliersMetric(
         if metric.name == "violations_absconsion"
     ),
     outcome_type=MetricOutcome.ADVERSE,
+)
+
+# Vitals Metrics
+TIMELY_RISK_ASSESSMENT = OutliersVitalsMetricConfig(
+    metric_id="timely_risk_assessment",
+    title_display_name="Timely Risk Assessment",
+)
+TIMELY_CONTACT = OutliersVitalsMetricConfig(
+    metric_id="timely_contact",
+    title_display_name="Timely Contact",
 )
 
 # Lantern Events

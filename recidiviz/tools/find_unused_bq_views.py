@@ -399,10 +399,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         table_id="supervision_office_day_aggregated_metrics",
     ): ("Will be used for vitals-in-insights (see #34611) (Dana Hoffman 11/1/24)"),
     BigQueryAddress(
-        dataset_id=VITALS_REPORT_DATASET,
-        table_id="supervision_officer_day_aggregated_metrics",
-    ): ("Will be used for vitals-in-insights (see #34611) (Dana Hoffman 11/1/24)"),
-    BigQueryAddress(
         dataset_id="observations__workflows_surfaceable_caseload_event",
         table_id="all_workflows_surfaceable_caseload_events",
     ): (
