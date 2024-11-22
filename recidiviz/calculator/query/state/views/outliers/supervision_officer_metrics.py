@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Aggregated metrics at the officer-level for supervision-related metrics"""
+from typing import List, Literal, LiteralString
+
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
@@ -26,12 +28,17 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysisType,
 )
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states_for_bigquery,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_metrics_helpers import (
     supervision_metric_query_template,
 )
 from recidiviz.calculator.query.state.views.outliers.utils import (
     format_state_specific_officer_aggregated_metric_filters,
 )
+from recidiviz.outliers.outliers_configs import get_outliers_backend_config
+from recidiviz.outliers.types import OutliersVitalsMetricConfig
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -83,6 +90,65 @@ _OFFICER_CASELOAD_CATEGORIES_CTE = "\n    UNION ALL\n".join(
 )
 
 
+def _supervision_vitals_metric_query_template() -> str:
+    """
+    Gets the vitals metrics
+    """
+    state_queries = []
+
+    for state in get_outliers_enabled_states_for_bigquery():
+        metrics_config: List[OutliersVitalsMetricConfig] = get_outliers_backend_config(
+            state
+        ).vitals_metrics
+
+        if not metrics_config:  # Skip if no metrics
+            continue
+
+        VALID_METRICS = {"timely_contact", "timely_risk_assessment"}
+        if invalid_metrics := {m.metric_id for m in metrics_config} - VALID_METRICS:
+            raise ValueError(
+                f"Invalid metrics found: {invalid_metrics}. Only {VALID_METRICS} are allowed."
+            )
+
+        metrics_list = ", ".join(f"'{metric.metric_id}'" for metric in metrics_config)
+
+        agg_metrics = "vitals_report_views.supervision_officer_day_aggregated_metrics_materialized"
+
+        query = f"""
+            SELECT
+                state_code,
+                officer_id,
+                end_date,
+                metric_id,
+                period,
+                CASE 
+                    WHEN metric_id = 'timely_contact' THEN ROUND((1 - SAFE_DIVIDE(avg_population_contact_overdue, avg_population_contact_required)) * 100, 0)
+                    WHEN metric_id = 'timely_risk_assessment' THEN ROUND((1 - SAFE_DIVIDE(avg_population_assessment_overdue, avg_population_assessment_required)) * 100, 0)
+                    ELSE NULL
+                END AS metric_value,
+                "RATE" AS value_type,
+                "ALL" as caseload_category,
+                "ALL" as category_type
+            FROM
+                `{{project_id}}.{agg_metrics}`
+            CROSS JOIN UNNEST([{metrics_list}]) AS metric_id
+            WHERE
+                state_code = '{state}' AND
+                end_date IN (
+                    DATE_SUB((SELECT MAX(end_date) FROM `{{project_id}}.{agg_metrics}`), INTERVAL 1 DAY),
+                    DATE_SUB((SELECT MAX(end_date) FROM `{{project_id}}.{agg_metrics}`), INTERVAL 30 DAY)
+            )
+        """
+        state_queries.append(query.strip())
+
+    return "\nUNION ALL\n".join(state_queries)
+
+
+_OFFICER_VITALS_METRICS: LiteralString | Literal[
+    ""
+] = _supervision_vitals_metric_query_template()
+
+
 _QUERY_TEMPLATE = f"""
 WITH 
 filtered_supervision_officer_aggregated_metrics AS (
@@ -93,13 +159,18 @@ supervision_officer_metrics AS (
 ),
 officer_caseload_categories AS (
     {_OFFICER_CASELOAD_CATEGORIES_CTE}
+),
+officer_vitals_metrics AS (
+    {_OFFICER_VITALS_METRICS}
 )
 
 SELECT 
-    {{columns}}
+    {{columns}},
 FROM supervision_officer_metrics
 INNER JOIN officer_caseload_categories
 USING (state_code, officer_id, end_date, period)
+FULL OUTER JOIN officer_vitals_metrics
+USING (state_code, officer_id, end_date, metric_id, period, metric_value, value_type, caseload_category, category_type)
 """
 
 SUPERVISION_OFFICER_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(

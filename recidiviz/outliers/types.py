@@ -282,6 +282,9 @@ class OutliersBackendConfig:
     # once the metric changes are propogated through to production.
     metrics: List[OutliersMetricConfig] = attr.ib()
 
+    # The vitals metrics relevant to this state
+    vitals_metrics: List[OutliersVitalsMetricConfig] = attr.ib(default=[])
+
     # Mapping of client event types that are relevant for this state to a config with relevant info
     client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
 
