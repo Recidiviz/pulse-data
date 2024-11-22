@@ -54,6 +54,8 @@ QUOTED_NEWLINE = "example_file_structure_commas.csv"
 
 QUOTED_CARRIAGE_NEWLINE = "example_file_structure_commas_carriage_return.csv"
 
+LINE_TERMINATOR_CONTAINS_NEWLINE = "custom_line_terminator_contains_new_line.csv"
+
 QUOTED_NEWLINE_NO_ENDING_NEWLINE = (
     "example_file_structure_commas_no_trailing_newline.csv"
 )
@@ -312,7 +314,7 @@ class GcsfsCsvChunkBoundaryFinderChunksForPathTests(unittest.TestCase):
         assert finder._line_terminators == [CARRIAGE_RETURN.encode()]
 
         finder = self._get_finder(line_terminator="‡\n")
-        assert finder._line_terminators == ["‡\n".encode()]
+        assert finder._line_terminators == ["‡\n".encode(), "‡\r\n".encode()]
 
     def test_chunk_size_one(self) -> None:
         expected_boundaries = [
@@ -437,6 +439,29 @@ class GcsfsCsvChunkBoundaryFinderChunksForPathTests(unittest.TestCase):
             peek_size=10,
             encoding="UTF-8",
             quoting_mode=csv.QUOTE_MINIMAL,
+        )
+
+    def test_custom_line_terminator_contains_newline(self) -> None:
+        """This file uses custom line terminator "‡\n" but the file contains "‡\r\n" line terminators."""
+        expected_boundaries = [
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=77, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=77, end_exclusive=141, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=141, end_exclusive=170, chunk_num=2),
+        ]
+        expected_chunks = [
+            b'numerical_col,string_col_1,string_col_2\xe2\x80\xa1\r\n1234,"Hello, world",I\'m Anna\xe2\x80\xa1\r\n',
+            b'4567,"This line\r\nis split in two","This word is ""quoted"""\xe2\x80\xa1\r\n',
+            b'7890,"""quoted value""",\xe2\x80\xa1\r\n',
+        ]
+        self.run_local_test(
+            LINE_TERMINATOR_CONTAINS_NEWLINE,
+            expected_boundaries,
+            expected_chunks,
+            chunk_size=50,
+            peek_size=10,
+            encoding="UTF-8",
+            quoting_mode=csv.QUOTE_MINIMAL,
+            line_terminator="‡\n",
         )
 
     def test_quoted_newlines_no_ending_newline_one_line_each(self) -> None:

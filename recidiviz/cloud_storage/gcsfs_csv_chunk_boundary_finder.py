@@ -103,11 +103,22 @@ class GcsfsCsvChunkBoundaryFinder:
 
         # different file systems sometimes use newline (\n) and carriage return (\r\n)
         # interchangeably (even within the same file). python's built-in open(...) and csv
-        # module treats them both as standard newlines under the hood. when we see a
-        # standard newline as the terminator (\n), we also look for carriage return (\r\n).
+        # module treats them both as standard newlines under the hood. whenever we
+        # see a standard newline (\n) in the line terminator without a corresponding `\r`
+        # we will search for both a plain newline and the carriage return (\r\n).
         # however, in all other cases, we only want to support a single line terminator.
-        if line_terminator == DEFAULT_CSV_LINE_TERMINATOR:
-            self._line_terminators.append(bytes(CARRIAGE_RETURN, self._encoding))
+        if (
+            CARRIAGE_RETURN not in line_terminator
+            and DEFAULT_CSV_LINE_TERMINATOR in line_terminator
+        ):
+            self._line_terminators.append(
+                bytes(
+                    line_terminator.replace(
+                        DEFAULT_CSV_LINE_TERMINATOR, CARRIAGE_RETURN
+                    ),
+                    self._encoding,
+                )
+            )
 
     @staticmethod
     def _get_peek_size(peek_size: Optional[int], quoting: int) -> int:

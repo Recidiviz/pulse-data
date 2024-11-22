@@ -19,25 +19,37 @@ from enum import Enum
 
 import attr
 
-from recidiviz.common.constants.csv import VALID_MULTIPLE_LINE_TERMINATORS
+from recidiviz.common.constants.csv import CARRIAGE_RETURN, NEWLINE
 
 
 def validate_line_terminators(*, encoding: str, line_terminators: list[bytes]) -> None:
     """Different file systems sometimes use newline (\n) and carriage return (\r\n)
-    interchangeably (even within the same file) and python's built-in open(...) and csv
-    module treats them both as standard newlines. Thus, when we see a standard newline
-    as the terminator (\n), we also look for carriage return (\r\n). However, in all
-    other cases, we only want to support a single line terminator.
+    interchangeably (even within the same file). python's built-in open(...) and csv
+    module treats them both as standard newlines under the hood. whenever we
+    see a standard newline (\n) in the line terminator without a corresponding `\r`
+    we will search for both a plain newline and the carriage return (\r\n).
+    However, in all other cases, we only want to support a single line terminator.
     """
     if len(line_terminators) > 1:
-        _line_terminators_str = {
+        _line_terminators_strs = {
             line_terminator.decode(encoding) for line_terminator in line_terminators
         }
-        if _line_terminators_str != VALID_MULTIPLE_LINE_TERMINATORS:
+        if len(_line_terminators_strs) == 1:
+            raise ValueError(
+                "If you are specifying multiple line terminators, they must not be identical. "
+                f"Instead, found: {repr(line_terminators)}."
+            )
+
+        terminators_sans_newline_chars = {
+            line.replace(CARRIAGE_RETURN, "").replace(NEWLINE, "")
+            for line in _line_terminators_strs
+        }
+
+        if len(terminators_sans_newline_chars) > 1:
             raise ValueError(
                 f"If you are specifying multiple line terminators, the line terminators "
-                f"MUST be the newline [\\n] and carriage return [\\r\\n]. Instead, "
-                f"found: {repr(_line_terminators_str)}."
+                f"MUST be identical except for the newline [\\n] and carriage return [\\r\\n]. Instead, "
+                f"found: {repr(_line_terminators_strs)}."
             )
 
 
