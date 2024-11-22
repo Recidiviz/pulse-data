@@ -188,18 +188,20 @@ function main(e) {
         supervisionDistrictData
       );
 
-    const { wauByWeekData, weeklyActiveUsers } = getWauByWeekData(
-      stateCode,
-      startDateString,
-      endDateString,
-      completionEventType
-    );
+    const { wauAndMauByWeekData, weeklyActiveUsers, monthlyActiveUsers } =
+      getWauAndMauByWeekData(
+        stateCode,
+        startDateString,
+        endDateString,
+        completionEventType
+      );
 
     let wauByWeekColumnChart = null;
-    if (wauByWeekData) {
-      wauByWeekColumnChart = constructWauByWeekColumnChart(
+    if (wauAndMauByWeekData) {
+      wauByWeekColumnChart = constructWauAndMauByWeekColumnChart(
+        monthlyActiveUsers,
         weeklyActiveUsers,
-        wauByWeekData
+        wauAndMauByWeekData
       );
     }
     workflowToWauByWeekChart[workflow] = wauByWeekColumnChart;

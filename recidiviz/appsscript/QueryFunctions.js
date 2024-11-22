@@ -17,7 +17,7 @@
 /* File containing functions that construct SQL Queries used in CreateReport.gs. */
 
 /**
- * Get WAU By Week Data
+ * Get WAU and MAU By Week Data
  * Given parameters provided by the user, constructs a query string and calls runQuery
  * to query the BiqQuery database.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
@@ -26,35 +26,40 @@
  * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
  * @returns {object} wauByWeekData An array or arrays containing data for each week. Also returns the weeklyActiveUsers string
  */
-function getWauByWeekData(
+function getWauAndMauByWeekData(
   stateCode,
   startDateString,
   endDateString,
-  completionEventType,
+  completionEventType
 ) {
   const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
-  const endDate = "end_date";
   const weeklyActiveUsers = "weekly_active_users";
+  const monthlyActiveUsers = "monthly_active_users";
 
   const wauTable = "justice_involved_state_week_rolling_weekly_aggregated_metrics_materialized";
+  const mauTable = "justice_involved_state_month_rolling_weekly_aggregated_metrics_materialized";
 
   const queryString = `
     SELECT
-      FORMAT_DATE('%m/%d/%y', ${endDate}),
-      ${distinctActiveUsers} AS ${weeklyActiveUsers}
-    FROM
-    \`impact_reports.${wauTable}\`
+      FORMAT_DATE('%m/%d/%y', end_date) AS formatted_date,
+      w.${distinctActiveUsers} AS ${weeklyActiveUsers},
+      m.${distinctActiveUsers} AS ${monthlyActiveUsers}
+    FROM \`impact_reports.${mauTable}\` m 
+    INNER JOIN \`impact_reports.${wauTable}\` w
+    USING (state_code, end_date)
     WHERE state_code = '${stateCode}'
-    AND start_date >= '${startDateString}'
-    AND start_date < '${endDateString}'
-    ORDER BY start_date ASC;
+    AND w.start_date >= '${startDateString}'
+    AND w.start_date < '${endDateString}'
+    AND NOT (w.${distinctActiveUsers} IS NULL OR m.${distinctActiveUsers} IS NULL)
+    ORDER BY w.start_date ASC
   `;
-  
-  const wauByWeekData = runQuery(queryString);
+
+  const wauAndMauByWeekData = runQuery(queryString);
 
   return {
-    wauByWeekData,
+    wauAndMauByWeekData,
     weeklyActiveUsers,
+    monthlyActiveUsers,
   };
 }
 
@@ -281,7 +286,7 @@ function getStartDate(stateCode, timePeriod, endDateString) {
   const startDate = `${splitStartDate[1]}/${splitStartDate[2]}/${splitStartDate[0]}`;
   Logger.log("startDate: %s", startDate);
 
-  return {startDate, startDateString};
+  return { startDate, startDateString };
 }
 
 /**
@@ -405,7 +410,7 @@ function getMaxLocations(locationData) {
       // We have a new max value and location
       maxValue = arr[1];
       maxLocations = [arr[0]];
-    } else if ((parseFloat(arr[1]) === parseFloat(maxValue)) && (maxValue !== 0)) {
+    } else if (parseFloat(arr[1]) === parseFloat(maxValue) && maxValue !== 0) {
       // We have a tied max value and location
       maxLocations.push(arr[0]);
     }
@@ -587,32 +592,35 @@ function constructMauWauByLocationColumnChart(
   return mauWauByLocationColumnChart;
 }
 
-
 /**
- * Construct WAU by week column chart
+ * Construct WAU and MAU by week column chart
  * Populates a new wau by week column chart.
  * @param {string} weeklyActiveUsers The name of the weeklyActiveUsers column
- * @param {array} wauByWeekData An array of arrays containing data for each week
+ * @param {string} monthlyActiveUsers The name of the monthlyActiveUsers column
+ * @param {array} wauAndMauByWeekData An array of arrays containing data for each week
  * @returns {Chart} The built/populated column chart
  */
-function constructWauByWeekColumnChart(
+function constructWauAndMauByWeekColumnChart(
+  monthlyActiveUsers,
   weeklyActiveUsers,
-  wauByWeekData
+  wauAndMauByWeekData
 ) {
   const xAxisClean = "End Date";
   const wauClean = cleanString(weeklyActiveUsers);
+  const mauClean = cleanString(monthlyActiveUsers);
 
   const chartData = Charts.newDataTable()
     .addColumn(Charts.ColumnType.STRING, xAxisClean)
-    .addColumn(Charts.ColumnType.NUMBER, wauClean);
+    .addColumn(Charts.ColumnType.NUMBER, wauClean)
+    .addColumn(Charts.ColumnType.NUMBER, mauClean);
 
-  wauByWeekColumnChart = createColumnChart(
-    wauByWeekData,
+  wauAndMauByWeekColumnChart = createColumnChart(
+    wauAndMauByWeekData,
     chartData,
-    "Weekly Active Users",
+    "Weekly and Monthly Active Users",
     xAxisClean,
     "# of Users",
-    ["#CA2E17"], // this chart will have red columns
+    ["#CA2E17", "#3697FA"], // this chart will have red and blue columns
     false, // we do not want to stack columns
     1278, // chart width
     910, // chart height
@@ -620,5 +628,5 @@ function constructWauByWeekColumnChart(
     false // for this chart, we do not want to filter out zero values
   );
 
-  return wauByWeekColumnChart;
+  return wauAndMauByWeekColumnChart;
 }
