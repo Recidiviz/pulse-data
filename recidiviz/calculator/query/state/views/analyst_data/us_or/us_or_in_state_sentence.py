@@ -61,8 +61,9 @@ US_OR_IN_STATE_SENTENCE_QUERY_TEMPLATE = f"""
         ODOC should be excluded from EDIS. Note that there are some sentences with
         two-character codes that don't appear to be state codes; these appear to be data
         errors / are from very old data, and so we just include those in the exclusion
-        here. */
-        (CHAR_LENGTH(county_code)=4) AS meets_criteria,
+        here. We explicitly exclude sentences with missing `county_code` values from
+        eligibility. */
+        CHAR_LENGTH(COALESCE(county_code, 'UNKNOWN'))=4 AS meets_criteria,
     FROM sentences
 """
 
