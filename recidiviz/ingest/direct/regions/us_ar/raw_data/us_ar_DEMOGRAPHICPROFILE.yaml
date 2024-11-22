@@ -629,7 +629,7 @@ columns:
         description: Ohio
       - value: OK
         description: Oklahoma
-      - value: ON
+      - value: "ON"
         description: Ontario
       - value: OR
         description: Oregon
