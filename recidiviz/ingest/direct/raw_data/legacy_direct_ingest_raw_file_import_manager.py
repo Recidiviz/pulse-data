@@ -149,7 +149,7 @@ class DirectIngestRawFileReader:
                     normalize_column_name_for_bq(column_name)
                     for column_name in df.columns
                 ]
-            except IndexError:
+            except ValueError:
                 # This indicates that there are empty column values in the DF, which highly
                 # suggests that we are working with a file that does not have header rows.
                 return columns_from_file_config
