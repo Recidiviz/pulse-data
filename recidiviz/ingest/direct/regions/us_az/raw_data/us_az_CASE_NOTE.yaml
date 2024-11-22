@@ -4,6 +4,7 @@ file_description: |-
   Contains case notes from ADCRR. This is a subset of the columns that exist in this table
   in the ADCRR database, because the file is very large.
 data_classification: source
+encoding: UTF-8
 primary_key_cols:
   - CASE_NOTE_ID
 columns:
