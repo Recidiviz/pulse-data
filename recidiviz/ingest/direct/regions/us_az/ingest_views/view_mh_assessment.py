@@ -53,6 +53,7 @@ FROM filtered_data mh
 INNER JOIN {LOOKUPS} l
     ON (l.LOOKUP_CATEGORY = 'MHSTATUS'
     AND mh.MH_STATUS_ID = l.LOOKUP_ID)
+WHERE l.CODE != 'U' -- Undetermined
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
