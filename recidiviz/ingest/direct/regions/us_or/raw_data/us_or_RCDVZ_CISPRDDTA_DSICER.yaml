@@ -22,9 +22,17 @@ columns:
   - name: DISCOUNTINUED_REASON
   - name: DISCONTINUED_DATE
   - name: TIME_SERVED_RESTRICTION
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#35364) Verify this column isn't meant to be populated
   - name: DISQ_CODE
   - name: PHYSICAL_RELEASE_DATE
   - name: SENTENCE_STATUS_DATE
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#35364) Verify this column isn't meant to be populated
   - name: DATE_OF_REVIEW
   - name: WD_OVERRIDE
   - name: APPROVAL_DATE
@@ -33,6 +41,10 @@ columns:
   - name: NOTIFY_DATE
   - name: PROJECTED_RELEASE_DATE
   - name: EFFECTIVE_DATE
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#35364) Verify this column isn't meant to be populated
   - name: NEXT_NUMBER
     description: |-
       Part of the composite key.

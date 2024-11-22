@@ -14,7 +14,15 @@ columns:
   - name: NEWNEEDCODE2
   - name: NEWNEEDCODE
   - name: NEEDDESC
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#35364) Verify this column isn't meant to be populated
   - name: EDUC_EXEMPT
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#35364) Verify this column isn't meant to be populated
   - name: MATHGRP
   - name: READGRP
   - name: ENROLLSTATUS_EXITCD
@@ -44,6 +52,10 @@ columns:
   - name: MATHDATE
   - name: MATHFORM
   - name: READLEVELESL
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#35364) Verify this column isn't meant to be populated
   - name: READLEVEL
   - name: READSCORE
   - name: READDATE
