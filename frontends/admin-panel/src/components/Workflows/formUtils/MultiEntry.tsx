@@ -70,6 +70,7 @@ export const MultiEntry = ({
               )}
             </div>
           ))}
+          {readonly && fields.length === 0 && <i>None</i>}
           {!readonly && (
             <Form.Item>
               <Button

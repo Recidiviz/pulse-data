@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Button, Checkbox, Divider, Form, Input, Select } from "antd";
+import { Button, Divider, Form, Input } from "antd";
 import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { useHistory } from "react-router-dom";
@@ -27,15 +27,9 @@ import {
 } from "../../../WorkflowsStore/models/OpportunityConfiguration";
 import OpportunityConfigurationPresenter from "../../../WorkflowsStore/presenters/OpportunityConfigurationPresenter";
 import { useWorkflowsStore } from "../../StoreProvider";
+import { FieldsFromSpec } from "../formUtils/FieldsFromSpec";
 import HydrationWrapper from "../HydrationWrapper";
-import { CompareByEdit } from "./CompareBy";
-import { CriteriaCopyEdit } from "./CriteriaCopy";
-import { DenialReasonsEdit } from "./DenialReasons";
-import { MultiEntry } from "./MultiEntry";
-import { NotificationsEdit } from "./Notifications";
-import { SidebarComponentsEdit } from "./SidebarComponents";
-import { SnoozeInput } from "./SnoozeInput";
-import { TabGroupsEdit } from "./TabGroups";
+import { opportunityConfigFormSpec } from "./opportunityConfigurationFormSpec";
 
 const OPTIONAL_FIELDS: (keyof z.input<
   typeof babyOpportunityConfigurationSchema
@@ -99,6 +93,7 @@ const OpportunityConfigurationForm = ({
       labelCol={{ span: 4 }}
       wrapperCol={{ span: 12 }}
       labelWrap
+      scrollToFirstError
       onFinish={async (values) => {
         setIsSubmitting(true);
         const config = babyOpportunityConfigurationSchema.parse({
@@ -136,112 +131,7 @@ const OpportunityConfigurationForm = ({
       >
         <Input disabled={!freshNonDefault} />
       </Form.Item>
-      <Divider />
-      <Form.Item
-        label="Opportunity Name"
-        name="displayName"
-        rules={[{ required: true }]}
-      >
-        <Input />
-      </Form.Item>
-      <Form.Item label="Initial Header" name="initialHeader">
-        <Input />
-      </Form.Item>
-      <Form.Item label="Subheading" name="subheading">
-        <Input />
-      </Form.Item>
-      <Form.Item
-        label="Call To Action"
-        name="callToAction"
-        rules={[{ required: true }]}
-      >
-        <Input />
-      </Form.Item>
-      <Form.Item
-        label="Dynamic Eligibility Text"
-        name="dynamicEligibilityText"
-        rules={[{ required: true }]}
-      >
-        <Input />
-      </Form.Item>
-      <Divider orientation="left">Criteria</Divider>
-      <MultiEntry
-        label="Eligible Criteria Copy"
-        name="eligibleCriteriaCopy"
-        child={CriteriaCopyEdit}
-      />
-      <MultiEntry
-        label="Almost Eligible Criteria Copy"
-        name="ineligibleCriteriaCopy"
-        child={CriteriaCopyEdit}
-      />
-      <Divider orientation="left">Sidebar</Divider>
-      <Form.Item label="Alert?" name="isAlert" valuePropName="checked">
-        <Checkbox />
-      </Form.Item>
-      <MultiEntry
-        label="Sidebar Components"
-        name="sidebarComponents"
-        child={SidebarComponentsEdit}
-      />
-      <Form.Item label="Eligibility Date Text" name="eligibilityDateText">
-        <Input />
-      </Form.Item>
-      <Form.Item
-        label="Methodology URL"
-        name="methodologyUrl"
-        rules={[{ required: true }]}
-      >
-        <Input />
-      </Form.Item>
-      <Divider orientation="left">Denial/Snooze</Divider>
-      <MultiEntry
-        label="Denial Reasons"
-        name="denialReasons"
-        child={DenialReasonsEdit}
-      />
-      <Form.Item label="Snooze" name="snooze">
-        <SnoozeInput />
-      </Form.Item>
-      <Form.Item label="Denial Text" name="denialText">
-        <Input />
-      </Form.Item>
-      <Form.Item
-        label="Hide Denial Revert?"
-        name="hideDenialRevert"
-        valuePropName="checked"
-      >
-        <Checkbox />
-      </Form.Item>
-      <Divider orientation="left">Supervisor Homepage</Divider>
-      <Form.Item label="Priority" name="priority" rules={[{ required: true }]}>
-        <Select>
-          <Select.Option value="NORMAL">NORMAL</Select.Option>
-          <Select.Option value="HIGH">HIGH</Select.Option>
-        </Select>
-      </Form.Item>
-      <Form.Item label="Zero Grants Tooltip" name="zeroGrantsTooltip">
-        <Input />
-      </Form.Item>
-      <Divider />
-      <Form.Item label="Tooltip Eligibility Text" name="tooltipEligibilityText">
-        <Input />
-      </Form.Item>
-      <MultiEntry
-        label="Notifications"
-        name="notifications"
-        child={NotificationsEdit}
-      />
-      <Divider orientation="left">Danger Zone</Divider>
-      <Form.Item>
-        <i>Consult with Polaris before editing these fields.</i>
-      </Form.Item>
-      <MultiEntry label="Tab Groups" name="tabGroups" child={TabGroupsEdit} />
-      <MultiEntry
-        label="Caseload Sorting"
-        name="compareBy"
-        child={CompareByEdit}
-      />
+      <FieldsFromSpec spec={opportunityConfigFormSpec} mode="edit" />
       <Divider />
       <Form.Item
         label="Revision Description"

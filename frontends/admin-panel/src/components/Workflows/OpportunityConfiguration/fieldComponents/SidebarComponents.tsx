@@ -17,8 +17,8 @@
 
 import { Form, Select } from "antd";
 
-import { StaticValue } from "./formSpec";
-import { MultiEntryChild } from "./MultiEntry";
+import { MultiEntryChild } from "../../formUtils/MultiEntry";
+import { StaticValue } from "../../formUtils/StaticValue";
 
 const sidebarComponentNames = [
   "CaseNotes",

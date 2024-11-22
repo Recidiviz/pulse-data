@@ -16,40 +16,46 @@
 // =============================================================================
 
 import { Form, Input } from "antd";
+import TextArea from "antd/lib/input/TextArea";
 
-import { StaticValue } from "./formSpec";
-import { MultiEntryChild } from "./MultiEntry";
+import { MultiEntryChild } from "../../formUtils/MultiEntry";
+import { StaticValue } from "../../formUtils/StaticValue";
 
-export const NotificationsView: MultiEntryChild = ({ name }) => (
+export const CriteriaCopyView: MultiEntryChild = ({ name }) => (
   <>
-    <Form.Item noStyle name={[name, "title"]}>
+    <Form.Item noStyle name={[name, "key"]}>
       <StaticValue />
     </Form.Item>
-    <Form.Item noStyle name={[name, "body"]}>
+    :
+    <Form.Item noStyle name={[name, "text"]}>
       <StaticValue />
     </Form.Item>
-    <Form.Item noStyle name={[name, "cta"]}>
+    <Form.Item noStyle name={[name, "tooltip"]}>
       <StaticValue />
     </Form.Item>
   </>
 );
 
-export const NotificationsEdit: MultiEntryChild = ({ name }) => (
-  <>
-    <Form.Item noStyle name={[name, "title"]} rules={[{ required: false }]}>
-      <Input placeholder="Title (optional)" />
-    </Form.Item>
-    :
+export const CriteriaCopyEdit: MultiEntryChild = ({ name }) => (
+  <div style={{ width: "100%", marginBottom: "0.25em" }}>
     <Form.Item
       noStyle
-      name={[name, "body"]}
-      rules={[{ required: true, message: "Notification body is required" }]}
+      name={[name, "key"]}
+      rules={[{ required: true, message: "'criteria' is required" }]}
     >
-      <Input placeholder="Body" />
+      <Input placeholder="Criteria" />
     </Form.Item>
-    :
-    <Form.Item noStyle name={[name, "cta"]}>
-      <Input placeholder="CTA (optional)" />
-    </Form.Item>
-  </>
+    <div style={{ marginTop: "0.25em", display: "flex", gap: "0.25em" }}>
+      <Form.Item
+        noStyle
+        name={[name, "text"]}
+        rules={[{ required: true, message: "'text' is required" }]}
+      >
+        <TextArea placeholder="Text" />
+      </Form.Item>
+      <Form.Item noStyle name={[name, "tooltip"]}>
+        <TextArea placeholder="Tooltip" />
+      </Form.Item>
+    </div>
+  </div>
 );

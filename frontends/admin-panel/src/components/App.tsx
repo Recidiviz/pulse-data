@@ -51,8 +51,8 @@ import UploadRawFilesView from "./UploadRawFilesView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
 import OpportunitiesHeader from "./Workflows/OpportunitiesHeader";
 import OpportunitiesView from "./Workflows/OpportunitiesView";
-import OpportunityConfigurationForm from "./Workflows/OpportunityConfigurationForm/OpportunityConfigurationForm";
-import OpportunityConfigurationView from "./Workflows/OpportunityConfigurationView";
+import OpportunityConfigurationForm from "./Workflows/OpportunityConfiguration/OpportunityConfigurationForm";
+import OpportunityConfigurationView from "./Workflows/OpportunityConfiguration/OpportunityConfigurationView";
 import OpportunityView from "./Workflows/OpportunityView";
 
 type MenuItem = Required<MenuProps>["items"][number];
