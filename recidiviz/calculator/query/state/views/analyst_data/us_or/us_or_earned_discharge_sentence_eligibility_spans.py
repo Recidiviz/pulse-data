@@ -129,18 +129,13 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             sentence_id,
             start_date,
             end_date,
-            /* Note: using COALESCE(LOGICAL_AND(), FALSE) prevents the problem of ending
-            up with NULL for the `meets_criteria_` fields, which can happen if there is
-            no row in the relevant view for that person-sentence span (i.e., there's
-            nothing going into the LOGICAL_AND). By using COALESCE here, we ensure that
-            each of these criteria is always either TRUE or FALSE (and never NULL). */
-            COALESCE(LOGICAL_AND(sentence_date), FALSE) AS meets_criteria_sentence_date,
-            COALESCE(LOGICAL_AND(served_6_months), FALSE) AS meets_criteria_served_6_months,
-            COALESCE(LOGICAL_AND(served_half_of_sentence), FALSE) AS meets_criteria_served_half_of_sentence,
-            COALESCE(LOGICAL_AND(statute), FALSE) AS meets_criteria_statute,
-            COALESCE(LOGICAL_AND(no_convictions_since_sentence_start_date), FALSE) AS meets_criteria_no_convictions_since_sentence_start_date,
-            COALESCE(LOGICAL_AND(in_state_sentence), FALSE) AS meets_criteria_in_state_sentence,
-            COALESCE(LOGICAL_AND(funded_sentence), FALSE) AS meets_criteria_funded_sentence,
+            LOGICAL_AND(sentence_date) AS meets_criteria_sentence_date,
+            LOGICAL_AND(served_6_months) AS meets_criteria_served_6_months,
+            LOGICAL_AND(served_half_of_sentence) AS meets_criteria_served_half_of_sentence,
+            LOGICAL_AND(statute) AS meets_criteria_statute,
+            LOGICAL_AND(no_convictions_since_sentence_start_date) AS meets_criteria_no_convictions_since_sentence_start_date,
+            LOGICAL_AND(in_state_sentence) AS meets_criteria_in_state_sentence,
+            LOGICAL_AND(funded_sentence) AS meets_criteria_funded_sentence,
             /* Use the greatest critical date per sentence across all date-based
             sentence criteria to determine when the sentence could become eligible. */
             MAX(sentence_critical_date) AS sentence_eligibility_date,
