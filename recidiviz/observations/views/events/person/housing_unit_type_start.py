@@ -35,7 +35,7 @@ SELECT
     person_id,
     housing_unit_type,
     DATE_DIFF({nonnull_end_date_exclusive_clause('end_date_exclusive')}, start_date, DAY) AS length_of_stay,
-    end_date_exclusive IS NOT NULL AS is_active,
+    end_date_exclusive IS NULL AS is_active,
     start_date
 FROM `{{project_id}}.sessions.housing_unit_type_sessions_materialized`
 """
