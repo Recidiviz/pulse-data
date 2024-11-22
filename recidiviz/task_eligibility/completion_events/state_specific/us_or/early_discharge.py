@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identifies (at the person-sentence level) when clients in OR have been granted earned discharge"""
+"""Identifies (at the person-sentence level) when clients in OR have been granted earned
+discharge.
+"""
 
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -25,8 +27,10 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Identifies (at the person-sentence level) when clients in OR have been granted earned discharge"""
-
+# TODO(#28207): Adjust downstream state-agnostic infrastructure
+# (`all_completion_events`, `person_events`, and any others, as needed) to account for
+# the fact that this completion event is at the person-sentence level, unlike other
+# events that are at the person level.
 _QUERY_TEMPLATE = """
     SELECT
     /* NOTE: Because earned discharge in OR is granted at the sentence level, here, we
@@ -35,10 +39,6 @@ _QUERY_TEMPLATE = """
     sentence). Consequently, we may see multiple events per person per supervision
     period (if someone has multiple sentences that were terminated via EDIS). This
     differs from other completion events, which are at the person level. */
-    /* TODO(#28207): Adjust downstream state-agnostic infrastructure
-    (all_completion_events, person_events, and any others, as needed) to account for the
-    fact that this completion event is at the person-sentence level, unlike other events
-    that are at the person level.*/
         state_code,
         person_id,
         completion_date AS completion_event_date,
@@ -46,15 +46,16 @@ _QUERY_TEMPLATE = """
     FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized`
     WHERE state_code='US_OR'
         AND sentence_type='SUPERVISION'
-        -- select cases closed out via EDIS (by selecting raw-text statuses starting with 'EDIS')
-        AND REGEXP_SUBSTR(status_raw_text, '^[^@@]+')='EDIS'   
+        /* Select cases closed out via earned discharge (EDIS) by selecting sentences
+        with raw-text statuses starting with 'EDIS'. */
+        AND REGEXP_SUBSTR(status_raw_text, '^[^@@]+')='EDIS'
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
     StateSpecificTaskCompletionEventBigQueryViewBuilder(
         state_code=StateCode.US_OR,
         completion_event_type=TaskCompletionEventType.EARLY_DISCHARGE,
-        description=_DESCRIPTION,
+        description=__doc__,
         completion_event_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
     )
