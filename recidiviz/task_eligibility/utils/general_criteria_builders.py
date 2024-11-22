@@ -519,7 +519,7 @@ def violations_within_time_interval_criteria_builder(
 ) -> TaskCriteriaBigQueryViewBuilder:
     """
     Returns a criteria query that has spans of time where the violations that meet
-    certain conditions set by the user (<violaiton_type> and <where clause>) occured.
+    certain conditions set by the user (<violation_type> and <where clause>) occurred.
     Args:
         criteria_name (str): Name of the criteria
         description (str): Description of the criteria
@@ -543,9 +543,9 @@ def violations_within_time_interval_criteria_builder(
     Returns:
         TaskCriteriaBigQueryViewBuilder: CTE query that shows the spans of
             time where the violations that meet certain conditions set by the user
-            (<violaiton_type> and <where clause>) occured. The span of time for the validity of
+            (<violation_type> and <where clause>) occured. The span of time for the validity of
             each violation starts at violation_date and ends after a period specified by
-            the user (in <date_interval> and <date_part>)
+            the user (in <date_interval> and <date_part>).
     """
 
     violation_type_join = f"""
