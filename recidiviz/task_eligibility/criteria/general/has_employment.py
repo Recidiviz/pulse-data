@@ -49,7 +49,7 @@ WITH employment AS (
            IFNULL(employer_name, 'NULL'), '@@',
            CAST(start_date AS STRING)) AS status_employer_start_date
   FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period`
-  WHERE employment_status IN ('EMPLOYED_UNKONWN_AMOUNT','EMPLOYED_FULL_TIME','EMPLOYED_PART_TIME')
+  WHERE employment_status IN ('EMPLOYED_UNKNOWN_AMOUNT','EMPLOYED_FULL_TIME','EMPLOYED_PART_TIME')
 ),
 
 {create_sub_sessions_with_attributes('employment')}
