@@ -53,7 +53,6 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
         Edit: TextArea,
       },
       callToAction: {
-        required: true,
         Edit: TextArea,
       },
       dynamicEligibilityText: {

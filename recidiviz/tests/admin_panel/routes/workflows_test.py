@@ -31,6 +31,8 @@ from freezegun import freeze_time
 
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.admin_panel.routes.workflows import workflows_blueprint
+from recidiviz.common.common_utils import convert_nested_dictionary_keys
+from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.persistence.database.schema.workflows.schema import OpportunityStatus
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 from recidiviz.workflows.types import FullOpportunityConfig
@@ -81,6 +83,22 @@ def generate_config(
         ],
         notifications=[],
         zero_grants_tooltip="example tooltip",
+        denied_tab_title="Marked Ineligible",
+        denial_adjective="Ineligible",
+        denial_noun="Ineligibility",
+        supports_submitted=True,
+        submitted_tab_title="Submitted",
+        empty_tab_copy=[],
+        tab_preface_copy=[],
+        subcategory_headings=[],
+        subcategory_orderings=[],
+        mark_submitted_options_by_tab=[],
+        oms_criteria_header="Validated by data from OMS",
+        non_oms_criteria_header="Requirements to check",
+        non_oms_criteria=[{}],
+        highlight_cases_on_homepage=False,
+        highlighted_case_cta_copy="Opportunity name",
+        overdue_opportunity_callout_copy="overdue for opportunity",
     )
 
 
@@ -311,39 +329,14 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
 
         config_fields = generate_config(-1, datetime.datetime(9, 9, 9))
 
-        req_body = {
-            "stateCode": "US_ID",
-            "variantDescription": config_fields.variant_description,
-            "revisionDescription": config_fields.revision_description,
-            "featureVariant": config_fields.feature_variant,
-            "displayName": config_fields.display_name,
-            "methodologyUrl": config_fields.methodology_url,
-            "isAlert": config_fields.is_alert,
-            "priority": config_fields.priority,
-            "initialHeader": config_fields.initial_header,
-            "denialReasons": config_fields.denial_reasons,
-            "eligibleCriteriaCopy": config_fields.eligible_criteria_copy,
-            "ineligibleCriteriaCopy": config_fields.ineligible_criteria_copy,
-            "dynamicEligibilityText": config_fields.dynamic_eligibility_text,
-            "callToAction": config_fields.call_to_action,
-            "subheading": config_fields.subheading,
-            "denialText": config_fields.denial_text,
-            "snooze": {"defaultSnoozeDays": 30, "maxSnoozeDays": 180},
-            "sidebarComponents": config_fields.sidebar_components,
-            "eligibilityDateText": config_fields.eligibility_date_text,
-            "hideDenialRevert": config_fields.hide_denial_revert,
-            "tooltipEligibilityText": config_fields.tooltip_eligibility_text,
-            "tabGroups": config_fields.tab_groups,
-            "compareBy": [
-                {
-                    "field": "eligibilityDate",
-                    "sortDirection": "asc",
-                    "undefinedBehavior": "undefinedFirst",
-                }
-            ],
-            "notifications": config_fields.notifications,
-            "zeroGrantsTooltip": config_fields.zero_grants_tooltip,
-        }
+        # remove fields that are not part of the request body
+        config_fields_for_request = config_fields.__dict__
+        for field in ("status", "created_at", "opportunity_type", "id"):
+            config_fields_for_request.pop(field)
+
+        req_body = convert_nested_dictionary_keys(
+            config_fields_for_request, snake_to_camel
+        )
 
         mock_querier.return_value.add_config.return_value = TEST_CONFIG_ID
 
@@ -355,41 +348,14 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(TEST_CONFIG_ID, response.json)
+
+            # state code is not included in call to add_config
+            config_fields_for_request.pop("state_code")
+
             mock_querier.return_value.add_config.assert_called_with(
                 TEST_WORKFLOW_TYPE,
-                created_by="e@mail.com",
                 created_at=datetime.datetime.now(),
-                variant_description=req_body["variantDescription"],
-                revision_description=req_body["revisionDescription"],
-                feature_variant=req_body["featureVariant"],
-                display_name=req_body["displayName"],
-                methodology_url=req_body["methodologyUrl"],
-                is_alert=req_body["isAlert"],
-                priority=req_body["priority"],
-                initial_header=req_body["initialHeader"],
-                denial_reasons=req_body["denialReasons"],
-                eligible_criteria_copy=req_body["eligibleCriteriaCopy"],
-                ineligible_criteria_copy=req_body["ineligibleCriteriaCopy"],
-                dynamic_eligibility_text=req_body["dynamicEligibilityText"],
-                eligibility_date_text=req_body["eligibilityDateText"],
-                hide_denial_revert=req_body["hideDenialRevert"],
-                tooltip_eligibility_text=req_body["tooltipEligibilityText"],
-                call_to_action=req_body["callToAction"],
-                subheading=req_body["subheading"],
-                denial_text=req_body["denialText"],
-                snooze={"default_snooze_days": 30, "max_snooze_days": 180},
-                sidebar_components=req_body["sidebarComponents"],
-                tab_groups=req_body["tabGroups"],
-                compare_by=[
-                    {
-                        "field": "eligibilityDate",
-                        "sort_direction": "asc",
-                        "undefined_behavior": "undefinedFirst",
-                    }
-                ],
-                notifications=req_body["notifications"],
-                staging_id=None,
-                zero_grants_tooltip=req_body["zeroGrantsTooltip"],
+                **(config_fields_for_request),
             )
 
     ########
@@ -548,16 +514,23 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         fetch_id_token_mock: MagicMock,
     ) -> None:
         mock_enabled_states.return_value = ["US_ID"]
-        mock_get_email.return_value = ("email@fake.com", None)
+        mock_get_email.return_value = ("Mary", None)
 
         test_token = "test-token-value"
         in_gcp_mock.return_value = True
         fetch_id_token_mock.return_value = test_token
         mock_get_secret.return_value = "audience"
 
-        mock_querier.return_value.get_config_for_id.return_value = generate_config(
+        mock_config = generate_config(
             TEST_CONFIG_ID, datetime.datetime(2024, 5, 12), is_active=True
         )
+
+        mock_querier.return_value.get_config_for_id.return_value = mock_config
+
+        config_fields = mock_config.__dict__.copy()
+        config_fields["staging_id"] = config_fields["id"]
+        for field in ("status", "created_at", "opportunity_type", "id"):
+            config_fields.pop(field)
 
         with self.app.test_request_context(), responses.RequestsMock() as rsps:
             rsps.post(
@@ -568,41 +541,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                         {"Authorization": f"Bearer {test_token}"}
                     ),
                     responses.matchers.json_params_matcher(
-                        {
-                            "stateCode": "US_ID",
-                            "displayName": "display",
-                            "methodologyUrl": "url",
-                            "initialHeader": "header",
-                            "denialReasons": [{"key": "DENY", "text": "Denied"}],
-                            "eligibleCriteriaCopy": [],
-                            "ineligibleCriteriaCopy": [],
-                            "dynamicEligibilityText": "text",
-                            "eligibilityDateText": "date text",
-                            "hideDenialRevert": True,
-                            "tooltipEligibilityText": "Eligible",
-                            "callToAction": "do something",
-                            "subheading": "this is what the policy does",
-                            "snooze": {"defaultSnoozeDays": 30, "maxSnoozeDays": 180},
-                            "isAlert": False,
-                            "priority": "NORMAL",
-                            "sidebarComponents": ["someComponent"],
-                            "denialText": "Deny",
-                            "tabGroups": [],
-                            "compareBy": [
-                                {
-                                    "field": "eligibilityDate",
-                                    "sortDirection": "asc",
-                                    "undefinedBehavior": "undefinedFirst",
-                                }
-                            ],
-                            "notifications": [],
-                            "variantDescription": "A config",
-                            "revisionDescription": "for testing",
-                            "featureVariant": "feature_variant",
-                            "stagingId": TEST_CONFIG_ID,
-                            "createdBy": "email@fake.com",
-                            "zeroGrantsTooltip": "example tooltip",
-                        }
+                        convert_nested_dictionary_keys(config_fields, snake_to_camel)
                     ),
                 ],
             )
