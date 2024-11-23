@@ -189,7 +189,7 @@ class OpportunityConfigurationsAPI(MethodView):
             eligibility_date_text=body_args.get("eligibility_date_text"),
             hide_denial_revert=body_args["hide_denial_revert"],
             tooltip_eligibility_text=body_args.get("tooltip_eligibility_text"),
-            call_to_action=body_args["call_to_action"],
+            call_to_action=body_args.get("call_to_action"),
             subheading=body_args.get("subheading"),
             denial_text=body_args.get("denial_text"),
             snooze=body_args.get("snooze"),
@@ -199,6 +199,24 @@ class OpportunityConfigurationsAPI(MethodView):
             notifications=body_args["notifications"],
             staging_id=body_args.get("staging_id"),
             zero_grants_tooltip=body_args.get("zero_grants_tooltip"),
+            denied_tab_title=body_args.get("denied_tab_title"),
+            denial_adjective=body_args.get("denial_adjective"),
+            denial_noun=body_args.get("denial_noun"),
+            supports_submitted=body_args["supports_submitted"],
+            submitted_tab_title=body_args.get("submitted_tab_title"),
+            empty_tab_copy=body_args["empty_tab_copy"],
+            tab_preface_copy=body_args["tab_preface_copy"],
+            subcategory_headings=body_args["subcategory_headings"],
+            subcategory_orderings=body_args["subcategory_orderings"],
+            mark_submitted_options_by_tab=body_args["mark_submitted_options_by_tab"],
+            oms_criteria_header=body_args.get("oms_criteria_header"),
+            non_oms_criteria_header=body_args.get("non_oms_criteria_header"),
+            non_oms_criteria=body_args["non_oms_criteria"],
+            highlight_cases_on_homepage=body_args["highlight_cases_on_homepage"],
+            highlighted_case_cta_copy=body_args.get("highlighted_case_cta_copy"),
+            overdue_opportunity_callout_copy=body_args.get(
+                "overdue_opportunity_callout_copy"
+            ),
         )
         return new_config_id
 

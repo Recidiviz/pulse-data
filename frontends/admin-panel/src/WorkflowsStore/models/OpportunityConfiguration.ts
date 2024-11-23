@@ -46,12 +46,40 @@ const criteriaCopySchema = z.array(
   })
 );
 
+const keylessCriteriaCopySchema = z.array(
+  z.object({
+    text: z.string(),
+    tooltip: nullishAsUndefined(z.string()),
+  })
+);
+
 export const notificationsSchema = z.array(
   z.object({
     id: z.string(),
     title: nullishAsUndefined(z.string()),
     body: z.string(),
     cta: nullishAsUndefined(z.string()),
+  })
+);
+
+export const tabTextSchema = z.array(
+  z.object({
+    tab: z.string(),
+    text: z.string(),
+  })
+);
+
+export const subcategoryHeadingSchema = z.array(
+  z.object({
+    subcategory: z.string(),
+    text: z.string(),
+  })
+);
+
+export const tabTextListSchema = z.array(
+  z.object({
+    tab: z.string(),
+    texts: z.array(z.string()),
   })
 );
 
@@ -65,7 +93,7 @@ export const babyOpportunityConfigurationSchema = z
     displayName: z.string(),
     featureVariant: nullishAsUndefined(z.string()),
     dynamicEligibilityText: z.string(),
-    callToAction: z.string(),
+    callToAction: nullishAsUndefined(z.string()),
     subheading: nullishAsUndefined(z.string()),
     snooze: nullishAsUndefined(snoozeConfigurationSchema),
     denialReasons: z.array(z.object({ key: z.string(), text: z.string() })),
@@ -95,6 +123,27 @@ export const babyOpportunityConfigurationSchema = z
     ),
     zeroGrantsTooltip: nullishAsUndefined(z.string()),
     stagingId: nullishAsUndefined(z.number()),
+    deniedTabTitle: nullishAsUndefined(z.string()),
+    denialAdjective: nullishAsUndefined(z.string()),
+    denialNoun: nullishAsUndefined(z.string()),
+
+    supportsSubmitted: z.boolean(),
+    submittedTabTitle: nullishAsUndefined(z.string()),
+
+    emptyTabCopy: tabTextSchema,
+    tabPrefaceCopy: tabTextSchema,
+
+    subcategoryHeadings: subcategoryHeadingSchema,
+    subcategoryOrderings: tabTextListSchema,
+    markSubmittedOptionsByTab: tabTextListSchema,
+
+    omsCriteriaHeader: nullishAsUndefined(z.string()),
+    nonOmsCriteriaHeader: nullishAsUndefined(z.string()),
+    nonOmsCriteria: keylessCriteriaCopySchema,
+
+    highlightCasesOnHomepage: z.boolean(),
+    highlightedCaseCtaCopy: nullishAsUndefined(z.string()),
+    overdueOpportunityCalloutCopy: nullishAsUndefined(z.string()),
   })
   .strict();
 // strict() prevents us from accidentally dropping fields the frontend doesn't know about

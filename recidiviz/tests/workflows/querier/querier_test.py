@@ -117,6 +117,22 @@ def make_add_config_arguments(
         "compare_by": None,
         "notifications": [],
         "zero_grants_tooltip": "zero grants tooltip",
+        "denied_tab_title": "Marked Ineligible",
+        "denial_adjective": "Ineligible",
+        "denial_noun": "Ineligibility",
+        "supports_submitted": True,
+        "submitted_tab_title": "Submitted",
+        "empty_tab_copy": [],
+        "tab_preface_copy": [],
+        "subcategory_headings": [],
+        "subcategory_orderings": [],
+        "mark_submitted_options_by_tab": [],
+        "oms_criteria_header": "Validated by data from OMS",
+        "non_oms_criteria_header": "Requirements to check",
+        "non_oms_criteria": [{}],
+        "highlight_cases_on_homepage": False,
+        "highlighted_case_cta_copy": "Opportunity name",
+        "overdue_opportunity_callout_copy": "overdue for opportunity",
     }
 
 
@@ -665,45 +681,15 @@ class TestWorkflowsQuerier(TestCase):
             "usIdSupervisionLevelDowngrade", new_active_id
         )
 
-        # ensure a new activate config was created
+        # ensure a new activated config was created
         self.assertNotEqual(config_id, new_active_id)
         self.assertEqual(actual.status, OpportunityStatus.ACTIVE)  # type: ignore
 
-        # assert all the other activate config data is identical as the deactivate config
-        self.assertEqual(actual.created_by, deactivated.created_by)  # type: ignore
-        self.assertEqual(actual.created_at, deactivated.created_at)  # type: ignore
-        self.assertEqual(actual.variant_description, deactivated.variant_description)  # type: ignore
-        self.assertEqual(actual.revision_description, deactivated.revision_description)  # type: ignore
-        self.assertEqual(actual.feature_variant, deactivated.feature_variant)  # type: ignore
-        self.assertEqual(actual.display_name, deactivated.display_name)  # type: ignore
-        self.assertEqual(actual.methodology_url, deactivated.methodology_url)  # type: ignore
-        self.assertEqual(actual.is_alert, deactivated.is_alert)  # type: ignore
-        self.assertEqual(actual.priority, deactivated.priority)  # type: ignore
-        self.assertEqual(actual.initial_header, deactivated.initial_header)  # type: ignore
-        self.assertEqual(actual.denial_reasons, deactivated.denial_reasons)  # type: ignore
-        self.assertEqual(
-            actual.eligible_criteria_copy, deactivated.eligible_criteria_copy  # type: ignore
-        )
-        self.assertEqual(
-            actual.ineligible_criteria_copy, deactivated.ineligible_criteria_copy  # type: ignore
-        )
-        self.assertEqual(
-            actual.dynamic_eligibility_text, deactivated.dynamic_eligibility_text  # type: ignore
-        )
-        self.assertEqual(
-            actual.eligibility_date_text, deactivated.eligibility_date_text  # type: ignore
-        )
-        self.assertEqual(actual.hide_denial_revert, deactivated.hide_denial_revert)  # type: ignore
-        self.assertEqual(
-            actual.tooltip_eligibility_text, deactivated.tooltip_eligibility_text  # type: ignore
-        )
-        self.assertEqual(actual.call_to_action, deactivated.call_to_action)  # type: ignore
-        self.assertEqual(actual.denial_text, deactivated.denial_text)  # type: ignore
-        self.assertEqual(actual.snooze, deactivated.snooze)  # type: ignore
-        self.assertEqual(actual.sidebar_components, deactivated.sidebar_components)  # type: ignore
-        self.assertEqual(actual.tab_groups, deactivated.tab_groups)  # type: ignore
-        self.assertEqual(actual.compare_by, deactivated.compare_by)  # type: ignore
-        self.assertEqual(actual.zero_grants_tooltip, deactivated.zero_grants_tooltip)  # type: ignore
+        # assert all the other activated config data is identical to the deactivated config
+        for field in actual.__dict__:
+            if field in ("status", "id"):
+                continue
+            self.assertEqual(getattr(actual, field), getattr(deactivated, field))
 
     def test_activate_config_nonexistent(self) -> None:
         querier = WorkflowsQuerier(StateCode.US_ID)

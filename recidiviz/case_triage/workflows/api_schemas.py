@@ -186,6 +186,10 @@ class WorkflowsConfigSchema(CamelCaseSchema):
         text = fields.Str()
         tooltip = fields.Str(required=False)
 
+    class KeylessCriteriaCopySchema(CamelCaseSchema):
+        text = fields.Str()
+        tooltip = fields.Str(required=False)
+
     class DenialReasonsSchema(CamelCaseSchema):
         key = fields.Str()
         text = fields.Str()
@@ -205,6 +209,18 @@ class WorkflowsConfigSchema(CamelCaseSchema):
         body = fields.Str()
         cta = fields.Str(required=False)
 
+    class SubcategoryHeadingSchema(CamelCaseSchema):
+        subcategory = fields.Str()
+        text = fields.Str()
+
+    class TabTextSchema(CamelCaseSchema):
+        tab = fields.Str()
+        text = fields.Str()
+
+    class TabTextListSchema(CamelCaseSchema):
+        tab = fields.Str()
+        texts = fields.List(fields.Str())
+
     state_code = fields.Str()
     display_name = fields.Str()
     feature_variant = fields.Str(required=False)
@@ -212,7 +228,7 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     eligibility_date_text = fields.Str(required=False)
     hide_denial_revert = fields.Bool()
     tooltip_eligibility_text = fields.Str(required=False)
-    call_to_action = fields.Str()
+    call_to_action = fields.Str(required=False)
     subheading = fields.Str(required=False)
     snooze = fields.Nested(SnoozeConfigSchema(), required=False)
     denial_reasons = fields.List(fields.Nested(DenialReasonsSchema()))
@@ -228,6 +244,22 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     compare_by = fields.List(fields.Nested(SortParamSchema()), required=False)
     notifications = fields.List(fields.Nested(NotificationSchema()))
     zero_grants_tooltip = fields.Str(required=False)
+    denied_tab_title = fields.Str(required=False)
+    denial_adjective = fields.Str(required=False)
+    denial_noun = fields.Str(required=False)
+    supports_submitted = fields.Bool()
+    submitted_tab_title = fields.Str(required=False)
+    empty_tab_copy = fields.List(fields.Nested(TabTextSchema))
+    tab_preface_copy = fields.List(fields.Nested(TabTextSchema))
+    subcategory_headings = fields.List(fields.Nested(SubcategoryHeadingSchema))
+    subcategory_orderings = fields.List(fields.Nested(TabTextListSchema))
+    mark_submitted_options_by_tab = fields.List(fields.Nested(TabTextListSchema))
+    oms_criteria_header = fields.Str(required=False)
+    non_oms_criteria_header = fields.Str(required=False)
+    non_oms_criteria = fields.List(fields.Nested(KeylessCriteriaCopySchema()))
+    highlight_cases_on_homepage = fields.Bool()
+    highlighted_case_cta_copy = fields.Str(required=False)
+    overdue_opportunity_callout_copy = fields.Str(required=False)
 
 
 class WorkflowsFullConfigSchema(WorkflowsConfigSchema):

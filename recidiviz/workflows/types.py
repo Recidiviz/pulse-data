@@ -20,6 +20,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 import attr
+import attrs
 import cattrs
 
 from recidiviz.persistence.database.schema.workflows.schema import (
@@ -79,8 +80,8 @@ class OpportunityConfig:
     eligibility_date_text: Optional[str] = attr.ib()
     hide_denial_revert: bool = attr.ib()
     tooltip_eligibility_text: Optional[str] = attr.ib()
-    call_to_action: str = attr.ib()
-    subheading: str = attr.ib()
+    call_to_action: Optional[str] = attr.ib()
+    subheading: Optional[str] = attr.ib()
     snooze: Dict[str, Any] | None = attr.ib()
     is_alert: bool = attr.ib()
     sidebar_components: List[str] = attr.ib()
@@ -90,6 +91,28 @@ class OpportunityConfig:
     notifications: List[Any] = attr.ib()
     zero_grants_tooltip: Optional[str] = attr.ib()
 
+    denied_tab_title: Optional[str] = attr.ib()
+    denial_adjective: Optional[str] = attr.ib()
+    denial_noun: Optional[str] = attr.ib()
+
+    supports_submitted: bool = attr.ib()
+    submitted_tab_title: Optional[str] = attr.ib()
+
+    empty_tab_copy: list[dict[str, str]] = attr.ib()
+    tab_preface_copy: list[dict[str, str]] = attr.ib()
+
+    subcategory_headings: list[dict[str, str]] = attr.ib()
+    subcategory_orderings: list[dict[str, list[str]]] = attr.ib()
+    mark_submitted_options_by_tab: list[dict[str, list[str]]] = attr.ib()
+
+    oms_criteria_header: Optional[str] = attr.ib()
+    non_oms_criteria_header: Optional[str] = attr.ib()
+    non_oms_criteria: list[dict[str, str]] = attr.ib()
+
+    highlight_cases_on_homepage: bool = attr.ib()
+    highlighted_case_cta_copy: Optional[str] = attr.ib()
+    overdue_opportunity_callout_copy: Optional[str] = attr.ib()
+
     def to_dict(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
 
@@ -97,30 +120,13 @@ class OpportunityConfig:
     def from_full_config(
         cls, full_config: "FullOpportunityConfig"
     ) -> "OpportunityConfig":
+        # Copy only the fields from the other config object that are valid fields
+        # for an OpportunityConfig
         return OpportunityConfig(
-            state_code=full_config.state_code,
-            opportunity_type=full_config.opportunity_type,
-            display_name=full_config.display_name,
-            methodology_url=full_config.methodology_url,
-            initial_header=full_config.initial_header,
-            denial_reasons=full_config.denial_reasons,
-            eligible_criteria_copy=full_config.eligible_criteria_copy,
-            ineligible_criteria_copy=full_config.ineligible_criteria_copy,
-            dynamic_eligibility_text=full_config.dynamic_eligibility_text,
-            eligibility_date_text=full_config.eligibility_date_text,
-            hide_denial_revert=full_config.hide_denial_revert,
-            tooltip_eligibility_text=full_config.tooltip_eligibility_text,
-            call_to_action=full_config.call_to_action,
-            subheading=full_config.subheading,
-            snooze=full_config.snooze,
-            is_alert=full_config.is_alert,
-            priority=full_config.priority,
-            denial_text=full_config.denial_text,
-            sidebar_components=full_config.sidebar_components,
-            tab_groups=full_config.tab_groups,
-            compare_by=full_config.compare_by,
-            notifications=full_config.notifications,
-            zero_grants_tooltip=full_config.zero_grants_tooltip,
+            **{
+                field.name: getattr(full_config, field.name)
+                for field in attrs.fields(OpportunityConfig)
+            }
         )
 
 
@@ -143,38 +149,13 @@ class FullOpportunityConfig(OpportunityConfig):
 
     @classmethod
     def from_db_entry(cls, config: OpportunityConfiguration) -> "FullOpportunityConfig":
+        # Copy only the fields from the other config object that are valid fields
+        # for a FullOpportunityConfig
         return FullOpportunityConfig(
-            id=config.id,
-            state_code=config.state_code,
-            opportunity_type=config.opportunity_type,
-            created_by=config.created_by,
-            created_at=config.created_at,
-            variant_description=config.variant_description,
-            revision_description=config.revision_description,
-            status=config.status,
-            display_name=config.display_name,
-            methodology_url=config.methodology_url,
-            initial_header=config.initial_header,
-            denial_reasons=config.denial_reasons,
-            eligible_criteria_copy=config.eligible_criteria_copy,
-            ineligible_criteria_copy=config.ineligible_criteria_copy,
-            dynamic_eligibility_text=config.dynamic_eligibility_text,
-            call_to_action=config.call_to_action,
-            subheading=config.subheading,
-            eligibility_date_text=config.eligibility_date_text,
-            hide_denial_revert=config.hide_denial_revert,
-            tooltip_eligibility_text=config.tooltip_eligibility_text,
-            snooze=config.snooze,
-            feature_variant=config.feature_variant,
-            is_alert=config.is_alert,
-            priority=config.priority,
-            denial_text=config.denial_text,
-            sidebar_components=config.sidebar_components,
-            tab_groups=config.tab_groups,
-            compare_by=config.compare_by,
-            notifications=config.notifications,
-            staging_id=config.staging_id,
-            zero_grants_tooltip=config.zero_grants_tooltip,
+            **{
+                field.name: getattr(config, field.name)
+                for field in attrs.fields(FullOpportunityConfig)
+            }
         )
 
 
@@ -189,32 +170,7 @@ class OpportunityConfigResponse(OpportunityInfo, OpportunityConfig):
     def from_opportunity_and_config(
         cls, opportunity: OpportunityInfo, config: OpportunityConfig
     ) -> "OpportunityConfigResponse":
+        # include all items from both parameters, with the opportunity taking priority
         return OpportunityConfigResponse(
-            state_code=opportunity.state_code,
-            opportunity_type=opportunity.opportunity_type,
-            system_type=opportunity.system_type,
-            url_section=opportunity.url_section,
-            firestore_collection=opportunity.firestore_collection,
-            homepage_position=opportunity.homepage_position,
-            display_name=config.display_name,
-            methodology_url=config.methodology_url,
-            initial_header=config.initial_header,
-            denial_reasons=config.denial_reasons,
-            eligible_criteria_copy=config.eligible_criteria_copy,
-            ineligible_criteria_copy=config.ineligible_criteria_copy,
-            dynamic_eligibility_text=config.dynamic_eligibility_text,
-            eligibility_date_text=config.eligibility_date_text,
-            hide_denial_revert=config.hide_denial_revert,
-            tooltip_eligibility_text=config.tooltip_eligibility_text,
-            call_to_action=config.call_to_action,
-            subheading=config.subheading,
-            snooze=config.snooze,
-            priority=config.priority,
-            is_alert=config.is_alert,
-            denial_text=config.denial_text,
-            sidebar_components=config.sidebar_components,
-            tab_groups=config.tab_groups,
-            compare_by=config.compare_by,
-            notifications=config.notifications,
-            zero_grants_tooltip=config.zero_grants_tooltip,
+            **(config.__dict__ | opportunity.__dict__),
         )

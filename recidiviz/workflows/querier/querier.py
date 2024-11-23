@@ -329,20 +329,39 @@ class WorkflowsQuerier:
         eligibility_date_text: Optional[str],
         hide_denial_revert: bool,
         tooltip_eligibility_text: Optional[str],
-        call_to_action: str,
+        call_to_action: Optional[str],
         subheading: Optional[str],
         denial_text: Optional[str],
-        snooze: Optional[Dict[str, Any]],
-        sidebar_components: List[str],
+        snooze: Optional[dict[str, Any]],
+        sidebar_components: list[str],
         tab_groups: Optional[list[dict[str, Any]]],
-        compare_by: Optional[List[Any]],
-        notifications: List[Any],
+        compare_by: Optional[list[Any]],
+        notifications: list[Any],
         staging_id: Optional[str] = None,
         zero_grants_tooltip: Optional[str],
+        denied_tab_title: Optional[str],
+        denial_adjective: Optional[str],
+        denial_noun: Optional[str],
+        supports_submitted: bool,
+        submitted_tab_title: Optional[str],
+        empty_tab_copy: list[dict[str, str]],
+        tab_preface_copy: list[dict[str, str]],
+        subcategory_headings: list[dict[str, str]],
+        subcategory_orderings: list[dict[str, list[str]]],
+        mark_submitted_options_by_tab: list[dict[str, list[str]]],
+        oms_criteria_header: Optional[str],
+        non_oms_criteria_header: Optional[str],
+        non_oms_criteria: list[dict[str, str]],
+        highlight_cases_on_homepage: bool,
+        highlighted_case_cta_copy: Optional[str],
+        overdue_opportunity_callout_copy: Optional[str],
     ) -> int:
         """
         Given an opportunity type and a config, adds that config to the database,
         deactivating any existing configs with the same gating for the given opportunity.
+
+        Takes as kwargs every attribute of FullOpportunityConfig except for
+        state_code, status, opportunity_type, and id. staging_id is optional.
         """
         with self.database_session() as session:
             # This level of transaction isolation is required to ensure that another
@@ -356,12 +375,12 @@ class WorkflowsQuerier:
                 .values(
                     state_code=self.state_code.value,
                     opportunity_type=opportunity_type,
+                    status=OpportunityStatus.ACTIVE,
                     created_by=created_by,
                     priority=priority,
                     created_at=created_at,
                     variant_description=variant_description,
                     revision_description=revision_description,
-                    status=OpportunityStatus.ACTIVE,
                     feature_variant=feature_variant,
                     display_name=display_name,
                     methodology_url=methodology_url,
@@ -384,6 +403,22 @@ class WorkflowsQuerier:
                     notifications=notifications,
                     staging_id=staging_id,
                     zero_grants_tooltip=zero_grants_tooltip,
+                    denied_tab_title=denied_tab_title,
+                    denial_adjective=denial_adjective,
+                    denial_noun=denial_noun,
+                    supports_submitted=supports_submitted,
+                    submitted_tab_title=submitted_tab_title,
+                    empty_tab_copy=empty_tab_copy,
+                    tab_preface_copy=tab_preface_copy,
+                    subcategory_headings=subcategory_headings,
+                    subcategory_orderings=subcategory_orderings,
+                    mark_submitted_options_by_tab=mark_submitted_options_by_tab,
+                    oms_criteria_header=oms_criteria_header,
+                    non_oms_criteria_header=non_oms_criteria_header,
+                    non_oms_criteria=non_oms_criteria,
+                    highlight_cases_on_homepage=highlight_cases_on_homepage,
+                    highlighted_case_cta_copy=highlighted_case_cta_copy,
+                    overdue_opportunity_callout_copy=overdue_opportunity_callout_copy,
                 )
                 .returning(OpportunityConfiguration.id)
             )
@@ -420,36 +455,12 @@ class WorkflowsQuerier:
         if config.status == OpportunityStatus.ACTIVE:
             raise ValueError("Config is already active")
 
-        # add_config will create a new activate config and deactivate existing configs with the same feature gating
-        return self.add_config(
-            opportunity_type,
-            created_by=config.created_by,
-            created_at=config.created_at,
-            variant_description=config.variant_description,
-            revision_description=config.revision_description,
-            priority=config.priority,
-            feature_variant=config.feature_variant,
-            display_name=config.display_name,
-            methodology_url=config.methodology_url,
-            is_alert=config.is_alert,
-            initial_header=config.initial_header,
-            denial_reasons=config.denial_reasons,
-            eligible_criteria_copy=config.eligible_criteria_copy,
-            ineligible_criteria_copy=config.ineligible_criteria_copy,
-            dynamic_eligibility_text=config.dynamic_eligibility_text,
-            eligibility_date_text=config.eligibility_date_text,
-            hide_denial_revert=config.hide_denial_revert,
-            tooltip_eligibility_text=config.tooltip_eligibility_text,
-            call_to_action=config.call_to_action,
-            subheading=config.subheading,
-            denial_text=config.denial_text,
-            snooze=config.snooze,
-            sidebar_components=config.sidebar_components,
-            tab_groups=config.tab_groups,
-            compare_by=config.compare_by,
-            notifications=config.notifications,
-            zero_grants_tooltip=config.zero_grants_tooltip,
-        )
+        add_config_args = config.__dict__.copy()
+        for field in ("state_code", "id", "status"):
+            add_config_args.pop(field)
+
+        # add_config will create a new activated config and deactivate existing configs with the same feature gating
+        return self.add_config(**add_config_args)
 
     def deactivate_config(self, opportunity_type: str, config_id: int) -> None:
         """

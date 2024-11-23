@@ -185,7 +185,7 @@ class OpportunityConfiguration(WorkflowsBase):
     tooltip_eligibility_text = Column(String, nullable=True)
 
     # CTA text shown on the opportunity results page
-    call_to_action = Column(String, nullable=False)
+    call_to_action = Column(String, nullable=True)
 
     # Subheading for the new policy copy
     subheading = Column(String, nullable=True)
@@ -214,3 +214,48 @@ class OpportunityConfiguration(WorkflowsBase):
 
     # Optional tooltip for the zero grants pill
     zero_grants_tooltip = Column(String, nullable=True)
+
+    # Text for the tab of "denied" opportunities
+    denied_tab_title = Column(String, nullable=True)
+
+    # Control the sidebar option for marking someone as denied
+    denial_adjective = Column(String, nullable=True)
+    denial_noun = Column(String, nullable=True)
+
+    # Does this opportunity support submitted/in-progress/pending status?
+    supports_submitted = Column(Boolean, nullable=False, server_default="true")
+
+    # Text for the tab of submitted/in-progress/pending opportunities
+    submitted_tab_title = Column(String, nullable=True)
+
+    # Blob of text to display in tabs without people
+    empty_tab_copy = Column(JSON, nullable=False, server_default="{}")
+
+    # Blob of text to display at the top of each tab
+    tab_preface_copy = Column(JSON, nullable=False, server_default="{}")
+
+    # Options related to subcategories:
+    # Mapping between internal names for subcategories and copy to display
+    subcategory_headings = Column(JSON, nullable=False, server_default="{}")
+    # Mapping of tabs to orders of subcategories within that tab
+    subcategory_orderings = Column(JSON, nullable=False, server_default="{}")
+    # Mapping of tabs to all possible subcategories of submitted that one can transition to
+    mark_submitted_options_by_tab = Column(JSON, nullable=False, server_default="{}")
+
+    # Header for Eligible and Almost Eligible criteria
+    oms_criteria_header = Column(String, nullable=True)
+
+    # Header and criteria items that are required but we don't validate
+    non_oms_criteria_header = Column(String, nullable=True)
+    non_oms_criteria = Column(JSON, nullable=False, server_default="{}")
+
+    # Should we separate opportunities of this type into a highlighted component in the
+    # workflows homepage?
+    highlight_cases_on_homepage = Column(
+        Boolean, nullable=False, server_default="false"
+    )
+    # Label for the highlighted component
+    highlighted_case_cta_copy = Column(String, nullable=True)
+
+    # Label for a linked overdue opportunity
+    overdue_opportunity_callout_copy = Column(String, nullable=True)
