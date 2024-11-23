@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,11 +34,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     SENTENCE_SESSIONS_DATASET,
     SESSIONS_DATASET,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
-    StateSpecificTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
@@ -441,18 +439,6 @@ def custody_level_compared_to_recommended(
     """
 
 
-VIOLATIONS_FOUND_WHERE_CLAUSE = """
-    WHERE 
-        CASE v.state_code
-            # In ME, convictions are only relevant if their outcome is VIOLATION FOUND
-            WHEN 'US_ME' THEN response_type IN ("VIOLATION_REPORT", "PERMANENT_DECISION")
-            -- TODO(#26878): Update this if we revise violation ingest mappings in Oregon
-            WHEN 'US_OR' THEN JSON_EXTRACT_SCALAR(vr.violation_response_metadata, '$.SANCTION_OR_INTERVENTION') = 'S'
-            ELSE TRUE
-            END
-"""
-
-
 def num_events_within_time_interval_spans(
     events_cte: str,
     date_interval: Optional[int] = None,
@@ -504,83 +490,121 @@ def num_events_within_time_interval_spans(
     """
 
 
-def violations_within_time_interval_criteria_builder(
+def supervision_violations_within_time_interval_criteria_builder(
     *,
     criteria_name: str,
     description: str,
+    date_interval: int,
+    date_part: str,
     violation_type: str = "",
-    where_clause: str = "",
-    bool_column: str = "False AS meets_criteria,",
-    date_interval: int = 12,
-    date_part: str = "MONTH",
-    violation_date_name_in_reason_blob: str = "latest_convictions",
-    display_single_violation_date: bool = False,
-    state_code: Optional[StateCode] = None,
-) -> TaskCriteriaBigQueryViewBuilder:
+    where_clause_addition: str = "",
+    violation_date_name_in_reason_blob: str = "latest_violations",
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
-    Returns a criteria query that has spans of time where the violations that meet
-    certain conditions set by the user (<violation_type> and <where clause>) occurred.
+    Returns a TES criterion view builder that has spans of time where violations that
+    meet certain conditions set by the user have occurred within some specified window
+    of time (e.g., within the past 6 months).
     Args:
-        criteria_name (str): Name of the criteria
-        description (str): Description of the criteria
+        criteria_name (str): Name of the criterion.
+        description (str): Description of the criterion.
+        date_interval (int): Number of <date_part> when the violation will be counted as
+            valid/relevant.
+        date_part (str): Supports any of the BigQuery date_part values: "DAY", "WEEK",
+            "MONTH", "QUARTER", or "YEAR".
         violation_type (str, optional): Specifies the violation types that should be
-            counted towards the criteria. Should only include values inside of the
-            StateSupervisionViolationType enum. Example: "AND vt.violation_type = 'FELONY' "
-            Defaults to ''.
-        where_clause (str, optional): _description_. Defaults to ''.
-        bool_column (str, optional): _description_. Defaults to "False AS meets_criteria,".
-        date_interval (int, optional): Number of <date_part> when the violation
-            will be counted as valid. Defaults to 12 (e.g. it could be 12 months).
-        date_part (str, optional): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK", "MONTH", "QUARTER", "YEAR". Defaults to "MONTH".
-        violation_date_name_in_reason_blob (str, optional): Name of the violation_date
-            field in the reason blob. Defaults to "latest_convictions".
-        display_single_violation_date (bool, optional): Show only the latest violation in
-            the reason blob. Defaults to False, showing all violations in the given time
-            period.
-        state_code (str, optional): State code for which to return a state-specific view
-            builder. Defaults to None, returning a state-agnostic view builder.
+            counted towards the criterion. Should only include values inside of the
+            StateSupervisionViolationType enum. Example: "AND vt.violation_type='FELONY'".
+            Defaults to "".
+        where_clause_addition (str, optional): Any additional WHERE-clause filters for
+            selecting violations. Example: "AND vr.response_type='VIOLATION_REPORT'".
+            Defaults to "".
+        violation_date_name_in_reason_blob (str, optional): Name of the `violation_date`
+            field in the reason blob. Defaults to "latest_violations".
     Returns:
-        TaskCriteriaBigQueryViewBuilder: CTE query that shows the spans of
-            time where the violations that meet certain conditions set by the user
-            (<violation_type> and <where clause>) occured. The span of time for the validity of
-            each violation starts at violation_date and ends after a period specified by
-            the user (in <date_interval> and <date_part>).
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: view builder for a TES criterion
+            view that shows the spans of time where the violations that meet certain
+            conditions set by the user (<violation_type> and <where_clause_addition>)
+            occurred. The span of time for the validity of each violation starts at
+            `violation_date` and ends after a period specified by the user
+            (<date_interval> and <date_part>).
     """
 
     violation_type_join = f"""
     INNER JOIN `{{project_id}}.normalized_state.state_supervision_violation_type_entry` vt
-        ON vr.supervision_violation_id = vt.supervision_violation_id
-        AND vr.person_id = vt.person_id
-        AND vr.state_code = vt.state_code
+        ON v.supervision_violation_id = vt.supervision_violation_id
+        AND v.person_id = vt.person_id
+        AND v.state_code = vt.state_code
         {violation_type}
     """
 
-    violation_date_content_in_reason_blob = (
-        "ARRAY_AGG(violation_date IGNORE NULLS ORDER BY violation_date DESC)"
-    )
-    if display_single_violation_date:
-        violation_date_content_in_reason_blob += "[OFFSET(0)]"
-
-    criteria_query = f"""WITH supervision_violations AS (
+    # TODO(#35354): Account for violation decisions when considering which violations
+    # should disqualify someone from eligibility.
+    criteria_query = f"""
+    WITH supervision_violations AS (
+        /* Select violations that we want to count for this criterion. Violations are
+        filtered based on any specified violation-level attributes and any aggregated
+        attributes of violation responses (since there can be multiple responses per
+        violation). */
         SELECT
-            vr.state_code,
-            vr.person_id,
-            COALESCE(v.violation_date, vr.response_date) AS start_date,
-            DATE_ADD(COALESCE(v.violation_date, vr.response_date), INTERVAL {date_interval} {date_part}) AS end_date,
-            DATE_ADD(COALESCE(v.violation_date, vr.response_date), INTERVAL {date_interval} {date_part}) AS violation_expiration_date,
-            COALESCE(v.violation_date, vr.response_date) AS violation_date,
-            {bool_column}
-        FROM `{{project_id}}.normalized_state.state_supervision_violation_response` vr
+            v.state_code,
+            v.person_id,
+            v.supervision_violation_id,
+            /* If there is no `violation_date` value, we treat the earliest date of any
+            response(s) as the violation date. (We take the MIN of `violation_date`
+            below just because we have to aggregate the `violation_date` field in this
+            expression, but note that because the violation-to-response ratio can be
+            one-to-many, every row should have the same `violation_date`, and this
+            therefore will just return the original `violation_date` value if there is
+            one.) */
+            COALESCE(MIN(v.violation_date), MIN(vr.response_date)) AS violation_date,
+        FROM `{{project_id}}.normalized_state.state_supervision_violation` v
         {violation_type_join if violation_type else ""}
-        LEFT JOIN `{{project_id}}.normalized_state.state_supervision_violation` v
-            ON vr.supervision_violation_id = v.supervision_violation_id
-            AND vr.person_id = v.person_id
-            AND vr.state_code = v.state_code
-        {where_clause}
-    ), 
-    {create_sub_sessions_with_attributes('supervision_violations')}
-
+        /* NB: there can be multiple responses per violation, so this LEFT JOIN can
+        create multiple rows per violation (where each row is a unique violation
+        response). */
+        LEFT JOIN `{{project_id}}.normalized_state.state_supervision_violation_response` vr
+            ON v.supervision_violation_id = vr.supervision_violation_id
+            AND v.person_id = vr.person_id
+            AND v.state_code = vr.state_code
+        /* NB: the WHERE clause is typically evaluated after the FROM clause but before
+        GROUP BY and aggregation, per BigQuery documentation. This means that any
+        filtering applied in this WHERE clause will apply to the pre-grouped data. */
+        WHERE
+            CASE v.state_code
+                /* In ME, only violations with a `response_type` of 'PERMANENT_DECISION'
+                or 'VIOLATION_REPORT' are considered to be violations that would ever
+                impact a client's eligibility for any opportunity. From the set of ME
+                violations & responses, then, we therefore drop rows without one of
+                these specified response types. Note that this means that if a violation
+                in ME did not have any response with one of these types, it will get
+                entirely dropped (and will therefore not disqualify a client from
+                eligibility). */
+                WHEN 'US_ME' THEN vr.response_type IN ('PERMANENT_DECISION', 'VIOLATION_REPORT')
+                ELSE TRUE
+                END
+            {where_clause_addition}
+        /* Group by violation, so that we get one row per violation coming out of this
+        CTE. */
+        GROUP BY 1, 2, 3
+    ),
+    supervision_violation_ineligibility_spans AS (
+        /* With our selected violations, we create spans of *ineligibility*, covering
+        the periods of time during which someone will not meet this criterion due to
+        still-relevant violations. */
+        SELECT
+            state_code,
+            person_id,
+            violation_date AS start_date,
+            DATE_ADD(violation_date, INTERVAL {date_interval} {date_part}) AS end_date,
+            violation_date,
+            DATE_ADD(violation_date, INTERVAL {date_interval} {date_part}) AS violation_expiration_date,
+            FALSE AS meets_criteria,
+        FROM supervision_violations
+    ),
+    /* We sub-sessionize to handle overlapping spans, which arise when clients have
+    more than one violation within the given time period of violation relevance (as
+    specified by <date_interval> and <date_part>). */
+    {create_sub_sessions_with_attributes('supervision_violation_ineligibility_spans')}
     SELECT 
         state_code,
         person_id,
@@ -588,36 +612,14 @@ def violations_within_time_interval_criteria_builder(
         end_date,
         LOGICAL_AND(meets_criteria) AS meets_criteria,
         TO_JSON(STRUCT(
-            {violation_date_content_in_reason_blob} AS {violation_date_name_in_reason_blob},
+            ARRAY_AGG(violation_date IGNORE NULLS ORDER BY violation_date DESC) AS {violation_date_name_in_reason_blob},
             MAX(violation_expiration_date) AS violation_expiration_date
         )) AS reason,
-        {violation_date_content_in_reason_blob} AS {violation_date_name_in_reason_blob},
+        ARRAY_AGG(violation_date IGNORE NULLS ORDER BY violation_date DESC) AS {violation_date_name_in_reason_blob},
         MAX(violation_expiration_date) AS violation_expiration_date,
     FROM sub_sessions_with_attributes
-    GROUP BY 1,2,3,4
+    GROUP BY 1, 2, 3, 4
     """
-
-    if state_code:
-        # TODO(#26803): Remove this once Oregon fits within state-agnostic logic
-        return StateSpecificTaskCriteriaBigQueryViewBuilder(
-            criteria_name=criteria_name,
-            description=description,
-            criteria_spans_query_template=criteria_query,
-            state_code=state_code,
-            meets_criteria_default=True,
-            reasons_fields=[
-                ReasonsField(
-                    name=violation_date_name_in_reason_blob,
-                    type=bigquery.enums.StandardSqlTypeNames.DATE,
-                    description="Date when the violation occurred",
-                ),
-                ReasonsField(
-                    name="violation_expiration_date",
-                    type=bigquery.enums.StandardSqlTypeNames.DATE,
-                    description="Date when the violations will age out of the time interval",
-                ),
-            ],
-        )
 
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=criteria_name,
@@ -627,13 +629,13 @@ def violations_within_time_interval_criteria_builder(
         reasons_fields=[
             ReasonsField(
                 name=violation_date_name_in_reason_blob,
-                type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date when the violation occurred",
+                type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                description="Date(s) when the violation(s) occurred",
             ),
             ReasonsField(
                 name="violation_expiration_date",
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
-                description="Date when the violations will age out of the time interval",
+                description="Date when the most recent violation(s) will age out of the time interval",
             ),
         ],
     )
