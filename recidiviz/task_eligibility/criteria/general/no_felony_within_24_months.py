@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,30 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which there
-is no felony within 24 months on supervision
+"""Defines a criterion span view that shows spans of time during which there has not
+been a felony within the past 24 months on supervision.
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    TaskCriteriaBigQueryViewBuilder,
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    violations_within_time_interval_criteria_builder,
+    supervision_violations_within_time_interval_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NO_FELONY_WITHIN_24_MONTHS"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-there is no felony within 24 months on supervision."""
-
-VIEW_BUILDER: TaskCriteriaBigQueryViewBuilder = (
-    violations_within_time_interval_criteria_builder(
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+    supervision_violations_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        violation_type="AND vt.violation_type = 'FELONY'",
+        description=__doc__,
         date_interval=24,
+        date_part="MONTH",
+        violation_type="AND vt.violation_type='FELONY'",
         violation_date_name_in_reason_blob="latest_felony_convictions",
     )
 )

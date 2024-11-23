@@ -20,45 +20,34 @@ on violation date, not report date).
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    TaskCriteriaBigQueryViewBuilder,
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    violations_within_time_interval_criteria_builder,
+    supervision_violations_within_time_interval_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "NO_SUPERVISION_VIOLATION_REPORT_WITHIN_2_YEARS"
 
-_WHERE_CLAUSE = """
+_WHERE_CLAUSE_ADDITION = """
 /* Only keep 'VIOLATION_REPORT' responses. Note that this will exclude responses with
 missing `response_type` values, as well as responses with other types from the
 StateSupervisionViolationResponseType enum (such as 'CITATION' and
 'PERMANENT_DECISION'). */
-WHERE response_type='VIOLATION_REPORT'
+AND vr.response_type='VIOLATION_REPORT'
 """
 
-# TODO(#34676): Update criterion as needed when fixing the general criterion builder
-# `violations_within_time_interval_criteria_builder()`.
-# Currently, this general criterion builder can create incorrect reasons blobs with
-# duplicate violation dates (in cases where there are multiple responses per violation).
-# Therefore, in this criterion, we currently choose just the most recent violation to
-# display in the reasons blob (via `display_single_violation_date=True`), and the
-# relevant reasons field is named to indicate that this is just the most recent one.
-# More generally, we may decide to rework this criterion more generally to fit in with
-# other sanctions-shaped criteria; however, for now, we'll just use this existing
-# criterion builder.
 # NB: criterion currently uses *violation dates* to assess eligibility, not *response
 # dates*. This is intended to prevent clients from being penalized by delays in the
 # submission of violation reports.
-VIEW_BUILDER: TaskCriteriaBigQueryViewBuilder = violations_within_time_interval_criteria_builder(
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = supervision_violations_within_time_interval_criteria_builder(
     criteria_name=_CRITERIA_NAME,
     description=__doc__,
     date_interval=2,
     date_part="YEAR",
-    violation_date_name_in_reason_blob="latest_violation_resulting_in_violation_report",
-    display_single_violation_date=True,
-    where_clause=_WHERE_CLAUSE,
+    where_clause_addition=_WHERE_CLAUSE_ADDITION,
+    violation_date_name_in_reason_blob="latest_violations_resulting_in_violation_reports",
 )
 
 if __name__ == "__main__":
