@@ -77,7 +77,9 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                 event_date_col=event_date_col,
             ),
             should_materialize=True,
-            clustering_fields=["state_code"],
+            clustering_fields=MetricUnitOfObservation(
+                type=self.unit_of_observation_type
+            ).primary_key_columns_ordered,
         )
 
     @property
