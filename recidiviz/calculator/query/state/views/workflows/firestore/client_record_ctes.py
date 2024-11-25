@@ -34,6 +34,9 @@ from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     compartment_level_1_super_sessions_without_me_sccp,
 )
+from recidiviz.task_eligibility.utils.us_pa_query_fragments import (
+    us_pa_supervision_super_sessions,
+)
 
 STATES_WITH_ALTERNATE_OFFICER_SOURCES = list_to_query_string(
     ["US_CA", "US_OR"], quoted=True
@@ -173,10 +176,11 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
         FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`
         WHERE state_code IN ({{workflows_supervision_states}})
         AND end_date IS NULL
-        AND state_code NOT IN ('US_ME', 'US_CA')
+        AND state_code NOT IN ('US_ME', 'US_CA', 'US_PA')
         # TODO(#20872) - Remove 'US_ME' filter once super_sessions fixed
         # TODO(#23716) - Remove 'US_CA' filter once CA date in super_sessions is fixed
- 
+        # TODO(#31253) - Remove 'US_PA' filter once prioritized_super_sessions is fixed
+        
         UNION ALL
 
         #TODO(#20872) - some liberty cases are being labeled as pending_custody, which
@@ -197,6 +201,14 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
             person_id,
             LastParoleDate AS start_date
         FROM us_ca_most_recent_client_data
+                
+        # TODO(#31253) - Move this PA-specific upstream of prioritized super sessions
+        UNION ALL
+        SELECT 
+            person_id,
+            start_date
+        FROM ({us_pa_supervision_super_sessions()})
+        WHERE end_date_exclusive IS NULL
     ),
     """
 

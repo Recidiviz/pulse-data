@@ -41,6 +41,7 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 )
 from recidiviz.task_eligibility.utils.us_pa_query_fragments import (
     case_when_special_case,
+    us_pa_supervision_super_sessions,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -73,6 +74,7 @@ WITH sentence_spans AS (
     WHERE state_code = "US_PA"
     GROUP BY 1,2,3,4
 ),
+us_pa_supervision_super_sessions AS ({us_pa_supervision_super_sessions()}),
 supervision_spans AS (
 /* This CTE pulls supervision super sessions and joins
         1) the first assessment done within each supervision period
@@ -87,11 +89,11 @@ supervision_spans AS (
             ELSE 'non-life sentence (non-violent case)' 
         END AS case_type,
         sup.start_date AS supervision_super_session_start_date,
-    FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` sup
+    FROM us_pa_supervision_super_sessions sup
     LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` sap
         ON sup.state_code = sap.state_code
         AND sup.person_id = sap.person_id 
-        AND sap.assessment_date BETWEEN sup.start_date AND {nonnull_end_date_clause('sup.end_date')}
+        AND sap.assessment_date BETWEEN sup.start_date AND {nonnull_end_date_clause('sup.end_date_exclusive')}
     LEFT JOIN sentence_spans sent
     --sentence spans are joined such that they overlap with the start of a supervision super session 
     --this way, there is only one sentence span associated with a supervision super session 

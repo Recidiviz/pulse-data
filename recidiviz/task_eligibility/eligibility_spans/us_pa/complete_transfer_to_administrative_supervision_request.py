@@ -26,7 +26,6 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_pa import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    on_parole_at_least_one_year,
     supervision_level_is_not_limited,
     supervision_past_full_term_completion_date_or_upcoming_90_days,
 )
@@ -36,6 +35,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_pa import (
     not_assigned_ineligible_stat_code,
     not_on_sex_offense_protocol,
     not_serving_ineligible_offense_for_admin_supervision,
+    on_supervision_at_least_one_year,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -61,7 +61,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        on_parole_at_least_one_year.VIEW_BUILDER,
+        on_supervision_at_least_one_year.VIEW_BUILDER,
         supervision_level_is_not_limited.VIEW_BUILDER,
         no_high_sanctions_in_past_year.VIEW_BUILDER,
         fulfilled_requirements.VIEW_BUILDER,
@@ -72,7 +72,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
-        criteria=on_parole_at_least_one_year.VIEW_BUILDER,
+        criteria=on_supervision_at_least_one_year.VIEW_BUILDER,
         reasons_date_field="minimum_time_served_date",
         interval_length=6,
         interval_date_part=BigQueryDateInterval.MONTH,

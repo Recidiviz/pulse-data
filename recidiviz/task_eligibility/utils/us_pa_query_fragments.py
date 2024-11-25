@@ -16,6 +16,8 @@
 # =============================================================================
 """Helper fragments to import data for case notes in PA"""
 
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+
 
 def case_when_special_case() -> str:
     return """CASE WHEN supervision_type_raw_text LIKE '%05%'
@@ -111,3 +113,35 @@ def description_refers_to_assault() -> str:
                 OR description LIKE '%ASSLT%'
                 OR description LIKE '%ASS\\'LT%'
                 OR description LIKE 'ASS%')"""
+
+
+def us_pa_supervision_super_sessions() -> str:
+    """Custom supervision logic for time served on supervision in PA
+    The supervision period stays open as long as the state says they're on supervision, unless they're simultaneously
+        in general incarceration.
+    In addition, we manually add shock incarceration and parole board holds since the state does not handle these consistently"""
+    # TODO(#31253) - Move this upstream of prioritized super sessions
+    return f"""
+        WITH supervision_periods AS (
+            SELECT 
+                state_code,
+                person_id,
+                start_date,
+                end_date_exclusive,
+            FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
+            WHERE (open_supervision_cl1 IS NOT NULL -- client has an open supervision period
+                    OR compartment_level_2 IN ('PAROLE_BOARD_HOLD', 'SHOCK_INCARCERATION')) -- or a PBH/shock inc. 
+                AND compartment_level_2 <> 'GENERAL' -- but not an actual prison term
+                AND state_code = 'US_PA'
+        )
+        /* this aggregates all of the above periods */
+            SELECT
+                person_id,
+                state_code,
+                super_session_id,
+                start_date,
+                end_date_exclusive,
+                FROM ({aggregate_adjacent_spans(table_name='supervision_periods',
+                                                session_id_output_name='super_session_id',
+                                                end_date_field_name='end_date_exclusive')})                                                                                    
+    """
