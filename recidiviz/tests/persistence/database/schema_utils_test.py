@@ -148,6 +148,7 @@ class TestSchemaUtils(unittest.TestCase):
             "spreadsheet",
             "agency_setting",
             "agency_jurisdictions",
+            "jurisdiction_population",
             "metric_setting",
             "metric_setting_history",
         ]

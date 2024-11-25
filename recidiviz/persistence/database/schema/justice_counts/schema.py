@@ -1118,6 +1118,43 @@ class AgencyJurisdiction(JusticeCountsBase):
     source = relationship(Source)
 
 
+class JurisdictionPopulation(JusticeCountsBase):
+    """
+    Represents the population data of a jurisdiction, broken down by optional
+    demographic attributes such as race/ethnicity or biological sex.
+    """
+
+    __tablename__ = "jurisdiction_population"
+
+    id = Column(Integer, autoincrement=True)
+
+    # The geoid of the jurisdiction (unique geographic identifier)
+    geoid = Column(String, nullable=False, index=True)
+
+    # The year the population data corresponds to
+    year = Column(Integer, nullable=False)
+
+    # Represents the race or ethnicity of the population subset in the jurisdiction.
+    # This will have a value if the row corresponds to a specific race/ethnicity.
+    race_ethnicity = Column(String, nullable=True)
+
+    # At least one of `race_ethnicity` or `sex` must have a value, ensuring the row
+    # represents a specific subset of the population. Neither field can be null simultaneously.
+
+    # Represents the biological sex of the population subset in the jurisdiction.
+    # This will have a value if the row corresponds to a specific sex.
+    sex = Column(String, nullable=True)
+
+    # Total population count for the jurisdiction, optionally filtered by race/ethnicity or sex.
+    population = Column(Integer, nullable=False)
+
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+        ]
+    )
+
+
 # As this is a TypeVar, it should be used when all variables within the scope of this type should have the same
 # concrete class.
 JusticeCountsDatabaseEntity = TypeVar(
