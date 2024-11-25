@@ -137,14 +137,46 @@ def adjust_any_is_sex_offense(cohort_df_row: pd.Series) -> bool:
 
     There are some offenses that are not marked as is_sex_offense but should be.
     We override any_is_sex_offense to be true if most_severe_ncic_category_uniform is "Sexual Assault",
-    "Sexual Assualt", or "Sex Offense".
+    "Sexual Assualt", or "Sex Offense", or if most_severe_description contains the word 'sexual'.
     Note the typo in "Sexual Assualt"; this is a known typo in our data for most_severe_ncic_category_uniform.
     """
-    return cohort_df_row.any_is_sex_offense or (
-        not pd.isna(cohort_df_row.most_severe_ncic_category_uniform)
-        and cohort_df_row.most_severe_ncic_category_uniform
-        in ["Sexual Assault", "Sexual Assualt", "Sex Offense"]
+    return (
+        cohort_df_row.any_is_sex_offense
+        or (
+            not pd.isna(cohort_df_row.most_severe_ncic_category_uniform)
+            and cohort_df_row.most_severe_ncic_category_uniform
+            in ["Sexual Assault", "Sexual Assualt", "Sex Offense"]
+        )
+        or (
+            not pd.isna(cohort_df_row.most_severe_description)
+            and "SEXUAL" in cohort_df_row.most_severe_description.upper()
+        )
     )
+
+
+def adjust_ncic_category(cohort_df_row: pd.Series) -> str:
+    """Adjust the adjust_ncic_category value for a given row.
+
+    There are some offenses that have incorrect NCIC categories. While we're not addressing this systematically, here
+    we at least override the known cases of some sex offenses being miscategorized as Bribery.
+
+    Specifically, offenses containing:
+     * "SEXUAL ABUSE", "SEXUAL BATTERY", "SEXUAL CONTACT" are overridden to be "Sexual Assault"
+     * "SEXUALLY EXPLOITATIVE MATERIAL" or "SEXUAL EXPLOITATION" are overridden to be "Commercial Sex"
+    """
+    if not pd.isna(cohort_df_row.most_severe_description) and (
+        "SEXUAL ABUSE" in cohort_df_row.most_severe_description.upper()
+        or "SEXUAL BATTERY" in cohort_df_row.most_severe_description.upper()
+        or "SEXUAL CONTACT" in cohort_df_row.most_severe_description.upper()
+    ):
+        return "Sexual Assault"
+    if not pd.isna(cohort_df_row.most_severe_description) and (
+        "SEXUALLY EXPLOITATIVE MATERIAL"
+        in cohort_df_row.most_severe_description.upper()
+        or "SEXUAL EXPLOITATION" in cohort_df_row.most_severe_description.upper()
+    ):
+        return "Commercial Sex"
+    return cohort_df_row.most_severe_ncic_category_uniform
 
 
 def get_combined_offense_category(cohort_df_row: pd.Series) -> str:
@@ -176,6 +208,10 @@ def add_offense_attributes(cohort_df: pd.DataFrame) -> pd.DataFrame:
     cohort_df.any_is_sex_offense = cohort_df.any_is_sex_offense.fillna(False)
     cohort_df.any_is_sex_offense = cohort_df.apply(
         adjust_any_is_sex_offense,
+        axis=1,
+    )
+    cohort_df.most_severe_ncic_category_uniform = cohort_df.apply(
+        adjust_ncic_category,
         axis=1,
     )
 
@@ -395,7 +431,7 @@ def get_all_rollup_aggregated_df(
     drop any rows that would be dropped because there is no data at a given rollup level.
     """
     index_attributes = set(ROLLUP_ATTRIBUTES[0]).difference({"cohort_group"})
-    index = index_df.set_index(list(index_attributes)).index
+    index = index_df.set_index(sorted(list(index_attributes))).index
     all_rollup_levels_df = pd.DataFrame(
         index=index,
         columns=pd.MultiIndex(
@@ -416,8 +452,8 @@ def get_all_rollup_aggregated_df(
         )
 
         if idx == 0:
-            all_rollup_levels_df = recidivism_series_df.merge(
-                all_rollup_levels_df,
+            all_rollup_levels_df = all_rollup_levels_df.merge(
+                recidivism_series_df,
                 left_index=True,
                 right_index=True,
                 how="left",

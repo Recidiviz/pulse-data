@@ -237,10 +237,12 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
         self.assertEqual(-1, score_bucket_end)
 
     def test_adjust_any_is_sex_offense(self) -> None:
+        # any_is_sex_offense should override to True for three categories
         input_row = pd.Series(
             {
                 "any_is_sex_offense": True,
                 "most_severe_ncic_category_uniform": "General Crimes",
+                "most_severe_description": "Assault",
             }
         )
         any_is_sex_offense = write_case_insights_data_to_bq.adjust_any_is_sex_offense(
@@ -252,6 +254,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             {
                 "any_is_sex_offense": False,
                 "most_severe_ncic_category_uniform": "General Crimes",
+                "most_severe_description": "Assault",
             }
         )
         any_is_sex_offense = write_case_insights_data_to_bq.adjust_any_is_sex_offense(
@@ -263,6 +266,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             {
                 "any_is_sex_offense": False,
                 "most_severe_ncic_category_uniform": "Sexual Assault",
+                "most_severe_description": "Assault",
             }
         )
         any_is_sex_offense = write_case_insights_data_to_bq.adjust_any_is_sex_offense(
@@ -274,6 +278,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             {
                 "any_is_sex_offense": False,
                 "most_severe_ncic_category_uniform": "Sexual Assualt",
+                "most_severe_description": "Assault",
             }
         )
         any_is_sex_offense = write_case_insights_data_to_bq.adjust_any_is_sex_offense(
@@ -285,12 +290,93 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             {
                 "any_is_sex_offense": False,
                 "most_severe_ncic_category_uniform": "Sex Offense",
+                "most_severe_description": "Assault",
             }
         )
         any_is_sex_offense = write_case_insights_data_to_bq.adjust_any_is_sex_offense(
             input_row
         )
         self.assertEqual(True, any_is_sex_offense)
+
+        # any_is_sex_offense should override to True if most_severe_description contains "sexual"
+        input_row = pd.Series(
+            {
+                "any_is_sex_offense": False,
+                "most_severe_ncic_category_uniform": "General Crimes",
+                "most_severe_description": "Assault",
+            }
+        )
+        any_is_sex_offense = write_case_insights_data_to_bq.adjust_any_is_sex_offense(
+            input_row
+        )
+        self.assertEqual(False, any_is_sex_offense)
+
+        input_row = pd.Series(
+            {
+                "any_is_sex_offense": False,
+                "most_severe_ncic_category_uniform": "General Crimes",
+                "most_severe_description": "Sexual Assault",
+            }
+        )
+        any_is_sex_offense = write_case_insights_data_to_bq.adjust_any_is_sex_offense(
+            input_row
+        )
+        self.assertEqual(True, any_is_sex_offense)
+
+    def test_adjust_ncic_category(self) -> None:
+        input_row = pd.Series(
+            {
+                "most_severe_ncic_category_uniform": "General Crimes",
+                "most_severe_description": "ASSAULT",
+            }
+        )
+        ncic_category = write_case_insights_data_to_bq.adjust_ncic_category(input_row)
+        self.assertEqual("General Crimes", ncic_category)
+
+        input_row = pd.Series(
+            {
+                "most_severe_ncic_category_uniform": "Bribery",
+                "most_severe_description": "CHILD SEXUAL ABUSE OF A MINOR UNDER 16 YEARS OF AGE",
+            }
+        )
+        ncic_category = write_case_insights_data_to_bq.adjust_ncic_category(input_row)
+        self.assertEqual("Sexual Assault", ncic_category)
+
+        input_row = pd.Series(
+            {
+                "most_severe_ncic_category_uniform": "Bribery",
+                "most_severe_description": "CHILDREN-SEXUAL BATTERY OF MINOR CHILD 16 TO 17 YEARS OF AGE",
+            }
+        )
+        ncic_category = write_case_insights_data_to_bq.adjust_ncic_category(input_row)
+        self.assertEqual("Sexual Assault", ncic_category)
+
+        input_row = pd.Series(
+            {
+                "most_severe_ncic_category_uniform": "Bribery",
+                "most_severe_description": "SEXUAL CONTACT WITH AN ADULT INMATE OR JUVENILE OFFENDER",
+            }
+        )
+        ncic_category = write_case_insights_data_to_bq.adjust_ncic_category(input_row)
+        self.assertEqual("Sexual Assault", ncic_category)
+
+        input_row = pd.Series(
+            {
+                "most_severe_ncic_category_uniform": "Bribery",
+                "most_severe_description": "CHILD SEXUALLY EXPLOITATIVE MATERIAL-KNOWINGLY DISTRIBUTES BY ANY MEANS",
+            }
+        )
+        ncic_category = write_case_insights_data_to_bq.adjust_ncic_category(input_row)
+        self.assertEqual("Commercial Sex", ncic_category)
+
+        input_row = pd.Series(
+            {
+                "most_severe_ncic_category_uniform": "Bribery",
+                "most_severe_description": "CHILDREN-SEXUAL EXPLOITATION OF A CHILD",
+            }
+        )
+        ncic_category = write_case_insights_data_to_bq.adjust_ncic_category(input_row)
+        self.assertEqual("Commercial Sex", ncic_category)
 
     def test_get_combined_offense_category(self) -> None:
         input_row = pd.Series(
@@ -608,12 +694,12 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             pd.DataFrame(
                 index=pd.MultiIndex.from_arrays(
                     [
-                        ["US_IX", "US_IX"],
                         ["ASSAULT OR BATTERY", "MISUSE OF PUBLIC MONEY"],
+                        ["US_IX", "US_IX"],
                     ],
                     names=[
-                        "state_code",
                         "most_severe_description",
+                        "state_code",
                     ],
                 ),
                 data=[
@@ -646,12 +732,12 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             pd.DataFrame(
                 index=pd.MultiIndex.from_arrays(
                     [
-                        ["US_IX", "US_IX"],
                         ["ASSAULT OR BATTERY", "MISUSE OF PUBLIC MONEY"],
+                        ["US_IX", "US_IX"],
                     ],
                     names=[
-                        "state_code",
                         "most_severe_description",
+                        "state_code",
                     ],
                 ),
                 data=[
@@ -995,6 +1081,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                 "gender": ["FEMALE", "MALE"],
                 "assessment_score": [5, 5],
                 "most_severe_ncic_category_uniform": ["Assault", "Sex Offense"],
+                "most_severe_description": ["ASSAULT OR BATTERY", "SEXUAL ASSAULT"],
                 "any_is_violent_uniform": [True, False],
                 "any_is_drug_uniform": [True, False],
                 "any_is_sex_offense": [False, True],
@@ -1010,6 +1097,7 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                 "gender": ["FEMALE", "MALE"],
                 "assessment_score": [5, 5],
                 "most_severe_ncic_category_uniform": ["Assault", "Sex Offense"],
+                "most_severe_description": ["ASSAULT OR BATTERY", "SEXUAL ASSAULT"],
                 "any_is_violent_uniform": [True, False],
                 "any_is_drug_uniform": [True, False],
                 "any_is_sex_offense": [False, True],
