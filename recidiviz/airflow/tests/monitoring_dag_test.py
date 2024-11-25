@@ -17,7 +17,11 @@
 """Unit test for the monitoring DAG"""
 from unittest.mock import patch
 
-from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
+from airflow.models.dagbag import DagBag
+from airflow.utils.trigger_rule import TriggerRule
+
+from recidiviz.airflow.dags.monitoring.dag_registry import get_monitoring_dag_id
+from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 
 _PROJECT_ID = "recidiviz-testing"
 
@@ -28,8 +32,35 @@ _PROJECT_ID = "recidiviz-testing"
         "GCP_PROJECT": _PROJECT_ID,
     },
 )
+class TestMonitoringDagSequencing(AirflowIntegrationTest):
+    """Tests the monitoring DAGs sequencing"""
+
+    def test_raw_data_before_airflow_monitoring(self) -> None:
+        """Tests that we build raw data errors before we try to incorporate them into
+        our airflow alerting.
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[get_monitoring_dag_id(_PROJECT_ID)]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        raw_data_errors = dag.task_dict["fetch_raw_data_file_tag_import_runs"]
+        assert (
+            "airflow_failure_monitoring_and_alerting"
+            in raw_data_errors.downstream_task_ids
+        )
+
+        airflow_alerting = dag.task_dict["airflow_failure_monitoring_and_alerting"]
+        assert airflow_alerting.trigger_rule == TriggerRule.ALL_DONE
+
+
+@patch(
+    "os.environ",
+    {
+        "GCP_PROJECT": _PROJECT_ID,
+    },
+)
 class TestMonitoringDag(AirflowIntegrationTest):
-    """Tests the airflow monitoring dag."""
+    """Tests the airflow monitoring DAG."""
 
     def test_import(self) -> None:
         """Just tests that the monitoring_dag file can be imported."""

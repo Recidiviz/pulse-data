@@ -37,9 +37,11 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
     DirectIngestRawDataLockActor,
     DirectIngestRawDataResourceLockResource,
 )
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatusBucket,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportStatusBuckets,
     DirectIngestRawFileImportSummary,
     LatestDirectIngestRawFileImportRunSummary,
 )
@@ -365,8 +367,8 @@ class IngestOpsEndpointTests(TestCase):
                 is_enabled=True,
                 import_run_start=datetime(2022, 8, 29, tzinfo=pytz.UTC),
                 count_by_status_bucket={
-                    DirectIngestRawFileImportStatusBuckets.SUCCEEDED: 10,
-                    DirectIngestRawFileImportStatusBuckets.FAILED: 5,
+                    DirectIngestRawFileImportStatusBucket.SUCCEEDED: 10,
+                    DirectIngestRawFileImportStatusBucket.FAILED: 5,
                 },
             ),
             StateCode.US_YY: LatestDirectIngestRawFileImportRunSummary(

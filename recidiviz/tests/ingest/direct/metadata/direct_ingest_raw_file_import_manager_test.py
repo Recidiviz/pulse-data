@@ -27,13 +27,15 @@ from freezegun import freeze_time
 from sqlalchemy.exc import IntegrityError, NoResultFound
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatusBucket,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_path,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
-    DirectIngestRawFileImportStatusBuckets,
     DirectIngestRawFileImportSummary,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
@@ -987,7 +989,7 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             assert summary is not None
             assert summary.import_run_start == fixed_datetime + timedelta(hours=1)
             assert summary.count_by_status_bucket == {
-                DirectIngestRawFileImportStatusBuckets.FAILED: 2
+                DirectIngestRawFileImportStatusBucket.FAILED: 2
             }
 
         with freeze_time(fixed_datetime + timedelta(hours=2)):
@@ -1015,8 +1017,8 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             assert summary.is_enabled is False
             assert summary.import_run_start == fixed_datetime + timedelta(hours=2)
             assert summary.count_by_status_bucket == {
-                DirectIngestRawFileImportStatusBuckets.FAILED: 1,
-                DirectIngestRawFileImportStatusBuckets.SUCCEEDED: 1,
+                DirectIngestRawFileImportStatusBucket.FAILED: 1,
+                DirectIngestRawFileImportStatusBucket.SUCCEEDED: 1,
             }
         with freeze_time(fixed_datetime + timedelta(hours=2)):
             us_yy_manager = DirectIngestRawFileImportManager(
@@ -1045,8 +1047,8 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             assert yy_summary is not None
             assert yy_summary.import_run_start == fixed_datetime + timedelta(hours=2)
             assert yy_summary.count_by_status_bucket == {
-                DirectIngestRawFileImportStatusBuckets.IN_PROGRESS: 1,
-                DirectIngestRawFileImportStatusBuckets.FAILED: 1,
+                DirectIngestRawFileImportStatusBucket.IN_PROGRESS: 1,
+                DirectIngestRawFileImportStatusBucket.FAILED: 1,
             }
 
             summary = self.us_xx_manager.get_most_recent_import_run_summary()
@@ -1054,15 +1056,15 @@ class DirectIngestRawFileImportManagerTest(TestCase):
             assert summary is not None
             assert summary.import_run_start == fixed_datetime + timedelta(hours=2)
             assert summary.count_by_status_bucket == {
-                DirectIngestRawFileImportStatusBuckets.FAILED: 1,
-                DirectIngestRawFileImportStatusBuckets.SUCCEEDED: 1,
+                DirectIngestRawFileImportStatusBucket.FAILED: 1,
+                DirectIngestRawFileImportStatusBucket.SUCCEEDED: 1,
             }
 
 
 class DirectIngestRawFileImportStatusBucketsTest(TestCase):
     def test_all_statuses_covered(self) -> None:
         for status in DirectIngestRawFileImportStatus:
-            DirectIngestRawFileImportStatusBuckets.from_session_status(status)
+            DirectIngestRawFileImportStatusBucket.from_session_status(status)
 
     def test_missing_status_fails(self) -> None:
         with self.assertRaisesRegex(
@@ -1071,4 +1073,4 @@ class DirectIngestRawFileImportStatusBucketsTest(TestCase):
                 "Unrecognized import status: eeek; please add it to the list of values in recidiviz/ingest/direct/metadata/direct_ingest_raw_file_import_manager.py"
             ),
         ):
-            DirectIngestRawFileImportStatusBuckets.from_session_status("eeek")  # type: ignore
+            DirectIngestRawFileImportStatusBucket.from_session_status("eeek")  # type: ignore

@@ -35,7 +35,6 @@ class JobRunState(Enum):
     - PENDING: has not yet reached its terminal state (i.e. is waiting to start, is
         already in progress, is being retried, etc).
     - FAILED: failed itself or failed to start due to a related failure.
-
     """
 
     SUCCESS = 0

@@ -19,7 +19,6 @@ DirectIngestRawFileImportRun
 """
 import datetime
 from collections import defaultdict
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 import attr
@@ -28,6 +27,7 @@ from sqlalchemy import and_, select, text
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
+    DirectIngestRawFileImportStatusBucket,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
@@ -100,42 +100,6 @@ class DirectIngestRawFileImportSummary:
         }
 
 
-class DirectIngestRawFileImportStatusBuckets(Enum):
-    """Higher-level status buckets for DirectIngestRawFileImportStatus"""
-
-    IN_PROGRESS: str = "IN_PROGRESS"
-    SUCCEEDED: str = "SUCCEEDED"
-    FAILED: str = "FAILED"
-
-    @classmethod
-    def from_session_status(
-        cls, status: DirectIngestRawFileImportStatus
-    ) -> "DirectIngestRawFileImportStatusBuckets":
-        match status:
-            case DirectIngestRawFileImportStatus.SUCCEEDED:
-                return cls.SUCCEEDED
-            case DirectIngestRawFileImportStatus.STARTED:
-                return cls.IN_PROGRESS
-            case DirectIngestRawFileImportStatus.FAILED_LOAD_STEP:
-                return cls.FAILED
-            case DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP:
-                return cls.FAILED
-            case DirectIngestRawFileImportStatus.FAILED_VALIDATION_STEP:
-                return cls.FAILED
-            case DirectIngestRawFileImportStatus.FAILED_UNKNOWN:
-                return cls.FAILED
-            case DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED:
-                return cls.FAILED
-            case _:
-                raise ValueError(
-                    f"Unrecognized import status: {status}; please add it to the list "
-                    f"of values in recidiviz/ingest/direct/metadata/direct_ingest_raw_file_import_manager.py"
-                )
-
-    def for_api(self) -> str:
-        return self.value.replace("_", " ")
-
-
 # TODO(#28239): remove is_enabled once the raw data import dag is fully rolled out
 @attr.define
 class LatestDirectIngestRawFileImportRunSummary:
@@ -155,7 +119,7 @@ class LatestDirectIngestRawFileImportRunSummary:
     import_run_start: Optional[datetime.datetime] = attr.ib(
         validator=attr_validators.is_opt_utc_timezone_aware_datetime
     )
-    count_by_status_bucket: Dict[DirectIngestRawFileImportStatusBuckets, int] = attr.ib(
+    count_by_status_bucket: Dict[DirectIngestRawFileImportStatusBucket, int] = attr.ib(
         validator=attr_validators.is_dict
     )
 
@@ -516,14 +480,14 @@ class DirectIngestRawFileImportManager:
             results = session.execute(text(query))
 
             count_by_status_bucket: Dict[
-                DirectIngestRawFileImportStatusBuckets, int
+                DirectIngestRawFileImportStatusBucket, int
             ] = defaultdict(int)
             import_run_start: Optional[datetime.datetime] = None
             for result in results:
                 if not import_run_start:
                     import_run_start = result.import_run_start
                 count_by_status_bucket[
-                    DirectIngestRawFileImportStatusBuckets.from_session_status(
+                    DirectIngestRawFileImportStatusBucket.from_session_status(
                         DirectIngestRawFileImportStatus(result.file_import_status)
                     )
                 ] += result.num_file_imports

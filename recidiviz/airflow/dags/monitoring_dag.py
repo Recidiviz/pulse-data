@@ -21,19 +21,31 @@ This file is uploaded to GCS on deploy.
 
 from airflow.decorators import dag
 from airflow.operators.python import PythonOperator
+from airflow.utils.trigger_rule import TriggerRule
 
 from recidiviz.airflow.dags.monitoring.cleanup_exited_pods import cleanup_exited_pods
 from recidiviz.airflow.dags.monitoring.dag_registry import get_monitoring_dag_id
-from recidiviz.airflow.dags.monitoring.task_failure_alerts import report_failed_tasks
+from recidiviz.airflow.dags.monitoring.raw_data_file_tag_import_runs_sql_query_generator import (
+    RawDataFileTagImportRunSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
+    INCIDENT_START_DATE_LOOKBACK,
+    report_failed_tasks,
+)
+from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
+    CloudSqlQueryOperator,
+)
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     build_kubernetes_pod_task,
 )
+from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.email import can_send_mail
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.recidiviz_pagerduty_service import (
     RecidivizPagerDutyService,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 
 DAG_ID = get_monitoring_dag_id(get_project_id())
 
@@ -41,6 +53,14 @@ pagerduty_service = RecidivizPagerDutyService.monitoring_airflow_service(
     project_id=get_project_id()
 )
 email = pagerduty_service.service_integration_email
+
+
+# Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
+# pylint: disable=W0104 pointless-statement
+
+# Need a "disable expression-not-assigned" because the chaining ('>>') doesn't need expressions to be assigned
+# pylint: disable=W0106 expression-not-assigned
+
 
 # By setting catchup to False and max_active_runs to 1, we ensure that at
 # most one instance of this DAG is running at a time. Because we set catchup
@@ -68,10 +88,21 @@ def create_monitoring_dag() -> None:
         ],
     )
 
-    PythonOperator(
+    fetch_raw_data_file_tag_import_runs = CloudSqlQueryOperator(
+        task_id="fetch_raw_data_file_tag_import_runs",
+        cloud_sql_conn_id=cloud_sql_conn_id_for_schema_type(SchemaType.OPERATIONS),
+        query_generator=RawDataFileTagImportRunSqlQueryGenerator(
+            lookback=INCIDENT_START_DATE_LOOKBACK
+        ),
+    )
+
+    airflow_failure_monitoring_and_alerting = PythonOperator(
         task_id="airflow_failure_monitoring_and_alerting",
         python_callable=report_failed_tasks,
+        trigger_rule=TriggerRule.ALL_DONE,
     )
+
+    fetch_raw_data_file_tag_import_runs >> airflow_failure_monitoring_and_alerting
 
     PythonOperator(
         task_id="cleanup_exited_pods",

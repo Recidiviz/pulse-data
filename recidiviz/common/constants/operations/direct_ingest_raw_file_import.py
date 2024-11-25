@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Constants related to the direct_ingest_raw_file_import operations table"""
-from enum import unique
+from enum import Enum, unique
 from typing import Dict
 
 import recidiviz.common.constants.operations.enum_canonical_strings as operations_enum_strings
@@ -93,3 +93,62 @@ _DIRECT_INGEST_RAW_FILE_IMPORT_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, s
         "update_datetime order."
     ),
 }
+
+
+class DirectIngestRawFileImportStatusBucket(Enum):
+    """Higher-level status buckets for DirectIngestRawFileImportStatus"""
+
+    IN_PROGRESS: str = "IN_PROGRESS"
+    SUCCEEDED: str = "SUCCEEDED"
+    FAILED: str = "FAILED"
+
+    __IN_PROGRESS_STATUSES: frozenset[DirectIngestRawFileImportStatus] = frozenset(
+        [DirectIngestRawFileImportStatus.STARTED]
+    )
+    __SUCCEEDED_STATUSES: frozenset[DirectIngestRawFileImportStatus] = frozenset(
+        [DirectIngestRawFileImportStatus.SUCCEEDED]
+    )
+    __FAILED_STATUSES: frozenset[DirectIngestRawFileImportStatus] = frozenset(
+        [
+            DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
+            DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
+            DirectIngestRawFileImportStatus.FAILED_VALIDATION_STEP,
+            DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
+            DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+        ]
+    )
+
+    @classmethod
+    def in_progress_statuses(cls) -> frozenset[DirectIngestRawFileImportStatus]:
+        return cls.__IN_PROGRESS_STATUSES
+
+    @classmethod
+    def succeeded_statuses(cls) -> frozenset[DirectIngestRawFileImportStatus]:
+        return cls.__SUCCEEDED_STATUSES
+
+    @classmethod
+    def failed_statuses(cls) -> frozenset[DirectIngestRawFileImportStatus]:
+        return cls.__FAILED_STATUSES
+
+    @classmethod
+    def from_session_status(
+        cls, status: DirectIngestRawFileImportStatus
+    ) -> "DirectIngestRawFileImportStatusBucket":
+
+        if status in cls.__IN_PROGRESS_STATUSES:
+            return cls.IN_PROGRESS
+
+        if status in cls.__SUCCEEDED_STATUSES:
+            return cls.SUCCEEDED
+
+        if status in cls.__FAILED_STATUSES:
+            return cls.FAILED
+
+        raise ValueError(
+            f"Unrecognized import status: {status}; please add it to the list "
+            f"of values in recidiviz/ingest/direct/metadata/direct_ingest_raw_file_import_manager.py"
+        )
+
+    def for_api(self) -> str:
+        """Transforms a value for the AdminPanel."""
+        return self.value.replace("_", " ")
