@@ -297,6 +297,9 @@ from recidiviz.validation.views.state.workflows.person_record_missing_opportunit
 from recidiviz.validation.views.static_reference_tables.experiment_assignments_unit_of_analysis_validation import (
     EXPERIMENT_ASSIGNMENTS_UNIT_OF_ANALYSIS_VALIDATION_VIEW_BUILDER,
 )
+from recidiviz.validation.views.task_eligibility.completion_event_type_mismatch import (
+    COMPLETION_EVENT_TYPE_MISMATCH_VIEW_BUILDER,
+)
 from recidiviz.validation.views.task_eligibility.configured_validations import (
     get_all_task_eligibility_validations,
 )
@@ -521,6 +524,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=SESSION_LOCATION_NAMES_NO_DUPLICATES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=COMPLETION_EVENT_TYPE_MISMATCH_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
