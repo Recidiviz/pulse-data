@@ -47,6 +47,10 @@ class MetricTimePeriod(enum.Enum):
 class MetricTimePeriodConfig:
     """Class that can be used to build a query that produces a set of time periods."""
 
+    METRIC_TIME_PERIOD_PERIOD_COLUMN = "period"
+    METRIC_TIME_PERIOD_START_DATE_COLUMN = "metric_period_start_date"
+    METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN = "metric_period_end_date_exclusive"
+
     # These tell us how long each time period is (i.e. time between
     # metric_period_start_date and metric_period_end_date_exclusive).
     interval_length: int = attr.ib(validator=attr_validators.is_int)
@@ -123,6 +127,14 @@ class MetricTimePeriodConfig:
                     f"[{self.max_period_end_date.isoformat()}] which is less than "
                     f"min_period_end_date [{self.min_period_end_date.isoformat()}]"
                 )
+
+    @classmethod
+    def query_output_columns(cls) -> list[str]:
+        return [
+            cls.METRIC_TIME_PERIOD_START_DATE_COLUMN,
+            cls.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN,
+            cls.METRIC_TIME_PERIOD_PERIOD_COLUMN,
+        ]
 
     @staticmethod
     def week_periods(lookback_weeks: int) -> "MetricTimePeriodConfig":
@@ -259,14 +271,14 @@ class MetricTimePeriodConfig:
         return f"""
 SELECT
     DATE_SUB(
-        metric_period_end_date_exclusive, {interval_str}
-    ) AS metric_period_start_date,
-    metric_period_end_date_exclusive,
-    {period_str} as period,
+        {self.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN}, {interval_str}
+    ) AS {self.METRIC_TIME_PERIOD_START_DATE_COLUMN},
+    {self.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN},
+    {period_str} as {self.METRIC_TIME_PERIOD_PERIOD_COLUMN},
 FROM
     UNNEST(GENERATE_DATE_ARRAY(
         {min_date_str},
         {max_date_str},
         {rolling_interval_str}
-    )) AS metric_period_end_date_exclusive
+    )) AS {self.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN}
 """

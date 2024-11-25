@@ -63,6 +63,10 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
         # Should produce the same number of rows as specified in lookback_weeks
         self.assertEqual(lookback_weeks, len(results))
         self.assertEqual(expected_results, results)
+        self.assertEqual(
+            sorted(MetricTimePeriodConfig.query_output_columns()),
+            sorted(results[0].keys()),
+        )
 
     def test_week_periods_last_day_of_week(self) -> None:
         lookback_weeks = 2
@@ -93,6 +97,10 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
         # Should produce the same number of rows as specified in lookback_weeks
         self.assertEqual(lookback_weeks, len(results))
         self.assertEqual(expected_results, results)
+        self.assertEqual(
+            sorted(MetricTimePeriodConfig.query_output_columns()),
+            sorted(results[0].keys()),
+        )
 
     def test_week_periods_first_day_of_week(self) -> None:
         lookback_weeks = 2
@@ -124,6 +132,10 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
         # Should produce the same number of rows as specified in lookback_weeks
         self.assertEqual(lookback_weeks, len(results))
         self.assertEqual(expected_results, results)
+        self.assertEqual(
+            sorted(MetricTimePeriodConfig.query_output_columns()),
+            sorted(results[0].keys()),
+        )
 
     def test_month_periods(self) -> None:
         lookback_months = 3
@@ -160,6 +172,10 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
         # Should produce the same number of rows as specified in lookback_months
         self.assertEqual(lookback_months, len(results))
         self.assertEqual(expected_results, results)
+        self.assertEqual(
+            sorted(MetricTimePeriodConfig.query_output_columns()),
+            sorted(results[0].keys()),
+        )
 
     def test_monthly_quarter_periods(self) -> None:
         lookback_months = 4
@@ -188,6 +204,10 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
 
         results = self.query(query_str).to_dict(orient="records")
         self.assertEqual(expected_results, results)
+        self.assertEqual(
+            sorted(MetricTimePeriodConfig.query_output_columns()),
+            sorted(results[0].keys()),
+        )
 
     def test_monthly_year_periods(self) -> None:
         lookback_months = 14
@@ -221,6 +241,10 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
 
         results = self.query(query_str).to_dict(orient="records")
         self.assertEqual(expected_results, results)
+        self.assertEqual(
+            sorted(MetricTimePeriodConfig.query_output_columns()),
+            sorted(results[0].keys()),
+        )
 
     def test_custom_periods(self) -> None:
         # Tuesday, Nov 12, 2024 (US/Eastern time)
@@ -260,3 +284,7 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
         results = self.query(query_str).to_dict(orient="records")
 
         self.assertEqual(expected_results, results)
+        self.assertEqual(
+            sorted(MetricTimePeriodConfig.query_output_columns()),
+            sorted(results[0].keys()),
+        )
