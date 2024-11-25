@@ -80,8 +80,8 @@ def _get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
             method=TriggerPredicateMethod.PRECONDITION,
             dag_id=get_calculation_dag_id(project_id),
             condition=lambda incident: (
-                "ingest_instance" in incident.conf_obj
-                and incident.conf_obj["ingest_instance"] == "PRIMARY"
+                "ingest_instance" in incident.dag_run_config_obj
+                and incident.dag_run_config_obj["ingest_instance"] == "PRIMARY"
             ),
             failure_message="incident is not for the primary ingest instance",
         ),

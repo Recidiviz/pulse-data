@@ -33,12 +33,11 @@ class AirflowAlertingIncident:
     """
 
     dag_id: str = attr.ib(validator=attr_validators.is_str)
-    conf: str = attr.ib(validator=attr_validators.is_str)
+    dag_run_config: str = attr.ib(validator=attr_validators.is_str)
     job_id: str = attr.ib(validator=attr_validators.is_str)
     failed_execution_dates: List[datetime] = attr.ib(
         validator=attr_validators.is_list_of(datetime)
     )
-
     # This value will never be more than INCIDENT_START_DATE_LOOKBACK ago,
     # even if it started failing before then.
     previous_success_date: Optional[datetime] = attr.ib(
@@ -46,6 +45,9 @@ class AirflowAlertingIncident:
     )
     next_success_date: Optional[datetime] = attr.ib(
         default=None, validator=attr_validators.is_opt_datetime
+    )
+    error_message: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
     )
 
     @property
@@ -57,8 +59,8 @@ class AirflowAlertingIncident:
         return self.failed_execution_dates[-1]
 
     @cached_property
-    def conf_obj(self) -> Dict[str, Any]:
-        return json.loads(self.conf)
+    def dag_run_config_obj(self) -> Dict[str, Any]:
+        return json.loads(self.dag_run_config)
 
     @property
     def unique_incident_id(self) -> str:
@@ -67,7 +69,7 @@ class AirflowAlertingIncident:
         The unique incident id includes the last successful job run in order to group incidents by distinct sets of
         consecutive failures.
         """
-        conf_string = f"{self.conf} " if self.conf != "{}" else ""
+        conf_string = f"{self.dag_run_config} " if self.dag_run_config != "{}" else ""
         start_date = self.incident_start_date.strftime("%Y-%m-%d %H:%M %Z")
         return f"{conf_string}{self.dag_id}.{self.job_id}, started: {start_date}"
 
@@ -78,15 +80,16 @@ class AirflowAlertingIncident:
         dag_id: str,
         conf: str,
         job_id: str,
-        execution_dates: list[datetime],
+        failed_execution_dates: list[datetime],
         previous_success: pd.Timestamp | NaTType,
         next_success: pd.Timestamp | NaTType,
+        error_message: str | None,
     ) -> "AirflowAlertingIncident":
         return AirflowAlertingIncident(
             dag_id=dag_id,
-            conf=conf,
+            dag_run_config=conf,
             job_id=job_id,
-            failed_execution_dates=execution_dates,
+            failed_execution_dates=failed_execution_dates,
             previous_success_date=(
                 previous_success.to_pydatetime()
                 if not pd.isna(previous_success)
@@ -95,4 +98,5 @@ class AirflowAlertingIncident:
             next_success_date=(
                 next_success.to_pydatetime() if not pd.isna(next_success) else None
             ),
+            error_message=error_message,
         )

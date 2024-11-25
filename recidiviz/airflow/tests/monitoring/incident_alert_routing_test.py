@@ -46,7 +46,7 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
     def _make_incident(dag_id: str, job_id: str) -> AirflowAlertingIncident:
         return AirflowAlertingIncident(
             dag_id=dag_id,
-            conf="{}",
+            dag_run_config="{}",
             job_id=job_id,
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
         )

@@ -57,6 +57,7 @@ class JobRun:
         - job_id (str): the unique job_id of the job run. If a job run is representing a
             an Airflow task, this will be the `task_id`.
         - state (JobRunState): the state of the this job.
+        - error_message (str | None): error message associated with this job.
     """
 
     dag_id: str = attr.field(validator=attr_validators.is_str)
@@ -66,6 +67,7 @@ class JobRun:
     dag_run_config: str = attr.field(validator=attr_validators.is_str)
     job_id: str = attr.field(validator=attr_validators.is_str)
     state: JobRunState = attr.field(validator=attr.validators.in_(JobRunState))
+    error_message: str | None = attr.field(validator=attr_validators.is_opt_str)
 
     @classmethod
     def unique_keys(cls) -> list[str]:
@@ -90,4 +92,5 @@ class JobRun:
             dag_run_config=json.dumps(filter_params_to_discrete(conf, dag_id)),
             job_id=task_id,
             state=JobRunState(state),
+            error_message=None,
         )

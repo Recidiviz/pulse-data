@@ -109,8 +109,9 @@ class TestDagIntegrity(AirflowIntegrationTest):
                 get_alerting_service_for_incident(
                     AirflowAlertingIncident(
                         dag_id=dag.dag_id,
-                        conf="{}",
+                        dag_run_config="{}",
                         job_id=task_id,
                         failed_execution_dates=[datetime.now(tz=timezone.utc)],
+                        error_message=None,
                     )
                 )

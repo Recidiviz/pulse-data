@@ -30,6 +30,10 @@ from sqlalchemy.orm import Session
 from recidiviz.airflow.dags.monitoring.airflow_task_run_history_delegate import (
     AirflowTaskRunHistoryDelegate,
 )
+from recidiviz.airflow.dags.monitoring.file_tag_import_run_summary import (
+    BigQueryFailedFileImportRunSummary,
+    FileTagImportRunSummary,
+)
 from recidiviz.airflow.dags.monitoring.incident_history_builder import (
     IncidentHistoryBuilder,
 )
@@ -40,12 +44,21 @@ from recidiviz.airflow.dags.monitoring.job_run_history_delegate import (
 from recidiviz.airflow.dags.monitoring.job_run_history_delegate_factory import (
     JobRunHistoryDelegateFactory,
 )
+from recidiviz.airflow.dags.monitoring.raw_data_file_tag_task_run_history_delegate import (
+    RawDataFileTagTaskRunHistoryDelegate,
+)
 from recidiviz.airflow.tests.fixtures import monitoring as monitoring_fixtures
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
+from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
+    DirectIngestRawFileImportStatus,
+)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 _PROJECT_ID = "recidiviz-testing"
 _TEST_DAG_ID = "test_dag"
 _MULTIPLE_DELEGATE_DAG = "multiple_delegate_dag"
+_RAW_DATA_DAG = "raw_data_dag"
 
 
 class FakeJobRunHistoryDelegateFactory(JobRunHistoryDelegateFactory):
@@ -61,6 +74,12 @@ class FakeJobRunHistoryDelegateFactory(JobRunHistoryDelegateFactory):
                 AirflowTaskRunHistoryDelegate(dag_id=dag_id),
             ]
 
+        if dag_id == _RAW_DATA_DAG:
+            return [
+                AirflowTaskRunHistoryDelegate(dag_id=dag_id),
+                RawDataFileTagTaskRunHistoryDelegate(dag_id=dag_id),
+            ]
+
         raise ValueError(f"Unrecognized DAG :{dag_id}")
 
 
@@ -72,6 +91,7 @@ def read_csv_fixture_for_delegate(file: str) -> set[JobRun]:
             dag_run_config=row["conf"],
             job_id=row["job_id"],
             state=JobRunState(int(row["state"])),
+            error_message=row.get("error_message"),
         )
         for row in monitoring_fixtures.read_csv_fixture(file)
     }
@@ -600,3 +620,210 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 incident.next_success_date,
                 july_seventh_primary.execution_date,
             )
+
+    @patch(
+        "recidiviz.airflow.dags.monitoring.raw_data_file_tag_task_run_history_delegate.get_current_context"
+    )
+    def test_error_messages(self, context_patcher: MagicMock) -> None:
+        """
+        Given a raw data file import history like (where ⬜ is no run)
+
+        tag     id  instance        2024-01-01  2024-01-02  2024-01-03
+        tag_a   1   SECONDARY       🟥          ⬜           🟥
+                2   SECONDARY       🟥          ⬜           🟥
+                3   SECONDARY       🟥          ⬜           🟥
+                4   PRIMARY         🟥          🟩           🟩
+                5   PRIMARY         🟥          🟥           🟩
+                6   PRIMARY         🟥          🟥           🟩
+
+
+        """
+
+        date_2024_01_01 = datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC)
+        date_2024_01_02 = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
+        date_2024_01_03 = datetime.datetime(2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC)
+
+        primary_2024_01_01 = FileTagImportRunSummary(
+            import_run_start=date_2024_01_01,
+            state_code=StateCode.US_XX,
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+            file_tag="tag_a",
+            file_tag_import_state=JobRunState.FAILED,
+            failed_file_import_runs=[
+                BigQueryFailedFileImportRunSummary(
+                    file_id=4,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+                    error_message="ERROR\nfailed load step, silly\nERROR!",
+                ),
+                BigQueryFailedFileImportRunSummary(
+                    file_id=5,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
+                    error_message="ERROR\nfailed pre-import norm step\nERROR!",
+                ),
+                BigQueryFailedFileImportRunSummary(
+                    file_id=6,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 4, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
+                    error_message="Blocked by 4",
+                ),
+            ],
+        )
+        primary_2024_01_02 = FileTagImportRunSummary(
+            import_run_start=date_2024_01_02,
+            state_code=StateCode.US_XX,
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+            file_tag="tag_a",
+            file_tag_import_state=JobRunState.FAILED,
+            failed_file_import_runs=[
+                BigQueryFailedFileImportRunSummary(
+                    file_id=4,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+                    error_message="ERROR\nfailed load step, silly\nERROR!",
+                ),
+                BigQueryFailedFileImportRunSummary(
+                    file_id=5,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
+                    error_message=None,
+                ),
+                BigQueryFailedFileImportRunSummary(
+                    file_id=6,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 4, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
+                    error_message="Blocked by 4",
+                ),
+            ],
+        )
+        primary_2024_01_03 = FileTagImportRunSummary(
+            import_run_start=date_2024_01_03,
+            state_code=StateCode.US_XX,
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+            file_tag="tag_a",
+            file_tag_import_state=JobRunState.SUCCESS,
+            failed_file_import_runs=[],
+        )
+        secondary_2024_01_01 = FileTagImportRunSummary(
+            import_run_start=date_2024_01_01,
+            state_code=StateCode.US_XX,
+            raw_data_instance=DirectIngestInstance.SECONDARY,
+            file_tag="tag_a",
+            file_tag_import_state=JobRunState.FAILED,
+            failed_file_import_runs=[
+                BigQueryFailedFileImportRunSummary(
+                    file_id=1,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+                    error_message="ERROR\nfailed load step, silly\nERROR!",
+                ),
+                BigQueryFailedFileImportRunSummary(
+                    file_id=2,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
+                    error_message="ERROR\nfailed pre-import norm step\nERROR!",
+                ),
+                BigQueryFailedFileImportRunSummary(
+                    file_id=3,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 4, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
+                    error_message="Blocked by 1",
+                ),
+            ],
+        )
+        secondary_2024_01_03 = FileTagImportRunSummary(
+            import_run_start=date_2024_01_03,
+            state_code=StateCode.US_XX,
+            raw_data_instance=DirectIngestInstance.SECONDARY,
+            file_tag="tag_a",
+            file_tag_import_state=JobRunState.FAILED,
+            failed_file_import_runs=[
+                BigQueryFailedFileImportRunSummary(
+                    file_id=1,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.FAILED_LOAD_STEP,
+                    error_message="ERROR\nfailed load step, silly\nERROR!",
+                ),
+                BigQueryFailedFileImportRunSummary(
+                    file_id=2,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.FAILED_PRE_IMPORT_NORMALIZATION_STEP,
+                    error_message="ERROR\nfailed pre-import norm step\nERROR!",
+                ),
+                BigQueryFailedFileImportRunSummary(
+                    file_id=3,
+                    update_datetime=datetime.datetime(
+                        2024, 1, 4, 1, 1, 1, tzinfo=datetime.UTC
+                    ),
+                    file_import_status=DirectIngestRawFileImportStatus.FAILED_IMPORT_BLOCKED,
+                    error_message="Blocked by 1",
+                ),
+            ],
+        )
+        summaries = [
+            primary_2024_01_01,
+            primary_2024_01_02,
+            primary_2024_01_03,
+            secondary_2024_01_01,
+            secondary_2024_01_03,
+        ]
+
+        ti = MagicMock()
+        ti.xcom_pull.return_value = [s.serialize() for s in summaries]
+        context_patcher.return_value = {"ti": ti}
+
+        # validate job run history
+        job_run_history = RawDataFileTagTaskRunHistoryDelegate(
+            dag_id=_RAW_DATA_DAG
+        ).fetch_job_runs(
+            lookback=TEST_START_DATE_LOOKBACK,
+        )
+
+        assert job_run_history == [s.as_job_run(_RAW_DATA_DAG) for s in summaries]
+
+        # validate incident history
+
+        history = IncidentHistoryBuilder(dag_id=_RAW_DATA_DAG).build(
+            lookback=TEST_START_DATE_LOOKBACK
+        )
+
+        assert len(history) == 2
+
+        primary_key = '{"ingest_instance": "PRIMARY"} raw_data_dag.US_XX.PRIMARY.tag_a, started: 2024-01-01 01:01 UTC'
+        assert primary_key in history
+        primary_incident = history[primary_key]
+        primary_incident.next_success_date = date_2024_01_03
+        primary_incident.failed_execution_dates = [date_2024_01_01, date_2024_01_02]
+        primary_incident.job_id = "raw_data_dag.US_XX.PRIMARY.tag_a"
+        primary_incident.error_message = primary_2024_01_02.format_error_message()
+
+        secondary_key = '{"ingest_instance": "SECONDARY"} raw_data_dag.US_XX.SECONDARY.tag_a, started: 2024-01-01 01:01 UTC'
+        assert secondary_key in history
+        secondy_incident = history[secondary_key]
+        secondy_incident.next_success_date = None
+        secondy_incident.failed_execution_dates = [date_2024_01_01, date_2024_01_03]
+        secondy_incident.job_id = "raw_data_dag.US_XX.SECONDARY.tag_a"
+        secondy_incident.error_message = secondary_2024_01_03.format_error_message()

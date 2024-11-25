@@ -107,7 +107,7 @@ class IncidentHistoryBuilder:
                     & (job_runs.execution_date > row.end_date)
                 ].execution_date.min()
 
-                execution_dates = [
+                failed_execution_dates = [
                     execution_date.to_pydatetime()
                     for execution_date in job_runs[
                         job_runs.execution_date.between(
@@ -116,13 +116,18 @@ class IncidentHistoryBuilder:
                     ].execution_date.to_list()
                 ]
 
+                most_recent_error_message = job_runs[
+                    job_runs.execution_date == row.end_date
+                ].error_message.iloc[0]
+
                 incident = AirflowAlertingIncident.build(
                     dag_id=dag_id,
                     conf=conf,
                     job_id=job_id,
-                    execution_dates=execution_dates,
+                    failed_execution_dates=failed_execution_dates,
                     previous_success=previous_success,
                     next_success=next_success,
+                    error_message=most_recent_error_message,
                 )
 
                 incidents[incident.unique_incident_id] = incident
