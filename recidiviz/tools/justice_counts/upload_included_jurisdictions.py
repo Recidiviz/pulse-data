@@ -133,11 +133,11 @@ def bulk_update_included_jurisdictions(
             except Exception as e:
                 logger.error("Failed to update jurisdictions %s", e)
 
-                if dry_run is False:
-                    logger.info("Committing changes to the database.")
-                    session.commit()
-                else:
-                    logger.info("Dry run enabled. No changes committed.")
+            if dry_run is False:
+                logger.info("Committing changes to the database.")
+                session.commit()
+            else:
+                logger.info("Dry run enabled. No changes committed.")
 
 
 if __name__ == "__main__":
