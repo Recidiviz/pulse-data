@@ -17,10 +17,49 @@
 """Utils for working with YAML files."""
 
 # on/off were part of yaml 1.1: https://stackoverflow.com/questions/75853887/yaml-attributeerror-on-for-a-key-named-on-in-yaml-file
-YAML_RESERVED_WORDS = ["y", "yes", "n", "no", "true", "false", "on", "off"]
+YAML_RESERVED_WORDS = frozenset(
+    ["y", "yes", "n", "no", "true", "false", "on", "off", "null"]
+)
+YAML_RESERVED_CHARS = frozenset(
+    [
+        "#",
+        ",",
+        "[",
+        "]",
+        "{",
+        "}",
+        "&",
+        "*",
+        "!",
+        "|",
+        ">",
+        "?",
+        "'",
+        "%",
+        "@",
+        "`",
+        "-",
+        ":",
+        "~",
+        '"',
+    ]
+)
+
+
+def _is_number(value: str) -> bool:
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
 
 
 def get_properly_quoted_yaml_str(value: str) -> str:
-    if value.lower() in YAML_RESERVED_WORDS or value.isdigit():
+    if (
+        not value
+        or value.lower() in YAML_RESERVED_WORDS
+        or value[0] in YAML_RESERVED_CHARS
+        or _is_number(value)
+    ):
         return f'"{value}"'
     return f"{value}"

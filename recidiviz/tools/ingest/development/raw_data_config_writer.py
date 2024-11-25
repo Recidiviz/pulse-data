@@ -62,9 +62,6 @@ class RawDataConfigWriter:
 
     def _generate_individual_column_string(self, column: RawTableColumnInfo) -> str:
         """Generates a string for a single column in the yaml file."""
-        if column is None or column.name is None:
-            return ""
-
         column_string = f"  - name: {column.name}"
         if column.description:
             column_description_string = "\n      ".join(column.description.splitlines())
@@ -160,11 +157,12 @@ class RawDataConfigWriter:
         if raw_file_config.supplemental_order_by_clause:
             config += "supplemental_order_by_clause: True\n"
 
-        if (
-            raw_file_config.infer_columns_from_config
-            != default_infer_columns_from_config
+        # TODO(#35391) Align raw file config and default config default values for infer_columns_from_config
+        # If the field is missing all together default config defaults to None and raw file config defaults to False
+        if bool(raw_file_config.infer_columns_from_config) != bool(
+            default_infer_columns_from_config
         ):
-            config += "infer_columns_from_config: True\n"
+            config += f"infer_columns_from_config: {raw_file_config.infer_columns_from_config}\n"
         # If an encoding is not the default, we need to include it in the config
         if raw_file_config.encoding != default_encoding:
             config += f"encoding: {raw_file_config.encoding}\n"

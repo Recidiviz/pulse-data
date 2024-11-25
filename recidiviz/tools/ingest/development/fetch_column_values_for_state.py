@@ -187,7 +187,7 @@ def main(
             original_config=original_raw_file_config,
             project_id=project_id,
             bq_client=bq_client,
-            default_description="TO" + "DO(#" + f"{issue_id}): Document this value.",
+            default_description="TO" + "DO(#" + f"{issue_id}) Document this value.",
             sandbox_dataset_prefix=sandbox_dataset_prefix,
         )
         raw_data_config_writer = RawDataConfigWriter()
