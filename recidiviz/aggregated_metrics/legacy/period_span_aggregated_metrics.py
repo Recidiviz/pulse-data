@@ -91,6 +91,7 @@ def get_period_span_time_specific_cte(
                 metric.generate_aggregation_query_fragment(
                     filter_observations_by_type=True,
                     read_observation_attributes_from_json=True,
+                    observations_cte_name="ses",
                     span_start_date_col="ses.start_date",
                     span_end_date_col="ses.end_date",
                     period_start_date_col="pop.population_start_date",

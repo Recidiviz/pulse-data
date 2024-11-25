@@ -133,6 +133,7 @@ def generate_period_span_metric_view(
         AVG_DAILY_POPULATION.generate_aggregation_query_fragment(
             filter_observations_by_type=True,
             read_observation_attributes_from_json=True,
+            observations_cte_name="ses",
             span_start_date_col="ses.start_date",
             span_end_date_col="ses.end_date",
             period_start_date_col="time_period.start_date",
@@ -146,6 +147,7 @@ def generate_period_span_metric_view(
                     metric.generate_aggregation_query_fragment(
                         filter_observations_by_type=True,
                         read_observation_attributes_from_json=True,
+                        observations_cte_name="ses",
                         span_start_date_col="ses.start_date",
                         span_end_date_col="ses.end_date",
                         period_start_date_col="time_period.start_date",
@@ -286,6 +288,7 @@ def generate_period_event_metric_view(
                 metric.generate_aggregation_query_fragment(
                     filter_observations_by_type=True,
                     read_observation_attributes_from_json=True,
+                    observations_cte_name="events",
                     event_date_col="events.event_date",
                 ),
                 metric,
@@ -485,6 +488,7 @@ def generate_assignment_event_metric_view(
                 metric.generate_aggregation_query_fragment(
                     filter_observations_by_type=True,
                     read_observation_attributes_from_json=True,
+                    observations_cte_name="events",
                     event_date_col="events.event_date",
                     assignment_date_col="assignments.assignment_date",
                 ),

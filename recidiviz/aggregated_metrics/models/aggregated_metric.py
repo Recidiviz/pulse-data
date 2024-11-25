@@ -196,6 +196,9 @@ class PeriodSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        #  aggregated metrics queries.
+        observations_cte_name: str,
         span_start_date_col: str,
         span_end_date_col: str,
         period_start_date_col: str,
@@ -249,6 +252,9 @@ class PeriodEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMixin):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        #  aggregated metrics queries.
+        observations_cte_name: str,
         event_date_col: str,
     ) -> str:
         """Returns a query fragment that calculates an aggregation corresponding to the PeriodEvent metric type."""
@@ -277,6 +283,9 @@ class AssignmentEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMix
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        #  aggregated metrics queries.
+        observations_cte_name: str,
         event_date_col: str,
         assignment_date_col: str,
     ) -> str:
@@ -301,6 +310,9 @@ class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        #  aggregated metrics queries.
+        observations_cte_name: str,
         span_start_date_col: str,
         span_end_date_col: str,
         period_start_date_col: str,
@@ -351,6 +363,9 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        #  aggregated metrics queries.
+        observations_cte_name: str,
         span_start_date_col: str,
         span_end_date_col: str,
         period_start_date_col: str,
@@ -418,6 +433,9 @@ class DailyAvgTimeSinceSpanStartMetric(PeriodSpanAggregatedMetric):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        #  aggregated metrics queries.
+        observations_cte_name: str,
         span_start_date_col: str,
         span_end_date_col: str,
         period_start_date_col: str,
@@ -490,6 +508,9 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        #  aggregated metrics queries.
+        observations_cte_name: str,
         span_start_date_col: str,
         span_end_date_col: str,
         period_start_date_col: str,
@@ -544,6 +565,9 @@ class SpanDistinctUnitCountMetric(PeriodSpanAggregatedMetric):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        #  aggregated metrics queries.
+        observations_cte_name: str,
         span_start_date_col: str,
         span_end_date_col: str,
         period_start_date_col: str,
@@ -557,7 +581,7 @@ class SpanDistinctUnitCountMetric(PeriodSpanAggregatedMetric):
         return f"""
             COUNT(DISTINCT IF(
                 {observation_conditions},
-                CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix="ses")}),
+                CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_cte_name)}),
                 NULL
             )) AS {self.name}
         """
@@ -764,6 +788,9 @@ class EventCountMetric(PeriodEventAggregatedMetric):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        #  aggregated metrics queries.
+        observations_cte_name: str,
         event_date_col: str,
     ) -> str:
 
@@ -794,7 +821,7 @@ class EventCountMetric(PeriodEventAggregatedMetric):
             COUNT(DISTINCT IF(
                 {observation_conditions},
                 CONCAT(
-                    {self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")}, 
+                    {self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_cte_name)}, 
                     {event_date_col}{event_segmentation_columns_str}
                 ), NULL
             )) AS {self.name}
@@ -828,6 +855,7 @@ class EventValueMetric(PeriodEventAggregatedMetric):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        observations_cte_name: str,
         event_date_col: str,
     ) -> str:
         observation_conditions = self.get_observation_conditions_string(
@@ -869,6 +897,7 @@ class EventDistinctUnitCountMetric(PeriodEventAggregatedMetric):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        observations_cte_name: str,
         event_date_col: str,
     ) -> str:
         observation_conditions = self.get_observation_conditions_string(
@@ -878,7 +907,7 @@ class EventDistinctUnitCountMetric(PeriodEventAggregatedMetric):
         return f"""
             COUNT(DISTINCT IF(
                 {observation_conditions},
-                CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")}),
+                CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_cte_name)}),
                 NULL
             )) AS {self.name}
         """
@@ -906,6 +935,7 @@ class AssignmentDaysToFirstEventMetric(AssignmentEventAggregatedMetric):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        observations_cte_name: str,
         event_date_col: str,
         assignment_date_col: str,
     ) -> str:
@@ -948,6 +978,7 @@ class AssignmentEventCountMetric(AssignmentEventAggregatedMetric):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        observations_cte_name: str,
         event_date_col: str,
         assignment_date_col: str,
     ) -> str:
@@ -960,7 +991,7 @@ class AssignmentEventCountMetric(AssignmentEventAggregatedMetric):
                 DISTINCT IF(
                     {observation_conditions}
                     AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
-                    CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")}, {event_date_col}),
+                    CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_cte_name)}, {event_date_col}),
                     NULL
                 )
             ) AS {self.name}"""
@@ -988,6 +1019,7 @@ class AssignmentEventBinaryMetric(AssignmentEventAggregatedMetric):
         # TODO(#29291): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
+        observations_cte_name: str,
         event_date_col: str,
         assignment_date_col: str,
     ) -> str:

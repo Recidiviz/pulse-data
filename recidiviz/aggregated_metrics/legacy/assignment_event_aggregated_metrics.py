@@ -90,6 +90,7 @@ def get_assignment_event_time_specific_cte(
                 metric.generate_aggregation_query_fragment(
                     filter_observations_by_type=True,
                     read_observation_attributes_from_json=True,
+                    observations_cte_name="events",
                     event_date_col="events.event_date",
                     assignment_date_col="assign.assignment_date",
                 )
