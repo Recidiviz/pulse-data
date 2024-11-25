@@ -109,4 +109,3 @@ columns:
   - name: ParoleUnit
     description: |-
       The unit the parolee is paroled in. See ParoleRegion.
-infer_columns_from_config: True

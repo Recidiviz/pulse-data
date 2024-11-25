@@ -330,4 +330,3 @@ columns:
       - value: TO DIS
       - value: W&I 7301
       - value: With New Term
-infer_columns_from_config: True

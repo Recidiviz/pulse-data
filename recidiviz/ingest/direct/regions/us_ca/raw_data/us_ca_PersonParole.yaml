@@ -230,4 +230,3 @@ columns:
         update_datetime: 2024-02-07T00:00:00+00:00
   - name: LastCCRDate
     field_type: datetime
-infer_columns_from_config: True
