@@ -58,6 +58,10 @@ class AggregatedMetric:
     description: str = attr.field(validator=attr_validators.is_non_empty_str)
 
     @abc.abstractmethod
+    def referenced_observation_attributes(self) -> list[str]:
+        """Returns the list of event/span attributes referenced by this metric."""
+
+    @abc.abstractmethod
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         """
         Returns a query fragment used to aggregate a metric over multiple time periods,
@@ -91,6 +95,10 @@ class MetricConditionsMixin(Generic[ObservationTypeT]):
     @property
     def unit_of_observation(self) -> MetricUnitOfObservation:
         return self.observation_selector.unit_of_observation
+
+    @property
+    def observation_type(self) -> ObservationTypeT:
+        return self.observation_selector.observation_type
 
     @property
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:
@@ -182,6 +190,9 @@ class MiscAggregatedMetric(AggregatedMetric):
     # Units of analysis at which the metric can be aggregated
     unit_of_analysis_types: List[MetricUnitOfAnalysisType]
 
+    def referenced_observation_attributes(self) -> list[str]:
+        raise NotImplementedError("TODO(#29291): No support for MiscAggregatedMetric")
+
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"ARRAY_AGG({self.name} ORDER BY {self.name}) AS {self.name}"
 
@@ -222,6 +233,9 @@ class PeriodSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin):
     ) -> str:
         """Returns a query fragment that calculates an aggregation corresponding to the PeriodSpan metric type."""
 
+    def referenced_observation_attributes(self) -> list[str]:
+        return list(self.span_selector.span_conditions_dict.keys())
+
 
 @attr.define(frozen=True, kw_only=True)
 class AssignmentSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin):
@@ -253,6 +267,9 @@ class AssignmentSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin
     ) -> str:
         """Returns a query fragment that calculates an aggregation corresponding to the AssignmentSpan metric type."""
 
+    def referenced_observation_attributes(self) -> list[str]:
+        return list(self.span_selector.span_conditions_dict.keys())
+
 
 @attr.define(frozen=True, kw_only=True)
 class PeriodEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMixin):
@@ -281,6 +298,9 @@ class PeriodEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMixin):
         event_date_col: str,
     ) -> str:
         """Returns a query fragment that calculates an aggregation corresponding to the PeriodEvent metric type."""
+
+    def referenced_observation_attributes(self) -> list[str]:
+        return list(self.event_selector.event_conditions_dict.keys())
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -317,6 +337,9 @@ class AssignmentEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMix
         assignment_date_col: str,
     ) -> str:
         """Returns a query fragment that calculates an aggregation corresponding to the AssignmentEvent metric type."""
+
+    def referenced_observation_attributes(self) -> list[str]:
+        return list(self.event_selector.event_conditions_dict.keys())
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -380,6 +403,9 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric):
 
     # Name of the field in span_attributes JSON containing the numeric attribute of the span.
     span_value_numeric: str = attr.field(validator=attr_validators.is_non_empty_str)
+
+    def referenced_observation_attributes(self) -> list[str]:
+        return super().referenced_observation_attributes() + [self.span_value_numeric]
 
     def generate_aggregation_query_fragment(
         self,
@@ -727,6 +753,9 @@ class AssignmentSpanValueAtStartMetric(AssignmentSpanAggregatedMetric):
     # Metric counting the number of assignments satisfying the span condition
     span_count_metric: AssignmentSpanDaysMetric
 
+    def referenced_observation_attributes(self) -> list[str]:
+        return super().referenced_observation_attributes() + [self.span_value_numeric]
+
     def generate_aggregation_query_fragment(
         self,
         *,
@@ -806,6 +835,11 @@ class EventCountMetric(PeriodEventAggregatedMetric):
     # Otherwise, we treat those rows as the same event.
     event_segmentation_columns: Optional[List[str]] = None
 
+    def referenced_observation_attributes(self) -> list[str]:
+        return super().referenced_observation_attributes() + (
+            self.event_segmentation_columns or []
+        )
+
     def generate_aggregation_query_fragment(
         self,
         *,
@@ -872,6 +906,9 @@ class EventValueMetric(PeriodEventAggregatedMetric):
 
     # EventCount metric counting the number of events contributing to the event value metric
     event_count_metric: EventCountMetric
+
+    def referenced_observation_attributes(self) -> list[str]:
+        return super().referenced_observation_attributes() + [self.event_value_numeric]
 
     def generate_aggregation_query_fragment(
         self,
