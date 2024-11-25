@@ -25,6 +25,9 @@ from airflow.utils.trigger_rule import TriggerRule
 
 from recidiviz.airflow.dags.monitoring.cleanup_exited_pods import cleanup_exited_pods
 from recidiviz.airflow.dags.monitoring.dag_registry import get_monitoring_dag_id
+from recidiviz.airflow.dags.monitoring.metadata import (
+    FETCH_RAW_DATA_FILE_TAG_IMPORT_RUNS_TASK_ID,
+)
 from recidiviz.airflow.dags.monitoring.raw_data_file_tag_import_runs_sql_query_generator import (
     RawDataFileTagImportRunSqlQueryGenerator,
 )
@@ -89,7 +92,7 @@ def create_monitoring_dag() -> None:
     )
 
     fetch_raw_data_file_tag_import_runs = CloudSqlQueryOperator(
-        task_id="fetch_raw_data_file_tag_import_runs",
+        task_id=FETCH_RAW_DATA_FILE_TAG_IMPORT_RUNS_TASK_ID,
         cloud_sql_conn_id=cloud_sql_conn_id_for_schema_type(SchemaType.OPERATIONS),
         query_generator=RawDataFileTagImportRunSqlQueryGenerator(
             lookback=INCIDENT_START_DATE_LOOKBACK

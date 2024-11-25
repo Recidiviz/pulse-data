@@ -79,14 +79,15 @@ SELECT
     raw_data_instance,
     file_tag,
     MAX(import_state) as file_tag_import_state,
+    -- we filter down to just FAILED statuses since they are the details we care about
     json_agg(
         json_build_object(
             'file_id', file_id,
             'update_datetime', update_datetime,
-            'file_import_status', import_status,
+            'failed_file_import_status', import_status,
             'error_message', error_message
         )
-    ) as file_import_runs
+    ) FILTER (WHERE import_status in {failed_statuses}) as failed_file_import_runs
 FROM recent_file_imports
 GROUP BY (
     dag_run_id, 
@@ -121,7 +122,7 @@ class RawDataFileTagImportRunSqlQueryGenerator(CloudSqlQueryGenerator[List[str]]
                 raw_data_instance_str=file_tag_import_run_summary[2],
                 file_tag=file_tag_import_run_summary[3],
                 file_tag_import_state_int=file_tag_import_run_summary[4],
-                file_import_runs_json=file_tag_import_run_summary[5],
+                failed_file_import_runs_json=file_tag_import_run_summary[5],
             )
             for file_tag_import_run_summary in postgres_hook.get_records(
                 self._get_recent_file_import_runs_sql_query()

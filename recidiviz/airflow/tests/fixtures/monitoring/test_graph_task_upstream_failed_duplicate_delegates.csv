@@ -1,0 +1,4 @@
+dag_id,conf,job_id,execution_date,state
+multiple_delegate_dag,{},parent_task,2023-07-09 12:00:00+00:00,3
+multiple_delegate_dag,{},parent_task,2023-07-10 12:00:00+00:00,1
+multiple_delegate_dag,{},parent_task,2023-07-11 12:00:00+00:00,3

@@ -21,7 +21,7 @@ from typing import Any, Type
 from unittest import TestCase
 
 from recidiviz.airflow.dags.monitoring.file_tag_import_run_summary import (
-    BigQueryFileImportRunSummary,
+    BigQueryFailedFileImportRunSummary,
     FileTagImportRunSummary,
 )
 from recidiviz.airflow.dags.monitoring.job_run import JobRunState
@@ -38,14 +38,14 @@ class FileSummarySerializationTest(TestCase):
     """
 
     def test_import_run_summary(self) -> None:
-        summary = BigQueryFileImportRunSummary(
+        summary = BigQueryFailedFileImportRunSummary(
             file_id=1,
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
             file_import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
             error_message="ERROR\n\n\n\n\nERROR!",
         )
 
-        self._validate_serialization(summary, BigQueryFileImportRunSummary)
+        self._validate_serialization(summary, BigQueryFailedFileImportRunSummary)
 
     def test_file_tag_import_run_summary(self) -> None:
         summary = FileTagImportRunSummary(
@@ -56,8 +56,8 @@ class FileSummarySerializationTest(TestCase):
             raw_data_instance=DirectIngestInstance.PRIMARY,
             file_tag="tag_a",
             file_tag_import_state=JobRunState.FAILED,
-            file_import_runs=[
-                BigQueryFileImportRunSummary(
+            failed_file_import_runs=[
+                BigQueryFailedFileImportRunSummary(
                     file_id=1,
                     update_datetime=datetime.datetime(
                         2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
@@ -65,7 +65,7 @@ class FileSummarySerializationTest(TestCase):
                     file_import_status=DirectIngestRawFileImportStatus.FAILED_UNKNOWN,
                     error_message="ERROR\n\n\n\n\nERROR!",
                 ),
-                BigQueryFileImportRunSummary(
+                BigQueryFailedFileImportRunSummary(
                     file_id=2,
                     update_datetime=datetime.datetime(
                         2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC

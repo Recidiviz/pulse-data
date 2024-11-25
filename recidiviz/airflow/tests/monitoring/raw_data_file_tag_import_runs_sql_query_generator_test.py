@@ -35,6 +35,7 @@ from recidiviz.airflow.dags.utils.cloud_sql import postgres_formatted_datetime_w
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
+    DirectIngestRawFileImportStatusBucket,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import RawFileImport
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
@@ -202,22 +203,11 @@ class RawDataFileTagImportRunSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTes
         for result in results:
             summary = FileTagImportRunSummary.deserialize(result)
 
-            file_imports, update_datetime = (
-                (tag_a_file_imports, tag_a_update_datetime)
-                if summary.file_tag == "tag_a"
-                else (tag_b_file_imports, tag_b_update_datetime)
-            )
-
             assert summary.import_run_start == start_time
             assert summary.raw_data_instance.value == "PRIMARY"
             assert summary.file_tag_import_state == JobRunState.SUCCESS
 
-            for i, import_run in enumerate(
-                sorted(summary.file_import_runs, key=lambda x: x.file_id)
-            ):
-                assert import_run.file_id == file_imports[i].file_id
-                assert import_run.update_datetime == update_datetime
-                assert import_run.error_message == file_imports[i].error_message
+            assert len(summary.failed_file_import_runs) == 0
 
     def test_consecutive_dags(self) -> None:
         start_time = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
@@ -275,12 +265,7 @@ class RawDataFileTagImportRunSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTes
             summary = FileTagImportRunSummary.deserialize(result)
             assert summary.raw_data_instance.value == "PRIMARY"
             assert summary.file_tag_import_state == JobRunState.SUCCESS
-            assert len(summary.file_import_runs) == 3
-            for i, run in enumerate(
-                sorted(summary.file_import_runs, key=lambda x: x.file_id)
-            ):
-                assert run.file_import_status == file_imports[i].import_status
-                assert run.error_message == file_imports[i].error_message
+            assert len(summary.failed_file_import_runs) == 0
 
     def test_lookback(self) -> None:
         start_time = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
@@ -304,10 +289,9 @@ class RawDataFileTagImportRunSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTes
             ),
             RawFileImport(
                 file_id=3,
-                import_status=DirectIngestRawFileImportStatus.SUCCEEDED,
+                import_status=DirectIngestRawFileImportStatus.FAILED_VALIDATION_STEP,
                 historical_diffs_active=False,
-                raw_rows=1,
-                error_message=None,
+                error_message="oops!",
             ),
         ]
 
@@ -342,13 +326,13 @@ class RawDataFileTagImportRunSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTes
         for result in results:
             summary = FileTagImportRunSummary.deserialize(result)
             assert summary.raw_data_instance.value == "PRIMARY"
-            assert summary.file_tag_import_state == JobRunState.SUCCESS
-            assert len(summary.file_import_runs) == 3
+            assert summary.file_tag_import_state == JobRunState.FAILED
+            assert len(summary.failed_file_import_runs) == 1
             for i, run in enumerate(
-                sorted(summary.file_import_runs, key=lambda x: x.file_id)
+                sorted(summary.failed_file_import_runs, key=lambda x: x.file_id)
             ):
-                assert run.file_import_status == file_imports[i].import_status
-                assert run.error_message == file_imports[i].error_message
+                assert run.file_import_status == file_imports[2].import_status
+                assert run.error_message == file_imports[2].error_message
 
     def test_single_file_tag_with_failures(self) -> None:
         start_time = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
@@ -521,6 +505,14 @@ ValueError: known_values for tagBasic must not be empty""",
         self._seed_bq_metadata(file_imports, file_tag="tag_a", dt=update_datetime)
         self._seed_import_run(file_imports, dt=start_time)
 
+        failed_file_imports = list(
+            filter(
+                lambda x: x.import_status
+                in DirectIngestRawFileImportStatusBucket.failed_statuses(),
+                file_imports,
+            )
+        )
+
         with freeze_time(start_time + datetime.timedelta(hours=1)):
             result = self.generator.execute_postgres_query(
                 self.mock_operator, self.mock_pg_hook, self.mock_context
@@ -536,12 +528,12 @@ ValueError: known_values for tagBasic must not be empty""",
         assert tag_a.file_tag_import_state == JobRunState.FAILED
 
         for i, import_run in enumerate(
-            sorted(tag_a.file_import_runs, key=lambda x: x.file_id)
+            sorted(tag_a.failed_file_import_runs, key=lambda x: x.file_id)
         ):
-            assert import_run.file_id == file_imports[i].file_id
+            assert import_run.file_id == failed_file_imports[i].file_id
             assert import_run.update_datetime == update_datetime
-            assert import_run.file_import_status == file_imports[i].import_status
-            assert import_run.error_message == file_imports[i].error_message
+            assert import_run.file_import_status == failed_file_imports[i].import_status
+            assert import_run.error_message == failed_file_imports[i].error_message
 
     def test_invalidation(self) -> None:
         start_time = datetime.datetime(2024, 1, 2, 1, 1, 1, tzinfo=datetime.UTC)
@@ -593,13 +585,10 @@ ValueError: known_values for tagBasic must not be empty""",
         summary = FileTagImportRunSummary.deserialize(results[0])
         assert summary.raw_data_instance.value == "PRIMARY"
         assert summary.file_tag_import_state == JobRunState.FAILED
-        assert len(summary.file_import_runs) == 3
-        for i, run in enumerate(
-            sorted(summary.file_import_runs, key=lambda x: x.file_id)
-        ):
-            assert run.file_import_status == file_imports[i].import_status
-            assert run.error_message == file_imports[i].error_message
-
+        assert len(summary.failed_file_import_runs) == 1
+        for run in sorted(summary.failed_file_import_runs, key=lambda x: x.file_id):
+            assert run.file_import_status == file_imports[0].import_status
+            assert run.error_message == file_imports[0].error_message
         # OKAY
         # now we invalidate the failure (file_id: 1) -- it should still show up!
 
@@ -615,9 +604,7 @@ ValueError: known_values for tagBasic must not be empty""",
         summary = FileTagImportRunSummary.deserialize(results[0])
         assert summary.raw_data_instance.value == "PRIMARY"
         assert summary.file_tag_import_state == JobRunState.FAILED
-        assert len(summary.file_import_runs) == 3
-        for i, run in enumerate(
-            sorted(summary.file_import_runs, key=lambda x: x.file_id)
-        ):
-            assert run.file_import_status == file_imports[i].import_status
-            assert run.error_message == file_imports[i].error_message
+        assert len(summary.failed_file_import_runs) == 1
+        for run in sorted(summary.failed_file_import_runs, key=lambda x: x.file_id):
+            assert run.file_import_status == file_imports[0].import_status
+            assert run.error_message == file_imports[0].error_message

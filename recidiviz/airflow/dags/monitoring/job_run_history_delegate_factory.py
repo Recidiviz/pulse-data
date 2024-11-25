@@ -28,6 +28,9 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
 from recidiviz.airflow.dags.monitoring.job_run_history_delegate import (
     JobRunHistoryDelegate,
 )
+from recidiviz.airflow.dags.monitoring.raw_data_file_tag_task_run_history_delegate import (
+    RawDataFileTagTaskRunHistoryDelegate,
+)
 from recidiviz.airflow.dags.utils.environment import get_project_id
 
 
@@ -42,7 +45,10 @@ class JobRunHistoryDelegateFactory:
             return [AirflowTaskRunHistoryDelegate(dag_id=dag_id)]
 
         if dag_id == get_raw_data_import_dag_id(project_id):
-            return [AirflowTaskRunHistoryDelegate(dag_id=dag_id)]
+            return [
+                AirflowTaskRunHistoryDelegate(dag_id=dag_id),
+                RawDataFileTagTaskRunHistoryDelegate(dag_id=dag_id),
+            ]
 
         if dag_id == get_monitoring_dag_id(project_id):
             return [AirflowTaskRunHistoryDelegate(dag_id=dag_id)]

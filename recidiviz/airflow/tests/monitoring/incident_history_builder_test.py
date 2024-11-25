@@ -45,6 +45,7 @@ from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 
 _PROJECT_ID = "recidiviz-testing"
 _TEST_DAG_ID = "test_dag"
+_MULTIPLE_DELEGATE_DAG = "multiple_delegate_dag"
 
 
 class FakeJobRunHistoryDelegateFactory(JobRunHistoryDelegateFactory):
@@ -52,6 +53,13 @@ class FakeJobRunHistoryDelegateFactory(JobRunHistoryDelegateFactory):
     def build(cls, *, dag_id: str) -> list[JobRunHistoryDelegate]:
         if dag_id == _TEST_DAG_ID:
             return [AirflowTaskRunHistoryDelegate(dag_id=dag_id)]
+
+        if dag_id == _MULTIPLE_DELEGATE_DAG:
+            return [
+                AirflowTaskRunHistoryDelegate(dag_id=dag_id),
+                AirflowTaskRunHistoryDelegate(dag_id=dag_id),
+                AirflowTaskRunHistoryDelegate(dag_id=dag_id),
+            ]
 
         raise ValueError(f"Unrecognized DAG :{dag_id}")
 
@@ -243,6 +251,85 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
             self.assertEqual(
                 incidents[incident_key].failed_execution_dates,
                 [july_ninth.execution_date, july_eleventh.execution_date],
+            )
+
+    def test_graph_task_upstream_failed_duplicate_delegates(self) -> None:
+        """
+        Given a task has consecutively failed, but its upstream task failed in between
+
+                    2023-07-09 2023-07-10 2023-07-11
+        parent_task 🟥         🟧         🟥
+
+        Assert that an incident is only reported once
+        """
+        multi_test_dag = DAG(
+            dag_id=_MULTIPLE_DELEGATE_DAG,
+            start_date=datetime.datetime(year=2023, month=6, day=21),
+            schedule=None,
+        )
+
+        multi_parent_task = dummy_task(multi_test_dag, "parent_task")
+        multi_child_task = dummy_task(multi_test_dag, "child_task")
+        multi_parent_task >> multi_child_task
+
+        with self._get_session() as session:
+            july_ninth = dummy_dag_run(multi_test_dag, "2023-07-09 12:00")
+            july_ninth_ti = dummy_ti(multi_parent_task, july_ninth, "failed")
+
+            july_tenth = dummy_dag_run(multi_test_dag, "2023-07-10 12:00")
+            july_tenth_ti = dummy_ti(multi_parent_task, july_tenth, "upstream_failed")
+
+            july_eleventh = dummy_dag_run(multi_test_dag, "2023-07-11 12:00")
+            july_eleventh_ti = dummy_ti(multi_parent_task, july_eleventh, "failed")
+
+            session.add_all(
+                [
+                    july_ninth,
+                    july_ninth_ti,
+                    july_tenth,
+                    july_tenth_ti,
+                    july_eleventh,
+                    july_eleventh_ti,
+                ]
+            )
+            session.commit()
+
+            # validate job run history
+            job_run_history = AirflowTaskRunHistoryDelegate(
+                dag_id=multi_test_dag.dag_id
+            ).fetch_job_runs(
+                lookback=TEST_START_DATE_LOOKBACK,
+            )
+
+            self.assertSetEqual(
+                set(job_run_history),
+                read_csv_fixture_for_delegate(
+                    "test_graph_task_upstream_failed_duplicate_delegates.csv"
+                ),
+            )
+
+            # validate incident history
+            incidents = IncidentHistoryBuilder(dag_id=multi_test_dag.dag_id).build(
+                lookback=TEST_START_DATE_LOOKBACK
+            )
+            incident_key = (
+                "multiple_delegate_dag.parent_task, started: 2023-07-09 12:00 UTC"
+            )
+            self.assertListEqual(list(incidents.keys()), [incident_key])
+            self.assertEqual(
+                set(incidents[incident_key].failed_execution_dates),
+                {july_ninth.execution_date, july_eleventh.execution_date},
+            )
+            self.assertEqual(
+                incidents[incident_key].failed_execution_dates,
+                [
+                    july_ninth.execution_date,
+                    july_eleventh.execution_date,
+                    july_ninth.execution_date,
+                    july_eleventh.execution_date,
+                    july_ninth.execution_date,
+                    july_eleventh.execution_date,
+                ],
             )
 
     @patch(

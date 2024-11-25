@@ -22,7 +22,7 @@ from typing import Any, Iterator
 
 import attr
 
-from recidiviz.airflow.dags.monitoring.job_run import JobRunState
+from recidiviz.airflow.dags.monitoring.job_run import JobRun, JobRunState
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
 )
@@ -32,8 +32,8 @@ from recidiviz.utils.airflow_types import BaseResult
 
 
 @attr.define
-class BigQueryFileImportRunSummary(BaseResult):
-    """Metadata about a single "conceptual" file's import status."""
+class BigQueryFailedFileImportRunSummary(BaseResult):
+    """Metadata about a single "conceptual" file's failed import status."""
 
     file_id: int
     update_datetime: datetime.datetime
@@ -51,9 +51,9 @@ class BigQueryFileImportRunSummary(BaseResult):
         )
 
     @staticmethod
-    def deserialize(json_str: str) -> "BigQueryFileImportRunSummary":
+    def deserialize(json_str: str) -> "BigQueryFailedFileImportRunSummary":
         json_obj = json.loads(json_str)
-        return BigQueryFileImportRunSummary(
+        return BigQueryFailedFileImportRunSummary(
             file_id=json_obj[0],
             update_datetime=datetime.datetime.fromisoformat(json_obj[1]),
             file_import_status=DirectIngestRawFileImportStatus(json_obj[2]),
@@ -61,12 +61,12 @@ class BigQueryFileImportRunSummary(BaseResult):
         )
 
     @classmethod
-    def from_db_json(cls, db_json: dict) -> "BigQueryFileImportRunSummary":
-        return BigQueryFileImportRunSummary(
+    def from_db_json(cls, db_json: dict) -> "BigQueryFailedFileImportRunSummary":
+        return BigQueryFailedFileImportRunSummary(
             file_id=db_json["file_id"],
             update_datetime=datetime.datetime.fromisoformat(db_json["update_datetime"]),
             file_import_status=DirectIngestRawFileImportStatus(
-                db_json["file_import_status"]
+                db_json["failed_file_import_status"]
             ),
             error_message=db_json["error_message"],
         )
@@ -86,17 +86,17 @@ class FileTagImportRunSummary(BaseResult):
     raw_data_instance: DirectIngestInstance
     file_tag: str
     file_tag_import_state: JobRunState
-    file_import_runs: list[BigQueryFileImportRunSummary]
+    failed_file_import_runs: list[BigQueryFailedFileImportRunSummary]
 
     def _format_file_import_run(
-        self, file_import_run: BigQueryFileImportRunSummary
+        self, file_import_run: BigQueryFailedFileImportRunSummary
     ) -> str:
         return f"[{self.file_tag}] with update_datetime [{file_import_run.update_datetime.isoformat()}] and file_id [{file_import_run.file_id}] failed: \n{file_import_run.error_message}"
 
-    def failed_import_runs(self) -> Iterator[BigQueryFileImportRunSummary]:
+    def failed_import_runs(self) -> Iterator[BigQueryFailedFileImportRunSummary]:
         return filter(
             lambda x: x.file_import_status == JobRunState.FAILED,
-            self.file_import_runs,
+            self.failed_file_import_runs,
         )
 
     def format_error_message(self) -> str:
@@ -108,6 +108,9 @@ class FileTagImportRunSummary(BaseResult):
             self._format_file_import_run(failure) for failure in ascending_failures
         )
 
+    def job_id(self) -> str:
+        return f"{self.state_code.value}.{self.raw_data_instance.value}.{self.file_tag}"
+
     def serialize(self) -> str:
         return json.dumps(
             [
@@ -116,7 +119,7 @@ class FileTagImportRunSummary(BaseResult):
                 self.raw_data_instance.value,
                 self.file_tag,
                 self.file_tag_import_state.value,
-                [import_run.serialize() for import_run in self.file_import_runs],
+                [import_run.serialize() for import_run in self.failed_file_import_runs],
             ]
         )
 
@@ -129,8 +132,8 @@ class FileTagImportRunSummary(BaseResult):
             raw_data_instance=DirectIngestInstance(json_obj[2]),
             file_tag=json_obj[3],
             file_tag_import_state=JobRunState(json_obj[4]),
-            file_import_runs=[
-                BigQueryFileImportRunSummary.deserialize(import_run)
+            failed_file_import_runs=[
+                BigQueryFailedFileImportRunSummary.deserialize(import_run)
                 for import_run in json_obj[5]
             ],
         )
@@ -144,7 +147,7 @@ class FileTagImportRunSummary(BaseResult):
         raw_data_instance_str: str,
         file_tag: str,
         file_tag_import_state_int: int,
-        file_import_runs_json: list[dict[str, Any]],
+        failed_file_import_runs_json: list[dict[str, Any]] | None,
     ) -> "FileTagImportRunSummary":
         return FileTagImportRunSummary(
             import_run_start=import_run_start,
@@ -152,8 +155,23 @@ class FileTagImportRunSummary(BaseResult):
             raw_data_instance=DirectIngestInstance(raw_data_instance_str.upper()),
             file_tag=file_tag,
             file_tag_import_state=JobRunState(file_tag_import_state_int),
-            file_import_runs=[
-                BigQueryFileImportRunSummary.from_db_json(import_run_json)
-                for import_run_json in file_import_runs_json
-            ],
+            failed_file_import_runs=(
+                [
+                    BigQueryFailedFileImportRunSummary.from_db_json(import_run_json)
+                    for import_run_json in failed_file_import_runs_json
+                ]
+                if failed_file_import_runs_json is not None
+                else []
+            ),
+        )
+
+    def as_job_run(self, dag_id: str) -> JobRun:
+        return JobRun(
+            dag_id=dag_id,
+            execution_date=self.import_run_start,
+            dag_run_config=json.dumps(
+                {"ingest_instance": self.raw_data_instance.value}
+            ),
+            job_id=self.job_id(),
+            state=self.file_tag_import_state,
         )
