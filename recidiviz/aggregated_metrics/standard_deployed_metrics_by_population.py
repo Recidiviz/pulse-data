@@ -151,7 +151,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     VIOLATIONS,
     VIOLATIONS_BY_TYPE_METRICS,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
 

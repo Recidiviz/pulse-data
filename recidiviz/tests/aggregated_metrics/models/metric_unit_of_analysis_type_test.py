@@ -19,7 +19,7 @@
 import re
 import unittest
 
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,

@@ -16,6 +16,13 @@
 # =============================================================================
 """Generates view builder creating spans of assignment to a level of analysis for a specified population"""
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
+from recidiviz.aggregated_metrics.models.metric_population_type import (
+    MetricPopulationType,
+)
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
@@ -29,13 +36,6 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_intersection_spans,
     create_sub_sessions_with_attributes,
     list_to_query_string,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    MetricPopulationType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
-    MetricUnitOfAnalysisType,
 )
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (

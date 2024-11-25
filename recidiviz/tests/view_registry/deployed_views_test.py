@@ -32,6 +32,12 @@ from recidiviz.aggregated_metrics.impact_reports_aggregated_metrics_view_collect
 from recidiviz.aggregated_metrics.legacy.collect_standard_aggregated_metric_views import (
     collect_standard_legacy_aggregated_metric_views,
 )
+from recidiviz.aggregated_metrics.models.metric_population_type import (
+    MetricPopulationType,
+)
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
@@ -45,12 +51,6 @@ from recidiviz.calculator.query.state.views.analyst_data.all_task_eligibility_sp
 )
 from recidiviz.calculator.query.state.views.analyst_data.all_task_type_ineligible_criteria_sessions import (
     ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    MetricPopulationType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events import (
     WORKFLOWS_PERSON_EVENTS_VIEW_BUILDER,

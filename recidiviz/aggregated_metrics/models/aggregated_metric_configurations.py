@@ -33,14 +33,14 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     MiscAggregatedMetric,
     SumSpanDaysMetric,
 )
-from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
-    CASELOAD_CATEGORIES_BY_CATEGORY_TYPE,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
+    CASELOAD_CATEGORIES_BY_CATEGORY_TYPE,
 )
 from recidiviz.calculator.query.state.views.sessions.justice_impact_sessions import (
     JusticeImpactType,

@@ -36,14 +36,14 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
     get_static_attributes_query_for_unit_of_analysis,
 )
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )

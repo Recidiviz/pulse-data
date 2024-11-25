@@ -21,8 +21,6 @@ from typing import Dict, List, Optional
 import attr
 
 
-# TODO(#29291): Unit of analysis types / constants to the recidiviz.aggregated_metrics
-#  package
 class MetricUnitOfAnalysisType(Enum):
     """A unit of analysis is the entity that you wish to say something about at the end
     of your study.

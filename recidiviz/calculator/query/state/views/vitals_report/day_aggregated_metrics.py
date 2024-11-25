@@ -25,14 +25,14 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_POPULATION_CONTACT_OVERDUE,
     AVG_DAILY_POPULATION_CONTACT_REQUIRED,
 )
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import VITALS_REPORT_DATASET
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.dataset_config import VITALS_REPORT_DATASET
 from recidiviz.common.date import current_datetime_us_eastern
 from recidiviz.tools.analyst.aggregated_metrics_utils import (
     get_legacy_custom_aggregated_metrics_query_template,

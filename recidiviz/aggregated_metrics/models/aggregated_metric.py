@@ -21,13 +21,13 @@ from typing import Generic, List, Optional
 
 import attr
 
-from recidiviz.calculator.query.bq_utils import nonnull_current_date_exclusive_clause
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.calculator.query.bq_utils import nonnull_current_date_exclusive_clause
 from recidiviz.common import attr_validators
 from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType

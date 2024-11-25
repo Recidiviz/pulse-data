@@ -30,10 +30,10 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     CONTACTS_ATTEMPTED,
     DAYS_EMPLOYED_365,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
 

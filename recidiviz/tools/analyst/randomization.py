@@ -21,12 +21,12 @@ import pandas as pd
 from google.cloud.bigquery.enums import StandardSqlTypeNames as BigQueryFieldType
 from scipy import stats
 
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.state.dataset_config import (
     MANUALLY_UPDATED_SOURCE_TABLES_DATASET,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
 )
 from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
     build_source_table_repository_for_externally_managed_tables,

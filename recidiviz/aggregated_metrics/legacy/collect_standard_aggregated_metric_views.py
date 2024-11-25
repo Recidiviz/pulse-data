@@ -20,6 +20,9 @@
 from recidiviz.aggregated_metrics.legacy.aggregated_metric_view_collector import (
     collect_legacy_aggregated_metrics_view_builders,
 )
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
     METRICS_BY_POPULATION_TYPE,
 )
@@ -27,9 +30,6 @@ from recidiviz.aggregated_metrics.standard_deployed_unit_of_analysis_types_by_po
     UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
-)
 
 _UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS: list[
     MetricUnitOfAnalysisType

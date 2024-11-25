@@ -23,17 +23,17 @@ from recidiviz.aggregated_metrics.legacy.aggregated_metric_view_collector import
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
 )
+from recidiviz.aggregated_metrics.models.metric_population_type import (
+    MetricPopulationType,
+)
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state.dataset_config import OUTLIERS_VIEWS_DATASET
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    MetricPopulationType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
-)
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
 )

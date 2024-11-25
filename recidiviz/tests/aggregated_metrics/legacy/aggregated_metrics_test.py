@@ -21,10 +21,10 @@ import unittest
 from recidiviz.aggregated_metrics.legacy.aggregated_metrics import (
     generate_aggregated_metrics_view_builder,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysisType,
 )

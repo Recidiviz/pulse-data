@@ -19,13 +19,13 @@ from recidiviz.aggregated_metrics.assignment_sessions_view_builder import (
     generate_metric_assignment_sessions_view_builder,
     has_configured_assignment_query,
 )
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )

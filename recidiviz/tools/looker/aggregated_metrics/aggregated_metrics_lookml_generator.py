@@ -38,14 +38,14 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     VIOLATION_RESPONSES,
     VIOLATIONS,
 )
-from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
-    METRICS_BY_POPULATION_TYPE,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
+)
+from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
+    METRICS_BY_POPULATION_TYPE,
 )
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (

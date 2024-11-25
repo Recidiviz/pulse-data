@@ -15,14 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Metrics that are aggregated at the state or caseload level and used as the benchmarks/targets."""
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
-    MetricUnitOfAnalysisType,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_metrics_helpers import (
     supervision_metric_query_template,
 )

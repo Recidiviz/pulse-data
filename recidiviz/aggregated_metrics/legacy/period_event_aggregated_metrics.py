@@ -27,16 +27,16 @@ from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePer
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodEventAggregatedMetric,
 )
+from recidiviz.aggregated_metrics.models.metric_population_type import (
+    MetricPopulationType,
+)
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysis,
+)
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     join_on_columns_fragment,
     nonnull_end_date_clause,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    MetricPopulationType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysis,
 )
 from recidiviz.observations.dataset_config import dataset_for_observation_type_cls
 from recidiviz.observations.event_type import EventType

@@ -33,11 +33,11 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodSpanAggregatedMetric,
     SpanMetricConditionsMixin,
 )
+from recidiviz.aggregated_metrics.models.metric_population_type import (
+    MetricPopulationType,
+)
 from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
     METRICS_BY_POPULATION_TYPE,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    MetricPopulationType,
 )
 from recidiviz.common.constants.state.state_person import StateGender, StateRace
 from recidiviz.common.str_field_utils import snake_to_title

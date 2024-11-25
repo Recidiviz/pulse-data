@@ -38,11 +38,11 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     SpanDistinctUnitCountMetric,
     SumSpanDaysMetric,
 )
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysis,
+)
 from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
     METRICS_BY_POPULATION_TYPE,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysis,
 )
 from recidiviz.looker.lookml_view_field import (
     DimensionLookMLViewField,

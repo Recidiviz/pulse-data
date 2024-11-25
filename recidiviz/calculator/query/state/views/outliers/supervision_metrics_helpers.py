@@ -18,11 +18,11 @@
 from typing import Optional
 
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
-from recidiviz.calculator.query.bq_utils import list_to_query_string
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
 )
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states_for_bigquery,
 )

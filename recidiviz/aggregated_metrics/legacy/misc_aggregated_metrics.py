@@ -26,18 +26,18 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_CASELOAD_OFFICER,
     PROP_PERIOD_WITH_CRITICAL_CASELOAD,
 )
+from recidiviz.aggregated_metrics.models.metric_population_type import (
+    MetricPopulationType,
+)
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysis,
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     nonnull_current_date_clause,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    MetricPopulationType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysis,
-    MetricUnitOfAnalysisType,
 )
 
 # List of [MetricPopulationType, MetricUnitOfAnalysisType] tuples that are supported by

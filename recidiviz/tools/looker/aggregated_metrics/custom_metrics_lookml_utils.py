@@ -33,6 +33,14 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
 )
+from recidiviz.aggregated_metrics.models.metric_population_type import (
+    MetricPopulationType,
+)
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysisType,
+    get_static_attributes_query_for_unit_of_analysis,
+)
 from recidiviz.aggregated_metrics.standard_deployed_unit_of_analysis_types_by_population_type import (
     UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
 )
@@ -44,14 +52,6 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
     revert_nonnull_end_date_clause,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    MetricPopulationType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
-    MetricUnitOfAnalysisType,
-    get_static_attributes_query_for_unit_of_analysis,
 )
 from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.looker.lookml_view import LookMLView

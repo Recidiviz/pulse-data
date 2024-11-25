@@ -20,7 +20,7 @@ from typing import List, Sequence
 
 from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
 )
 

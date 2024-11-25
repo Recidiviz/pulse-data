@@ -17,16 +17,16 @@
 """Aggregated metrics at the officer-level for supervision-related metrics"""
 from typing import List, Literal, LiteralString
 
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     InsightsCaseloadCategoryType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
-    MetricUnitOfAnalysisType,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states_for_bigquery,

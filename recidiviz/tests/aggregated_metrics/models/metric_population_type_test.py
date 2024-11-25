@@ -22,7 +22,7 @@ import unittest
 from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
     get_standard_population_selector_for_unit_of_observation,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
 from recidiviz.observations.metric_unit_of_observation_type import (
