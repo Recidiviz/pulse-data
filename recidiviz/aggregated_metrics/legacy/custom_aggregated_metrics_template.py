@@ -50,7 +50,7 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
     get_static_attributes_query_for_unit_of_analysis,
 )
@@ -131,7 +131,7 @@ def get_legacy_custom_aggregated_metrics_query_template(
         raise ValueError(
             f"Unsupported population and unit of analysis pair: {unit_of_analysis_type.value}, {population_type.value}"
         )
-    unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
+    unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
     time_period_cte = _get_time_period_cte(
         time_interval_unit,
         time_interval_length,

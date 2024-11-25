@@ -16,7 +16,6 @@
 # =============================================================================
 """Metrics that are aggregated at the state or caseload level and used as the benchmarks/targets."""
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysisType,
 )
 from recidiviz.big_query.selected_columns_big_query_view import (
@@ -72,13 +71,13 @@ statewide_iqrs AS (
         metric_value,
         value_type
         FROM (
-            {supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.STATE_CODE])}
+            {supervision_metric_query_template(unit_of_analysis_type=MetricUnitOfAnalysisType.STATE_CODE)}
         )
     
     UNION ALL
     
     SELECT * FROM (
-        {supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY], dataset_id=dataset_config.OUTLIERS_VIEWS_DATASET)}
+        {supervision_metric_query_template(unit_of_analysis_type=MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY, dataset_id=dataset_config.OUTLIERS_VIEWS_DATASET)}
     )
     WHERE category_type != "ALL"
 )

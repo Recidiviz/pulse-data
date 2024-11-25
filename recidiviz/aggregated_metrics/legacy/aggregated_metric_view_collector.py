@@ -51,7 +51,7 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
 )
 from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
@@ -112,7 +112,7 @@ def collect_legacy_aggregated_metrics_view_builders(
                 in units_of_analysis_to_exclude_from_non_assignment_views
             ):
                 continue
-            unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
+            unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
 
             # Build metric builder views by type
             # PeriodSpanAggregatedMetric

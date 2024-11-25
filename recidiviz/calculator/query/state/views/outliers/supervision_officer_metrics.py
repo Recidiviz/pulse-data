@@ -18,7 +18,6 @@
 from typing import List, Literal, LiteralString
 
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysisType,
 )
 from recidiviz.big_query.selected_columns_big_query_view import (
@@ -155,7 +154,7 @@ filtered_supervision_officer_aggregated_metrics AS (
   {format_state_specific_officer_aggregated_metric_filters()}
 ),
 supervision_officer_metrics AS (
-    {supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.SUPERVISION_OFFICER], cte_source="filtered_supervision_officer_aggregated_metrics")}
+    {supervision_metric_query_template(unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER, cte_source="filtered_supervision_officer_aggregated_metrics")}
 ),
 officer_caseload_categories AS (
     {_OFFICER_CASELOAD_CATEGORIES_CTE}

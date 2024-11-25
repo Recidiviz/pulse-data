@@ -16,7 +16,6 @@
 # =============================================================================
 """Aggregated metrics at the state-level for supervision-related metrics"""
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysisType,
 )
 from recidiviz.big_query.selected_columns_big_query_view import (
@@ -40,7 +39,7 @@ SUPERVISION_STATE_METRICS_QUERY_TEMPLATE = f"""
 
 WITH 
 supervision_state_metrics AS (
-    {supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.STATE_CODE])}
+    {supervision_metric_query_template(unit_of_analysis_type=MetricUnitOfAnalysisType.STATE_CODE)}
 )
 
 SELECT 

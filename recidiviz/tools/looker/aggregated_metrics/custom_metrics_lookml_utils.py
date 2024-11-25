@@ -37,7 +37,7 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
     get_static_attributes_query_for_unit_of_analysis,
 )
@@ -627,7 +627,7 @@ def generate_assignments_view(
         # For all assignment types that already have a materialized metric assignment session in bigquery,
         # generate a query fragment that combines the assignment session view with the static attributes query.
         population_type, unit_of_analysis_type = assignment_types_dict[assignment_type]
-        unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
+        unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
         primary_columns_str = unit_of_analysis.get_primary_key_columns_query_string()
         shared_columns = sorted(
             {
@@ -709,9 +709,9 @@ def generate_assignments_view(
             set(
                 col
                 for (_, unit_of_analysis_type) in assignment_types_dict.values()
-                for col in METRIC_UNITS_OF_ANALYSIS_BY_TYPE[
+                for col in MetricUnitOfAnalysis.for_type(
                     unit_of_analysis_type
-                ].index_columns
+                ).index_columns
             )
         )
     )

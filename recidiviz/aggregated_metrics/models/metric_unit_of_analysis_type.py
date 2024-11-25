@@ -95,73 +95,91 @@ class MetricUnitOfAnalysis:
         prefix_str = f"{prefix}." if prefix else ""
         return ", ".join(f"{prefix_str}{column}" for column in self.index_columns)
 
+    @classmethod
+    def for_type(
+        cls, metric_unit_of_analysis_type: MetricUnitOfAnalysisType
+    ) -> "MetricUnitOfAnalysis":
 
-METRIC_UNITS_OF_ANALYSIS = [
-    MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.FACILITY,
-        primary_key_columns=["state_code", "facility"],
-        static_attribute_columns=["facility_name"],
-    ),
-    MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
-        primary_key_columns=["state_code", "facility_counselor_id"],
-        static_attribute_columns=["facility_counselor_name"],
-    ),
-    MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY,
-        primary_key_columns=["state_code", "caseload_category", "category_type"],
-        static_attribute_columns=[],
-    ),
-    MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.STATE_CODE,
-        primary_key_columns=["state_code"],
-        static_attribute_columns=[],
-    ),
-    MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-        primary_key_columns=["state_code", "district"],
-        static_attribute_columns=["district_name"],
-    ),
-    MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
-        primary_key_columns=["state_code", "district", "office"],
-        static_attribute_columns=["district_name", "office_name"],
-    ),
-    MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.SUPERVISION_UNIT,
-        primary_key_columns=["state_code", "unit_supervisor"],
-        static_attribute_columns=["unit_supervisor_name"],
-    ),
-    MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
-        primary_key_columns=["state_code", "officer_id"],
-        static_attribute_columns=["officer_name"],
-    ),
-    MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
-        primary_key_columns=["state_code", "caseload_id"],
-        static_attribute_columns=[],
-    ),
-    MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.LOCATION_DETAIL,
-        primary_key_columns=["state_code", "location_detail_id"],
-        static_attribute_columns=[],
-    ),
-    MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.LOCATION,
-        primary_key_columns=["state_code", "location_name"],
-        static_attribute_columns=[],
-    ),
-    MetricUnitOfAnalysis(
-        type=MetricUnitOfAnalysisType.PERSON_ID,
-        primary_key_columns=["state_code", "person_id"],
-        static_attribute_columns=[],
-    ),
-]
+        match metric_unit_of_analysis_type:
+            case MetricUnitOfAnalysisType.FACILITY:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.FACILITY,
+                    primary_key_columns=["state_code", "facility"],
+                    static_attribute_columns=["facility_name"],
+                )
+            case MetricUnitOfAnalysisType.FACILITY_COUNSELOR:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
+                    primary_key_columns=["state_code", "facility_counselor_id"],
+                    static_attribute_columns=["facility_counselor_name"],
+                )
+            case MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY,
+                    primary_key_columns=[
+                        "state_code",
+                        "caseload_category",
+                        "category_type",
+                    ],
+                    static_attribute_columns=[],
+                )
+            case MetricUnitOfAnalysisType.STATE_CODE:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.STATE_CODE,
+                    primary_key_columns=["state_code"],
+                    static_attribute_columns=[],
+                )
+            case MetricUnitOfAnalysisType.SUPERVISION_DISTRICT:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+                    primary_key_columns=["state_code", "district"],
+                    static_attribute_columns=["district_name"],
+                )
+            case MetricUnitOfAnalysisType.SUPERVISION_OFFICE:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+                    primary_key_columns=["state_code", "district", "office"],
+                    static_attribute_columns=["district_name", "office_name"],
+                )
+            case MetricUnitOfAnalysisType.SUPERVISION_UNIT:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+                    primary_key_columns=["state_code", "unit_supervisor"],
+                    static_attribute_columns=["unit_supervisor_name"],
+                )
+            case MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+                    primary_key_columns=["state_code", "officer_id"],
+                    static_attribute_columns=["officer_name"],
+                )
+            case MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
+                    primary_key_columns=["state_code", "caseload_id"],
+                    static_attribute_columns=[],
+                )
+            case MetricUnitOfAnalysisType.LOCATION_DETAIL:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.LOCATION_DETAIL,
+                    primary_key_columns=["state_code", "location_detail_id"],
+                    static_attribute_columns=[],
+                )
+            case MetricUnitOfAnalysisType.LOCATION:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.LOCATION,
+                    primary_key_columns=["state_code", "location_name"],
+                    static_attribute_columns=[],
+                )
+            case MetricUnitOfAnalysisType.PERSON_ID:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.PERSON_ID,
+                    primary_key_columns=["state_code", "person_id"],
+                    static_attribute_columns=[],
+                )
 
-METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {u.type: u for u in METRIC_UNITS_OF_ANALYSIS}
 
-UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT: Dict[
+_UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT: Dict[
     MetricUnitOfAnalysisType, str
 ] = {
     MetricUnitOfAnalysisType.FACILITY: """
@@ -230,8 +248,10 @@ def get_static_attributes_query_for_unit_of_analysis(
     If bq_view is True, includes the `{project_id}` prefix in all view addresses; otherwise,
     removes prefix because we assume the view will be referenced in Looker, where project id is set elsewhere.
     """
-    if unit_of_analysis_type in UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT:
-        query = UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT[unit_of_analysis_type]
+    if unit_of_analysis_type in _UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT:
+        query = _UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT[
+            unit_of_analysis_type
+        ]
         if not bq_view:
             query = query.replace("{project_id}.", "")
         return query

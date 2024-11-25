@@ -25,7 +25,7 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
 )
 
@@ -36,9 +36,9 @@ class GenerateAggregatedMetricsViewBuilderTest(unittest.TestCase):
     def test_no_metrics(self) -> None:
         with self.assertRaises(ValueError):
             generate_aggregated_metrics_view_builder(
-                unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[
+                unit_of_analysis=MetricUnitOfAnalysis.for_type(
                     MetricUnitOfAnalysisType.STATE_CODE
-                ],
+                ),
                 population_type=MetricPopulationType.JUSTICE_INVOLVED,
                 metrics=[],  # no metrics
             )

@@ -20,7 +20,7 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -414,7 +414,7 @@ def generate_metric_assignment_sessions_view_builder(
     Returns a SimpleBigQueryViewBuilder where each row is a continuous time period during which
     a unit of observation is associated with the specified aggregation level indicated by the unit of analysis.
     """
-    unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
+    unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
     unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
 
     unit_of_analysis_name = unit_of_analysis_type.short_name

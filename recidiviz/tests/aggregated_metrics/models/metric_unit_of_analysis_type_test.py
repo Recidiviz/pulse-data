@@ -20,7 +20,6 @@ import re
 import unittest
 
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
 )
@@ -29,8 +28,11 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
 class MetricUnitOfAnalysisByTypeTest(unittest.TestCase):
     # check that index/attribute columns have no repeats
     def test_index_columns_no_repeats(self) -> None:
-        for _, value in METRIC_UNITS_OF_ANALYSIS_BY_TYPE.items():
-            if len(value.index_columns) != len(set(value.index_columns)):
+        for unit_of_analysis_type in MetricUnitOfAnalysisType:
+            unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
+            if len(unit_of_analysis.index_columns) != len(
+                set(unit_of_analysis.index_columns)
+            ):
                 raise ValueError(
                     "MetricUnitOfAnalysisType `primary_key_columns` and `static_attribute_columns`"
                     " cannot have repeated/shared values."
@@ -38,7 +40,7 @@ class MetricUnitOfAnalysisByTypeTest(unittest.TestCase):
 
     # check that short_name only has valid character types
     def test_short_name_char_types(self) -> None:
-        for unit_of_analysis_type, _ in METRIC_UNITS_OF_ANALYSIS_BY_TYPE.items():
+        for unit_of_analysis_type in MetricUnitOfAnalysisType:
             if not re.match(r"^\w+$", unit_of_analysis_type.short_name):
                 raise ValueError(
                     "All characters in MetricUnitOfAnalysisType value must be alphanumeric or underscores."
@@ -57,3 +59,7 @@ class MetricUnitOfAnalysisTest(unittest.TestCase):
         )
         expected_query_string = "my_prefix.region_code, my_prefix.my_officer_id, my_prefix.my_officer_attribute"
         self.assertEqual(query_string, expected_query_string)
+
+    def test_all_units_of_analysis_build(self) -> None:
+        for unit_of_analysis_type in MetricUnitOfAnalysisType:
+            _ = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)

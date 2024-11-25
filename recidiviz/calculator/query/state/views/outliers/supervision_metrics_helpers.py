@@ -35,13 +35,14 @@ from recidiviz.outliers.types import OutliersMetricValueType
 
 
 def supervision_metric_query_template(
-    unit_of_analysis: MetricUnitOfAnalysis,
+    unit_of_analysis_type: MetricUnitOfAnalysisType,
     cte_source: Optional[str] = None,
     dataset_id: Optional[str] = AGGREGATED_METRICS_DATASET_ID,
 ) -> str:
     """
     Helper for querying supervision_<unit_of_analysis>_aggregated_metrics views
     """
+    unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
     shared_subquery_columns = unit_of_analysis.primary_key_columns + [
         "period",
         "end_date",
