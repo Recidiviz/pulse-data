@@ -100,7 +100,11 @@ columns:
           we aren't sure what's happened -- we need the case notes or minute orders to
           understand. Likely a revocation?
       - value: IDLE
+      - value: Max CDD/Expired Jurisdiction
+        description: TODO(#35313) Document this value.
       - value: Not True
+      - value: Not True (Dismiss)
+        description: TODO(#35313) Document this value.
       - value: REFER
       - value: Return To Parole
       - value: Revoke Parole ( Up To 180 Days
