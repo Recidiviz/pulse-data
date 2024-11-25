@@ -70,6 +70,13 @@ class AggregatedMetric:
         # Solution taken from here: https://stackoverflow.com/questions/199059/a-pythonic-way-to-insert-a-space-before-capital-letters
         return re.sub(r"(\w)([A-Z])", r"\1 \2", short_cls_name)
 
+    @classmethod
+    @abc.abstractmethod
+    def metric_class_name_lower(cls) -> str:
+        """Subclasses should return a lowercase name that can be used in view_ids that
+        represents the metric class for this metric.
+        """
+
 
 class MetricConditionsMixin(Generic[ObservationTypeT]):
     """Attributes and functions to derive query snippets for defining a metric"""
@@ -165,6 +172,10 @@ class MiscAggregatedMetric(AggregatedMetric):
     for specific populations and units of analysis, without using events or spans logic
     """
 
+    @classmethod
+    def metric_class_name_lower(cls) -> str:
+        return "misc"
+
     # Populations compatible with metric
     populations: List[MetricPopulationType]
 
@@ -185,6 +196,10 @@ class PeriodSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin):
     Class that stores information about metrics that involve spans and calculate
     aggregations across an entire analysis period.
     """
+
+    @classmethod
+    def metric_class_name_lower(cls) -> str:
+        return "period_span"
 
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
@@ -215,6 +230,10 @@ class AssignmentSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin
     aggregations over some window following assignment, for all assignments during an analysis period.
     """
 
+    @classmethod
+    def metric_class_name_lower(cls) -> str:
+        return "assignment_span"
+
     # Length (in days) of the window following assignment date over which to calculate metric
     window_length_days: int = 365
 
@@ -242,6 +261,10 @@ class PeriodEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMixin):
     aggregations across an entire analysis period.
     """
 
+    @classmethod
+    def metric_class_name_lower(cls) -> str:
+        return "period_event"
+
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
         self,
@@ -266,6 +289,10 @@ class AssignmentEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMix
     Class that stores information about metrics that involve `events` and calculate
     aggregations over some window following assignment, for all assignments during an analysis period.
     """
+
+    @classmethod
+    def metric_class_name_lower(cls) -> str:
+        return "assignment_event"
 
     # Length (in days) of the window following assignment date over which to calculate metric
     window_length_days: int = 365

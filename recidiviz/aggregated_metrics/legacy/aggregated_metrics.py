@@ -125,15 +125,22 @@ Static attribute columns: `{unit_of_analysis.get_static_attribute_columns_query_
 
     # generate FROM clause
     from_clause = ""
-    metric_class_to_table_mapping = {
-        PeriodSpanAggregatedMetric: "period_span",
-        PeriodEventAggregatedMetric: "period_event",
-        AssignmentSpanAggregatedMetric: "assignment_span",
-        AssignmentEventAggregatedMetric: "assignment_event",
-        MiscAggregatedMetric: "misc",
-    }
+    metric_classes = [
+        PeriodSpanAggregatedMetric,
+        PeriodEventAggregatedMetric,
+        AssignmentSpanAggregatedMetric,
+        AssignmentEventAggregatedMetric,
+        MiscAggregatedMetric,
+    ]
 
-    for metric_class, table_name in metric_class_to_table_mapping.items():
+    metric_class: type[PeriodSpanAggregatedMetric] | type[
+        PeriodEventAggregatedMetric
+    ] | type[AssignmentSpanAggregatedMetric] | type[
+        AssignmentEventAggregatedMetric
+    ] | type[
+        MiscAggregatedMetric
+    ]
+    for metric_class in metric_classes:
         # Check if there is a metric of the given class. If so, we need to add the
         # table to the FROM clause.
         if any(
@@ -157,6 +164,7 @@ Static attribute columns: `{unit_of_analysis.get_static_attribute_columns_query_
                 if not misc_metrics_view_builder:
                     continue
 
+            table_name = metric_class.metric_class_name_lower()
             # Add table to the FROM clause
             table_ref = f"`{{project_id}}.aggregated_metrics.{population_name}_{unit_of_analysis_name}_{table_name}_aggregated_metrics_materialized` {table_name}"
             if not from_clause:
