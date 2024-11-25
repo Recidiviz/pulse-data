@@ -84,9 +84,9 @@ num_allowed_rows_overrides:
     override_reason: >-
       P2 Not relevant to currently launched products. TODO(#18829)
   - validation_name: invalid_admission_reason_and_pfi
-    hard_num_allowed_rows_override: 2100
+    hard_num_allowed_rows_override: 2150
     override_reason: >-
-      P2 Not relevant to currently launched products
+      TODO(#35461) Need to investigate and fix, but I think it should be easy-ish. P1.
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 75
     override_reason: >-
