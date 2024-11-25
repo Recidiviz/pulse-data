@@ -20,9 +20,6 @@
 from recidiviz.aggregated_metrics.legacy.aggregated_metric_view_collector import (
     collect_legacy_aggregated_metrics_view_builders,
 )
-from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
-)
 from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
     METRICS_BY_POPULATION_TYPE,
 )
@@ -31,14 +28,6 @@ from recidiviz.aggregated_metrics.standard_deployed_unit_of_analysis_types_by_po
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 
-_UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS: list[
-    MetricUnitOfAnalysisType
-] = [
-    MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
-    MetricUnitOfAnalysisType.LOCATION_DETAIL,
-    MetricUnitOfAnalysisType.LOCATION,
-]
-
 
 def collect_standard_legacy_aggregated_metric_views() -> list[
     SimpleBigQueryViewBuilder
@@ -46,5 +35,4 @@ def collect_standard_legacy_aggregated_metric_views() -> list[
     return collect_legacy_aggregated_metrics_view_builders(
         metrics_by_population_dict=METRICS_BY_POPULATION_TYPE,
         units_of_analysis_by_population_dict=UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
-        units_of_analysis_to_exclude_from_non_assignment_views=_UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS,
     )

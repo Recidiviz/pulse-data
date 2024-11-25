@@ -73,9 +73,6 @@ def collect_legacy_aggregated_metrics_view_builders(
     units_of_analysis_by_population_dict: Dict[
         MetricPopulationType, List[MetricUnitOfAnalysisType]
     ],
-    units_of_analysis_to_exclude_from_non_assignment_views: Optional[
-        List[MetricUnitOfAnalysisType]
-    ] = None,
     dataset_id_override: Optional[str] = None,
 ) -> List[SimpleBigQueryViewBuilder]:
     """
@@ -106,12 +103,6 @@ def collect_legacy_aggregated_metrics_view_builders(
         for unit_of_analysis_type in units_of_analysis_by_population_dict[
             population_type
         ]:
-            # Filter out unit of analysis types for which we don't need materialized metric views
-            if units_of_analysis_to_exclude_from_non_assignment_views and (
-                unit_of_analysis_type
-                in units_of_analysis_to_exclude_from_non_assignment_views
-            ):
-                continue
             unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
 
             # Build metric builder views by type
