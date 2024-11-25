@@ -31,6 +31,26 @@ from recidiviz.observations.span_type import SpanType
 ObservationTypeT = TypeVar("ObservationTypeT", SpanType, EventType)
 
 
+def date_column_names_for_observation_type(
+    observation_type: EventType | SpanType,
+) -> list[str]:
+    """Returns the column in any observation view that contains JSON-packaged attributes
+    about that observation.
+    """
+    if isinstance(observation_type, EventType):
+        return [EventObservationBigQueryViewBuilder.EVENT_DATE_OUTPUT_COL_NAME]
+    if isinstance(observation_type, SpanType):
+        return [
+            SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME,
+            SpanObservationBigQueryViewBuilder.END_DATE_OUTPUT_COL_NAME,
+        ]
+
+    raise ValueError(
+        f"Unexpected type [{type(observation_type)}] for observation_type "
+        f"[{observation_type}]"
+    )
+
+
 def attributes_column_name_for_observation_type(
     observation_type: EventType | SpanType,
 ) -> str:

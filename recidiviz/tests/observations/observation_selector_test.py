@@ -273,11 +273,15 @@ class TestObservationSelector(unittest.TestCase):
         expected_query = """
 SELECT
     state_code,
-    person_id
+    person_id,
+    start_date,
+    end_date
 FROM (
     SELECT
         state_code,
-        person_id
+        person_id,
+        start_date,
+        end_date
     FROM 
         `{project_id}.observations__person_span.compartment_session_materialized`
 )
@@ -305,12 +309,16 @@ WHERE
 SELECT
     state_code,
     person_id,
+    start_date,
+    end_date,
     case_type_start,
     compartment_level_1
 FROM (
     SELECT
         state_code,
         person_id,
+        start_date,
+        end_date,
         JSON_EXTRACT_SCALAR(span_attributes, "$.case_type_start") AS case_type_start,
         JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_1") AS compartment_level_1,
         JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_2") AS compartment_level_2
@@ -338,12 +346,14 @@ WHERE
 SELECT
     state_code,
     person_id,
+    event_date,
     change_type,
     previous_custody_level
 FROM (
     SELECT
         state_code,
         person_id,
+        event_date,
         JSON_EXTRACT_SCALAR(event_attributes, "$.change_type") AS change_type,
         JSON_EXTRACT_SCALAR(event_attributes, "$.previous_custody_level") AS previous_custody_level
     FROM 
@@ -381,12 +391,14 @@ WHERE
 SELECT
     state_code,
     person_id,
+    event_date,
     change_type,
     previous_custody_level
 FROM (
     SELECT
         state_code,
         person_id,
+        event_date,
         JSON_EXTRACT_SCALAR(event_attributes, "$.change_type") AS change_type,
         JSON_EXTRACT_SCALAR(event_attributes, "$.new_custody_level") AS new_custody_level,
         JSON_EXTRACT_SCALAR(event_attributes, "$.previous_custody_level") AS previous_custody_level

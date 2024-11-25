@@ -30,6 +30,7 @@ from recidiviz.observations.metric_unit_of_observation_type import (
 )
 from recidiviz.observations.observation_type_utils import (
     ObservationTypeT,
+    date_column_names_for_observation_type,
     materialized_view_address_for_observation,
     observation_attribute_value_clause,
     observation_type_name_column_for_observation_type,
@@ -171,7 +172,12 @@ class ObservationSelector(Generic[ObservationTypeT]):
         unit_of_observation: MetricUnitOfObservation = MetricUnitOfObservation(
             type=observation_type.unit_of_observation_type
         )
-        observation_column_strs = [*unit_of_observation.primary_key_columns_ordered]
+        unmodified_observation_columns: list[str] = [
+            *unit_of_observation.primary_key_columns_ordered,
+            *date_column_names_for_observation_type(observation_type),
+        ]
+
+        observation_column_strs = [*unmodified_observation_columns]
         for attribute in sorted(
             {*attribute_columns_in_filters, *output_attribute_columns}
         ):
@@ -208,7 +214,7 @@ FROM
             filters_str = "\nOR ".join(f"( {clause} )" for clause in filter_clauses)
 
         output_columns = [
-            *unit_of_observation.primary_key_columns_ordered,
+            *unmodified_observation_columns,
             *sorted(output_attribute_columns),
         ]
         output_columns_str = ",\n".join(output_columns)

@@ -21,6 +21,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.observations.event_type import EventType
 from recidiviz.observations.observation_type_utils import (
     attributes_column_name_for_observation_type,
+    date_column_names_for_observation_type,
     materialized_view_address_for_observation,
     observation_attribute_value_clause,
 )
@@ -29,6 +30,16 @@ from recidiviz.observations.span_type import SpanType
 
 class TestObservationTypeUtils(unittest.TestCase):
     """Tests for helpers in observation_type_utils.py"""
+
+    def test_date_column_names_for_observation_type(self) -> None:
+        self.assertEqual(
+            ["event_date"],
+            date_column_names_for_observation_type(EventType.DRUG_SCREEN),
+        )
+        self.assertEqual(
+            ["start_date", "end_date"],
+            date_column_names_for_observation_type(SpanType.SENTENCE_SPAN),
+        )
 
     def test_attributes_column_name_for_observation_type(self) -> None:
         self.assertEqual(
