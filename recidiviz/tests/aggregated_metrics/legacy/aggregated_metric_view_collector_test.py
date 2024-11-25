@@ -18,8 +18,8 @@
 
 import unittest
 
-from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
-    collect_aggregated_metrics_view_builders,
+from recidiviz.aggregated_metrics.legacy.aggregated_metric_view_collector import (
+    collect_legacy_aggregated_metrics_view_builders,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     ASSIGNMENTS,
@@ -48,7 +48,7 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
         """
         # assignment span metric without ASSIGNMENTS
         with self.assertRaises(ValueError):
-            collect_aggregated_metrics_view_builders(
+            collect_legacy_aggregated_metrics_view_builders(
                 metrics_by_population_dict={
                     MetricPopulationType.JUSTICE_INVOLVED: [
                         DAYS_AT_LIBERTY_365,
@@ -63,7 +63,7 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
 
         # assignment event metric without ASSIGNMENTS
         with self.assertRaises(ValueError):
-            collect_aggregated_metrics_view_builders(
+            collect_legacy_aggregated_metrics_view_builders(
                 metrics_by_population_dict={
                     MetricPopulationType.JUSTICE_INVOLVED: [
                         LSIR_ASSESSMENTS_365,
@@ -82,7 +82,7 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
         included with ASSIGNMENTS.
         """
         # assignment span metric with ASSIGNMENTS
-        collect_aggregated_metrics_view_builders(
+        collect_legacy_aggregated_metrics_view_builders(
             metrics_by_population_dict={
                 MetricPopulationType.JUSTICE_INVOLVED: [
                     ASSIGNMENTS,
@@ -97,7 +97,7 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
         )
 
         # assignment event metric with ASSIGNMENTS
-        collect_aggregated_metrics_view_builders(
+        collect_legacy_aggregated_metrics_view_builders(
             metrics_by_population_dict={
                 MetricPopulationType.JUSTICE_INVOLVED: [
                     ASSIGNMENTS,
@@ -117,7 +117,7 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
         has no associated EventCountMetric configured for the same population type.
         """
         with self.assertRaises(ValueError):
-            collect_aggregated_metrics_view_builders(
+            collect_legacy_aggregated_metrics_view_builders(
                 metrics_by_population_dict={
                     MetricPopulationType.JUSTICE_INVOLVED: [
                         LSIR_ASSESSMENTS_AVG_SCORE,
@@ -135,7 +135,7 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
         Test verifies that no error is thrown when a configured EventValueMetric
         has an associated EventCountMetric configured for the same population type.
         """
-        collect_aggregated_metrics_view_builders(
+        collect_legacy_aggregated_metrics_view_builders(
             metrics_by_population_dict={
                 MetricPopulationType.JUSTICE_INVOLVED: [
                     LSIR_ASSESSMENTS_AVG_SCORE,

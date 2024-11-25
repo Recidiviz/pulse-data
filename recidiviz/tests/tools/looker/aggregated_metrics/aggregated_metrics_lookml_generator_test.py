@@ -18,7 +18,7 @@
 
 import unittest
 
-from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
+from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
     METRICS_BY_POPULATION_TYPE,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (

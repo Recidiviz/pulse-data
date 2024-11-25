@@ -35,7 +35,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
 )
 from recidiviz.common.date import current_datetime_us_eastern
 from recidiviz.tools.analyst.aggregated_metrics_utils import (
-    get_custom_aggregated_metrics_query_template,
+    get_legacy_custom_aggregated_metrics_query_template,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -51,7 +51,9 @@ def get_view_builders() -> list[SimpleBigQueryViewBuilder]:
         MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
         MetricUnitOfAnalysisType.STATE_CODE,
     ]:
-        query_template = get_custom_aggregated_metrics_query_template(
+        # TODO(#29291): Migrate to use an optimized custom metrics template builder
+        #  once it exists.
+        query_template = get_legacy_custom_aggregated_metrics_query_template(
             metrics=[
                 AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED,
                 AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE,

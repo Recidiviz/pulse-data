@@ -52,7 +52,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
 )
 from recidiviz.common.date import current_datetime_us_eastern, first_day_of_month
 from recidiviz.tools.analyst.aggregated_metrics_utils import (
-    get_custom_aggregated_metrics_query_template,
+    get_legacy_custom_aggregated_metrics_query_template,
 )
 
 METRICS_BY_TIME_PERIOD: dict[MetricTimePeriod, list[AggregatedMetric]] = {
@@ -187,7 +187,9 @@ def get_impact_reports_aggregated_metrics_view_builders() -> (
             # daily would be:
             #   August report: 2024-08-31 - 2024-09-01
             #   September report: 2024-09-30 - 2024-10-01
-            query_template = get_custom_aggregated_metrics_query_template(
+            # TODO(#29291): Migrate to use an optimized custom metrics template builder
+            #  once it exists.
+            query_template = get_legacy_custom_aggregated_metrics_query_template(
                 metrics=metrics,
                 unit_of_analysis_type=unit_of_analysis_type,
                 population_type=MetricPopulationType.JUSTICE_INVOLVED,
@@ -250,7 +252,9 @@ def construct_weekly_rolling_agg_metric_view_builder(
         # (e.g. 2024-09-30 - 2024-10-07)
         max_end_date = min_end_date + relativedelta(months=1) - relativedelta(days=1)
 
-        query_template = get_custom_aggregated_metrics_query_template(
+        # TODO(#29291): Migrate to use an optimized custom metrics template builder once
+        #  it exists.
+        query_template = get_legacy_custom_aggregated_metrics_query_template(
             metrics=metrics,
             unit_of_analysis_type=unit_of_analysis_type,
             population_type=MetricPopulationType.JUSTICE_INVOLVED,

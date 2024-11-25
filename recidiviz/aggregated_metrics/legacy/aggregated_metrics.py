@@ -24,7 +24,7 @@ from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
     get_standard_population_selector_for_unit_of_observation,
 )
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
-from recidiviz.aggregated_metrics.misc_aggregated_metrics import (
+from recidiviz.aggregated_metrics.legacy.misc_aggregated_metrics import (
     generate_misc_aggregated_metrics_view_builder,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import (

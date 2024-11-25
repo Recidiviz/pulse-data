@@ -24,9 +24,6 @@ To print the contents of a lookml view file for the desired population and unit 
 import argparse
 from typing import List, Optional, Tuple
 
-from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
-    METRICS_BY_POPULATION_TYPE,
-)
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
@@ -40,6 +37,9 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     SUPERVISION_STARTS,
     VIOLATION_RESPONSES,
     VIOLATIONS,
+)
+from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
+    METRICS_BY_POPULATION_TYPE,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulationType,

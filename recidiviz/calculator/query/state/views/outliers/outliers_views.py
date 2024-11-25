@@ -17,8 +17,8 @@
 """All Outliers views."""
 from typing import List
 
-from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
-    collect_aggregated_metrics_view_builders,
+from recidiviz.aggregated_metrics.legacy.aggregated_metric_view_collector import (
+    collect_legacy_aggregated_metrics_view_builders,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
@@ -109,21 +109,23 @@ OUTLIERS_IMPACT_VIEW_BUILDERS_TO_EXPORT: List[BigQueryViewBuilder] = [
     SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 ]
 
-INSIGHTS_AGGREGATED_METRICS_VIEW_BUILDERS: List[
-    SimpleBigQueryViewBuilder
-] = collect_aggregated_metrics_view_builders(
-    metrics_by_population_dict={
-        MetricPopulationType.SUPERVISION: [
-            AVG_DAILY_POPULATION,
-            *AggregatedMetricsCollector.get_metrics(),
-        ]
-    },
-    units_of_analysis_by_population_dict={
-        MetricPopulationType.SUPERVISION: [
-            MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY
-        ]
-    },
-    dataset_id_override=OUTLIERS_VIEWS_DATASET,
+INSIGHTS_AGGREGATED_METRICS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
+    # TODO(#29291): Update to use a collector that produces optimized aggregated
+    #  metric views once that exists.
+    collect_legacy_aggregated_metrics_view_builders(
+        metrics_by_population_dict={
+            MetricPopulationType.SUPERVISION: [
+                AVG_DAILY_POPULATION,
+                *AggregatedMetricsCollector.get_metrics(),
+            ]
+        },
+        units_of_analysis_by_population_dict={
+            MetricPopulationType.SUPERVISION: [
+                MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY
+            ]
+        },
+        dataset_id_override=OUTLIERS_VIEWS_DATASET,
+    )
 )
 
 OUTLIERS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [

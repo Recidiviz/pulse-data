@@ -19,9 +19,6 @@
 import itertools
 from typing import Callable, Optional, Sequence
 
-from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
-    METRICS_BY_POPULATION_TYPE,
-)
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
     AssignmentCountMetric,
@@ -40,6 +37,9 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     MiscAggregatedMetric,
     SpanDistinctUnitCountMetric,
     SumSpanDaysMetric,
+)
+from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
+    METRICS_BY_POPULATION_TYPE,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,

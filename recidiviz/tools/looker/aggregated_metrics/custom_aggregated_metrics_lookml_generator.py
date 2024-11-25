@@ -25,9 +25,6 @@ python -m recidiviz.tools.looker.aggregated_metrics.custom_aggregated_metrics_lo
 import argparse
 import os
 
-from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
-    METRICS_BY_POPULATION_TYPE,
-)
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
@@ -35,6 +32,9 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
     SpanMetricConditionsMixin,
+)
+from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
+    METRICS_BY_POPULATION_TYPE,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulationType,

@@ -18,9 +18,6 @@
 
 from typing import Dict, List, Optional, Tuple
 
-from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
-    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
-)
 from recidiviz.aggregated_metrics.assignment_sessions_view_builder import (
     get_metric_assignment_sessions_materialized_table_address,
     has_configured_assignment_query,
@@ -35,6 +32,9 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
+)
+from recidiviz.aggregated_metrics.standard_deployed_unit_of_analysis_types_by_population_type import (
+    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
 )
 from recidiviz.calculator.query.bq_utils import (
     MAGIC_START_DATE,

@@ -18,16 +18,13 @@
 
 from typing import Sequence
 
-from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
-    METRICS_BY_POPULATION_TYPE,
-    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
-    UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS,
-    collect_aggregated_metrics_view_builders,
-)
 from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
     collect_assignment_sessions_view_builders,
 )
-from recidiviz.aggregated_metrics.metric_time_periods import (
+from recidiviz.aggregated_metrics.legacy.collect_standard_aggregated_metric_views import (
+    collect_standard_legacy_aggregated_metric_views,
+)
+from recidiviz.aggregated_metrics.legacy.metric_time_periods import (
     METRIC_TIME_PERIODS_VIEW_BUILDER,
 )
 from recidiviz.aggregated_metrics.supervision_officer_caseload_count_spans import (
@@ -43,10 +40,6 @@ def get_aggregated_metrics_view_builders() -> Sequence[BigQueryViewBuilder]:
     return [
         METRIC_TIME_PERIODS_VIEW_BUILDER,
         SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
-        *collect_aggregated_metrics_view_builders(
-            metrics_by_population_dict=METRICS_BY_POPULATION_TYPE,
-            units_of_analysis_by_population_dict=UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
-            units_of_analysis_to_exclude_from_non_assignment_views=UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS,
-        ),
+        *collect_standard_legacy_aggregated_metric_views(),
         *collect_assignment_sessions_view_builders(),
     ]

@@ -25,15 +25,12 @@ from unittest.mock import MagicMock, patch
 import sqlglot
 from parameterized import parameterized
 
-from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
-    METRICS_BY_POPULATION_TYPE,
-    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
-    UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS,
-    collect_aggregated_metrics_view_builders,
-)
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.aggregated_metrics.impact_reports_aggregated_metrics_view_collector import (
     get_impact_reports_aggregated_metrics_view_builders,
+)
+from recidiviz.aggregated_metrics.legacy.collect_standard_aggregated_metric_views import (
+    collect_standard_legacy_aggregated_metric_views,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
@@ -383,11 +380,7 @@ class ViewDagInvariantTests(unittest.TestCase):
             *{
                 b.address
                 for b in (
-                    collect_aggregated_metrics_view_builders(
-                        metrics_by_population_dict=METRICS_BY_POPULATION_TYPE,
-                        units_of_analysis_by_population_dict=UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
-                        units_of_analysis_to_exclude_from_non_assignment_views=UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS,
-                    )
+                    collect_standard_legacy_aggregated_metric_views()
                     + get_impact_reports_aggregated_metrics_view_builders()
                     + INSIGHTS_AGGREGATED_METRICS_VIEW_BUILDERS
                     + VITALS_AGGREGATED_METRIC_VIEW_BUILDERS

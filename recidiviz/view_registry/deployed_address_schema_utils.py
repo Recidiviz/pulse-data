@@ -19,7 +19,7 @@ tables.
 """
 from functools import cache
 
-from recidiviz.aggregated_metrics.metric_time_periods import (
+from recidiviz.aggregated_metrics.legacy.metric_time_periods import (
     METRIC_TIME_PERIODS_VIEW_BUILDER,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress

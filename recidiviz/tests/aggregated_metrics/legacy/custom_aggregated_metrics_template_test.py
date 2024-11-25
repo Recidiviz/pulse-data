@@ -21,6 +21,10 @@ from datetime import datetime
 
 import pytz
 
+from recidiviz.aggregated_metrics.legacy.custom_aggregated_metrics_template import (
+    _get_time_period_cte,
+    get_legacy_custom_aggregated_metrics_query_template,
+)
 from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     CONTACTS_ATTEMPTED,
@@ -32,10 +36,6 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
-from recidiviz.tools.analyst.aggregated_metrics_utils import (
-    get_custom_aggregated_metrics_query_template,
-    get_time_period_cte,
-)
 
 
 class TestAggregatedMetricsUtils(unittest.TestCase):
@@ -43,7 +43,7 @@ class TestAggregatedMetricsUtils(unittest.TestCase):
 
     # custom time periods
     def test_get_time_period_cte_custom(self) -> None:
-        my_time_periods_cte = get_time_period_cte(
+        my_time_periods_cte = _get_time_period_cte(
             interval_unit=MetricTimePeriod.WEEK,
             interval_length=19,
             min_end_date=datetime(2020, 1, 4, tzinfo=pytz.timezone("US/Eastern")),
@@ -75,7 +75,7 @@ FROM (
 
     # tests time periods creation when no max date is provided
     def test_get_time_period_cte_no_max_date(self) -> None:
-        my_time_periods_cte = get_time_period_cte(
+        my_time_periods_cte = _get_time_period_cte(
             interval_unit=MetricTimePeriod.QUARTER,
             interval_length=1,
             min_end_date=datetime(2020, 1, 4, tzinfo=pytz.timezone("US/Eastern")),
@@ -107,7 +107,7 @@ FROM (
 
     # tests time periods creation when rolling periods are different than interval periods
     def test_get_time_period_monthly_metrics_yearly_intervals(self) -> None:
-        my_time_periods_cte = get_time_period_cte(
+        my_time_periods_cte = _get_time_period_cte(
             interval_unit=MetricTimePeriod.MONTH,
             interval_length=1,
             min_end_date=datetime(2020, 1, 4, tzinfo=pytz.timezone("US/Eastern")),
@@ -138,7 +138,7 @@ FROM (
         self.assertEqual(expected_time_periods_cte, my_time_periods_cte)
 
     def test_get_time_period_call_without_rolling_params(self) -> None:
-        my_time_periods_cte = get_time_period_cte(
+        my_time_periods_cte = _get_time_period_cte(
             interval_unit=MetricTimePeriod.MONTH,
             interval_length=1,
             min_end_date=datetime(2020, 1, 4, tzinfo=pytz.timezone("US/Eastern")),
@@ -169,7 +169,7 @@ FROM (
     # TODO(#26436): Add more rigorous unit testing for query output
     def test_get_custom_aggregated_metrics_query_template(self) -> None:
         # Test passes if this doesn't crash
-        _ = get_custom_aggregated_metrics_query_template(
+        _ = get_legacy_custom_aggregated_metrics_query_template(
             metrics=[
                 CONTACTS_ATTEMPTED,
                 DAYS_EMPLOYED_365,
@@ -183,7 +183,7 @@ FROM (
             min_end_date=datetime(2023, 1, 1, tzinfo=pytz.timezone("US/Eastern")),
             max_end_date=datetime(2023, 5, 1, tzinfo=pytz.timezone("US/Eastern")),
         )
-        _ = get_custom_aggregated_metrics_query_template(
+        _ = get_legacy_custom_aggregated_metrics_query_template(
             metrics=[
                 CONTACTS_ATTEMPTED,
                 DAYS_EMPLOYED_365,
