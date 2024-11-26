@@ -28,6 +28,9 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
 from recidiviz.airflow.dags.monitoring.dag_registry import get_sftp_dag_id
+from recidiviz.airflow.dags.monitoring.recidiviz_alerting_service import (
+    RecidivzAlertingService,
+)
 from recidiviz.airflow.dags.utils.branch_utils import (
     BRANCH_END_TASK_NAME,
     BRANCH_START_TASK_NAME,
@@ -107,47 +110,55 @@ def _job_is_task_branching_start_or_end(job_id: str) -> bool:
     )
 
 
-def get_alerting_service_for_incident(
+def get_alerting_services_for_incident(
     incident: AirflowAlertingIncident,
-) -> RecidivizPagerDutyService:
-    """Returns the service that the given alerting incident should be attributed to. A
-    PagerDuty alert will be triggered for the given service when that job fails.
-    """
+) -> list[RecidivzAlertingService]:
+    """Returns the service that the given alerting incident should be sent to."""
     project_id = get_project_id()
     dag_id = incident.dag_id
     job_id = incident.job_id
 
     if dag_id == get_sftp_dag_id(project_id):
         if not (state_code := _state_code_from_job_id(job_id)):
-            return RecidivizPagerDutyService.data_platform_airflow_service(
-                project_id=project_id
+            return [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=project_id
+                )
+            ]
+        return [
+            RecidivizPagerDutyService.airflow_service_for_state_code(
+                project_id=project_id, state_code=state_code
             )
-        return RecidivizPagerDutyService.airflow_service_for_state_code(
-            project_id=project_id, state_code=state_code
-        )
+        ]
 
     if _job_id_part_matches(job_id=job_id, regex=DATAFLOW_OPERATOR_TASK_ID):
         state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
-        return RecidivizPagerDutyService.airflow_service_for_state_code(
-            project_id=project_id, state_code=state_code
-        )
+        return [
+            RecidivizPagerDutyService.airflow_service_for_state_code(
+                project_id=project_id, state_code=state_code
+            )
+        ]
 
     # Failures in this job indicate that raw data has been removed or operations tables
     # haven't been properly managed, so route the failure to state-specific on-calls.
     if _job_id_part_matches(job_id=job_id, regex=CHECK_FOR_VALID_WATERMARKS_TASK_ID):
         state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
-        return RecidivizPagerDutyService.airflow_service_for_state_code(
-            project_id=project_id, state_code=state_code
-        )
+        return [
+            RecidivizPagerDutyService.airflow_service_for_state_code(
+                project_id=project_id, state_code=state_code
+            )
+        ]
 
     if _job_is_in_group(
         job_id=job_id, group_id=STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID
     ) and not _job_is_task_branching_start_or_end(job_id):
         state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
-        return RecidivizPagerDutyService.airflow_service_for_state_code(
-            project_id=project_id, state_code=state_code
-        )
+        return [
+            RecidivizPagerDutyService.airflow_service_for_state_code(
+                project_id=project_id, state_code=state_code
+            )
+        ]
 
-    return RecidivizPagerDutyService.data_platform_airflow_service(
-        project_id=project_id
-    )
+    return [
+        RecidivizPagerDutyService.data_platform_airflow_service(project_id=project_id)
+    ]

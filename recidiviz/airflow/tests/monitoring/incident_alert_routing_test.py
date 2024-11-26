@@ -28,7 +28,7 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_sftp_dag_id,
 )
 from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
-    get_alerting_service_for_incident,
+    get_alerting_services_for_incident,
 )
 from recidiviz.airflow.dags.utils.recidiviz_pagerduty_service import (
     RecidivizPagerDutyService,
@@ -53,10 +53,12 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
 
     def test_get_alerting_service_for_incident(self) -> None:
         self.assertEqual(
-            RecidivizPagerDutyService.data_platform_airflow_service(
-                project_id=_PROJECT_ID
-            ),
-            get_alerting_service_for_incident(
+            [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=_PROJECT_ID
+                )
+            ],
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     job_id="initialize_dag.verify_parameters",
@@ -64,10 +66,12 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            RecidivizPagerDutyService.data_platform_airflow_service(
-                project_id=_PROJECT_ID
-            ),
-            get_alerting_service_for_incident(
+            [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=_PROJECT_ID
+                )
+            ],
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     job_id="update_state",
@@ -77,10 +81,12 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
 
         # State-specific metric export failure
         self.assertEqual(
-            RecidivizPagerDutyService.airflow_service_for_state_code(
-                project_id=_PROJECT_ID, state_code=StateCode.US_PA
-            ),
-            get_alerting_service_for_incident(
+            [
+                RecidivizPagerDutyService.airflow_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_PA
+                )
+            ],
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     job_id=(
@@ -93,10 +99,12 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
 
         # Metric export group start / end
         self.assertEqual(
-            RecidivizPagerDutyService.data_platform_airflow_service(
-                project_id=_PROJECT_ID
-            ),
-            get_alerting_service_for_incident(
+            [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=_PROJECT_ID
+                )
+            ],
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     job_id=("metric_exports.state_specific_metric_exports"),
@@ -104,10 +112,12 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            RecidivizPagerDutyService.data_platform_airflow_service(
-                project_id=_PROJECT_ID
-            ),
-            get_alerting_service_for_incident(
+            [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=_PROJECT_ID
+                )
+            ],
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     job_id=(
@@ -117,10 +127,12 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            RecidivizPagerDutyService.data_platform_airflow_service(
-                project_id=_PROJECT_ID
-            ),
-            get_alerting_service_for_incident(
+            [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=_PROJECT_ID
+                )
+            ],
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     job_id="metric_exports.state_specific_metric_exports.branch_end",
@@ -130,10 +142,12 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
 
         # State-specific Dataflow pipeline failure
         self.assertEqual(
-            RecidivizPagerDutyService.airflow_service_for_state_code(
-                project_id=_PROJECT_ID, state_code=StateCode.US_ND
-            ),
-            get_alerting_service_for_incident(
+            [
+                RecidivizPagerDutyService.airflow_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_ND
+                )
+            ],
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     job_id=(
@@ -148,10 +162,12 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
         # tables haven't been properly managed, so route the failure to state-specific
         # on-calls.
         self.assertEqual(
-            RecidivizPagerDutyService.airflow_service_for_state_code(
-                project_id=_PROJECT_ID, state_code=StateCode.US_ND
-            ),
-            get_alerting_service_for_incident(
+            [
+                RecidivizPagerDutyService.airflow_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_ND
+                )
+            ],
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     job_id=(
@@ -164,10 +180,12 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
 
         # Failures in this task indicate general data platform issues
         self.assertEqual(
-            RecidivizPagerDutyService.data_platform_airflow_service(
-                project_id=_PROJECT_ID
-            ),
-            get_alerting_service_for_incident(
+            [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=_PROJECT_ID
+                )
+            ],
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     job_id=(
@@ -181,10 +199,12 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
         # We don't route validation task failures to state-specific services because
         # crashes here are indicative of general infra issues.
         self.assertEqual(
-            RecidivizPagerDutyService.data_platform_airflow_service(
-                project_id=_PROJECT_ID
-            ),
-            get_alerting_service_for_incident(
+            [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=_PROJECT_ID
+                )
+            ],
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     job_id="validations.execute_validations_US_AR",
@@ -194,10 +214,12 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
 
         # Generic tasks in SFTP route to platform
         self.assertEqual(
-            RecidivizPagerDutyService.data_platform_airflow_service(
-                project_id=_PROJECT_ID
-            ),
-            get_alerting_service_for_incident(
+            [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=_PROJECT_ID
+                )
+            ],
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_sftp_dag_id(_PROJECT_ID),
                     job_id="start_sftp",
@@ -207,10 +229,12 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
 
         # All other state-specific SFTP tasks route to that state
         self.assertEqual(
-            RecidivizPagerDutyService.airflow_service_for_state_code(
-                project_id=_PROJECT_ID, state_code=StateCode.US_AR
-            ),
-            get_alerting_service_for_incident(
+            [
+                RecidivizPagerDutyService.airflow_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_AR
+                )
+            ],
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_sftp_dag_id(_PROJECT_ID),
                     job_id="US_AR.check_config",
@@ -224,7 +248,7 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
             r"Found job_id \[.*\] referencing more than one state code. "
             r"References \[US_CA\] and \[US_ND\]",
         ):
-            get_alerting_service_for_incident(
+            get_alerting_services_for_incident(
                 self._make_incident(
                     dag_id=get_calculation_dag_id(_PROJECT_ID),
                     job_id=(
@@ -249,7 +273,7 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
                 r"Job id part \[.*\] references more than one "
                 r"state code: \['US_CA', 'US_ND'\].",
             ):
-                get_alerting_service_for_incident(
+                get_alerting_services_for_incident(
                     self._make_incident(
                         dag_id=get_calculation_dag_id(_PROJECT_ID),
                         job_id=bad_task_id,

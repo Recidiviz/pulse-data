@@ -17,13 +17,20 @@
 """Information about PagerDuty services."""
 
 import attr
+from airflow.providers.sendgrid.utils.emailer import send_email
 
+from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
+    AirflowAlertingIncident,
+)
+from recidiviz.airflow.dags.monitoring.recidiviz_alerting_service import (
+    RecidivzAlertingService,
+)
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 
 
 @attr.define
-class RecidivizPagerDutyService:
+class RecidivizPagerDutyService(RecidivzAlertingService):
     """Structure holding information about a service managed by the Recidiviz repo.
     For the full list of services, see
     https://recidiviz.pagerduty.com/service-directory.
@@ -77,3 +84,13 @@ class RecidivizPagerDutyService:
     @staticmethod
     def _build_integration_email(base_username: str, project_id: str) -> str:
         return f"{base_username}-{project_id}@recidiviz.pagerduty.com"
+
+    def handle_incident(self, incident: AirflowAlertingIncident) -> None:
+        event = (
+            "Task failure:" if incident.next_success_date is None else "Task success:"
+        )
+        send_email(
+            to=self.service_integration_email,
+            subject=f"{event} {incident.unique_incident_id}",
+            html_content=f"{incident}",
+        )

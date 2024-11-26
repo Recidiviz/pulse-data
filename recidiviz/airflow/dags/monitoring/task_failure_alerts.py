@@ -18,11 +18,9 @@ import logging
 from datetime import timedelta
 from pprint import pprint
 
-from airflow.providers.sendgrid.utils.emailer import send_email
-
 from recidiviz.airflow.dags.monitoring.dag_registry import get_all_dag_ids
 from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
-    get_alerting_service_for_incident,
+    get_alerting_services_for_incident,
 )
 from recidiviz.airflow.dags.monitoring.incident_history_builder import (
     IncidentHistoryBuilder,
@@ -78,16 +76,7 @@ def report_failed_tasks() -> None:
             if not should_trigger:
                 continue
 
-            event = (
-                "Task failure:"
-                if incident.next_success_date is None
-                else "Task success:"
-            )
+            alerting_services = get_alerting_services_for_incident(incident)
 
-            alerting_service = get_alerting_service_for_incident(incident)
-
-            send_email(
-                to=alerting_service.service_integration_email,
-                subject=f"{event} {incident.unique_incident_id}",
-                html_content=f"{incident}",
-            )
+            for service in alerting_services:
+                service.handle_incident(incident)

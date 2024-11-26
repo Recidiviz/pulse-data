@@ -31,7 +31,7 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_known_configuration_parameters,
 )
 from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
-    get_alerting_service_for_incident,
+    get_alerting_services_for_incident,
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 
@@ -106,7 +106,7 @@ class TestDagIntegrity(AirflowIntegrationTest):
         self.assertNotEqual(len(dag_bag.dags), 0)
         for dag in dag_bag.dags.values():
             for task_id in dag.task_ids:
-                get_alerting_service_for_incident(
+                get_alerting_services_for_incident(
                     AirflowAlertingIncident(
                         dag_id=dag.dag_id,
                         dag_run_config="{}",
