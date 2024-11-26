@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSElectronicMonitoring
+file_description: |-
+  This table contains electronic monitoring information for adults on parole.
+data_classification: source
+primary_key_cols:
+  - electronicMonitoringId
+columns:
+  - name: electronicMonitoringId
+    description: |-
+      Primary key for table
+  - name: inmateNumber
+    description: |-
+      Unique ID for each individual on parole
+    field_type: person_external_id
+    external_id_type: US_NE_ID_NBR
+    is_pii: True
+  - name: monitoringType
+    description: |-
+      Monitoring type
+  - name: monitoringMethod
+    description: |-
+      Monitoring method
+  - name: dateOn
+    field_type: datetime
+    description: |-
+      Date electronic monitoring put on
+  - name: dateOff
+    field_type: datetime
+    description: |-
+      Date electronic monitoring taken off
+  - name: unitNumber
+    description: |-
+      Unit Number
+  - name: secondaryUnitNumber
+    description: |-
+      Secondary unit number
+  - name: comments
+    description: |-
+      Comments
+    is_pii: True
+  - name: creationDateTime
+    field_type: datetime
+    description: |-
+      Record created when
+  - name: createdByUserid
+    description: |-
+      Record created by
+    is_pii: True
+  - name: lastUpdatedDateTime
+    field_type: datetime
+    description: |-
+      Record last updated when
+  - name: lastUpdatedByUserid
+    description: |-
+      Record last updated by
+    is_pii: True
+  - name: longTermMonitoringTypeCode
+    description: |-
+      Indicator for long term monitoring

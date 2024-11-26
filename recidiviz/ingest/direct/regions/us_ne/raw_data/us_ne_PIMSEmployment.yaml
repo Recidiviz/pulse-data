@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSEmployment
+file_description: |-
+  This table contains employment information for adults on parole
+data_classification: source
+primary_key_cols:
+  - employmentId
+columns:
+  - name: employmentId
+    description: |-
+      Primary key for table
+  - name: inmateNumber
+    description: |-
+      Unique ID for each person on parole
+    field_type: person_external_id
+    external_id_type: US_NE_ID_NBR
+    is_pii: True
+  - name: employerName
+    description: |-
+      Name of employer
+  - name: addressLine1
+    description: |-
+      Address line 1
+    is_pii: True
+  - name: addressLine2
+    description: |-
+      Address Line 2
+    is_pii: True
+  - name: city
+    description: |-
+      City
+  - name: state
+    description: |-
+      State
+  - name: zipCode5
+    description: |-
+      Zip code 5
+  - name: zipCode4
+    description: |-
+      Zip code 4
+  - name: employerPhone
+    description: |-
+      Employer phone number
+    is_pii: True
+  - name: contactPhone
+    description: |-
+      Contact phone
+    is_pii: True
+  - name: contactPerson
+    description: |-
+      Contact person
+    is_pii: True
+  - name: jobTitle
+    description: |-
+      Job title
+  - name: startDate
+    field_type: datetime
+    description: |-
+      Employment start date
+  - name: endDate
+    field_type: datetime
+    description: |-
+      Employment end date
+  - name: employmentStatus
+    description: |-
+      Employment status
+  - name: employmentStatusOther
+    description: |-
+      Employment status other
+  - name: comments
+    description: |-
+      Comments
+    is_pii: True
+  - name: creationDateTime
+    field_type: datetime
+    description: |-
+      Record created when
+  - name: createdByUserid
+    description: |-
+      Record created by
+    is_pii: True
+  - name: lastUpdatedDateTime
+    field_type: datetime
+    description: |-
+      Record last updated when
+  - name: lastUpdatedByUserid
+    description: |-
+      Record last updated by
+    is_pii: True
+  - name: effectiveDate
+    field_type: datetime
+    description: |-
+      Date effective
+  - name: employmentTypeCode
+    description: |-
+      Employment type code

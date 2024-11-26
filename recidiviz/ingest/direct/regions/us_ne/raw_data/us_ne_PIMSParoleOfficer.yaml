@@ -12,7 +12,7 @@ columns:
     is_pii: True
   - name: argusId
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Parole officer system log in
     is_pii: True
   - name: firstName
     description: |-

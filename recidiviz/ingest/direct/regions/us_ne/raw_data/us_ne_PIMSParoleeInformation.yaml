@@ -30,7 +30,7 @@ columns:
       TODO(#31972): Fill in with answers from NE
   - name: fk_paroleOfficerId
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Foreign key to ParoleOfficer table
   - name: dateOfParole
     field_type: datetime
     description: |-

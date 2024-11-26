@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSLSOStatic99Ans
+file_description: |-
+  This table contains Static Assessment information, taken by adults on lifetime sex offense supervision
+data_classification: source
+primary_key_cols:
+  - pk_answerId
+columns:
+  - name: pk_answerId
+    description: |-
+      Primary to
+  - name: fk_raId
+    description: |-
+      Foreign key to PIMSLsoStatic99RA primary key
+  - name: riskCriteria
+    description: |-
+      Risk criteria
+  - name: riskWeight
+    description: |-
+      Risk weight
