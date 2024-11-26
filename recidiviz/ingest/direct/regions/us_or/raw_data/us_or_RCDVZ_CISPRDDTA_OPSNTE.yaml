@@ -8,12 +8,11 @@ primary_key_cols:
   - SENT_NEXT_NUMBER
 columns:
   - name: LAST_UPDATED_WHEN
-    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: EDIS_YN_FLAG
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -40,11 +39,10 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: PROBATION_REVOKE_DATE
-    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
+    field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: WRKREL_REMAINING_RSTR
     description: |-
@@ -71,12 +69,11 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: SUMMIT_DATE_RSTR
-    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
+    field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%d-%b-%y', {col_name})"
   - name: TRNLV_REMAINING_RSTR
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -84,12 +81,11 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: TRNLV_DATE_RSTR
-    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
+    field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%d-%b-%y', {col_name})"
   - name: ORS_SUMMIT_UNTIL_YEARS2
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -127,11 +123,10 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: ORS_WORK_RELE_DT
-    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
+    field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: ORS_WORK_RELE
     description: |-
@@ -199,9 +194,9 @@ columns:
   - name: RECORD_KEY
     description: |-
       Unique identifier for each person.
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_OR_RECORD_KEY
+    is_pii: True
   - name: SENT_NEXT_NUMBER
     description: |-
       Number of the next sentence.

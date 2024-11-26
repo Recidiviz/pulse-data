@@ -12,14 +12,13 @@ columns:
       Date this information was last updated.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y, %I:%M:%S %p', {col_name})"
   - name: RECORD_KEY
     description: |-
       Unique identifier for each person.
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_OR_RECORD_KEY
+    is_pii: True
   - name: LAST_UPDATE_LOCATION
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -28,8 +27,7 @@ columns:
       TODO(#17148): Fill in with answer from OR
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y, %I:%M:%S %p', {col_name})"
   - name: PROXY_REASON_CODE
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -59,7 +57,6 @@ columns:
       TODO(#17148): Fill in with answer from OR
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: DATA_SOURCE
     description: |-
@@ -156,5 +153,4 @@ columns:
       Date the assesment was taken.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
-      - "SAFE.PARSE_DATETIME('%m/%D/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
