@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: MRRSAppealCharge
+file_description: |-
+  This file contains appeal charge information for misconduct reports
+data_classification: source
+primary_key_cols:
+  - pk_fk_chargeId
+columns:
+  - name: pk_fk_chargeId
+    description: |-
+      Primary key and foreign key to charge ID table
+  - name: chargeCode
+    description: |-
+      Charge code
+  - name: lossOfGoodCT
+    description: |-
+      Loss of good time
+  - name: fkappealBoardId
+    description: |-
+      Foreign key to appeal board
+  - name: dispositionCode
+    description: |-
+      Disposition code
+  - name: reasonCode
+    description: |-
+      Reason code
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date created
+  - name: createdBy
+    description: |-
+      User created by
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date modified
+  - name: modifiedBy
+    description: |-
+      User modified by
+    is_pii: True

@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: MRRSAppealBoard
+file_description: |-
+  This contains misconduct reports appeal board information
+data_classification: source
+primary_key_cols:
+  - appealBoardId
+columns:
+  - name: appealBoardId
+    description: |-
+      Primary key
+  - name: fkMisconductReportId
+    description: |-
+      Foreign key to Misconduct Report table
+  - name: inmateNumber
+    description: |-
+      Unique ID for each individual involved
+    field_type: person_external_id
+    external_id_type: US_NE_ID_NBR
+    is_pii: True
+  - name: caseNumber
+    description: |-
+      Case number
+    is_pii: True
+  - name: submittingInstitutionCode
+    description: |-
+      Submitting institution code
+  - name: flowStep
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: submittingEmployee
+    description: |-
+      Submitting employee
+    is_pii: True
+  - name: submissionDate
+    field_type: datetime
+    description: |-
+      Date of submission
+  - name: submissionTime
+    description: |-
+      Time of submission
+  - name: hearingDate
+    field_type: datetime
+    description: |-
+      Date of hearing
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date record created
+  - name: createdBy
+    description: |-
+      User created by
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date modified
+  - name: modifiedBy
+    description: |-
+      User modified by
+    is_pii: True
+  - name: finalDecisionDate
+    field_type: datetime
+    description: |-
+      Date of final decision
+  - name: signatureAttorney
+    description: |-
+      Signed by Attorney
+  - name: signatureMemberB
+    description: |-
+      Signed by member B
+  - name: signatureMemberC
+    description: |-
+      Signed by member C
+  - name: additionalComment
+    description: |-
+      Additional comments
+    is_pii: True

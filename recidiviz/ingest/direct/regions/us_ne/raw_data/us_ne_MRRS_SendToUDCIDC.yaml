@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: MRRS_SendToUDCIDC
+file_description: |-
+  TODO(#31972): Fill in with answers from NE
+data_classification: source
+primary_key_cols:
+  - sendToUDCIDCId
+columns:
+  - name: sendToUDCIDCId
+    description: |-
+      Primary key
+  - name: fkMisconductReportId
+    description: |-
+      Foreign key to Misconduct Report
+  - name: sendTo
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: commentsLongInfo
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: sendBy
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: sendOn
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: showToMySendUDCIDCPool
+    description: |-
+      TODO(#31972): Fill in with answers from NE

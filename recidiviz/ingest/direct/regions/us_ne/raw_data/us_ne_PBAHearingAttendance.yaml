@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PBAHearingAttendance
+file_description: |-
+  This table contains Parole Board hearing attendance
+data_classification: source
+primary_key_cols:
+  - pkHearingAttendanceId
+columns:
+  - name: pkHearingAttendanceId
+    description: |-
+      Primary key for the table
+  - name: fkHearingRosterId
+    description: |-
+      Foreign key to Hearing Roster table
+  - name: hearingDate
+    field_type: datetime
+    description: |-
+      Hearing date
+  - name: hearingType
+    description: |-
+      Type of hearing
+  - name: createdBy
+    description: |-
+      User record created by
+    is_pii: True
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date record created
+  - name: modifiedBy
+    description: |-
+      User record modified by
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date record modified
+  - name: hearingLocation
+    description: |-
+      Hearing location
+  - name: version

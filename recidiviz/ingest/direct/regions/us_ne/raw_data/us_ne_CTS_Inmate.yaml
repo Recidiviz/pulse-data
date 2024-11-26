@@ -7,9 +7,12 @@ primary_key_cols:
   - ID_NBR
 columns:
   - name: ID_NBR
+    field_type: person_external_id
     description: |-
       Unique ID number for each person
     is_pii: True
+    external_id_type: US_NE_ID_NBR
+    is_primary_for_external_id_type: True
   - name: NAME_TITLE
     description: |-
       Name title (mr, mrs, etc)

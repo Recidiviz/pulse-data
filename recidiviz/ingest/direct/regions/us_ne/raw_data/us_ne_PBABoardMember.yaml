@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PBABoardMember
+file_description: |-
+  This table countains Parole Board Member information
+data_classification: source
+primary_key_cols:
+  - pkBoardMemberID
+columns:
+  - name: pkBoardMemberID
+    description: |-
+      Primary key, data id for each board member
+    is_pii: True
+  - name: firstName
+    description: |-
+      First name
+    is_pii: True
+  - name: lastName
+    description: |-
+      Last name
+    is_pii: True
+  - name: middleInitial
+    description: |-
+      Middle initial
+    is_pii: True
+  - name: positionCode
+    description: |-
+      Position code
+  - name: ranking
+    description: |-
+      Ranking
+  - name: argusId
+    description: |-
+      Argus ID
+    is_pii: True
+  - name: email
+    description: |-
+      Email
+    is_pii: True
+  - name: inactive
+    description: |-
+      Indicates if member is inactive
+  - name: startDate
+    field_type: datetime
+    description: |-
+      Start date
+  - name: endDate
+    field_type: datetime
+    description: |-
+      End date
+  - name: createdBy
+    description: |-
+      User who created record
+    is_pii: True
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date record created
+  - name: modifiedBy
+    description: |-
+      User modified by
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date modified
+  - name: version

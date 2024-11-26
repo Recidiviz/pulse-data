@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: MRRSAttorney
+file_description: |-
+  This table contains Attorney information for those connected with misconduct reports
+data_classification: source
+primary_key_cols:
+  - attorneyId
+columns:
+  - name: attorneyId
+    description: |-
+      Prikary Key
+  - name: fkAppealBoardId
+    description: |-
+      Foreign key to AppealBoard table
+  - name: appealReceivedByLegalDate
+    field_type: datetime
+    description: |-
+      Appeal received by legal date
+  - name: issuesAndDiscussionLongInfo
+    description: |-
+      Issues and discussion comments
+    is_pii: True
+  - name: conclusionofLawLongInfo
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+    is_pii: True
+  - name: assignedTo
+    description: |-
+      Attorney assigned to
+    is_pii: True
+  - name: boardMemberBCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: boardMemberCCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: showToMyASPool
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date created
+  - name: createdBy
+    description: |-
+      User created by
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date modified
+  - name: modifiedBy
+    description: |-
+      User modified by
+    is_pii: True

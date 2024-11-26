@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PBAHearingReviewSummary
+file_description: |-
+  This file contains Porable Board hearing review summary
+data_classification: source
+primary_key_cols:
+  - pk_pbaSummaryId
+columns:
+  - name: pk_pbaSummaryId
+    description: |-
+      Primary key
+  - name: fk_offenderBoardID
+    description: |-
+      Foreign key to OffenderBoard table
+  - name: fk_initialHearingRosterDetailID
+    description: |-
+      Foreign key to initialHearingRosterDetail
+  - name: fk_reviewHearingRosterDetailID
+    description: |-
+      Foreign key reviewHearingRosterDetail
+  - name: inmateNumber
+    description: |-
+      ID number of individual on supervison or in custody.
+    field_type: person_external_id
+    external_id_type: US_NE_ID_NBR
+    is_pii: True
+  - name: location
+    description: |-
+      Location
+  - name: createdBy
+    description: |-
+      User created by
+    is_pii: True
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date created
+  - name: modifiedBy
+    description: |-
+      User modified by
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date modified
+  - name: fkCustodialSanctionId
+    description: |-
+      Foreign key to CustodialSanction

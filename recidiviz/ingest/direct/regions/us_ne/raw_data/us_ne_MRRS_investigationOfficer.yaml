@@ -1,0 +1,124 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: MRRS_investigationOfficer
+file_description: |-
+  Information on Misconduct investigation officer
+data_classification: source
+primary_key_cols:
+  - investigationOfficerId
+columns:
+  - name: investigationOfficerId
+    description: |-
+      Primary key for the table, not id for each investigative officer
+  - name: fkMisconductReportId
+    description: |-
+      Foreign key to MisconductReport table
+  - name: dateOfHearingBeforeIO
+    field_type: datetime
+    description: |-
+      Date of hearing before IO
+  - name: timeOfHearingBeforeIO
+    description: |-
+      Time of hearing before IO
+  - name: dateOfDiscovery
+    field_type: datetime
+    description: |-
+      Date of discovery
+  - name: timeOfDiscovery
+    description: |-
+      Time of discovery
+  - name: numberOfHoursBetwenInfractionFiling
+    description: |-
+      Number of hours between infraction filing
+  - name: inmatePresent
+    description: |-
+      Flag if person is present
+  - name: inmatePresentCommentLongInfo
+    description: |-
+      Comment on presence
+    is_pii: True
+  - name: representationRequested
+    description: |-
+      Requested representation
+  - name: representationRequestedWho
+    description: |-
+      Who is requested for representation
+    is_pii: True
+  - name: witnessesRequested
+    description: |-
+      Witness requested
+  - name: witnessesRequestedWho
+    description: |-
+      Who is the witness requested
+    is_pii: True
+  - name: dismissalRecommended
+    description: |-
+      Dismissal recommended
+  - name: investigationContinued
+    description: |-
+      Investigation continued
+  - name: investigationContinuedDate
+    field_type: datetime
+    description: |-
+      Investigation continued date
+  - name: investigationContinuedTime
+    description: |-
+      Investigation continued time
+  - name: commentsAndFindingOfFactsLongInfo
+    description: |-
+      Comments and findings
+    is_pii: True
+  - name: recommendedDateOfDisciplinaryCommitteeHearing
+    field_type: datetime
+    description: |-
+      Recommended date of disciplinary committee hearing
+  - name: recommendedTimeOfDisciplinaryCommitteeHearing
+    description: |-
+      Recommended time of disciplinary committee hearing
+  - name: dateOfDeliveredCopyToInmate
+    field_type: datetime
+    description: |-
+      Date of delivery to individual involved
+  - name: timeOfDeliveredCopyToInmate
+    description: |-
+      Time of delivery to individual involved
+  - name: assignedToIO
+    description: |-
+      Assigned to Investigation officer
+    is_pii: True
+  - name: lastUpdated
+    field_type: datetime
+    description: |-
+      Last updated
+  - name: lastUpdatedBy
+    description: |-
+      User last update by
+    is_pii: True
+  - name: showToMyMRPool
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: investigatingOfficer
+    description: |-
+      Investigating officer
+    is_pii: True
+  - name: employeeRequested
+    description: |-
+      Employee requested id
+    is_pii: True
+  - name: inmateSignature
+    description: |-
+      Indicates signature
+  - name: numberOfHoursBetweenFilingLogging
+    description: |-
+      Number of hours between filing logging
+  - name: noticeOfCharges
+    description: |-
+      Notice of charges
+  - name: noticeOfHearing
+    description: |-
+      Notice of hearing
+  - name: committeeAppearance
+    description: |-
+      Comittee appearance
+  - name: waiverResponse
+    description: |-
+      Waiver response

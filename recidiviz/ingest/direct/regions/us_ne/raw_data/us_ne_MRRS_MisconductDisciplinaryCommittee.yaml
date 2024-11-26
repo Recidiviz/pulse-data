@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: MRRS_MisconductDisciplinaryCommittee
+file_description: |-
+  This file contains Misconduct Disciplinary Committee information
+data_classification: source
+primary_key_cols:
+  - misconductDisciplinaryCommitteeId
+columns:
+  - name: misconductDisciplinaryCommitteeId
+    description: |-
+      Primary key
+  - name: fkMisconductReportId
+    description: |-
+      Foreign key to misconduct report table
+  - name: dateAndTimeLog
+    field_type: datetime
+    description: |-
+      Date and time log
+  - name: timeLog
+    description: |-
+      Time log
+  - name: continuedHearing
+    description: |-
+      Continued hearing
+  - name: reasonForContinuedHearing
+    description: |-
+      Reason for continued hearing
+  - name: interpreterPresent
+    description: |-
+      Interpreter present
+  - name: docEvidenceRecInmateDefence
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: summaryOfInmateTestimonyLongInfo
+    description: |-
+      Summary of testimony
+    is_pii: True
+  - name: supportMisconductReport
+    description: |-
+      Support misconduct report
+  - name: dateOfSupportMisconductReport
+    field_type: datetime
+    description: |-
+      Date of support misconduct report
+  - name: timeOfSupportMisconductReport
+    description: |-
+      Time of support misconduct report
+  - name: otherLongInfo
+    description: |-
+      Other long info
+    is_pii: True
+  - name: guiltyCounts
+    description: |-
+      Guilty counts
+  - name: dismissedCounts
+    description: |-
+      Dismissed counts
+  - name: committeeFindingLongInfo
+    description: |-
+      Committee finding long info
+    is_pii: True
+  - name: sanctionsImposedLongInfo
+    description: |-
+      Sanctions imposed long info
+    is_pii: True
+  - name: assignedToDC
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: lastUpdated
+    field_type: datetime
+    description: |-
+      Date last updated
+  - name: lastUpdatedBy
+    description: |-
+      User last updated by
+    is_pii: True
+  - name: showToMyDCPool
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: chairperson
+    description: |-
+      Chair person
+    is_pii: True
+  - name: otherDisciplinaryCommitteeMember
+    description: |-
+      Other disciplinary committee member
+    is_pii: True
+  - name: recorder
+    description: |-
+      Recorder
+    is_pii: True
+  - name: inmateSignatureUDCIDC
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: dispositionOfPhysicalEvidence
+    description: |-
+      Disposition of physical evidence
+  - name: receivedRoomRestriction
+    description: |-
+      Received room restriction
+  - name: dismissedNotHeardIn7Days
+    description: |-
+      Dismissed not heard in 7 days
