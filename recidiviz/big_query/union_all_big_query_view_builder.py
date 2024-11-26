@@ -204,6 +204,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             view_query_template=view_query_template,
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
+            time_partitioning=None,
             sandbox_context=sandbox_context,
             should_deploy_predicate=None,
             **query_format_args,

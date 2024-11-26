@@ -435,6 +435,8 @@ def _create_or_update_view_and_materialize_if_necessary(
             existing_view.view_query != updated_view.view_query
             # Also update the view if clustering fields have changed
             or existing_view.clustering_fields != updated_view.clustering_fields
+            # Also update the view if time partitioning configuration has changed
+            or existing_view.time_partitioning != updated_view.time_partitioning
             # We also check for schema changes, just in case a parent view or table has
             # added a column
             or existing_view.schema != updated_view.schema

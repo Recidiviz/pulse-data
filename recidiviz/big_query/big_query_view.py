@@ -50,6 +50,7 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         materialized_address: Optional[BigQueryAddress] = None,
         sandbox_context: BigQueryViewSandboxContext | None = None,
         clustering_fields: Optional[List[str]] = None,
+        time_partitioning: bigquery.TimePartitioning | None = None,
         should_deploy_predicate: Optional[Callable[[], bool]] = None,
         **query_format_kwargs: Any,
     ) -> None:
@@ -110,6 +111,7 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
             )
         self._materialized_address = materialized_address
         self._clustering_fields = clustering_fields
+        self._time_partitioning = time_partitioning
 
         # Returns whether it's safe to deploy this view.
         self._should_deploy_predicate = should_deploy_predicate
@@ -240,6 +242,10 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
     def clustering_fields(self) -> Optional[List[str]]:
         return self._clustering_fields
 
+    @property
+    def time_partitioning(self) -> bigquery.TimePartitioning | None:
+        return self._time_partitioning
+
 
 BigQueryViewType = TypeVar("BigQueryViewType", bound=BigQueryView)
 
@@ -357,6 +363,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         materialized_address_override: Optional[BigQueryAddress] = None,
         should_deploy_predicate: Optional[Callable[[], bool]] = None,
         clustering_fields: Optional[List[str]] = None,
+        time_partitioning: bigquery.TimePartitioning | None = None,
         # All query format kwargs args must have string values
         **query_format_kwargs: str,
     ):
@@ -368,6 +375,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         self.view_query_template = view_query_template
         self.should_deploy_predicate = should_deploy_predicate
         self.clustering_fields = clustering_fields
+        self.time_partitioning = time_partitioning
         self.query_format_kwargs = query_format_kwargs
         self.materialized_address = self._build_materialized_address(
             dataset_id=dataset_id,
@@ -387,6 +395,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             view_query_template=self.view_query_template,
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
+            time_partitioning=self.time_partitioning,
             sandbox_context=sandbox_context,
             should_deploy_predicate=self.should_deploy_predicate,
             **self.query_format_kwargs,

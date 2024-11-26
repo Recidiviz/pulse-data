@@ -306,6 +306,9 @@ class ViewChangeType(Enum):
 def _get_all_views_changed_on_branch(
     full_dag_walker: BigQueryViewDagWalker,
 ) -> Dict[BigQueryAddress, ViewChangeType]:
+    """Finds all views that have changed (or been added) as compared to their currently
+    deployed versions.
+    """
     bq_client = BigQueryClientImpl()
 
     def check_for_change(
@@ -321,6 +324,19 @@ def _get_all_views_changed_on_branch(
 
         if t.view_query != v.view_query:
             return ViewChangeType.UPDATED
+
+        if v.materialized_address:
+            try:
+                materialized_t = bq_client.get_table(v.materialized_address)
+            except exceptions.NotFound:
+                return ViewChangeType.UPDATED
+            old_clustering_fields = materialized_t.clustering_fields or []
+            new_clustering_fields = v.clustering_fields or []
+            if (
+                old_clustering_fields != new_clustering_fields
+                or materialized_t.time_partitioning != v.time_partitioning
+            ):
+                return ViewChangeType.UPDATED
 
         return None
 

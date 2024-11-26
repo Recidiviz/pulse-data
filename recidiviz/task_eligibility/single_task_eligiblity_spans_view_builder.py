@@ -393,6 +393,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             projects_to_deploy=None,
             should_deploy_predicate=None,
             clustering_fields=None,
+            time_partitioning=None,
         )
         self.state_code = state_code
         self.task_name = task_name

@@ -597,6 +597,7 @@ class BigQueryClient:
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         overwrite: Optional[bool] = False,
         clustering_fields: Optional[List[str]] = None,
+        time_partitioning: bigquery.TimePartitioning | None = None,
         job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
         """Creates a table at the given address with the output from the given query.
@@ -610,6 +611,8 @@ class BigQueryClient:
             query_parameters: Optional parameters for the query
             overwrite: Whether or not to overwrite an existing table.
             clustering_fields: Columns by which to cluster the table.
+            time_partitioning: Configuration for time period partitioning that should be
+                applied to the table.
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
             job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
@@ -665,6 +668,7 @@ class BigQueryClient:
         allow_field_additions: bool = False,
         write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
         clustering_fields: Optional[List[str]] = None,
+        time_partitioning: bigquery.TimePartitioning | None = None,
         job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
         """Inserts the results of the given query into the table at the given address.
@@ -683,6 +687,8 @@ class BigQueryClient:
             write_disposition: What to do if the destination table already exists.
                 Defaults to WRITE_APPEND, which will append rows to an existing table.
             clustering_fields: Columns by which to cluster the table.
+            time_partitioning: Configuration for time period partitioning that should be
+                applied to the table.
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
             job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
@@ -1737,6 +1743,7 @@ class BigQueryClientImpl(BigQueryClient):
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         overwrite: Optional[bool] = False,
         clustering_fields: Optional[List[str]] = None,
+        time_partitioning: bigquery.TimePartitioning | None = None,
         use_query_cache: bool,
         job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
@@ -1754,6 +1761,7 @@ class BigQueryClientImpl(BigQueryClient):
             query_parameters=query_parameters,
             write_disposition=write_disposition,
             clustering_fields=clustering_fields,
+            time_partitioning=time_partitioning,
             use_query_cache=use_query_cache,
             job_labels=job_labels,
         )
@@ -1870,6 +1878,7 @@ class BigQueryClientImpl(BigQueryClient):
         allow_field_additions: bool = False,
         write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
         clustering_fields: Optional[List[str]] = None,
+        time_partitioning: bigquery.TimePartitioning | None = None,
         use_query_cache: bool,
         job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
@@ -1887,22 +1896,35 @@ class BigQueryClientImpl(BigQueryClient):
         query_job_config.write_disposition = write_disposition
         query_job_config.query_parameters = query_parameters or []
 
-        if clustering_fields:
+        if clustering_fields or time_partitioning:
             query_job_config.clustering_fields = clustering_fields
+            query_job_config.time_partitioning = time_partitioning
 
             # if new clustering fields are different, delete existing table
             # only if the write_disposition is WRITE_TRUNCATE
             try:
                 existing_table = self.get_table(destination_address)
-                if existing_table.clustering_fields != clustering_fields:
-                    if write_disposition == bigquery.WriteDisposition.WRITE_TRUNCATE:
-                        self.delete_table(destination_address)
-                    else:
+
+                if write_disposition != bigquery.WriteDisposition.WRITE_TRUNCATE:
+                    if existing_table.clustering_fields != clustering_fields:
                         raise ValueError(
                             "Trying to materialize into a table using different "
                             "clustering fields than what currently exists requires "
                             "'WRITE_TRUNCATE' write_disposition."
                         )
+
+                    if existing_table.time_partitioning != time_partitioning:
+                        raise ValueError(
+                            f"Found updated time_partitioning configuration for "
+                            f"destination table [{destination_address.to_str()}]. "
+                            f"Cannot write to the table with write_disposition "
+                            f"[{write_disposition}]."
+                        )
+                else:
+                    # Delete destination table so that it will be recreated with the
+                    # correct partitioning (ok to delete because we're just going to
+                    # TRUNCATE the data anyway).
+                    self.delete_table(destination_address)
             except exceptions.NotFound:
                 pass
 
@@ -2037,6 +2059,7 @@ class BigQueryClientImpl(BigQueryClient):
             query=view.direct_select_query,
             overwrite=True,
             clustering_fields=view.clustering_fields,
+            time_partitioning=view.time_partitioning,
             use_query_cache=use_query_cache,
             job_labels=job_labels,
         )
