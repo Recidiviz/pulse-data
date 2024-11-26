@@ -4,41 +4,46 @@ file_description: |-
   This table holds profile information about a person involved in MDOC that is linked
   to a given booking.
 data_classification: source
-# Setting this file to always historical  = False because this sometimes come in truncated for some unexpected reason
-# TODO(#30687) Remove this (aka set back to True) when raw data import is blocked when a transfer of this file comes in smaller than previous transfers
-always_historical_export: False
 primary_key_cols:
   - offender_id
   - offender_number
 columns:
   - name: offender_id
-    description: The OMNI-database generated ID for the justice-involved individual.
-    is_pii: True
+    description: |-
+      The OMNI-database generated ID for the justice-involved individual.
     field_type: person_external_id
     external_id_type: US_MI_DOC_ID
-  - name: offender_number
-    description: The MDOC ID that all staff uses for the justice-involved individual.
     is_pii: True
+  - name: offender_number
+    description: |-
+      The MDOC ID that all staff uses for the justice-involved individual.
     field_type: person_external_id
     external_id_type: US_MI_DOC
-  - name: offender_booking_id
-    description: The OMNI-database generated ID for the most recent booking row associated with this justice-involved individual.
     is_pii: True
+  - name: offender_booking_id
+    description: |-
+      The OMNI-database generated ID for the most recent booking row associated with this justice-involved individual.
     field_type: person_external_id
     external_id_type: US_MI_DOC_BOOK
+    is_pii: True
   - name: last_name
-    description: The last name of the justice-involved individual
+    description: |-
+      The last name of the justice-involved individual
     is_pii: True
   - name: first_name
-    description: The first name of the justice-involved individual
+    description: |-
+      The first name of the justice-involved individual
     is_pii: True
   - name: middle_name
-    description: The middle name of the justice-involved individual
+    description: |-
+      The middle name of the justice-involved individual
     is_pii: True
   - name: name_suffix
-    description: The name suffix (Jr., Sr. III) of the justice-involved individual
+    description: |-
+      The name suffix (Jr., Sr. III) of the justice-involved individual
   - name: birth_date
-    description: The birthdate of the justice-involved individual
+    description: |-
+      The birthdate of the justice-involved individual
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
@@ -53,30 +58,36 @@ columns:
     known_values:
       - value: "371"
         description: Black or African American
-      - value: "685"
-        description: White
+      - value: "372"
+        description: Asian
       - value: "373"
         description: American Indian or Alaskan Native
+      - value: "685"
+        description: White
       - value: "7404"
         description: Unknown
       - value: "9875"
         description: Native Hawaiian or Other Pacific Islander
-      - value: "372"
-        description: Asian
+      - value: "20095"
+        description: TODO(#35219) Document this value.
+      - value: "20096"
+        description: TODO(#35219) Document this value.
   - name: race
-    description: The description that accompanies race_id
+    description: |-
+      The description that accompanies race_id
   - name: gender_id
     description: |-
       The flag that indicates a person's gender (as indicated by the REFERENCE_CODE table).
     known_values:
-      - value: "435"
-        description: Male
       - value: "434"
         description: Female
+      - value: "435"
+        description: Male
       - value: "7403"
         description: Unknown
   - name: gender
-    description: The gender that accompanies gender_id
+    description: |-
+      The gender that accompanies gender_id
   - name: height
   - name: weight
   - name: city
@@ -108,7 +119,9 @@ columns:
       latest jurisdiction for a person within MDOC.
     is_pii: True
   - name: last_update_date
-
+# Setting this file to always historical  = False because this sometimes come in truncated for some unexpected reason
+# TODO(#30687) Remove this (aka set back to True) when raw data import is blocked when a transfer of this file comes in smaller than previous transfers
+always_historical_export: False
 table_relationships:
   - foreign_table: ADH_OFFENDER
     join_logic:

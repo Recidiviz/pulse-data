@@ -7,44 +7,53 @@ primary_key_cols:
   - offender_sentence_id
 columns:
   - name: offender_sentence_id
-    description: The OMNI-database generated ID for each sentence record
+    description: |-
+      The OMNI-database generated ID for each sentence record
   - name: offender_charge_id
-    description: The OMNI-database generated ID for each charge record
+    description: |-
+      The OMNI-database generated ID for each charge record
   - name: legal_order_id
-    description: The OMNI-database generated ID for each legal order record
+    description: |-
+      The OMNI-database generated ID for each legal order record
   - name: offender_id
-    is_pii: True
-    description: The OMNI-database generated ID for the justice-involved individual.
+    description: |-
+      The OMNI-database generated ID for the justice-involved individual.
     field_type: person_external_id
     external_id_type: US_MI_DOC_ID
-  - name: offender_booking_id
     is_pii: True
-    description: The OMNI-database generated ID for a specific booking for a specific individual
+  - name: offender_booking_id
+    description: |-
+      The OMNI-database generated ID for a specific booking for a specific individual
     field_type: person_external_id
     external_id_type: US_MI_DOC_BOOK
+    is_pii: True
   - name: sentence_record_no
   - name: monetary_only
   - name: sentence_type_id
-    description: Reference code for the type of sentence
+    description: |-
+      Reference code for the type of sentence
     known_values:
-      - value: "2164"
-        description: FIA (DSS)
-      - value: "2163"
-        description: Community Service Only
-      - value: "430"
-        description: Prison
       - value: "429"
         description: Fines/Costs/Restitution Only
-      - value: "692"
-        description: Jail Only
+      - value: "430"
+        description: Prison
       - value: "431"
         description: Probation
+      - value: "692"
+        description: Jail Only
+      - value: "2163"
+        description: Community Service Only
+      - value: "2164"
+        description: FIA (DSS)
       - value: "2165"
         description: Parole
+      - value: "20025"
+        description: TODO(#35219) Document this value.
   - name: sentence_subtype_id
   - name: sentence_calc_type_id
   - name: sentence_status_id
-    description: status of the sentence
+    description: |-
+      status of the sentence
     known_values:
       - value: "1661"
         description: Closed
@@ -54,91 +63,113 @@ columns:
   - name: judge_id
     is_pii: True
   - name: counts
-    description: the number of counts of the charge that are on this legal order
+    description: |-
+      the number of counts of the charge that are on this legal order
   - name: review_flag_id
   - name: effective_date
-    description: effective date of sentence
+    description: |-
+      effective date of sentence
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: sentenced_date
-    description: date of sentencing
+    description: |-
+      date of sentencing
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: corrected_date
-    description: sentence corrected date
+    description: |-
+      sentence corrected date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: probation_jail_months
   - name: probation_jail_days
   - name: min_length_years
-    description: minimum sentence length - years component
+    description: |-
+      minimum sentence length - years component
   - name: min_length_months
-    description: minimum sentence length - months component
+    description: |-
+      minimum sentence length - months component
   - name: min_length_days
-    description: minimum sentence length - days component
+    description: |-
+      minimum sentence length - days component
   - name: min_abs_flag
   - name: min_life_flag
-    description: flag for whether the minimum sentence length is a life sentence
+    description: |-
+      flag for whether the minimum sentence length is a life sentence
   - name: min_credits_begin_date
-    description: minimum credits begin date
+    description: |-
+      minimum credits begin date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: min_credits_end_date
-    description: minimum credits end date
+    description: |-
+      minimum credits end date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: pmi_sgt_min_date
-    description: pmi sgt minimum date
+    description: |-
+      pmi sgt minimum date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: ami_rgt_min_date
-    description: AMX minimum date
+    description: |-
+      AMX minimum date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: calendar_min_date
-    description: calendar minimum date
+    description: |-
+      calendar minimum date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: max_length_years
-    description: maximum sentence length - years component
+    description: |-
+      maximum sentence length - years component
   - name: max_length_months
-    description: maximum sentence length - months component
+    description: |-
+      maximum sentence length - months component
   - name: max_length_days
-    description: maximum sentence length - days component
+    description: |-
+      maximum sentence length - days component
   - name: max_abs_flag
   - name: max_life_flag
-    description: flag for whether the maximum sentence length is a life sentence
+    description: |-
+      flag for whether the maximum sentence length is a life sentence
   - name: max_credits_begin_date
-    description: maximum credits begin date
+    description: |-
+      maximum credits begin date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: max_credits_end_date
-    description: maximum credits end date
+    description: |-
+      maximum credits end date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: pmx_sgt_max_date
-    description: PMX max date
+    description: |-
+      PMX max date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: amx_rgt_max_date
-    description: AMX max date
+    description: |-
+      AMX max date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: consecutive_flag
   - name: controlling_sent_code_id
-    description: reference code for whether this sentence is a controlling sentence and if so what type (reference table = ADH_REFERENCE_CODE)
+    description: |-
+      reference code for whether this sentence is a controlling sentence and if so what type (reference table = ADH_REFERENCE_CODE)
   - name: controlling_min_sentence_flag
   - name: controlling_max_sentence_flag
   - name: prior_minimum_sentence_id
@@ -147,61 +178,64 @@ columns:
   - name: next_maximum_sentence_id
   - name: parole_to_min_max_id
   - name: expiration_date
-    description: expiration date of sentence
+    description: |-
+      expiration date of sentence
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_reason_code
-    description: reference code for closing reason
+    description: |-
+      reference code for closing reason
     known_values:
-      - value: "7201"
-        description: Parole Term Extended
-      - value: "5285"
-        description: Reversal on Appeal
-      - value: "5279"
-        description: Probation Violation Technical Violation
-      - value: "11789"
-        description: HYTA Probation Revoked
-      - value: "5289"
-        description: Early Discharge
-      - value: "5284"
-        description: Resentenced on Appeal
-      - value: "5288"
-        description: Death
-      - value: "5282"
-        description: Parole Violation New Sentence
-      - value: "5286"
-        description: Discharged Without Improvement
-      - value: "5283"
-        description: Sentence Extended
-      - value: "5278"
-        description: Pardoned
-      - value: "7473"
-        description: Sentenced From Delay To Probation
-      - value: "5287"
-        description: Sentence Term Modified
-      - value: "5277"
-        description: Commuted
       - value: "5276"
         description: Other
+      - value: "5277"
+        description: Commuted
+      - value: "5278"
+        description: Pardoned
+      - value: "5279"
+        description: Probation Violation Technical Violation
+      - value: "5280"
+        description: Parole Violation Technical Violation
       - value: "5281"
         description: Probation Violation New Sentence
-      - value: "11790"
-        description: 7411 Probation Revoked
+      - value: "5282"
+        description: Parole Violation New Sentence
+      - value: "5283"
+        description: Sentence Extended
+      - value: "5284"
+        description: Resentenced on Appeal
+      - value: "5285"
+        description: Reversal on Appeal
+      - value: "5286"
+        description: Discharged Without Improvement
+      - value: "5287"
+        description: Sentence Term Modified
+      - value: "5288"
+        description: Death
+      - value: "5289"
+        description: Early Discharge
       - value: "5290"
         description: Completed Satisfactorily
       - value: "5467"
         description: Closed Offender Charge
+      - value: "7201"
+        description: Parole Term Extended
       - value: "7297"
         description: Vacated
+      - value: "7473"
+        description: Sentenced From Delay To Probation
+      - value: "11789"
+        description: HYTA Probation Revoked
+      - value: "11790"
+        description: 7411 Probation Revoked
       - value: "12021"
         description: Sentence Suspended
-      - value: "5280"
-        description: Parole Violation Technical Violation
   - name: closing_authority_id
     is_pii: True
   - name: closing_date
-    description: closing date of sentence
+    description: |-
+      closing date of sentence
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
@@ -212,8 +246,8 @@ columns:
     field_type: datetime
   - name: last_update_node
   - name: lifetime_gps_flag
-    description: Flag for whether this sentence mandates lifetime electronic monitoring
-
+    description: |-
+      Flag for whether this sentence mandates lifetime electronic monitoring
 table_relationships:
   - foreign_table: ADH_OFFENDER
     join_logic:

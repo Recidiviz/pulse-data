@@ -8,48 +8,54 @@ primary_key_cols:
   - sequence_number
 columns:
   - name: offender_booking_id
-    description: OMNI-database generated id for a specific justice-involved individual during a specific booking
-    is_pii: True
+    description: |-
+      OMNI-database generated id for a specific justice-involved individual during a specific booking
     field_type: person_external_id
     external_id_type: US_MI_DOC_BOOK
+    is_pii: True
   - name: sequence_number
-    description: Employment sequence number
+    description: |-
+      Employment sequence number
   - name: employment_date
-    description: Date employment began
+    description: |-
+      Date employment began
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: employment_mo_yr_flag
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
   - name: employment_yr_flag
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
   - name: termination_date
-    description: Date employment finished
+    description: |-
+      Date employment finished
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: termination_mo_yr_flag
-    description: TODO(#17944)DO
+    description: |-
+      TODO(#17944)DO
   - name: termination_yr_flag
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
   - name: employer_name
-    description: Name of employer
+    description: |-
+      Name of employer
     is_pii: True
   - name: supervisor_name
-    description: Name of supervisor
+    description: |-
+      Name of supervisor
     is_pii: True
   - name: position
-    description: Position
+    description: |-
+      Position
     is_pii: True
   - name: employment_status_id
-    description: Reference code for employment status (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for employment status (links with ADH_REFERENCE_CODE)
     known_values:
-      - value: "14347"
-        description: Proposed
-      - value: "15055"
-        description: Gave victim drugs or alcohol # Seems like a data entry error
-      - value: "5105"
-        description: Retired
       - value: "627"
         description: Part Time
       - value: "628"
@@ -58,13 +64,22 @@ columns:
         description: Unknown
       - value: "630"
         description: Disability
+      - value: "5105"
+        description: Retired
+      - value: "14347"
+        description: Proposed
+      - value: "15055"
+        description: Gave victim drugs or alcohol
   - name: termination_reason_code
-    description: Reference code for termination reason (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for termination reason (links with ADH_REFERENCE_CODE)
     known_values:
-      - value: "11944"
-        description: Unknown
-      - value: "13245"
-        description: Committed to Prison
+      - value: "886"
+        description: Fired
+      - value: "887"
+        description: Quit
+      - value: "888"
+        description: Laid Off
       - value: "3135"
         description: Arrested
       - value: "3752"
@@ -75,16 +90,16 @@ columns:
         description: Disability
       - value: "5185"
         description: Retired
-      - value: "886"
-        description: Fired
-      - value: "887"
-        description: Quit
-      - value: "888"
-        description: Laid Off
+      - value: "11944"
+        description: Unknown
+      - value: "13245"
+        description: Committed to Prison
   - name: wage
-    description: wage (in dollars)
+    description: |-
+      wage (in dollars)
   - name: wage_period_code
-    description: Reference code for unit of period for wage
+    description: |-
+      Reference code for unit of period for wage
     known_values:
       - value: "1198"
         description: Semi-Annually
@@ -107,29 +122,24 @@ columns:
       - value: "5775"
         description: Hourly
   - name: address1
-    description: Address of employment location (segment 1)
+    description: |-
+      Address of employment location (segment 1)
     is_pii: True
   - name: address2
-    description: Address of employment location (segment 2)
+    description: |-
+      Address of employment location (segment 2)
     is_pii: True
   - name: address3
-    description: Address of employment location (segment 3)
+    description: |-
+      Address of employment location (segment 3)
     is_pii: True
   - name: city
-    description: City of employment location
+    description: |-
+      City of employment location
   - name: state_id
-    description: Reference code for state of employment location
+    description: |-
+      Reference code for state of employment location
     known_values:
-      - value: "1261"
-        description: Tennessee
-      - value: "1262"
-        description: New Hampshire
-      - value: "1263"
-        description: North Carolina
-      - value: "1266"
-        description: South Carolina
-      - value: "13125"
-        description: Puerto Rico
       - value: "350"
         description: Alabama
       - value: "351"
@@ -172,6 +182,14 @@ columns:
         description: Wisconsin
       - value: "370"
         description: Wyoming
+      - value: "1261"
+        description: Tennessee
+      - value: "1262"
+        description: New Hampshire
+      - value: "1263"
+        description: North Carolina
+      - value: "1266"
+        description: South Carolina
       - value: "5157"
         description: South Dakota
       - value: "5158"
@@ -226,137 +244,15 @@ columns:
         description: Idaho
       - value: "7082"
         description: None
+      - value: "13125"
+        description: Puerto Rico
   - name: postal_code
-    description: Postal code for employment location
+    description: |-
+      Postal code for employment location
   - name: country_id
-    description: Reference code for country of employment location (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for country of employment location (links with ADH_REFERENCE_CODE)
     known_values:
-      - value: "13013"
-        description: Belarus
-      - value: "13691"
-        description: Zambia
-      - value: "15383"
-        description: Republic of Benin
-      - value: "15387"
-        description: Andorra
-      - value: "15391"
-        description: Bosnia and Herzegovina
-      - value: "15394"
-        description: Fiji
-      - value: "15396"
-        description: Georgia
-      - value: "15399"
-        description: Kazakhstan
-      - value: "15404"
-        description: Mauritius
-      - value: "15406"
-        description: Micronesia, Federated States of
-      - value: "15415"
-        description: Saint Kitts and Nevis
-      - value: "15422"
-        description: U.K.
-      - value: "15423"
-        description: Ukraine
-      - value: "16267"
-        description: Czech Republic
-      - value: "16269"
-        description: Croatia
-      - value: "16275"
-        description: Macedonia
-      - value: "16278"
-        description: Korea- South
-      - value: "16282"
-        description: Equatorial Guinea
-      - value: "16289"
-        description: Namibia
-      - value: "16291"
-        description: Oman
-      - value: "16292"
-        description: Papua New Guinea
-      - value: "16293"
-        description: Qatar
-      - value: "16294"
-        description: Samoa
-      - value: "16301"
-        description: Taiwan
-      - value: "16304"
-        description: Vanuatu
-      - value: "16374"
-        description: Congo Republic (Brazzaville)
-      - value: "5042"
-        description: Malaysia
-      - value: "5043"
-        description: Luxembourg
-      - value: "5045"
-        description: Lebanon
-      - value: "5046"
-        description: Laos
-      - value: "5047"
-        description: Korea
-      - value: "5048"
-        description: Kuwait
-      - value: "5049"
-        description: Jordan
-      - value: "5051"
-        description: Indonesia
-      - value: "5052"
-        description: Hong Kong
-      - value: "5053"
-        description: Guam
-      - value: "5055"
-        description: Ghana
-      - value: "5056"
-        description: Gabon
-      - value: "5057"
-        description: East Germany
-      - value: "5064"
-        description: Cambodia
-      - value: "5065"
-        description: Burma
-      - value: "5068"
-        description: Albania
-      - value: "5069"
-        description: Yugoslavia
-      - value: "5070"
-        description: Yemen
-      - value: "5071"
-        description: West Germany
-      - value: "5073"
-        description: Wake Island
-      - value: "5074"
-        description: Virgin Islands
-      - value: "5075"
-        description: United Arab Republic
-      - value: "5076"
-        description: Trinidad and Tobago
-      - value: "5078"
-        description: Syria
-      - value: "5079"
-        description: Somalia
-      - value: "5083"
-        description: Poland
-      - value: "5084"
-        description: New Zealand
-      - value: "5085"
-        description: Netherlands
-      - value: "5086"
-        description: Nepal
-      - value: "7087"
-        description: Other
-      - value: "7090"
-        description: Africa
-      - value: "7094"
-        description: Dahomey
-      - value: "7099"
-        description: Philippine Islands
-      - value: "7101"
-        description: Midway Islands
-      - value: "7106"
-        description: Romania
-      - value: "7109"
-        description: Upper Volta
-      - value: "7153"
-        description: Bangladesh
       - value: "766"
         description: Canada
       - value: "767"
@@ -439,8 +335,8 @@ columns:
         description: Australia
       - value: "816"
         description: Greece
-      - value: "8163"
-        description: Unknown
+      - value: "817"
+        description: TODO(#35219) Document this value.
       - value: "818"
         description: China
       - value: "819"
@@ -473,42 +369,185 @@ columns:
         description: Thailand
       - value: "838"
         description: South Africa
+      - value: "5042"
+        description: Malaysia
+      - value: "5043"
+        description: Luxembourg
+      - value: "5045"
+        description: Lebanon
+      - value: "5046"
+        description: Laos
+      - value: "5047"
+        description: Korea
+      - value: "5048"
+        description: Kuwait
+      - value: "5049"
+        description: Jordan
+      - value: "5051"
+        description: Indonesia
+      - value: "5052"
+        description: Hong Kong
+      - value: "5053"
+        description: Guam
+      - value: "5055"
+        description: Ghana
+      - value: "5056"
+        description: Gabon
+      - value: "5057"
+        description: East Germany
+      - value: "5064"
+        description: Cambodia
+      - value: "5065"
+        description: Burma
+      - value: "5068"
+        description: Albania
+      - value: "5069"
+        description: Yugoslavia
+      - value: "5070"
+        description: Yemen
+      - value: "5071"
+        description: West Germany
+      - value: "5073"
+        description: Wake Island
+      - value: "5074"
+        description: Virgin Islands
+      - value: "5075"
+        description: United Arab Republic
+      - value: "5076"
+        description: Trinidad and Tobago
+      - value: "5078"
+        description: Syria
+      - value: "5079"
+        description: Somalia
+      - value: "5083"
+        description: Poland
+      - value: "5084"
+        description: New Zealand
+      - value: "5085"
+        description: Netherlands
+      - value: "5086"
+        description: Nepal
+      - value: "7087"
+        description: Other
+      - value: "7090"
+        description: Africa
+      - value: "7094"
+        description: Dahomey
+      - value: "7099"
+        description: Philippine Islands
+      - value: "7101"
+        description: Midway Islands
+      - value: "7106"
+        description: Romania
+      - value: "7109"
+        description: Upper Volta
+      - value: "7153"
+        description: Bangladesh
+      - value: "8163"
+        description: Unknown
       - value: "9877"
         description: United Arab Emirates
       - value: "9878"
         description: Bosnia
+      - value: "13013"
+        description: Belarus
+      - value: "13691"
+        description: Zambia
+      - value: "15383"
+        description: Republic of Benin
+      - value: "15387"
+        description: Andorra
+      - value: "15391"
+        description: Bosnia and Herzegovina
+      - value: "15394"
+        description: Fiji
+      - value: "15396"
+        description: Georgia
+      - value: "15399"
+        description: Kazakhstan
+      - value: "15404"
+        description: Mauritius
+      - value: "15406"
+        description: Micronesia, Federated States of
+      - value: "15415"
+        description: Saint Kitts and Nevis
+      - value: "15422"
+        description: U.K.
+      - value: "15423"
+        description: Ukraine
+      - value: "16260"
+        description: TODO(#35219) Document this value.
+      - value: "16267"
+        description: Czech Republic
+      - value: "16269"
+        description: Croatia
+      - value: "16275"
+        description: Macedonia
+      - value: "16278"
+        description: Korea- South
+      - value: "16282"
+        description: Equatorial Guinea
+      - value: "16289"
+        description: Namibia
+      - value: "16291"
+        description: Oman
+      - value: "16292"
+        description: Papua New Guinea
+      - value: "16293"
+        description: Qatar
+      - value: "16294"
+        description: Samoa
+      - value: "16301"
+        description: Taiwan
+      - value: "16304"
+        description: Vanuatu
+      - value: "16374"
+        description: Congo Republic (Brazzaville)
   - name: business_phone_country_code
-    description: Country code for phone number of employment business
+    description: |-
+      Country code for phone number of employment business
   - name: business_phone_area_code
-    description: Area code for phone number of employment business
+    description: |-
+      Area code for phone number of employment business
   - name: business_phone_number
-    description: Phone number of employment business
+    description: |-
+      Phone number of employment business
     is_pii: True
   - name: business_phone_extension
-    description: Phone extension for employment business
+    description: |-
+      Phone extension for employment business
   - name: business_fax_area_code
-    description: Area code for fax number for place of employment
+    description: |-
+      Area code for fax number for place of employment
   - name: business_fax_number
-    description: Fax number for place of employment
+    description: |-
+      Fax number for place of employment
   - name: notes
-    description: Notes about employment
+    description: |-
+      Notes about employment
     is_pii: True
   - name: work_schedule
-    description: Notes about work schedule
+    description: |-
+      Notes about work schedule
     is_pii: True
   - name: employer_knows_record_flag
-    description: Flag for whether employer knows about the justice-involved individual's record
+    description: |-
+      Flag for whether employer knows about the justice-involved individual's record
   - name: occupation_description
-    description: occupation description
+    description: |-
+      occupation description
     is_pii: True
   - name: occupation
-    description: occupation
+    description: |-
+      occupation
     is_pii: True
   - name: last_update_user
-    description: User who last updated record
+    description: |-
+      User who last updated record
     is_pii: True
   - name: last_update_date
-    description: Date record last updated
+    description: |-
+      Date record last updated
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"

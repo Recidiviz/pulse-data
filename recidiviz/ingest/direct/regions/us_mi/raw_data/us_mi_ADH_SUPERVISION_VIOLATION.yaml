@@ -1,21 +1,26 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_SUPERVISION_VIOLATION
-file_description: OMNI-database table recording supervision violations
+file_description: |-
+  OMNI-database table recording supervision violations
 data_classification: source
 primary_key_cols:
   - supervision_violation_id
 columns:
   - name: supervision_violation_id
-    description: OMNI-database generated id for a supervision violation
+    description: |-
+      OMNI-database generated id for a supervision violation
   - name: offender_booking_id
-    is_pii: True
-    description: OMNI-database generated id for an individual booking
+    description: |-
+      OMNI-database generated id for an individual booking
     field_type: person_external_id
     external_id_type: US_MI_DOC_BOOK
+    is_pii: True
   - name: legal_order_id
-    description: OMNI-database generated id for a legal order
+    description: |-
+      OMNI-database generated id for a legal order
   - name: violation_recommendation_id
-    description: Reference code for violation recommendation (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for violation recommendation (links with ADH_REFERENCE_CODE)
     known_values:
       - value: "5336"
         description: Issue Probation Show Cause
@@ -76,22 +81,28 @@ columns:
       - value: "5729"
         description: Pending Investigation
   - name: violation_status_id
-    description: Reference code for violation status (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for violation status (links with ADH_REFERENCE_CODE)
     known_values:
       - value: "1812"
         description: Closed
       - value: "1819"
         description: Active
   - name: violation_score
-    description: Violation score
+    description: |-
+      Violation score
   - name: violation_assessment_date
-    description: Violation assessment date
+    description: |-
+      Violation assessment date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: violation_assessment_result_id
-    description: Reference code for violation assessment result (links with ADH_REFERENCE_CODE) # Not sure what this actually means TODO(#16348)
+    description: |-
+      Reference code for violation assessment result (links with ADH_REFERENCE_CODE)
     known_values:
+      - value: "0"
+        description: TODO(#35219) Document this value.
       - value: "5617"
         description: Level 1 Agnt
       - value: "5618"
@@ -99,32 +110,42 @@ columns:
       - value: "5619"
         description: Level 3 A.M.
   - name: available_flag
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
   - name: available_date
+    description: |-
+      TODO(#16348)
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
-    description: TODO(#16348)
   - name: due_process_max_date
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: waived_preliminary_flag
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
   - name: prelim_hearing_date
-    description: Date of preliminary hearing
+    description: |-
+      Date of preliminary hearing
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: prelim_hearing_location_id
-    description: Location ID for preliminary hearing (links with ADH_LOCATION)
+    description: |-
+      Location ID for preliminary hearing (links with ADH_LOCATION)
   - name: prelim_hearing_employee_id
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
     is_pii: True
   - name: preliminary_decision_id
-    description: Reference code for preliminary decision (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for preliminary decision (links with ADH_REFERENCE_CODE)
     known_values:
+      - value: "0"
+        description: TODO(#35219) Document this value.
       - value: "13150"
         description: Reinstate
       - value: "13151"
@@ -136,30 +157,22 @@ columns:
       - value: "13775"
         description: TRRP
   - name: formal_hearing_date
-    description: Date of formal hearing
+    description: |-
+      Date of formal hearing
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: formal_hearing_location_id
-    description: Location ID for formal hearing (links with ADH_LOCATION)
+    description: |-
+      Location ID for formal hearing (links with ADH_LOCATION)
   - name: formal_hearing_employee_id
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
     is_pii: True
   - name: formal_hearing_disp_id
-    description: Reference code for disposition of formal hearing (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for disposition of formal hearing (links with ADH_REFERENCE_CODE)
     known_values:
-      - value: "12271"
-        description: Decision Pending
-      - value: "13331"
-        description: Dismissed by OFP for Due Process
-      - value: "13332"
-        description: Dismissed by OFP for No Witnesses
-      - value: "13333"
-        description: Dismissed by OFP Insufficient Evidence
-      - value: "13334"
-        description: Reinstated by OFP Without Hearing
-      - value: "13748"
-        description: Not Guilty - No Witnesses
       - value: "1820"
         description: Dismissed for No Witnesses
       - value: "1821"
@@ -178,28 +191,51 @@ columns:
         description: Guilty by Criminal Conviction
       - value: "9879"
         description: Reinstated Without Hearing
+      - value: "12271"
+        description: Decision Pending
+      - value: "13331"
+        description: Dismissed by OFP for Due Process
+      - value: "13332"
+        description: Dismissed by OFP for No Witnesses
+      - value: "13333"
+        description: Dismissed by OFP Insufficient Evidence
+      - value: "13334"
+        description: Reinstated by OFP Without Hearing
+      - value: "13748"
+        description: Not Guilty - No Witnesses
   - name: arraignment_date
-    description: Arraignment date
+    description: |-
+      Arraignment date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: arraignment_location_id
-    description: Location of arraingment (links with ADH_LOCATION)
+    description: |-
+      Location of arraingment (links with ADH_LOCATION)
   - name: arraignment_judge
-    description: Judge id for arraignment judge (links with ADH_JUDGE)
+    description: |-
+      Judge id for arraignment judge (links with ADH_JUDGE)
     is_pii: True
   - name: active_flag
-    description: Flag for whether this supervision violation record is active
+    description: |-
+      Flag for whether this supervision violation record is active
   - name: date_violation_charges_served
-    description: Date violation charges served
+    description: |-
+      Date violation charges served
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: court_room_number
-    description: Court room number
+    description: |-
+      Court room number
   - name: violation_type_id
-    description: Reference code for violation type (links with ADH_REFERENCE)
+    description: |-
+      Reference code for violation type (links with ADH_REFERENCE)
     known_values:
+      - value: "708"
+        description: New Offense
+      - value: "709"
+        description: Technical
       - value: "1913"
         description: Incident
       - value: "1914"
@@ -208,52 +244,61 @@ columns:
         description: Supplemental
       - value: "1916"
         description: Investigation
-      - value: "708"
-        description: New Offense
-      - value: "709"
-        description: Technical
       - value: "7311"
         description: Multiple Order Violation
   - name: violation_invest_begin_date
-    description: Begin date of violation investigation
+    description: |-
+      Begin date of violation investigation
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: notes
-    description: Supervision violation notes
+    description: |-
+      Supervision violation notes
     is_pii: True
   - name: parolee_comments_notes_id
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
   - name: procedural_matters_notes_id
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
   - name: plea_agreement_notes_id
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
   - name: conclusion_notes_id
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
   - name: ale_recommendation_type_id
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
     known_values:
-      - value: "13131"
-        description: Continue
       - value: "13130"
         description: Reparole
+      - value: "13131"
+        description: Continue
   - name: ale_recommendation_term_id
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
     known_values:
       - value: "13335"
         description: Continue
       - value: "13336"
         description: Reparole
   - name: summary_of_evidence_notes_id
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
   - name: findings_of_fact_notes_id
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
   - name: mitigation_summary_notes_id
-    description: TODO(#16348)
+    description: |-
+      TODO(#16348)
   - name: foa_representative_id
-    description: ID for FOA representative
+    description: |-
+      ID for FOA representative
   - name: foa_recommendation_id
-    description: FOA representative recommendation
+    description: |-
+      FOA representative recommendation
     known_values:
       - value: "13143"
         description: Continuance
@@ -276,13 +321,16 @@ columns:
       - value: "13354"
         description: Continue - PMX (NLGT)
   - name: offender_representative
-    description: Representative for individual on supervision
+    description: |-
+      Representative for individual on supervision
     is_pii: True
   - name: offender_representative_id
-    description: Reference code for representative for individual on supervision (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for representative for individual on supervision (links with ADH_REFERENCE_CODE)
     is_pii: True
   - name: defense_recommendation_id
-    description: Reference code for recommendation of the defense (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for recommendation of the defense (links with ADH_REFERENCE_CODE)
     known_values:
       - value: "13145"
         description: Parole
@@ -305,12 +353,14 @@ columns:
       - value: "13352"
         description: Continue - PMX (NLGT)
   - name: formal_hearing_arraign_date
-    description: Formal hearing arraingment date
+    description: |-
+      Formal hearing arraingment date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: formal_hearing_status_id
-    description: Reference code for hearing status (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for hearing status (links with ADH_REFERENCE_CODE)
     known_values:
       - value: "13141"
         description: Completed
@@ -319,12 +369,15 @@ columns:
       - value: "13710"
         description: Set for Formal
   - name: video_hearing_flag
-    description: Flag for whether hearing was a video hearing
+    description: |-
+      Flag for whether hearing was a video hearing
   - name: last_update_user
-    description: user who last updated the file
+    description: |-
+      user who last updated the file
     is_pii: True
   - name: last_update_date
-    description: date record last updated
+    description: |-
+      date record last updated
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"

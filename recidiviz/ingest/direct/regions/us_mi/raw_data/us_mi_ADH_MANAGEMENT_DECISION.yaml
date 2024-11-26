@@ -1,24 +1,29 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_MANAGEMENT_DECISION
-file_description: OMNI-database table recording management decisions in response to supervision violations
+file_description: |-
+  OMNI-database table recording management decisions in response to supervision violations
 data_classification: source
 primary_key_cols:
   - management_decision_id
 columns:
   - name: management_decision_id
-    description: OMNI-database generated ID for a management decision record
+    description: |-
+      OMNI-database generated ID for a management decision record
   - name: supervision_violation_id
-    description: OMNI-database generated ID for a supervision violation record (links with ADH_SUPERVISION_VIOLATION)
+    description: |-
+      OMNI-database generated ID for a supervision violation record (links with ADH_SUPERVISION_VIOLATION)
   - name: decision_date
-    description: Date of the decision
+    description: |-
+      Date of the decision
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: decision_type_id
-    description: Reference code for type of decision (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for type of decision (links with ADH_REFERENCE_CODE)
     known_values:
-      - value: "13815"
-        description: Residential ReEntry Program
+      - value: "0"
+        description: TODO(#35219) Document this value.
       - value: "1827"
         description: Day Treatment
       - value: "1828"
@@ -38,9 +43,9 @@ columns:
       - value: "1839"
         description: Extend Term
       - value: "1840"
-        description: Issue Warrant #2
+        description: "Issue Warrant #2"
       - value: "1841"
-        description: Issue Warrant #1
+        description: "Issue Warrant #1"
       - value: "1842"
         description: Electronic Monitoring
       - value: "1843"
@@ -69,27 +74,37 @@ columns:
         description: Residential Programming Center
       - value: "9995"
         description: Return to Prison PVNS
+      - value: "13815"
+        description: Residential ReEntry Program
   - name: active_flag
-    description: Flag for whether this dicision is still active
+    description: |-
+      Flag for whether this dicision is still active
   - name: decide_employee_id
-    description: ID of employee who made the decision
+    description: |-
+      ID of employee who made the decision
     is_pii: True
   - name: decide_employee_position
-    description: Position of the employee who made this decision
+    description: |-
+      Position of the employee who made this decision
   - name: notes
-    description: Notes with details about the position
+    description: |-
+      Notes with details about the position
     is_pii: True
   - name: notes2
-    description: Notes with more details about the position
+    description: |-
+      Notes with more details about the position
     is_pii: True
   - name: notes3
-    description: Notes with even more details about the position
+    description: |-
+      Notes with even more details about the position
     is_pii: True
   - name: last_update_user
+    description: |-
+      ID of use who last updated the record
     is_pii: True
-    description: ID of use who last updated the record
   - name: last_update_date
-    description: Date record was last updated
+    description: |-
+      Date record was last updated
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"

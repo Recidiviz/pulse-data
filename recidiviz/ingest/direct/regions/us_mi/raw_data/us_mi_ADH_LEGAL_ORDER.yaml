@@ -7,240 +7,249 @@ primary_key_cols:
   - legal_order_id
 columns:
   - name: legal_order_id
-    description: The OMNI-database generated ID for a legal order row
+    description: |-
+      The OMNI-database generated ID for a legal order row
   - name: offender_booking_id
-    description: The OMNI-database generated ID for an individual's booking.
-    is_pii: True
+    description: |-
+      The OMNI-database generated ID for an individual's booking.
     field_type: person_external_id
     external_id_type: US_MI_DOC_BOOK
+    is_pii: True
   - name: order_type_id
-    description: Reference code for the type of legal order each record represents
+    description: |-
+      Reference code for the type of legal order each record represents
     known_values:
+      - value: "1719"
+        description: Interstate Compact Parole
+      - value: "1720"
+        description: Interstate Compact Probation
+      - value: "1721"
+        description: Family Independence Agency (DSS)
+      - value: "1722"
+        description: Community Service Only
+      - value: "1723"
+        description: Jail Only
+      - value: "1724"
+        description: Fine/Cost/Restitution Only
+      - value: "1725"
+        description: Prison
+      - value: "1726"
+        description: Parole
+      - value: "1727"
+        description: Probation
+      - value: "1728"
+        description: Presentence Investigation
       - value: "3162"
         description: Other State's Prison
       - value: "20147"
         description: MDHHS - Juvenile
-      - value: "1724"
-        description: Fine/Cost/Restitution Only
-      - value: "1719"
-        description: Interstate Compact Parole
-      - value: "1727"
-        description: Probation
-      - value: "1726"
-        description: Parole
-      - value: "1721"
-        description: Family Independence Agency (DSS)
-      - value: "1725"
-        description: Prison
-      - value: "1720"
-        description: Interstate Compact Probation
-      - value: "1722"
-        description: Community Service Only
-      - value: "1728"
-        description: Presentence Investigation
-      - value: "1723"
-        description: Jail Only
   - name: order_status_id
-    description: Reference code for the status of the legal order
+    description: |-
+      Reference code for the status of the legal order
     known_values:
       - value: "2044"
         description: Closed
-      - value: "3157"
-        description: Inactive Awaiting Pre-Parole
       - value: "2045"
         description: Active
+      - value: "3157"
+        description: Inactive Awaiting Pre-Parole
   - name: create_date
-    description: Date legal order was created
+    description: |-
+      Date legal order was created
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: issue_date
-    description: Date legal order was issued
+    description: |-
+      Date legal order was issued
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: issue_location_id
   - name: issue_reason_code
   - name: county_code_id
-    description: Reference code for the county
+    description: |-
+      Reference code for the county
     known_values:
-      - value: "1355"
-        description: Isabella County
-      - value: "1367"
-        description: Genesee County
-      - value: "1313"
-        description: Van Buren County
-      - value: "1376"
-        description: Cheboygan County
-      - value: "1387"
-        description: Antrim County
-      - value: "1316"
-        description: Schoolcraft County
-      - value: "1326"
-        description: Osceola County
-      - value: "1311"
-        description: Wexford County
-      - value: "1373"
-        description: Clinton County
-      - value: "1377"
-        description: Charlevoix County
-      - value: "1328"
-        description: Ogemaw County
-      - value: "1353"
-        description: Kalamazoo County
-      - value: "1366"
-        description: Gladwin County
-      - value: "1351"
-        description: Keweenaw County
-      - value: "1346"
-        description: Livingston County
-      - value: "1381"
-        description: Berrien County
-      - value: "1350"
-        description: Lake County
-      - value: "1375"
-        description: Chippewa County
-      - value: "1374"
-        description: Clare County
-      - value: "1336"
-        description: Missaukee County
-      - value: "1329"
-        description: Oceana County
+      - value: "1307"
+        description: Kent County
+      - value: "1308"
+        description: Wayne County
       - value: "1309"
         description: Alcona County
-      - value: "1343"
-        description: Macomb County
-      - value: "1380"
-        description: Branch County
-      - value: "1348"
-        description: Leelanau County
-      - value: "1372"
-        description: Crawford County
-      - value: "1325"
-        description: Oscoda County
-      - value: "1359"
-        description: Ingham County
-      - value: "1320"
-        description: Saginaw County
-      - value: "1332"
-        description: Muskegon County
-      - value: "1378"
-        description: Cass County
-      - value: "1368"
-        description: Emmet County
-      - value: "1339"
-        description: Mecosta County
-      - value: "1334"
-        description: Montcalm County
-      - value: "1363"
-        description: Gratiot County
-      - value: "1349"
-        description: Lapeer County
-      - value: "1390"
-        description: Alger County
+      - value: "1311"
+        description: Wexford County
+      - value: "1312"
+        description: Washtenaw County
+      - value: "1313"
+        description: Van Buren County
+      - value: "1314"
+        description: Tuscola County
+      - value: "1315"
+        description: Shiawassee County
+      - value: "1316"
+        description: Schoolcraft County
+      - value: "1317"
+        description: Sanilac County
       - value: "1318"
         description: St. Joseph County
-      - value: "1370"
-        description: Dickinson County
-      - value: "1341"
-        description: Marquette County
-      - value: "1385"
-        description: Baraga County
-      - value: "1345"
-        description: Luce County
-      - value: "1388"
-        description: Allegan County
-      - value: "1327"
-        description: Ontonagon County
-      - value: "7119"
-        description: Recorder's Court
-      - value: "1337"
-        description: Midland County
+      - value: "1319"
+        description: St. Clair County
+      - value: "1320"
+        description: Saginaw County
+      - value: "1321"
+        description: Roscommon County
       - value: "1322"
         description: Presque Isle County
       - value: "1323"
         description: Ottawa County
-      - value: "1384"
-        description: Barry County
-      - value: "1307"
-        description: Kent County
-      - value: "1383"
-        description: Bay County
-      - value: "1317"
-        description: Sanilac County
       - value: "1324"
         description: Otsego County
-      - value: "1369"
-        description: Eaton County
-      - value: "1314"
-        description: Tuscola County
-      - value: "1342"
-        description: Manistee County
-      - value: "1364"
-        description: Grand Traverse County
-      - value: "1344"
-        description: Mackinac County
-      - value: "1315"
-        description: Shiawassee County
-      - value: "1386"
-        description: Arenac County
-      - value: "1371"
-        description: Delta County
-      - value: "1340"
-        description: Mason County
-      - value: "1319"
-        description: St. Clair County
-      - value: "1360"
-        description: Huron County
-      - value: "1338"
-        description: Menominee County
+      - value: "1325"
+        description: Oscoda County
+      - value: "1326"
+        description: Osceola County
+      - value: "1327"
+        description: Ontonagon County
+      - value: "1328"
+        description: Ogemaw County
+      - value: "1329"
+        description: Oceana County
       - value: "1330"
         description: Oakland County
-      - value: "1358"
-        description: Ionia County
-      - value: "1389"
-        description: Alpena County
-      - value: "1365"
-        description: Gogebic County
-      - value: "1362"
-        description: Hillsdale County
-      - value: "1356"
-        description: Iron County
-      - value: "1321"
-        description: Roscommon County
-      - value: "1335"
-        description: Monroe County
-      - value: "1347"
-        description: Lenawee County
-      - value: "1354"
-        description: Jackson County
-      - value: "1357"
-        description: Iosco County
-      - value: "1333"
-        description: Montmorency County
-      - value: "1308"
-        description: Wayne County
-      - value: "1379"
-        description: Calhoun County
-      - value: "1312"
-        description: Washtenaw County
       - value: "1331"
         description: Newaygo County
+      - value: "1332"
+        description: Muskegon County
+      - value: "1333"
+        description: Montmorency County
+      - value: "1334"
+        description: Montcalm County
+      - value: "1335"
+        description: Monroe County
+      - value: "1336"
+        description: Missaukee County
+      - value: "1337"
+        description: Midland County
+      - value: "1338"
+        description: Menominee County
+      - value: "1339"
+        description: Mecosta County
+      - value: "1340"
+        description: Mason County
+      - value: "1341"
+        description: Marquette County
+      - value: "1342"
+        description: Manistee County
+      - value: "1343"
+        description: Macomb County
+      - value: "1344"
+        description: Mackinac County
+      - value: "1345"
+        description: Luce County
+      - value: "1346"
+        description: Livingston County
+      - value: "1347"
+        description: Lenawee County
+      - value: "1348"
+        description: Leelanau County
+      - value: "1349"
+        description: Lapeer County
+      - value: "1350"
+        description: Lake County
+      - value: "1351"
+        description: Keweenaw County
       - value: "1352"
         description: Kalkaska County
-      - value: "1382"
-        description: Benzie County
+      - value: "1353"
+        description: Kalamazoo County
+      - value: "1354"
+        description: Jackson County
+      - value: "1355"
+        description: Isabella County
+      - value: "1356"
+        description: Iron County
+      - value: "1357"
+        description: Iosco County
+      - value: "1358"
+        description: Ionia County
+      - value: "1359"
+        description: Ingham County
+      - value: "1360"
+        description: Huron County
       - value: "1361"
         description: Houghton County
+      - value: "1362"
+        description: Hillsdale County
+      - value: "1363"
+        description: Gratiot County
+      - value: "1364"
+        description: Grand Traverse County
+      - value: "1365"
+        description: Gogebic County
+      - value: "1366"
+        description: Gladwin County
+      - value: "1367"
+        description: Genesee County
+      - value: "1368"
+        description: Emmet County
+      - value: "1369"
+        description: Eaton County
+      - value: "1370"
+        description: Dickinson County
+      - value: "1371"
+        description: Delta County
+      - value: "1372"
+        description: Crawford County
+      - value: "1373"
+        description: Clinton County
+      - value: "1374"
+        description: Clare County
+      - value: "1375"
+        description: Chippewa County
+      - value: "1376"
+        description: Cheboygan County
+      - value: "1377"
+        description: Charlevoix County
+      - value: "1378"
+        description: Cass County
+      - value: "1379"
+        description: Calhoun County
+      - value: "1380"
+        description: Branch County
+      - value: "1381"
+        description: Berrien County
+      - value: "1382"
+        description: Benzie County
+      - value: "1383"
+        description: Bay County
+      - value: "1384"
+        description: Barry County
+      - value: "1385"
+        description: Baraga County
+      - value: "1386"
+        description: Arenac County
+      - value: "1387"
+        description: Antrim County
+      - value: "1388"
+        description: Allegan County
+      - value: "1389"
+        description: Alpena County
+      - value: "1390"
+        description: Alger County
+      - value: "7119"
+        description: Recorder's Court
   - name: released_from_location_id
   - name: notes
   - name: effective_date
-    description: effective start date of the legal order
+    description: |-
+      effective start date of the legal order
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: expiration_date
-    description: expiration date of the legal order
+    description: |-
+      expiration date of the legal order
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
@@ -252,113 +261,125 @@ columns:
   - name: suspended_date
   - name: suspended_parole_id
   - name: closing_reason_code
-    description: reference code for legal order closing reason
+    description: |-
+      reference code for legal order closing reason
     known_values:
-      - value: "11813"
-        description: Sentenced to Family Independence Agency (DSS)
-      - value: "5238"
-        description: Client Number Reassignment
       - value: "5235"
         description: Administrative Discharge from Parole
-      - value: "5245"
-        description: Parole Violator Technical Violation
-      - value: "7580"
-        description: Plea Withdrawn
-      - value: "12260"
-        description: Resentenced on Appeal
-      - value: "5251"
-        description: Completed Satisfactorily
-      - value: "7470"
-        description: Sentenced From Delay To A Jail Only Sentence
-      - value: "5242"
-        description: Pardoned
-      - value: "5693"
-        description: Out of State Parolee Receiving Sentence In Michigan
-      - value: "5252"
-        description: Vacated
-      - value: "7472"
-        description: Sentenced From Delay To A Monetary Only Sentence
-      - value: "5237"
-        description: Discharged by Court, Nollo Prosequi
-      - value: "20148"
-        description: Sentenced to MDHHS - Juvenile
-      - value: "8000"
-        description: HYTA Probation Revoked
-      - value: "19488"
-        description: Court Discharged with Time Served
-      - value: "7210"
-        description: Release from SAI - Complete
-      - value: "7296"
-        description: Sentenced to Jail Only
-      - value: "7624"
-        description: Suspended Sentence
-      - value: "7137"
-        description: New Commitment While Under Sentence
-      - value: "9941"
-        description: Administrative Discharge from Probation
-      - value: "5689"
-        description: Order Entered in Error
-      - value: "5239"
-        description: Discharged While Escapee or Absconder
-      - value: "7915"
-        description: Failure To Appear For Sentencing
-      - value: "11675"
-        description: Resentenced on Appeal to Jail Only
-      - value: "19461"
-        description: Conviction Reversed by Court
-      - value: "12254"
-        description: Drug Court Probation Revoked
-      - value: "5463"
-        description: Offender Discharge
-      - value: "5249"
-        description: Death
-      - value: "9670"
-        description: Dismissed by Court
-      - value: "7136"
-        description: Technical Violation Sustained
       - value: "5236"
         description: Discharged by Transfer to Foreign Country
-      - value: "5691"
-        description: Sentence Reduced to Misdemeanor
-      - value: "12276"
-        description: Supervision Transferred to District Court
-      - value: "5248"
-        description: Discharged Without Improvement
-      - value: "5690"
-        description: Court Resentenced to Probation
+      - value: "5237"
+        description: Discharged by Court, Nollo Prosequi
+      - value: "5238"
+        description: Client Number Reassignment
+      - value: "5239"
+        description: Discharged While Escapee or Absconder
       - value: "5240"
         description: Out of State Case Transferred out of Michigan
-      - value: "5244"
-        description: Probation Violator New Sentence
-      - value: "7211"
-        description: Release from SAI - Incomplete
-      - value: "5246"
-        description: Parole Violator New Sentence
-      - value: "12558"
-        description: Sentenced From Delay No Further Sentence Imposed
-      - value: "9869"
-        description: Sentenced to Prison under HYTA
       - value: "5241"
         description: Commuted
-      - value: "5247"
-        description: Reversal on Appeal
+      - value: "5242"
+        description: Pardoned
       - value: "5243"
         description: Probation Violator Technical Violation
-      - value: "8001"
-        description: 7411 Probation Revoked
-      - value: "19489"
-        description: Termination for Classification
+      - value: "5244"
+        description: Probation Violator New Sentence
+      - value: "5245"
+        description: Parole Violator Technical Violation
+      - value: "5246"
+        description: Parole Violator New Sentence
+      - value: "5247"
+        description: Reversal on Appeal
+      - value: "5248"
+        description: Discharged Without Improvement
+      - value: "5249"
+        description: Death
+      - value: "5250"
+        description: TODO(#35219) Document this value.
+      - value: "5251"
+        description: Completed Satisfactorily
+      - value: "5252"
+        description: Vacated
+      - value: "5463"
+        description: Offender Discharge
+      - value: "5689"
+        description: Order Entered in Error
+      - value: "5690"
+        description: Court Resentenced to Probation
+      - value: "5691"
+        description: Sentence Reduced to Misdemeanor
       - value: "5692"
         description: Out of State Parolee Receiving Sentence Out of State
-      - value: "11812"
-        description: Sentenced to Prison While in Custody of Outside Jurisdiction
-      - value: "10003"
-        description: Sentenced to Community Service Only
+      - value: "5693"
+        description: Out of State Parolee Receiving Sentence In Michigan
+      - value: "7133"
+        description: TODO(#35219) Document this value.
+      - value: "7136"
+        description: Technical Violation Sustained
+      - value: "7137"
+        description: New Commitment While Under Sentence
+      - value: "7210"
+        description: Release from SAI - Complete
+      - value: "7211"
+        description: Release from SAI - Incomplete
+      - value: "7296"
+        description: Sentenced to Jail Only
+      - value: "7470"
+        description: Sentenced From Delay To A Jail Only Sentence
+      - value: "7471"
+        description: TODO(#35219) Document this value.
+      - value: "7472"
+        description: Sentenced From Delay To A Monetary Only Sentence
+      - value: "7580"
+        description: Plea Withdrawn
       - value: "7603"
         description: Sentenced to a Monetary Sentence Only
+      - value: "7624"
+        description: Suspended Sentence
+      - value: "7915"
+        description: Failure To Appear For Sentencing
+      - value: "8000"
+        description: HYTA Probation Revoked
+      - value: "8001"
+        description: 7411 Probation Revoked
+      - value: "8002"
+        description: TODO(#35219) Document this value.
+      - value: "9670"
+        description: Dismissed by Court
+      - value: "9869"
+        description: Sentenced to Prison under HYTA
+      - value: "9941"
+        description: Administrative Discharge from Probation
+      - value: "10003"
+        description: Sentenced to Community Service Only
+      - value: "10380"
+        description: TODO(#35219) Document this value.
+      - value: "11675"
+        description: Resentenced on Appeal to Jail Only
+      - value: "11812"
+        description: Sentenced to Prison While in Custody of Outside Jurisdiction
+      - value: "11813"
+        description: Sentenced to Family Independence Agency (DSS)
+      - value: "12254"
+        description: Drug Court Probation Revoked
+      - value: "12260"
+        description: Resentenced on Appeal
+      - value: "12276"
+        description: Supervision Transferred to District Court
+      - value: "12558"
+        description: Sentenced From Delay No Further Sentence Imposed
+      - value: "19461"
+        description: Conviction Reversed by Court
+      - value: "19488"
+        description: Court Discharged with Time Served
+      - value: "19489"
+        description: Termination for Classification
+      - value: "20148"
+        description: Sentenced to MDHHS - Juvenile
   - name: closing_authority_id
   - name: closing_date
-    description: closing date of the legal order
+    description: |-
+      closing date of the legal order
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
@@ -375,7 +396,8 @@ columns:
   - name: order_disclosure_id
   - name: prison_prefix
   - name: judge_id
-    description: ID for a specific judge (references ADH_JUDGE)
+    description: |-
+      ID for a specific judge (references ADH_JUDGE)
     is_pii: True
   - name: defense_counsel_name
     is_pii: True
