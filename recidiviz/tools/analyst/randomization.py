@@ -25,11 +25,11 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.calculator.query.state.dataset_config import (
-    MANUALLY_UPDATED_SOURCE_TABLES_DATASET,
-)
 from recidiviz.source_tables.externally_managed.collect_externally_managed_source_table_configs import (
     build_source_table_repository_for_externally_managed_tables,
+)
+from recidiviz.source_tables.externally_managed.datasets import (
+    MANUALLY_UPDATED_SOURCE_TABLES_DATASET,
 )
 from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.source_tables.source_table_repository import SourceTableRepository

@@ -14,17 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Constants related to externally managed source table datasets."""
+"""Constants related to source table datasets that contain tables that are managed
+outside of our standard table update process (e.g. via Terraform or via an external
+process that writes to BQ).
+"""
 from recidiviz.calculator.query.state.dataset_config import (
     AUTH0_EVENTS,
     AUTH0_PROD_ACTION_LOGS,
     EXPORT_ARCHIVES_DATASET,
-    GOOGLE_SHEET_BACKED_TABLES_DATASET,
-    MANUALLY_UPDATED_SOURCE_TABLES_DATASET,
-    POPULATION_PROJECTION_OUTPUT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
     SENDGRID_EMAIL_DATA_DATASET,
-    SPARK_OUTPUT_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
@@ -33,11 +32,14 @@ from recidiviz.validation.views.dataset_config import (
     validation_oneoff_dataset_for_state,
 )
 
-VERA_DATASET: str = "vera_data"
+# Views backed by Google Sheets
+GOOGLE_SHEET_BACKED_TABLES_DATASET: str = "google_sheet_backed_tables"
+
+# Views that are updated manually
+MANUALLY_UPDATED_SOURCE_TABLES_DATASET: str = "manually_updated_source_tables"
 
 VALIDATION_RESULTS_DATASET_ID: str = "validation_results"
 
-VIEW_UPDATE_METADATA_DATASET: str = "view_update_metadata"
 
 VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
     validation_oneoff_dataset_for_state(state_code): (
@@ -83,26 +85,16 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     MANUALLY_UPDATED_SOURCE_TABLES_DATASET: (
         "Stores source tables that are updated manually."
     ),
-    POPULATION_PROJECTION_OUTPUT_DATASET: (
-        "Stores output of the population projection simulations."
-    ),
     PULSE_DASHBOARD_SEGMENT_DATASET: (
         "Stores events logged from pulse-dashboard via Segment."
     ),
     SENDGRID_EMAIL_DATA_DATASET: (
         "Stores the output of email activity data from Sendgrid."
     ),
-    SPARK_OUTPUT_DATASET: "Stores output of Spark simulations",
     STATIC_REFERENCE_TABLES_DATASET: (
         "Reference tables used by various views in BigQuery. May need to be updated manually for new states."
     ),
     VALIDATION_RESULTS_DATASET_ID: (
         "Stores results from our data validations framework."
-    ),
-    VERA_DATASET: (
-        "Stores data calculated outside of our codebase by Vera. Used only by Vera."
-    ),
-    VIEW_UPDATE_METADATA_DATASET: (
-        "Stores metadata about the performance of our view update process"
     ),
 }

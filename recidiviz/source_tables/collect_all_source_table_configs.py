@@ -61,6 +61,9 @@ from recidiviz.source_tables.source_table_repository import SourceTableRepositor
 from recidiviz.source_tables.us_mi_validation_oneoffs import (
     collect_duplicative_us_mi_validation_oneoffs,
 )
+from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_configs import (
+    collect_yaml_managed_source_table_collections,
+)
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
@@ -212,6 +215,9 @@ def build_source_table_repository_for_collected_schemata(
     return SourceTableRepository(
         source_table_collections=[
             *collect_externally_managed_source_table_collections(
+                project_id=metadata.project_id()
+            ),
+            *collect_yaml_managed_source_table_collections(
                 project_id=metadata.project_id()
             ),
             *collect_raw_data_source_table_collections(),
