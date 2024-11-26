@@ -22,7 +22,7 @@ import abc
 from collections import defaultdict
 from functools import cached_property
 from textwrap import indent
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Set, Union
 
 import attr
 from google.cloud import bigquery
@@ -78,6 +78,10 @@ class TaskCriteriaGroupBigQueryViewBuilder:
     # `ANY_VALUE` for arrays, `MAX` for all other types
     reasons_aggregate_function_override: Dict[str, str] = attr.ib(factory=dict)
 
+    # Map of reasons field name to ordering clauses for ordering aggregation functions
+    # when necessary to ensure the views are deterministic
+    reasons_aggregate_function_use_ordering_clause: Set[str] = attr.ib(factory=dict)
+
     @property
     @abc.abstractmethod
     def meets_criteria_aggregator_clause(self) -> str:
@@ -121,8 +125,15 @@ class TaskCriteriaGroupBigQueryViewBuilder:
                 [sub_criteria_name for _, sub_criteria_name in fields_list]
             )
             # Check that none of the duplicate reasons fields have ARRAY type
+            # without a corresponding entry in `reasons_aggregate_function_override`
             for reasons_field, sub_criteria_name in fields_list:
-                if reasons_field.type == bigquery.enums.StandardSqlTypeNames.ARRAY:
+                if (
+                    reasons_field.type == bigquery.enums.StandardSqlTypeNames.ARRAY
+                    and (
+                        field_name not in self.allowed_duplicate_reasons_keys
+                        or field_name not in self.reasons_aggregate_function_override
+                    )
+                ):
                     raise ValueError(
                         f"Found ARRAY type reason fields with the name [{field_name}] in multiple "
                         f"sub-criteria of criteria group [{self.criteria_name}]: "
@@ -171,7 +182,7 @@ class TaskCriteriaGroupBigQueryViewBuilder:
                 + extract_object_from_json(
                     reason.name, str(reason.type.value), "reason_v2"
                 )
-                + f""") AS {reason.name}"""
+                + f"""{self._get_reason_aggregate_ordering_clause(reason)}) AS {reason.name}"""
                 for reason in self.reasons_fields
             ]
         )
@@ -188,6 +199,12 @@ class TaskCriteriaGroupBigQueryViewBuilder:
         if reason.type == bigquery.enums.StandardSqlTypeNames.ARRAY:
             return "ANY_VALUE"
         return "MAX"
+
+    def _get_reason_aggregate_ordering_clause(self, reason: ReasonsField) -> str:
+        """Return the ordering clause used to aggregate the reasons fields when provided"""
+        if reason.name in self.reasons_aggregate_function_use_ordering_clause:
+            return f" ORDER BY ARRAY_TO_STRING({extract_object_from_json(reason.name, reason.type.value, 'reason_v2')}, ',')"
+        return ""
 
     def general_criteria_state_code_filter(
         self,

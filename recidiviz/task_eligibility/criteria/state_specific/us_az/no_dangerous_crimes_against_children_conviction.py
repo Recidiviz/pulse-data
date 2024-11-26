@@ -41,12 +41,12 @@ _SEC_STATUTE = [
 
 _QUERY_TEMPLATE = no_current_or_prior_convictions(
     statutes_list=_SEC_STATUTE,
-    reasons_field_name="ineligible_offenses_crimes_ag_children",
+    reasons_field_name="ineligible_offenses",
 )
 
 _REASONS_FIELDS = [
     ReasonsField(
-        name="ineligible_offenses_crimes_ag_children",
+        name="ineligible_offenses",
         type=bigquery.enums.StandardSqlTypeNames.ARRAY,
         description="A list of ineligible offenses related to dangerous crimes against children",
     )

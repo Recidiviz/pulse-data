@@ -37,16 +37,11 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     is_us_citizen_or_legal_permanent_resident,
     meets_functional_literacy_dtp,
     no_active_felony_detainers,
-    no_arson_conviction,
-    no_dangerous_crimes_against_children_conviction,
-    no_domestic_violence_conviction,
     no_dtp_denial_in_current_incarceration,
     no_dtp_removals_from_self_improvement_programs,
+    no_ineligible_dtp_offense_convictions,
     no_major_violent_violation_during_incarceration,
-    no_sexual_exploitation_of_children_conviction,
-    no_sexual_offense_conviction,
     no_unsatisfactory_program_ratings_within_3_months,
-    no_violent_conviction,
     not_previous_dtp_participant,
     not_serving_flat_sentence,
     only_drug_offense_convictions,
@@ -70,15 +65,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 # Criteria shared in both TPR and DTP
 COMMON_CRITERIA_ACROSS_TPR_AND_DTP = [
-    AndTaskCriteriaGroup(
-        criteria_name="US_AZ_NO_SEXUAL_ARSON_OR_DANGEROUS_CRIMES_AGAINST_CHILDREN",
-        sub_criteria_list=[
-            no_sexual_offense_conviction.VIEW_BUILDER,
-            no_arson_conviction.VIEW_BUILDER,
-            no_dangerous_crimes_against_children_conviction.VIEW_BUILDER,
-        ],
-        allowed_duplicate_reasons_keys=[],
-    ),
     no_active_felony_detainers.VIEW_BUILDER,
     custody_level_is_minimum_or_medium.VIEW_BUILDER,
     no_unsatisfactory_program_ratings_within_3_months.VIEW_BUILDER,
@@ -123,9 +109,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ),
         # b. Offenses
         only_drug_offense_convictions.VIEW_BUILDER,
-        no_domestic_violence_conviction.VIEW_BUILDER,
-        no_sexual_exploitation_of_children_conviction.VIEW_BUILDER,
-        no_violent_conviction.VIEW_BUILDER,
+        no_ineligible_dtp_offense_convictions.VIEW_BUILDER,
         # c. No DTP denials in current incarceration, DTPs in the past
         AndTaskCriteriaGroup(
             criteria_name="US_AZ_NO_DTP_DENIAL_OR_PREVIOUS_DTP_RELEASE",

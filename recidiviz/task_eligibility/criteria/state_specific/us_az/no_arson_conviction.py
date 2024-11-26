@@ -36,12 +36,12 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = "US_AZ_NO_ARSON_CONVICTION"
 
 _QUERY_TEMPLATE = no_current_or_prior_convictions(
-    statutes_list=ARSON_STATUTES, reasons_field_name="ineligible_offenses_arson"
+    statutes_list=ARSON_STATUTES, reasons_field_name="ineligible_offenses"
 )
 
 _REASONS_FIELDS = [
     ReasonsField(
-        name="ineligible_offenses_arson",
+        name="ineligible_offenses",
         type=bigquery.enums.StandardSqlTypeNames.ARRAY,
         description="A list of ineligible offenses related to arson",
     )

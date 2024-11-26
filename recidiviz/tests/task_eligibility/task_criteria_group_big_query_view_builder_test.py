@@ -393,7 +393,7 @@ GROUP BY 1, 2, 3, 4
     def test_criteria_group_duplicate_array_reasons(
         self,
     ) -> None:
-        """Checks that OR group with duplicate keys with type ARRAY throws an error"""
+        """Checks that OR group with duplicate keys with type ARRAY throws an error when no aggregation function set"""
 
         with self.assertRaises(ValueError):
             criteria_query = OrTaskCriteriaGroup(
@@ -414,9 +414,140 @@ GROUP BY 1, 2, 3, 4
                         ],
                     ),
                 ],
-                allowed_duplicate_reasons_keys=["ineligible_offenses"],
+                allowed_duplicate_reasons_keys=["offense_types"],
             )
             print(criteria_query.reasons_fields)
+
+    def test_criteria_group_duplicate_array_reasons_with_aggregators(
+        self,
+    ) -> None:
+        """Checks that groups with duplicate array keys are allowed if an override is set"""
+
+        criteria_query = OrTaskCriteriaGroup(
+            criteria_name="CRITERIA_WITH_DUPLICATE_ARRAY_REASONS",
+            sub_criteria_list=[
+                CRITERIA_5_STATE_SPECIFIC,
+                StateAgnosticTaskCriteriaBigQueryViewBuilder(
+                    criteria_name="CRITERIA_WITH_ARRAY_2",
+                    description="Another state-agnostic criteria with array reasons",
+                    criteria_spans_query_template="SELECT * FROM `{project_id}.sessions.super_sessions_materialized`",
+                    meets_criteria_default=False,
+                    reasons_fields=[
+                        ReasonsField(
+                            name="offense_types",
+                            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                            description="Offense types that person is serving",
+                        ),
+                    ],
+                ),
+            ],
+            allowed_duplicate_reasons_keys=["offense_types"],
+            reasons_aggregate_function_override={"offense_types": "ARRAY_CONCAT_AGG"},
+        )
+        expected_query_template = f"""
+WITH unioned_criteria AS (
+    SELECT *, True AS meets_criteria_default
+    FROM `{{project_id}}.task_eligibility_criteria_us_ky.criteria_5_materialized`
+    UNION ALL
+    SELECT *, False AS meets_criteria_default
+    FROM `{{project_id}}.task_eligibility_criteria_general.criteria_with_array_2_materialized`
+    WHERE state_code = "US_KY"
+)
+,
+{create_sub_sessions_with_attributes("unioned_criteria")}
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    LOGICAL_OR(
+        COALESCE(meets_criteria, meets_criteria_default)
+    ) AS meets_criteria,
+    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ARRAY_CONCAT_AGG(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types)) AS reason,
+    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ARRAY_CONCAT_AGG(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types,
+FROM
+    sub_sessions_with_attributes
+GROUP BY 1, 2, 3, 4
+"""
+        self.assertEqual(expected_query_template, criteria_query.get_query_template())
+
+    def test_criteria_group_duplicate_array_reasons_with_aggregators_and_ordering_clause(
+        self,
+    ) -> None:
+        """Checks that ordering clauses are inserted into aggregation queries when specified"""
+
+        criteria_query = OrTaskCriteriaGroup(
+            criteria_name="CRITERIA_WITH_DUPLICATE_ARRAY_REASONS",
+            sub_criteria_list=[
+                StateAgnosticTaskCriteriaBigQueryViewBuilder(
+                    criteria_name="CRITERIA_WITH_ARRAY_1",
+                    description="Some state-agnostic criteria with array reasons",
+                    criteria_spans_query_template="SELECT * FROM `{project_id}.sessions.super_sessions_materialized`",
+                    meets_criteria_default=False,
+                    reasons_fields=[
+                        ReasonsField(
+                            name="array_field_one",
+                            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                            description="Some array",
+                        ),
+                        ReasonsField(
+                            name="array_field_two",
+                            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                            description="Some other array",
+                        ),
+                    ],
+                ),
+                StateAgnosticTaskCriteriaBigQueryViewBuilder(
+                    criteria_name="CRITERIA_WITH_ARRAY_2",
+                    description="Another state-agnostic criteria with array reasons",
+                    criteria_spans_query_template="SELECT * FROM `{project_id}.sessions.super_sessions_materialized`",
+                    meets_criteria_default=False,
+                    reasons_fields=[
+                        ReasonsField(
+                            name="array_field_one",
+                            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                            description="Some array",
+                        ),
+                        ReasonsField(
+                            name="array_field_two",
+                            type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                            description="Some other array",
+                        ),
+                    ],
+                ),
+            ],
+            allowed_duplicate_reasons_keys=["array_field_one", "array_field_two"],
+            reasons_aggregate_function_override={
+                "array_field_one": "ARRAY_CONCAT_AGG",
+                "array_field_two": "SOME_AGG_FUNC",
+            },
+            reasons_aggregate_function_use_ordering_clause={"array_field_one"},
+        )
+        expected_query_template = f"""
+WITH unioned_criteria AS (
+    SELECT *, False AS meets_criteria_default
+    FROM `{{project_id}}.task_eligibility_criteria_general.criteria_with_array_1_materialized`
+    UNION ALL
+    SELECT *, False AS meets_criteria_default
+    FROM `{{project_id}}.task_eligibility_criteria_general.criteria_with_array_2_materialized`
+)
+,
+{create_sub_sessions_with_attributes("unioned_criteria")}
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    LOGICAL_OR(
+        COALESCE(meets_criteria, meets_criteria_default)
+    ) AS meets_criteria,
+    TO_JSON(STRUCT(ARRAY_CONCAT_AGG(JSON_VALUE_ARRAY(reason_v2, '$.array_field_one') ORDER BY ARRAY_TO_STRING(JSON_VALUE_ARRAY(reason_v2, '$.array_field_one'), ',')) AS array_field_one, SOME_AGG_FUNC(JSON_VALUE_ARRAY(reason_v2, '$.array_field_two')) AS array_field_two)) AS reason,
+    ARRAY_CONCAT_AGG(JSON_VALUE_ARRAY(reason_v2, '$.array_field_one') ORDER BY ARRAY_TO_STRING(JSON_VALUE_ARRAY(reason_v2, '$.array_field_one'), ',')) AS array_field_one, SOME_AGG_FUNC(JSON_VALUE_ARRAY(reason_v2, '$.array_field_two')) AS array_field_two,
+FROM
+    sub_sessions_with_attributes
+GROUP BY 1, 2, 3, 4
+"""
+        self.assertEqual(expected_query_template, criteria_query.get_query_template())
 
     def test_criteria_group_two_state_specific_criteria_error(self) -> None:
         """Checks that OR group between state-specific criteria from two different states throws an error"""

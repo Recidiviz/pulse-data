@@ -33,10 +33,10 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     eligible_or_almost_eligible_for_overdue_for_recidiviz_dtp,
     meets_functional_literacy_tpr,
     no_active_felony_detainers,
+    no_ineligible_tpr_offense_convictions,
     no_tpr_denial_in_current_incarceration,
     no_tpr_removals_from_self_improvement_programs,
     no_transition_release_in_current_sentence_span,
-    no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction,
     within_6_months_of_recidiviz_tpr_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -69,7 +69,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # a. Functional literacy
         meets_functional_literacy_tpr.VIEW_BUILDER,
         # b. Offenses
-        no_violent_conviction_unless_assault_or_aggravated_assault_or_robbery_conviction.VIEW_BUILDER,
+        no_ineligible_tpr_offense_convictions.VIEW_BUILDER,
         # c. No TPR denials in current incarceration, TPRs on current sentence and no ACIS TPR date
         AndTaskCriteriaGroup(
             criteria_name="US_AZ_NO_TPR_DENIAL_OR_RELEASE_IN_CURRENT_INCARCERATION",

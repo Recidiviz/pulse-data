@@ -246,6 +246,7 @@ def _function_complexity_score(function_expression: expr.Func) -> int:
             "ENDS_WITH",
             "ERROR",
             "CHAR_LENGTH",
+            "ARRAY_CONCAT_AGG",
         }
     ):
         return 1

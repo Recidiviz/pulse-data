@@ -36,12 +36,12 @@ _CRITERIA_NAME = "US_AZ_NO_SEXUAL_OFFENSE_CONVICTION"
 
 _QUERY_TEMPLATE = no_current_or_prior_convictions(
     additional_where_clauses="AND sent.is_sex_offense",
-    reasons_field_name="ineligible_offenses_sexual",
+    reasons_field_name="ineligible_offenses",
 )
 
 _REASONS_FIELDS = [
     ReasonsField(
-        name="ineligible_offenses_sexual",
+        name="ineligible_offenses",
         type=bigquery.enums.StandardSqlTypeNames.ARRAY,
         description="A list of ineligible offenses related to sexual offenses",
     )
