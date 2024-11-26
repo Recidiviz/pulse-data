@@ -25,10 +25,14 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
 )
 from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_calculation_dag_id,
+    get_raw_data_import_dag_id,
     get_sftp_dag_id,
 )
 from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
     get_alerting_services_for_incident,
+)
+from recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service import (
+    RecidivizGitHubService,
 )
 from recidiviz.airflow.dags.utils.recidiviz_pagerduty_service import (
     RecidivizPagerDutyService,
@@ -41,6 +45,15 @@ _PROJECT_ID = "recidiviz-456"
 @patch.dict(os.environ, {"GCP_PROJECT": _PROJECT_ID})
 class TestGetAlertingServiceForIncident(unittest.TestCase):
     """Tests for incident_alert_routing.py"""
+
+    def setUp(self) -> None:
+        self.github_hook_patcher = patch(
+            "recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service.GithubHook",
+        )
+        self.github_hook_patcher.start()
+
+    def tearDown(self) -> None:
+        self.github_hook_patcher.stop()
 
     @staticmethod
     def _make_incident(dag_id: str, job_id: str) -> AirflowAlertingIncident:
@@ -238,6 +251,54 @@ class TestGetAlertingServiceForIncident(unittest.TestCase):
                 self._make_incident(
                     dag_id=get_sftp_dag_id(_PROJECT_ID),
                     job_id="US_AR.check_config",
+                )
+            ),
+        )
+
+        self.assertEqual(
+            [
+                RecidivizPagerDutyService.airflow_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_OZ
+                ),
+                RecidivizGitHubService.raw_data_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_OZ
+                ),
+            ],
+            get_alerting_services_for_incident(
+                self._make_incident(
+                    dag_id=get_raw_data_import_dag_id(_PROJECT_ID),
+                    job_id="US_OZ.hunger_games_person",
+                )
+            ),
+        )
+
+        self.assertEqual(
+            [
+                RecidivizPagerDutyService.airflow_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_OZ
+                ),
+                RecidivizGitHubService.raw_data_service_for_state_code(
+                    project_id=_PROJECT_ID, state_code=StateCode.US_OZ
+                ),
+            ],
+            get_alerting_services_for_incident(
+                self._make_incident(
+                    dag_id=get_raw_data_import_dag_id(_PROJECT_ID),
+                    job_id="raw_data_branching.us_oz_primary_import_branch.raise_operations_registration_errors",
+                )
+            ),
+        )
+
+        self.assertEqual(
+            [
+                RecidivizPagerDutyService.data_platform_airflow_service(
+                    project_id=_PROJECT_ID
+                )
+            ],
+            get_alerting_services_for_incident(
+                self._make_incident(
+                    dag_id=get_raw_data_import_dag_id(_PROJECT_ID),
+                    job_id="raw_data_branching.us_oz_primary_import_branch.pre_import_normalization.raise_chunk_normalization_errors",
                 )
             ),
         )

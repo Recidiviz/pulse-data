@@ -17,6 +17,7 @@
 """Helpers for routing Airflow job failures to the correct service."""
 
 import re
+from re import Pattern
 from typing import Optional
 
 from more_itertools import one
@@ -27,9 +28,15 @@ from recidiviz.airflow.dags.calculation.constants import (
 from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
-from recidiviz.airflow.dags.monitoring.dag_registry import get_sftp_dag_id
+from recidiviz.airflow.dags.monitoring.dag_registry import (
+    get_raw_data_import_dag_id,
+    get_sftp_dag_id,
+)
 from recidiviz.airflow.dags.monitoring.recidiviz_alerting_service import (
     RecidivzAlertingService,
+)
+from recidiviz.airflow.dags.monitoring.recidiviz_github_alerting_service import (
+    RecidivizGitHubService,
 )
 from recidiviz.airflow.dags.utils.branch_utils import (
     BRANCH_END_TASK_NAME,
@@ -38,6 +45,7 @@ from recidiviz.airflow.dags.utils.branch_utils import (
 from recidiviz.airflow.dags.utils.constants import (
     CHECK_FOR_VALID_WATERMARKS_TASK_ID,
     DATAFLOW_OPERATOR_TASK_ID,
+    RAISE_OPERATIONS_REGISTRATION_ERRORS,
 )
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.recidiviz_pagerduty_service import (
@@ -86,7 +94,7 @@ def _state_code_from_job_id(job_id: str) -> Optional[StateCode]:
     return state_code
 
 
-def _job_id_part_matches(*, job_id: str, regex: str) -> bool:
+def _job_id_part_matches(*, job_id: str, regex: str | Pattern) -> bool:
     """Returns True if any part of a job_id matches the regex. Job id parts are
     separated by periods.
     """
@@ -130,6 +138,32 @@ def get_alerting_services_for_incident(
                 project_id=project_id, state_code=state_code
             )
         ]
+
+    if dag_id == get_raw_data_import_dag_id(project_id):
+        # jobs that start like US_XX\..* are file-tag level failures
+        if _job_id_part_matches(job_id=job_id, regex=_STATE_CODE_BEGINNING_REGEX):
+            state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
+            return [
+                RecidivizPagerDutyService.airflow_service_for_state_code(
+                    project_id=project_id, state_code=state_code
+                ),
+                RecidivizGitHubService.raw_data_service_for_state_code(
+                    project_id=project_id, state_code=state_code
+                ),
+            ]
+
+        if _job_id_part_matches(
+            job_id=job_id, regex=RAISE_OPERATIONS_REGISTRATION_ERRORS
+        ):
+            state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
+            return [
+                RecidivizPagerDutyService.airflow_service_for_state_code(
+                    project_id=project_id, state_code=state_code
+                ),
+                RecidivizGitHubService.raw_data_service_for_state_code(
+                    project_id=project_id, state_code=state_code
+                ),
+            ]
 
     if _job_id_part_matches(job_id=job_id, regex=DATAFLOW_OPERATOR_TASK_ID):
         state_code = assert_type(_state_code_from_job_id(job_id), StateCode)

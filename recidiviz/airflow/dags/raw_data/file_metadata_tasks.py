@@ -34,6 +34,7 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     SKIPPED_FILE_ERRORS,
 )
 from recidiviz.airflow.dags.raw_data.utils import get_direct_ingest_region_raw_config
+from recidiviz.airflow.dags.utils.constants import RAISE_OPERATIONS_REGISTRATION_ERRORS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
@@ -541,7 +542,7 @@ def _deserialize_coalesce_results_and_errors_inputs(
     )
 
 
-@task
+@task(task_id=RAISE_OPERATIONS_REGISTRATION_ERRORS)
 def raise_skipped_file_errors(serialized_skipped_file_errors: List[str]) -> None:
     skipped_file_errors = [
         RawDataFilesSkippedError.deserialize(serialized_skipped_file_error)

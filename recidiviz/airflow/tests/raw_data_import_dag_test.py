@@ -196,7 +196,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 "coalesce_results_and_errors",
                 "read_and_verify_column_headers",
                 "split_by_pre_import_normalization_type",
-                "raise_skipped_file_errors",
+                "raise_operations_registration_errors",
             ],
         ]
 
@@ -364,7 +364,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
         "raw_data_branching.us_xx_primary_import_branch.split_by_pre_import_normalization_type",
         "raw_data_branching.us_xx_primary_import_branch.write_import_start",
         "raw_data_branching.us_xx_primary_import_branch.has_files_to_import",
-        "raw_data_branching.us_xx_primary_import_branch.raise_skipped_file_errors",
+        "raw_data_branching.us_xx_primary_import_branch.raise_operations_registration_errors",
     ]
 
     def setUp(self) -> None:
@@ -657,7 +657,7 @@ class RawDataImportOperationsRegistrationIntegrationTest(AirflowIntegrationTest)
                 self._create_operations_registration_only_dag(),
                 session=session,
                 expected_failure_task_id_regexes=[
-                    "raw_data_branching.us_xx_primary_import_branch.raise_skipped_file_errors"
+                    "raw_data_branching.us_xx_primary_import_branch.raise_operations_registration_errors"
                 ],
                 expected_skipped_task_id_regexes=[],  # none!
             )
@@ -2683,7 +2683,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
                     r".*_primary_import_branch\.has_files_to_import",
                     r".*_primary_import_branch\.write_import_start",
-                    r".*primary_import_branch.raise_skipped_file_errors",
+                    r".*primary_import_branch\.raise_operations_registration_errors",
                     r".*_primary_import_branch\.read_and_verify_column_headers",
                     r".*_primary_import_branch\.raise_header_verification_errors",
                     r".*_primary_import_branch\.split_by_pre_import_normalization_type",

@@ -26,3 +26,8 @@ DATAFLOW_OPERATOR_TASK_ID = "run_pipeline"
 # Task id for the check that runs before ingest pipelines to make sure we aren't
 # running with stale / missing raw data.
 CHECK_FOR_VALID_WATERMARKS_TASK_ID = "check_for_valid_watermarks"
+
+
+# Task id for the task in raw data for files that fail to register with the operations
+# db
+RAISE_OPERATIONS_REGISTRATION_ERRORS = "raise_operations_registration_errors"
