@@ -36,7 +36,7 @@ run_cmd verify_can_deploy recidiviz-123 "${COMMIT_HASH}"
 read -r -a VERSION_PARTS < <(parse_version "${GIT_VERSION_TAG}")
 MAJOR_VERSION="${VERSION_PARTS[1]}"
 MINOR_VERSION="${VERSION_PARTS[2]}"
-CHANGES_SINCE_TAG=$(git log "tags/${GIT_VERSION_TAG}..releases/v${MAJOR_VERSION}.${MINOR_VERSION}-rc" --oneline) || exit_on_fail
+CHANGES_SINCE_TAG=$(git log "tags/${GIT_VERSION_TAG}..origin/releases/v${MAJOR_VERSION}.${MINOR_VERSION}-rc" --oneline) || exit_on_fail
 if [ -n "${CHANGES_SINCE_TAG}" ]; then
   echo "There are newly-added commits in the release branch that will not be deployed in ${GIT_VERSION_TAG}:"
   echo "${CHANGES_SINCE_TAG}" | indent_output
