@@ -48,6 +48,8 @@ tramp
 # Distribution / packaging
 .Python
 build/
+# with an exception for endpoint docs
+!docs/**/build/
 develop-eggs/
 dist/
 downloads/
@@ -221,4 +223,3 @@ recidiviz/justice_counts/control_panel/local/**/*
 
 # Terraform cache
 recidiviz/tools/deploy/terraform/.terraform
-

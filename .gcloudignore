@@ -32,6 +32,8 @@ tramp
 # Distribution / packaging
 .Python
 build/
+# with an exception for endpoint docs
+!docs/**/build/
 develop-eggs/
 dist/
 downloads/
