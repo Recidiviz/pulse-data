@@ -524,6 +524,6 @@ FROM {unit_of_analysis_name}_assignments
         view_id=view_address.table_id,
         view_query_template=query_template,
         description=view_description,
-        clustering_fields=sorted(unit_of_analysis.primary_key_columns),
+        clustering_fields=unit_of_observation.primary_key_columns_ordered,
         should_materialize=True,
     )
