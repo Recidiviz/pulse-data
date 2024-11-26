@@ -1,25 +1,32 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_SUPER_COND_VIOLATION
-file_description: OMNI-database table linking supervision violations, supervision conditions, and supervision incidents
+file_description: |-
+  OMNI-database table linking supervision violations, supervision conditions, and supervision incidents
 data_classification: source
 primary_key_cols:
   - super_cond_violation_id
 columns:
   - name: super_cond_violation_id
-    description: OMNI-database generated ID for this supervision condition violation linking record
+    description: |-
+      OMNI-database generated ID for this supervision condition violation linking record
   - name: supervision_condition_id
-    description: OMNI-database generated ID for a supervision condition (links with ADH_SUPERIVISION_CONDITION)
+    description: |-
+      OMNI-database generated ID for a supervision condition (links with ADH_SUPERIVISION_CONDITION)
   - name: supv_violation_incident_id
-    description: OMNI-database generated ID for a supervision violation incident (links with ADH_SUPV_VIOLATION_INCIDENT)
+    description: |-
+      OMNI-database generated ID for a supervision violation incident (links with ADH_SUPV_VIOLATION_INCIDENT)
   - name: supervision_violation_id
-    description: OMNI-database generated ID for a supervision violation (links with ADH_SUPERVISION_VIOLATION)
+    description: |-
+      OMNI-database generated ID for a supervision violation (links with ADH_SUPERVISION_VIOLATION)
   - name: offender_booking_id
-    description: OMNI-database generated ID for an individual booking
-    is_pii: True
+    description: |-
+      OMNI-database generated ID for an individual booking
     field_type: person_external_id
     external_id_type: US_MI_DOC_BOOK
+    is_pii: True
   - name: prelim_hearing_finding_id
-    description: Reference code for preliminary hearing findings (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for preliminary hearing findings (links with ADH_REFERENCE_CODE)
     known_values:
       - value: "12815"
         description: No Probable Cause
@@ -54,12 +61,18 @@ columns:
       - value: "8099"
         description: 45 Day Waiver
   - name: prelim_hearing_finding_note_id
-    description: ID for preliminary hearing findings notes (not sure which table it links to but we already have the notes here)
+    description: |-
+      ID for preliminary hearing findings notes (not sure which table it links to but we already have the notes here)
   - name: prelim_hearing_finding_notes
-    description: Preliminary hearing finding notes
+    description: |-
+      Preliminary hearing finding notes
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: formal_hearing_finding_id
-    description: Reference code for formal hearing findings (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for formal hearing findings (links with ADH_REFERENCE_CODE)
     known_values:
       - value: "13324"
         description: Dismissed by OFP for Due Process
@@ -90,24 +103,40 @@ columns:
       - value: "1869"
         description: Dismissed for Due Process
   - name: formal_hearing_finding_notes
-    description: Formal hearing finding notes
+    description: |-
+      Formal hearing finding notes
     is_pii: True
   - name: notes_id
-    description: ID for notes (links with ADH_SUPERVISION_VIOLATION_NOTES)
+    description: |-
+      ID for notes (links with ADH_SUPERVISION_VIOLATION_NOTES)
   - name: notes
-    description: Notes
+    description: |-
+      Notes
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: notes2
-    description: More notes
+    description: |-
+      More notes
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: notes3
-    description: Even more notes
+    description: |-
+      Even more notes
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: last_update_user
-    description: User who last updated the record
+    description: |-
+      User who last updated the record
     is_pii: True
   - name: last_update_date
-    description: Date record was last updated
+    description: |-
+      Date record was last updated
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"

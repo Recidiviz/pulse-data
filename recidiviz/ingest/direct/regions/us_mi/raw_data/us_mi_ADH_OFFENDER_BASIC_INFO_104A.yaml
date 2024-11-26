@@ -257,6 +257,9 @@ columns:
   - name: general_violence_cnvt
   - name: compas_vfo_id
   - name: gv_domestic_cnvt
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
 table_relationships:
   - foreign_table: ADH_OFFENDER_BOOKING
     join_logic:

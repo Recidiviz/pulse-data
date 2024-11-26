@@ -7,38 +7,50 @@ primary_key_cols:
   - offender_fee_profile_id
 columns:
   - name: offender_fee_profile_id
-    description: OMNI-database generated id for the offender fee profile
+    description: |-
+      OMNI-database generated id for the offender fee profile
   - name: cos_fee_type_id
-    description: OMNI-database generated id for the fee type record (links with ADH_COS_FEE_TYPE)
+    description: |-
+      OMNI-database generated id for the fee type record (links with ADH_COS_FEE_TYPE)
   - name: offender_booking_id
-    description: OMNI-database generated id for a specific justice-involved individual during a specific booking
-    is_pii: True
+    description: |-
+      OMNI-database generated id for a specific justice-involved individual during a specific booking
     field_type: person_external_id
     external_id_type: US_MI_DOC_BOOK
+    is_pii: True
   - name: profile_create_date
-    description: Date fee profile was created
+    description: |-
+      Date fee profile was created
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: initial_amount_ordered
-    description: Initial fee amount ordered (in dollars)
+    description: |-
+      Initial fee amount ordered (in dollars)
   - name: total_amount_ordered
-    description: Total fee amount ordered (in dollars)
+    description: |-
+      Total fee amount ordered (in dollars)
   - name: months
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
   - name: amount_paid_todate
-    description: Amount paid to date (in dollars)
+    description: |-
+      Amount paid to date (in dollars)
   - name: last_payment_date
-    description: Date of last payment
+    description: |-
+      Date of last payment
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: other_assets_flag
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
   - name: court_file_no
-    description: Court file number
+    description: |-
+      Court file number
   - name: status_id
-    description: Reference code for fee profile status (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for fee profile status (links with ADH_REFERENCE_CODE)
     known_values:
       - value: "12065"
         description: Prison
@@ -51,33 +63,47 @@ columns:
       - value: "6676"
         description: Post Review Collection
   - name: fee_review_date
-    description: Date fee profile last reviewed
+    description: |-
+      Date fee profile last reviewed
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: fee_review_notes
-    description: Notes from fee profile review
+    description: |-
+      Notes from fee profile review
     is_pii: True
   - name: review_employee_id
-    description: Employee who conducted the last review
+    description: |-
+      Employee who conducted the last review
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: supv_discharge_date
-    description: Supervision discharge date
+    description: |-
+      Supervision discharge date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_authority_id
-    description: TODO(#17944) # Always null so not sure what this is
+    description: |-
+      TODO(#17944)
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: closing_date
-    description: closing date of fee profile
+    description: |-
+      closing date of fee profile
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_notes
-    description: Closing notes
+    description: |-
+      Closing notes
     is_pii: True
   - name: closing_reason_id
-    description: Reference code for closing reason (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for closing reason (links with ADH_REFERENCE_CODE)
     known_values:
       - value: "5396"
         description: Paid in Full
@@ -94,37 +120,49 @@ columns:
       - value: "5410"
         description: Fee Set Aside
   - name: create_location_id
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
   - name: no_order_zero_order_id
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: final_assessment_date
-    description: Date of final fee profile assessment
+    description: |-
+      Date of final fee profile assessment
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: treasury_hold_date
-    description: Treasury hold date
+    description: |-
+      Treasury hold date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: statement_date
-    description: Date of statement
+    description: |-
+      Date of statement
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: warning_90_day_letter_date
-    description: Date of 90 day warning letter
+    description: |-
+      Date of 90 day warning letter
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: profile_notes
-    description: Profile notes
+    description: |-
+      Profile notes
     is_pii: True
   - name: last_update_user
-    description: User who last updated record
+    description: |-
+      User who last updated record
     is_pii: True
   - name: last_update_date
-    description: Date record last updated
+    description: |-
+      Date record last updated
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"

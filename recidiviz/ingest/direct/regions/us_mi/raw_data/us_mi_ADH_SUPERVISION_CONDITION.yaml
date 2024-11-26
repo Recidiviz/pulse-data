@@ -13,8 +13,14 @@ columns:
     description: |-
       The OMNI-database generated ID for a specific special condition (links with rows in the ADH_SPECIAL_CONDITION table)
   - name: corporation_id
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: person_id
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: legal_order_id
     description: |-
       The OMNI-database generated ID for a specific legal order for a specific person's booking

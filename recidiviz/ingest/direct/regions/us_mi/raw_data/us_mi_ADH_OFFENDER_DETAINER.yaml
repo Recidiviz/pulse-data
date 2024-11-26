@@ -110,6 +110,9 @@ columns:
     description: |-
       address line 3
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: city
     description: |-
       city
@@ -125,6 +128,9 @@ columns:
   - name: country_id
     description: |-
       reference code for country id (links with ADH_REFERENCE)
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: contact_phone
     description: |-
       contact phone
@@ -219,6 +225,9 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: deportation_final_order_flg
     description: |-
       deportation final order flag
@@ -244,15 +253,24 @@ columns:
   - name: followup_req
     description: |-
       followup required
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: followup_reason_id
     description: |-
       reference code for followup reason (links with ADH_REFERENCE_CODE)
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: followup_date
     description: |-
       followup date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
 table_relationships:
   - foreign_table: ADH_OFFENDER
     join_logic:

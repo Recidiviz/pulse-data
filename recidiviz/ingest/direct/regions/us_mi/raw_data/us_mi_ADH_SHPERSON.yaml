@@ -3,40 +3,56 @@ file_tag: ADH_SHPERSON
 file_description: |-
   This table contains information on people in the COMPAS system.
 data_classification: source
-encoding: windows-1252
 primary_key_cols:
   - RecId
 columns:
   - name: RecId
-    description: COMPAS system-generated ID for each person record
+    description: |-
+      COMPAS system-generated ID for each person record
     is_pii: True
   - name: FirstName
-    description: First name
+    description: |-
+      First name
     is_pii: True
   - name: LastName
-    description: Last name
+    description: |-
+      Last name
     is_pii: True
   - name: MiddleName
-    description: Middle name
+    description: |-
+      Middle name
     is_pii: True
   - name: FkShSyCodeSex
-    description: Reference code for sex (we don't currently have the reference table)
+    description: |-
+      Reference code for sex (we don't currently have the reference table)
   - name: FkShSyCodeRace
-    description: Reference code for race (we don't currently have the reference table)
+    description: |-
+      Reference code for race (we don't currently have the reference table)
   - name: FkShRfCodeEthnic
-    description: Reference code for ethnicity (we don't currently have the reference table)
+    description: |-
+      Reference code for ethnicity (we don't currently have the reference table)
   - name: DateOfBirth
-    description: Date of birth
-    is_pii: True
+    description: |-
+      Date of birth
     field_type: datetime
+    is_pii: True
   - name: SSN
-    description: SSN
+    description: |-
+      SSN
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: EmailAddress
-    description: Email address
+    description: |-
+      Email address
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: IsDeleted
-    description: Boolean flag for whether this person record should be treated as deleted/inactive
+    description: |-
+      Boolean flag for whether this person record should be treated as deleted/inactive
   - name: DateCreated
     field_type: datetime
   - name: DateUpdated
@@ -53,8 +69,14 @@ columns:
   - name: FkShRfCodeSuffix
   - name: EncryptedSSN
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: CryptoSSN
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: DateOfBirthAsString
     is_pii: True
   - name: FkShClient
@@ -63,4 +85,11 @@ columns:
   - name: FkShRfCodeRace
   - name: FkShRfCodeGender
   - name: FkShRfCodeGenderIdentity
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: FkShRfCodePronouns
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
+encoding: windows-1252

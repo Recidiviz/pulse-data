@@ -52,6 +52,9 @@ columns:
   - name: reporting_clock_no
     description: |-
       TODO(#17944)
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: pending_hearing_status_id
     description: |-
       Reference code for status of pending hearing (links with ADH_REFERENCE_CODE)
@@ -61,6 +64,9 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: review_date
     description: |-
       Review date
@@ -80,6 +86,9 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: hearing_invest_request_flag
     description: |-
       TODO(#17944)
@@ -99,6 +108,9 @@ columns:
     description: |-
       TODO(#17944) is this an employee id or a flag
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: witness_requested_flag
     description: |-
       flag for whether witnesses were requested

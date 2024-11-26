@@ -30,6 +30,9 @@ columns:
   - name: original_offense_code_id
     description: |-
       TODO(#17944) What does this link with?
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: closing_date
     description: |-
       closing date of the charge
@@ -40,6 +43,9 @@ columns:
     description: |-
       Notes about the closing of the charge
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35329) Ensure this column is intentionally null and isn't being used anywhere
   - name: closing_reason_id
     description: |-
       Reference code for the closing reaseon (links with ADH_REFERENCE_CODE)
