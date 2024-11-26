@@ -73,7 +73,7 @@ resource "google_composer_environment" "default_v2" {
         "python-levenshtein"              = "==0.25.1"
         "dateparser"                      = "==1.2.0"
         "apache-airflow-providers-github" = "==2.6.2"
-        "PyGithub"                        = "==2.5.0"
+        "pygithub"                        = "==2.5.0"
       }
       image_version = "composer-2.7.1-airflow-2.7.3"
     }
