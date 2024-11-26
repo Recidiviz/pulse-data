@@ -74,6 +74,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_sentencing_
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_lists import (
     US_TN_SEGREGATION_LISTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
+    WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_outlier_officers import (
     SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER,
 )
@@ -418,6 +421,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ): (
         "This view will eventually be referenced by impact metrics related to "
         "insights early adoption funnel usage (Mayuka Sarukkai 10/11/2024)"
+    ),
+    WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER.address: (
+        "Will be referenced for Looker view of disaggregated marked ineligible status sessions and snooze "
+        "details (see looker#616) (Jenna Bellassai 11/18/2024)"
     ),
 }
 

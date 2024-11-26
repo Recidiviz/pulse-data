@@ -288,6 +288,9 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
+    WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_provisioned_user_registration_sessions import (
     WORKFLOWS_PROVISIONED_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
 )
@@ -400,4 +403,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INSIGHTS_USER_AUTH0_REGISTRATIONS_VIEW_BUILDER,
     WORKFLOWS_USER_AUTH0_REGISTRATIONS_VIEW_BUILDER,
     INSIGHTS_SEGMENT_EVENTS_VIEW_BUILDER,
+    WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
 ]
