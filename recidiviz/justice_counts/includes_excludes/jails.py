@@ -281,6 +281,59 @@ class UseOfForceIncidentsIncludesExcludes(Enum):
     ROUTINE = "Use of restraints during routine operations and movement of people in the agency’s jurisdiction that follows jurisdiction policy and standard operating procedures"
 
 
+# Total Admissions
+class TotalAdmissionsIncludesExcludes(Enum):
+    """
+    Enum representing various categories of individuals included or excluded in
+    calculations of total jail admissions.
+    """
+
+    AWAITING_ARRAIGNMENT = "People in jail awaiting arraignment"
+    UNPAID_BAIL = "People in jail due to unpaid bail"
+    DENIAL_OF_BAIL = "People in jail due to denial of bail"
+    REVOCATION_OF_BAIL = "People in jail due to revocation of bail"
+    ASSESSMENT_OF_CAPACITY = (
+        "People in jail pending assessment of capacity to stand trial"
+    )
+    TRANSFERRED_TO_HOSPITAL = "People who have been transferred to a hospital for a capacity assessment but are still counted on jail rolls"
+    PENDING_PRETRIAL_REVOCATION = (
+        "People in jail to be held pending outcome of pretrial revocation decision"
+    )
+    REVOCATION_OF_PRETRIAL_RELEASE = (
+        "People in jail due to revocation of pretrial release"
+    )
+    PRETRIAL_SUPERVISION_SANCTION = (
+        "People in jail due to a pretrial supervision incarceration sanction"
+    )
+    FEDERAL_HOLD = (
+        "People in jail due to a pre-adjudication federal hold for U.S. Marshals Service, Federal Bureau of Prisons, "
+        "or U.S. Immigration and Customs Enforcement"
+    )
+    TRIBAL_HOLD = "People in jail due to a pre-adjudication federal hold for a Tribal Nation or the Bureau of Indian Affairs"
+    AWAITING_FAILURE_TO_APPEAR = "People held awaiting hearings for failure to appear in court or court-ordered programs"
+    FAILURE_TO_PAY_FINES = "People held due to failure to pay fines or fees ordered by civil or criminal courts"
+    OTHER_STATE_OR_COUNTY_HOLDS = "People held for other state or county jurisdictions"
+    SERVING_JAIL_SENTENCE = "People in jail to serve a sentence of jail incarceration"
+    SPLIT_JAIL_SENTENCE = (
+        "People in jail to serve a split sentence of jail incarceration"
+    )
+    SUSPENDED_JAIL_SENTENCE = (
+        "People in jail to serve a suspended sentence of jail incarceration"
+    )
+    REVOCATION_OF_SUPERVISION_SENTENCE = (
+        "People in jail due to a revocation of post-adjudication community supervision sentence "
+        "(i.e., probation, parole, or other community supervision sentence type)"
+    )
+    POST_ADJUDICATION_SANCTION_COMMUNITY_SUPERVISION = (
+        "People in jail due to a post-adjudication incarceration sanction imposed by a community supervision agency "
+        "(e.g., a “dip,” “dunk,” or weekend sentence)"
+    )
+    POST_ADJUDICATION_SANCTION_SPECIALTY_AGENCY = (
+        "People in jail due to a post-adjudication incarceration sanction imposed by a specialty, treatment, "
+        "or problem-solving court (e.g., a “dip,” “dunk,” or weekend sentence)"
+    )
+
+
 # Pre-adjudication Admissions
 class PreAdjudicationAdmissionsIncludesExcludes(Enum):
     PAPER_BOOKINGS = "“Paper bookings” who are never admitted to facilities"
@@ -293,6 +346,30 @@ class PreAdjudicationAdmissionsIncludesExcludes(Enum):
     ADMITTED = "Admission events that are booked and admitted to jail pre-adjudication"
     TEMPORARY_ABSENCE = "Admission events returning from a temporary absence (e.g., hospital visit, court hearing, etc.)"
     MOVING = "Admission events that are moving between facilities under the same agency’s jurisdiction"
+
+
+# Total Releases
+
+
+class TotalReleasesIncludesExcludes(Enum):
+    RELEASE_TO_OWN_RECOGNIZANCE = "Releases to own recognizance awaiting trial"
+    MONETARY_BAIL = "Releases on monetary bail"
+    NONMONETARY_BAIL = "Release events on nonmonetary bail (i.e., travel restrictions, no contact orders)"
+    SUPERVISION_RELEASE = "Releases to supervision (including electronic monitoring, home confinement, traditional supervision, etc.)"
+    BAIL_MODIFICATIONS = "Releases with subsequent bail modifications"
+    DEATH_IN_CUSTODY = "Releases due to death in custody"
+    ESCAPE_OR_AWOL = "Releases due to escape or Absent Without Leave (AWOL) status for more than 30 days"
+    EMERGENCY_RELEASES = "Emergency releases (such as due to COVID-19, etc.)"
+    PROBATION_SUPERVISION = "Releases to probation supervision following a period of jail incarceration (including electronic monitoring)"
+    PAROLE_SUPERVISION = (
+        "Releases to parole supervision following a period of jail incarceration"
+    )
+    OTHER_COMMUNITY_SUPERVISION = (
+        "Releases to other community supervision that is not probation or parole"
+    )
+    INPATIENT_TREATMENT = "Releases to inpatient treatment in the community"
+    NO_CORRECTIONAL_CONTROL = "Releases with no additional correctional control"
+    TEMPORARY_RELEASES_EXCLUDE = "Temporary releases for medical or court appearances"
 
 
 # Pre-adjudication Releases
@@ -400,3 +477,54 @@ class PostAdjudicationReleasesDueToDeathIncludesExcludes(Enum):
 class PostAdjudicationReleasesDueToEscapeOrAWOLIncludesExcludes(Enum):
     ESCAPE = "Escape from custody"
     AWOL = "AWOL from custody"
+
+
+# Total Daily Population
+
+
+class TotalDailyPopulationIncludesExcludes(Enum):
+    """
+    Enum representing various categories of individuals included or excluded in
+    calculations of total jail admissions.
+    """
+
+    AWAITING_ARRAIGNMENT = "People in jail awaiting arraignment"
+    UNPAID_BAIL = "People in jail due to unpaid bail"
+    DENIAL_OF_BAIL = "People in jail due to denial of bail"
+    REVOCATION_OF_BAIL = "People in jail due to revocation of bail"
+    PENDING_CAPACITY_ASSESSMENT = (
+        "People in jail pending assessment of capacity to stand trial"
+    )
+    TRANSFERRED_TO_HOSPITAL = "People who have been transferred to a hospital for a capacity assessment but are still counted on jail rolls"
+    PENDING_PRETRIAL_REVOCATION = (
+        "People in jail to be held pending outcome of pretrial revocation decision"
+    )
+    PRETRIAL_RELEASE_REVOCATION = "People in jail due to revocation of pretrial release"
+    PRETRIAL_SUPERVISION_SANCTION = (
+        "People in jail due to a pretrial supervision incarceration sanction"
+    )
+    FEDERAL_HOLD = (
+        "People in jail due to a pre-adjudication federal hold for U.S. Marshals Service, Federal Bureau of Prisons, "
+        "or U.S. Immigration and Customs Enforcement"
+    )
+    TRIBAL_NATION_HOLD = "People in jail due to a pre-adjudication federal hold for a Tribal Nation or the Bureau of Indian Affairs"
+    FAILURE_TO_APPEAR = "People held awaiting hearings for failure to appear in court or court-ordered programs"
+    FAILURE_TO_PAY_FEES = "People held due to failure to pay fines or fees ordered by civil or criminal courts"
+    OTHER_JURISDICTION_HOLDS = "People held for other state or county jurisdictions"
+    SERVING_SENTENCE = "People in jail to serve a sentence of jail incarceration"
+    SPLIT_SENTENCE = "People in jail to serve a split sentence of jail incarceration"
+    SUSPENDED_SENTENCE = (
+        "People in jail to serve a suspended sentence of jail incarceration"
+    )
+    REVOCATION_OF_SUPERVISION = (
+        "People in jail due to a revocation of post-adjudication community supervision sentence "
+        "(i.e., probation, parole, or other community supervision sentence type)"
+    )
+    POST_ADJUDICATION_SUPERVISION_SANCTION = (
+        "People in jail due to a post-adjudication incarceration sanction imposed by a community supervision agency "
+        "(e.g., a “dip,” “dunk,” or weekend sentence)"
+    )
+    POST_ADJUDICATION_SPECIALTY_SANCTION = (
+        "People in jail due to a post-adjudication incarceration sanction imposed by a specialty, treatment, "
+        "or problem-solving court (e.g., a “dip,” “dunk,” or weekend sentence)"
+    )

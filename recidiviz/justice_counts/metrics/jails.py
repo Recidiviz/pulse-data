@@ -67,6 +67,9 @@ from recidiviz.justice_counts.includes_excludes.jails import (
     ProgrammaticStaffIncludesExcludes,
     SecurityStaffIncludesExcludes,
     StaffIncludesExcludes,
+    TotalAdmissionsIncludesExcludes,
+    TotalDailyPopulationIncludesExcludes,
+    TotalReleasesIncludesExcludes,
     TrainingIncludesExcludes,
     UseOfForceIncidentsIncludesExcludes,
     VacantPositionsIncludesExcludes,
@@ -335,6 +338,36 @@ readmissions = MetricDefinition(
     # TODO(#18071) implement reused includes/excludes
 )
 
+total_admissions = MetricDefinition(
+    system=System.JAILS,
+    metric_type=MetricType.ADMISSIONS,
+    category=MetricCategory.POPULATIONS,
+    display_name="Total Admissions",
+    description="The number of admission events to the agency’s jurisdiction.",
+    additional_description="Admissions are based on the number of events in which a person was incarcerated in a jail facility, not the number of individual people who entered the facility. If the same person was admitted to jail three times in a time period, it would count as three admissions.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=TotalAdmissionsIncludesExcludes,
+        ),
+    ],
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=OffenseType,
+            required=False,
+            dimension_to_description={
+                OffenseType.PERSON: "The total number of admission events in which the most serious charge was for an offense against a person.",
+                OffenseType.PROPERTY: "The total number of admission events in which the most serious charge was for a property offense.",
+                OffenseType.PUBLIC_ORDER: "The total number of admission events in which the most serious charge was for a public order offense.",
+                OffenseType.DRUG: "The total number of admission events in which the most serious charge was for a drug offense.",
+                OffenseType.OTHER: "The total number of admission events in which the most serious charge was for another type of offense that was not a person, property, public order, or drug offense.",
+                OffenseType.UNKNOWN: "The total number of admission events in which the most serious offense charge type is not known.",
+            },
+        )
+    ],
+)
+
 pre_adjudication_admissions = MetricDefinition(
     system=System.JAILS,
     metric_type=MetricType.PRE_ADJUDICATION_ADMISSIONS,
@@ -490,6 +523,40 @@ post_adjudication_admissions = MetricDefinition(
                 OffenseType.UNKNOWN: "The number of post-adjudication admission events in which the most serious offense charge type is not known.",
             },
         )
+    ],
+)
+
+total_daily_population = MetricDefinition(
+    system=System.JAILS,
+    metric_type=MetricType.POPULATION,
+    category=MetricCategory.POPULATIONS,
+    display_name="Total Daily Population",
+    description="A single day count of the total number of people incarcerated under the agency’s jurisdiction.",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=TotalDailyPopulationIncludesExcludes,
+        ),
+    ],
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=OffenseType,
+            required=False,
+            dimension_to_description={
+                OffenseType.PERSON: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious charge was for an offense against a person.",
+                OffenseType.PROPERTY: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious charge was for a property offense.",
+                OffenseType.PUBLIC_ORDER: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious charge was for a public order offense.",
+                OffenseType.DRUG: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious charge was for a public order offense.",
+                OffenseType.OTHER: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious charge was for another type of offense that was not a person, property, public order, or drug offense.",
+                OffenseType.UNKNOWN: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious offense charge type is not known.",
+            },
+        ),
+        AggregatedDimension(dimension=RaceAndEthnicity, required=False),
+        AggregatedDimension(
+            dimension=BiologicalSex,
+            required=False,
+        ),
     ],
 )
 
@@ -703,6 +770,22 @@ post_adjudication_daily_population = MetricDefinition(
                     ),
                 ],
             },
+        ),
+    ],
+)
+
+total_releases = MetricDefinition(
+    system=System.JAILS,
+    metric_type=MetricType.RELEASES,
+    category=MetricCategory.POPULATIONS,
+    display_name="Total Releases",
+    description="The number of total release events from the agency’s jurisdiction after a period of incarceration. Releases are based on the number of events in which a person was released from the jurisdiction of the agency, not the number of individual people released. If the same person was released from jail three times in a time period, it would count as three releases.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=TotalReleasesIncludesExcludes,
+            excluded_set={TotalReleasesIncludesExcludes.TEMPORARY_RELEASES_EXCLUDE},
         ),
     ],
 )

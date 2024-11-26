@@ -265,6 +265,8 @@ class MetricDefinition:
     measurement_type: MeasurementType
     # How often the metric should be reported
     reporting_frequencies: List[ReportingFrequency]
+    # Additional Human-readable description of the metric
+    additional_description: Optional[str] = None
     # Note to agencies about how to report this metric (i.e. the ideal methodology)
     reporting_note: Optional[str] = None
     # Additional context that the agency is required to report on this metric

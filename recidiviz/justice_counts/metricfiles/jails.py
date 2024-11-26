@@ -65,6 +65,16 @@ JAILS_METRIC_FILES = [
         definition=jails.readmissions,
     ),
     MetricFile(
+        canonical_filename="total_admissions",
+        definition=jails.total_admissions,
+    ),
+    MetricFile(
+        canonical_filename="total_admissions_by_type",
+        definition=jails.total_admissions,
+        disaggregation=OffenseType,
+        disaggregation_column_name="offense_type",
+    ),
+    MetricFile(
         canonical_filename="pre_adj_admissions",
         definition=jails.pre_adjudication_admissions,
     ),
@@ -83,6 +93,28 @@ JAILS_METRIC_FILES = [
         definition=jails.post_adjudication_admissions,
         disaggregation=OffenseType,
         disaggregation_column_name="offense_type",
+    ),
+    MetricFile(
+        canonical_filename="total_population",
+        definition=jails.total_daily_population,
+    ),
+    MetricFile(
+        canonical_filename="total_population_by_type",
+        definition=jails.total_daily_population,
+        disaggregation=OffenseType,
+        disaggregation_column_name="offense_type",
+    ),
+    MetricFile(
+        canonical_filename="total_population_by_race",
+        definition=jails.total_daily_population,
+        disaggregation=RaceAndEthnicity,
+        disaggregation_column_name="race/ethnicity",
+    ),
+    MetricFile(
+        canonical_filename="total_population_by_sex",
+        definition=jails.total_daily_population,
+        disaggregation=BiologicalSex,
+        disaggregation_column_name="biological_sex",
     ),
     MetricFile(
         canonical_filename="pre_adj_population",
@@ -127,6 +159,10 @@ JAILS_METRIC_FILES = [
         definition=jails.post_adjudication_daily_population,
         disaggregation=BiologicalSex,
         disaggregation_column_name="biological_sex",
+    ),
+    MetricFile(
+        canonical_filename="total_releases",
+        definition=jails.total_releases,
     ),
     MetricFile(
         canonical_filename="pre_adj_releases",
