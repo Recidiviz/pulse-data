@@ -182,7 +182,12 @@ class FileTagImportRunSummary(BaseResult):
         )
 
     def job_id(self) -> str:
-        return f"{self.state_code.value}.{self.raw_data_instance.value}.{self.file_tag}"
+        """Unique job_id: (state_code.file_tag) -- used to identify all files imported
+        with the same file tag within a single run together. Since JobRun objects are
+        unique based on job_id and dag_run_config, we do not need to include the
+        raw_data_instance in the job_id.
+        """
+        return f"{self.state_code.value}.{self.file_tag}"
 
     def serialize(self) -> str:
         return json.dumps(
@@ -239,12 +244,15 @@ class FileTagImportRunSummary(BaseResult):
         )
 
     def as_job_run(self, dag_id: str) -> JobRun:
+        dag_run_config = (
+            {}
+            if self.raw_data_instance == DirectIngestInstance.PRIMARY
+            else {"ingest_instance": self.raw_data_instance.value}
+        )
         return JobRun(
             dag_id=dag_id,
             execution_date=self.import_run_start,
-            dag_run_config=json.dumps(
-                {"ingest_instance": self.raw_data_instance.value}
-            ),
+            dag_run_config=json.dumps(dag_run_config),
             job_id=self.job_id(),
             state=self.file_tag_import_state,
             error_message=self.format_error_message(),

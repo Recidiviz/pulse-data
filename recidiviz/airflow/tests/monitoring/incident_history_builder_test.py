@@ -812,18 +812,18 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
 
         assert len(history) == 2
 
-        primary_key = '{"ingest_instance": "PRIMARY"} raw_data_dag.US_XX.PRIMARY.tag_a, started: 2024-01-01 01:01 UTC'
+        primary_key = "raw_data_dag.US_XX.tag_a, started: 2024-01-01 01:01 UTC"
         assert primary_key in history
         primary_incident = history[primary_key]
         primary_incident.next_success_date = date_2024_01_03
         primary_incident.failed_execution_dates = [date_2024_01_01, date_2024_01_02]
-        primary_incident.job_id = "raw_data_dag.US_XX.PRIMARY.tag_a"
+        primary_incident.job_id = "raw_data_dag.US_XX.tag_a"
         primary_incident.error_message = primary_2024_01_02.format_error_message()
 
-        secondary_key = '{"ingest_instance": "SECONDARY"} raw_data_dag.US_XX.SECONDARY.tag_a, started: 2024-01-01 01:01 UTC'
+        secondary_key = '{"ingest_instance": "SECONDARY"} raw_data_dag.US_XX.tag_a, started: 2024-01-01 01:01 UTC'
         assert secondary_key in history
         secondy_incident = history[secondary_key]
         secondy_incident.next_success_date = None
         secondy_incident.failed_execution_dates = [date_2024_01_01, date_2024_01_03]
-        secondy_incident.job_id = "raw_data_dag.US_XX.SECONDARY.tag_a"
+        secondy_incident.job_id = "raw_data_dag.US_XX.tag_a"
         secondy_incident.error_message = secondary_2024_01_03.format_error_message()
