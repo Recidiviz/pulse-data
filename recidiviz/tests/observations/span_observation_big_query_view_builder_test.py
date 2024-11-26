@@ -54,7 +54,7 @@ class SpanObservationBigQueryViewBuilderTest(unittest.TestCase):
 
         expected_view_query = """
 SELECT DISTINCT
-    state_code, person_id,
+    person_id, state_code,
     my_start_date_col AS start_date,
     my_end_date_col AS end_date,
     TO_JSON_STRING(STRUCT(
@@ -79,7 +79,7 @@ FROM `test-project.dataset.source_table`
 
         expected_view_query = """
 SELECT DISTINCT
-    state_code, person_id,
+    person_id, state_code,
     my_start_date_col AS start_date,
     my_end_date_col AS end_date,
     TO_JSON_STRING(STRUCT(
@@ -120,7 +120,7 @@ FROM `test-project.input_prefix_dataset.source_table`
 
         expected_view_query = """
 SELECT DISTINCT
-    state_code, officer_id,
+    officer_id, state_code,
     my_start_date_col AS start_date,
     my_end_date_col AS end_date,
     TO_JSON_STRING(STRUCT(
@@ -148,7 +148,7 @@ FROM (
 
         expected_view_query = """
 SELECT DISTINCT
-    state_code, officer_id,
+    officer_id, state_code,
     my_start_date_col AS start_date,
     my_end_date_col AS end_date,
     TO_JSON_STRING(STRUCT(

@@ -65,12 +65,19 @@ class MetricUnitOfObservation:
 
     @property
     def primary_key_columns_ordered(self) -> list[str]:
+        """Provides primary keys in a stable order that should be used in JOIN / WHERE
+        clauses and will be used as the clustering order for observation view output.
+        """
         if "state_code" not in self.primary_key_columns:
             raise ValueError(
                 f"Expected all primary_key_columns for unit of observation type "
                 f"[{self}] to include a state_code column."
             )
 
-        return ["state_code"] + sorted(
-            c for c in self.primary_key_columns if c != "state_code"
-        )
+        # Sort the `state_code` key last because it's going to be the
+        # least-differentiated value. When doing joins, we want to first look for the
+        # most-differentiated value for optimal query performance. See
+        # https://cloud.google.com/blog/topics/developers-practitioners/bigquery-admin-reference-guide-query-optimization.
+        return sorted(c for c in self.primary_key_columns if c != "state_code") + [
+            "state_code"
+        ]

@@ -132,7 +132,7 @@ FROM (
     INNER JOIN
         `{{project_id}}.aggregated_metrics.{population_type.population_name_short}_{unit_of_analysis.type.short_name}_metrics_{unit_of_observation.type.short_name}_assignment_sessions_materialized` assign
     ON
-        {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="spans", table2="assign")}
+        {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="spans", table2="assign")}
         AND (
           assign.assignment_date
             BETWEEN spans.start_date AND {nonnull_end_date_exclusive_clause("spans.end_date")}

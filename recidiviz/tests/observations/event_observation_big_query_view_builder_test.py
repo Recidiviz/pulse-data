@@ -55,7 +55,7 @@ class EventObservationBigQueryViewBuilderTest(unittest.TestCase):
 
         expected_view_query = """
 SELECT DISTINCT
-    state_code, person_id,
+    person_id, state_code,
     my_date_col AS event_date,
     TO_JSON_STRING(STRUCT(
         CAST(attribute_1 AS STRING) AS attribute_1,
@@ -79,7 +79,7 @@ FROM `test-project.dataset.source_table`
 
         expected_view_query = """
 SELECT DISTINCT
-    state_code, person_id,
+    person_id, state_code,
     my_date_col AS event_date,
     TO_JSON_STRING(STRUCT(
         CAST(attribute_1 AS STRING) AS attribute_1,
@@ -118,7 +118,7 @@ FROM `{project_id}.another_dataset.table`;
 
         expected_view_query = """
 SELECT DISTINCT
-    state_code, email_address,
+    email_address, state_code,
     my_date_col AS event_date,
     TO_JSON_STRING(STRUCT(
         CAST(attribute_1 AS STRING) AS attribute_1,
@@ -145,7 +145,7 @@ FROM (
 
         expected_view_query = """
 SELECT DISTINCT
-    state_code, email_address,
+    email_address, state_code,
     my_date_col AS event_date,
     TO_JSON_STRING(STRUCT(
         CAST(attribute_1 AS STRING) AS attribute_1,

@@ -26,6 +26,7 @@ from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
 from recidiviz.observations.event_type import EventType
+from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
@@ -58,43 +59,45 @@ def _description_for_union_all_view(
 
 
 def _build_unioned_spans_builder(
-    unit_of_observation: MetricUnitOfObservationType,
+    unit_of_observation_type: MetricUnitOfObservationType,
     parent_span_views: list[SpanObservationBigQueryViewBuilder],
 ) -> UnionAllBigQueryViewBuilder:
     """Returns a view builder for a view that unions together all the span observations
     for a given unit of observation.
     """
+    unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
     columns_str = ", ".join(
-        SpanObservationBigQueryViewBuilder.output_columns(unit_of_observation)
+        SpanObservationBigQueryViewBuilder.output_columns(unit_of_observation_type)
     )
 
     def _parent_to_select_statement(vb: SpanObservationBigQueryViewBuilder) -> str:
         return f'SELECT "{vb.span_type.value}" AS span, {columns_str}'
 
     dataset_id = dataset_for_observation_type_cls(
-        unit_of_observation=unit_of_observation,
+        unit_of_observation=unit_of_observation_type,
         observation_type_cls=SpanType,
     )
 
     return UnionAllBigQueryViewBuilder(
         dataset_id=dataset_id,
-        view_id=f"all_{unit_of_observation.short_name}_spans",
-        description=_description_for_union_all_view(unit_of_observation, SpanType),
+        view_id=f"all_{unit_of_observation_type.short_name}_spans",
+        description=_description_for_union_all_view(unit_of_observation_type, SpanType),
         parents=parent_span_views,
-        clustering_fields=["state_code", "span"],
+        clustering_fields=(unit_of_observation.primary_key_columns_ordered + ["span"]),
         parent_to_select_statement=_parent_to_select_statement,
     )
 
 
 def _build_unioned_events_builder(
-    unit_of_observation: MetricUnitOfObservationType,
+    unit_of_observation_type: MetricUnitOfObservationType,
     parent_event_views: list[EventObservationBigQueryViewBuilder],
 ) -> UnionAllBigQueryViewBuilder:
     """Returns a view builder for a view that unions together all the event observations
     for a given unit of observation.
     """
+    unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
     columns_str = ", ".join(
-        EventObservationBigQueryViewBuilder.output_columns(unit_of_observation)
+        EventObservationBigQueryViewBuilder.output_columns(unit_of_observation_type)
     )
 
     def _parent_to_select_statement(vb: EventObservationBigQueryViewBuilder) -> str:
@@ -102,13 +105,15 @@ def _build_unioned_events_builder(
 
     return UnionAllBigQueryViewBuilder(
         dataset_id=dataset_for_observation_type_cls(
-            unit_of_observation=unit_of_observation,
+            unit_of_observation=unit_of_observation_type,
             observation_type_cls=EventType,
         ),
-        view_id=f"all_{unit_of_observation.short_name}_events",
-        description=_description_for_union_all_view(unit_of_observation, EventType),
+        view_id=f"all_{unit_of_observation_type.short_name}_events",
+        description=_description_for_union_all_view(
+            unit_of_observation_type, EventType
+        ),
         parents=parent_event_views,
-        clustering_fields=["state_code", "event"],
+        clustering_fields=(unit_of_observation.primary_key_columns_ordered + ["event"]),
         parent_to_select_statement=_parent_to_select_statement,
     )
 
@@ -128,7 +133,7 @@ def _get_unioned_observation_builders() -> list[UnionAllBigQueryViewBuilder]:
         builders.append(
             _build_unioned_spans_builder(
                 parent_span_views=parent_span_views,
-                unit_of_observation=unit_of_observation,
+                unit_of_observation_type=unit_of_observation,
             )
         )
 
@@ -141,7 +146,7 @@ def _get_unioned_observation_builders() -> list[UnionAllBigQueryViewBuilder]:
         builders.append(
             _build_unioned_events_builder(
                 parent_event_views=parent_event_views,
-                unit_of_observation=unit_of_observation,
+                unit_of_observation_type=unit_of_observation,
             )
         )
     return builders

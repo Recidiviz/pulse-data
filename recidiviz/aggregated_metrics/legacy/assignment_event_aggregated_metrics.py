@@ -135,7 +135,7 @@ def get_assignment_event_time_specific_cte(
             LEFT JOIN
                 `{{project_id}}.{events_dataset_id}.all_{unit_of_observation.type.short_name}_events_materialized` events
             ON
-                {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="events", table2="assign")}
+                {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="events", table2="assign")}
                 AND events.event_date >= assign.assignment_date
             WHERE
                 period = "{metric_time_period.value}"

@@ -33,5 +33,5 @@ class MetricUnitOfObservationTest(unittest.TestCase):
         query_string = my_metric_observation_level.get_primary_key_columns_query_string(
             prefix="my_prefix"
         )
-        expected_query_string = "my_prefix.state_code, my_prefix.officer_id"
+        expected_query_string = "my_prefix.officer_id, my_prefix.state_code"
         self.assertEqual(query_string, expected_query_string)

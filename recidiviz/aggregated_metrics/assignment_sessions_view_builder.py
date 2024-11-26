@@ -434,7 +434,7 @@ for use in the {unit_of_analysis_name}_metrics table, based on {unit_of_observat
     # of the unit of analysis
     child_primary_key_columns = [
         col
-        for col in sorted(unit_of_observation.primary_key_columns)
+        for col in unit_of_observation.primary_key_columns_ordered
         if col not in unit_of_analysis.primary_key_columns
     ]
     child_primary_key_columns_query_string = (
@@ -468,16 +468,16 @@ sample AS (
     {create_intersection_spans(
         table_1_name="assign", 
         table_2_name="sample", 
-        index_columns=sorted(unit_of_observation.primary_key_columns),
+        index_columns=unit_of_observation.primary_key_columns_ordered,
         include_zero_day_intersections=True,
-        table_1_columns=[col for col in unit_of_analysis.primary_key_columns if col not in sorted(unit_of_observation.primary_key_columns)] + ["dummy"],
+        table_1_columns=[col for col in unit_of_analysis.primary_key_columns if col not in unit_of_observation.primary_key_columns_ordered] + ["dummy"],
         table_2_columns=[]
     )}
 )
 ,
 {create_sub_sessions_with_attributes(
     table_name="potentially_adjacent_spans", 
-    index_columns=sorted(unit_of_observation.primary_key_columns), 
+    index_columns=unit_of_observation.primary_key_columns_ordered, 
     end_date_field_name="end_date_exclusive"
 )}
 , sub_sessions_with_attributes_distinct AS (

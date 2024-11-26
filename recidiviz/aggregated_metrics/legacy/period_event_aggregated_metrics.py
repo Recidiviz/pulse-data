@@ -111,7 +111,7 @@ ON
 LEFT JOIN
     `{{project_id}}.{events_dataset_id}.all_{unit_of_observation.type.value.lower()}_events_materialized` AS events
 ON
-    {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="events", table2="assign")}
+    {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="events", table2="assign")}
     -- Include events occurring on the last date of an end-date exclusive span,
     -- but exclude events occurring on the last date of an end-date exclusive analysis period.
     AND events.event_date BETWEEN GREATEST(assign.assignment_date, pop.population_start_date)

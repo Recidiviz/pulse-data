@@ -134,7 +134,7 @@ FROM (
     LEFT JOIN
         `{{project_id}}.{spans_dataset_id}.all_{unit_of_observation.type.short_name}_spans_materialized` spans
     ON
-        {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="spans", table2="assign")}
+        {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="spans", table2="assign")}
         AND (
             spans.start_date > assign.assignment_date
             OR assign.assignment_date BETWEEN spans.start_date

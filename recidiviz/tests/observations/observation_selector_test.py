@@ -272,14 +272,14 @@ class TestObservationSelector(unittest.TestCase):
 
         expected_query = """
 SELECT
-    state_code,
     person_id,
+    state_code,
     start_date,
     end_date
 FROM (
     SELECT
-        state_code,
         person_id,
+        state_code,
         start_date,
         end_date
     FROM 
@@ -307,16 +307,16 @@ WHERE
 
         expected_query = """
 SELECT
-    state_code,
     person_id,
+    state_code,
     start_date,
     end_date,
     case_type_start,
     compartment_level_1
 FROM (
     SELECT
-        state_code,
         person_id,
+        state_code,
         start_date,
         end_date,
         JSON_EXTRACT_SCALAR(span_attributes, "$.case_type_start") AS case_type_start,
@@ -344,15 +344,15 @@ WHERE
 
         expected_query = """
 SELECT
-    state_code,
     person_id,
+    state_code,
     event_date,
     change_type,
     previous_custody_level
 FROM (
     SELECT
-        state_code,
         person_id,
+        state_code,
         event_date,
         JSON_EXTRACT_SCALAR(event_attributes, "$.change_type") AS change_type,
         JSON_EXTRACT_SCALAR(event_attributes, "$.previous_custody_level") AS previous_custody_level
@@ -389,15 +389,15 @@ WHERE
 
         expected_query = """
 SELECT
-    state_code,
     person_id,
+    state_code,
     event_date,
     change_type,
     previous_custody_level
 FROM (
     SELECT
-        state_code,
         person_id,
+        state_code,
         event_date,
         JSON_EXTRACT_SCALAR(event_attributes, "$.change_type") AS change_type,
         JSON_EXTRACT_SCALAR(event_attributes, "$.new_custody_level") AS new_custody_level,

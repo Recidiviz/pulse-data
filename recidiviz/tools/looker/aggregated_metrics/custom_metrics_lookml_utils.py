@@ -231,7 +231,7 @@ def generate_period_span_metric_view(
         INNER JOIN
             ${{{unit_of_observation.type.short_name}_{assignments_with_attributes_view}_{view_name}.SQL_TABLE_NAME}} assignments
         ON
-            {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="assignments", table2="spans")}
+            {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="assignments", table2="spans")}
             AND (
               assignments.assignment_date
                 BETWEEN spans.start_date AND {nonnull_end_date_exclusive_clause("spans.end_date")}
@@ -262,7 +262,7 @@ def generate_period_span_metric_view(
     ON
         ses.start_date < time_period.span_end_date
         AND time_period.span_start_date < {nonnull_current_date_clause("ses.end_date")}
-        AND {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="ses", table2="time_period")}
+        AND {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="ses", table2="time_period")}
     GROUP BY
         1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
     """
@@ -352,7 +352,7 @@ def generate_period_event_metric_view(
     LEFT JOIN
         `{events_dataset_id}.all_{unit_of_observation.type.short_name}_events_materialized` AS events
     ON
-        {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="events", table2="assignments")}
+        {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="events", table2="assignments")}
         AND events.event_date BETWEEN GREATEST(assignments.assignment_date, assignments.start_date)
           AND LEAST(
             {nonnull_end_date_clause("assignments.assignment_end_date")},
@@ -457,7 +457,7 @@ def generate_assignment_span_metric_view(
     LEFT JOIN
         `{spans_dataset_id}.all_{unit_of_observation.type.short_name}_spans_materialized` spans
     ON
-        {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="assignments", table2="spans")}
+        {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="assignments", table2="spans")}
         AND (
             spans.start_date > assignments.assignment_date
             OR assignments.assignment_date BETWEEN spans.start_date
@@ -593,7 +593,7 @@ def generate_assignment_event_metric_view(
         LEFT JOIN
             `{events_dataset_id}.all_{unit_of_observation.type.short_name}_events_materialized` events
         ON
-            {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="assignments", table2="events")}
+            {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="assignments", table2="events")}
             AND events.event_date >= assignments.assignment_date
         GROUP BY
             assignments.state_code,

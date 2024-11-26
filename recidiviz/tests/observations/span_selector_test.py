@@ -54,7 +54,7 @@ WITH filtered_spans AS (
 ,
 sub_sessions_dedup AS (
     SELECT DISTINCT
-        state_code, person_id,
+        person_id, state_code,
         start_date,
         end_date_exclusive,
     FROM
@@ -89,7 +89,7 @@ WITH filtered_spans AS (
 ,
 sub_sessions_dedup AS (
     SELECT DISTINCT
-        state_code, officer_id,
+        officer_id, state_code,
         start_date,
         end_date_exclusive,
     FROM
@@ -125,7 +125,7 @@ WITH filtered_spans AS (
 ,
 sub_sessions_dedup AS (
     SELECT DISTINCT
-        state_code, person_id,
+        person_id, state_code,
         start_date,
         end_date_exclusive,
     FROM
@@ -158,7 +158,7 @@ WITH filtered_spans AS (
 ,
 sub_sessions_dedup AS (
     SELECT DISTINCT
-        state_code, person_id,
+        person_id, state_code,
         start_date,
         end_date_exclusive,
     FROM
