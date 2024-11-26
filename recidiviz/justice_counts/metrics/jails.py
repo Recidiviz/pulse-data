@@ -340,7 +340,7 @@ readmissions = MetricDefinition(
 
 total_admissions = MetricDefinition(
     system=System.JAILS,
-    metric_type=MetricType.ADMISSIONS,
+    metric_type=MetricType.TOTAL_ADMISSIONS,
     category=MetricCategory.POPULATIONS,
     display_name="Total Admissions",
     description="The number of admission events to the agency’s jurisdiction.",
@@ -528,7 +528,7 @@ post_adjudication_admissions = MetricDefinition(
 
 total_daily_population = MetricDefinition(
     system=System.JAILS,
-    metric_type=MetricType.POPULATION,
+    metric_type=MetricType.TOTAL_POPULATION,
     category=MetricCategory.POPULATIONS,
     display_name="Total Daily Population",
     description="A single day count of the total number of people incarcerated under the agency’s jurisdiction.",
@@ -776,7 +776,7 @@ post_adjudication_daily_population = MetricDefinition(
 
 total_releases = MetricDefinition(
     system=System.JAILS,
-    metric_type=MetricType.RELEASES,
+    metric_type=MetricType.TOTAL_RELEASES,
     category=MetricCategory.POPULATIONS,
     display_name="Total Releases",
     description="The number of total release events from the agency’s jurisdiction after a period of incarceration. Releases are based on the number of events in which a person was released from the jurisdiction of the agency, not the number of individual people released. If the same person was released from jail three times in a time period, it would count as three releases.",
