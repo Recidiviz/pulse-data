@@ -69,8 +69,12 @@ columns:
     description: |-
       Distinguishes sanction and intervention records.
     known_values:
+      - value: A
+        description: TODO(#35462) Document this value.
       - value: S
         description: Sanction (default)
+      - value: T
+        description: TODO(#35462) Document this value.
       - value: V
         description: Intervention
   - name: CUSTODY_NUMBER
