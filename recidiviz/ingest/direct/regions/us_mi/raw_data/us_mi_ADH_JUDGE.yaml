@@ -7,22 +7,29 @@ primary_key_cols:
   - judge_id
 columns:
   - name: judge_id
-    description: The OMNI-database generated ID for an individual judge
+    description: |-
+      The OMNI-database generated ID for an individual judge
   - name: title_id
-    description: Reference code for the title of the judge
+    description: |-
+      Reference code for the title of the judge
   - name: first_name
-    description: First name of the judge
+    description: |-
+      First name of the judge
     is_pii: True
   - name: middle_name
-    description: Middle name of the judge
+    description: |-
+      Middle name of the judge
     is_pii: True
   - name: last_name
-    description: Last name of the judge
+    description: |-
+      Last name of the judge
     is_pii: True
   - name: name_suffix
-    description: Name suffix of the judge
+    description: |-
+      Name suffix of the judge
   - name: active_flag
-    description: Flag for whether the judge is still active
+    description: |-
+      Flag for whether the judge is still active
   - name: list_seq
   - name: address1
     is_pii: True
@@ -47,13 +54,16 @@ columns:
   - name: expiration_date
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: county_id
-    description: Reference code for the county in which the judge operates
+    description: |-
+      Reference code for the county in which the judge operates
   - name: circuit_id
-    description: Reference code for the circuit in which the judge operates
+    description: |-
+      Reference code for the circuit in which the judge operates
   - name: district_court_id
-    description: Reference code for the district court in which the judge operates (reference table = ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for the district court in which the judge operates (reference table = ADH_REFERENCE_CODE)
     known_values:
       - value: "1454"
         description: Eastpointe Municipal Court
@@ -304,5 +314,5 @@ columns:
   - name: last_update_date
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node

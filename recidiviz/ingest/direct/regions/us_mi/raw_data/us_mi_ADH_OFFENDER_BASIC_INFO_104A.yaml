@@ -7,25 +7,33 @@ primary_key_cols:
   - offender_booking_id
 columns:
   - name: offender_booking_id
-    description: The OMNI-database generated ID for an individual's booking
-    is_pii: True
+    description: |-
+      The OMNI-database generated ID for an individual's booking
     field_type: person_external_id
     external_id_type: US_MI_DOC_BOOK
+    is_pii: True
   - name: pending_charge_flag
-    description: Flag for whether this individual currently has a pending charge
+    description: |-
+      Flag for whether this individual currently has a pending charge
   - name: hold_flag
   - name: probat_violation_flag
-    description: Flag for whether this individual currently has a probation violation
+    description: |-
+      Flag for whether this individual currently has a probation violation
   - name: hist_of_arson
-    description: Flag for whether this individual has a history of arson
+    description: |-
+      Flag for whether this individual has a history of arson
   - name: hist_of_drug_sales
-    description: Flag for whether this individual has a history of drug sales
+    description: |-
+      Flag for whether this individual has a history of drug sales
   - name: hist_of_assault
-    description: Flag for whether this individual has a history of assault
+    description: |-
+      Flag for whether this individual has a history of assault
   - name: hist_of_sex_offense_minor
-    description: Flag for whether this individual has a history of sexual offense towards a minor
+    description: |-
+      Flag for whether this individual has a history of sexual offense towards a minor
   - name: hist_of_sex_offense
-    description: Flag for whether this individual has a history of sexual offense
+    description: |-
+      Flag for whether this individual has a history of sexual offense
   - name: history_srce_code_i
   - name: history_srce_code_p
   - name: history_srce_code_ir
@@ -144,13 +152,14 @@ columns:
     # description: TODO(#15325)
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: to_location_id
   - name: recommend_by_emp_id
     is_pii: True
   - name: security_level
   - name: pending_charge_comments
-    description: Comments about pending charges
+    description: |-
+      Comments about pending charges
   - name: offense
   - name: docket_no
   - name: jurisdiction
@@ -168,7 +177,7 @@ columns:
   - name: homosex_designated_date
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: num_prior_prison_terms
   - name: num_prior_adult_probations
   - name: age_1st_juvenile_arrest
@@ -181,7 +190,7 @@ columns:
   - name: last_update_date
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
   - name: hods_srce_code_i
   - name: hods_srce_code_p
@@ -223,21 +232,25 @@ columns:
   - name: static_risk_id
     # description: TODO(#15325)
   - name: compas_screener_employee_id
-    description: ID for employee that conducted the COMPAS screener
+    description: |-
+      ID for employee that conducted the COMPAS screener
     is_pii: True
   - name: static_risk_screener_emp_id
-    description: ID for employee that conducted the STATIC risk screener
+    description: |-
+      ID for employee that conducted the STATIC risk screener
     is_pii: True
   - name: compass_screen_date
-    description: Date of COMPAS screener
+    description: |-
+      Date of COMPAS screener
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: static_risk_screen_date
-    description: Date of STATIC risk screener
+    description: |-
+      Date of STATIC risk screener
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: additional_offense_flag
   - name: additional_off_flag
   - name: domestic_violence_cnvt

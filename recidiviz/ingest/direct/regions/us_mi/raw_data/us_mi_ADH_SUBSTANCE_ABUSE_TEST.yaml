@@ -1,299 +1,337 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_SUBSTANCE_ABUSE_TEST
-file_description: OMNI-database table for substance abuse test records
+file_description: |-
+  OMNI-database table for substance abuse test records
 data_classification: source
 primary_key_cols:
   - substance_abuse_test_id
 columns:
   - name: substance_abuse_test_id
-    description: OMNI-database generated ID for a substance abuse test record
+    description: |-
+      OMNI-database generated ID for a substance abuse test record
   - name: offender_booking_id
-    description: OMNI-database generated ID for an individual's booking
-    is_pii: True
+    description: |-
+      OMNI-database generated ID for an individual's booking
     field_type: person_external_id
     external_id_type: US_MI_DOC_BOOK
+    is_pii: True
   - name: specimen_date
-    description: Date test specimen was taken
+    description: |-
+      Date test specimen was taken
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: sample_taken_flag
-    description: Flag for whether sample was taken
+    description: |-
+      Flag for whether sample was taken
     known_values:
-      - value: 1
+      - value: "1"
         description: Sample was taken
-      - value: 0
+      - value: "0"
         description: Sample was not taken
   - name: sample_not_taken_reason_id
-    description: Code for the reason why a sample was not taken.
+    description: |-
+      Code for the reason why a sample was not taken.
     known_values:
-      - value: 3704
+      - value: "3704"
         description: Refused
-      - value: 3705
+      - value: "3705"
         description: Offender Not Available
-      - value: 3706
+      - value: "3706"
         description: Same Sex Tester Unavailable
-      - value: 3707
+      - value: "3707"
         description: Insufficient/Adulterated Sample
-      - value: 3708
+      - value: "3708"
         description: Other
   - name: sample_type_id
-    description: Code for the type of sample taken.
+    description: |-
+      Code for the type of sample taken.
     known_values:
-      - value: 3711
+      - value: "3711"
         description: Lab Urine Test
-      - value: 7156
+      - value: "7156"
         description: Admissions
-      - value: 7731
+      - value: "7731"
         description: On-Site Saliva Test
-      - value: 3710
+      - value: "3710"
         description: On-Site Urine Test
-      - value: 3712
+      - value: "3712"
         description: PBT
-      - value: 8170
+      - value: "8170"
         description: Breathalyzer/PBT
-      - value: 3709
+      - value: "3709"
         description: Patch
-      - value: 13540
+      - value: "13540"
         description: STOP Test
   - name: test_taker_type_id
-    description: Code for the type of employee that took the test.
+    description: |-
+      Code for the type of employee that took the test.
     known_values:
-      - value: 3714
+      - value: "3714"
         description: Vendor
-      - value: 14394
+      - value: "14394"
         description: Community Resource Provider
-      - value: 3713
+      - value: "3713"
         description: MDOC Employee
-      - value: 3715
+      - value: "3715"
         description: County Employee
-      - value: 3716
+      - value: "3716"
         description: Other
   - name: test_taker_employee_id
-    description: Id for employee that took the test.
+    description: |-
+      Id for employee that took the test.
     is_pii: True
   - name: test_taker_other_id
-    description: Other ID for the employee that took the test.
+    description: |-
+      Other ID for the employee that took the test.
     known_values:
-      - value: 3720
+      - value: "3720"
         description: Vendor
-      - value: 3721
+      - value: "3721"
         description: County Employee
-      - value: 3722
+      - value: "3722"
         description: Other
   - name: test_schedule_print_date
-    description: Always null.
+    description: |-
+      Always null.
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: lab_sample_ref_code
-    description: Reference ID for the sample.
+    description: |-
+      Reference ID for the sample.
   - name: reason_tested_id
-    description: Code for the reason the individual was tested.
+    description: |-
+      Code for the reason the individual was tested.
     known_values:
-      - value: 15877
+      - value: "15877"
         description: Confirmation
-      - value: 3723
+      - value: "3723"
         description: Suspicion/High Risk/RSAT
-      - value: 3724
+      - value: "3724"
         description: Policy Requirement
-      - value: 3725
+      - value: "3725"
         description: Retest
-      - value: 3726
+      - value: "3726"
         description: CRP Entry
-      - value: 3727
+      - value: "3727"
         description: Parole Board Ordered
-      - value: 3728
+      - value: "3728"
         description: Court Ordered
-      - value: 3729
+      - value: "3729"
         description: Random
-      - value: 13126
+      - value: "13126"
         description: MSI
-      - value: 13127
+      - value: "13127"
         description: Gatepass/Public Works
   - name: overall_result_id
-    description: Result of the substance abuse test.
+    description: |-
+      Result of the substance abuse test.
     known_values:
-      - value: 3730
+      - value: "3730"
         description: Positive
-      - value: 3731
+      - value: "3731"
         description: Negative
-      - value: 3732
+      - value: "3732"
         description: Positive Approved
-      - value: 5468
+      - value: "5468"
         description: Void
   - name: sample_void_reason_id
-    description: The reason why a sample was voided, if applicable
+    description: |-
+      The reason why a sample was voided, if applicable
     known_values:
-      - value: 7214
+      - value: "7214"
         description: Specimen Not Received by Lab
-      - value: 6711
+      - value: "6711"
         description: Mismatched Specimen/Barcode
-      - value: 6713
+      - value: "6713"
         description: Received Without Specimen/Chain of Custody Form
-      - value: 3733
+      - value: "3733"
         description: Tampering
-      - value: 3734
+      - value: "3734"
         description: Insufficient Sample
-      - value: 6712
+      - value: "6712"
         description: Adulterated/Compromised Specimen
-      - value: 6714
+      - value: "6714"
         description: Damaged Barcode/Chain of Custody Form
-      - value: 6715
+      - value: "6715"
         description: Data Missing on Chain of Custody Form
-      - value: 13441
+      - value: "13441"
         description: Sample Lost
   - name: patch_length_of_wear_days
-    description: When sample type is patch, how long the individual wore the patch.
+    description: |-
+      When sample type is patch, how long the individual wore the patch.
   - name: completion_of_wear_id
-    description: Flag for whether the individual completed the patch testing period.
+    description: |-
+      Flag for whether the individual completed the patch testing period.
     known_values:
-      - value: 3735
+      - value: "3735"
         description: "Yes"
-      - value: 3736
+      - value: "3736"
         description: "No"
   - name: patch_removal_reason_id
-    description: When sample type is patch, code for why the patch was removed.
+    description: |-
+      When sample type is patch, code for why the patch was removed.
     known_values:
-      - value: 3737
+      - value: "3737"
         description: Tampered with by Offender
-      - value: 3738
+      - value: "3738"
         description: Fell Off
-      - value: 3739
+      - value: "3739"
         description: Removed by MDOC Employee
-      - value: 3740
+      - value: "3740"
         description: Removed by Vendor
-      - value: 3741
+      - value: "3741"
         description: Other
   - name: testing_lab_id
-    description: Code for the lab where the test was processed.
+    description: |-
+      Code for the lab where the test was processed.
     known_values:
-      - value: 15610
+      - value: "15610"
         description: Alere
-      - value: 10013
+      - value: "10013"
         description: Berrien County Health Department
-      - value: 10014
+      - value: "10014"
         description: Garcia Laboratory
-      - value: 13128
+      - value: "13128"
         description: MDOC Reference Lab
-      - value: 19540
+      - value: "19540"
         description: Phamatech
-      - value: 3717
+      - value: "3717"
         description: Pharm Chem
-      - value: 3718
+      - value: "3718"
         description: Roche
-      - value: 3719
+      - value: "3719"
         description: Other
-      - value: 9830
+      - value: "9830"
         description: MedTox
-      - value: 9935
+      - value: "9935"
         description: Med Path
-      - value: 10381
+      - value: "10381"
         description: Quest Diagnostics
-      - value: 12697
+      - value: "12697"
         description: Kroll Laboratory
   - name: lab_test_date
-    description: The date the sample was tested in the lab.
+    description: |-
+      The date the sample was tested in the lab.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: misconduct_incident_id
-    description: TODO(#17070)
+    description: |-
+      TODO(#17070)
   - name: offender_type_id
-    description: Code for the type of individual being tested.
+    description: |-
+      Code for the type of individual being tested.
     known_values:
-      - value: 12788
+      - value: "12788"
         description: Other
-      - value: 12789
+      - value: "12789"
         description: Prisoner
-      - value: 12790
+      - value: "12790"
         description: Probationer
-      - value: 12791
+      - value: "12791"
         description: Parolee
   - name: notes
-    description: Notes about the test.
+    description: |-
+      Notes about the test.
     is_pii: True
   - name: test_result_create_date
-    description: The date the test result was entered.
+    description: |-
+      The date the test result was entered.
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: positive_response_id
-    description: Code for what action was taken in response to a positive test.
+    description: |-
+      Code for what action was taken in response to a positive test.
     known_values:
-      - value: 3742
+      - value: "3742"
         description: Violation Report
-      - value: 3743
+      - value: "3743"
         description: Substance Abuse Treatment Referral
-      - value: 3744
+      - value: "3744"
         description: Verbal Warning
-      - value: 6692
+      - value: "6692"
         description: Show Cause
-      - value: 7176
+      - value: "7176"
         description: Violation Response Required
-      - value: 7300
+      - value: "7300"
         description: Increase Supervision Level
-      - value: 7301
+      - value: "7301"
         description: Add Special Condition(s)
-      - value: 3745
+      - value: "3745"
         description: Misconduct Written
-      - value: 7917
+      - value: "7917"
         description: Lab Confirmation Test Submitted
-      - value: 7936
+      - value: "7936"
         description: Continue In Treatment
-      - value: 9936
+      - value: "9936"
         description: STOP Sanction Imposed
   - name: positive_response_date
-    description: Date the action in response to a positive response was taken.
+    description: |-
+      Date the action in response to a positive response was taken.
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: specimen_location_id
-    description: TODO(#17070)
+    description: |-
+      TODO(#17070)
   - name: last_update_user
-    description: User who last updated the record
+    description: |-
+      User who last updated the record
     is_pii: True
   - name: last_update_date
-    description: Date record was last updated
+    description: |-
+      Date record was last updated
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
-    description: TODO(#17070)
+    description: |-
+      TODO(#17070)
   - name: record_source_id
-    description: Code for the source of the record.
+    description: |-
+      Code for the source of the record.
     known_values:
-      - value: 14401
+      - value: "14401"
         description: Community Provider
-      - value: 14402
+      - value: "14402"
         description: Agent
   - name: program_id
-    description: TODO(#17070)
+    description: |-
+      TODO(#17070)
   - name: record_sent_to_lab_flag
-    description: Presumably a flag demarcating that the record was sent to the lab. Always 0.
+    description: |-
+      Presumably a flag demarcating that the record was sent to the lab. Always 0.
   - name: record_sent_to_lab_date
-    description: Presumably the date the test was sent to the lab for analysis. Always null.
+    description: |-
+      Presumably the date the test was sent to the lab for analysis. Always null.
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: default_drug_panel_id
-    description: Code for which drug panel was tested.
+    description: |-
+      Code for which drug panel was tested.
     known_values:
-      - value: 15831
+      - value: "15831"
         description: Panel C
-      - value: 15832
+      - value: "15832"
         description: Panel B
-      - value: 15833
+      - value: "15833"
         description: Panel A
   - name: print_flag
-    description: Presumably a flag demarcating that the record was printed. Always 0.
+    description: |-
+      Presumably a flag demarcating that the record was printed. Always 0.
   - name: print_date
-    description: Presumably the date the test was printed. Always null.
+    description: |-
+      Presumably the date the test was printed. Always null.
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: printed_by_user
-    description: Presumably the user who printed the report. Always null.
+    description: |-
+      Presumably the user who printed the report. Always null.
     is_pii: True
 table_relationships:
   - foreign_table: ADH_OFFENDER_BOOKING

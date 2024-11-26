@@ -7,38 +7,50 @@ primary_key_cols:
   - miscond_hearing_penalty_id
 columns:
   - name: miscond_hearing_penalty_id
-    description: OMNI-database generated ID for the misconduct hearing penalty record
+    description: |-
+      OMNI-database generated ID for the misconduct hearing penalty record
   - name: offender_miscond_hearing_id
-    description: OMNI-database generated ID for the misconduct hearing record
+    description: |-
+      OMNI-database generated ID for the misconduct hearing record
   - name: penalty_type_id
-    description: Reference code for the type of penalty (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for the type of penalty (links with ADH_REFERENCE_CODE)
   - name: penalty_days
-    description: Penalty length (days)
+    description: |-
+      Penalty length (days)
   - name: penalty_hours
-    description: Penalty length (hours)
+    description: |-
+      Penalty length (hours)
   - name: penalty_fine_amount
-    description: Penalty fine amount
+    description: |-
+      Penalty fine amount
   - name: effective_date
-    description: effective date of penalty
+    description: |-
+      effective date of penalty
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: end_date
-    description: end date of penalty
+    description: |-
+      end date of penalty
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: consecutive_flag
-    description: Flag for whether this penalty should be served consecutively
+    description: |-
+      Flag for whether this penalty should be served consecutively
   - name: penalty_notes
-    description: penalty notes
+    description: |-
+      penalty notes
     is_pii: True
   - name: last_update_user
-    description: User that last updated the record
+    description: |-
+      User that last updated the record
     is_pii: True
   - name: last_update_date
-    description: Date record was last updated
+    description: |-
+      Date record was last updated
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node

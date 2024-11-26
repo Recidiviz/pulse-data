@@ -7,96 +7,126 @@ primary_key_cols:
   - misconduct_incident_id
 columns:
   - name: misconduct_incident_id
-    description: OMNI-database generated ID for the misconduct incident
+    description: |-
+      OMNI-database generated ID for the misconduct incident
   - name: offender_booking_id
-    description: OMNI-database generated ID for an individual's booking (used as an ID for a specific justice-involved individual)
-    is_pii: True
+    description: |-
+      OMNI-database generated ID for an individual's booking (used as an ID for a specific justice-involved individual)
     field_type: person_external_id
     external_id_type: US_MI_DOC_BOOK
+    is_pii: True
   - name: location_id
-    description: Reference code for where the misconduct incident occured (links with ADH_LOCATION)
+    description: |-
+      Reference code for where the misconduct incident occured (links with ADH_LOCATION)
   - name: miscond_status_id
-    description: Reference code for misconduct status (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for misconduct status (links with ADH_REFERENCE_CODE)
   - name: miscond_violation_date
-    description: Misconduct violation date
+    description: |-
+      Misconduct violation date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: miscond_written_date
-    description: Date misconduct was written up
+    description: |-
+      Date misconduct was written up
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: reporting_employee_id
-    description: Employee ID for employee that reported the incident
+    description: |-
+      Employee ID for employee that reported the incident
     is_pii: True
   - name: incident_place_type_id
-    description: Reference code for the type of place the incident occurred (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for the type of place the incident occurred (links with ADH_REFERENCE_CODE)
   - name: cmis_record_number
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
   - name: housing_unit
-    description: housing unit
+    description: |-
+      housing unit
   - name: cell_bunk_room
-    description: cell bunk room
+    description: |-
+      cell bunk room
   - name: reporting_clock_no
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
   - name: pending_hearing_status_id
-    description: Reference code for status of pending hearing (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for status of pending hearing (links with ADH_REFERENCE_CODE)
   - name: pending_hearing_status_date
-    description: Date status of pending hearing was updated
+    description: |-
+      Date status of pending hearing was updated
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: review_date
-    description: Review date
+    description: |-
+      Review date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: review_employee_id
-    description: Employee id of employee who condcted review
+    description: |-
+      Employee id of employee who condcted review
     is_pii: True
   - name: post_review_status_id
-    description: Reference code of status after review (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code of status after review (links with ADH_REFERENCE_CODE)
   - name: post_review_status_date
-    description: Date status was updated after review
+    description: |-
+      Date status was updated after review
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: hearing_invest_request_flag
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
   - name: relevant_doc_requested_flag
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
   - name: waive_24hour_flag
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
   - name: incident_finding_id
-    description: Reference code for the findings of the incident (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for the findings of the incident (links with ADH_REFERENCE_CODE)
   - name: incident_location_id
-    description: Reference code for the location of the incident (links with ADH_LOCATION)
+    description: |-
+      Reference code for the location of the incident (links with ADH_LOCATION)
   - name: notified_employee
-    description: TODO(#17944) # is this an employee id or a flag
+    description: |-
+      TODO(#17944) is this an employee id or a flag
     is_pii: True
   - name: witness_requested_flag
-    description: flag for whether witnesses were requested
+    description: |-
+      flag for whether witnesses were requested
   - name: proposed_hearing_date
-    description: proposed hearing date
+    description: |-
+      proposed hearing date
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: proposed_hearing_location_id
-    description: Reference code for the proposed hearing location (links with ADH_LOCATION)
+    description: |-
+      Reference code for the proposed hearing location (links with ADH_LOCATION)
   - name: last_date_for_hearing
-    description: last date for hearing
+    description: |-
+      last date for hearing
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_user
-    description: User who last updated the record
+    description: |-
+      User who last updated the record
     is_pii: True
   - name: last_update_date
-    description: last update date of record
+    description: |-
+      last update date of record
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
 table_relationships:
   - foreign_table: ADH_OFFENDER_BOOKING

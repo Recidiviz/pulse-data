@@ -7,39 +7,53 @@ primary_key_cols:
   - misconduct_charge_id
 columns:
   - name: misconduct_charge_id
-    description: OMNI-database generated ID for the misconduct charge record
+    description: |-
+      OMNI-database generated ID for the misconduct charge record
   - name: misconduct_offense_id
-    description: OMNI-database generated ID for the misconduct offense record
+    description: |-
+      OMNI-database generated ID for the misconduct offense record
   - name: offender_miscond_hearing_id
-    description: OMNI-database generated ID for the miconduct hearing record
+    description: |-
+      OMNI-database generated ID for the miconduct hearing record
   - name: misconduct_incident_id
-    description: OMNI-database generated ID for the miconduct incident record
+    description: |-
+      OMNI-database generated ID for the miconduct incident record
   - name: reduced_flag
-    description: TODO(#17944)
+    description: |-
+      TODO(#17944)
   - name: plea_code_id
-    description: Reference code for the plea (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for the plea (links with ADH_REFERENCE_CODE)
   - name: finding_code_id
-    description: Reference code for the finding of the charge (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for the finding of the charge (links with ADH_REFERENCE_CODE)
   - name: original_offense_code_id
-    description: TODO(#17944) # What does this link with?
+    description: |-
+      TODO(#17944) What does this link with?
   - name: closing_date
-    description: closing date of the charge
+    description: |-
+      closing date of the charge
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_notes
-    description: Notes about the closing of the charge
+    description: |-
+      Notes about the closing of the charge
     is_pii: True
   - name: closing_reason_id
-    description: Reference code for the closing reaseon (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for the closing reaseon (links with ADH_REFERENCE_CODE)
   - name: closing_authority_id
-    description: Reference code for the closing authority (links with ADH_REFERENCE_CODE)
+    description: |-
+      Reference code for the closing authority (links with ADH_REFERENCE_CODE)
   - name: last_update_user
-    description: User who last updated the record
+    description: |-
+      User who last updated the record
     is_pii: True
   - name: last_update_date
-    description: last update date of the record
+    description: |-
+      last update date of the record
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
