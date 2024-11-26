@@ -1320,10 +1320,10 @@ express-jwt@^7.7.8:
     express-unless "^2.1.3"
     jsonwebtoken "^9.0.2"
 
-express-rate-limit@^6.11.2:
-  version "6.11.2"
-  resolved "https://registry.yarnpkg.com/express-rate-limit/-/express-rate-limit-6.11.2.tgz#6c42035603d3b52e4e2fb59f6ebaa89e628ef980"
-  integrity sha512-a7uwwfNTh1U60ssiIkuLFWHt4hAC5yxlLGU2VP0X4YNlyEDZAqF4tK3GD3NSitVBrCQmQ0++0uOyFOgC2y4DDw==
+express-rate-limit@^7.4.1:
+  version "7.4.1"
+  resolved "https://registry.yarnpkg.com/express-rate-limit/-/express-rate-limit-7.4.1.tgz#90954ecbcde9e7ae7b5000325395f86991191d94"
+  integrity sha512-KS3efpnpIDVIXopMc65EMbWbUht7qvTCdtCR2dD/IZmi9MIkopYESwyRqLgv8Pfu589+KqDqOdzJWW7AHoACeg==
 
 express-unless@^2.1.3:
   version "2.1.3"
