@@ -452,6 +452,8 @@ class OutliersQuerier:
                     SupervisionOfficerSupervisor.full_name,
                     SupervisionOfficerSupervisor.supervision_district,
                     SupervisionOfficerSupervisor.supervision_unit,
+                    SupervisionOfficerSupervisor.supervision_location_for_list_page,
+                    SupervisionOfficerSupervisor.supervision_location_for_supervisor_page,
                     SupervisionOfficerSupervisor.pseudonymized_id,
                     SupervisionOfficerSupervisor.email,
                 )
@@ -460,6 +462,8 @@ class OutliersQuerier:
                     SupervisionOfficerSupervisor.full_name,
                     SupervisionOfficerSupervisor.supervision_district,
                     SupervisionOfficerSupervisor.supervision_unit,
+                    SupervisionOfficerSupervisor.supervision_location_for_list_page,
+                    SupervisionOfficerSupervisor.supervision_location_for_supervisor_page,
                     SupervisionOfficerSupervisor.pseudonymized_id,
                     SupervisionOfficerSupervisor.email,
                     (
@@ -494,6 +498,8 @@ class OutliersQuerier:
                     pseudonymized_id=record.pseudonymized_id,
                     supervision_district=record.supervision_district,
                     supervision_unit=record.supervision_unit,
+                    supervision_location_for_list_page=record.supervision_location_for_list_page,
+                    supervision_location_for_supervisor_page=record.supervision_location_for_supervisor_page,
                     email=record.email,
                     has_outliers=record.has_outliers,
                 )
