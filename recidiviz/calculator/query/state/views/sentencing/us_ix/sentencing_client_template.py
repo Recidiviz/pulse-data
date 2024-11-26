@@ -69,6 +69,6 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
     LEFT JOIN `{project_id}.reference_views.location_metadata_materialized` lmm
         ON lmm.state_code = "US_IX" AND lmm.location_external_id =  CONCAT("ATLAS-",loc.LocationId)
     -- Gets most recent county of client, doesn't exclude if no county on record
-    WHERE (recency_rank = 1 or recency_rank IS NULL) AND DATE(CompletedDate) > DATE_SUB(CURRENT_DATE, INTERVAL 2 YEAR)
-
+    WHERE (recency_rank = 1 or recency_rank IS NULL) AND 
+    (DATE(CompletedDate) > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH) OR CompletedDate IS NULL)
 """
