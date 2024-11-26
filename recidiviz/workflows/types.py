@@ -171,6 +171,11 @@ class OpportunityConfigResponse(OpportunityInfo, OpportunityConfig):
         cls, opportunity: OpportunityInfo, config: OpportunityConfig
     ) -> "OpportunityConfigResponse":
         # include all items from both parameters, with the opportunity taking priority
-        return OpportunityConfigResponse(
-            **(config.__dict__ | opportunity.__dict__),
+
+        conv = cattrs.Converter()
+
+        # TODO(#35533): Check if this is necessary, or if there's something that is incorrectly feeding the `FullOpportunityInfo` instead of `OpportunityInfo`
+        # remove any keys not expected in OpportunityConfigResponse
+        return conv.structure(
+            conv.unstructure(config) | conv.unstructure(opportunity), cls
         )

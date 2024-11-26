@@ -41,6 +41,7 @@ from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.utils.types import assert_type
 from recidiviz.workflows.types import (
+    FullOpportunityInfo,
     OpportunityConfig,
     OpportunityInfo,
     WorkflowsSystemType,
@@ -1896,6 +1897,109 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "urlSection": "urlSection",
             **convert_nested_dictionary_keys(fake_config.__dict__, snake_to_camel),
         }
+        expected_config.pop("opportunityType")
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(
+            response.get_json(),
+            {"enabledConfigs": {"oppType": expected_config}},
+        )
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsQuerier")
+    def test_workflows_config_response_ignores_bad_keys(
+        self, mock_workflows_querier: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_id", "foo@id.gov"
+        )
+
+        mock_workflows_querier.return_value.get_enabled_opportunities.return_value = [
+            FullOpportunityInfo(
+                experiment_id="1234",
+                last_updated_by="Kenneth Ojibe",
+                last_updated_at=datetime.datetime(2024, 11, 26),
+                completion_event="NEW_YEARS",
+                state_code="US_ID",
+                opportunity_type="oppType",
+                system_type=WorkflowsSystemType.SUPERVISION,
+                url_section="urlSection",
+                firestore_collection="firestoreCollection",
+                homepage_position=1,
+            )
+        ]
+
+        fake_config = OpportunityConfig(
+            state_code="US_ID",
+            opportunity_type="oppType",
+            display_name="Opportunity",
+            methodology_url="example.com",
+            initial_header="header",
+            dynamic_eligibility_text="dynamic text[|s]",
+            call_to_action="action",
+            subheading="the subheading",
+            snooze={"default_snooze_days": 12, "max_snooze_days": 90},
+            is_alert=False,
+            priority="NORMAL",
+            denial_text=None,
+            eligible_criteria_copy=[
+                {
+                    "key": "criteria",
+                    "text": "baz",
+                    "tooltip": "fill this:{{opportunity.client.goop}}",
+                }
+            ],
+            ineligible_criteria_copy=[],
+            denial_reasons=[{"key": "DENY", "text": "Denied"}],
+            sidebar_components=["someComponent", "someOtherComponent"],
+            eligibility_date_text=None,
+            hide_denial_revert=True,
+            tooltip_eligibility_text="eligible",
+            tab_groups=None,
+            compare_by=[
+                {
+                    "field": "eligibilityDate",
+                    "sort_direction": "asc",
+                    "undefined_behavior": "undefinedFirst",
+                }
+            ],
+            notifications=[],
+            zero_grants_tooltip="example tooltip",
+            denied_tab_title="Marked Ineligible",
+            denial_adjective="Ineligible",
+            denial_noun="Ineligibility",
+            supports_submitted=True,
+            submitted_tab_title="Submitted",
+            empty_tab_copy=[],
+            tab_preface_copy=[],
+            subcategory_headings=[],
+            subcategory_orderings=[],
+            mark_submitted_options_by_tab=[],
+            oms_criteria_header="Validated by data from OMS",
+            non_oms_criteria_header="Requirements to check",
+            non_oms_criteria=[{}],
+            highlight_cases_on_homepage=False,
+            highlighted_case_cta_copy="Opportunity name",
+            overdue_opportunity_callout_copy="overdue for opportunity",
+        )
+
+        mock_workflows_querier.return_value.get_top_config_for_opportunity_types.return_value = {
+            "oppType": fake_config
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.get(
+                "/workflows/US_ID/opportunities",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+        expected_config = {
+            "firestoreCollection": "firestoreCollection",
+            "homepagePosition": 1,
+            "systemType": "SUPERVISION",
+            "urlSection": "urlSection",
+            **convert_nested_dictionary_keys(fake_config.__dict__, snake_to_camel),
+        }
+
         expected_config.pop("opportunityType")
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
