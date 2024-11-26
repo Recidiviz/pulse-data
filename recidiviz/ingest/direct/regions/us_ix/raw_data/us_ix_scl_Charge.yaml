@@ -121,11 +121,11 @@ columns:
   - name: ChargeStatusId
     description: |-
       TODO(#15329): Fill in column description
-    known_values: []
   - name: ChargePleaId
     description: |-
       TODO(#15329): Fill in column description
-    known_values: []
+      TODO(#34964): I'm removing the enum designation because this field is always null.
+      We should confirm that this is expected and not in error.
   - name: Comments
     description: |-
       TODO(#15329): Fill in column description
