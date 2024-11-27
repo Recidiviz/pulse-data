@@ -91,6 +91,9 @@ output:
                   - Assigned To Jail
                   - Civil Commitment
                   - Civil Commitment Pending
+                  # The following two reasons only show up <10 times each
+                  - Intensive Re-entry Program
+                  - Pre-Release Assignment
                   # TODO(#21085) Investigate why Release to Supervision and Release to Parole
                   # are coming in as an admission reason for one person
                   - Release to Supervision
@@ -112,8 +115,6 @@ output:
                   - Death Row
                   - Home Electronic Monitoring
                   - Independent Living Program
-                  - Intensive Re-entry Program
-                  - Pre-Release Assignment
                   - Segregation -Administration
                   - Segregation -Mental Health
                   - Segregation -Protective Custody

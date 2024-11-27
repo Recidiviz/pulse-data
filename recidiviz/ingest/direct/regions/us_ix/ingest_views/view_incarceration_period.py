@@ -47,38 +47,6 @@ WITH
 {SECURITY_LEVEL_PERIODS_CTE},
 {CLIENT_ADDRESS_CTE},
 
--- This cte treats the transfer period as the primary source of truth for when a person
--- is incarcerated, and attempts to map a legal status on to the transfer period by
--- searching for what legal status was active at the time of the transfer. This usually
--- works quite well, since legal statuses are only at day-level granularity but transfers
--- have datetime granularity, so a legal status becomes active at 00:00:00 but the transfer
--- does not occur until later in the day.
-transfer_periods_with_legal_status AS (
-    SELECT * FROM (
-        SELECT
-            t.OffenderId,
-            Start_TransferReasonDesc,
-            End_TransferReasonDesc,
-            Start_TransferTypeDesc,
-            End_TransferTypeDesc,
-            Start_TransferDate,
-            End_TransferDate,
-            DOCLocationToName,
-            DOCLocationToTypeName,
-            DOCLocationToSubTypeName,
-            LegalStatusDesc,
-            ROW_NUMBER() OVER (
-                PARTITION BY t.OffenderId, Start_TransferDate
-                ORDER BY Priority
-            ) AS rn,
-        FROM transfer_periods_incarceration_cte t
-        LEFT JOIN legal_status_periods_incarceration_cte ls
-            ON t.OffenderId = ls.OffenderId
-            AND t.Start_TransferDate BETWEEN ls.LegalStatus_StartDate AND IFNULL(ls.LegalStatus_EndDate, '9999-12-31')
-    ) a
-    WHERE a.rn = 1
-),
-
 -- Adds the security level based on bed assignment at the time of transfer
 transfer_periods_with_legal_status_with_beds_and_security_level AS (
     SELECT
@@ -98,13 +66,14 @@ transfer_periods_with_legal_status_with_beds_and_security_level AS (
         -- We use Start_TransferTypeDesc to determine whether this period is an incarceration period or not, 
         -- so we keep this valued for all rows
         tls.Start_TransferTypeDesc,
-        tls.LegalStatusDesc,
         tls.DOCLocationToName,
         tls.DOCLocationToTypeName,
         tls.DOCLocationToSubTypeName,
         slp.SecurityLevelName,
         b.LevelPath,
-        cac.JurisdictionId
+        b.BedAssignmentId,
+        cac.JurisdictionId,
+        ls.LegalStatusDesc
     FROM (
         -- Create periods based on all the dates in transfer_periods_with_legal_status and bed_assignment_periods_cte and security_level_cte
         SELECT
@@ -116,7 +85,7 @@ transfer_periods_with_legal_status_with_beds_and_security_level AS (
                 DISTINCT
                 OffenderId,
                 Start_TransferDate as dte
-            FROM transfer_periods_with_legal_status
+            FROM transfer_periods_incarceration_cte
             
             UNION DISTINCT 
 
@@ -124,7 +93,7 @@ transfer_periods_with_legal_status_with_beds_and_security_level AS (
                 DISTINCT
                 OffenderId,
                 End_TransferDate as dte
-            FROM transfer_periods_with_legal_status
+            FROM transfer_periods_incarceration_cte
 
             UNION DISTINCT
 
@@ -173,10 +142,27 @@ transfer_periods_with_legal_status_with_beds_and_security_level AS (
                 OffenderId,
                 EndDate AS dte,
             FROM client_addresses_cte
+
+            UNION DISTINCT
+
+            SELECT
+                DISTINCT 
+                OffenderId,
+                LegalStatus_StartDate AS dte
+            FROM legal_status_periods_incarceration_cte
+
+            UNION DISTINCT
+
+            SELECT
+                DISTINCT 
+                OffenderId,
+                LegalStatus_EndDate AS dte
+            FROM legal_status_periods_incarceration_cte
+            
         ) spans 
     ) p
     -- merge on all relevant info from transfer_periods_with_legal_status and bed_assignment_periods_cte for each period
-    LEFT JOIN transfer_periods_with_legal_status tls
+    LEFT JOIN transfer_periods_incarceration_cte tls
         ON p.OffenderId = tls.OffenderId
         AND p.period_start >= tls.Start_TransferDate
         AND COALESCE(p.period_end, DATE(9999,12,31)) <= COALESCE(tls.End_TransferDate, DATE(9999,12,31))
@@ -192,6 +178,10 @@ transfer_periods_with_legal_status_with_beds_and_security_level AS (
         ON p.OffenderId = slp.OffenderId
         AND p.period_start >= slp.startDate
         AND COALESCE(p.period_end, DATE(9999,12,31)) <= COALESCE(slp.endDate, DATE(9999,12,31))
+    LEFT JOIN legal_status_periods_incarceration_cte ls
+        ON p.OffenderId = ls.OffenderId
+        AND p.period_start >= ls.LegalStatus_StartDate
+        AND COALESCE(p.period_end, DATE(9999,12,31)) <= COALESCE(ls.LegalStatus_EndDate, DATE(9999,12,31))
     -- filter out periods that start in the future
     WHERE p.period_start <= @update_timestamp
 ),
@@ -201,9 +191,10 @@ transfer_periods_with_legal_status_with_beds_and_security_level AS (
 -- to drop that period because we need information from that row for window functions in
 -- previous CTEs.
 incarceration_periods AS (
-    SELECT *, ROW_NUMBER() OVER incarceration_period_window AS period_id
+    SELECT * EXCEPT(keep_prio), 
+        ROW_NUMBER() OVER incarceration_period_window AS period_id
     FROM (
-        SELECT
+        SELECT DISTINCT
             OffenderId,
             Start_TransferDate,
             IF(End_TransferDate = '9999-12-31', NULL, End_TransferDate) AS End_TransferDate,
@@ -214,10 +205,18 @@ incarceration_periods AS (
             LegalStatusDesc,
             SecurityLevelName,
             LevelPath,
-            JurisdictionId
+            JurisdictionId,
+            RANK() OVER(PARTITION BY OffenderId, Start_TransferDate, End_TransferDate
+                              ORDER BY 
+                                CASE LegalStatusDesc WHEN 'Parole Violator' THEN 1
+                                                     WHEN 'Rider' THEN 2
+                                                     WHEN 'Termer' THEN 3
+                                                     ELSE 4 END,
+                                CAST(BedAssignmentId AS INT64) DESC) AS keep_prio
         FROM transfer_periods_with_legal_status_with_beds_and_security_level
         WHERE Start_TransferTypeDesc != 'Out from DOC'
-    ) a
+    ) 
+    WHERE keep_prio = 1
     WINDOW incarceration_period_window AS (
         PARTITION BY OffenderId
         ORDER BY Start_TransferDate

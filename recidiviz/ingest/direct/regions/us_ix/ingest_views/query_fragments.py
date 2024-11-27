@@ -969,6 +969,7 @@ CLIENT_ADDRESS_CTE = """
             DATE(EndDate) AS EndDate
         FROM {ref_Address}
         LEFT JOIN {ind_Offender_Address} using (AddressId)
+        WHERE PrimaryAddress = '1'
     )
 """
 SUPERVISOR_ROSTER_SUPERVISOR_IDS_CTE = """
