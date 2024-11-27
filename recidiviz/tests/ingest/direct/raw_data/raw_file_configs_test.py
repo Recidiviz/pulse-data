@@ -209,6 +209,22 @@ class TestRawTableColumnInfo(unittest.TestCase):
                 ],
             )
 
+        with self.assertRaisesRegex(
+            ValueError,
+            "Expected all datetime_sql_parsers to parse the same type",
+        ):
+            _ = RawTableColumnInfo(
+                name="COL2",
+                field_type=RawTableColumnFieldType.DATETIME,
+                is_pii=False,
+                description=None,
+                known_values=None,
+                datetime_sql_parsers=[
+                    "SAFE.PARSE_DATETIME('%m/%D/%Y', {col_name})",
+                    "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})",
+                ],
+            )
+
     def test_bad_external_id_type(self) -> None:
         with self.assertRaisesRegex(
             ValueError,

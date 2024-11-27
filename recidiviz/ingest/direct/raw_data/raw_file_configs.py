@@ -207,7 +207,8 @@ class RawTableColumnInfo:
     # Describes the SQL parsers needed to parse the datetime string appropriately.
     # It should contain the string literal {col_name} and follow the format with the
     # SAFE.PARSE_TIMESTAMP('[insert your time format st]', [some expression w/ {col_name}]).
-    # SAFE.PARSE_DATE or SAFE.PARSE_DATETIME can also be used.
+    # SAFE.PARSE_DATE or SAFE.PARSE_DATETIME can also be used, but you must only use one type
+    # within a list of parsers.
     # See recidiviz.ingest.direct.views.raw_table_query_builder.DATETIME_COL_NORMALIZATION_TEMPLATE
     datetime_sql_parsers: Optional[List[str]] = attr.ib(
         default=None, validator=attr_validators.is_opt_list
@@ -335,28 +336,43 @@ class RawTableColumnInfo:
                 )
 
     def _validate_datetime_sql_parsers(self) -> None:
-        """Validates the datetime_sql field by ensuring that is_datetime is set to True
-        and the correct string literals are contained within the string."""
+        """Validates the datetime_sql field by ensuring that is_datetime is set to True,
+        the correct string literals are contained within the string, and all parsers have
+        the same type (TIMESTAMP, DATE, or DATETIME)."""
         if not self.is_datetime and self.datetime_sql_parsers:
             raise ValueError(
                 f"Expected datetime_sql_parsers to be null if is_datetime is False for {self.name}"
             )
         # TODO(#12174) Enforce that is self.is_datetime is True, that datetime_sql_parsers exist.
-        if self.datetime_sql_parsers:
-            for parser in self.datetime_sql_parsers:
-                if "{col_name}" not in parser:
-                    raise ValueError(
-                        "Expected datetime_sql_parser to have the string literal {col_name}"
-                        f"for {self.name}: {parser}"
-                    )
-                if not re.match(
+        if not self.datetime_sql_parsers:
+            return
+
+        extracted_types = set()
+        for parser in self.datetime_sql_parsers:
+            if "{col_name}" not in parser:
+                raise ValueError(
+                    "Expected datetime_sql_parser to have the string literal {col_name}"
+                    f"for {self.name}: {parser}"
+                )
+            if not (
+                match := re.match(
                     DATETIME_SQL_REGEX,
                     parser.strip(),
-                ):
-                    raise ValueError(
-                        f"Expected datetime_sql_parser must match expected timestamp parsing formats for {self.name}. Current parser: {parser}"
-                        "See recidiviz.ingest.direct.views.raw_table_query_builder.DATETIME_COL_NORMALIZATION_TEMPLATE"
-                    )
+                )
+            ):
+                raise ValueError(
+                    f"Expected datetime_sql_parser must match expected timestamp parsing formats for {self.name}. Current parser: {parser}"
+                    "See recidiviz.ingest.direct.views.raw_table_query_builder.DATETIME_COL_NORMALIZATION_TEMPLATE"
+                )
+
+            # Extract the type (e.g., TIMESTAMP, DATE, DATETIME) and add it to the set
+            extracted_types.add(match.group(1))
+
+        if len(extracted_types) > 1:
+            raise ValueError(
+                f"Expected all datetime_sql_parsers to parse the same type (all DATE, all DATETIME, or all TIMESTAMP) "
+                f"for {self.name}. Found types: {extracted_types}"
+            )
 
     @property
     def is_enum(self) -> bool:
