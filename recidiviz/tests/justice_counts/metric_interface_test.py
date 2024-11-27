@@ -3662,7 +3662,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                     },
                 ),
                 {
-                    "additional_description": None,
+                    "additional_description": law_enforcement.arrests.additional_description,
                     "category": "Operations and Dynamics",
                     "contexts": [
                         {

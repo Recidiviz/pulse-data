@@ -276,6 +276,7 @@ cases_declined = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Cases Declined",
     description="The number of criminal cases referred to the office for review and declined for prosecution.",
+    additional_description="If the same person is listed as the defendant in multiple cases, these cases should be counted separately if they were referred and reviewed on different dates. If multiple charges were referred against one person on the same date, with the expectation that they would be reviewed and filed together, these charges should be combined to count as one case. If a single case includes multiple defendants, it should be counted as one case.",
     measurement_type=MeasurementType.DELTA,
     includes_excludes=[
         IncludesExcludesSet(
@@ -348,6 +349,7 @@ cases_referred = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Cases Referred",
     description="The number of criminal cases referred to the office.",
+    additional_description="If the same person is listed as the defendant in multiple cases, these cases should be counted separately if they were referred and reviewed on different dates. If multiple charges were referred against one person on the same date, with the expectation that they would be reviewed and filed together, these charges should be combined to count as one case. If a single case includes multiple defendants, it should be counted as one case.",
     measurement_type=MeasurementType.DELTA,
     includes_excludes=[
         IncludesExcludesSet(
@@ -573,6 +575,7 @@ cases_diverted_or_deferred = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Cases Diverted/Deferred",
     description="The number of criminal cases diverted from traditional case processing.",
+    additional_description="This may include cases diverted before or after filing, cases reopened and diverted, or cases deferred in lieu of probation conditions. Diversion programs will vary by jurisdiction and may include diversion to specialty court dockets.",
     measurement_type=MeasurementType.DELTA,
     includes_excludes=[
         IncludesExcludesSet(
@@ -644,6 +647,7 @@ cases_disposed = MetricDefinition(
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Cases Disposed",
     description="The number of criminal cases disposed by the office.",
+    additional_description="If the same person is listed as the defendant in multiple cases, these cases should be counted separately if they were disposed on different dates.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[

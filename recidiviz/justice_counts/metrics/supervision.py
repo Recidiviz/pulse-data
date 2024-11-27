@@ -309,6 +309,9 @@ violations = MetricDefinition(
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Violations",
     description="The number of incidents in which conditions of supervision were violated. Incidents may include multiple violations that are reported by the agency at the same time, commonly called violation reports.",
+    additional_description="""If the agency recorded the incident and provided any form of accountability measure, from verbal warning to incarceration, it should be reflected in this count. If a person had multiple violation incidents in a month, each of those violation incidents would be counted here. If a person had multiple violation types involved in a single incident, the incident should be counted as a single event for this metric.
+
+For incidents in which there were multiple violation types, please apply a hierarchy rule and share data according to the most serious violation (as determined by the agency). If your agency does not have a hierarchy rule, we recommend considering new offense violations the most serious, followed by absconding, technical, other, and unknown.""",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -360,6 +363,7 @@ new_cases = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="New Cases",
     description="The number of people with new community supervision cases referred to the agency as the result of a legal decision made by the courts or another authority, such as a parole board.",
+    additional_description="New cases are based on the number of people who had a new supervision case initiated, not the number of new cases initiated. For example, if a person who was not already on supervision started three new supervision sentences in a time period, they would count as one new case. If a person who is already on supervision starts a new supervision case during the time period, they would not be counted in this metric.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -550,6 +554,7 @@ discharges = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Discharges",
     description="The number of people who had a supervision term that ended.",
+    additional_description="In some instances, this may mean being released from the jurisdiction of the supervision agency. In others, it may mean transitioning from one term of supervision to another or that a supervision term ended due to revocation to incarceration.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -673,6 +678,7 @@ revocations = MetricDefinition(
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Revocations",
     description="The number of people who had a term of supervision revoked.",
+    additional_description="For incidents in which there were multiple violations that contributed to a revocation, please apply a hierarchy rule and share data according to the most serious violation (as determined by the agency). If your agency does not have a hierarchy rule, we recommend considering new offense violations the most serious, followed by absconding, technical, other, and unknown.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     # TODO(#17579)
