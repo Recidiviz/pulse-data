@@ -8,7 +8,7 @@ services:
     image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
-      - "~/.config:/root/.config" # use user's credentials to access GCP APIs
+      - "~/.config:/home/recidiviz/.config" # use user's credentials to access GCP APIs
       - insights_db_socket:/cloudsql/insights
     depends_on:
       - insights_db

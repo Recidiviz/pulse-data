@@ -8,7 +8,7 @@ services:
     image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
-      - "~/.config:/root/.config"
+      - "~/.config:/home/recidiviz/.config"
       - case_triage_db_socket:/cloudsql/case_triage
       - justice_counts_db_socket:/cloudsql/justice_counts
       - operations_db_socket:/cloudsql/operations
@@ -39,7 +39,7 @@ services:
     image: us-docker.pkg.dev/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
-      - "~/.config:/root/.config"
+      - "~/.config:/home/recidiviz/.config"
       - case_triage_db_socket:/cloudsql/case_triage
       - justice_counts_db_socket:/cloudsql/justice_counts
       - operations_db_socket:/cloudsql/operations

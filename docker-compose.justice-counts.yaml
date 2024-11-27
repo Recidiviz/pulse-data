@@ -8,7 +8,7 @@ services:
     image: us-central1-docker.pkg.dev/justice-counts-staging/publisher-and-dashboard-images/main:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
-      - "~/.config:/root/.config" # use user's credentials to access GCP APIs
+      - "~/.config:/home/recidiviz/.config" # use user's credentials to access GCP APIs
       - justice_counts_db_socket:/cloudsql/justice_counts
     depends_on:
       - justice_counts_db
