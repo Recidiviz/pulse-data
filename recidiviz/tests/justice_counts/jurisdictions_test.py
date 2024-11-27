@@ -143,8 +143,44 @@ class TestJurisdictions(JusticeCountsDatabaseTestCase):
                 super_agency_id=None,
                 is_dashboard_enabled=False,
             )
+            session.commit()
+            session.refresh(agency_A)
+
+            race_eth_categories = [
+                "American Indian or Alaska Native",
+                "Asian",
+                "Black",
+                "Hispanic or Latino",
+                "More than one race",
+                "Native Hawaiian or Pacific Islander",
+                "White",
+            ]
+
+            bio_sex_categories = ["Male", "Female"]
+            session.add(
+                schema.AgencyJurisdiction(
+                    source_id=agency_A.id,
+                    geoid=1234,
+                    membership=schema.AgencyJurisdictionType.INCLUDE.value,
+                )
+            )
+            for race_eth in race_eth_categories:
+                session.add(
+                    schema.JurisdictionPopulation(
+                        geoid=1234, year=2022, race_ethnicity=race_eth, population=10
+                    )
+                )
+
+            for sex in bio_sex_categories:
+                session.add(
+                    schema.JurisdictionPopulation(
+                        geoid=1234, year=2022, sex=sex, population=10
+                    )
+                )
+            session.commit()
+
             populations_dict = AgencyJurisdictionInterface.get_agency_population(
-                agency_A
+                agency=agency_A, session=session
             )
             self.assertEqual(
                 set(populations_dict.keys()), {"biological_sex", "race_and_ethnicity"}
@@ -170,59 +206,13 @@ class TestJurisdictions(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 populations_dict["biological_sex"]["Female"],
                 {
-                    2000: 7552996,
-                    2001: 7594773,
-                    2002: 7629590,
-                    2003: 7666088,
-                    2004: 7704669,
-                    2005: 7730550,
-                    2006: 7757331,
-                    2007: 7799114,
-                    2008: 7835408,
-                    2009: 7878572,
-                    2010: 7899236,
-                    2011: 7956059,
-                    2012: 8002188,
-                    2013: 8038323,
-                    2014: 8064504,
-                    2015: 8074684,
-                    2016: 8074601,
-                    2017: 8067748,
-                    2018: 8056799,
-                    2019: 8037418,
-                    2020: 8229952,
-                    2021: 8150837,
-                    2022: 8101971,
-                    2023: 8082795,
+                    2022: 10,
                 },
             )
 
             self.assertEqual(
                 populations_dict["race_and_ethnicity"]["Hispanic or Latino"],
                 {
-                    2000: 1991833,
-                    2001: 2032713,
-                    2002: 2068908,
-                    2003: 2102770,
-                    2004: 2133377,
-                    2005: 2160630,
-                    2006: 2188240,
-                    2007: 2225043,
-                    2008: 2266941,
-                    2009: 2313707,
-                    2010: 2456106,
-                    2011: 2510485,
-                    2012: 2560523,
-                    2013: 2603634,
-                    2014: 2638610,
-                    2015: 2668674,
-                    2016: 2694872,
-                    2017: 2712981,
-                    2018: 2733086,
-                    2019: 2744198,
-                    2020: 2882715,
-                    2021: 2869279,
-                    2022: 2859368,
-                    2023: 2866903,
+                    2022: 10,
                 },
             )

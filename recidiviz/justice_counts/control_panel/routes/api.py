@@ -2249,11 +2249,9 @@ def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
             session=current_session,
             agency_id=agency_id,
         )
-        if schema.System.PRISONS.value in set(agency.systems):
-            # Surface populations data for prisons agencies
-            agency_json[
-                "population"
-            ] = AgencyJurisdictionInterface.get_agency_population(agency=agency)
+        agency_json["population"] = AgencyJurisdictionInterface.get_agency_population(
+            agency=agency, session=current_session
+        )
     return {
         "agency": agency_json,
         "metrics": metrics_json,

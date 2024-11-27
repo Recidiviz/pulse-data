@@ -15,14 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Interface for working with the AgencyJurisdiction model."""
-from typing import Dict, Hashable, List
+from collections import defaultdict
+from typing import Dict, List
 
-import pandas as pd
 from sqlalchemy import delete
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
@@ -86,8 +85,9 @@ class AgencyJurisdictionInterface:
 
     @staticmethod
     def get_agency_population(
+        session: Session,
         agency: schema.Agency,
-    ) -> Dict[str, Dict[Hashable, int]]:
+    ) -> Dict[str, Dict[str, Dict[int, int]]]:
         """
         Retrieves population data for an agency's state based on race/ethnicity and biological sex.
 
@@ -113,44 +113,70 @@ class AgencyJurisdictionInterface:
                 Each key represents a demographic category, and each inner dictionary maps
                 the year to the corresponding population for each category.
         """
-        state_code = StateCode(agency.state_code.upper())
-        state = state_code.get_state()
-        state_name = state.name
-
-        populations_dict: Dict[str, Dict[Hashable, int]] = {}
-
-        # Read the CSVs into a DataFrame
-        race_eth_df = pd.read_csv(
-            "./recidiviz/justice_counts/data_sets/state_adult_pop_by_race_eth.csv"
-        )
-        bio_sex_df = pd.read_csv(
-            "./recidiviz/justice_counts/data_sets/state_adult_pop_by_sex.csv"
+        # Fetch all jurisdictions associated with the agency
+        all_agency_jurisdictions = (
+            session.query(schema.AgencyJurisdiction)
+            .filter(schema.AgencyJurisdiction.source_id == agency.id)
+            .all()
         )
 
-        # Filter data by state name
-        race_eth_df_filtered = race_eth_df[race_eth_df["state_name"] == state_name]
-        bio_sex_df_filtered = bio_sex_df[bio_sex_df["state_name"] == state_name]
-
-        # Group by race_eth and year, aggregate, and convert to nested dictionary
-        race_eth_populations_dict = (
-            race_eth_df_filtered.groupby(["race_eth", "year"])["n"]
-            .first()  # Get the first non-null entry from sheet (there is only one row per race_eth, year so this is safe)
-            .unstack()  # Pivot 'year' into columns
-            .to_dict(orient="index")
-        )
-
-        # Group by biological sex and year, aggregate, and convert to nested dictionary
-        bio_sex_populations_dict = (
-            bio_sex_df_filtered.groupby(["sex", "year"])["n"]
-            .first()
-            .unstack()
-            .to_dict(orient="index")
-        )
-
-        # Structure the final dictionary
-        populations_dict = {
-            "race_and_ethnicity": race_eth_populations_dict,
-            "biological_sex": bio_sex_populations_dict,
+        # Map jurisdiction GEOIDs to their membership status (INCLUDE/EXCLUDE)
+        geoid_to_membership = {
+            jurisdiction.geoid: jurisdiction.membership
+            for jurisdiction in all_agency_jurisdictions
         }
+
+        # List of GEOIDs associated with the agency
+        geoids = list(geoid_to_membership.keys())
+
+        # Fetch population data for all relevant jurisdictions
+        jurisdiction_populations = (
+            session.query(schema.JurisdictionPopulation)
+            .filter(schema.JurisdictionPopulation.geoid.in_(geoids))
+            .all()
+        )
+
+        # Dictionaries to store aggregated population data
+        race_eth_populations_dict: Dict[str, Dict[int, int]] = defaultdict(
+            lambda: defaultdict(int)
+        )
+        bio_sex_populations_dict: Dict[str, Dict[int, int]] = defaultdict(
+            lambda: defaultdict(int)
+        )
+
+        # Process each jurisdiction's population data
+        for jurisdiction_population in jurisdiction_populations:
+            membership_status = geoid_to_membership[jurisdiction_population.geoid]
+
+            if membership_status == schema.AgencyJurisdictionType.INCLUDE.value:
+                # Include population data (add it)
+                if jurisdiction_population.sex is not None:
+                    bio_sex_populations_dict[jurisdiction_population.sex][
+                        jurisdiction_population.year
+                    ] += jurisdiction_population.population
+                elif jurisdiction_population.race_ethnicity is not None:
+                    race_eth_populations_dict[jurisdiction_population.race_ethnicity][
+                        jurisdiction_population.year
+                    ] += jurisdiction_population.population
+            else:
+                # Exclude population data (subtract it)
+                if jurisdiction_population.sex is not None:
+                    bio_sex_populations_dict[jurisdiction_population.sex][
+                        jurisdiction_population.year
+                    ] -= jurisdiction_population.population
+                elif jurisdiction_population.race_ethnicity is not None:
+                    race_eth_populations_dict[jurisdiction_population.race_ethnicity][
+                        jurisdiction_population.year
+                    ] -= jurisdiction_population.population
+
+            # Structure the final dictionary for output
+            populations_dict = {
+                "race_and_ethnicity": {
+                    key: dict(value) for key, value in race_eth_populations_dict.items()
+                },
+                "biological_sex": {
+                    key: dict(value) for key, value in bio_sex_populations_dict.items()
+                },
+            }
 
         return populations_dict
