@@ -29,5 +29,29 @@ CHECK_FOR_VALID_WATERMARKS_TASK_ID = "check_for_valid_watermarks"
 
 
 # Task id for the task in raw data for files that fail to register with the operations
-# db
+# db -- we WANT to report these errors
 RAISE_OPERATIONS_REGISTRATION_ERRORS = "raise_operations_registration_errors"
+
+
+# Task id for "failure" task in the raw data import DAG whose job it is to just raise
+# task failures if we encounter them during execution. For certain raw data tasks, we
+# batch files together and airflow won't push to xcom for failed tasks for k8s, so we
+# need to split the "failure" out from the actual execution; for these failure tasks,
+# it's nice to have the failure task close to the failure location so it's easier to
+# reason about what might have gone wrong.
+# Instead of reporting the Airflow task failures, we'll have our file-tag level alerting
+# infra that reads from the operations database report these errors.
+
+RAISE_HEADER_VERIFICATION_ERRORS = "raise_header_verification_errors"
+RAISE_FILE_CHUNKING_ERRORS = "raise_file_chunking_errors"
+RAISE_CHUNK_NORMALIZATION_ERRORS = "raise_chunk_normalization_errors"
+RAISE_LOAD_PREP_ERRORS = "raise_load_prep_errors"
+RAISE_APPEND_ERRORS = "raise_append_errors"
+
+RAW_DATA_TASKS_ALLOWED_TO_FAIL: set[str] = {
+    RAISE_HEADER_VERIFICATION_ERRORS,
+    RAISE_FILE_CHUNKING_ERRORS,
+    RAISE_CHUNK_NORMALIZATION_ERRORS,
+    RAISE_LOAD_PREP_ERRORS,
+    RAISE_APPEND_ERRORS,
+}

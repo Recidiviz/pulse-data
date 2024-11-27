@@ -46,7 +46,7 @@ from recidiviz.airflow.dags.raw_data.clean_up_tasks import (
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
     coalesce_import_ready_files,
     coalesce_results_and_errors,
-    raise_skipped_file_errors,
+    raise_operations_registration_errors,
     split_by_pre_import_normalization_type,
 )
 from recidiviz.airflow.dags.raw_data.filtering_tasks import (
@@ -227,7 +227,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             get_all_unprocessed_bq_file_metadata.output
         )
 
-        skipped_file_errors = raise_skipped_file_errors(
+        skipped_file_errors = raise_operations_registration_errors(
             serialized_skipped_file_errors=get_all_unprocessed_bq_file_metadata.output[
                 SKIPPED_FILE_ERRORS
             ]

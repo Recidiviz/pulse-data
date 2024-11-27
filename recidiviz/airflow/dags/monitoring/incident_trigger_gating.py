@@ -29,6 +29,7 @@ from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_sftp_dag_id,
 )
 from recidiviz.airflow.dags.utils.branch_utils import BRANCH_END_TASK_NAME
+from recidiviz.airflow.dags.utils.constants import RAW_DATA_TASKS_ALLOWED_TO_FAIL
 from recidiviz.airflow.dags.utils.environment import get_project_id
 
 
@@ -108,6 +109,17 @@ def _get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
                 and incident.dag_run_config_obj["ingest_instance"] == "SECONDARY"
             ),
             failure_message="raw data import DAG secondary is being used for testing",
+        ),
+        AlertingIncidentTriggerPredicate(
+            method=TriggerPredicateMethod.SILENCE,
+            dag_id=get_raw_data_import_dag_id(project_id),
+            condition=lambda incident: (
+                any(
+                    incident.job_id.endswith(allowed_to_fail_task)
+                    for allowed_to_fail_task in RAW_DATA_TASKS_ALLOWED_TO_FAIL
+                )
+            ),
+            failure_message="errors for this task will be handled by file-level errors",
         ),
     ]
 

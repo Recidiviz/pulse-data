@@ -38,6 +38,11 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     HEADER_VERIFICATION_ERRORS,
 )
 from recidiviz.airflow.dags.raw_data.utils import n_evenly_weighted_buckets
+from recidiviz.airflow.dags.utils.constants import (
+    RAISE_CHUNK_NORMALIZATION_ERRORS,
+    RAISE_FILE_CHUNKING_ERRORS,
+    RAISE_HEADER_VERIFICATION_ERRORS,
+)
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -604,7 +609,7 @@ def read_and_verify_column_headers(
     }
 
 
-@task
+@task(task_id=RAISE_HEADER_VERIFICATION_ERRORS)
 def raise_header_verification_errors(header_verification_errors: List[str]) -> None:
     errors = [
         RawFileProcessingError.deserialize(error)
@@ -614,7 +619,7 @@ def raise_header_verification_errors(header_verification_errors: List[str]) -> N
     _raise_task_errors(errors)
 
 
-@task
+@task(task_id=RAISE_FILE_CHUNKING_ERRORS)
 def raise_file_chunking_errors(serialized_chunking_errors: List[str]) -> None:
     chunking_errors = [
         RawFileProcessingError.deserialize(error)
@@ -623,7 +628,7 @@ def raise_file_chunking_errors(serialized_chunking_errors: List[str]) -> None:
     _raise_task_errors(chunking_errors)
 
 
-@task
+@task(task_id=RAISE_CHUNK_NORMALIZATION_ERRORS)
 def raise_chunk_normalization_errors(chunk_normalization_output: str) -> None:
     errors = BatchedTaskInstanceOutput.deserialize(
         chunk_normalization_output,

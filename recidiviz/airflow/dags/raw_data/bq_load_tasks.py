@@ -33,6 +33,10 @@ from recidiviz.airflow.dags.raw_data.utils import (
     get_direct_ingest_region_raw_config,
     n_evenly_weighted_buckets,
 )
+from recidiviz.airflow.dags.utils.constants import (
+    RAISE_APPEND_ERRORS,
+    RAISE_LOAD_PREP_ERRORS,
+)
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
@@ -149,7 +153,7 @@ def load_and_prep_paths_for_batch(
     ).serialize()
 
 
-@task
+@task(task_id=RAISE_LOAD_PREP_ERRORS)
 def raise_load_prep_errors(
     serialized_batched_task_instance_output: List[str],
     serialized_skipped_file_errors: List[str],
@@ -392,7 +396,7 @@ def _append_to_raw_data_table_for_file_tag(
     )
 
 
-@task
+@task(task_id=RAISE_APPEND_ERRORS)
 def raise_append_errors(
     append_tasks_output: List[str],
 ) -> None:

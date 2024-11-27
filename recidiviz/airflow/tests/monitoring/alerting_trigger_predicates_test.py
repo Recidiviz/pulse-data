@@ -116,3 +116,52 @@ class TestPredicates(unittest.TestCase):
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
         self.assertFalse(should_trigger, messages)
         self.assertIn("incident has not occurred recently", messages)
+
+    # TODO(#28239) remove once we actually want to route secondary failures to pager duty
+    def test_raw_data_secondary(self) -> None:
+        incident = AirflowAlertingIncident(
+            dag_id="test_project_raw_data_import_dag",
+            dag_run_config=json.dumps({"ingest_instance": "SECONDARY"}),
+            job_id="US_OZ.hunger_games_people",
+            failed_execution_dates=[datetime.now(tz=timezone.utc) - timedelta(days=1)],
+        )
+
+        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
+        self.assertFalse(should_trigger, messages)
+        self.assertIn(
+            "raw data import DAG secondary is being used for testing", messages
+        )
+
+        incident = AirflowAlertingIncident(
+            dag_id="test_project_raw_data_import_dag",
+            dag_run_config=json.dumps({"ingest_instance": "PRIMARY"}),
+            job_id="US_OZ.hunger_games_people",
+            failed_execution_dates=[datetime.now(tz=timezone.utc) - timedelta(days=1)],
+        )
+
+        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
+        self.assertTrue(should_trigger)
+
+    def test_raw_data_tasks_allowed_to_fail(self) -> None:
+        incident = AirflowAlertingIncident(
+            dag_id="test_project_raw_data_import_dag",
+            dag_run_config=json.dumps({"ingest_instance": "PRIMARY"}),
+            job_id="raw_data_branching.us_xx_primary_import_branch.pre_import_normalization.raise_file_chunking_errors",
+            failed_execution_dates=[datetime.now(tz=timezone.utc) - timedelta(days=1)],
+        )
+
+        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
+        self.assertFalse(should_trigger, messages)
+        self.assertIn(
+            "errors for this task will be handled by file-level errors", messages
+        )
+
+        incident = AirflowAlertingIncident(
+            dag_id="test_project_raw_data_import_dag",
+            dag_run_config=json.dumps({"ingest_instance": "PRIMARY"}),
+            job_id="raw_data_branching.us_xx_primary_import_branch.raise_operations_registration_errors",
+            failed_execution_dates=[datetime.now(tz=timezone.utc) - timedelta(days=1)],
+        )
+
+        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
+        self.assertTrue(should_trigger)
