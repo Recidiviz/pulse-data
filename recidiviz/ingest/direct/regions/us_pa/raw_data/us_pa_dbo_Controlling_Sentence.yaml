@@ -28,9 +28,9 @@ columns:
     description: Controlling Sentence Type
   - name: indictment_id
     description: Indictment ID
-  - name: Criame_Code
+  - name: Crime_Code
     description: Crime Code
-  - name: Criame_Code_Description
+  - name: Crime_Code_Description
     description: Crime Code Description
   - name: Grade
     description: Grade
