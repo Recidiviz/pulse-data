@@ -282,11 +282,16 @@ class SpreadsheetInterface:
 
         # If there are ingest-blocking errors, log errors to console and set the spreadsheet status to ERRORED
         if not is_ingest_successful:
-            SpreadsheetInterface.log_errors_and_update_spreadsheet_status(
-                spreadsheet=spreadsheet,
-                agency_id=agency.id,
-                metric_key_to_errors=bulk_upload_metadata.metric_key_to_errors,
+            logging.error(
+                (
+                    "Ingestion failed without errors for agency_id: %i. "
+                    "Details about the errors and warnings are available in the "
+                    "justice-counts-<environment>-bulk-upload-errors-warnings-json file: %s"
+                ),
+                agency.id,
+                spreadsheet.standardized_name.replace("xlsx", "json"),
             )
+            spreadsheet.status = schema.SpreadsheetStatus.ERRORED
 
         else:
             logging.info(
@@ -307,22 +312,6 @@ class SpreadsheetInterface:
         ingest_result.unchanged_reports = unchanged_reports
 
         return ingest_result
-
-    @staticmethod
-    def log_errors_and_update_spreadsheet_status(
-        spreadsheet: schema.Spreadsheet,
-        agency_id: int,
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
-    ) -> None:
-        logging.error(
-            "Failed to ingest without errors: agency_id: %i, spreadsheet_id: %i, errors: %s",
-            agency_id,
-            spreadsheet.id,
-            metric_key_to_errors,
-        )
-        spreadsheet.status = schema.SpreadsheetStatus.ERRORED
 
     @staticmethod
     def get_spreadsheet_path(spreadsheet: schema.Spreadsheet) -> GcsfsFilePath:
