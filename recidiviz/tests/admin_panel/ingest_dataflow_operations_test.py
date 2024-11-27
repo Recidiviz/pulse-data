@@ -88,6 +88,11 @@ class IngestDataflowOperations(TestCase):
             ],
         )
         self.state_code_list_patcher.start()
+        self.dag_enabled_patcher = mock.patch(
+            "recidiviz.admin_panel.ingest_dataflow_operations.is_raw_data_import_dag_enabled",
+            return_value=False,
+        )
+        self.dag_enabled_mock = self.dag_enabled_patcher.start()
         self.watermark_manager = DirectIngestDataflowWatermarkManager()
         self.job_manager = DirectIngestDataflowJobManager()
         local_persistence_helpers.use_on_disk_postgresql_database(
@@ -101,6 +106,7 @@ class IngestDataflowOperations(TestCase):
     def tearDown(self) -> None:
         super().tearDown()
         self.state_code_list_patcher.stop()
+        self.dag_enabled_patcher.stop()
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.watermark_manager.database_key
         )

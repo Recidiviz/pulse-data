@@ -26,11 +26,15 @@ from google.cloud import dataflow_v1beta3
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
     DirectIngestDataflowJobManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager import (
     DirectIngestDataflowWatermarkManager,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
+    DirectIngestRawFileMetadataManagerV2,
 )
 from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
     LegacyDirectIngestRawFileMetadataManager,
@@ -117,12 +121,10 @@ def get_latest_job_for_state_instance(
     return None
 
 
-def get_all_latest_ingest_jobs() -> (
-    Dict[
-        StateCode,
-        Optional[DataflowPipelineMetadataResponse],
-    ]
-):
+def get_all_latest_ingest_jobs() -> Dict[
+    StateCode,
+    Optional[DataflowPipelineMetadataResponse],
+]:
     """Get the latest job for each ingest pipeline."""
     with futures.ThreadPoolExecutor(max_workers=20) as executor:
         jobs_by_state_instance: Dict[
@@ -141,9 +143,11 @@ def get_all_latest_ingest_jobs() -> (
                 # a job may not have yet completed successfully for a state code and instance combination
                 # in this case most_recent_job_ids_map will not contain an entry for that combination
                 # use None in that case
-                most_recent_job_ids_map[state_code][DirectIngestInstance.PRIMARY]
-                if state_code in most_recent_job_ids_map
-                else None,
+                (
+                    most_recent_job_ids_map[state_code][DirectIngestInstance.PRIMARY]
+                    if state_code in most_recent_job_ids_map
+                    else None
+                ),
             ): state_code
             for state_code in get_direct_ingest_states_launched_in_env()
         }
@@ -175,18 +179,25 @@ def get_raw_data_tags_not_meeting_watermark(
         state_code, ingest_instance
     )
 
-    # TODO(#29058): update this script to, behind gates, use new bq file metadata table
+    manager: (
+        LegacyDirectIngestRawFileMetadataManager | DirectIngestRawFileMetadataManagerV2
+    ) = (
+        LegacyDirectIngestRawFileMetadataManager(state_code.value, ingest_instance)
+        if not is_raw_data_import_dag_enabled(
+            state_code=state_code, raw_data_instance=ingest_instance
+        )
+        else DirectIngestRawFileMetadataManagerV2(state_code.value, ingest_instance)
+    )
+
     latest_upper_bound_by_file_tag: Dict[str, datetime.datetime] = {
         info.file_tag: info.latest_update_datetime
-        for info in LegacyDirectIngestRawFileMetadataManager(
-            str(state_code.value), ingest_instance
-        ).get_metadata_for_all_raw_files_in_region()
+        for info in manager.get_metadata_for_all_raw_files_in_region()
         if info.latest_update_datetime is not None
     }
 
     stale_file_tags = [
         file_tag
-        for file_tag, watermark in watermarks_by_file_tag.items()
+        for file_tag, _watermark in watermarks_by_file_tag.items()
         if (
             file_tag not in latest_upper_bound_by_file_tag
             or watermarks_by_file_tag[file_tag]
