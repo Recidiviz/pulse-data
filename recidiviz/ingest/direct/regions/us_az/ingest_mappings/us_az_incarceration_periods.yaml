@@ -267,21 +267,7 @@ output:
           custody_level:
             $enum_mapping:
               $raw_text: custody_level
-              $mappings:
-                StateIncarcerationPeriodCustodyLevel.INTAKE:
-                  - Intake
-                StateIncarcerationPeriodCustodyLevel.MINIMUM:
-                  - Minimum
-                StateIncarcerationPeriodCustodyLevel.MEDIUM:
-                  - Medium
-                StateIncarcerationPeriodCustodyLevel.MAXIMUM:
-                  - Maximum
-                StateIncarcerationPeriodCustodyLevel.CLOSE:
-                  - Close
-                StateIncarcerationPeriodCustodyLevel.SOLITARY_CONFINEMENT:
-                  - Detention
-                StateIncarcerationPeriodCustodyLevel.EXTERNAL_UNKNOWN:
-                  - Unknown
+              $custom_parser: us_az_custom_enum_parsers.parse_custody_level
           custodial_authority:
             $conditional:
               - $if:

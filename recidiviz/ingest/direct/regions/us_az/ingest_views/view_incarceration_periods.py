@@ -125,7 +125,7 @@ SELECT DISTINCT
   CAST(NULL AS DATE) AS MOVEMENT_DATE,
   CAST(START_DTM AS DATETIME) AS CLASSIFICATION_DATE,
   'CLASSIFICATION' AS MOVEMENT_DESCRIPTION,
-  custody_lookup.DESCRIPTION AS CLASSIFICATION_CUSTODY_LEVEL, 
+  CONCAT(IFNULL(score.TOTAL_SCORE, 'NONE'), '-', custody_lookup.DESCRIPTION) AS CLASSIFICATION_CUSTODY_LEVEL, 
   CAST(NULL AS STRING) AS HOUSING_UNIT_DETAIL,
   CAST(NULL AS STRING) AS jail_location,
   CAST(NULL AS STRING) AS hospital_location,
@@ -133,6 +133,11 @@ SELECT DISTINCT
   CAST(NULL AS STRING) AS LOCATOR_CODE_ID,
   CAST(NULL AS STRING) AS prison_name,
 FROM {DOC_CLASSIFICATION} class
+-- Older classifications do not always have scores associated. We left join the SCORE 
+-- table to preserve those classifications. >90% of classifications finalized in the 
+-- last 10 years have an associated score. 
+LEFT JOIN {DOC_CLASSIFICATION_SCORE} score
+USING(CLASSIFICATION_ID)
 LEFT JOIN {LOOKUPS} custody_lookup
 ON(CUSTODY_DISCIPLINE_LEVEL_ID = custody_lookup.LOOKUP_ID)
 LEFT JOIN {DOC_EPISODE} ep

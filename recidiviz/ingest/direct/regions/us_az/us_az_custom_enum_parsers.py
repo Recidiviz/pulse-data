@@ -32,6 +32,7 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodHousingUnitCategory,
     StateIncarcerationPeriodHousingUnitType,
+    StateIncarcerationPeriodCustodyLevel,
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_staff_caseload_type import (
@@ -280,3 +281,24 @@ def parse_supervision_level(
 
     # If none of the above cases are true, we do not know this person's supervision level.
     return StateSupervisionLevel.PRESENT_WITHOUT_INFO
+
+
+def parse_custody_level(
+    raw_text: str,
+) -> Optional[StateIncarcerationPeriodCustodyLevel]:
+    level = raw_text.split("-")[1].upper()
+    if level == "INTAKE":
+        return StateIncarcerationPeriodCustodyLevel.INTAKE
+    if level == "MINIMUM":
+        return StateIncarcerationPeriodCustodyLevel.MINIMUM
+    if level == "MEDIUM":
+        return StateIncarcerationPeriodCustodyLevel.MEDIUM
+    if level == "MAXIMUM":
+        return StateIncarcerationPeriodCustodyLevel.MAXIMUM
+    if level == "CLOSE":
+        return StateIncarcerationPeriodCustodyLevel.CLOSE
+    if level == "DETENTION":
+        return StateIncarcerationPeriodCustodyLevel.SOLITARY_CONFINEMENT
+    if level == "UNKNOWN":
+        return StateIncarcerationPeriodCustodyLevel.EXTERNAL_UNKNOWN
+    return StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN
