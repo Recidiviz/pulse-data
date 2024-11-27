@@ -322,7 +322,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             normalized_file_name="normalized_file_tag_1",
         )
         with SessionFactory.using_database(self.database_key) as session:
-            self.raw_metadata_manager.mark_file_as_invalidated_by_file_id(
+            self.raw_metadata_manager.mark_file_as_invalidated_by_file_id_with_session(
                 session=session,
                 file_id=10,
             )

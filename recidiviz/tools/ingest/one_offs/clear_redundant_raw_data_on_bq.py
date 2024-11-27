@@ -35,6 +35,10 @@ from tabulate import tabulate
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
+    DirectIngestRawFileMetadataManagerV2,
+)
 from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
     LegacyDirectIngestRawFileMetadataManager,
 )
@@ -43,6 +47,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -72,8 +77,10 @@ class PruningStatus(Enum):
 
 
 def get_postgres_min_and_max_update_datetime_by_file_tag(
+    *,
     session: Session,
     state_code: StateCode,
+    metadata_table: str,
 ) -> Dict[str, Tuple[str, str]]:
     """Returns a dictionary of file tags to their associated (non-invalidated) raw file min and max
     update_datetime.
@@ -81,7 +88,7 @@ def get_postgres_min_and_max_update_datetime_by_file_tag(
     command = (
         "SELECT file_tag, min(update_datetime) as min_datetimes_contained, "
         "max(update_datetime) as max_datetimes_contained "
-        "FROM direct_ingest_raw_file_metadata "
+        f"FROM {metadata_table} "
         f"WHERE region_code = '{state_code.value}' "
         "AND is_invalidated is False "
         "AND raw_data_instance = 'PRIMARY'"
@@ -93,11 +100,13 @@ def get_postgres_min_and_max_update_datetime_by_file_tag(
 
 
 def get_min_and_max_file_ids_in_postgres(
+    *,
     session: Session,
     state_code: StateCode,
     file_tag: str,
     min_datetimes_contained: str,
     max_datetimes_contained: str,
+    metadata_table: str,
 ) -> List[int]:
     """Returns file_ids from postgres whose update_datetimes match the provided
     |min_datetimes_contained| and |max_datetimes_contained|.
@@ -108,14 +117,14 @@ def get_min_and_max_file_ids_in_postgres(
     )
     command = (
         "SELECT DISTINCT file_id "
-        "FROM direct_ingest_raw_file_metadata "
+        f"FROM {metadata_table} "
         f"WHERE region_code = '{state_code.value}' "
         f"AND file_tag = '{file_tag}' "
         f"AND update_datetime in ('{min_datetimes_contained}', "
         f"'{max_datetimes_contained}')"
         "AND is_invalidated is FALSE "
         "AND raw_data_instance = 'PRIMARY'"
-        "order by file_id asc;"
+        "ORDER BY file_id asc;"
     )
     postgres_results = session.execute(sqlalchemy.text(command))
     logging.info("[%s] %s", file_tag, command)
@@ -124,6 +133,7 @@ def get_min_and_max_file_ids_in_postgres(
 
 
 def postgres_file_ids_present_in_bq(
+    *,
     file_tag: str,
     bq_client: BigQueryClient,
     table_bq_path: str,
@@ -166,17 +176,19 @@ def postgres_file_ids_present_in_bq(
 
 
 def get_redundant_raw_file_ids(
+    *,
     session: Session,
     state_code: StateCode,
     file_tag: str,
     min_datetimes_contained: str,
     max_datetimes_contained: str,
+    metadata_table: str,
 ) -> List[int]:
     """For a given file_tag, returns a list of file_ids whose `update_datetime` times are
     within the bounds the associated (non-invalidated) min and max update_datetime."""
     command = (
         "SELECT DISTINCT file_id "
-        "FROM direct_ingest_raw_file_metadata "
+        f"FROM {metadata_table} "
         f"WHERE region_code = '{state_code.value}' "
         f"AND file_tag = '{file_tag}' "
         f"AND update_datetime > '{min_datetimes_contained}' "
@@ -220,9 +232,31 @@ def main(
 
     bq_client: BigQueryClient = BigQueryClientImpl()
     database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-    # TODO(#29058): update this script to, behind gates, use new bq file metadata table
-    raw_data_metadata_manager = LegacyDirectIngestRawFileMetadataManager(
-        state_code.value, DirectIngestInstance.PRIMARY
+    # TODO(#28239): remove legacy manager / table when we roll out the raw data import dag
+    raw_data_metadata_manager: (
+        LegacyDirectIngestRawFileMetadataManager | DirectIngestRawFileMetadataManagerV2
+    ) = (
+        LegacyDirectIngestRawFileMetadataManager(
+            state_code.value, DirectIngestInstance.PRIMARY
+        )
+        if not is_raw_data_import_dag_enabled(
+            state_code=state_code,
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+            project_id=project_id,
+        )
+        else DirectIngestRawFileMetadataManagerV2(
+            state_code.value, DirectIngestInstance.PRIMARY
+        )
+    )
+
+    metadata_table: str = (
+        schema.DirectIngestRawFileMetadata.__tablename__
+        if not is_raw_data_import_dag_enabled(
+            state_code=state_code,
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+            project_id=project_id,
+        )
+        else schema.DirectIngestRawBigQueryFileMetadata.__tablename__
     )
 
     results: Dict[PruningStatus, List[str]] = defaultdict(list)
@@ -230,7 +264,9 @@ def main(
     with SessionFactory.for_proxy(database_key) as session:
         file_tag_to_min_and_max_update_datetimes: Dict[
             str, Tuple[str, str]
-        ] = get_postgres_min_and_max_update_datetime_by_file_tag(session, state_code)
+        ] = get_postgres_min_and_max_update_datetime_by_file_tag(
+            session=session, state_code=state_code, metadata_table=metadata_table
+        )
         for file_tag, (
             min_update_datetime,
             max_update_datetime,
@@ -257,11 +293,12 @@ def main(
             )
 
             file_ids_to_delete: List[int] = get_redundant_raw_file_ids(
-                session,
-                state_code,
-                file_tag,
-                min_update_datetime,
-                max_update_datetime,
+                session=session,
+                state_code=state_code,
+                file_tag=file_tag,
+                min_datetimes_contained=min_update_datetime,
+                max_datetimes_contained=max_update_datetime,
+                metadata_table=metadata_table,
             )
 
             table_bq_path = StrictStringFormatter().format(
@@ -277,6 +314,7 @@ def main(
                 file_tag=file_tag,
                 min_datetimes_contained=min_update_datetime,
                 max_datetimes_contained=max_update_datetime,
+                metadata_table=metadata_table,
             )
 
             if len(min_and_max_file_ids_in_pg) < 2:
@@ -355,7 +393,7 @@ def main(
                     len(file_ids_to_delete),
                 )
                 for file_id in file_ids_to_delete:
-                    raw_data_metadata_manager.mark_file_as_invalidated_by_file_id(
+                    raw_data_metadata_manager.mark_file_as_invalidated_by_file_id_with_session(
                         session, file_id
                     )
                 session.commit()

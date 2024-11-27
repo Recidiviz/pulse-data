@@ -465,7 +465,7 @@ class LegacyDirectIngestRawFileMetadataManager:
             metadata = self._get_raw_file_metadata_for_path(session, path)
             metadata.is_invalidated = True
 
-    def mark_file_as_invalidated_by_file_id(
+    def mark_file_as_invalidated_by_file_id_with_session(
         self, session: Session, file_id: int
     ) -> None:
         metadata = self._get_raw_file_metadata_for_file_id(session, file_id)

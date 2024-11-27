@@ -502,7 +502,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
         )
         assert metadata.file_id is not None
         with SessionFactory.using_database(self.database_key) as session:
-            self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
+            self.raw_metadata_manager.mark_file_as_invalidated_by_file_id_with_session(
                 session=session,
                 file_id=metadata.file_id,
             )
@@ -542,7 +542,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
         assert old_metadata.file_id is not None
 
         with SessionFactory.using_database(self.database_key) as session:
-            self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
+            self.raw_metadata_manager.mark_file_as_invalidated_by_file_id_with_session(
                 session=session,
                 file_id=old_metadata.file_id,
             )
@@ -589,7 +589,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
         )
 
         with SessionFactory.using_database(self.database_key) as session:
-            self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
+            self.raw_metadata_manager.mark_file_as_invalidated_by_file_id_with_session(
                 session, metadata.file_id
             )
 
@@ -1215,7 +1215,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                 )
             if day == 2:
                 with SessionFactory.using_database(self.database_key) as session:
-                    self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
+                    self.raw_metadata_manager.mark_file_as_invalidated_by_file_id_with_session(
                         session, assert_type(gcs_file.file_id, int)
                     )
 
@@ -1416,7 +1416,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
 
             if day == 2:
                 with SessionFactory.using_database(self.database_key) as session:
-                    self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
+                    self.raw_metadata_manager.mark_file_as_invalidated_by_file_id_with_session(
                         session, bq_file.file_id
                     )
 
@@ -1661,7 +1661,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                 )
             )
 
-            self.raw_metadata_manager_secondary.mark_raw_big_query_file_as_invalidated_by_file_id(
+            self.raw_metadata_manager_secondary.mark_file_as_invalidated_by_file_id(
                 assert_type(gcs_file.file_id, int)
             )
 
@@ -1710,7 +1710,7 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
 
         self.assertEqual(missing_files_iii, [file_iv.blob_name])
 
-        self.raw_metadata_manager.mark_raw_big_query_file_as_invalidated_by_file_id(
+        self.raw_metadata_manager.mark_file_as_invalidated_by_file_id(
             assert_type(gcs_file.file_id, int)
         )
 

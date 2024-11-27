@@ -351,14 +351,12 @@ class DirectIngestRawFileMetadataManagerV2:
 
     # --- file invalidation logic -----------------------------------------------------
 
-    def mark_raw_big_query_file_as_invalidated_by_file_id(self, file_id: int) -> None:
+    def mark_file_as_invalidated_by_file_id(self, file_id: int) -> None:
         """Marks the row associated with the |file_id| as invalidated=True."""
         with SessionFactory.using_database(self.database_key) as session:
-            self.mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
-                session, file_id
-            )
+            self.mark_file_as_invalidated_by_file_id_with_session(session, file_id)
 
-    def mark_raw_big_query_file_as_invalidated_by_file_id_with_session(
+    def mark_file_as_invalidated_by_file_id_with_session(
         self, session: Session, file_id: int
     ) -> None:
         """Marks the row associated with the |file_id| as invalidated=True using the
