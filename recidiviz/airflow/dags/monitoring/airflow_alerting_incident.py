@@ -46,8 +46,9 @@ class AirflowAlertingIncident:
     next_success_date: Optional[datetime] = attr.ib(
         default=None, validator=attr_validators.is_opt_datetime
     )
+    # since error messages can be quite large, don't include them in the airflow logs
     error_message: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+        default=None, validator=attr_validators.is_opt_str, repr=False
     )
 
     @property

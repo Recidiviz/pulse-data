@@ -36,6 +36,7 @@ class RecidivizPagerDutyService(RecidivzAlertingService):
     https://recidiviz.pagerduty.com/service-directory.
     """
 
+    name: str = attr.ib(validator=attr_validators.is_str)
     project_id: str = attr.ib(validator=attr_validators.is_str)
     service_integration_email: str = attr.ib(validator=attr_validators.is_str)
 
@@ -47,6 +48,7 @@ class RecidivizPagerDutyService(RecidivzAlertingService):
         platform task failures.
         """
         return RecidivizPagerDutyService(
+            name="Data Platform PagerDuty Service",
             project_id=project_id,
             service_integration_email=cls._build_integration_email(
                 "data-platform-airflow", project_id=project_id
@@ -59,6 +61,7 @@ class RecidivizPagerDutyService(RecidivzAlertingService):
         failures.
         """
         return RecidivizPagerDutyService(
+            name="Airflow Monitoring PagerDuty Service",
             project_id=project_id,
             service_integration_email=cls._build_integration_email(
                 "monitoring-airflow", project_id=project_id
@@ -75,6 +78,7 @@ class RecidivizPagerDutyService(RecidivzAlertingService):
         state_code_str = state_code.value.lower().replace("_", "-")
         base_username = f"{state_code_str}-airflow"
         return RecidivizPagerDutyService(
+            name=f"{state_code.value} PagerDuty Service",
             project_id=project_id,
             service_integration_email=cls._build_integration_email(
                 base_username, project_id=project_id
@@ -85,6 +89,23 @@ class RecidivizPagerDutyService(RecidivzAlertingService):
     def _build_integration_email(base_username: str, project_id: str) -> str:
         return f"{base_username}-{project_id}@recidiviz.pagerduty.com"
 
+    @staticmethod
+    def _format_body(incident: AirflowAlertingIncident) -> str:
+        failure_date_strs = ", ".join(
+            [
+                f"`{failure_date.isoformat()}`"
+                for failure_date in incident.failed_execution_dates
+            ]
+        )
+
+        detail_msg = (
+            incident.error_message or ""
+            if incident.next_success_date is None
+            else f"Incident resolved {incident.next_success_date.isoformat()}"
+        )
+
+        return f"Failed run of [{incident.job_id}] on the following dates: [ {failure_date_strs} ]. {detail_msg}"
+
     def handle_incident(self, incident: AirflowAlertingIncident) -> None:
         event = (
             "Task failure:" if incident.next_success_date is None else "Task success:"
@@ -92,5 +113,5 @@ class RecidivizPagerDutyService(RecidivzAlertingService):
         send_email(
             to=self.service_integration_email,
             subject=f"{event} {incident.unique_incident_id}",
-            html_content=f"{incident}",
+            html_content=self._format_body(incident),
         )

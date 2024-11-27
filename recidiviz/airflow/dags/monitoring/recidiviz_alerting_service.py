@@ -23,6 +23,9 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
 
 
 class RecidivzAlertingService:
+
+    name: str
+
     @abc.abstractmethod
     def handle_incident(self, incident: AirflowAlertingIncident) -> None:
         """Update the alerting backend with updated information about this incident.

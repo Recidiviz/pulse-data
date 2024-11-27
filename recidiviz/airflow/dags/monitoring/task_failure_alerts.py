@@ -79,4 +79,9 @@ def report_failed_tasks() -> None:
             alerting_services = get_alerting_services_for_incident(incident)
 
             for service in alerting_services:
+                logging.info(
+                    "Reporting incident %s to %s",
+                    incident.unique_incident_id,
+                    service.name,
+                )
                 service.handle_incident(incident)

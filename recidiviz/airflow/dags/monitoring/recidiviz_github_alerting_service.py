@@ -42,6 +42,7 @@ RAW_DATA_DEFAULT_LABELS = ["Raw Data Import Failure", "Team: State Pod"]
 class RecidivizGitHubService(RecidivzAlertingService):
     """An alerting service that creates and updates issues in GitHub."""
 
+    name: str
     issue_labels: list[str]
 
     def __attrs_post_init__(self) -> None:
@@ -57,11 +58,12 @@ class RecidivizGitHubService(RecidivzAlertingService):
         )
         label_for_state_code = f"Region: {state_code.value}"
         return RecidivizGitHubService(
+            name=f"Raw Data {state_code.value} Github Service",
             issue_labels=[
                 *RAW_DATA_DEFAULT_LABELS,
                 label_for_state_code,
                 label_for_project,
-            ]
+            ],
         )
 
     def _search_past_issues_for_incident(
