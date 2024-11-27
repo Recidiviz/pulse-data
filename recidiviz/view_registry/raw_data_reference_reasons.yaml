@@ -94,9 +94,14 @@ US_AZ:
   AZ_DOC_HWD_DETAINER:
     task_eligibility_criteria_us_az.no_active_felony_detainers: |-
       Needed information on when detainers are placed on residents, this information is not ingested.
+  AZ_DOC_LOCATOR_CODE:
+    us_az_validation.incarceration_population_person_level: |-
+      Needed to pull location names into external validation data view.
   AZ_DOC_PRISON:
     reference_views.us_az_location_metadata: |-
       We pull all prison facility locations from this raw data into the location metadata view.
+    us_az_validation.incarceration_population_person_level: |-
+      Needed to pull location names into external validation data view.
   AZ_DOC_SC_OFFENSE:
     task_eligibility_criteria_us_az.at_least_24_months_since_last_csed: |-
       Needed to identify the last CSed date in a criteria.
@@ -117,6 +122,9 @@ US_AZ:
   AZ_DOC_TRANSITION_PRG_REVIEW:
     task_eligibility_criteria_us_az.no_tpr_denial_in_current_incarceration: |-
       Needed TPR denial reasons in a criteria.
+  AZ_DOC_UNIT:
+    us_az_validation.incarceration_population_person_level: |-
+      Needed to pull location names into external validation data view.
   DEMOGRAPHICS:
     task_eligibility_criteria_us_az.is_us_citizen_or_legal_permanent_resident:
       |-
@@ -188,6 +196,10 @@ US_AZ:
       pulled into a validation view directly.
   validation_daily_count_sheet_by_supervision_type:
     us_az_validation.supervision_population_by_type: |-
+      This is a raw data table containing external comparison validation data, being
+      pulled into a validation view directly.
+  validation_incarceration_population_person_level:
+    us_az_validation.incarceration_population_person_level: |-
       This is a raw data table containing external comparison validation data, being
       pulled into a validation view directly.
   validation_supervision_population_person_level:
