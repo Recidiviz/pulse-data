@@ -25,16 +25,19 @@ columns:
     description: |-
       TODO(#17148): Fill in with more context from OR
   - name: EFFECTIVE_DATE
-    field_type: datetime
-    datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
     description: |-
       Effective date.
-  - name: DISCONTINUED_DATE
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+  - name: DISCONTINUED_DATE
     description: |-
       Date discontinued, if applicable.
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35364) Ensure this column is intentionally null and isn't being used anywhere

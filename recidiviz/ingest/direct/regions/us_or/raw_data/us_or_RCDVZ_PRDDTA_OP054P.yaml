@@ -21,9 +21,9 @@ columns:
   - name: RECORD_KEY
     description: |-
       Unique identifier for each person.
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_OR_RECORD_KEY
+    is_pii: True
   - name: CUSTODY_NUMBER
     description: |-
       Number indicating order of custody.
@@ -37,9 +37,9 @@ columns:
     description: |-
       Number indicating order of sentences.
   - name: LAST_UPDATED_WHEN
-    field_type: datetime
     description: |-
       Date when last updated.
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
@@ -69,16 +69,16 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: SENTENCE_BEGIN_DATE
-    field_type: datetime
     description: |-
       Date sentence began.
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: TOLLING_DATE
-    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
@@ -102,7 +102,7 @@ columns:
         description: Life Sentence
       - value: D
         description: Death Sentence
-      - value: N
+      - value: "N"
         description: No Parole Sentence
   - name: CONSEC_TO
     description: |-
@@ -197,6 +197,9 @@ columns:
   - name: M40_STATUS
     description: |-
       TODO(#17148): Fill in with answer from OR
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35364) Ensure this column is intentionally null and isn't being used anywhere
   - name: SG_EARNED_TIME_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -206,17 +209,20 @@ columns:
   - name: PROJECTED_COMPLETION_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35364) Ensure this column is intentionally null and isn't being used anywhere
   - name: MAXIMUM_DATE
-    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: MINIMUM_DATE
-    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
@@ -246,9 +252,9 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: TERMINATION_DATE
-    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
@@ -270,6 +276,9 @@ columns:
   - name: PPS_BEGIN_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35364) Ensure this column is intentionally null and isn't being used anywhere
   - name: SENT_ADD_LOCA
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -282,7 +291,6 @@ columns:
   - name: PB_DEFERAL_DAYS
     description: |-
       TODO(#17148): Fill in with answer from OR
-
 table_relationships:
   - foreign_table: RCDVZ_PRDDTA_OP970P
     join_logic:

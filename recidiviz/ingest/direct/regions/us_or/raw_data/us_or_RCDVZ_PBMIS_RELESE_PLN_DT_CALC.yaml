@@ -36,6 +36,9 @@ columns:
   - name: CONSEC_SENTENCE_DAYS
     description: |-
       TODO(#17148): Fill in with answer from OR
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35364) Ensure this column is intentionally null and isn't being used anywhere
   - name: CONSEC_SENTENCE_MONTHS
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -89,9 +92,9 @@ columns:
   - name: RECORD_KEY
     description: |-
       Unique identifier for each person
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_OR_RECORD_KEY
+    is_pii: True
   - name: VERSION_NUM
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -108,9 +111,9 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: CREATE_DATE
-    field_type: datetime
     description: |-
       Date record was created.
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
@@ -119,9 +122,9 @@ columns:
       TODO(#17148): Fill in with answer from OR
     is_pii: True
   - name: MODIFY_DATE
-    field_type: datetime
     description: |-
       Date record was modified.
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
@@ -135,6 +138,9 @@ columns:
   - name: CONSEC_SENTENCE_CALCDAYS
     description: |-
       TODO(#17148): Fill in with answer from OR
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35364) Ensure this column is intentionally null and isn't being used anywhere
   - name: SPLIT_TOTAL_SENT_CALCDAYS
     description: |-
       TODO(#17148): Fill in with answer from OR
