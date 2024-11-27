@@ -5,6 +5,7 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - offender_prog_attendance_id
+update_cadence: IRREGULAR
 columns:
   - name: offender_prog_attendance_id
     description: OMNI-generated ID for this program attendance record

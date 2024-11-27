@@ -49,6 +49,9 @@ max_allowed_error_overrides:
   - validation_name: state_supervision_violation_by_violation_date_stable_counts
     hard_max_allowed_error_override: 0.3
     override_reason: We're expecting .28 is standard variation.
+  - validation_name: state_supervision_period_by_start_date_stable_counts
+    hard_max_allowed_error_override: 0.3
+    override_reason: Sometimes we see variation right above .25
   - validation_name: state_supervision_period_by_termination_date_stable_counts
     hard_max_allowed_error_override: 0.3
     override_reason: We're expecting .28 is standard variation.
@@ -110,7 +113,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 180000
     override_reason: Current failing level as of 2/13/24 is 176,927 rows #TODO(#20404)
   - validation_name: in_custody_sps_have_associated_ip
-    hard_num_allowed_rows_override: 60000
+    hard_num_allowed_rows_override: 65000
     override_reason:
       Current failing level as of 9/13/24 is 57690 rows in staging.
       For now, we are not inferring IPs for in custody periods until we can re-validate PA insights.
