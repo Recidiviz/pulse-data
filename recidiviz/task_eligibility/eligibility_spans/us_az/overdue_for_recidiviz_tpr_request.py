@@ -26,7 +26,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
-    early_release_not_overdue,
+    early_release_to_community_confinement_supervision_not_overdue,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     at_least_24_months_since_last_csed,
@@ -87,7 +87,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # f. Not already eligible for overdue_for_recidiviz_dtp
         eligible_or_almost_eligible_for_overdue_for_recidiviz_dtp.VIEW_BUILDER,
     ],
-    completion_event_builder=early_release_not_overdue.VIEW_BUILDER,
+    completion_event_builder=early_release_to_community_confinement_supervision_not_overdue.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
         sub_conditions_list=[
             # Only missing mandatory literacy

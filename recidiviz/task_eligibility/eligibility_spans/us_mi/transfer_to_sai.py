@@ -22,7 +22,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.general import (
-    transfer_to_treatment_in_prison,
+    transfer_to_supervision_run_facility,
 )
 from recidiviz.task_eligibility.criteria.general import (
     no_violent_sexual_offenses,
@@ -63,7 +63,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         served_minimum_sentence_for_firearm_felony.VIEW_BUILDER,
         true_security_level_not_iv_or_v.VIEW_BUILDER,
     ],
-    completion_event_builder=transfer_to_treatment_in_prison.VIEW_BUILDER,
+    # The TRANSFER_TO_TREATMENT_IN_PRISON enum was deprecated but
+    # could be re-added in the future if this opportunity is revisited
+    completion_event_builder=transfer_to_supervision_run_facility.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

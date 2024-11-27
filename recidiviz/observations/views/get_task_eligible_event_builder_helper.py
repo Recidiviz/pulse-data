@@ -62,6 +62,8 @@ def get_task_eligible_event_observation_view_builder(
             FALSE
         ) AS after_almost_eligible,
         d.system_type,
+        d.decarceral_impact_type,
+        d.is_jii_decarceral_transition,
         launches.first_access_date IS NOT NULL AS task_type_is_live,
         IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
     FROM
@@ -95,6 +97,8 @@ def get_task_eligible_event_observation_view_builder(
             "task_name",
             "task_type",
             "system_type",
+            "decarceral_impact_type",
+            "is_jii_decarceral_transition",
             "task_type_is_live",
             "task_type_is_fully_launched",
             "after_tool_action",

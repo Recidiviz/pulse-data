@@ -58,6 +58,17 @@ class TestTaskCompletionEventBigQueryViewCollector(unittest.TestCase):
             except Exception as e:
                 raise ValueError(f"Failed to build view {builder.address}") from e
 
+    def test_every_completion_event_type_has_a_view(self) -> None:
+        """Check that every task completion event enum is linked to at least one view"""
+        all_configured_event_types = set(
+            builder.completion_event_type
+            for builder in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+        )
+        missing_event_types = set(TaskCompletionEventType).difference(
+            all_configured_event_types
+        )
+        self.assertEqual(set(), missing_event_types)
+
     def test_unique_state_agnostic_completion_event_types(self) -> None:
         """Checks that each StateAgnosticTaskCompletionEventBigQueryViewBuilder has a
         distinct completion event type.
@@ -139,8 +150,13 @@ class TestTaskCompletionEventBigQueryViewCollector(unittest.TestCase):
                             f"[{view.address}]."
                         )
 
-    def test_system_type_for_all_completion_event_types(self) -> None:
+    def test_properties_for_all_completion_event_types(self) -> None:
         collector = TaskCompletionEventBigQueryViewCollector()
         all_completion_event_builders = collector.collect_view_builders()
         for builder in all_completion_event_builders:
-            _ = builder.completion_event_type.system_type
+            self.assertIsNotNone(builder.completion_event_type.system_type)
+            self.assertIsNotNone(builder.completion_event_type.decarceral_impact_type)
+            self.assertIsNotNone(
+                builder.completion_event_type.is_jii_decarceral_transition
+            )
+            self.assertIsNotNone(builder.completion_event_type.has_mandatory_due_date)

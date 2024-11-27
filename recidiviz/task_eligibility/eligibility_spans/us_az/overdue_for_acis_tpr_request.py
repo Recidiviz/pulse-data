@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
-    early_release_overdue,
+    early_release_to_community_confinement_supervision_overdue,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     eligible_or_almost_eligible_for_overdue_for_acis_dtp,
@@ -56,7 +56,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         NOT_INCARCERATION_WITHIN_6_MONTHS_OF_ACIS_DTP_DATE,
         eligible_or_almost_eligible_for_overdue_for_acis_dtp.VIEW_BUILDER,
     ],
-    completion_event_builder=early_release_overdue.VIEW_BUILDER,
+    completion_event_builder=early_release_to_community_confinement_supervision_overdue.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
         criteria=incarceration_past_acis_tpr_date.VIEW_BUILDER,
         reasons_date_field="acis_tpr_date",

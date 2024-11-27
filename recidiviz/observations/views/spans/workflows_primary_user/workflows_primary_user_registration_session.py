@@ -33,6 +33,8 @@ SELECT
     sessions.workflows_user_email_address AS email_address,
     metadata.completion_event_type AS task_type,
     system_type,
+    metadata.decarceral_impact_type,
+    metadata.is_jii_decarceral_transition,
     launches.first_access_date IS NOT NULL AS task_type_is_live,
     IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
     start_date,
@@ -61,6 +63,8 @@ VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBu
     attribute_cols=[
         "task_type",
         "system_type",
+        "decarceral_impact_type",
+        "is_jii_decarceral_transition",
         "task_type_is_live",
         "task_type_is_fully_launched",
     ],

@@ -41,6 +41,8 @@ SELECT
     , FALSE) AS is_first_tool_action,
     DATE_DIFF(a.start_date, c.start_date, DAY) days_eligible,
     d.system_type,
+    d.decarceral_impact_type,
+    d.is_jii_decarceral_transition,
     launches.first_access_date IS NOT NULL AS task_type_is_live,
     IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
 FROM
@@ -75,6 +77,8 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
     attribute_cols=[
         "task_type",
         "system_type",
+        "decarceral_impact_type",
+        "is_jii_decarceral_transition",
         "task_type_is_live",
         "task_type_is_fully_launched",
         "usage_event_type",

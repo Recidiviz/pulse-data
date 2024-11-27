@@ -42,6 +42,8 @@ SELECT
     -- Flag if someone has experienced at least one tool action before task completion
     COALESCE(f.surfaced, FALSE) AS after_tool_action,
     c.system_type,
+    c.decarceral_impact_type,
+    c.is_jii_decarceral_transition,
     launches.first_access_date IS NOT NULL AS task_type_is_live,
     IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
     IFNULL(e.completion_event_date >= launches.launch_date, FALSE) AS is_after_full_state_launch,
@@ -98,6 +100,8 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
     attribute_cols=[
         "task_type",
         "system_type",
+        "decarceral_impact_type",
+        "is_jii_decarceral_transition",
         "task_type_is_live",
         "task_type_is_fully_launched",
         "is_after_full_state_launch",

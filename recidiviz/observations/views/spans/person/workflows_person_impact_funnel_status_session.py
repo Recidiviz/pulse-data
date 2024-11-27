@@ -40,6 +40,8 @@ SELECT
     person_id,
     task_type,
     metadata.system_type,
+    metadata.decarceral_impact_type,
+    metadata.is_jii_decarceral_transition,
     launches.first_access_date IS NOT NULL AS task_type_is_live,
     IFNULL(launches.is_fully_launched, false) AS task_type_is_fully_launched,
     is_justice_involved,
@@ -70,6 +72,8 @@ VIEW_BUILDER: SpanObservationBigQueryViewBuilder = SpanObservationBigQueryViewBu
     attribute_cols=[
         "task_type",
         "system_type",
+        "decarceral_impact_type",
+        "is_jii_decarceral_transition",
         "task_type_is_live",
         "task_type_is_fully_launched",
         "is_justice_involved",

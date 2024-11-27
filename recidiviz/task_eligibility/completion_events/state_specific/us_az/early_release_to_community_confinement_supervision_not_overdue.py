@@ -26,16 +26,14 @@ from recidiviz.task_eligibility.utils.us_az_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
-    StateSpecificTaskCompletionEventBigQueryViewBuilder(
-        state_code=StateCode.US_AZ,
-        completion_event_type=TaskCompletionEventType.EARLY_RELEASE_NOT_OVERDUE,
-        description=__doc__,
-        completion_event_query_template=early_release_completion_event_query_template(
-            release_type="TPR",
-            release_is_overdue=False,
-        ),
-    )
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
+    state_code=StateCode.US_AZ,
+    completion_event_type=TaskCompletionEventType.EARLY_RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION_NOT_OVERDUE,
+    description=__doc__,
+    completion_event_query_template=early_release_completion_event_query_template(
+        release_type="TPR",
+        release_is_overdue=False,
+    ),
 )
 
 if __name__ == "__main__":
