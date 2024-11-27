@@ -584,12 +584,12 @@ snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_supervisor_entities"
 ] = [
     GenericRepr(
-        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='1', middle_names='', name_suffix=''), external_id='101', pseudonymized_id='hash1', supervision_district=None, email='supervisor1@recidiviz.org', has_outliers=True, supervision_unit='unit1', supervision_location_for_list_page=None, supervision_location_for_supervisor_page='unit 1')"
+        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='1', middle_names='', name_suffix=''), external_id='101', pseudonymized_id='hash1', supervision_district=None, email='supervisor1@recidiviz.org', has_outliers=True, supervision_unit='unit1')"
     ),
     GenericRepr(
-        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='2', middle_names='', name_suffix=''), external_id='102', pseudonymized_id='hash2', supervision_district='2', email='supervisor2@recidiviz.org', has_outliers=True, supervision_unit=None, supervision_location_for_list_page='region 2', supervision_location_for_supervisor_page='unit 2')"
+        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='2', middle_names='', name_suffix=''), external_id='102', pseudonymized_id='hash2', supervision_district='2', email='supervisor2@recidiviz.org', has_outliers=True, supervision_unit=None)"
     ),
     GenericRepr(
-        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='3', middle_names='', name_suffix=''), external_id='103', pseudonymized_id='hash3', supervision_district='2', email='manager3@recidiviz.org', has_outliers=False, supervision_unit=None, supervision_location_for_list_page='region 2', supervision_location_for_supervisor_page=None)"
+        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='3', middle_names='', name_suffix=''), external_id='103', pseudonymized_id='hash3', supervision_district='2', email='manager3@recidiviz.org', has_outliers=False, supervision_unit=None)"
     ),
 ]

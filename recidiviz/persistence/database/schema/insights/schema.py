@@ -111,10 +111,6 @@ class SupervisionOfficerSupervisor(PersonBase, InsightsBase):
     supervision_district = Column(String, nullable=True)
     # Name of the supervision unit the supervisor is in
     supervision_unit = Column(String, nullable=True)
-    # Supervision location to show on the supervisor list page
-    supervision_location_for_list_page = Column(String, nullable=True)
-    # Supervision location to show on the individual supervisor page
-    supervision_location_for_supervisor_page = Column(String, nullable=True)
     email = Column(String, nullable=True)
 
 

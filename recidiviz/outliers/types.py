@@ -523,10 +523,6 @@ class SupervisionOfficerSupervisorEntity:
     has_outliers: bool = attr.ib()
     # The unit the supervisor's in
     supervision_unit: Optional[str] = attr.ib()
-    # Supervision location to show on the supervisor list page
-    supervision_location_for_list_page: Optional[str] = attr.ib()
-    # Supervision location to show on the individual supervisor page
-    supervision_location_for_supervisor_page: Optional[str] = attr.ib()
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
