@@ -34,6 +34,10 @@ class TestGetProperlyQuotedYamlString(unittest.TestCase):
             f"value: {get_properly_quoted_yaml_str('123.4')}", 'value: "123.4"'
         )
         self.assertEqual(f"value: {get_properly_quoted_yaml_str('??')}", 'value: "??"')
+        self.assertEqual(
+            f"value: {get_properly_quoted_yaml_str('emily is #1')}",
+            'value: "emily is #1"',
+        )
 
     def test_not_reserved_words(self) -> None:
         self.assertEqual(get_properly_quoted_yaml_str("foo"), "foo")

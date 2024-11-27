@@ -54,11 +54,15 @@ def _is_number(value: str) -> bool:
         return False
 
 
+def _contains_word_starting_with_reserved_char(value: str) -> bool:
+    return any(word[0] in YAML_RESERVED_CHARS for word in value.split())
+
+
 def get_properly_quoted_yaml_str(value: str) -> str:
     if (
         not value
         or value.lower() in YAML_RESERVED_WORDS
-        or value[0] in YAML_RESERVED_CHARS
+        or _contains_word_starting_with_reserved_char(value)
         or _is_number(value)
     ):
         return f'"{value}"'
