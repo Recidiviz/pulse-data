@@ -43,6 +43,8 @@ import logging
 from datetime import date
 from typing import List, Optional
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_deprecated_storage_directory_path_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
@@ -50,6 +52,9 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import (
     DirectIngestRawFileMetadata,
+)
+from recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller import (
+    InvalidateOperationsDBFilesController,
 )
 from recidiviz.tools.ingest.operations.operate_on_storage_raw_files_controller import (
     IngestFilesOperationType,
@@ -85,6 +90,7 @@ class MoveFilesToDeprecatedController:
         self.file_tag_regex = file_tag_regex
         self.project_id = project_id
         self.skip_prompts = skip_prompts
+        self.ingest_instance = ingest_instance
 
         self.region_storage_dir_path = (
             gcsfs_direct_ingest_storage_directory_path_for_state(
@@ -114,6 +120,7 @@ class MoveFilesToDeprecatedController:
                 dry_run=self.dry_run,
             )
 
+            # TODO(#3666): Update this script to make updates to BigQuery (if necessary)
             prompt_for_confirmation(
                 f"All associated rows in the BigQuery dataset "
                 f"`{self.region_code.lower()}_raw_data` must be deleted before moving "
@@ -121,17 +128,31 @@ class MoveFilesToDeprecatedController:
                 dry_run=self.dry_run,
             )
 
-            # TODO(#3666): Update this script to make updates to our Operations db and
-            #  BigQuery (if necessary). For now we print these messages to check if
-            #  appropriate data has been deleted from operations db.
-            operations_table = DirectIngestRawFileMetadata.__tablename__
+            # TODO(#28239): delete once raw data import DAG is live
+            # The invalidation logic only supports the new operations tables
+            if not is_raw_data_import_dag_enabled(
+                StateCode(self.region_code.upper()), DirectIngestInstance.PRIMARY
+            ):
+                operations_table = DirectIngestRawFileMetadata.__tablename__
 
-            prompt_for_confirmation(
-                f"All associated rows from our postgres table `{operations_table}` "
-                "must be deleted or marked as invalidated before moving these files to a deprecated "
-                "location.\nHave you already done so?",
-                dry_run=self.dry_run,
-            )
+                prompt_for_confirmation(
+                    f"All associated rows from our postgres table `{operations_table}` "
+                    "must be deleted or marked as invalidated before moving these files to a deprecated "
+                    "location.\nHave you already done so?",
+                    dry_run=self.dry_run,
+                )
+            else:
+                InvalidateOperationsDBFilesController(
+                    project_id=self.project_id,
+                    state_code=StateCode(self.region_code.upper()),
+                    ingest_instance=self.ingest_instance,
+                    file_tag_filters=self.file_tag_filters,
+                    file_tag_regex=self.file_tag_regex,
+                    start_date_bound=self.start_date_bound,
+                    end_date_bound=self.end_date_bound,
+                    dry_run=self.dry_run,
+                    skip_prompts=self.skip_prompts,
+                ).run()
 
         OperateOnStorageRawFilesController(
             region_code=self.region_code,
