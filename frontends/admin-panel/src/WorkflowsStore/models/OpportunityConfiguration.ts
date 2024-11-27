@@ -38,50 +38,62 @@ const snoozeConfigurationSchema = z
     })
   );
 
-const criteriaCopySchema = z.array(
-  z.object({
-    key: z.string(),
-    text: z.string(),
-    tooltip: nullishAsUndefined(z.string()),
-  })
-);
+const criteriaCopySchema = z
+  .array(
+    z.object({
+      key: z.string(),
+      text: z.string(),
+      tooltip: nullishAsUndefined(z.string()),
+    })
+  )
+  .default([]);
 
-const keylessCriteriaCopySchema = z.array(
-  z.object({
-    text: z.string(),
-    tooltip: nullishAsUndefined(z.string()),
-  })
-);
+const keylessCriteriaCopySchema = z
+  .array(
+    z.object({
+      text: z.string(),
+      tooltip: nullishAsUndefined(z.string()),
+    })
+  )
+  .default([]);
 
-export const notificationsSchema = z.array(
-  z.object({
-    id: z.string(),
-    title: nullishAsUndefined(z.string()),
-    body: z.string(),
-    cta: nullishAsUndefined(z.string()),
-  })
-);
+export const notificationsSchema = z
+  .array(
+    z.object({
+      id: z.string(),
+      title: nullishAsUndefined(z.string()),
+      body: z.string(),
+      cta: nullishAsUndefined(z.string()),
+    })
+  )
+  .default([]);
 
-export const tabTextSchema = z.array(
-  z.object({
-    tab: z.string(),
-    text: z.string(),
-  })
-);
+export const tabTextSchema = z
+  .array(
+    z.object({
+      tab: z.string(),
+      text: z.string(),
+    })
+  )
+  .default([]);
 
-export const subcategoryHeadingSchema = z.array(
-  z.object({
-    subcategory: z.string(),
-    text: z.string(),
-  })
-);
+export const subcategoryHeadingSchema = z
+  .array(
+    z.object({
+      subcategory: z.string(),
+      text: z.string(),
+    })
+  )
+  .default([]);
 
-export const tabTextListSchema = z.array(
-  z.object({
-    tab: z.string(),
-    texts: z.array(z.string()),
-  })
-);
+export const tabTextListSchema = z
+  .array(
+    z.object({
+      tab: z.string(),
+      texts: z.array(z.string()),
+    })
+  )
+  .default([]);
 
 // A BabyOpportunityConfigurationSchema just contains the parts
 // that are set in the form, not those that are set by the backend
@@ -96,12 +108,14 @@ export const babyOpportunityConfigurationSchema = z
     callToAction: nullishAsUndefined(z.string()),
     subheading: nullishAsUndefined(z.string()),
     snooze: nullishAsUndefined(snoozeConfigurationSchema),
-    denialReasons: z.array(z.object({ key: z.string(), text: z.string() })),
+    denialReasons: z
+      .array(z.object({ key: z.string(), text: z.string() }))
+      .default([]),
     denialText: nullishAsUndefined(z.string()),
     initialHeader: nullishAsUndefined(z.string()),
     eligibleCriteriaCopy: criteriaCopySchema,
     ineligibleCriteriaCopy: criteriaCopySchema,
-    sidebarComponents: z.array(z.string()),
+    sidebarComponents: z.array(z.string()).default([]),
     methodologyUrl: z.string(),
     isAlert: z.boolean(),
     priority: z.enum(["HIGH", "NORMAL"]),
@@ -127,7 +141,7 @@ export const babyOpportunityConfigurationSchema = z
     denialAdjective: nullishAsUndefined(z.string()),
     denialNoun: nullishAsUndefined(z.string()),
 
-    supportsSubmitted: z.boolean(),
+    supportsSubmitted: z.boolean().default(false),
     submittedTabTitle: nullishAsUndefined(z.string()),
 
     emptyTabCopy: tabTextSchema,
@@ -141,7 +155,7 @@ export const babyOpportunityConfigurationSchema = z
     nonOmsCriteriaHeader: nullishAsUndefined(z.string()),
     nonOmsCriteria: keylessCriteriaCopySchema,
 
-    highlightCasesOnHomepage: z.boolean(),
+    highlightCasesOnHomepage: z.boolean().default(false),
     highlightedCaseCtaCopy: nullishAsUndefined(z.string()),
     overdueOpportunityCalloutCopy: nullishAsUndefined(z.string()),
   })

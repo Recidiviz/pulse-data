@@ -104,11 +104,7 @@ const OpportunityConfigurationForm = ({
               values[f]?.length ? values[f] : undefined,
             ])
           ),
-          denialReasons: values.denialReasons ?? [],
-          eligibleCriteriaCopy: values.eligibleCriteriaCopy ?? [],
-          ineligibleCriteriaCopy: values.ineligibleCriteriaCopy ?? [],
-          sidebarComponents: values.sidebarComponents ?? [],
-          notifications: addNotificationIds(values.notifications) ?? [],
+          notifications: addNotificationIds(values.notifications),
         });
         const success = await presenter.createOpportunityConfiguration(config);
         setIsSubmitting(false);
