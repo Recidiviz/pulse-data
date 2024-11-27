@@ -35,16 +35,14 @@ _VIEW_DESCRIPTION = (
     'Event tracking all activity that qualifies a Workflows user as "active"'
 )
 
-# TODO(#34498): Remove all JSON_EXTRACT_SCALAR from this query once single-event views
-#  do not package attributes into JSON.
 _SOURCE_DATA_QUERY_TEMPLATE = f"""
 WITH combined_usage_events AS (
     SELECT
         state_code,
         email_address,
         event_date,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.event_type") AS event_type,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.task_type") AS task_type,
+        event_type,
+        task_type,
     FROM `{{project_id}}.{WORKFLOWS_USER_ACTION_VIEW_BUILDER.table_for_query.to_str()}`
     
     UNION ALL
@@ -53,8 +51,8 @@ WITH combined_usage_events AS (
         state_code,
         email_address,
         event_date,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.event_type") AS event_type,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.task_type") AS task_type,
+        event_type,
+        task_type,
     FROM `{{project_id}}.{WORKFLOWS_USER_CLIENT_STATUS_UPDATE_VIEW_BUILDER.table_for_query.to_str()}`
     
     UNION ALL
@@ -63,8 +61,8 @@ WITH combined_usage_events AS (
         state_code,
         email_address,
         event_date,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.event_type") AS event_type,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.task_type") AS task_type,
+        event_type,
+        task_type,
     FROM `{{project_id}}.{WORKFLOWS_USER_PAGE_VIEW_BUILDER.table_for_query.to_str()}`
     
 )

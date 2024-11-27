@@ -55,12 +55,11 @@ class EventObservationBigQueryViewBuilderTest(unittest.TestCase):
 
         expected_view_query = """
 SELECT DISTINCT
-    person_id, state_code,
+    person_id,
+    state_code,
     my_date_col AS event_date,
-    TO_JSON_STRING(STRUCT(
-        CAST(attribute_1 AS STRING) AS attribute_1,
-        CAST(attribute_2 AS STRING) AS attribute_2
-    )) AS event_attributes,
+    CAST(attribute_1 AS STRING) AS attribute_1,
+    CAST(attribute_2 AS STRING) AS attribute_2
 FROM `test-project.dataset.source_table`
 """
         self.assertEqual(expected_view_query, view.view_query)
@@ -79,12 +78,11 @@ FROM `test-project.dataset.source_table`
 
         expected_view_query = """
 SELECT DISTINCT
-    person_id, state_code,
+    person_id,
+    state_code,
     my_date_col AS event_date,
-    TO_JSON_STRING(STRUCT(
-        CAST(attribute_1 AS STRING) AS attribute_1,
-        CAST(attribute_2 AS STRING) AS attribute_2
-    )) AS event_attributes,
+    CAST(attribute_1 AS STRING) AS attribute_1,
+    CAST(attribute_2 AS STRING) AS attribute_2
 FROM `test-project.input_prefix_dataset.source_table`
 """
         self.assertEqual(expected_view_query, view_with_overrides.view_query)
@@ -118,12 +116,11 @@ FROM `{project_id}.another_dataset.table`;
 
         expected_view_query = """
 SELECT DISTINCT
-    email_address, state_code,
+    email_address,
+    state_code,
     my_date_col AS event_date,
-    TO_JSON_STRING(STRUCT(
-        CAST(attribute_1 AS STRING) AS attribute_1,
-        CAST(attribute_2 AS STRING) AS attribute_2
-    )) AS event_attributes,
+    CAST(attribute_1 AS STRING) AS attribute_1,
+    CAST(attribute_2 AS STRING) AS attribute_2
 FROM (
     SELECT *
     FROM `test-project.another_dataset.table`
@@ -145,12 +142,11 @@ FROM (
 
         expected_view_query = """
 SELECT DISTINCT
-    email_address, state_code,
+    email_address,
+    state_code,
     my_date_col AS event_date,
-    TO_JSON_STRING(STRUCT(
-        CAST(attribute_1 AS STRING) AS attribute_1,
-        CAST(attribute_2 AS STRING) AS attribute_2
-    )) AS event_attributes,
+    CAST(attribute_1 AS STRING) AS attribute_1,
+    CAST(attribute_2 AS STRING) AS attribute_2
 FROM (
     SELECT *
     FROM `test-project.input_prefix_another_dataset.table`

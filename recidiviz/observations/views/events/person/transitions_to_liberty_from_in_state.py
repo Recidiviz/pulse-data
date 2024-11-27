@@ -34,20 +34,18 @@ _VIEW_DESCRIPTION = (
     "View capturing releases from incarceration or supervision to liberty."
 )
 
-# TODO(#34498): Remove all JSON_EXTRACT_SCALAR from this query once single-event views
-#  do not package attributes into JSON.
 _SOURCE_DATA_QUERY_TEMPLATE = f"""
 WITH combined_releases AS (
     SELECT
         state_code,
         person_id,
         event_date,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.inflow_from_level_1") AS inflow_from_level_1,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.days_sentenced") AS days_sentenced,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.days_served") AS days_served,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.prop_sentence_served") AS prop_sentence_served,
+        inflow_from_level_1,
+        days_sentenced,
+        days_served,
+        prop_sentence_served,
     FROM `{{project_id}}.{INCARCERATION_RELEASE_VIEW_BUILDER.table_for_query.to_str()}`
-    WHERE JSON_EXTRACT_SCALAR(event_attributes, "$.outflow_to_level_1") = "LIBERTY"
+    WHERE outflow_to_level_1 = "LIBERTY"
     
     UNION ALL
     
@@ -55,12 +53,12 @@ WITH combined_releases AS (
         state_code,
         person_id,
         event_date,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.inflow_from_level_1") AS inflow_from_level_1,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.days_sentenced") AS days_sentenced,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.days_served") AS days_served,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.prop_sentence_served") AS prop_sentence_served,
+        inflow_from_level_1,
+        days_sentenced,
+        days_served,
+        prop_sentence_served,
     FROM `{{project_id}}.{SUPERVISION_RELEASE_VIEW_BUILDER.table_for_query.to_str()}`
-    WHERE JSON_EXTRACT_SCALAR(event_attributes, "$.outflow_to_level_1") = "LIBERTY"
+    WHERE outflow_to_level_1 = "LIBERTY"
 )
 SELECT
     state_code,

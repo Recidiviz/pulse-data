@@ -36,19 +36,17 @@ _VIEW_DESCRIPTION = (
     "terminations with incarceration entry statuses)"
 )
 
-# TODO(#34498): Remove all JSON_EXTRACT_SCALAR from this query once single-event views
-#  do not package attributes into JSON.
 _SOURCE_DATA_QUERY_TEMPLATE = f"""
 WITH combined_starts AS (
     SELECT
         state_code,
         person_id,
         event_date,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.is_discretionary") AS is_discretionary,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.latest_active_supervision_type") AS latest_active_supervision_type,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.most_severe_violation_type") AS most_severe_violation_type,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.prior_treatment_referrals_1y") AS prior_treatment_referrals_1y,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.violation_is_inferred") AS violation_is_inferred,
+        is_discretionary,
+        latest_active_supervision_type,
+        most_severe_violation_type,
+        prior_treatment_referrals_1y,
+        violation_is_inferred,
     FROM `{{project_id}}.{INCARCERATION_START_VIEW_BUILDER.table_for_query.to_str()}`
     
     UNION ALL
@@ -57,11 +55,11 @@ WITH combined_starts AS (
         state_code,
         person_id,
         event_date,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.is_discretionary") AS is_discretionary,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.latest_active_supervision_type") AS latest_active_supervision_type,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.most_severe_violation_type") AS most_severe_violation_type,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.prior_treatment_referrals_1y") AS prior_treatment_referrals_1y,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.violation_is_inferred") AS violation_is_inferred,
+        is_discretionary,
+        latest_active_supervision_type,
+        most_severe_violation_type,
+        prior_treatment_referrals_1y,
+        violation_is_inferred,
     FROM `{{project_id}}.{SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON_VIEW_BUILDER.table_for_query.to_str()}`
 )
 SELECT

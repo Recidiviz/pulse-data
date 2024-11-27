@@ -70,7 +70,7 @@ class SpanSelector(ObservationSelector[SpanType]):
 
         conditions_fragment = self.generate_observation_conditions_query_fragment(
             filter_by_observation_type=False,
-            read_attributes_from_json=True,
+            read_attributes_from_json=False,
             strip_newlines=False,
         )
         filter_clause = (

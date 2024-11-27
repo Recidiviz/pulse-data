@@ -70,9 +70,8 @@ class ObservationSelector(Generic[ObservationTypeT]):
     def generate_observation_conditions_query_fragment(
         self,
         filter_by_observation_type: bool,
-        # TODO(#34498), TODO(#29291): Shouldn't need this value (always assume it is
-        #  False) once we are only reading from single observation tables and the single
-        #  observation tables do not package their attributes into JSON.
+        # TODO(#29291): Shouldn't need this value (always assume it is
+        #  False) once we are only reading from single observation tables.
         read_attributes_from_json: bool,
         strip_newlines: bool,
     ) -> str:
@@ -163,41 +162,13 @@ class ObservationSelector(Generic[ObservationTypeT]):
                     f"which does not match expected type [{observation_type}]."
                 )
 
-        attribute_columns_in_filters: set[str] = {
-            attribute_col
-            for selector in observation_selectors
-            for attribute_col in selector.observation_conditions_dict.keys()
-        }
-
         unit_of_observation: MetricUnitOfObservation = MetricUnitOfObservation(
             type=observation_type.unit_of_observation_type
         )
-        unmodified_observation_columns: list[str] = [
-            *unit_of_observation.primary_key_columns_ordered,
-            *date_column_names_for_observation_type(observation_type),
-        ]
 
-        observation_column_strs = [*unmodified_observation_columns]
-        for attribute in sorted(
-            {*attribute_columns_in_filters, *output_attribute_columns}
-        ):
-            attribute_value_str = observation_attribute_value_clause(
-                observation_type=observation_type,
-                attribute=attribute,
-                read_attributes_from_json=True,
-            )
-            observation_column_strs.append(f"{attribute_value_str} AS {attribute}")
-
-        observation_columns_str = ",\n".join(observation_column_strs)
         observations_address = materialized_view_address_for_observation(
             observation_type
         )
-        observations_rows_query = f"""
-SELECT
-{fix_indent(observation_columns_str, indent_level=4)}
-FROM 
-    `{{project_id}}.{observations_address.to_str()}`
-"""
 
         filter_clauses = [
             selector.generate_observation_conditions_query_fragment(
@@ -214,19 +185,17 @@ FROM
             filters_str = "\nOR ".join(f"( {clause} )" for clause in filter_clauses)
 
         output_columns = [
-            *unmodified_observation_columns,
+            *unit_of_observation.primary_key_columns_ordered,
+            *date_column_names_for_observation_type(observation_type),
             *sorted(output_attribute_columns),
         ]
         output_columns_str = ",\n".join(output_columns)
 
-        # TODO(#34498): Simplify this query structure once observation attributes are no
-        #  longer packaged in JSON (will no longer need the inner SELECT query).
         return f"""
 SELECT
 {fix_indent(output_columns_str, indent_level=4)}
-FROM (
-{fix_indent(observations_rows_query, indent_level=4)}
-)
+FROM 
+    `{{project_id}}.{observations_address.to_str()}`
 WHERE
 {fix_indent(filters_str, indent_level=4)}
 """

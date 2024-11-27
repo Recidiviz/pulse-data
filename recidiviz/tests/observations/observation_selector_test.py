@@ -276,15 +276,8 @@ SELECT
     state_code,
     start_date,
     end_date
-FROM (
-    SELECT
-        person_id,
-        state_code,
-        start_date,
-        end_date
-    FROM 
-        `{project_id}.observations__person_span.compartment_session_materialized`
-)
+FROM 
+    `{project_id}.observations__person_span.compartment_session_materialized`
 WHERE
     TRUE
 """
@@ -313,18 +306,8 @@ SELECT
     end_date,
     case_type_start,
     compartment_level_1
-FROM (
-    SELECT
-        person_id,
-        state_code,
-        start_date,
-        end_date,
-        JSON_EXTRACT_SCALAR(span_attributes, "$.case_type_start") AS case_type_start,
-        JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_1") AS compartment_level_1,
-        JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_2") AS compartment_level_2
-    FROM 
-        `{project_id}.observations__person_span.compartment_session_materialized`
-)
+FROM 
+    `{project_id}.observations__person_span.compartment_session_materialized`
 WHERE
     compartment_level_1 IN ("INCARCERATION", "SUPERVISION") AND compartment_level_2 IN ("COMMUNITY_CONFINEMENT")
 """
@@ -349,16 +332,8 @@ SELECT
     event_date,
     change_type,
     previous_custody_level
-FROM (
-    SELECT
-        person_id,
-        state_code,
-        event_date,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.change_type") AS change_type,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.previous_custody_level") AS previous_custody_level
-    FROM 
-        `{project_id}.observations__person_event.custody_level_change_materialized`
-)
+FROM 
+    `{project_id}.observations__person_event.custody_level_change_materialized`
 WHERE
     change_type IN ("DOWNGRADE")
 """
@@ -394,17 +369,8 @@ SELECT
     event_date,
     change_type,
     previous_custody_level
-FROM (
-    SELECT
-        person_id,
-        state_code,
-        event_date,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.change_type") AS change_type,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.new_custody_level") AS new_custody_level,
-        JSON_EXTRACT_SCALAR(event_attributes, "$.previous_custody_level") AS previous_custody_level
-    FROM 
-        `{project_id}.observations__person_event.custody_level_change_materialized`
-)
+FROM 
+    `{project_id}.observations__person_event.custody_level_change_materialized`
 WHERE
     ( change_type IN ("DOWNGRADE") )
     OR ( change_type IN ("UPGRADE") )

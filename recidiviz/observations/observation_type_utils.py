@@ -68,9 +68,8 @@ def attributes_column_name_for_observation_type(
     )
 
 
-# TODO(#34498), TODO(#29291): We should be able to delete this clause (it will become
-#  trivial) once we are only reading from single observation tables and the single
-#  observation tables do not package their attributes into JSON.
+# TODO(#29291): We should be able to delete this clause (it will become
+#  trivial) once we are only reading from single observation tables.
 def observation_attribute_value_clause(
     *,
     observation_type: EventType | SpanType,

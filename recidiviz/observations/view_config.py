@@ -21,6 +21,9 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.sessions_query_fragments import (
+    convert_cols_to_json_string,
+)
 from recidiviz.observations.dataset_config import dataset_for_observation_type_cls
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
@@ -66,12 +69,17 @@ def _build_unioned_spans_builder(
     for a given unit of observation.
     """
     unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
-    columns_str = ", ".join(
-        SpanObservationBigQueryViewBuilder.output_columns(unit_of_observation_type)
+    non_attribute_columns_str = ", ".join(
+        SpanObservationBigQueryViewBuilder.non_attribute_output_columns(
+            unit_of_observation_type
+        )
     )
 
     def _parent_to_select_statement(vb: SpanObservationBigQueryViewBuilder) -> str:
-        return f'SELECT "{vb.span_type.value}" AS span, {columns_str}'
+        return (
+            f'SELECT "{vb.span_type.value}" AS span, {non_attribute_columns_str}, '
+            f"{convert_cols_to_json_string(vb.attribute_cols)} AS {vb.SPAN_ATTRIBUTES_OUTPUT_COL_NAME}"
+        )
 
     dataset_id = dataset_for_observation_type_cls(
         unit_of_observation=unit_of_observation_type,
@@ -96,12 +104,17 @@ def _build_unioned_events_builder(
     for a given unit of observation.
     """
     unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
-    columns_str = ", ".join(
-        EventObservationBigQueryViewBuilder.output_columns(unit_of_observation_type)
+    non_attribute_columns_str = ", ".join(
+        EventObservationBigQueryViewBuilder.non_attribute_output_columns(
+            unit_of_observation_type
+        )
     )
 
     def _parent_to_select_statement(vb: EventObservationBigQueryViewBuilder) -> str:
-        return f'SELECT "{vb.event_type.value}" AS event, {columns_str}'
+        return (
+            f'SELECT "{vb.event_type.value}" AS event, {non_attribute_columns_str}, '
+            f"{convert_cols_to_json_string(vb.attribute_cols)} AS {vb.EVENT_ATTRIBUTES_OUTPUT_COL_NAME}"
+        )
 
     return UnionAllBigQueryViewBuilder(
         dataset_id=dataset_for_observation_type_cls(

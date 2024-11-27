@@ -123,9 +123,7 @@ class OutliersMetric:
         """
         return self.aggregated_metric.get_observation_conditions_string_no_newline(
             filter_by_observation_type=False,
-            # TODO(#34498): Flip this flag once we've updated observation-specific
-            #  tables to not pack their attributes in JSON.
-            read_observation_attributes_from_json=True,
+            read_observation_attributes_from_json=False,
         )
 
 

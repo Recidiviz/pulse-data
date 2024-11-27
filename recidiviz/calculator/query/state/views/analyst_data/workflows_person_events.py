@@ -77,8 +77,8 @@ USAGE_EVENTS_DICT: Dict[str, EventSelector] = {
 def get_usage_status_case_statement(
     usage_event_selectors: Dict[str, EventSelector]
 ) -> str:
-    # TODO(#34498): When we stop packing observation attributes into JSON in
-    #  single-observation views, flip read_attributes_from_json to False.
+    # TODO(#29291): When we migrate workflows_person_events to use observation-specific
+    #  views, flip to read_attributes_from_json=False
     return "\n".join(
         [
             f"""

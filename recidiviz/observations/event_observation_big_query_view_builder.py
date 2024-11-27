@@ -20,9 +20,6 @@ a specified type.
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.sessions_query_fragments import (
-    convert_cols_to_json_string,
-)
 from recidiviz.observations.dataset_config import dataset_for_observation_type
 from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
@@ -126,11 +123,17 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         unit_of_observation = MetricUnitOfObservation(
             type=event_type.unit_of_observation_type
         )
+
+        column_clauses = [
+            *unit_of_observation.primary_key_columns_ordered,
+            f"{event_date_col} AS {cls.EVENT_DATE_OUTPUT_COL_NAME}",
+            *[f"CAST({col} AS STRING) AS {col}" for col in attribute_cols],
+        ]
+        columns_str = ",\n".join(column_clauses)
+
         return f"""
 SELECT DISTINCT
-    {unit_of_observation.get_primary_key_columns_query_string()},
-    {event_date_col} AS {cls.EVENT_DATE_OUTPUT_COL_NAME},
-    {convert_cols_to_json_string(attribute_cols)} AS {cls.EVENT_ATTRIBUTES_OUTPUT_COL_NAME},
+{fix_indent(columns_str, indent_level=4)}
 FROM {source_query_fragment}
 """
 
@@ -145,11 +148,10 @@ FROM {source_query_fragment}
         )
 
     @classmethod
-    def output_columns(
+    def non_attribute_output_columns(
         cls, unit_of_observation_type: MetricUnitOfObservationType
     ) -> list[str]:
         unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
         return unit_of_observation.primary_key_columns_ordered + [
             cls.EVENT_DATE_OUTPUT_COL_NAME,
-            cls.EVENT_ATTRIBUTES_OUTPUT_COL_NAME,
         ]
