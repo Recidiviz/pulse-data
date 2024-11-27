@@ -62,8 +62,9 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
         self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         local_persistence_helpers.use_on_disk_postgresql_database(self.operations_key)
         self.us_xx_manager = DirectIngestRawDataResourceLockManager(
-            StateCode.US_XX.value,
-            DirectIngestInstance.PRIMARY,
+            region_code=StateCode.US_XX.value,
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
+            with_proxy=False,
         )
         self.all_resources = [
             DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET,

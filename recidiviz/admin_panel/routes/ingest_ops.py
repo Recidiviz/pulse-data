@@ -934,7 +934,9 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         raw_data_instance = DirectIngestInstance(instance_str)
 
         locks = DirectIngestRawDataResourceLockManager(
-            state_code.value, raw_data_instance
+            region_code=state_code.value,
+            raw_data_source_instance=raw_data_instance,
+            with_proxy=False,
         ).get_most_recent_locks_for_all_resources()
 
         return (
@@ -988,7 +990,9 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         try:
             _locks = DirectIngestRawDataResourceLockManager(
-                state_code.value, raw_data_instance
+                region_code=state_code.value,
+                raw_data_source_instance=raw_data_instance,
+                with_proxy=False,
             ).acquire_all_locks(
                 actor=DirectIngestRawDataLockActor.ADHOC,
                 description=description,
@@ -1018,7 +1022,9 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         try:
             manager = DirectIngestRawDataResourceLockManager(
-                state_code.value, raw_data_instance
+                region_code=state_code.value,
+                raw_data_source_instance=raw_data_instance,
+                with_proxy=False,
             )
             for lock_id in lock_ids:
                 manager.release_lock_by_id(lock_id)

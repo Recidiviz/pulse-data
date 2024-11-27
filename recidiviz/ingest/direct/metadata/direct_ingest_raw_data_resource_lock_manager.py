@@ -26,13 +26,15 @@ from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock 
     DirectIngestRawDataResourceLockResource,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.cloud_sql_connection_mixin import (
+    CloudSqlConnectionMixin,
+)
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
     convert_schema_object_to_entity,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations import entities
 from recidiviz.persistence.errors import (
@@ -41,7 +43,7 @@ from recidiviz.persistence.errors import (
 )
 
 
-class DirectIngestRawDataResourceLockManager:
+class DirectIngestRawDataResourceLockManager(CloudSqlConnectionMixin):
     """Class for managing reads and writes to DirectIngestRawDataResourceLock
 
     n.b. while this class manages interaction w/ our file metadata tables, they are also
@@ -51,12 +53,15 @@ class DirectIngestRawDataResourceLockManager:
 
     def __init__(
         self,
+        *,
         region_code: str,
         raw_data_source_instance: DirectIngestInstance,
+        with_proxy: bool,
     ) -> None:
         self.region_code = region_code.upper()
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         self.raw_data_source_instance = raw_data_source_instance
+        self.with_proxy = with_proxy
 
     def _get_unreleased_locks_for_resources(
         self, resources: List[DirectIngestRawDataResourceLockResource], session: Session
@@ -182,7 +187,9 @@ class DirectIngestRawDataResourceLockManager:
         they exist, for the provided |resources|."""
         resource_str = ",".join([f"'{resource.value}'" for resource in resources])
 
-        with SessionFactory.using_database(self.database_key) as session:
+        with self.get_session(
+            database_key=self.database_key, with_proxy=self.with_proxy
+        ) as session:
             self._update_unreleased_but_expired_locks_for_resources(resources, session)
             # flush here so changes are propagated for us to read w/ our next query
             session.flush()
@@ -229,7 +236,9 @@ class DirectIngestRawDataResourceLockManager:
         status if it is unreleased but expired. If the lock does not exist, a
         LookupError will be raised.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self.get_session(
+            database_key=self.database_key, with_proxy=self.with_proxy
+        ) as session:
             lock = self._get_lock_by_id(lock_id, session)
 
             if self._is_lock_unreleased_but_expired(lock):
@@ -248,7 +257,9 @@ class DirectIngestRawDataResourceLockManager:
         not exist, a LookupError will be raised. If the lock is already released,
         a DirectIngestRawDataResourceLockAlreadyReleasedError will be raised.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with self.get_session(
+            database_key=self.database_key, with_proxy=self.with_proxy
+        ) as session:
             lock = self._get_lock_by_id(lock_id, session)
             if lock.released:
                 raise DirectIngestRawDataResourceLockAlreadyReleasedError(
@@ -289,8 +300,8 @@ class DirectIngestRawDataResourceLockManager:
         If successful, returns the newly created locks; otherwise raises
         DirectIngestRawDataResourceLockHeldError.
         """
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
+        with self.get_session(
+            database_key=self.database_key, with_proxy=self.with_proxy, autocommit=False
         ) as session:
             unreleased_locks = self._update_unreleased_but_expired_locks_for_resources(
                 resources, session

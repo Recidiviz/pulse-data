@@ -586,6 +586,7 @@ class IngestOperationsStore(AdminPanelStore):
             state_code: DirectIngestRawDataResourceLockManager(
                 region_code=state_code.value,
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                with_proxy=False,
             ).get_current_lock_summary()
             for state_code in get_direct_ingest_states_launched_in_env()
         }
