@@ -113,13 +113,14 @@ class MetricTimePeriodConfig:
             )
 
         if self.max_period_end_date:
-            current_date_eastern = current_date_us_eastern()
-            if self.max_period_end_date > current_date_eastern:
-                raise ValueError(
-                    f"Expected max_period_end_date to be less than or equal to current "
-                    f"date [{current_date_eastern.isoformat()}]. Found "
-                    f"[{self.max_period_end_date.isoformat()}] instead."
-                )
+            # TODO(#35618): Revert this comment or decide to remove it entirely
+            # current_date_eastern = current_date_us_eastern()
+            # if self.max_period_end_date > current_date_eastern:
+            #     raise ValueError(
+            #         f"Expected max_period_end_date to be less than or equal to current "
+            #         f"date [{current_date_eastern.isoformat()}]. Found "
+            #         f"[{self.max_period_end_date.isoformat()}] instead."
+            #     )
 
             if self.min_period_end_date > self.max_period_end_date:
                 raise ValueError(
