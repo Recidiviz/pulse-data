@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_ORAS_assessments` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - pkORASClientRiskLevelAndNeedsId
+  - inmateNumber
+  - overallScore
+  - riskLevel
+  - assessmentDate
+  - overrideReasonCode
+  - supervisionLevelOverrideCode
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - inmateNumber
+                - pkORASClientRiskLevelAndNeedsId
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type: $literal_enum(StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING) # not sure which ORAS is the best fit?
+          assessment_date: assessmentDate
+          assessment_score: overallScore
+          assessment_level:
+            $enum_mapping:
+              $raw_text: riskLevel
+              $mappings:
+                StateAssessmentLevel.LOW:
+                  - Low
+                StateAssessmentLevel.LOW_MODERATE:
+                  - Low/Moderate
+                StateAssessmentLevel.MODERATE:
+                  - Moderate
+                StateAssessmentLevel.HIGH:
+                  - High
+                StateAssessmentLevel.VERY_HIGH:
+                  - Very High
+          assessment_metadata:
+            $json_dict:
+              override_reason: overrideReasonCode
+              supervision_level_override: supervisionLevelOverrideCode
