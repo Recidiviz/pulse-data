@@ -158,6 +158,7 @@ class LegacyDirectIngestRawFileImportManagerTest(unittest.TestCase):
             file_discovery_time=datetime.datetime.now(),
             update_datetime=parts.utc_upload_datetime,
             raw_data_instance=DirectIngestInstance.PRIMARY,
+            is_invalidated=False,
         )
 
     def _check_no_temp_files_remain(self) -> None:

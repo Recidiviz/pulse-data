@@ -93,6 +93,7 @@ class DirectIngestRawFileMetadata(Entity, BuildableAttr, DefaultableAttr):
     file_processed_time: Optional[datetime.datetime] = attr.ib(
         validator=attr_validators.is_opt_utc_timezone_aware_datetime
     )
+    is_invalidated: bool = attr.ib(validator=attr_validators.is_bool)
 
     update_datetime: datetime.datetime = attr.ib(
         validator=attr_validators.is_utc_timezone_aware_datetime

@@ -152,6 +152,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             file_processed_time=None,
             update_datetime=datetime.datetime(2015, 1, 2, 3, 3, 3, 3, tzinfo=pytz.UTC),
             raw_data_instance=DirectIngestInstance.PRIMARY,
+            is_invalidated=False,
         )
 
         self.assertIsInstance(metadata, DirectIngestRawFileMetadata)
@@ -180,6 +181,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             file_processed_time=None,
             update_datetime=datetime.datetime(2015, 1, 2, 3, 3, 3, 3, tzinfo=pytz.UTC),
             raw_data_instance=DirectIngestInstance.PRIMARY,
+            is_invalidated=False,
         )
 
         self.assertIsInstance(metadata, DirectIngestRawFileMetadata)
@@ -404,6 +406,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 normalized_file_name="unprocessed_2015-01-02T03:05:05:000000_raw_file_tag.csv",
                 update_datetime=datetime.datetime(2015, 1, 2, 3, 5, 5, tzinfo=pytz.UTC),
                 raw_data_instance=DirectIngestInstance.PRIMARY,
+                is_invalidated=False,
             ),
             DirectIngestRawFileMetadata.new_with_defaults(
                 region_code=self.raw_metadata_manager.region_code,
@@ -414,6 +417,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 normalized_file_name="unprocessed_2015-01-02T03:07:07:000000_raw_file_tag.csv",
                 update_datetime=datetime.datetime(2015, 1, 2, 3, 7, 7, tzinfo=pytz.UTC),
                 raw_data_instance=DirectIngestInstance.PRIMARY,
+                is_invalidated=False,
             ),
         ]
 
@@ -551,6 +555,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             file_processed_time=None,
             update_datetime=datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=pytz.UTC),
             raw_data_instance=DirectIngestInstance.PRIMARY,
+            is_invalidated=False,
         )
 
         # Act
@@ -611,6 +616,7 @@ class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             file_processed_time=None,
             update_datetime=datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=pytz.UTC),
             raw_data_instance=DirectIngestInstance.SECONDARY,
+            is_invalidated=False,
         )
 
         # Act

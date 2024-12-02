@@ -104,7 +104,7 @@ class DirectIngestRawFileMetadataManagerV2:
             .one()
         )
 
-    def _get_non_invalidated_raw_gcs_file_metadata_for_file_id(
+    def _get_raw_gcs_file_metadata_for_file_id(
         self, session: Session, file_id: int
     ) -> List[schema.DirectIngestRawGCSFileMetadata]:
         """Returns non-invalidated gcs metadata rows for the provided |file_id|"""
@@ -114,10 +114,21 @@ class DirectIngestRawFileMetadataManagerV2:
                 region_code=self.region_code,
                 file_id=file_id,
                 raw_data_instance=self.raw_data_instance.value,
-                is_invalidated=False,
             )
             .all()
         )
+
+    def _get_non_invalidated_raw_gcs_file_metadata_for_file_id(
+        self, session: Session, file_id: int
+    ) -> List[schema.DirectIngestRawGCSFileMetadata]:
+        """Returns non-invalidated gcs metadata rows for the provided |file_id|"""
+        return [
+            metadata
+            for metadata in self._get_raw_gcs_file_metadata_for_file_id(
+                session, file_id
+            )
+            if metadata.is_invalidated is False
+        ]
 
     # --- row-level object retrieval ---------------------------------------------------
 
@@ -154,6 +165,25 @@ class DirectIngestRawFileMetadataManagerV2:
                 entities.DirectIngestRawGCSFileMetadata,
                 populate_direct_back_edges=False,
             )
+
+    def get_raw_gcs_file_metadata_by_file_id(
+        self, file_id: int
+    ) -> list[entities.DirectIngestRawGCSFileMetadata]:
+        """Returns metadata information for the provided |file_id|. If no such
+        id exists, an error will be thrown.
+        """
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            files = self._get_raw_gcs_file_metadata_for_file_id(session, file_id)
+            return [
+                convert_schema_object_to_entity(
+                    metadata,
+                    entities.DirectIngestRawGCSFileMetadata,
+                    populate_direct_back_edges=False,
+                )
+                for metadata in files
+            ]
 
     # --- file discovery logic ---------------------------------------------------------
 

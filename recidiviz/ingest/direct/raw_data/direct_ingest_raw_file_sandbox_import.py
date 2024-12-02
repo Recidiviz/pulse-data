@@ -208,6 +208,7 @@ def legacy_import_raw_files_to_bq_sandbox(
                     update_datetime=parts.utc_upload_datetime,
                     # Sandbox instance can be primary
                     raw_data_instance=DirectIngestInstance.PRIMARY,
+                    is_invalidated=False,
                 ),
             )
 
