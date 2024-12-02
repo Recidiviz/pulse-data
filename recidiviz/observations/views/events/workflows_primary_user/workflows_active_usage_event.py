@@ -43,6 +43,12 @@ WITH combined_usage_events AS (
         event_date,
         event_type,
         task_type,
+        system_type,
+        decarceral_impact_type,
+        is_jii_decarceral_transition,
+        task_type_is_live,
+        task_type_is_fully_launched,
+        person_external_id,
     FROM `{{project_id}}.{WORKFLOWS_USER_ACTION_VIEW_BUILDER.table_for_query.to_str()}`
     
     UNION ALL
@@ -53,6 +59,12 @@ WITH combined_usage_events AS (
         event_date,
         event_type,
         task_type,
+        system_type,
+        decarceral_impact_type,
+        is_jii_decarceral_transition,
+        task_type_is_live,
+        task_type_is_fully_launched,
+        person_external_id,
     FROM `{{project_id}}.{WORKFLOWS_USER_CLIENT_STATUS_UPDATE_VIEW_BUILDER.table_for_query.to_str()}`
     
     UNION ALL
@@ -63,6 +75,12 @@ WITH combined_usage_events AS (
         event_date,
         event_type,
         task_type,
+        system_type,
+        decarceral_impact_type,
+        is_jii_decarceral_transition,
+        task_type_is_live,
+        task_type_is_fully_launched,
+        person_external_id,
     FROM `{{project_id}}.{WORKFLOWS_USER_PAGE_VIEW_BUILDER.table_for_query.to_str()}`
     
 )
@@ -72,6 +90,12 @@ SELECT
     event_date,
     event_type,
     task_type,
+    system_type,
+    decarceral_impact_type,
+    is_jii_decarceral_transition,
+    task_type_is_live,
+    task_type_is_fully_launched,
+    person_external_id,
 FROM combined_usage_events
 """
 
@@ -82,6 +106,12 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
     attribute_cols=[
         "event_type",
         "task_type",
+        "system_type",
+        "decarceral_impact_type",
+        "is_jii_decarceral_transition",
+        "task_type_is_live",
+        "task_type_is_fully_launched",
+        "person_external_id",
     ],
     event_date_col="event_date",
 )
