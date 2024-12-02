@@ -26,7 +26,10 @@ import datetime
 from typing import Dict, List, Type
 
 from recidiviz.common.constants.enum_parser import EnumParsingError
-from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
+from recidiviz.common.constants.state.state_charge import (
+    StateChargeClassificationType,
+    StateChargeV2ClassificationType,
+)
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -36,6 +39,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person import StateResidencyStatus
+from recidiviz.common.constants.state.state_sentence import StateSentencingAuthority
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_staff_caseload_type import (
     StateStaffCaseloadType,
@@ -374,6 +378,29 @@ def parse_classification_type_from_raw_text(
     if raw_text.startswith("M"):
         return StateChargeClassificationType.MISDEMEANOR
     return StateChargeClassificationType.INTERNAL_UNKNOWN
+
+
+def parse_classification_type_from_raw_text_v2(
+    raw_text: str,
+) -> StateChargeV2ClassificationType:
+    """Parses a raw text field with the level of an offense to determine classification type."""
+    if raw_text.startswith("F"):
+        return StateChargeV2ClassificationType.FELONY
+    if raw_text.startswith("M"):
+        return StateChargeV2ClassificationType.MISDEMEANOR
+    return StateChargeV2ClassificationType.INTERNAL_UNKNOWN
+
+
+def parse_sentencing_authority(raw_text: str) -> StateSentencingAuthority:
+    """Parses sentencing authority from the county code of the judicial district where
+    sentencing occurred."""
+    if raw_text.startswith("US_ND") or raw_text == "PAROLE":
+        return StateSentencingAuthority.STATE
+    if raw_text == "FEDERAL":
+        return StateSentencingAuthority.FEDERAL
+    if raw_text in ("INTERNATIONAL", "ERROR"):
+        return StateSentencingAuthority.INTERNAL_UNKNOWN
+    return StateSentencingAuthority.OTHER_STATE
 
 
 def supervision_contact_type_mapper(raw_text: str) -> StateSupervisionContactType:

@@ -76,7 +76,7 @@ _DOCSTARS_NEGATIVE_PATTERN: Pattern = re.compile(r"^\((?P<value>-?\d+)\)$")
 def parse_supervision_sentence_max_length(
     years: str, months: str, effective_date: str
 ) -> str:
-    """Returns a string number of days for the max length of a given sentence, in XXXXd
+    """Returns a string number of days for the max length of a given sentence, in XXXX
     format.
     """
     # It appears a recent change to Docstars files started passing negative values inside of parentheses instead
@@ -95,8 +95,7 @@ def parse_supervision_sentence_max_length(
         days_str=None,
         start_dt_str=effective_date,
     )
-    day_string = f"{total_days}d"
-    return day_string
+    return str(total_days)
 
 
 def are_new_offenses_violent(

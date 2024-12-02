@@ -199,7 +199,8 @@ columns:
         description: "No, a revocation did not occur due to a technical violation"
   - name: LAST_UPDATE
     description: |-
-      When this record was most recently updated.
+      When this record was most recently updated, and the username of the officer who updated it.
+    is_pii: True
   - name: INACTIVEDATE
     field_type: datetime
     description: |-

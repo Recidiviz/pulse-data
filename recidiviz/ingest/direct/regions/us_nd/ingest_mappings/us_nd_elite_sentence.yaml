@@ -1,0 +1,167 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDER_BOOK_ID
+  - SENTENCE_SEQ
+  - CHARGE_SEQ
+  - COUNTY_CODE
+  - OFFENCE_TYPE
+  - OFFENCE_CODE
+  - OFFENSE_DATE
+  - severity_ranking
+  - description
+  - INITIAL_COUNTS
+  - COMMENT_TEXT
+  - CHARGE_STATUS
+  - JUDGE_NAME
+  - ISSUING_AGY_LOC_ID
+  - COURT_INFO_ID
+  - PROBABLE_RELEASE_DATE
+  - SENTENCE_EXPIRY_DATE
+  - SENTENCE_CALC_TYPE
+  - IMPOSED_DATE
+  - sentence_type
+  - parent_sentence_external_id_array
+  - SENTENCE_UPDT_DTM
+  - MONTHS
+  - YEARS
+  - DAYS
+  - has_sentence_group
+unused_columns: []
+variables:
+  - has_sentence_group:
+      $equal:
+        - has_sentence_group
+        - $literal("True")
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDER_BOOK_ID
+          id_type: $literal("US_ND_ELITE_BOOKING")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDER_BOOK_ID
+                - SENTENCE_SEQ
+          sentence_group_external_id:
+            # As of 11/19/24, 12 OFFENDER_BOOK_IDs appear in elite_sentences with sentence information,
+            # but are unable to be connected to a sentence group. Do not hydrate this variable
+            # for those sentences.
+            $conditional:
+              - $if: $variable(has_sentence_group)
+                $then: OFFENDER_BOOK_ID
+          sentence_type:
+            $enum_mapping:
+              $raw_text: sentence_type
+              $mappings:
+                StateSentenceType.STATE_PRISON:
+                  - INCARCERATION
+          imposed_date: IMPOSED_DATE
+          is_life:
+            $equal:
+              - SENTENCE_CALC_TYPE
+              - $literal("LIFE")
+          county_code:
+            $custom:
+              $function: us_nd_custom_parsers.normalize_county_code
+              $args:
+                county_code: COUNTY_CODE
+          sentencing_authority:
+            $conditional:
+              - $if:
+                  $not_null: COUNTY_CODE
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $custom:
+                        $function: us_nd_custom_parsers.normalize_county_code
+                        $args:
+                          county_code: COUNTY_CODE
+                    $custom_parser: us_nd_custom_enum_parsers.parse_sentencing_authority
+              - $else: $literal_enum(StateSentencingAuthority.PRESENT_WITHOUT_INFO)
+          sentence_metadata:
+            $json_dict:
+              COURT_CASE_ID: COURT_INFO_ID
+          # There is a maximum of one other sentence external ID included in parent_sentence_external_id_array.
+          # The array can accommodate more than one, but the data never contains more than one.
+          parent_sentence_external_id_array: parent_sentence_external_id_array
+          sentence_lengths:
+            - StateSentenceLength:
+                length_update_datetime: SENTENCE_UPDT_DTM
+                projected_completion_date_min_external: PROBABLE_RELEASE_DATE
+                projected_completion_date_max_external: SENTENCE_EXPIRY_DATE
+                sentence_length_days_max:
+                  $custom:
+                    $function: us_nd_custom_parsers.max_length_days_from_ymd
+                    $args:
+                      years: YEARS
+                      months: MONTHS
+                      days: DAYS
+          charges:
+            - StateChargeV2:
+                external_id:
+                  $concat:
+                    $values:
+                      - OFFENDER_BOOK_ID
+                      - CHARGE_SEQ
+                offense_date: OFFENSE_DATE
+                county_code:
+                  $custom:
+                    $function: us_nd_custom_parsers.normalize_county_code
+                    $args:
+                      county_code: COUNTY_CODE
+                status: $literal_enum(StateChargeV2Status.CONVICTED) # Make sure of this
+                # OFFENCE_CODE is sometimes an actual offense code and sometimes a statute.
+                # All have descriptions in ref file regardless of their format.
+                statute: OFFENCE_CODE
+                description: description
+                classification_type:
+                  $conditional:
+                    - $if:
+                        $not_null: OFFENCE_TYPE
+                      $then:
+                        $enum_mapping:
+                          $raw_text:
+                            $custom:
+                              $function: us_nd_custom_parsers.classification_type_raw_text_from_raw_text
+                              $args:
+                                raw_charge_text: OFFENCE_TYPE
+                          $custom_parser: us_nd_custom_enum_parsers.parse_classification_type_from_raw_text_v2
+                    - $else: $literal_enum(StateChargeV2ClassificationType.INTERNAL_UNKNOWN)
+                classification_subtype:
+                  $custom:
+                    $function: us_nd_custom_parsers.classification_subtype_from_raw_text
+                    $args:
+                      raw_charge_text: OFFENCE_TYPE
+                offense_type: severity_ranking
+                is_violent:
+                  $equal:
+                    - severity_ranking
+                    - $literal("VIOLENT")
+                is_drug:
+                  $equal:
+                    - severity_ranking
+                    - $literal("DRUG")
+                is_sex_offense:
+                  $equal:
+                    - severity_ranking
+                    - $literal("SEX")
+                counts: INITIAL_COUNTS
+                charge_notes: COMMENT_TEXT
+                is_controlling:
+                  $in:
+                    $value: CHARGE_STATUS
+                    $options:
+                      - $literal("C")
+                      - $literal("CT")
+                judge_full_name:
+                  $person_name:
+                    $full_name: JUDGE_NAME
+                judicial_district_code:
+                  $custom:
+                    $function: us_nd_custom_parsers.normalize_judicial_district_code
+                    $args:
+                      judicial_district_code_text: ISSUING_AGY_LOC_ID

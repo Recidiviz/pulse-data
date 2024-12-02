@@ -1,0 +1,221 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - SID
+  - CASE_NUMBER
+  - COURT_NUMBER
+  - RecID
+  - CASE_DESCRIPTION
+  - PAROLE_TO
+  - TERM_DATE
+  - SENT_YY
+  - SENT_MM
+  - PAROLE_FR
+  - RecDate
+  - SENTENCING_COUNTY
+  - LEVEL
+  - COUNT
+  - OFFENSEDATE
+  - CHARGE_COUNTY
+  - SENTENCING_AUTHORITY
+  - MASTER_OFFENSE_IND
+  - REQUIRES_REGISTRATION
+  - OFFENSE_CODE
+  - CHARGE_DESCRIPTION
+  - JUDGE
+variables:
+  # This field sometimes includes invalid NCIC codes in raw data.
+  # If the NCIC code attached to this charge is known, it appears
+  # in the ncic.csv reference table, and this function returns its associated entry.
+
+  # If the NCIC code attached to this charge does not exist in the reference table,
+  # this function checks if the first two digits of the NCIC code followed by "99"
+  # appear as a code fin this table, which would be the generic category of the same
+  # offense. This is to minimize the prevalence of NULL values in offense fields.
+  - normalized_offense_code:
+      $custom:
+        $function: us_nd_custom_parsers.normalize_ncic_code
+        $args:
+          ncic_code: OFFENSE_CODE
+unused_columns: [TERM_DATE, COUNT]
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID
+          id_type: $literal("US_ND_SID")
+    sentence_groups:
+      # If we do not filter out NULL COURT_NUMBER values, far more sentences
+      # than are appropriate end up sharing a sentence group because they have
+      # "the same" sentence group ID, when that is only the case because there is no
+      # COURT_NUMBER value differentiating them.
+      - $conditional:
+          - $if:
+              $not_null: COURT_NUMBER
+            $then:
+              StateSentenceGroup:
+                external_id:
+                  $concat:
+                    $values:
+                      - COURT_NUMBER
+                      - SID
+                    $separator: "|"
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - COURT_NUMBER
+                - SID
+                - CASE_NUMBER
+              $separator: "|"
+          sentence_group_external_id:
+            # If we do not filter out NULL COURT_NUMBER values, far more sentences
+            # than are appropriate end up sharing a sentence group because they have
+            # "the same" sentence group ID, when that is only the case because there is no
+            # COURT_NUMBER value differentiating them.
+            $conditional:
+              - $if:
+                  $not_null: COURT_NUMBER
+                $then:
+                  $concat:
+                    $values:
+                      - COURT_NUMBER
+                      - SID
+                    $separator: "|"
+          sentence_type:
+            $enum_mapping:
+              $raw_text: CASE_DESCRIPTION
+              $mappings:
+                StateSentenceType.COMMUNITY_CORRECTIONS: "Community Placement Pgrm"
+                StateSentenceType.INTERNAL_UNKNOWN:
+                  - "CCC"
+                  - "Pre-Trial"
+                StateSentenceType.PAROLE:
+                  - "IC Parole"
+                  - "Parole"
+                  - "SSOP"
+                StateSentenceType.PROBATION:
+                  - "Deferred"
+                  - "IC Probation"
+                  - "Suspended"
+          imposed_date: PAROLE_FR
+          parole_possible: $literal_bool(True)
+          # If a person is on an interstate compact, this will be the county in ND in
+          # which they are supervised.
+          county_code:
+            $custom:
+              $function: us_nd_custom_parsers.normalize_county_code
+              $args:
+                county_code: SENTENCING_COUNTY
+          # A person can have charges from multiple counties or states associated
+          # with the same sentence, so this information is preprocessed in the view to
+          # establish only the sentencing authority, which is consistent even when the
+          # charging counties or states are not. A single sentence never has charges
+          # from both in and out of the state.
+          sentencing_authority:
+            $enum_mapping:
+              $raw_text: SENTENCING_AUTHORITY
+              $mappings:
+                StateSentencingAuthority.STATE: [STATE]
+                StateSentencingAuthority.FEDERAL: [FEDERAL]
+                StateSentencingAuthority.INTERNAL_UNKNOWN: [INTERNAL_UNKNOWN]
+                StateSentencingAuthority.PRESENT_WITHOUT_INFO: [NO INFO]
+                StateSentencingAuthority.OTHER_STATE: [OTHER_STATE]
+          sentence_lengths:
+            - StateSentenceLength:
+                length_update_datetime: RecDate
+                projected_completion_date_max_external: PAROLE_TO
+                sentence_length_days_max:
+                  $conditional:
+                    - $if:
+                        $not_null: SENT_YY
+                      $then:
+                        $custom:
+                          $function: us_nd_custom_parsers.parse_supervision_sentence_max_length
+                          $args:
+                            years: SENT_YY
+                            months: SENT_MM
+                            effective_date: PAROLE_FR
+          charges:
+            - StateChargeV2:
+                external_id:
+                  $concat:
+                    $values:
+                      - COURT_NUMBER
+                      - SID
+                      - CASE_NUMBER
+                      - RecID
+                    $separator: "|"
+                offense_date: OFFENSEDATE
+                classification_type:
+                  $enum_mapping:
+                    $raw_text:
+                      $custom:
+                        $function: us_nd_custom_parsers.classification_type_raw_text_from_raw_text
+                        $args:
+                          raw_charge_text: LEVEL
+                    $custom_parser: us_nd_custom_enum_parsers.parse_classification_type_from_raw_text_v2
+                classification_subtype:
+                  $custom:
+                    $function: us_nd_custom_parsers.classification_subtype_from_raw_text
+                    $args:
+                      raw_charge_text: LEVEL
+                status:
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - CASE_DESCRIPTION
+                          - $literal("Pre-Trial")
+                      $then: $literal_enum(StateChargeV2Status.PENDING)
+                      # IF the trial ends with a non-guilty verdict, this should go straight to completed. Can only know this from TA_TYPE.
+                    - $else: $literal_enum(StateChargeV2Status.CONVICTED)
+                ncic_code: $variable(normalized_offense_code)
+                # This description is pulled directly from the Docstars-specific cross-reference
+                # file sent nightly from ND (recidiviz_docstars_cst_ncic_code).
+                description: CHARGE_DESCRIPTION
+                # Option to use RECIDIVIZ_REF_violent_crimes_codes, sent directly from
+                # the state, rather than the state-agnostic NCIC reference.
+                is_violent:
+                  $conditional:
+                    - $if:
+                        $not_null: $variable(normalized_offense_code)
+                      $then:
+                        $custom:
+                          $function: us_nd_custom_parsers.extract_is_violent_from_ncic_code
+                          $args:
+                            ncic_code: $variable(normalized_offense_code)
+                is_drug:
+                  $conditional:
+                    - $if:
+                        $not_null: $variable(normalized_offense_code)
+                      $then:
+                        $custom:
+                          $function: us_nd_custom_parsers.extract_is_drug_from_ncic_code
+                          $args:
+                            ncic_code: $variable(normalized_offense_code)
+                # This source field in raw data is not well hydrated, but is hydrated to some extent.
+                is_sex_offense:
+                  $conditional:
+                    - $if:
+                        $not_null: REQUIRES_REGISTRATION
+                      $then:
+                        $equal:
+                          - REQUIRES_REGISTRATION
+                          - $literal("Y")
+                county_code:
+                  $custom:
+                    $function: us_nd_custom_parsers.normalize_county_code
+                    $args:
+                      county_code: CHARGE_COUNTY
+                is_controlling:
+                  $conditional:
+                    - $if:
+                        $not_null: MASTER_OFFENSE_IND
+                      $then:
+                        $equal:
+                          - MASTER_OFFENSE_IND
+                          - $literal("Y")
+                judge_full_name:
+                  $person_name:
+                    $full_name: JUDGE
