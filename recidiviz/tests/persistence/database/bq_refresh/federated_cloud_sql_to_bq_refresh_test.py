@@ -18,6 +18,7 @@
 
 import importlib
 import unittest
+from typing import Optional
 from unittest import mock
 from unittest.mock import create_autospec, patch
 
@@ -25,7 +26,12 @@ from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import (
+    BigQueryClientImpl,
+    BigQueryViewMaterializationResult,
+)
+from recidiviz.big_query.big_query_job_labels import BigQueryJobLabel
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.common.constants import states
 from recidiviz.persistence.database.bq_refresh import (
@@ -69,6 +75,22 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             "recidiviz.big_query.view_update_manager.BigQueryClientImpl"
         )
         self.view_update_client_patcher.start().return_value = self.mock_bq_client
+
+        def fake_materialize_view_to_table(
+            view: BigQueryView,
+            # pylint: disable=unused-argument
+            use_query_cache: bool,
+            job_labels: Optional[list[BigQueryJobLabel]] = None,
+        ) -> BigQueryViewMaterializationResult:
+            return BigQueryViewMaterializationResult(
+                view_address=view.address,
+                materialized_table=create_autospec(bigquery.Table),
+                completed_materialization_job=create_autospec(bigquery.QueryJob),
+            )
+
+        self.mock_bq_client.materialize_view_to_table.side_effect = (
+            fake_materialize_view_to_table
+        )
 
         test_secrets = {
             # pylint: disable=protected-access

@@ -17,7 +17,7 @@
 
 """Tests for view_update_manager.py."""
 import unittest
-from typing import Iterator, Set, Tuple
+from typing import Optional, Set, Tuple
 from unittest import mock
 from unittest.mock import call, create_autospec, patch
 
@@ -26,6 +26,8 @@ from google.cloud import bigquery
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_client import BigQueryViewMaterializationResult
+from recidiviz.big_query.big_query_job_labels import BigQueryJobLabel
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_sandbox_context import (
@@ -66,6 +68,22 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client_constructor = self.client_patcher.start()
         self.mock_client = self.mock_client_constructor.return_value
+
+        def fake_materialize_view_to_table(
+            view: BigQueryView,
+            # pylint: disable=unused-argument
+            use_query_cache: bool,
+            job_labels: Optional[list[BigQueryJobLabel]] = None,
+        ) -> BigQueryViewMaterializationResult:
+            return BigQueryViewMaterializationResult(
+                view_address=view.address,
+                materialized_table=create_autospec(bigquery.Table),
+                completed_materialization_job=create_autospec(bigquery.QueryJob),
+            )
+
+        self.mock_client.materialize_view_to_table.side_effect = (
+            fake_materialize_view_to_table
+        )
 
         self.client_patcher_2 = mock.patch(
             "recidiviz.big_query.big_query_table_checker.BigQueryClientImpl"
@@ -803,77 +821,6 @@ class ViewManagerTest(unittest.TestCase):
             [
                 mock.call(view_builder.build(), might_exist=True)
                 for view_builder in mock_view_builders
-            ],
-            any_order=True,
-        )
-
-    def test_copy_dataset_schemas_to_sandbox(self) -> None:
-        def dataset_exists(dataset_id: str) -> bool:
-            return dataset_id in (_DATASET_NAME, _DATASET_NAME_2)
-
-        self.mock_client.dataset_exists.side_effect = dataset_exists
-
-        mock_table = create_autospec(bigquery.table.TableListItem)
-        mock_table.table_type = "TABLE"
-        mock_table.dataset_id = _DATASET_NAME
-        mock_table.table_id = "my_table"
-
-        mock_table_2 = create_autospec(bigquery.table.TableListItem)
-        mock_table_2.table_type = "TABLE"
-        mock_table_2.dataset_id = _DATASET_NAME_2
-        mock_table_2.table_id = "my_table_2"
-
-        def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
-            if dataset_id == _DATASET_NAME:
-                tables = [mock_table]
-            elif dataset_id == _DATASET_NAME_2:
-                tables = [mock_table_2]
-            else:
-                raise ValueError(f"Unexpected dataset [{dataset_id}]")
-
-            return iter(tables)
-
-        self.mock_client.list_tables.side_effect = mock_list_tables
-
-        view_update_manager.copy_dataset_schemas_to_sandbox(
-            {_DATASET_NAME, _DATASET_NAME_2, _DATASET_NAME_3},
-            sandbox_prefix="test",
-            default_table_expiration=3000,
-        )
-
-        self.mock_client.create_dataset_if_necessary.assert_has_calls(
-            [
-                call(
-                    f"test_{_DATASET_NAME}",
-                    default_table_expiration_ms=3000,
-                ),
-                call(
-                    f"test_{_DATASET_NAME_2}",
-                    default_table_expiration_ms=3000,
-                ),
-            ],
-            any_order=True,
-        )
-        self.mock_client.copy_table.assert_has_calls(
-            [
-                call(
-                    source_table_address=BigQueryAddress(
-                        dataset_id=_DATASET_NAME,
-                        table_id="my_table",
-                    ),
-                    destination_dataset_id=f"test_{_DATASET_NAME}",
-                    schema_only=True,
-                    overwrite=False,
-                ),
-                call(
-                    source_table_address=BigQueryAddress(
-                        dataset_id=_DATASET_NAME_2,
-                        table_id="my_table_2",
-                    ),
-                    destination_dataset_id=f"test_{_DATASET_NAME_2}",
-                    schema_only=True,
-                    overwrite=False,
-                ),
             ],
             any_order=True,
         )

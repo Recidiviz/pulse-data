@@ -17,7 +17,6 @@
 """Provides utilities for updating views within a live BigQuery instance."""
 import logging
 from concurrent import futures
-from concurrent.futures import Future
 from enum import Enum
 from typing import Dict, Iterable, List, Optional, Sequence, Set
 
@@ -33,9 +32,13 @@ from recidiviz.big_query.big_query_client import (
     BQ_CLIENT_MAX_POOL_SIZE,
     BigQueryClient,
     BigQueryClientImpl,
+    BigQueryViewMaterializationResult,
 )
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.big_query_view_dag_walker import (
+    BigQueryViewDagWalker,
+    ProcessDagResult,
+)
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
@@ -91,6 +94,32 @@ class BigQueryViewUpdateSandboxContext:
     )
 
 
+class CreateOrUpdateViewStatus(Enum):
+    # Returned for a given view if this view was not deployed (e.g. because it cannot
+    # be deployed to this project or because a parent couldn't be deployed)
+    SKIPPED = "SKIPPED"
+    # Returned if neither this view or any of the views in its parent chain were updated
+    SUCCESS_WITHOUT_CHANGES = "SUCCESS_WITHOUT_CHANGES"
+    # Returned if this view or any views in its parent chain have been updated from the
+    # version that was saved in BigQuery before this update.
+    SUCCESS_WITH_CHANGES = "SUCCESS_WITH_CHANGES"
+
+
+@attr.define(kw_only=True)
+class CreateOrUpdateViewResult:
+    """Object with info about a single view that was created or updated via
+    create_managed_dataset_and_deploy_views_for_view_builders().
+    """
+
+    view: BigQueryView = attr.ib(validator=attr.validators.instance_of(BigQueryView))
+    status: CreateOrUpdateViewStatus = attr.ib(
+        validator=attr.validators.instance_of(CreateOrUpdateViewStatus)
+    )
+    materialization_result: BigQueryViewMaterializationResult | None = attr.ib(
+        validator=attr_validators.is_opt(BigQueryViewMaterializationResult)
+    )
+
+
 def create_managed_dataset_and_deploy_views_for_view_builders(
     *,
     view_source_table_datasets: Set[str],
@@ -102,7 +131,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     default_table_expiration_for_new_datasets: Optional[int] = None,
     views_might_exist: bool = True,
     allow_slow_views: bool = False,
-) -> None:
+) -> tuple[ProcessDagResult[CreateOrUpdateViewResult], BigQueryViewDagWalker]:
     """Creates or updates all the views in the provided list with the view query in the
     provided view builder list. The view will be re-materialized if it is configured
     with a materialized address unless |materialize_changed_views_only| is True and the
@@ -154,7 +183,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             sandbox_context=sandbox_context,
         )
 
-        _create_managed_dataset_and_deploy_views(
+        return _create_managed_dataset_and_deploy_views(
             views_to_update=views_to_update,
             bq_region_override=bq_region_override,
             materialize_changed_views_only=materialize_changed_views_only,
@@ -169,81 +198,6 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
         )
 
         raise e
-
-
-def copy_dataset_schemas_to_sandbox(
-    datasets: Set[str], sandbox_prefix: str, default_table_expiration: int
-) -> None:
-    """Copies the schemas of all tables in `datasets` to sandbox datasets prefixed
-    with `sandbox_prefix`. This does not copy any of the contents of the tables, only
-    the schemas.
-    """
-
-    bq_client = BigQueryClientImpl()
-
-    def create_sandbox_dataset_and_get_source_table_addresses(
-        dataset_id: str,
-    ) -> Optional[List[BigQueryAddress]]:
-        if not bq_client.dataset_exists(dataset_id):
-            return None
-
-        bq_client.create_dataset_if_necessary(
-            BigQueryAddressOverrides.format_sandbox_dataset(sandbox_prefix, dataset_id),
-            default_table_expiration_ms=default_table_expiration,
-        )
-        return [
-            BigQueryAddress(dataset_id=t.dataset_id, table_id=t.table_id)
-            for t in bq_client.list_tables(dataset_id)
-        ]
-
-    def copy_table_schema(source_table_address: BigQueryAddress) -> BigQueryAddress:
-        destination_table_address = BigQueryAddress(
-            dataset_id=BigQueryAddressOverrides.format_sandbox_dataset(
-                sandbox_prefix, source_table_address.dataset_id
-            ),
-            table_id=source_table_address.table_id,
-        )
-        bq_client.copy_table(
-            source_table_address=source_table_address,
-            destination_dataset_id=destination_table_address.dataset_id,
-            schema_only=True,
-            overwrite=False,
-        )
-        return destination_table_address
-
-    with futures.ThreadPoolExecutor(
-        # Conservatively allow only half as many workers as allowed connections.
-        # Lower this number if we see "urllib3.connectionpool:Connection pool is
-        # full, discarding connection" errors.
-        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
-    ) as executor:
-        logging.info("Collecting tables in [%s] datasets", len(datasets))
-
-        list_tables_futures = {
-            executor.submit(
-                structured_logging.with_context(
-                    create_sandbox_dataset_and_get_source_table_addresses
-                ),
-                dataset_id,
-            )
-            for dataset_id in datasets
-        }
-
-        copy_futures: Set[Future[BigQueryAddress]] = set()
-        for list_table_future in futures.as_completed(list_tables_futures):
-            source_table_addresses = list_table_future.result()
-            if source_table_addresses is not None:
-                copy_futures.update(
-                    executor.submit(
-                        structured_logging.with_context(copy_table_schema),
-                        source_table_address,
-                    )
-                    for source_table_address in source_table_addresses
-                )
-        logging.info("Copying schemas for [%s] tables", len(copy_futures))
-        for copy_future in futures.as_completed(copy_futures):
-            destination_address = copy_future.result()
-            logging.info("Completed copy of schema to [%s]", destination_address)
 
 
 def _create_all_datasets_if_necessary(
@@ -277,12 +231,6 @@ def _create_all_datasets_if_necessary(
             future.result()
 
 
-class CreateOrUpdateViewStatus(Enum):
-    SKIPPED = "SKIPPED"
-    SUCCESS_WITHOUT_CHANGES = "SUCCESS_WITHOUT_CHANGES"
-    SUCCESS_WITH_CHANGES = "SUCCESS_WITH_CHANGES"
-
-
 def _create_managed_dataset_and_deploy_views(
     *,
     views_to_update: Iterable[BigQueryView],
@@ -292,7 +240,7 @@ def _create_managed_dataset_and_deploy_views(
     default_table_expiration_for_new_datasets: Optional[int] = None,
     views_might_exist: bool = True,
     allow_slow_views: bool = False,
-) -> None:
+) -> tuple[ProcessDagResult[CreateOrUpdateViewResult], BigQueryViewDagWalker]:
     """Create and update the given views and their parent datasets. Cleans up unmanaged views and datasets
 
     For each dataset key in the given dictionary, creates  the dataset if it does not
@@ -342,8 +290,8 @@ def _create_managed_dataset_and_deploy_views(
         )
 
     def process_fn(
-        v: BigQueryView, parent_results: Dict[BigQueryView, CreateOrUpdateViewStatus]
-    ) -> CreateOrUpdateViewStatus:
+        v: BigQueryView, parent_results: Dict[BigQueryView, CreateOrUpdateViewResult]
+    ) -> CreateOrUpdateViewResult:
         """Returns True if this view or any of its parents were updated."""
         try:
             return _create_or_update_view_and_materialize_if_necessary(
@@ -366,23 +314,20 @@ def _create_managed_dataset_and_deploy_views(
     )
     results.log_processing_stats(n_slowest=NUM_SLOW_VIEWS_TO_LOG)
 
+    return results, dag_walker
+
 
 def _create_or_update_view_and_materialize_if_necessary(
     *,
     bq_client: BigQueryClient,
     view: BigQueryView,
-    parent_results: Dict[BigQueryView, CreateOrUpdateViewStatus],
+    parent_results: Dict[BigQueryView, CreateOrUpdateViewResult],
     materialize_changed_views_only: bool,
     might_exist: bool,
-) -> CreateOrUpdateViewStatus:
+) -> CreateOrUpdateViewResult:
     """Creates or updates the provided view in BigQuery and materializes that view into
-    a table when appropriate. Returns:
-        - CreateOrUpdateViewStatus.SKIPPED if this view cannot be deployed
-        - CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES if this view or any views in its
-           parent chain have been updated from the version that was saved in BigQuery
-           before this update.
-        - CreateOrUpdateViewStatus.SUCCESS_WITHOUT_CHANGES if neither this view or any of the
-           views in its parent chain were updated.
+    a table when appropriate. Returns a CreateOrUpdateViewResult object containing
+    metadata about the update.
     """
     if not view.should_deploy():
         logging.info(
@@ -390,22 +335,28 @@ def _create_or_update_view_and_materialize_if_necessary(
             view.dataset_id,
             view.view_id,
         )
-        return CreateOrUpdateViewStatus.SKIPPED
+        return CreateOrUpdateViewResult(
+            view=view,
+            status=CreateOrUpdateViewStatus.SKIPPED,
+            materialization_result=None,
+        )
+
     skipped_parents = [
-        parent_view.address
-        for parent_view, parent_status in parent_results.items()
-        if parent_status == CreateOrUpdateViewStatus.SKIPPED
+        parent_result.view.address
+        for parent_result in parent_results.values()
+        if parent_result.status == CreateOrUpdateViewStatus.SKIPPED
     ]
     if skipped_parents:
         raise ValueError(
             f"Found view [{view.address}] that has skipped parents - cannot deploy. "
             f"This means that the should_deploy() on these parent views returned False. "
-            f"Skipped parents: {skipped_parents}"
+            f"Skipped parents: {BigQueryAddress.addresses_to_str(skipped_parents)}"
         )
 
-    parent_changed = (
-        CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES in parent_results.values()
-    )
+    parent_statuses = {
+        parent_result.status for parent_result in parent_results.values()
+    }
+    parent_changed = CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES in parent_statuses
 
     existing_view = None
     if might_exist:
@@ -462,8 +413,13 @@ def _create_or_update_view_and_materialize_if_necessary(
             )
     # View has changes if the view was updated or newly materialized
     has_changes = view_changed or materialization_result is not None
-    return (
+
+    update_status = (
         CreateOrUpdateViewStatus.SUCCESS_WITH_CHANGES
         if has_changes
         else CreateOrUpdateViewStatus.SUCCESS_WITHOUT_CHANGES
+    )
+
+    return CreateOrUpdateViewResult(
+        view=view, status=update_status, materialization_result=materialization_result
     )
