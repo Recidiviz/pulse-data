@@ -164,6 +164,9 @@ columns:
   - name: CC_END_ET_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: TODO(#35364) Ensure this column is intentionally null and isn't being used anywhere
   - name: CC_BEGIN_ET_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR

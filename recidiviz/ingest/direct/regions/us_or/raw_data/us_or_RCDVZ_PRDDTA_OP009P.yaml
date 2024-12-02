@@ -135,9 +135,15 @@ columns:
   - name: NEW_CRIME_DATE
     description: |-
       Date of a new crime, if any. Not used.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: Field isn't used.
   - name: LEAVE_SCHEDULED_DATE
     description: |-
       Not used.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: Field isn't used.
   - name: RELEASE_DATE
     description: |-
       Date of status release.
