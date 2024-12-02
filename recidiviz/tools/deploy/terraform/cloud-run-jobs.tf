@@ -66,19 +66,19 @@ resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
 locals {
   jii_jobs = {
     "id-lsu-jii-initial-texts" = {
-      "id" = "us-central1/id-lsu-jii-initial-texts"
+      "id"   = "us-central1/id-lsu-jii-initial-texts"
       "args" = ["run", "python", "-m", "recidiviz.case_triage.jii.send_id_lsu_texts", "--message-type=initial_text", "--bigquery-view=", "--dry-run=False"]
-      }
+    }
     "id-lsu-jii-eligibility-texts" = {
-      "id" = "us-central1/id-lsu-jii-eligibility-texts"
+      "id"   = "us-central1/id-lsu-jii-eligibility-texts"
       "args" = ["run", "python", "-m", "recidiviz.case_triage.jii.send_id_lsu_texts", "--message-type=eligibility_text", "--bigquery-view=", "--dry-run=False"]
     }
-    "id-lsu-jii-update-statuses"    = {
-      "id" = "us-central1/id-lsu-jii-update-statuses"
+    "id-lsu-jii-update-statuses" = {
+      "id"   = "us-central1/id-lsu-jii-update-statuses"
       "args" = ["run", "python", "-m", "recidiviz.case_triage.jii.send_id_lsu_texts", "--message-type=initial_text", "--bigquery-view=", "--dry-run=True", "--redeliver-failed-messages=False", "--previous-batch-id-to-update-status-for="]
     }
     "redeliver-id-lsu-jii-initial-texts" = {
-      "id" = "us-central1/redeliver-id-lsu-jii-initial-texts"
+      "id"   = "us-central1/redeliver-id-lsu-jii-initial-texts"
       "args" = ["run", "python", "-m", "recidiviz.case_triage.jii.send_id_lsu_texts", "--message-type=initial_text", "--bigquery-view=", "--dry-run=False", "--redeliver-failed-messages=True", "--previous-batch-id-to-update-status-for="]
     }
   }
@@ -86,8 +86,8 @@ locals {
 
 import {
   for_each = local.jii_jobs
-  to = google_cloud_run_v2_job.jii_jobs[each.key]
-  id = each.value.id
+  to       = google_cloud_run_v2_job.jii_jobs[each.key]
+  id       = each.value.id
 }
 
 resource "google_cloud_run_v2_job" "jii_jobs" {
@@ -97,7 +97,7 @@ resource "google_cloud_run_v2_job" "jii_jobs" {
   provider = google-beta
 
   template {
-    task_count  = 1
+    task_count = 1
     template {
       execution_environment = "EXECUTION_ENVIRONMENT_GEN2"
       max_retries           = 3
@@ -105,9 +105,9 @@ resource "google_cloud_run_v2_job" "jii_jobs" {
       timeout               = "600s"
       containers {
         image   = "us-docker.pkg.dev/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
-        args        = each.value.args
-        command     = ["pipenv"]
-        name        = "default-1"
+        args    = each.value.args
+        command = ["pipenv"]
+        name    = "default-1"
         env {
           name  = "RECIDIVIZ_ENV"
           value = "staging"
