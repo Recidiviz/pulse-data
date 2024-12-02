@@ -126,7 +126,7 @@ columns:
       - value: CDCR Lost Jurisdiction
       - value: Civil Addict- Discharge
       - value: Civil Addict- Expiration of Commitment
-      - value: Civil Addict- Felon Comm. Same Case # as Civil Addict Commit
+      - value: "Civil Addict- Felon Comm. Same Case # as Civil Addict Commit"
       - value: Civil Addict- Not Amenable to Treatment
       - value: Civil Addict- Successful Period of Time While on CAP
         description: TODO(#35313) Document this value.
@@ -243,7 +243,7 @@ columns:
       - value: Civil Addict- Discharge
       - value: Civil Addict- Discharge while Released at Large 1+ yrs
       - value: Civil Addict- Expiration of Commitment
-      - value: Civil Addict- Felon Comm. Same Case # as Civil Addict Commit
+      - value: "Civil Addict- Felon Comm. Same Case # as Civil Addict Commit"
       - value: Civil Addict- Not Amenable to Treatment
       - value: Civil Addict- Not Available for Treatment
       - value: Civil Addict- Successful Period of Time While on CAP
