@@ -105,7 +105,6 @@ ydata-profiling = "*"
 # end recidiviz-research dependencies
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
-sqlglot = "==23.11.2"
 docker = "*"
 docker-stubs = "*"
 types-tabulate = "*"
@@ -252,6 +251,7 @@ vertexai = "*"
 asyncpg ="*"
 pygit2 = "*"
 matplotx = "*"
+sqlglot = "==23.11.2"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!

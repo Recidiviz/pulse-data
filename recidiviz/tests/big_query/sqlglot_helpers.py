@@ -18,12 +18,14 @@
 Utility functions that use the sqlglot library to do advanced checks
 of SQL queries using their ASTs.
 """
-import re
 from typing import Set
 
 import sqlglot
 import sqlglot.expressions as expr
 
+from recidiviz.big_query.big_query_sqlglot_helpers import (
+    get_state_code_literal_references,
+)
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 
 ORDER_BY_ALLOWED_IN = (expr.Window, expr.GroupConcat, expr.ArrayAgg)
@@ -192,14 +194,12 @@ def check_view_has_no_state_specific_logic(view_builder: BigQueryViewBuilder) ->
 
     view_query = view_builder.build(sandbox_context=None).view_query
     tree = sqlglot.parse_one(view_query, dialect="bigquery")
+    if not isinstance(tree, sqlglot.expressions.Query):
+        raise ValueError(f"Unexpected query expression type [{type(tree)}]")
+    found_state_codes = get_state_code_literal_references(tree)
 
-    for literal in tree.find_all(expr.Literal):
-        if not literal.is_string:
-            continue
-        str_literal_value = literal.this
-
-        if re.match(r"^US_[A-Z]{2}$", str_literal_value):
-            raise ValueError(
-                f"Cannot include state-specific logic this view. Found reference "
-                f"to state_code [{str_literal_value}]."
-            )
+    if found_state_codes:
+        raise ValueError(
+            f"Cannot include state-specific logic this view. Found reference "
+            f"to state_code(s) {[s.value for s in found_state_codes]}."
+        )
