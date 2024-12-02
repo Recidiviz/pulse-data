@@ -40,6 +40,8 @@ columns:
         description: CRP - Custody Pending Felony
       - value: "14239"
         description: SA Probation Parole Intensive SSU Non-EMS Unemployed
+      - value: "14240"
+        description: TODO(#35219) Document this value.
       - value: "13823"
         description: Probation GPS Employed
       - value: "13603"

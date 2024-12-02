@@ -40,6 +40,11 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: refuse_to_sign_flag
     description: |-
       TODO(#17944)
@@ -47,6 +52,11 @@ columns:
     description: |-
       Employee id for employee that delivered the hearing notice
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: report_read_flag
     description: |-
       TODO(#17944)
@@ -56,6 +66,11 @@ columns:
   - name: hearing_report_delivery_id
     description: |-
       TODO(#17944)
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra 
+          TODO(#35329) Verify we expect this column to be null and are not using it anywhere
   - name: closing_authority_id
     description: |-
       Reference code for authority that closed the hearing record (links with ADH_REFERENCE_CODE)
