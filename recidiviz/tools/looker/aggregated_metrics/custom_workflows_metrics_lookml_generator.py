@@ -37,6 +37,12 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     DEDUPED_TASK_COMPLETION_EVENT_VB,
 )
+from recidiviz.aggregated_metrics.models.metric_population_type import (
+    MetricPopulationType,
+)
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.common.constants.state.state_person import StateGender, StateRace
 from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
@@ -44,7 +50,6 @@ from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
-    ASSIGNMENT_NAME_TO_TYPES,
     generate_assignment_event_metric_view,
     generate_assignment_span_metric_view,
     generate_assignments_view,
@@ -60,10 +65,13 @@ WORKFLOWS_IMPACT_LOOKER_METRICS = [
     *workflows_metrics.AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER_FUNNEL_METRICS,
     workflows_metrics.AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER,
     *workflows_metrics.AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER_FUNNEL_METRICS,
-    workflows_metrics.DISTINCT_ACTIVE_USERS_LOOKER,
-    workflows_metrics.DISTINCT_REGISTERED_USERS_LOOKER,
-    workflows_metrics.DISTINCT_LOGGED_IN_USERS_LOOKER,
-    workflows_metrics.LOGINS_LOOKER,
+    workflows_metrics.DISTINCT_PROVISIONED_WORKFLOWS_USERS_LOOKER,
+    workflows_metrics.DISTINCT_REGISTERED_PROVISIONED_WORKFLOWS_USERS_LOOKER,
+    workflows_metrics.DISTINCT_PROVISIONED_PRIMARY_WORKFLOWS_USERS_LOOKER,
+    workflows_metrics.DISTINCT_REGISTERED_PRIMARY_WORKFLOWS_USERS_LOOKER,
+    workflows_metrics.DISTINCT_LOGGED_IN_PRIMARY_WORKFLOWS_USERS_LOOKER,
+    workflows_metrics.DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS_LOOKER,
+    workflows_metrics.LOGINS_BY_PRIMARY_WORKFLOWS_USER_LOOKER,
     workflows_metrics.PERSON_DAYS_TASK_ELIGIBLE_LOOKER,
     workflows_metrics.TASK_COMPLETIONS_LOOKER,
     workflows_metrics.TASK_COMPLETIONS_WHILE_ALMOST_ELIGIBLE_LOOKER,
@@ -75,6 +83,49 @@ WORKFLOWS_IMPACT_LOOKER_METRICS = [
     workflows_metrics.FIRST_TOOL_ACTIONS_LOOKER,
     workflows_metrics.DAYS_ELIGIBLE_AT_FIRST_TOOL_ACTION_LOOKER,
 ]
+
+WORKFLOWS_ASSIGNMENT_NAMES_TO_TYPES = {
+    "JUSTICE_INVOLVED_STATE": (
+        MetricPopulationType.JUSTICE_INVOLVED,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ),
+    "JUSTICE_INVOLVED_LOCATION": (
+        MetricPopulationType.JUSTICE_INVOLVED,
+        MetricUnitOfAnalysisType.LOCATION,
+    ),
+    "JUSTICE_INVOLVED_LOCATION_DETAIL": (
+        MetricPopulationType.JUSTICE_INVOLVED,
+        MetricUnitOfAnalysisType.LOCATION_DETAIL,
+    ),
+    "SUPERVISION_STATE": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ),
+    "SUPERVISION_DISTRICT": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ),
+    "SUPERVISION_OFFICE": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ),
+    "SUPERVISION_UNIT_SUPERVISOR": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+    ),
+    "SUPERVISION_OFFICER": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+    ),
+    "INCARCERATION_FACILITY": (
+        MetricPopulationType.INCARCERATION,
+        MetricUnitOfAnalysisType.FACILITY,
+    ),
+    "INCARCERATION_FACILITY_COUNSELOR": (
+        MetricPopulationType.INCARCERATION,
+        MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
+    ),
+}
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -133,7 +184,7 @@ def main(
             unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
             generate_assignments_view(
                 view_name,
-                ASSIGNMENT_NAME_TO_TYPES,
+                WORKFLOWS_ASSIGNMENT_NAMES_TO_TYPES,
                 unit_of_observation=unit_of_observation,
             ).write(output_subdirectory, source_script_path=__file__)
 

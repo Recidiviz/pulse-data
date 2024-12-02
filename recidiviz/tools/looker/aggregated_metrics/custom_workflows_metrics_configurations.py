@@ -33,6 +33,89 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
 
+# Adoption and usage metrics
+DISTINCT_PROVISIONED_WORKFLOWS_USERS_LOOKER = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_workflows_users",
+    display_name="Distinct Provisioned Workflows Users",
+    description="Number of distinct Workflows users who are provisioned to have tool access (regardless of role type)",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PROVISIONED_USER_SESSION,
+        span_conditions_dict={},
+    ),
+)
+DISTINCT_REGISTERED_PROVISIONED_WORKFLOWS_USERS_LOOKER = SpanDistinctUnitCountMetric(
+    name="distinct_registered_provisioned_workflows_users",
+    display_name="Distinct Registered Provisioned Workflows Users",
+    description=(
+        "Number of distinct Workflows users who are provisioned to have tool access (regardless of role type) "
+        "who have signed up/logged into Workflows at least once"
+    ),
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_registered": ["true"]},
+    ),
+)
+DISTINCT_PROVISIONED_PRIMARY_WORKFLOWS_USERS_LOOKER = SpanDistinctUnitCountMetric(
+    name="distinct_provisioned_primary_workflows_users",
+    display_name="Distinct Provisioned Primary Workflows Users",
+    description="Number of distinct primary Workflows users who are provisioned to have tool access",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PROVISIONED_USER_SESSION,
+        span_conditions_dict={"is_primary_user": ["true"]},
+    ),
+)
+DISTINCT_REGISTERED_PRIMARY_WORKFLOWS_USERS_LOOKER = SpanDistinctUnitCountMetric(
+    name="distinct_registered_primary_workflows_users",
+    display_name="Distinct Registered Primary Workflows Users",
+    description="Number of distinct primary (line staff) Workflows users who have signed up/logged into Workflows at least once",
+    span_selector=SpanSelector(
+        span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
+        span_conditions_dict={},
+    ),
+)
+DISTINCT_LOGGED_IN_PRIMARY_WORKFLOWS_USERS_LOOKER = EventDistinctUnitCountMetric(
+    name="distinct_logged_in_primary_workflows_users",
+    display_name="Distinct Logged In Primary Workflows Users",
+    description="Number of distinct primary (line staff) Workflows users who logged into Workflows",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+DISTINCT_ACTIVE_PRIMARY_WORKFLOWS_USERS_LOOKER = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_workflows_users",
+    display_name="Distinct Active Primary Workflows Users",
+    description="Number of distinct primary (line staff) Workflows users having at least one usage event for the "
+    "task type during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={},
+    ),
+)
+LOGINS_BY_PRIMARY_WORKFLOWS_USER_LOOKER = EventCountMetric(
+    name="logins_primary_workflows_user",
+    display_name="Logins, Primary Workflows Users",
+    description="Number of logins performed by primary Workflows users",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_USER_LOGIN,
+        event_conditions_dict={},
+    ),
+)
+FIRST_TOOL_ACTIONS_LOOKER = EventCountMetric(
+    name="first_tool_actions_workflows",
+    display_name="First Tool Actions, Workflows",
+    description="Number of unique instances of the first action taken in the workflows tool after a client is "
+    "newly surfaced for the selected task type",
+    event_selector=EventSelector(
+        event_type=EventType.WORKFLOWS_PERSON_USAGE_EVENT,
+        event_conditions_dict={
+            "is_first_tool_action": ["true"],
+        },
+    ),
+    event_segmentation_columns=["task_type"],
+)
+
+# Outcome metrics
 AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER = DailyAvgSpanCountMetric(
     name="avg_population_task_almost_eligible",
     display_name="Average Population: Task Almost Eligible",
@@ -87,43 +170,6 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER_FUNNEL_METRICS = [
     )
     for k in USAGE_EVENTS_DICT
 ]
-DISTINCT_ACTIVE_USERS_LOOKER = EventDistinctUnitCountMetric(
-    name="distinct_active_users",
-    display_name="Distinct Active Primary Users",
-    description="Number of distinct primary (line staff) Workflows users having at least one usage event for the "
-    "task type during the time period",
-    event_selector=EventSelector(
-        event_type=EventType.WORKFLOWS_ACTIVE_USAGE_EVENT,
-        event_conditions_dict={},
-    ),
-)
-DISTINCT_REGISTERED_USERS_LOOKER = SpanDistinctUnitCountMetric(
-    name="distinct_registered_users",
-    display_name="Distinct Total Registered Primary Users",
-    description="Number of distinct primary (line staff) Workflows users who have signed up/logged into Workflows at least once",
-    span_selector=SpanSelector(
-        span_type=SpanType.WORKFLOWS_PRIMARY_USER_REGISTRATION_SESSION,
-        span_conditions_dict={},
-    ),
-)
-DISTINCT_LOGGED_IN_USERS_LOOKER = EventDistinctUnitCountMetric(
-    name="distinct_logged_in_users",
-    display_name="Distinct Primary Users Logging In",
-    description="Number of distinct primary (line staff) Workflows users who logged into Workflows",
-    event_selector=EventSelector(
-        event_type=EventType.WORKFLOWS_USER_LOGIN,
-        event_conditions_dict={},
-    ),
-)
-LOGINS_LOOKER = EventCountMetric(
-    name="logins",
-    display_name="Logins",
-    description="Number of logins performed by primary Workflows users",
-    event_selector=EventSelector(
-        event_type=EventType.WORKFLOWS_USER_LOGIN,
-        event_conditions_dict={},
-    ),
-)
 PERSON_DAYS_TASK_ELIGIBLE_LOOKER = SumSpanDaysMetric(
     name="person_days_task_eligible",
     display_name="Person-Days Eligible for Opportunity",
@@ -191,19 +237,6 @@ TASK_COMPLETIONS_WHILE_ELIGIBLE_LOOKER = EventCountMetric(
         event_type=EventType.TASK_COMPLETED,
         event_conditions_dict={
             "is_eligible": ["true"],
-        },
-    ),
-    event_segmentation_columns=["task_type"],
-)
-FIRST_TOOL_ACTIONS_LOOKER = EventCountMetric(
-    name="first_tool_actions",
-    display_name="First Tool Actions",
-    description="Number of unique instances of the first action taken in the workflows tool after a client is "
-    "newly surfaced for the selected task type",
-    event_selector=EventSelector(
-        event_type=EventType.WORKFLOWS_PERSON_USAGE_EVENT,
-        event_conditions_dict={
-            "is_first_tool_action": ["true"],
         },
     ),
     event_segmentation_columns=["task_type"],

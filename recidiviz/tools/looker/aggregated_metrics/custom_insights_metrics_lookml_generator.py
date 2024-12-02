@@ -34,6 +34,12 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodSpanAggregatedMetric,
     SpanMetricConditionsMixin,
 )
+from recidiviz.aggregated_metrics.models.metric_population_type import (
+    MetricPopulationType,
+)
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.common.constants.state.state_person import StateGender, StateRace
 from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
@@ -41,7 +47,6 @@ from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
-    ASSIGNMENT_NAME_TO_TYPES,
     generate_assignment_event_metric_view,
     generate_assignment_span_metric_view,
     generate_assignments_view,
@@ -52,12 +57,40 @@ from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils impor
     generate_person_assignments_with_attributes_view,
 )
 
+INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES = {
+    "SUPERVISION_STATE": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ),
+    "SUPERVISION_DISTRICT": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ),
+    "SUPERVISION_OFFICE": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ),
+    "SUPERVISION_UNIT_SUPERVISOR": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+    ),
+    "SUPERVISION_OFFICER": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+    ),
+}
+
+
 INSIGHTS_IMPACT_LOOKER_METRICS = [
     insights_metrics.ABSCONSIONS_AND_BENCH_WARRANTS_LOOKER,
     insights_metrics.AVG_DAILY_POPULATION_LOOKER,
-    insights_metrics.DISTINCT_LOGGED_IN_USERS_LOOKER,
-    insights_metrics.DISTINCT_REGISTERED_USERS_LOOKER,
-    insights_metrics.LOGINS_LOOKER,
+    insights_metrics.DISTINCT_PROVISIONED_INSIGHTS_USERS_LOOKER,
+    insights_metrics.DISTINCT_REGISTERED_PROVISIONED_INSIGHTS_USERS_LOOKER,
+    insights_metrics.DISTINCT_PROVISIONED_PRIMARY_INSIGHTS_USERS_LOOKER,
+    insights_metrics.DISTINCT_REGISTERED_PRIMARY_INSIGHTS_USERS_LOOKER,
+    insights_metrics.DISTINCT_LOGGED_IN_PRIMARY_INSIGHTS_USERS_LOOKER,
+    insights_metrics.DISTINCT_ACTIVE_PRIMARY_INSIGHTS_USERS_LOOKER,
+    insights_metrics.LOGINS_PRIMARY_INSIGHTS_USERS_LOOKER,
     insights_metrics.INCARCERATION_STARTS_LOOKER,
     insights_metrics.INCARCERATION_STARTS_AND_INFERRED_LOOKER,
     insights_metrics.VIOLATIONS_ABSCONSION,
@@ -111,7 +144,7 @@ def main(
             unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
             generate_assignments_view(
                 view_name,
-                ASSIGNMENT_NAME_TO_TYPES,
+                INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES,
                 unit_of_observation=unit_of_observation,
             ).write(output_subdirectory, source_script_path=__file__)
 

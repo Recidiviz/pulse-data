@@ -81,6 +81,9 @@ from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils i
     get_metric_value_measure,
     measure_for_metric,
 )
+from recidiviz.view_registry.deployed_views import (
+    DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+)
 
 # Loops through all configured population <> unit of analysis combinations and generates a dictionary
 # that maps their combined name (assignment type) to a tuple with population and unit of analysis type
@@ -212,8 +215,9 @@ def generate_period_span_metric_view(
     spans_dataset_id = dataset_for_observation_type_cls(
         unit_of_observation=unit_of_observation.type, observation_type_cls=SpanType
     )
-
-    derived_table_query = f"""
+    # If this set of observations doesn't exist, use a dummy derived query table
+    if spans_dataset_id in DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED:
+        derived_table_query = f"""
     WITH eligible_spans AS (
         SELECT
             assignments.state_code,
@@ -233,9 +237,9 @@ def generate_period_span_metric_view(
         ON
             {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="assignments", table2="spans")}
             AND (
-              assignments.assignment_date
+            assignments.assignment_date
                 BETWEEN spans.start_date AND {nonnull_end_date_exclusive_clause("spans.end_date")}
-              OR spans.start_date
+            OR spans.start_date
                 BETWEEN assignments.assignment_date AND {nonnull_end_date_exclusive_clause("assignments.assignment_end_date")}
             )
             -- Disregard zero day sample spans for calculating population metrics
@@ -266,6 +270,28 @@ def generate_period_span_metric_view(
     GROUP BY
         1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
     """
+    else:
+        field_filters_dummy_query_fragment = "\n".join(
+            [
+                liquid_wrap_json_field(
+                    f"CAST(NULL AS STRING) AS {field},",
+                    field,
+                    view_name,
+                )
+                for field in json_field_filters
+            ]
+        )
+        derived_table_query = f"""
+    -- Dummy table because this observation type does not exist yet
+    SELECT
+        CAST(NULL AS STRING) AS state_code,
+        CAST(NULL AS STRING) AS unit_of_analysis,
+        CAST(NULL AS STRING) AS all_attributes,
+        CAST(NULL AS STRING) AS period,
+        CAST(NULL AS DATE) AS start_date,
+        CAST(NULL AS DATE) AS end_date,
+        {field_filters_dummy_query_fragment}
+"""
     return LookMLView(
         view_name=f"{unit_of_observation.type.short_name}_period_span_aggregated_metrics_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
@@ -330,7 +356,9 @@ def generate_period_event_metric_view(
     events_dataset_id = dataset_for_observation_type_cls(
         unit_of_observation=unit_of_observation.type, observation_type_cls=EventType
     )
-    derived_table_query = f"""
+    # If this set of observations doesn't exist, use a dummy derived query table
+    if events_dataset_id in DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED:
+        derived_table_query = f"""
     SELECT
         -- assignments
         assignments.state_code,
@@ -354,7 +382,7 @@ def generate_period_event_metric_view(
     ON
         {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="events", table2="assignments")}
         AND events.event_date BETWEEN GREATEST(assignments.assignment_date, assignments.start_date)
-          AND LEAST(
+        AND LEAST(
             {nonnull_end_date_clause("assignments.assignment_end_date")},
             DATE_SUB(assignments.end_date, INTERVAL 1 DAY)
     )
@@ -362,6 +390,28 @@ def generate_period_event_metric_view(
     GROUP BY
         1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
     """
+    else:
+        field_filters_dummy_query_fragment = "\n".join(
+            [
+                liquid_wrap_json_field(
+                    f"CAST(NULL AS STRING) AS {field},",
+                    field,
+                    view_name,
+                )
+                for field in json_field_filters
+            ]
+        )
+        derived_table_query = f"""
+    -- Dummy table because this observation type does not exist yet
+    SELECT
+        CAST(NULL AS STRING) AS state_code,
+        CAST(NULL AS STRING) AS unit_of_analysis,
+        CAST(NULL AS STRING) AS all_attributes,
+        CAST(NULL AS STRING) AS period,
+        CAST(NULL AS DATE) AS start_date,
+        CAST(NULL AS DATE) AS end_date,
+        {field_filters_dummy_query_fragment}
+"""
     return LookMLView(
         view_name=f"{unit_of_observation.type.short_name}_period_event_aggregated_metrics_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
@@ -435,7 +485,9 @@ def generate_assignment_span_metric_view(
         unit_of_observation=unit_of_observation.type, observation_type_cls=SpanType
     )
 
-    derived_table_query = f"""
+    # If this set of observations doesn't exist, use a dummy derived query table
+    if spans_dataset_id in DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED:
+        derived_table_query = f"""
     SELECT
         -- assignments
         assignments.state_code,
@@ -466,6 +518,28 @@ def generate_assignment_span_metric_view(
     GROUP BY
         1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
     """
+    else:
+        field_filters_dummy_query_fragment = "\n".join(
+            [
+                liquid_wrap_json_field(
+                    f"CAST(NULL AS STRING) AS {field},",
+                    field,
+                    view_name,
+                )
+                for field in json_field_filters
+            ]
+        )
+        derived_table_query = f"""
+    -- Dummy table because this observation type does not exist yet
+    SELECT
+        CAST(NULL AS STRING) AS state_code,
+        CAST(NULL AS STRING) AS unit_of_analysis,
+        CAST(NULL AS STRING) AS all_attributes,
+        CAST(NULL AS STRING) AS period,
+        CAST(NULL AS DATE) AS start_date,
+        CAST(NULL AS DATE) AS end_date,
+        {field_filters_dummy_query_fragment}
+"""
     return LookMLView(
         view_name=f"{unit_of_observation.type.short_name}_assignment_span_aggregated_metrics_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
@@ -560,7 +634,9 @@ def generate_assignment_event_metric_view(
         unit_of_observation=unit_of_observation.type, observation_type_cls=EventType
     )
 
-    derived_table_query = f"""
+    # If this set of observations doesn't exist, use a dummy derived query table
+    if events_dataset_id in DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED:
+        derived_table_query = f"""
     SELECT
         -- assignments
         state_code,
@@ -608,6 +684,28 @@ def generate_assignment_event_metric_view(
     GROUP BY
         1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
     """
+    else:
+        field_filters_dummy_query_fragment = "\n".join(
+            [
+                liquid_wrap_json_field(
+                    f"CAST(NULL AS STRING) AS {field},",
+                    field,
+                    view_name,
+                )
+                for field in json_field_filters
+            ]
+        )
+        derived_table_query = f"""
+    -- Dummy table because this observation type does not exist yet
+    SELECT
+        CAST(NULL AS STRING) AS state_code,
+        CAST(NULL AS STRING) AS unit_of_analysis,
+        CAST(NULL AS STRING) AS all_attributes,
+        CAST(NULL AS STRING) AS period,
+        CAST(NULL AS DATE) AS start_date,
+        CAST(NULL AS DATE) AS end_date,
+        {field_filters_dummy_query_fragment}
+"""
     return LookMLView(
         view_name=f"{unit_of_observation.type.short_name}_assignment_event_aggregated_metrics_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
@@ -780,7 +878,7 @@ def generate_assignments_view(
                 )
                 for assignment_type in assignment_types_dict
             ],
-            LookMLFieldParameter.default_value("JUSTICE_INVOLVED_STATE"),
+            LookMLFieldParameter.default_value(sorted(assignment_types_dict)[0]),
         ],
     )
 
@@ -1566,11 +1664,7 @@ def custom_metrics_view_query_template(
     , column_mapping AS (
         SELECT DISTINCT
             * EXCEPT (
-                assignment_date, assignment_end_date, event_time_base_date
-                {{% if {view_name}.assignment_type._parameter_value != "PERSON"
-                 and {view_name}.person_id._in_query == false %}}
-                , person_id
-                {{% endif %}}
+                assignment_date, assignment_end_date, event_time_base_date, person_id
             )
         FROM
             assignments_and_attributes_cte
