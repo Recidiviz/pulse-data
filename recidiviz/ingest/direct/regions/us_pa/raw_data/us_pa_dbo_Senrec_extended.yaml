@@ -3,6 +3,10 @@ file_tag: dbo_Senrec_extended
 file_description: |-
   A table containing additional information about sentences to incarceration to be served under the authority of PADOC.
 data_classification: source
+encoding: windows-1252
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
 primary_key_cols:
   - SEN_CURRENT_INMATE_NUM
   - SEN_TYPE_NUMBER

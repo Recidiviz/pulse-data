@@ -3,6 +3,10 @@ file_tag: dbo_Offender_MHT
 file_description: |-
   A table containing mental health treatment data from PADOC
 data_classification: source
+encoding: windows-1252
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
 primary_key_cols:
   - control_number
   - rostercode
