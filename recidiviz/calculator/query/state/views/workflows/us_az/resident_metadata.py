@@ -44,7 +44,7 @@ US_AZ_RESIDENT_METADATA_VIEW_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{us_az_normalized_state_dataset}.state_sentence_group`
         USING (state_code, person_id)
         LEFT JOIN `{project_id}.{sentence_sessions_dataset}.sentence_inferred_group_projected_dates_materialized`
-        USING (state_code, sentence_inferred_group_id)
+        USING (state_code, person_id, sentence_inferred_group_id)
         QUALIFY ROW_NUMBER()
             OVER (PARTITION BY person_id, state_code, sentence_inferred_group_id ORDER BY inferred_group_update_datetime DESC) = 1
     ), sed_dates AS (

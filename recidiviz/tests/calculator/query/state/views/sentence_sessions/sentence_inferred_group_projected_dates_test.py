@@ -37,6 +37,7 @@ from recidiviz.tests.big_query.simple_big_query_view_builder_test_case import (
 
 _SCHEMA = [
     bigquery.SchemaField("state_code", "STRING"),
+    bigquery.SchemaField("person_id", "INTEGER"),
     bigquery.SchemaField("sentence_inferred_group_id", "INTEGER"),
     bigquery.SchemaField("inferred_group_update_datetime", "DATETIME"),
     bigquery.SchemaField("parole_eligibility_date", "DATE"),
@@ -57,6 +58,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
     )
 
     state_code = StateCode.US_XX
+    person_id = hash("TEST-PERSON-1")
     inferred_group_id = 42
 
     critical_date_1 = datetime.datetime(2022, 1, 1, 6)
@@ -87,6 +89,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         agg_sentence_data = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_1,
                 "parole_eligibility_date": None,
@@ -96,6 +99,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             },
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_2,
                 "parole_eligibility_date": None,
@@ -114,6 +118,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         agg_group_data = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_1,
                 "parole_eligibility_date": None,
@@ -123,6 +128,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             },
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_2,
                 "parole_eligibility_date": None,
@@ -141,6 +147,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         agg_group_data = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_1,
                 "parole_eligibility_date": None,
@@ -152,6 +159,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         agg_sentence_data = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_2,
                 "parole_eligibility_date": None,
@@ -173,6 +181,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         agg_group_data = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_1,
                 "parole_eligibility_date": None,
@@ -182,6 +191,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             },
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_2,
                 "parole_eligibility_date": None,
@@ -193,6 +203,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         agg_sentence_data = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_1,
                 "parole_eligibility_date": None,
@@ -202,6 +213,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             },
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_2,
                 "parole_eligibility_date": None,
@@ -213,6 +225,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         expected_output = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_1,
                 "parole_eligibility_date": None,
@@ -222,6 +235,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             },
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_2,
                 "parole_eligibility_date": None,
@@ -249,6 +263,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         agg_group_data = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_1,
                 "parole_eligibility_date": None,
@@ -258,6 +273,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             },
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_3,
                 "parole_eligibility_date": None,
@@ -269,6 +285,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         agg_sentence_data = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_2,
                 "parole_eligibility_date": None,
@@ -278,6 +295,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             },
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_3,
                 "parole_eligibility_date": None,
@@ -289,6 +307,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
         expected_output = [
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_1,
                 "parole_eligibility_date": None,
@@ -299,6 +318,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             # Sentence level is nulled out, but not an overlapping date
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_2,
                 "parole_eligibility_date": None,
@@ -309,6 +329,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             # Sentence level is nulled out, with an overlapping date
             {
                 "state_code": self.state_code.value,
+                "person_id": self.person_id,
                 "sentence_inferred_group_id": self.inferred_group_id,
                 "inferred_group_update_datetime": self.critical_date_3,
                 "parole_eligibility_date": None,

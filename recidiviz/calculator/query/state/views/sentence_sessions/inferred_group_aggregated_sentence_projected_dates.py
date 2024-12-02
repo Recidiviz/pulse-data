@@ -73,6 +73,7 @@ WITH
 sentence_statuses AS (
     SELECT
         state_code,
+        person_id,
         sentence_id,
         status_update_datetime AS critical_dt,
         status
@@ -82,6 +83,7 @@ sentence_statuses AS (
 sentence_lengths AS (
     SELECT
         state_code,
+        person_id,
         sentence_id,
         length_update_datetime AS critical_dt,
         parole_eligibility_date_external,
@@ -94,6 +96,7 @@ sentence_lengths AS (
 sentence_level_data AS (
     SELECT
         state_code,
+        person_id,
         critical_dt,
         sentence_id,
         sentence_inferred_group_id,
@@ -107,20 +110,20 @@ sentence_level_data AS (
     FULL JOIN 
         sentence_lengths
     USING 
-        (state_code, sentence_id, critical_dt)
+        (state_code, person_id, sentence_id, critical_dt)
     JOIN 
         `{project_id}.normalized_state.state_sentence`
     USING
-        (state_code, sentence_id)
+        (state_code, person_id, sentence_id)
 ),
 -- We need this to get all group level critical dates to each sentence
 _group_level AS (
-    SELECT DISTINCT state_code, critical_dt, sentence_inferred_group_id
+    SELECT DISTINCT state_code, person_id, critical_dt, sentence_inferred_group_id
     FROM sentence_level_data
 ),
 -- We need this to get all group level critical dates to each sentence
 _sentences_by_group AS (
-    SELECT DISTINCT state_code, sentence_id, sentence_inferred_group_id
+    SELECT DISTINCT state_code, person_id, sentence_id, sentence_inferred_group_id
     FROM sentence_level_data
 ),
 -- This gives us the status and most recent projected dates for each group level critical date
@@ -128,6 +131,7 @@ _sentences_by_group AS (
 forward_filled_data AS (
     SELECT
         state_code,
+        person_id,
         critical_dt,
         sentence_id,
         sentence_inferred_group_id,
@@ -141,11 +145,11 @@ forward_filled_data AS (
     FULL JOIN
         _sentences_by_group
     USING
-        (state_code, sentence_inferred_group_id)
+        (state_code, person_id, sentence_inferred_group_id)
     LEFT JOIN
         sentence_level_data
     USING
-        (state_code, sentence_id, sentence_inferred_group_id, critical_dt)
+        (state_code, person_id, sentence_id, sentence_inferred_group_id, critical_dt)
     WINDOW sentence_window AS (PARTITION BY sentence_id ORDER BY critical_dt)
 ),
 -- This nulls out projected dates for suspended sentence spans so they are not included in 
@@ -153,6 +157,7 @@ forward_filled_data AS (
 pre_aggregated_sentence_projected_dates AS (
   SELECT
       state_code,
+      person_id,
       sentence_inferred_group_id,
       sentence_id,
       critical_dt,
@@ -174,6 +179,7 @@ pre_aggregated_sentence_projected_dates AS (
 )
 SELECT
     state_code,
+    person_id,
     sentence_inferred_group_id,
     critical_dt AS inferred_group_update_datetime,
     MAX(parole_eligibility_date_external) as parole_eligibility_date,
@@ -183,7 +189,7 @@ SELECT
 FROM
     pre_aggregated_sentence_projected_dates
 GROUP BY
-    state_code, sentence_inferred_group_id, critical_dt
+    state_code, person_id, sentence_inferred_group_id, critical_dt
 """
 
 

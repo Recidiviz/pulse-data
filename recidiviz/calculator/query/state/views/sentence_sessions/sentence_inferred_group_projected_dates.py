@@ -58,6 +58,7 @@ from recidiviz.utils.metadata import local_project_id_override
 COLUMNS = ",".join(
     [
         "state_code",
+        "person_id",
         "sentence_inferred_group_id",
         "inferred_group_update_datetime",
         "parole_eligibility_date",
@@ -87,6 +88,7 @@ all_aggregated_projected_dates AS (
 )
 SELECT
     state_code,
+    person_id,
     sentence_inferred_group_id, 
     inferred_group_update_datetime,
     MAX(parole_eligibility_date) AS parole_eligibility_date,
@@ -95,7 +97,7 @@ SELECT
     MAX(projected_full_term_release_date_max) AS projected_full_term_release_date_max
 FROM
     all_aggregated_projected_dates
-GROUP BY state_code, sentence_inferred_group_id, inferred_group_update_datetime
+GROUP BY state_code, person_id, sentence_inferred_group_id, inferred_group_update_datetime
 """
 
 
