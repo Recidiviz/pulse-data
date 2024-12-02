@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_InterventionPrograms
+file_description: |-
+  This is the ICON table for intervention programs
+data_classification: source
+primary_key_cols:
+  - OffenderInterventionProgramId
+columns:
+  - name: OffenderInterventionProgramId
+    description: ICON generated ID for the intervention program record
+  - name: OffenderCd
+    description: Offender code
+    is_pii: True
+  - name: InterventionProgramRegionId
+    description: Intervention program region id
+  - name: InterventionProgramRegionNm
+    description: Intervention program region name
+  - name: InterventionProgramLocationId
+    description: Intervention program location id
+  - name: InterventionProgramLocation
+    description: Intervention program location name
+  - name: InterventionProgramId
+    description: Intervention program id
+  - name: InterventionProgram
+    description: Intervention program name
+  - name: InterventionProgramRequired
+    description: Flag for whether intervention program is required
+  - name: ReferringWorkUnitRegionId
+    description: Referring work unit region id
+  - name: ReferringWorkUnitId
+    description: Referring work unit id
+  - name: ReferringStaffId
+    description: Referring staff id
+    is_pii: True
+  - name: EligibilityDt
+    description: Eligibility date
+    field_type: datetime
+  - name: OrientationDt
+    description: Orientation date
+    field_type: datetime
+  - name: InterventionProgramStartDt
+    description: Intervention program start date
+    field_type: datetime
+  - name: InterventionProgramEndDt
+    description: Intervention program end date
+    field_type: datetime
+  - name: InterventionClosureTypeId
+    description: Intervention closure type id
+  - name: InterventionClosureType
+    description: Intervention closure type description

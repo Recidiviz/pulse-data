@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_Interventions
+file_description: |-
+  This is the ICON table for interventions
+data_classification: source
+primary_key_cols:
+  - OffenderInterventionId
+columns:
+  - name: OffenderInterventionId
+    description: ICON generated id for intervention record
+  - name: OffenderInterventionProgramId
+    description: Record id for intervention program associated with this intervention
+  - name: OffenderCd
+    description: Offender code
+    is_pii: True
+  - name: InterventionRegionId
+    description: Intervention region id
+  - name: InterventionRegionNm
+    description: Intervention region name
+  - name: InterventionLocationId
+    description: Intervention location id
+  - name: InterventionLocation
+    description: Intervention location name
+  - name: InterventionId
+    description: Intervention id
+  - name: Intervention
+    description: Intervention name
+  - name: InterventionRequired
+    description: Flag for whether this intervention is required
+  - name: ReferringWorkUnitRegionId
+    description: Referring work unit region id
+  - name: ReferringWorkUnitRegionNm
+    description: Referring work unit region name
+  - name: ReferringWorkUnitId
+    description: Referring work unit id
+  - name: ReferringWorkUnitNm
+    description: Referring work unit name
+  - name: ReferringStaffId
+    description: Referring staff id
+    is_pii: True
+  - name: ReferringStaffFirstNm
+    description: Referring staff first name
+    is_pii: True
+  - name: ReferringStaffLastNm
+    description: Referring staff last name
+    is_pii: True
+  - name: InterventionClassId
+    description: Intervention class id
+  - name: InterventionClass
+    description: Intervention class name
+  - name: EligibilityDt
+    description: Eligibility date
+    field_type: datetime
+  - name: InterventionStartDt
+    description: Intervention start date
+    field_type: datetime
+  - name: InterventionEndDt
+    description: Intervention end date
+    field_type: datetime
+  - name: InterventionClosureTypeId
+    description: Intervention closure type id
+  - name: InterventionClosureType
+    description: Intervention closure type description
