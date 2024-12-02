@@ -225,14 +225,6 @@ def get_modified_file_assertions() -> Dict[str, List[RequiredModificationSets]]:
         ],
         # Ensure that any files copied from ID are kept in sync between the two regions.
         US_IX_KEY: [
-            RequiredModificationSets.for_symmetric_check(
-                frozenset(
-                    {
-                        "recidiviz/ingest/direct/regions/us_id/raw_data/us_id_current_day_daily_summary.yaml",
-                        "recidiviz/ingest/direct/regions/us_ix/raw_data/us_ix_current_day_daily_summary.yaml",
-                    }
-                )
-            ),
             RequiredModificationSets(
                 if_modified_files=frozenset(
                     {"recidiviz/pipelines/utils/state_utils/us_id/"}
