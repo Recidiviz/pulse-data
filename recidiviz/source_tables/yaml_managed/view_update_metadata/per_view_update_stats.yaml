@@ -23,7 +23,7 @@ schema:
     type: STRING
     mode: REQUIRED
     description: The table_id of the updated view.
-  - name: is_materialized
+  - name: was_materialized
     type: BOOLEAN
     mode: REQUIRED
     description: True if the view was materialized as part of the update.
@@ -34,29 +34,29 @@ schema:
       How long (in seconds) it took to update this specific view (and materialize it, if relevant).
 
   # Materialization scale
-  - name: num_materialized_rows
+  - name: materialized_table_num_rows
     type: INTEGER
     mode: NULLABLE
-    description: If `is_materialized` is True, returns the number of rows in the materialized table.
+    description: If `was_materialized` is True, returns the number of rows in the materialized table.
   - name: materialized_table_size_bytes
     type: INTEGER
     mode: NULLABLE
-    description: If `is_materialized` is True, returns the size in bytes of the materialized table.
+    description: If `was_materialized` is True, returns the size in bytes of the materialized table.
   - name: slot_millis
     type: INTEGER
     mode: NULLABLE
-    description: If `is_materialized` is True, returns the amount of slot time (in ms) used in the materialization query.
+    description: If `was_materialized` is True, returns the amount of slot time (in ms) used in the materialization query.
   - name: total_bytes_processed
     type: INTEGER
     mode: NULLABLE
     description: >-
-      If `is_materialized` is True, returns the number of bytes processed running the materialization query. See docs 
+      If `was_materialized` is True, returns the number of bytes processed running the materialization query. See docs 
       for more information on this value: https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics2.FIELDS.total_bytes_processed.
   - name: total_bytes_billed
     type: INTEGER
     mode: NULLABLE
     description: >-
-      If `is_materialized` is True, returns the number of bytes billed running the materialization query. See docs 
+      If `was_materialized` is True, returns the number of bytes billed running the materialization query. See docs 
       for more information on this value: https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics2.FIELDS.total_bytes_billed.
 
   # Generic complexity
@@ -104,6 +104,12 @@ schema:
     description: >-
       True if this view contains state-specific logic (i.e. it references an explicit state code literal like “US_XX” 
       or it references a state-specific table).
+  - name: states_referenced
+    type: STRING
+    mode: REPEATED
+    description: >-
+      States referenced in this view state-specific logic (i.e. it references an explicit state code literal like 
+      “US_XX” or it references a state-specific table).
   - name: state_code_specific_to_view
     type: STRING
     mode: NULLABLE
@@ -112,7 +118,7 @@ schema:
     type: STRING
     mode: REPEATED
     description: >-
-      The list of distinct state-specific raw data table addresses (in 'dataset_id.table_id' format) that this view 
-      references in its query. This is a subset of the values in the `parent_addresses` column.
+      The list of distinct state-specific raw data table (or latest view) addresses (in 'dataset_id.table_id' format) 
+      that this view references in its query. This is a subset of the values in the `parent_addresses` column.
 
 clustering_fields: null
