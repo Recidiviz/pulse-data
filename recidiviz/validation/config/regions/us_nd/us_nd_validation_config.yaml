@@ -93,6 +93,3 @@ num_allowed_rows_overrides:
   - validation_name: current_supervision_staff_missing_district
     hard_num_allowed_rows_override: 1
     override_reason: TODO(#34996) - Needs investigation
-  - validation_name: us_nd_stale_raw_data_tables
-    hard_num_allowed_rows_override: 1
-    override_reason: TODO(#34997) - Needs investigation

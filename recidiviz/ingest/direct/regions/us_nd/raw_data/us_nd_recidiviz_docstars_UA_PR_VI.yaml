@@ -5,6 +5,7 @@ file_description: |-
   it does not appear to exist within the database and there are no references to this 
   within the code.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - RecID
   - SID
