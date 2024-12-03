@@ -3,38 +3,12 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OFFENDER_NAME
-  - AGENCY_NAME
-  - DATE_OF_BIRTH
-  - GENDER
-  - ETHNICITY
   - DOC_ID
   - ASSESSMENT_TYPE
   - RISK_LEVEL
-  - OVERRIDE_RISK_LEVEL
-  - OVERRIDE_RISK_REASON
-  - ASSESSMENT_OUTCOME
-  - ASSESSMENT_STATUS
   - SCORE
-  - DATE_CREATED
-  - USER_CREATED
-  - RACE
-  - BIRTH_DATE
   - CREATED_DATE
-unused_columns:
-  - OFFENDER_NAME
-  - AGENCY_NAME
-  - DATE_OF_BIRTH
-  - GENDER
-  - ETHNICITY
-  - OVERRIDE_RISK_LEVEL
-  - OVERRIDE_RISK_REASON
-  - ASSESSMENT_OUTCOME
-  - ASSESSMENT_STATUS
-  - DATE_CREATED # Duplicate of CREATED_DATE
-  - USER_CREATED
-  - RACE
-  - BIRTH_DATE
+unused_columns: []
 output:
   StatePerson:
     external_ids:
