@@ -1844,7 +1844,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                     "key": "criteria",
                     "text": "baz",
                     "tooltip": "fill this:{{opportunity.client.goop}}",
-                }
+                },
+                {"key": "otherCriteria", "text": "baz2", "tooltip": None},
+                {"key": "otherOtherCriteria", "text": "baz4"},
             ],
             ineligible_criteria_copy=[],
             denial_reasons=[{"key": "DENY", "text": "Denied"}],
