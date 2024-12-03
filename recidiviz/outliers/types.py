@@ -469,6 +469,8 @@ class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
     avg_daily_population: float = attr.ib()
     # The caseload category this officer is part of
     caseload_category: str = attr.ib()
+    # Whether this officer is included in outcomes calculations
+    include_in_outcomes: bool = attr.ib()
     # earliest date that this officer was assigned a caseload
     earliest_person_assignment_date: Optional[date] = attr.ib(default=None)
     # A list of zero grant opportunity types for this officer.

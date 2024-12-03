@@ -417,6 +417,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     avg_daily_population=10.0,
                     earliest_person_assignment_date=date(2024, 1, 1),
                     zero_grant_opportunities=["usPaAdminSupervision"],
+                    include_in_outcomes=True,
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -433,6 +434,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     avg_daily_population=10.0,
                     earliest_person_assignment_date=date(2024, 1, 1),
                     zero_grant_opportunities=[],
+                    include_in_outcomes=True,
                 ),
             ]
 
@@ -557,6 +559,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -571,6 +574,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     outlier_metrics=[],
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
             ]
 
@@ -911,6 +915,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -925,6 +930,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     outlier_metrics=[],
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
             ]
 
@@ -1007,6 +1013,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -1022,6 +1029,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     outlier_metrics=[],
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
             ]
 
@@ -1123,6 +1131,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -1168,6 +1177,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
             ]
 
@@ -1286,6 +1296,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 # This officer is ineligible for ACTION_STRATEGY_OUTLIER_3_MONTHS because neither ACTION_STRATEGY_OUTLIER or ACTION_STRATEGY_60_PERC_OUTLIERS surfaced
                 SupervisionOfficerEntity(
@@ -1327,6 +1338,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 # # This officer is ineligible for ACTION_STRATEGY_OUTLIER_3_MONTHS because outlier status is not consecutive for 3+ months
                 SupervisionOfficerEntity(
@@ -1368,6 +1380,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
             ]
 
@@ -1488,6 +1501,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -1533,6 +1547,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
             ]
 
@@ -1641,6 +1656,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -1671,6 +1687,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -1701,6 +1718,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -1720,6 +1738,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
             ]
 
@@ -1796,6 +1815,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 # Has an ACTION_STRATEGY_OUTLIER event + outlier 3 months
                 # Should return ACTION_STRATEGY_OUTLIER_3_MONTHS
@@ -1833,6 +1853,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 # Has an ACTION_STRATEGY_OUTLIER event + is absconsion metric
                 # Should return ACTION_STRATEGY_OUTLIER_ABSCONSION
@@ -1860,6 +1881,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 # Not an outlier, should return None
                 SupervisionOfficerEntity(
@@ -1880,6 +1902,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         }
                     ],
                     avg_daily_population=10.0,
+                    include_in_outcomes=True,
                 ),
                 # Has an ACTION_STRATEGY_OUTLIER event, ACTION_STRATEGY_OUTLIER_ABSCONSION, and ACTION_STRATEGY_OUTLIER_3_MONTHS events
                 # Should return ACTION_STRATEGY_OUTLIER_NEW_OFFICER
@@ -1908,6 +1931,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     earliest_person_assignment_date=date(2022, 7, 30),
+                    include_in_outcomes=True,
                 ),
                 # Has seen all of the action strategies, should return None
                 SupervisionOfficerEntity(
@@ -1935,6 +1959,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     earliest_person_assignment_date=date(2022, 7, 30),
+                    include_in_outcomes=True,
                 ),
             ]
 
@@ -2178,6 +2203,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -2255,6 +2281,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -2321,6 +2348,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             outlier_metrics=[],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
         mock_get_supervisor.return_value = None
 
@@ -2383,6 +2411,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -2456,6 +2485,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         with local_project_id_override("test-project"):
@@ -2550,6 +2580,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         mock_get_supervisor.return_value = None
@@ -2623,6 +2654,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -2712,6 +2744,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -2830,6 +2863,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         with SessionFactory.using_database(self.insights_database_key) as session:
@@ -2896,6 +2930,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 "usPaSpecialCircumstancesSupervision",
                 "usPaAdminSupervision",
             ],
+            include_in_outcomes=True,
         )
 
         mock_get_supervisor.return_value = None
@@ -2961,6 +2996,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         mock_get_supervisor.return_value = None
@@ -3035,6 +3071,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         mock_get_supervisor.return_value = None

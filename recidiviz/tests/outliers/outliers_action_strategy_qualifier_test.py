@@ -250,6 +250,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 }
             ],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
         pseudo_id = "supervisorHash"
         events = [
@@ -305,6 +306,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 }
             ],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
         pseudo_id = "supervisorHash"
         events = [
@@ -361,6 +363,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 }
             ],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
         pseudo_id = "supervisorHash"
         events = [
@@ -417,6 +420,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 }
             ],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
         pseudo_id = "supervisorHash"
         events = [
@@ -464,6 +468,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
             SupervisionOfficerEntity(
                 full_name=PersonName(**{"given_names": "HARRY", "surname": "POTTER"}),
@@ -492,6 +497,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
             SupervisionOfficerEntity(
                 full_name=PersonName(
@@ -522,6 +528,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
             SupervisionOfficerEntity(
                 full_name=PersonName(
@@ -541,6 +548,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
         ]
         events: list[ActionStrategySurfacedEvent] = []
@@ -582,6 +590,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
             SupervisionOfficerEntity(
                 full_name=PersonName(**{"given_names": "HARRY", "surname": "POTTER"}),
@@ -599,6 +608,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
         ]
         events: list[ActionStrategySurfacedEvent] = []
@@ -639,6 +649,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
             SupervisionOfficerEntity(
                 full_name=PersonName(**{"given_names": "HARRY", "surname": "POTTER"}),
@@ -656,6 +667,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
             SupervisionOfficerEntity(
                 full_name=PersonName(
@@ -675,6 +687,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
             SupervisionOfficerEntity(
                 full_name=PersonName(
@@ -694,6 +707,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
         ]
         events: list[ActionStrategySurfacedEvent] = []
@@ -734,6 +748,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
             SupervisionOfficerEntity(
                 full_name=PersonName(**{"given_names": "HARRY", "surname": "POTTER"}),
@@ -762,6 +777,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
             SupervisionOfficerEntity(
                 full_name=PersonName(
@@ -792,6 +808,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
             SupervisionOfficerEntity(
                 full_name=PersonName(
@@ -811,6 +828,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     }
                 ],
                 avg_daily_population=10.0,
+                include_in_outcomes=True,
             ),
         ]
         # disqualifying event - does not meet eligiblity criteria
@@ -859,6 +877,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 }
             ],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         events = [
@@ -904,6 +923,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 }
             ],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         events = [
@@ -949,6 +969,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 }
             ],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         events: list[ActionStrategySurfacedEvent] = []
@@ -1001,6 +1022,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 }
             ],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         events: list[ActionStrategySurfacedEvent] = []
@@ -1035,6 +1057,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
                 }
             ],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         events = [
@@ -1093,6 +1116,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
             # Within 15 months of today
             earliest_person_assignment_date=datetime.date(2022, 7, 30),
         )
@@ -1127,6 +1151,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
             # More than 15 months from today
             earliest_person_assignment_date=datetime.date(2022, 5, 23),
         )
@@ -1163,6 +1188,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
         )
 
         events: list[ActionStrategySurfacedEvent] = []
@@ -1197,6 +1223,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
             earliest_person_assignment_date=datetime.date(2022, 9, 30),
         )
 
@@ -1238,6 +1265,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
             ],
             top_x_pct_metrics=[],
             avg_daily_population=10.0,
+            include_in_outcomes=True,
             earliest_person_assignment_date=datetime.date(2022, 9, 30),
         )
 

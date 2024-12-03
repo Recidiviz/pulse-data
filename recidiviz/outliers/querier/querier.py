@@ -995,19 +995,20 @@ class OutliersQuerier:
         :rtype: Optional[SupervisionOfficerOutcomes]
         """
         with self.insights_database_session() as session:
-            # TODO(#33943): Consider filtering for officers who aren't excluded from outcomes
-            # in this step once the include_in_outcomes flag column has exported. We'll
-            # be able to return early here instead of performing the query that
-            # joins against the SupervisionOfficerOutlierStatus table
+            # Return early if there is no officer included in outcomes calculations
+            # with the given pseudo ID.
             officer_external_id = (
                 session.query(SupervisionOfficer.external_id)
-                .filter(SupervisionOfficer.pseudonymized_id == pseudonymized_officer_id)
+                .filter(
+                    SupervisionOfficer.pseudonymized_id == pseudonymized_officer_id,
+                    SupervisionOfficer.include_in_outcomes,
+                )
                 .scalar()
             )
 
             if officer_external_id is None:
                 logging.info(
-                    "Requested officer with provided pseudonymized_id not found: %s",
+                    "Requested officer with provided pseudonymized_id not found (or is not included in outcomes): %s",
                     pseudonymized_officer_id,
                 )
                 return None
@@ -1164,6 +1165,7 @@ class OutliersQuerier:
                     )
                 ).label("is_top_x_pct_over_time"),
                 avgs_subquery.c.avg_daily_population,
+                SupervisionOfficer.include_in_outcomes,
             ]
 
             officer_status_query = (
@@ -1195,6 +1197,7 @@ class OutliersQuerier:
                     SupervisionOfficerOutlierStatus.metric_id,
                     SupervisionOfficer.earliest_person_assignment_date,
                     avgs_subquery.c.avg_daily_population,
+                    SupervisionOfficer.include_in_outcomes,
                 )
                 .with_entities(*query_entities)
             )
@@ -1385,6 +1388,7 @@ class OutliersQuerier:
                             if is_top_x_pct
                             else []
                         ),
+                        include_in_outcomes=record.include_in_outcomes,
                     )
 
             return officer_external_id_to_entity

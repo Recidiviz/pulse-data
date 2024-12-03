@@ -605,6 +605,18 @@ class TestOutliersQuerier(InsightsDbTestCase):
 
         self.assertIsNone(actual)
 
+    def test_get_officer_outcomes_excluded_from_outcomes(self) -> None:
+        # Return None because no valid officer found
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_outcomes(
+            # officer fixture where include_in_outcomes=False
+            pseudonymized_officer_id="officerhash12",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            num_lookback_periods=0,
+            period_end_date=TEST_PREV_END_DATE,
+        )
+
+        self.assertIsNone(actual)
+
     def test_get_excluded_supervision_officer_entity_found_match(self) -> None:
         # Return matching excluded supervision officer entity
         actual = OutliersQuerier(

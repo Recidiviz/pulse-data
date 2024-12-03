@@ -291,6 +291,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] 
             "nameSuffix": None,
             "surname": "Rodrigo",
         },
+        "includeInOutcomes": True,
         "outlierMetrics": [],
         "pseudonymizedId": "hashhash",
         "supervisorExternalId": "102",
@@ -316,6 +317,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
             "nameSuffix": None,
             "surname": "Rodrigo",
         },
+        "includeInOutcomes": True,
         "outlierMetrics": [
             {
                 "metricId": "absconsions_bench_warrants",
@@ -346,6 +348,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
                 "nameSuffix": None,
                 "surname": "Potter",
             },
+            "includeInOutcomes": True,
             "outlierMetrics": [
                 {
                     "metricId": "metric_one",
@@ -375,6 +378,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
                 "nameSuffix": None,
                 "surname": "Weasley",
             },
+            "includeInOutcomes": True,
             "outlierMetrics": [],
             "pseudonymizedId": "hashhashhash",
             "supervisorExternalId": "102",
@@ -401,6 +405,7 @@ snapshots[
                 "nameSuffix": None,
                 "surname": "Potter",
             },
+            "includeInOutcomes": True,
             "outlierMetrics": [
                 {
                     "metricId": "metric_one",
@@ -428,6 +433,7 @@ snapshots[
                 "nameSuffix": None,
                 "surname": "Weasley",
             },
+            "includeInOutcomes": True,
             "outlierMetrics": [],
             "pseudonymizedId": "hashhashhash",
             "supervisorExternalId": "102",
