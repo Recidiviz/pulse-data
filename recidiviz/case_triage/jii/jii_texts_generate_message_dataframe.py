@@ -36,7 +36,7 @@ from recidiviz.case_triage.jii.jii_texts_message_analytics import (
     _get_batch_id_from_doc,
     _get_doc_id_from_doc,
 )
-from recidiviz.case_triage.jii.send_id_lsu_texts import OPT_OUT_KEY_WORDS
+from recidiviz.case_triage.jii.send_jii_texts import OPT_OUT_KEY_WORDS
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.justice_counts.control_panel.utils import write_data_to_spreadsheet
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

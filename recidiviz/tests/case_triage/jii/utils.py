@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utilities used in tests for the send_id_lsu_texts.py file"""
+"""Utilities used in tests for the send_jii_texts.py file"""
 import datetime
 
 from google.cloud.firestore_v1.base_document import DocumentSnapshot

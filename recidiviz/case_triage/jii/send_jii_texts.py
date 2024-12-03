@@ -20,14 +20,14 @@
 For a given JII ID LSU launch, we plan to run this script 4 times as follows:
 
 1. Attempt to send initial texts to all individuals.
-python -m recidiviz.case_triage.jii.send_id_lsu_texts \
+python -m recidiviz.case_triage.jii.send_jii_texts \
     --bigquery-view recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test \
     --dry-run false \
     --message-type initial_text
 
 2. After at least 4 hours, attempt to send initial texts to individuals in which the first initial text (from step 1)
 was not delivered.
-python -m recidiviz.case_triage.jii.send_id_lsu_texts \
+python -m recidiviz.case_triage.jii.send_jii_texts \
     --bigquery-view recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test \
     --dry-run false \
     --message-type initial_text \
@@ -35,14 +35,14 @@ python -m recidiviz.case_triage.jii.send_id_lsu_texts \
     --redeliver-failed-messages true
 
 3. Attempt to send eligibility texts to all individuals.
-python -m recidiviz.case_triage.jii.send_id_lsu_texts \
+python -m recidiviz.case_triage.jii.send_jii_texts \
     --bigquery-view recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test \
     --dry-run false \
     --message-type eligibility_text \
     
 4. After at least 4 hours, attempt to send eligibility texts to individuals in which the first eligibility text
 (from step 3) was not delivered.
-python -m recidiviz.case_triage.jii.send_id_lsu_texts \
+python -m recidiviz.case_triage.jii.send_jii_texts \
     --bigquery-view recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test \
     --dry-run false \
     --message-type eligibility_text \
@@ -211,7 +211,7 @@ def create_parser() -> argparse.ArgumentParser:
 OPT_OUT_KEY_WORDS = ["CANCEL", "END", "QUIT", "STOP", "STOPALL", "UNSUBSCRIBE"]
 
 
-def send_id_lsu_texts(
+def send_jii_texts(
     bigquery_view: str,
     dry_run: bool,
     message_type: str,
@@ -241,7 +241,7 @@ def send_id_lsu_texts(
     """
     account_sid = get_secret("twilio_sid")
     auth_token = get_secret("twilio_auth_token")
-    messaging_service_sid = get_secret("twilio_us_id_messaging_service_sid")
+    messaging_service_sid = get_secret("twilio_jii_texting_messaging_service_sid")
 
     twilio_client = TwilioClient(account_sid, auth_token)
     current_batch_id = datetime.datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
@@ -636,7 +636,7 @@ def update_statuses_from_previous_batch(
     previous_batch_id: str,
 ) -> set:
     """
-    Given a previous_batch_id (identifies a previous run of the send_id_lsu_texts.py script), poll the Twilio API
+    Given a previous_batch_id (identifies a previous run of the send_jii_texts.py script), poll the Twilio API
     for the status of each message in that batch. If the status does not match the one we have in the Firestore database,
     update the status of that message.
     """
@@ -690,7 +690,7 @@ if __name__ == "__main__":
 
     if args.project_id is not None:
         with local_project_id_override(args.project_id):
-            send_id_lsu_texts(
+            send_jii_texts(
                 bigquery_view=args.bigquery_view,
                 dry_run=args.dry_run,
                 callback_url=args.callback_url,
@@ -700,7 +700,7 @@ if __name__ == "__main__":
                 resend_eligibility_texts=args.resend_eligibility_texts,
             )
     else:
-        send_id_lsu_texts(
+        send_jii_texts(
             bigquery_view=args.bigquery_view,
             dry_run=args.dry_run,
             callback_url=args.callback_url,

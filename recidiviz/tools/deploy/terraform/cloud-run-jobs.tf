@@ -67,19 +67,19 @@ locals {
   jii_jobs = {
     "id-lsu-jii-initial-texts" = {
       "id"   = "us-central1/id-lsu-jii-initial-texts"
-      "args" = ["run", "python", "-m", "recidiviz.case_triage.jii.send_id_lsu_texts", "--message-type=initial_text", "--bigquery-view=", "--dry-run=False"]
+      "args" = ["run", "python", "-m", "recidiviz.case_triage.jii.send_jii_texts", "--message-type=initial_text", "--bigquery-view=", "--dry-run=False"]
     }
     "id-lsu-jii-eligibility-texts" = {
       "id"   = "us-central1/id-lsu-jii-eligibility-texts"
-      "args" = ["run", "python", "-m", "recidiviz.case_triage.jii.send_id_lsu_texts", "--message-type=eligibility_text", "--bigquery-view=", "--dry-run=False"]
+      "args" = ["run", "python", "-m", "recidiviz.case_triage.jii.send_jii_texts", "--message-type=eligibility_text", "--bigquery-view=", "--dry-run=False"]
     }
     "id-lsu-jii-update-statuses" = {
       "id"   = "us-central1/id-lsu-jii-update-statuses"
-      "args" = ["run", "python", "-m", "recidiviz.case_triage.jii.send_id_lsu_texts", "--message-type=initial_text", "--bigquery-view=", "--dry-run=True", "--redeliver-failed-messages=False", "--previous-batch-id-to-update-status-for="]
+      "args" = ["run", "python", "-m", "recidiviz.case_triage.jii.send_jii_texts", "--message-type=initial_text", "--bigquery-view=", "--dry-run=True", "--redeliver-failed-messages=False", "--previous-batch-id-to-update-status-for="]
     }
     "redeliver-id-lsu-jii-initial-texts" = {
       "id"   = "us-central1/redeliver-id-lsu-jii-initial-texts"
-      "args" = ["run", "python", "-m", "recidiviz.case_triage.jii.send_id_lsu_texts", "--message-type=initial_text", "--bigquery-view=", "--dry-run=False", "--redeliver-failed-messages=True", "--previous-batch-id-to-update-status-for="]
+      "args" = ["run", "python", "-m", "recidiviz.case_triage.jii.send_jii_texts", "--message-type=initial_text", "--bigquery-view=", "--dry-run=False", "--redeliver-failed-messages=True", "--previous-batch-id-to-update-status-for="]
     }
   }
 }

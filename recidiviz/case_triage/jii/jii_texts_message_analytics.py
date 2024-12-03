@@ -33,7 +33,7 @@ from typing import Any, Dict, List, Optional, Set
 from google.cloud.firestore_v1 import FieldFilter
 from google.cloud.firestore_v1.base_document import DocumentSnapshot
 
-from recidiviz.case_triage.jii.send_id_lsu_texts import OPT_OUT_KEY_WORDS
+from recidiviz.case_triage.jii.send_jii_texts import OPT_OUT_KEY_WORDS
 from recidiviz.case_triage.util import MessageType
 from recidiviz.case_triage.workflows.utils import ExternalSystemRequestStatus
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
@@ -47,11 +47,11 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--initial-batch-id",
         required=True,
-        help="A string representing a datetime of a previous initial_text run of the send_id_lsu_texts.py script.",
+        help="A string representing a datetime of a previous initial_text run of the send_jii_texts.py script.",
     )
     parser.add_argument(
         "--eligibility-batch-id",
-        help="A string representing a datetime of a previous eligibility_text run of the send_id_lsu_texts.py script.",
+        help="A string representing a datetime of a previous eligibility_text run of the send_jii_texts.py script.",
     )
     return parser
 
@@ -60,10 +60,10 @@ def calculate_text_analytics(
     initial_batch_id: str, eligibility_batch_id: Optional[str] = None
 ) -> None:
     """
-    If only a initial_batch_id (a string representing a datetime of a previous initial_text run of the send_id_lsu_texts.py script) is provided,
+    If only a initial_batch_id (a string representing a datetime of a previous initial_text run of the send_jii_texts.py script) is provided,
     calculates various statistics for the ID LSU JII Texting Pilot for after the initial_batch_id.
 
-    If a initial_batch_id and eligibility_batch_id (a string representing a datetime of a previous eligibility_text run of the send_id_lsu_texts.py script) are provided,
+    If a initial_batch_id and eligibility_batch_id (a string representing a datetime of a previous eligibility_text run of the send_jii_texts.py script) are provided,
     calculates various statistics for the ID LSU JII Texting Pilot for between the initial_batch_id and eligibility_batch_id as well as after the eligibility_batch_id.
 
     Statistics of interest include:

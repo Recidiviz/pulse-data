@@ -17,7 +17,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-File with helper functions used by recidiviz/case_triage/jii/send_id_lsu_texts.py
+File with helper functions used by recidiviz/case_triage/jii/send_jii_texts.py
 """
 import datetime
 import logging

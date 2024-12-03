@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implement tests for the send_id_lsu_texts.py file"""
+"""Implement tests for the send_jii_texts.py file"""
 
 import datetime
 from unittest import TestCase
@@ -23,7 +23,7 @@ from unittest.mock import MagicMock, patch
 import freezegun
 from twilio.rest.api.v2010.account.message import MessageInstance
 
-from recidiviz.case_triage.jii.send_id_lsu_texts import (
+from recidiviz.case_triage.jii.send_jii_texts import (
     attempt_to_send_text,
     get_initial_and_eligibility_doc_ids,
     get_opt_out_document_ids,
@@ -36,7 +36,7 @@ from recidiviz.tests.case_triage.jii.utils import JIITestObjects
 
 
 class TestSendIDLSUTexts(TestCase):
-    """Implements tests for send_id_lsu_texts.py."""
+    """Implements tests for send_jii_texts.py."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -45,7 +45,7 @@ class TestSendIDLSUTexts(TestCase):
     def tearDown(self) -> None:
         super().tearDown()
 
-    @patch("recidiviz.case_triage.jii.send_id_lsu_texts.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.jii.send_jii_texts.FirestoreClientImpl")
     def test_store_batch_id(
         self,
         mock_firestore_impl: MagicMock,
@@ -74,7 +74,7 @@ class TestSendIDLSUTexts(TestCase):
             },
         )
 
-    @patch("recidiviz.case_triage.jii.send_id_lsu_texts.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.jii.send_jii_texts.FirestoreClientImpl")
     def test_get_initial_and_eligibility_doc_ids(
         self,
         mock_firestore_impl: MagicMock,
@@ -104,7 +104,7 @@ class TestSendIDLSUTexts(TestCase):
         )
         self.assertEqual(initial_text_document_ids, {"us_test_999999999"})
 
-    @patch("recidiviz.case_triage.jii.send_id_lsu_texts.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.jii.send_jii_texts.FirestoreClientImpl")
     def test_get_opt_out_document_ids(self, mock_firestore_impl: MagicMock) -> None:
         jii_doc_a = self.test_schema_objects.test_jii_document_A
 
@@ -238,8 +238,8 @@ class TestSendIDLSUTexts(TestCase):
         )
         self.assertFalse(send_text)
 
-    @patch("recidiviz.case_triage.jii.send_id_lsu_texts.FirestoreClientImpl")
-    @patch("recidiviz.case_triage.jii.send_id_lsu_texts.TwilioClient")
+    @patch("recidiviz.case_triage.jii.send_jii_texts.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.jii.send_jii_texts.TwilioClient")
     @freezegun.freeze_time(datetime.datetime(2024, 7, 11, 0, 0, 0, 0))
     def test_update_statuses_from_previous_batch(
         self, mock_firestore_impl: MagicMock, mock_twilio_client: MagicMock

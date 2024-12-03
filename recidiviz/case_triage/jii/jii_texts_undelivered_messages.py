@@ -51,22 +51,22 @@ def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--initial-batch-id",
-        help="A string representing a datetime of the initial texts run of the send_id_lsu_texts.py script.",
+        help="A string representing a datetime of the initial texts run of the send_jii_texts.py script.",
         required=True,
     )
     parser.add_argument(
         "--eligibility-batch-id",
-        help="A string representing a datetime of the eligibility texts of the send_id_lsu_texts.py script.",
+        help="A string representing a datetime of the eligibility texts of the send_jii_texts.py script.",
         required=True,
     )
     parser.add_argument(
         "--initial-batch-id-redelivery",
-        help="A string representing a datetime of the initial texts redelivery run of the send_id_lsu_texts.py script.",
+        help="A string representing a datetime of the initial texts redelivery run of the send_jii_texts.py script.",
         required=True,
     )
     parser.add_argument(
         "--eligibility-batch-id-redelivery",
-        help="A string representing a datetime of the eligibility texts redelivery run of the send_id_lsu_texts.py script.",
+        help="A string representing a datetime of the eligibility texts redelivery run of the send_jii_texts.py script.",
         required=True,
     )
     parser.add_argument(
@@ -108,7 +108,7 @@ def get_undelivered_messages(
     Given 4 batch_ids related to a launch of the LSU Texting Pilot, grabs documents for all undelivered text messages in those batches.
     Writes a sheet containing one row per undelivered text document to a google sheet.
 
-    Note: a batch_id is a string representing a datetime of a previous run of the send_id_lsu_texts.py script.
+    Note: a batch_id is a string representing a datetime of a previous run of the send_jii_texts.py script.
     """
     undelivered_message_df = pd.DataFrame()
 
