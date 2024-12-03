@@ -44,6 +44,10 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+    import_blocking_column_validation_exemptions:
+      - validation_type: DATETIME_PARSERS
+        exemption_reason: |-
+          TODO(#35651) Column uses '0' as a placeholder for null dates, which is not a valid date format.
   - name: COMPELLED_PAROLE
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -53,6 +57,10 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+    import_blocking_column_validation_exemptions:
+      - validation_type: DATETIME_PARSERS
+        exemption_reason: |-
+          TODO(#35651) Column uses '0' as a placeholder for null dates, which is not a valid date format.
   - name: NEXT_ACTION
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -110,6 +118,10 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+    import_blocking_column_validation_exemptions:
+      - validation_type: DATETIME_PARSERS
+        exemption_reason: |-
+          TODO(#35651) Column uses '0' as a placeholder for null dates, which is not a valid date format.
   - name: ACTIVE_REV_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
