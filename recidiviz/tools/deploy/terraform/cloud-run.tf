@@ -54,6 +54,7 @@ EOT
 
 locals {
   cloud_run_common_roles = [
+    "roles/appengine.appViewer",
     "roles/run.admin",
     "roles/secretmanager.secretAccessor",
     "roles/cloudsql.client",
