@@ -41,3 +41,8 @@ columns:
   - name: MODIFY_USER_ID
     description: The ID of the person who last modified the record.
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra.
+          TODO(#34922) Verify we expect this column to be null and are not using it anywhere

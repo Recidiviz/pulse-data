@@ -18,4 +18,9 @@ columns:
     description: |-
       Goal of identifying this need
   - name: INACTIVEDATE
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra.
+          TODO(#34922) Verify we expect this column to be null and are not using it anywhere
 always_historical_export: True
