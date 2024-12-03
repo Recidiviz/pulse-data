@@ -14,7 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { DatePicker, Form, FormInstance, Input, Select, Space } from "antd";
+import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  Button,
+  DatePicker,
+  Form,
+  FormInstance,
+  Input,
+  Select,
+  Space,
+} from "antd";
+import { rem } from "polished";
 import { useEffect, useState } from "react";
 import styled from "styled-components/macro";
 
@@ -22,6 +32,10 @@ const SelectContainer = styled.div`
   .ant-picker {
     width: 145px;
     height: 32px;
+  }
+
+  > :first-child {
+    padding-top: ${rem(12)};
   }
 `;
 
@@ -51,36 +65,64 @@ export const FeatureVariantFormItem = ({
 
   return (
     <SelectContainer>
-      <Space>
-        <Form.Item name={["featureVariant", "name"]}>
-          <Input disabled={disabled} placeholder="Feature variant name" />
-        </Form.Item>
-        <Form.Item name={["featureVariant", "enabled"]} labelCol={{ span: 13 }}>
-          <Select
-            allowClear
-            style={{
-              width: 200,
-            }}
-            options={options}
-            onChange={(value) => setDatePickerDisabled(!value)}
-            disabled={disabled}
-          />
-        </Form.Item>
-        <Form.Item
-          name={["featureVariant", "activeDate"]}
-          labelCol={{ span: 13 }}
-        >
-          <DatePicker
-            showTime={{
-              format: "h:mm A",
-              minuteStep: 15,
-            }}
-            placeholder="Set Active Date"
-            disabled={datePickerDisabled || disabled}
-            allowClear
-          />
-        </Form.Item>
-      </Space>
+      <Form.List name="featureVariant">
+        {(fields, { add, remove }) => {
+          return (
+            <>
+              {fields.map(({ key, name, ...restField }) => (
+                <Space key={key} align="baseline">
+                  <Form.Item {...restField} name={[name, "name"]}>
+                    <Input
+                      disabled={disabled}
+                      placeholder="Feature variant name"
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    {...restField}
+                    name={[name, "enabled"]}
+                    labelCol={{ span: 13 }}
+                  >
+                    <Select
+                      allowClear
+                      style={{
+                        width: 200,
+                      }}
+                      options={options}
+                      onChange={(value) => setDatePickerDisabled(!value)}
+                      disabled={disabled}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    {...restField}
+                    name={[name, "activeDate"]}
+                    labelCol={{ span: 13 }}
+                  >
+                    <DatePicker
+                      showTime={{
+                        format: "h:mm A",
+                        minuteStep: 15,
+                      }}
+                      placeholder="Set Active Date"
+                      disabled={datePickerDisabled || disabled}
+                      allowClear
+                    />
+                  </Form.Item>
+                  <MinusCircleOutlined onClick={() => remove(name)} />
+                </Space>
+              ))}
+              <Form.Item>
+                <Button
+                  onClick={add}
+                  icon={<PlusOutlined />}
+                  disabled={disabled}
+                >
+                  Add a feature variant
+                </Button>
+              </Form.Item>
+            </>
+          );
+        }}
+      </Form.List>
     </SelectContainer>
   );
 };

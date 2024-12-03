@@ -97,7 +97,7 @@ export interface StateUserForm extends StateUserPermissionsResponse, Routes {
     name: string;
     enabled: boolean;
     activeDate?: string;
-  };
+  }[];
 }
 
 // State Role Permissions
@@ -113,7 +113,7 @@ export interface StateRoleForm extends StateRolePermissionsResponse, Routes {
     name: string;
     enabled: boolean;
     activeDate?: string;
-  };
+  }[];
 }
 
 type FeatureVariantValue = { activeDate?: Date; variant?: string } | false;

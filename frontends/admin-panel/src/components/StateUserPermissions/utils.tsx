@@ -550,20 +550,28 @@ export const aggregateFormPermissionResults = (
       .filter((key) => key in formResults)
       .map((key) => [key, formResults[key as keyof StateUserForm]])
   ) as Partial<Routes>;
-  const featureVariantsToAdd = formResults.featureVariant?.enabled
-    ? {
-        [formResults.featureVariant.name]: {
-          ...(formResults.featureVariant.activeDate && {
-            activeDate: new Date(formResults.featureVariant.activeDate),
-          }),
-        },
-      }
-    : {};
+  const featureVariantsToAdd =
+    formResults.featureVariant?.reduce<Partial<FeatureVariants>>(
+      (fvsToAdd, fv) => {
+        if (fv.enabled) {
+          return {
+            ...fvsToAdd,
+            [fv.name]: {
+              ...(fv.activeDate && { activeDate: new Date(fv.activeDate) }),
+            },
+          };
+        }
+        return fvsToAdd;
+      },
+      {}
+    ) ?? {};
   const featureVariantsToRemove =
-    formResults.featureVariant?.name &&
-    formResults.featureVariant.enabled === false
-      ? [formResults.featureVariant.name]
-      : [];
+    formResults.featureVariant?.reduce<string[]>((fvsToRemove, fv) => {
+      if (fv.name && fv.enabled === false) {
+        fvsToRemove.push(fv.name);
+      }
+      return fvsToRemove;
+    }, []) ?? [];
   return { routes, featureVariantsToAdd, featureVariantsToRemove };
 };
 
