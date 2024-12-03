@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: OFFNSTANDARDFORM
+file_description: |-
+  Offender Standard Form
+data_classification: source
+primary_key_cols:
+  - OFFENDERID
+  - STDFORMDATEPREPARED
+  - STDFORMTIMEPREPARED
+  - STDFORMTYPE
+columns:
+  - name: STDFORMCONTENT
+    description: |-
+      Standard form content
+    is_pii: True
+  - name: STDFORMDATA
+    description: |-
+      Standard form data
+    is_pii: True
+  - name: OFFENDERID
+    description: |-
+      Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
+    is_pii: True
+  - name: STDFORMDATEPREPARED
+    description: |-
+      Date prepared
+    field_type: datetime
+  - name: STDFORMTIMEPREPARED
+    description: |-
+      Time prepared
+  - name: STDFORMTYPE
+    description: |-
+      Form type
+  - name: STDFORMSTAFF
+    description: |-
+      Staff
+    is_pii: True
+  - name: DATELASTUPDATE
+    description: |-
+      Date last updated
+    field_type: datetime
+  - name: TIMELASTUPDATE
+    description: |-
+      Time last updated
+  - name: STAFFLASTUPDATE
+    description: |-
+      Staff last updated
+    is_pii: True
+  - name: STDFORMSTATUS
+    description: |-
+      Form status
+  - name: NEXTSIGSTAFFPARTYID
+    description: |-
+      Next signing staff ID
+    is_pii: True
+  - name: STDFORMCONTAINSSTFSIG
+    description: |-
+      Form contains staff signature
+  - name: STDFORMCONTAINSINMSIG
+    description: |-
+      Form contains resident signature
+  - name: STDFORMFRAMEWORK
+    description: |-
+      Standard form framework
+  - name: STDFORMVERSION
+    description: |-
+      Standard form version
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - OFFNSTANDARDFORM.OFFENDERID = OFFENDERPROFILE.OFFENDERID
