@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSParoleeInformation_Aud
+file_description: |-
+  This table records every time the PIMSParoleeInformation table is updated in place.
+data_classification: source
+primary_key_cols:
+  - paroleeInformationAudId
+columns:
+  - name: paroleeInformationAudId
+    description: |-
+      Primary key generated every time a change is made to PIMSParoleeInformation table
+  - name: paroleeInformationId
+    description: |-
+      Parolee information id
+  - name: inmateNumber
+    description: |-
+      Unique ID for each individual
+    field_type: person_external_id
+    external_id_type: US_NE_ID_NBR
+    is_pii: True
+  - name: fk_reviewHearingIdAdd
+    description: |-
+      Foreign key to reviewHearing id added
+  - name: fk_reviewHearingIdUpdate
+    description: |-
+      Foreign key to reviewHearing id updated
+  - name: fk_initailHearingId
+    description: |-
+      Foregin key to initial hearing id
+  - name: effectivetDateFromMVS
+    field_type: datetime
+    description: |-
+      Conversion from main frame system, not used.
+  - name: creationTsFromMVS
+    description: |-
+      Conversion from main frame system, not used.
+  - name: fk_paroleOfficerId
+    description: |-
+      Foreign key to parole officer ID
+  - name: dateOfParole
+    field_type: datetime
+    description: |-
+      Date of parole
+  - name: paroleType
+    description: |-
+      Type of parole
+  - name: currentStatusCode
+    description: |-
+      Current status code
+  - name: countyParoledToCode
+    description: |-
+      County paroled to
+  - name: inOutStateIndicator1Code
+    description: |-
+      In out state indicator code 1, link to codevalue table
+  - name: inOutStateIndicator2Code
+    description: |-
+      In out state indicator code 2, link to codevalue table
+  - name: inOutStateIndicator3Code
+    description: |-
+      In out state indicator code 3, link to codevalue table
+  - name: dischargeDate
+    field_type: datetime
+    description: |-
+      Discharge date
+  - name: dischargeType
+    description: |-
+      Discharge type
+  - name: revocationDate
+    field_type: datetime
+    description: |-
+      Revocation date
+  - name: pickedUpByProbation
+    description: |-
+      Picked up by probation
+  - name: Unnamed__20
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdBy
+    description: |-
+      Record created by
+    is_pii: True
+  - name: createdDateTime
+    field_type: datetime
+    description: |-
+      Record created when
+  - name: modifiedBy
+    description: |-
+      Record modified by
+    is_pii: True
+  - name: modifiedDateTime
+    field_type: datetime
+    description: |-
+      Record modified when
+  - name: fkInitailHearingIdUpdate
+    description: |-
+      Foreign key to initial hearing id updated
+  - name: version
+    description: |-
+      Version
+  - name: custodialSanctionDaysAssessedToDate
+    field_type: datetime
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: updatedDateTime
+    field_type: datetime
+    description: |-
+      Record updates when
+  - name: operation
+    description: |-
+      Operation
