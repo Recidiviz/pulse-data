@@ -1,4 +1,12 @@
 # Terraform plan for `{{ commit_ref }}`
+{% if terraform_plan_error_logs %}
+## $${\textbf{\color{red}There was an error while generating the Terraform plan!}}$$
+```terraform
+{{ terraform_plan_error_logs }}
+```
+{%  endif %}
+
+{% if terraform_plan_output %}
 <details>
 <summary><strong><em>generated on: {{ generated_on }}</em></strong></summary>
 
@@ -8,3 +16,6 @@
 {{ terraform_plan_output }}
 ```
 </details>
+{% endif %}
+
+[Link to Cloud Build run]({{ cloud_build_url }})

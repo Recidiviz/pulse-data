@@ -19,7 +19,9 @@
 python -m recidiviz.tools.github.upsert_terraform_plan \
     --pull-request-number [pr-number] \
     --commit-ref [commit-ref] \
-    --terraform-plan-output-path [file containing output of `terraform_show`]
+    --terraform-plan-output-path [file containing output of `terraform_show`] \
+    --terraform-plan-error-logs [file containing error logs of `terraform plan`] \
+    --cloud-build-url [link to cloud build that generated the output]
 """
 import argparse
 import logging
@@ -43,12 +45,36 @@ def get_parser() -> argparse.ArgumentParser:
         required=True,
         help="Path to the Terraform plan contents",
     )
+    parser.add_argument(
+        "--terraform-plan-error-logs-path",
+        type=str,
+        required=True,
+        help="Path to the Terraform error logs, if any",
+    )
+    parser.add_argument(
+        "--cloud-build-url",
+        type=str,
+        required=True,
+        help="Cloud Build URL",
+    )
     return parser
 
 
 def main(args: argparse.Namespace) -> None:
-    with open(args.terraform_plan_output_path, mode="r", encoding="utf-8") as file:
-        plan_output = file.read()
+    """Writes a comment to Github detailing the output of a Terraform plan"""
+    try:
+        with open(args.terraform_plan_output_path, mode="r", encoding="utf-8") as file:
+            plan_output = file.read()
+    except FileNotFoundError:
+        plan_output = None
+
+    try:
+        with open(
+            args.terraform_plan_error_logs_path, mode="r", encoding="utf-8"
+        ) as file:
+            plan_error_output = file.read().strip()
+    except FileNotFoundError:
+        plan_error_output = "Could not find plan error logs!"
 
     # This jinja renderer does not render html to be served to clients, so disabling the `autoescape` B701 security rule
     env = Environment(
@@ -60,6 +86,8 @@ def main(args: argparse.Namespace) -> None:
     body = template.render(
         {
             "terraform_plan_output": plan_output,
+            "terraform_plan_error_logs": plan_error_output,
+            "cloud_build_url": args.cloud_build_url,
             "commit_ref": args.commit_ref[:8],
             "generated_on": datetime.now().isoformat(),
         }
