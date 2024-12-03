@@ -101,7 +101,9 @@ columns:
   - name: REC_PROV
     description: Unknown. Likely related to the presence of a provisional recommendation.
     known_values:
-      - value: -1
+      - value: "-1"
+      - value: "0"
+        description: TODO(#34909) Document this value.
   - name: VIC_IMPA
     description: Unknown. Likely related to the presence of a victim impact statement.
     known_values:

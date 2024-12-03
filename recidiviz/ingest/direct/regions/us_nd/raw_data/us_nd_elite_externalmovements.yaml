@@ -63,6 +63,10 @@ columns:
         description: Fargo - Female Transfer Program
       - value: "FTPMND"
         description: Mandan - Female Transfer Program
+      - value: MINN
+        description: TODO(#34909) Document this value.
+      - value: MN
+        description: TODO(#34909) Document this value.
       - value: "MTPFAR"
         description: Fargo - Male Transfer Program
       - value: "MTPMND"
@@ -151,6 +155,8 @@ columns:
         description: County Jail
       - value: "BTC"
         description: Bismarck Transition Center
+      - value: BTCWTR
+        description: TODO(#34909) Document this value.
       - value: "CPP"
         description: Community Placement Program
       - value: "GFC"
@@ -163,6 +169,8 @@ columns:
         description: Heart River Correctional Center
       - value: "JRCC"
         description: James River Correctional Center
+      - value: JRMU
+        description: TODO(#34909) Document this value.
       - value: "LRRP"
         description: Lake Region Residential Reentry Center
       - value: "MRCC"

@@ -24,16 +24,46 @@ columns:
   - name: ORDER_TYPE
     description: The description of the order
     known_values:
+      - value: APP
+        description: TODO(#34909) Document this value.
+      - value: AW
+        description: TODO(#34909) Document this value.
+      - value: BENCH
+        description: TODO(#34909) Document this value.
+      - value: CIVIL
+        description: TODO(#34909) Document this value.
+      - value: COM
+        description: TODO(#34909) Document this value.
       - value: DET
         description: Detainer
-      - value: WARF
-        description: Warrant - Felony
-      - value: WARM
-        description: Warrant - Misdemeanor
-      - value: PROBM
-        description: Parole Revocation - Misdemeanor
+      - value: NOTI
+        description: TODO(#34909) Document this value.
+      - value: PARF
+        description: TODO(#34909) Document this value.
+      - value: PARM
+        description: TODO(#34909) Document this value.
+      - value: PENDF
+        description: TODO(#34909) Document this value.
+      - value: PENDM
+        description: TODO(#34909) Document this value.
+      - value: PROB
+        description: TODO(#34909) Document this value.
       - value: PROBF
-        description: Parole Revocation - Felony
+        description: "Parole Revocation - Felony"
+      - value: PROBFE
+        description: TODO(#34909) Document this value.
+      - value: PROBM
+        description: "Parole Revocation - Misdemeanor"
+      - value: REM
+        description: TODO(#34909) Document this value.
+      - value: WARF
+        description: "Warrant - Felony"
+      - value: WARFEL
+        description: TODO(#34909) Document this value.
+      - value: WARM
+        description: "Warrant - Misdemeanor"
+      - value: WARMIS
+        description: TODO(#34909) Document this value.
   - name: COMMENT_TEXT
     description: A free-text comment about the offense.
     is_pii: True

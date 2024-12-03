@@ -48,6 +48,8 @@ columns:
         description: Alco-Sensor
       - value: CC
         description: Collateral Contact
+      - value: CS
+        description: TODO(#34909) Document this value.
       - value: CT
         description: Care Coordination Team
       - value: EP

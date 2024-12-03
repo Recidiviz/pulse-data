@@ -101,6 +101,8 @@ columns:
         description: No Referral
       - value: DEFERRED
         description: Deferred
+      - value: RESCIND
+        description: TODO(#34909) Document this value.
   - name: MODIFY_DATETIME
     description: |-
       The date and time this record was last modified.
@@ -131,6 +133,22 @@ columns:
       A code for why the supervision level was overridden. Not always hydrated even when there is an override.
     is_pii: True
     known_values:
+      - value: DETAINER
+        description: TODO(#34909) Document this value.
+      - value: ESCAPES
+        description: TODO(#34909) Document this value.
+      - value: JURIS
+        description: TODO(#34909) Document this value.
+      - value: PASTCRIM
+        description: TODO(#34909) Document this value.
+      - value: PASTINST
+        description: TODO(#34909) Document this value.
+      - value: PREVIOUS
+        description: TODO(#34909) Document this value.
+      - value: SECURITY
+        description: TODO(#34909) Document this value.
+      - value: SENTENCE
+        description: TODO(#34909) Document this value.
       - value: TTS
         description: Time to Serve
   - name: OVERRIDE_REASON_TEXT

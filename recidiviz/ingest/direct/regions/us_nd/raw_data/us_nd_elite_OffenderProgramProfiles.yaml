@@ -28,32 +28,42 @@ columns:
         description:
           Seems erroneous. Always associated with WEST CENTRAL HUMAN SERVICES
           value in COMMENT_TEXT field, where other location names are provided.
-      - value: MRCC
-        description: MISSOURI RIVER CORRECTIONAL CENTER
       - value: BTC
         description: BISMARCK TRANSITION CENTER
-      - value: TRCC
-        description: TOMPKINS REHAB AND CORRECTIONAL CENTER
-      - value: MTPFAR
-        description: MALE TRANSITION PROGRAM - FARGO
-      - value: FTPMND
-        description: FEMALE TRANSITION PROGRAM - MANDAN
-      - value: NDSP
-        description: NORTH DAKOTA STATE PENITENTIARY
-      - value: FTPFAR
-        description: FEMALE TRANSITION PROGRAM - FARGO
-      - value: HACTC
-        description: HEART OF AMERICA CORR & TREATMENT CENTER
-      - value: JRCC
-        description: JAMES RIVER CORRECTIONAL CENTER
-      - value: DWCRC
-        description: DAKOTA WOMEN'S CORR REHAB CENTER
+      - value: BTCWTR
+        description: TODO(#34909) Document this value.
       - value: CJ
         description: COUNTY JAIL
+      - value: DWCRC
+        description: DAKOTA WOMEN'S CORR REHAB CENTER
+      - value: DWCRC1
+        description: TODO(#34909) Document this value.
+      - value: FTPFAR
+        description: FEMALE TRANSITION PROGRAM - FARGO
+      - value: FTPMND
+        description: FEMALE TRANSITION PROGRAM - MANDAN
+      - value: GFC
+        description: TODO(#34909) Document this value.
+      - value: HACTC
+        description: HEART OF AMERICA CORR & TREATMENT CENTER
+      - value: HRCC
+        description: TODO(#34909) Document this value.
+      - value: JRCC
+        description: JAMES RIVER CORRECTIONAL CENTER
+      - value: MRCC
+        description: MISSOURI RIVER CORRECTIONAL CENTER
+      - value: MTPFAR
+        description: MALE TRANSITION PROGRAM - FARGO
+      - value: NCCRC
+        description: TODO(#18645) Fill in with answer from ND
+      - value: NDSP
+        description: NORTH DAKOTA STATE PENITENTIARY
       - value: OOS
         description: OUT OF STATE
-      - value: NCCRC
-        description: #TODO(#18645): Fill in with answer from ND
+      - value: TRC
+        description: TODO(#34909) Document this value.
+      - value: TRCC
+        description: TOMPKINS REHAB AND CORRECTIONAL CENTER
   - name: COMMENT_TEXT
     description: |-
       TODO(#18645): Fill in with answer from ND
@@ -130,10 +140,22 @@ columns:
       Misnamed field. Signifies if a person completed a course/program or not.
       TODO(#18645): Clarify with ND
     known_values:
+      - value: A
+        description: TODO(#34909) Document this value.
       - value: COMP
         description: Completed
       - value: NC
         description: Not completed
+      - value: P
+        description: TODO(#34909) Document this value.
+      - value: R
+        description: TODO(#34909) Document this value.
+      - value: S
+        description: TODO(#34909) Document this value.
+      - value: T
+        description: TODO(#34909) Document this value.
+      - value: TRF
+        description: TODO(#34909) Document this value.
     update_history:
       - update_type: DELETION
         update_datetime: 2023-10-31T12:46:58.820113Z
@@ -169,7 +191,7 @@ columns:
       - value: WAIT
         description: Waitlisted
       - value: ALLOC
-        description: Enrolled # TODO(#18645): Confirm with ND
+        description: Enrolled. TODO(#18645) Confirm with ND
       - value: END
         description: Finished
   - name: OFFENDER_SENT_CONDITION_ID
@@ -218,12 +240,51 @@ columns:
       a number of data entry errors in this field (entries that are dates, single digits, or blank). 
       TODO(#18645): Clarify with ND that the descriptions below are correct.
     known_values:
+      - value: 2ND
+        description: TODO(#34909) Document this value.
+      - value: AFTERWARRANT
+        description: TODO(#34909) Document this value.
+      - value: AIRR
+        description: TODO(#34909) Document this value.
+      - value: AS
+        description: TODO(#34909) Document this value.
+      - value: CHANCE
+        description: TODO(#34909) Document this value.
+      - value: COMMITTEE
+        description: TODO(#34909) Document this value.
+      - value: COMMUNITY
+        description: TODO(#34909) Document this value.
       - value: CONV
-        description: Most common value # TODO(#18645): Clarify what this code means
+        description: Most common value. TODO(#18645) Clarify what this code means
+      - value: DEFER
+        description: TODO(#34909) Document this value.
+      - value: DETERMINE
+        description: TODO(#34909) Document this value.
+      - value: FEDERAL
+        description: TODO(#34909) Document this value.
+      - value: LIFE
+        description: TODO(#34909) Document this value.
+      - value: PARBD
+        description: TODO(#34909) Document this value.
+      - value: PARDON
+        description: TODO(#34909) Document this value.
+      - value: PSG
+        description: TODO(#34909) Document this value.
       - value: REC
         description: Recommended
+      - value: RELEASE
+        description: TODO(#34909) Document this value.
+      - value: SAU
+        description: TODO(#34909) Document this value.
+      - value: SECOND2
+        description: TODO(#34909) Document this value.
       - value: SUG
         description: Suggested
+    import_blocking_column_validation_exemptions:
+      - validation_type: KNOWN_VALUES
+        exemption_reason: |-
+          As the column description notes, there are a number of data entry errors in this field
+          that are not covered by the known values.
   - name: REFERRAL_STAFF_ID
     description: |-
       ID of the staff member who referred this person to this program/course, formatted
@@ -266,6 +327,8 @@ columns:
     description: |-
       TODO(#18645): Fill in with answer from ND
     known_values:
+      - value: ALL
+        description: TODO(#34909) Document this value.
       - value: REJ
         description: Rejected
       - value: PEN
