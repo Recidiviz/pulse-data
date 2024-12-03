@@ -33,7 +33,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_
     PATHWAYS_OFFLINE_DEMO_STATE,
 )
 from recidiviz.case_triage.error_handlers import register_error_handlers
-from recidiviz.case_triage.jii.id_lsu_routes import create_jii_api_blueprint
+from recidiviz.case_triage.jii.jii_texts_routes import create_jii_api_blueprint
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
 from recidiviz.case_triage.pathways.pathways_routes import create_pathways_api_blueprint
 from recidiviz.case_triage.util import (

@@ -28,7 +28,7 @@ from freezegun import freeze_time
 from google.cloud.firestore_v1 import ArrayUnion
 
 from recidiviz.case_triage.error_handlers import register_error_handlers
-from recidiviz.case_triage.jii.id_lsu_routes import create_jii_api_blueprint
+from recidiviz.case_triage.jii.jii_texts_routes import create_jii_api_blueprint
 from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization,
 )
@@ -95,7 +95,7 @@ class TestJIIRoutes(JIIBlueprintTestCase):
         super().tearDown()
 
     @freeze_time("2023-01-01 01:23:45")
-    @patch("recidiviz.case_triage.jii.id_lsu_routes.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.jii.jii_texts_routes.FirestoreClientImpl")
     @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     def test_twilio_status_delivered(
         self,
@@ -135,7 +135,7 @@ class TestJIIRoutes(JIIBlueprintTestCase):
         )
 
     @freeze_time("2023-01-01 01:23:45")
-    @patch("recidiviz.case_triage.jii.id_lsu_routes.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.jii.jii_texts_routes.FirestoreClientImpl")
     @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     def test_twilio_status_failed(
         self,
@@ -180,7 +180,7 @@ class TestJIIRoutes(JIIBlueprintTestCase):
         )
 
     @freeze_time("2023-01-01 01:23:45")
-    @patch("recidiviz.case_triage.jii.id_lsu_routes.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.jii.jii_texts_routes.FirestoreClientImpl")
     @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     def test_twilio_status_failed_with_exception(
         self,
@@ -231,7 +231,7 @@ class TestJIIRoutes(JIIBlueprintTestCase):
         )
 
     @freeze_time("2023-01-01 01:23:45")
-    @patch("recidiviz.case_triage.jii.id_lsu_routes.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.jii.jii_texts_routes.FirestoreClientImpl")
     @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     def test_twilio_status_sending(
         self,
@@ -273,7 +273,7 @@ class TestJIIRoutes(JIIBlueprintTestCase):
         )
 
     @freeze_time("2023-01-01 01:23:45")
-    @patch("recidiviz.case_triage.jii.id_lsu_routes.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.jii.jii_texts_routes.FirestoreClientImpl")
     @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     def test_incoming_message_update_opt_out(
         self,
@@ -327,7 +327,7 @@ class TestJIIRoutes(JIIBlueprintTestCase):
         )
 
     @freeze_time("2023-01-01 01:23:45")
-    @patch("recidiviz.case_triage.jii.id_lsu_routes.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.jii.jii_texts_routes.FirestoreClientImpl")
     @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     def test_incoming_message_update_opt_out_changed(
         self,
@@ -384,7 +384,7 @@ class TestJIIRoutes(JIIBlueprintTestCase):
         )
 
     @freeze_time("2023-01-01 01:23:45")
-    @patch("recidiviz.case_triage.jii.id_lsu_routes.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.jii.jii_texts_routes.FirestoreClientImpl")
     @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     def test_incoming_message_update_opt_out_recipient_not_found(
         self,

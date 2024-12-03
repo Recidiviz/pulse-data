@@ -21,7 +21,7 @@ This file contains a script that checks the last time each JII in a Big Query vi
 received a text message.
 
 Usage:
-python -m recidiviz.case_triage.jii.id_lsu_check_jii_last_text \
+python -m recidiviz.case_triage.jii.jii_texts_check_last_text \
     --bigquery-view recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test \
     --credentials-path \
     --message-type initial_text
@@ -37,7 +37,7 @@ from google.cloud.firestore_v1 import FieldFilter
 from google.oauth2.service_account import Credentials
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.case_triage.jii.id_lsu_message_analytics import _get_doc_id_from_doc
+from recidiviz.case_triage.jii.jii_texts_message_analytics import _get_doc_id_from_doc
 from recidiviz.case_triage.util import MessageType
 from recidiviz.case_triage.workflows.utils import ExternalSystemRequestStatus
 from recidiviz.firestore.firestore_client import FirestoreClientImpl

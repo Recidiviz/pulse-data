@@ -17,11 +17,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-This file contains a script to generate and output a dataframe with information relating to the Idaho
-LSU JII Text Message Pilot.
+This file contains a script to generate and output a dataframe with information relating to the JII Text Message Pilot.
 
 Usage:
-python -m recidiviz.case_triage.jii.id_lsu_generate_message_dataframe \
+python -m recidiviz.case_triage.jii.jii_texts_generate_message_dataframe \
     --dry-run true \
     --credentials-path
 """
@@ -33,7 +32,7 @@ import pandas as pd
 from google.cloud.firestore_v1 import FieldFilter
 from google.oauth2.service_account import Credentials
 
-from recidiviz.case_triage.jii.id_lsu_message_analytics import (
+from recidiviz.case_triage.jii.jii_texts_message_analytics import (
     _get_batch_id_from_doc,
     _get_doc_id_from_doc,
 )
@@ -68,7 +67,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def generate_id_lsu_text_df(dry_run: bool, credentials: Credentials) -> None:
+def generate_text_df(dry_run: bool, credentials: Credentials) -> None:
     """Generate a dataframe that includes all attempted text messages along with their
     delivery statuses and opt-out information. Writes the dataframe to a google sheet.
     """
@@ -140,4 +139,4 @@ if __name__ == "__main__":
     # The service account has access to the spreadsheet with editor permissions.
     glocal_credentials = Credentials.from_service_account_file(args.credentials_path)
     with local_project_id_override(GCP_PROJECT_STAGING):
-        generate_id_lsu_text_df(dry_run=args.dry_run, credentials=glocal_credentials)
+        generate_text_df(dry_run=args.dry_run, credentials=glocal_credentials)

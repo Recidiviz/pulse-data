@@ -17,11 +17,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-This file contains a script to calculate and output analytics relating to the Idaho
-LSU JII Text Message Pilot.
+This file contains a script to calculate and output analytics relating to the JII Text Message Pilot.
 
 Usage:
-python -m recidiviz.case_triage.jii.id_lsu_message_analytics \
+python -m recidiviz.case_triage.jii.jii_texts_message_analytics \
     --initial-batch-id 02_28_2024_13_48_04 \
     --eligibility-batch-id 03_01_2024_14_47_43
 """
@@ -57,7 +56,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def calculate_id_lsu_text_analytics(
+def calculate_text_analytics(
     initial_batch_id: str, eligibility_batch_id: Optional[str] = None
 ) -> None:
     """
@@ -553,7 +552,7 @@ def get_all_batch_ids() -> None:
 if __name__ == "__main__":
     args = create_parser().parse_args()
     with local_project_id_override(GCP_PROJECT_STAGING):
-        calculate_id_lsu_text_analytics(
+        calculate_text_analytics(
             initial_batch_id=args.initial_batch_id,
             eligibility_batch_id=args.eligibility_batch_id,
         )

@@ -21,7 +21,7 @@ This file contains a script to output information regarding replies and undelive
 relating to the JII Text Message Pilot.
 
 Usage:
-python -m recidiviz.case_triage.jii.id_lsu_undelivered_messages \
+python -m recidiviz.case_triage.jii.jii_texts_undelivered_messages \
     --dry-run True \
     --initial-batch-id 10_21_2024_11_30_00 \
     --eligibility-batch-id 10_22_2024_11_01_36 \

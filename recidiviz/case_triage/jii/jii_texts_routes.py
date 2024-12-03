@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements routes to support the Idaho LSU JII Pilot."""
+"""Implements routes to support the JII Texting Pilot."""
 
 import datetime
 import logging

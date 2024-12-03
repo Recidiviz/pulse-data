@@ -17,7 +17,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-File with helper functions used by recidiviz/case_triage/jii/id_lsu_routes.py and
+File with helper functions used by recidiviz/case_triage/jii/jii_texts_routes.py and
 recidiviz/case_triage/workflows/workflows_routes.py
 """
 import logging
