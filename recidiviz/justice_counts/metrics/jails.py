@@ -90,6 +90,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     MetricCategory,
     MetricDefinition,
 )
+from recidiviz.justice_counts.utils.constants import MetricUnit
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
@@ -103,6 +104,7 @@ funding = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Funding",
     description="The amount of funding for the operation and maintenance of jail facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+    unit=MetricUnit.AMOUNT,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -178,6 +180,7 @@ expenses = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     system=System.JAILS,
     description="The amount the agency spent for the operation and maintenance of jail facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+    unit=MetricUnit.AMOUNT,
     metric_type=MetricType.EXPENSES,
     display_name="Expenses",
     measurement_type=MeasurementType.DELTA,
@@ -258,6 +261,7 @@ total_staff = MetricDefinition(
     display_name="Staff",
     description="The number of full-time equivalent (FTE) positions budgeted and paid for by the agency for the operation and maintenance of the jail facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
     additional_description="Staff positions should only be counted once per FTE. If one FTE position has job functions that span more than one type of role, please count that FTE position in the role with the largest percentage of job functions.",
+    unit=MetricUnit.FULL_TIME,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -347,6 +351,7 @@ total_admissions = MetricDefinition(
     display_name="Total Admissions",
     description="The number of admission events to the agency’s jurisdiction.",
     additional_description="Admissions are based on the number of events in which a person was incarcerated in a jail facility, not the number of individual people who entered the facility. If the same person was admitted to jail three times in a time period, it would count as three admissions.",
+    unit=MetricUnit.ADMISSIONS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -376,6 +381,7 @@ pre_adjudication_admissions = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Pre-adjudication Admissions",
     description="The number of admission events to the agency’s jurisdiction in which the person has not yet been adjudicated.",
+    unit=MetricUnit.ADMISSIONS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     # TODO(#18071) implement reused includes/excludes
@@ -449,6 +455,7 @@ post_adjudication_admissions = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Post-adjudication Admissions",
     description="The number of admission events to the agency’s jurisdiction in which the person has been adjudicated.",
+    unit=MetricUnit.ADMISSIONS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     # TODO(#18071) implement reused includes/excludes
@@ -534,6 +541,7 @@ total_daily_population = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Total Daily Population",
     description="A single day count of the total number of people incarcerated under the agency’s jurisdiction.",
+    unit=MetricUnit.PEOPLE_INCARCERATED,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -568,6 +576,7 @@ pre_adjudication_daily_population = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Pre-adjudication Daily Population",
     description="A single day count of the number of people incarcerated in the agency’s jurisdiction who have not yet been adjudicated.",
+    unit=MetricUnit.PEOPLE_INCARCERATED,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     # TODO(#18071) Implement reused global includes/excludes
@@ -671,6 +680,7 @@ post_adjudication_daily_population = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Post-adjudication Daily Population",
     description="A single day count of the number of people incarcerated in the agency’s jurisdiction who have been adjudicated and convicted.",
+    unit=MetricUnit.PEOPLE_INCARCERATED,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     # TODO(#18071) implement reused includes/excludes
@@ -782,6 +792,7 @@ total_releases = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Total Releases",
     description="The number of total release events from the agency’s jurisdiction after a period of incarceration. Releases are based on the number of events in which a person was released from the jurisdiction of the agency, not the number of individual people released. If the same person was released from jail three times in a time period, it would count as three releases.",
+    unit=MetricUnit.RELEASES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -799,6 +810,7 @@ pre_adjudication_releases = MetricDefinition(
     display_name="Pre-adjudication Releases",
     description="The number of release events from the agency’s jurisdiction after a period of pre-adjudication incarceration.",
     additional_description="Releases are based on the number of events in which a person was released from the jurisdiction of the agency, not the number of individual people released. If the same person was released from jail three times in a time period, it would count as three releases.",
+    unit=MetricUnit.RELEASES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -854,6 +866,7 @@ post_adjudication_releases = MetricDefinition(
     display_name="Post-adjudication Releases",
     description="The number of release events from the agency’s jurisdiction following a sentence of a period of incarceration in jail due to a conviction for a criminal offense.",
     additional_description="Releases are based on the number of events in which a person was released from the jurisdiction of the agency, not the number of individual people released. If the same person was released from jail three times in a time period, it would count as three releases.",
+    unit=MetricUnit.RELEASES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -919,6 +932,7 @@ staff_use_of_force_incidents = MetricDefinition(
     display_name="Use of Force Incidents",
     description="The number of incidents in which agency staff use physical force to gain compliance from or control of a person who is under the agency’s jurisdiction.",
     additional_description="Incidents represent unique events where force was used, not the number of people or staff involved in those events.",
+    unit=MetricUnit.INCIDENTS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -938,6 +952,7 @@ grievances_upheld = MetricDefinition(
     display_name="Grievances Upheld",
     description="The number of complaints from people in jail in the agency’s jurisdiction that were received through the official grievance process and upheld or substantiated.",
     additional_description="Count grievances in the time period in which they were resolved, not when they were received or occurred. For instance, if a complaint was received on November 8, 2021, and resolved on January 14, 2022, that grievance would be counted in 2022.",
+    unit=MetricUnit.GRIEVANCES_UPHELD,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[

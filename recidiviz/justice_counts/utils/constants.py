@@ -59,6 +59,34 @@ class ReportingAgencyCategory(enum.Enum):
     VENDOR = "VENDOR"
 
 
+class MetricUnit(enum.Enum):
+    ADMISSIONS = "Admission Events"
+    AMOUNT = "Amount"
+    ARRESTS = "Arrest Events"
+    CALLS = "Calls"
+    CASELOAD = "Caseload"
+    CASES = "Cases"
+    CASES_FILED = "Cases Filed"
+    CASES_PER_ATTORNEY = "Cases per Attorney"
+    CASES_PER_OFFICER = "Cases per Officer"
+    COMPLAINTS_SUSTAINED = "Complaints Sustained"
+    DISCHARGES = "Discharges"
+    FULL_TIME = "Full-time Equivalents"
+    GRIEVANCES_UPHELD = "Grievances Upheld"
+    INCIDENTS = "Number of Incidents"
+    NEW_CASES = "New Cases"
+    PEOPLE_INCARCERATED = "People Incarcerated"
+    PEOPLE_ON_SUPERVISION = "People on Supervision"
+    PRETRIAL_RELEASES = "Pretrial Releases"
+    READMISSIONS = "Readmission Events"
+    RECONVICTIONS = "Reconvictions"
+    RELEASES = "Release Events"
+    REPORTED_INCIDENTS = "Reported Incidents"
+    REVOCATIONS = "Revocations"
+    SENTENCES = "Sentences"
+    VIOLATIONS = "Violations"
+
+
 # Column headers for single-page upload.
 BREAKDOWN_CATEGORY = "breakdown_category"
 BREAKDOWN = "breakdown"

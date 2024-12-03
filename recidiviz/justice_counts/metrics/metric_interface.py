@@ -411,7 +411,11 @@ class MetricInterface:
             "display_name": self.metric_definition.display_name,
             "description": self.metric_definition.description,
             "includes_excludes": includes_excludes_json_lst,
-            "unit": self.metric_definition.metric_type.unit,
+            "unit": (
+                self.metric_definition.unit.value
+                if self.metric_definition.unit is not None
+                else None
+            ),
             "category": self.metric_definition.category.human_readable_string,
             "enabled": self.is_metric_enabled,
             "frequency": frequency,

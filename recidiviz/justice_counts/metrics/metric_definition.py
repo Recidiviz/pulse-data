@@ -24,6 +24,7 @@ import attr
 
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.base import DimensionBase
+from recidiviz.justice_counts.utils.constants import MetricUnit
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
@@ -280,6 +281,7 @@ class MetricDefinition:
     # Describes what data is included/excluded in the metrics aggregate value.
     # The IncludesExcludesSet is rendered as toggles in the metric settings page.
     includes_excludes: Optional[List[IncludesExcludesSet]] = None
+    unit: Optional[MetricUnit] = None
 
     @property
     def key(self) -> str:

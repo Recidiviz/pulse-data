@@ -28,7 +28,6 @@ If this causes issues with database serialization in the future, we can evaluate
 or adding `source.id` to the primary key of all objects and partitioning along that.
 """
 import enum
-import re
 from typing import Any, Dict, List, Optional, Set, TypeVar
 
 from sqlalchemy import BOOLEAN, ForeignKey
@@ -138,29 +137,6 @@ class MetricType(enum.Enum):
     TOTAL_ADMISSIONS = "TOTAL_ADMISSIONS"
     USE_OF_FORCE_INCIDENTS = "USE_OF_FORCE_INCIDENTS"
     VIOLATIONS_WITH_DISCIPLINARY_ACTION = "VIOLATIONS_WITH_DISCIPLINARY_ACTION"
-
-    @classmethod
-    def metric_type_to_unit(cls) -> Dict[str, str]:
-        """Provides a mapping from metric type to unit. Not all metric types need to be included
-        in this dictionary because the type itself represent the unit (e.g ADMISSIONS)
-        """
-
-        return {
-            "BUDGET": "USD",
-            "FUNDING": "USD",
-            "REPORTED_CRIME": "REPORTED CRIMES",
-            "TOTAL_STAFF": "PEOPLE",
-            "POPULATION": "PEOPLE",
-            "CALLS_FOR_SERVICE": "CALLS",
-        }
-
-    @property
-    def unit(self) -> str:
-        mapping = MetricType.metric_type_to_unit()
-        unit = mapping.get(self.value) or self.value
-        # Replace underscore with spaces, if they exist. COMPLAINTS_SUSTAINED -> COMPLAINTS SUSTAINED
-        unit = re.sub("_", " ", unit)
-        return unit
 
 
 class MeasurementType(enum.Enum):

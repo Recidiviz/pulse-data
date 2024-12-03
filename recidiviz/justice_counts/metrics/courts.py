@@ -76,6 +76,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     MetricDefinition,
     ReportingFrequency,
 )
+from recidiviz.justice_counts.utils.constants import MetricUnit
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
@@ -88,6 +89,7 @@ funding = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Funding",
     description="The amount of funding for the operation and maintenance of the court system to process criminal cases.",
+    unit=MetricUnit.AMOUNT,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -152,6 +154,7 @@ expenses = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Expenses",
     description="The amount spent by the court system for the operation and maintenance of the court system to process criminal cases.",
+    unit=MetricUnit.AMOUNT,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -213,6 +216,7 @@ judges_and_staff = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Judges and Staff",
     description="The number of full-time equivalent positions budgeted and paid for by the court system for criminal case processing.",
+    unit=MetricUnit.FULL_TIME,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -293,6 +297,7 @@ pretrial_releases = MetricDefinition(
     display_name="Pretrial Releases",
     description="The number of people released while awaiting disposition in a criminal case.",
     additional_description="If the same person is listed as the defendant in multiple cases, these cases should be counted separately if they were referred and reviewed on different dates. If multiple charges were referred against one person on the same date, with the expectation that they would be reviewed and filed together, these charges should be combined to count as one case. If a single case includes multiple defendants, it should be counted as one case.",
+    unit=MetricUnit.PRETRIAL_RELEASES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -352,6 +357,7 @@ sentences_imposed = MetricDefinition(
     display_name="Sentences Imposed",
     description="The number of cases in which the court imposed a sentence as a result of a criminal conviction.",
     additional_description="Sentences imposed are counted by the number of cases disposed, not the number of individual convictions or sanctions attached. The case should be categorized based on the most serious sentence imposed in the case. If a person has multiple charges under the same case, it should be counted as one sentence imposed according to the most serious sentence. If a person has multiple cases disposed, each separate case should be counted in this metric.",
+    unit=MetricUnit.SENTENCES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -470,6 +476,7 @@ criminal_case_filings = MetricDefinition(
     display_name="Criminal Case Filings",
     description="The number of criminal cases filed with the court.",
     additional_description="If the same person is listed as the defendant in multiple cases, these cases are still counted separately if they were filed on different dates. If multiple charges or counts were filed against one person on the same date, with the expectation that they would be reviewed and filed together, these charges are combined to count as one case. If the charging document contains multiple defendants involved in a single incident, count each defendant as a single case.",
+    unit=MetricUnit.CASES_FILED,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -517,6 +524,7 @@ cases_disposed = MetricDefinition(
     display_name="Cases Disposed",
     description="The number of criminal cases closed with the court.",
     additional_description="If the same person is listed as the defendant in multiple cases, these cases should be counted separately if they were disposed on different dates.",
+    unit=MetricUnit.CASES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[

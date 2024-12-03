@@ -75,6 +75,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     MetricDefinition,
     ReportingFrequency,
 )
+from recidiviz.justice_counts.utils.constants import MetricUnit
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
@@ -87,6 +88,7 @@ funding = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Funding",
     description="The amount of funding for agency law enforcement activities.",
+    unit=MetricUnit.AMOUNT,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -156,6 +158,7 @@ expenses = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Expenses",
     description="The amount spent by the agency for law enforcement activities.",
+    unit=MetricUnit.AMOUNT,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -216,6 +219,7 @@ calls_for_service = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Calls for Service",
     description="The number of calls for police assistance received by the agency.",
+    unit=MetricUnit.CALLS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -271,6 +275,7 @@ staff = MetricDefinition(
     display_name="Staff",
     description="The number of full-time equivalent positions budgeted for and paid by the agency for law enforcement activities.",
     additional_description="Staff positions should only be counted once per full-time equivalent (FTE). If one FTE position has job functions that span more than one type of role, please count that FTE position in the role with the largest percentage of job functions.",
+    unit=MetricUnit.FULL_TIME,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
@@ -377,6 +382,7 @@ reported_crime = MetricDefinition(
     ],
     description="The number of criminal incidents made known to the agency.",
     additional_description="The reported crime metric is based on the number of criminal incidents reported to the agency, not the number of offenses, victims, or people accused of committing a crime. An incident is one or more offenses committed by the same person, or a group of people acting in concert, at the same time and place. If more than one offense occurs within an incident, only the most serious offense is counted. Data should be categorized by the most severe offense in the incident. Justice Counts recommends following the summary reporting model of crimes against persons considered most serious, followed by crimes against property, public order offenses, drug offenses, other offenses, and unknown offenses. If more than one person was involved in the incident, it is only counted once.",
+    unit=MetricUnit.REPORTED_INCIDENTS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
@@ -437,6 +443,7 @@ arrests = MetricDefinition(
     display_name="Arrests",
     description="The number of arrests, citations, and summonses made by the agency.",
     additional_description="Arrests are based on the number of arrest events, not the number of unique people arrested. If the same person was arrested three times during a time period, it would count as three arrests. A person suspected of committing more than one offense, but arrested only once, should be counted as one arrest classified by the most serious charge in the incident. Justice Counts recommends following the summary reporting model of crimes against persons considered most serious, followed by crimes against property, public order offenses, drug offenses, other offenses, and unknown offenses. Law enforcement agencies should only share data for those arrests made for offenses committed within their own jurisdictions.",
+    unit=MetricUnit.ARRESTS,
     measurement_type=MeasurementType.DELTA,
     includes_excludes=[
         IncludesExcludesSet(
@@ -535,6 +542,7 @@ use_of_force_incidents = MetricDefinition(
     display_name="Use of Force Incidents",
     description="The number of incidents in which agency staff used physical coercion to gain compliance from a person.",
     additional_description="Use of force incidents are based on the number of unique incidents where force was used, not the number of individual people or staff involved in those incidents. If one agency staff member used force to gain compliance from a person three times in a time period, it would count as three use of force incidents.",
+    unit=MetricUnit.INCIDENTS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -596,6 +604,7 @@ civilian_complaints_sustained = MetricDefinition(
     display_name="Civilian Complaints Sustained",
     description="The number of allegations of misconduct filed against agency staff that were sustained by an internal affairs unit or review board.",
     additional_description="The civilian complaints sustained metric is based on the number of staff members investigated and sanctioned. If one complaint is related to three staff members, it should be counted as three complaints.",
+    unit=MetricUnit.COMPLAINTS_SUSTAINED,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[

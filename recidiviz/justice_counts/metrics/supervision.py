@@ -85,6 +85,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     MetricCategory,
     MetricDefinition,
 )
+from recidiviz.justice_counts.utils.constants import MetricUnit
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
@@ -98,6 +99,7 @@ funding = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Funding",
     description="The amount of funding for the provision of community supervision and operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+    unit=MetricUnit.AMOUNT,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -174,6 +176,7 @@ expenses = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Expenses",
     description="The amount spent by the agency for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+    unit=MetricUnit.AMOUNT,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -234,6 +237,7 @@ total_staff = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Staff",
     description="The number of full-time equivalent positions budgeted for the agency for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+    unit=MetricUnit.FULL_TIME,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
@@ -312,6 +316,7 @@ violations = MetricDefinition(
     additional_description="""If the agency recorded the incident and provided any form of accountability measure, from verbal warning to incarceration, it should be reflected in this count. If a person had multiple violation incidents in a month, each of those violation incidents would be counted here. If a person had multiple violation types involved in a single incident, the incident should be counted as a single event for this metric.
 
 For incidents in which there were multiple violation types, please apply a hierarchy rule and share data according to the most serious violation (as determined by the agency). If your agency does not have a hierarchy rule, we recommend considering new offense violations the most serious, followed by absconding, technical, other, and unknown.""",
+    unit=MetricUnit.VIOLATIONS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -364,6 +369,7 @@ new_cases = MetricDefinition(
     display_name="New Cases",
     description="The number of people with new community supervision cases referred to the agency as the result of a legal decision made by the courts or another authority, such as a parole board.",
     additional_description="New cases are based on the number of people who had a new supervision case initiated, not the number of new cases initiated. For example, if a person who was not already on supervision started three new supervision sentences in a time period, they would count as one new case. If a person who is already on supervision starts a new supervision case during the time period, they would not be counted in this metric.",
+    unit=MetricUnit.NEW_CASES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -468,6 +474,7 @@ daily_population = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Daily Population",
     description="A single day count of the number of people who are supervised under the jurisdiction of the agency.",
+    unit=MetricUnit.PEOPLE_ON_SUPERVISION,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -555,6 +562,7 @@ discharges = MetricDefinition(
     display_name="Discharges",
     description="The number of people who had a supervision term that ended.",
     additional_description="In some instances, this may mean being released from the jurisdiction of the supervision agency. In others, it may mean transitioning from one term of supervision to another or that a supervision term ended due to revocation to incarceration.",
+    unit=MetricUnit.DISCHARGES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -627,6 +635,7 @@ reconvictions = MetricDefinition(
     category=MetricCategory.PUBLIC_SAFETY,
     display_name="Reconvictions",
     description="The number of people convicted of a new crime while serving a term of supervision.",
+    unit=MetricUnit.RECONVICTIONS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -645,6 +654,7 @@ caseload_numerator = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Open Cases",
     description="The number of people with open cases under the jurisdiction of the supervision agency (used as the numerator in the calculation of the caseloads metric).",
+    unit=MetricUnit.FULL_TIME,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -660,6 +670,7 @@ caseload_denominator = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Staff with Caseload",
     description="The number of staff carrying a supervision caseload (used as the denominator in the calculation of the caseloads metric).",
+    unit=MetricUnit.CASES_PER_OFFICER,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -679,6 +690,7 @@ revocations = MetricDefinition(
     display_name="Revocations",
     description="The number of people who had a term of supervision revoked.",
     additional_description="For incidents in which there were multiple violations that contributed to a revocation, please apply a hierarchy rule and share data according to the most serious violation (as determined by the agency). If your agency does not have a hierarchy rule, we recommend considering new offense violations the most serious, followed by absconding, technical, other, and unknown.",
+    unit=MetricUnit.REVOCATIONS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     # TODO(#17579)

@@ -79,6 +79,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     MetricCategory,
     MetricDefinition,
 )
+from recidiviz.justice_counts.utils.constants import MetricUnit
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
@@ -92,6 +93,7 @@ funding = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Funding",
     description="The amount of funding for the operation and maintenance of the prosecution office to process criminal cases.",
+    unit=MetricUnit.AMOUNT,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -155,6 +157,7 @@ expenses = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Expenses",
     description="The amount spent by the office for the operation and maintenance of the prosecutor’s office to process criminal cases.",
+    unit=MetricUnit.AMOUNT,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -213,6 +216,7 @@ staff = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Staff",
     description="The number of full-time equivalent positions budgeted for the office to process criminal cases.",
+    unit=MetricUnit.FULL_TIME,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -277,6 +281,7 @@ cases_declined = MetricDefinition(
     display_name="Cases Declined",
     description="The number of criminal cases referred to the office for review and declined for prosecution.",
     additional_description="If the same person is listed as the defendant in multiple cases, these cases should be counted separately if they were referred and reviewed on different dates. If multiple charges were referred against one person on the same date, with the expectation that they would be reviewed and filed together, these charges should be combined to count as one case. If a single case includes multiple defendants, it should be counted as one case.",
+    unit=MetricUnit.CASES,
     measurement_type=MeasurementType.DELTA,
     includes_excludes=[
         IncludesExcludesSet(
@@ -350,6 +355,7 @@ cases_referred = MetricDefinition(
     display_name="Cases Referred",
     description="The number of criminal cases referred to the office.",
     additional_description="If the same person is listed as the defendant in multiple cases, these cases should be counted separately if they were referred and reviewed on different dates. If multiple charges were referred against one person on the same date, with the expectation that they would be reviewed and filed together, these charges should be combined to count as one case. If a single case includes multiple defendants, it should be counted as one case.",
+    unit=MetricUnit.CASES_PER_ATTORNEY,
     measurement_type=MeasurementType.DELTA,
     includes_excludes=[
         IncludesExcludesSet(
@@ -399,6 +405,7 @@ cases_prosecuted = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Cases Prosecuted",
     description="The number of criminal cases assigned for prosecution to an attorney and prosecuted by the office.",
+    unit=MetricUnit.CASES,
     includes_excludes=[
         IncludesExcludesSet(
             members=ProsecutionCasesProsecutedIncludesExcludes,
@@ -471,6 +478,7 @@ caseload_numerator = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Open Cases",
     description="The number of people with open criminal cases carried by the office (used as the numerator in the calculation of the caseload metric).",
+    unit=MetricUnit.CASELOAD,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -529,6 +537,7 @@ caseload_denominator = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Staff with Caseload",
     description="The number of legal staff carrying a criminal caseload (used as the denominator in the calculation of the caseload metric).",
+    unit=MetricUnit.CASELOAD,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -576,6 +585,7 @@ cases_diverted_or_deferred = MetricDefinition(
     display_name="Cases Diverted/Deferred",
     description="The number of criminal cases diverted from traditional case processing.",
     additional_description="This may include cases diverted before or after filing, cases reopened and diverted, or cases deferred in lieu of probation conditions. Diversion programs will vary by jurisdiction and may include diversion to specialty court dockets.",
+    unit=MetricUnit.CASES,
     measurement_type=MeasurementType.DELTA,
     includes_excludes=[
         IncludesExcludesSet(
@@ -648,6 +658,7 @@ cases_disposed = MetricDefinition(
     display_name="Cases Disposed",
     description="The number of criminal cases disposed by the office.",
     additional_description="If the same person is listed as the defendant in multiple cases, these cases should be counted separately if they were disposed on different dates.",
+    unit=MetricUnit.CASES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[

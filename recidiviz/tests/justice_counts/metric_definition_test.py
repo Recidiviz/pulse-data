@@ -26,6 +26,7 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.metric_definition import Context
 from recidiviz.justice_counts.metrics.metric_registry import METRICS
+from recidiviz.justice_counts.utils.constants import MetricUnit
 
 
 class TestAggregatedDimension(TestCase):
@@ -121,17 +122,17 @@ class TestMetricDefinition(TestCase):
         )
 
     def test_unit_from_metric_type(self) -> None:
-        self.assertEqual(law_enforcement.funding.metric_type.unit, "USD")
-        self.assertEqual(law_enforcement.calls_for_service.metric_type.unit, "CALLS")
-        self.assertEqual(law_enforcement.arrests.metric_type.unit, "ARRESTS")
-        self.assertEqual(law_enforcement.staff.metric_type.unit, "PEOPLE")
+        self.assertEqual(law_enforcement.funding.unit, MetricUnit.AMOUNT)
+        self.assertEqual(law_enforcement.calls_for_service.unit, MetricUnit.CALLS)
+        self.assertEqual(law_enforcement.arrests.unit, MetricUnit.ARRESTS)
+        self.assertEqual(law_enforcement.staff.unit, MetricUnit.FULL_TIME)
         self.assertEqual(
-            law_enforcement.civilian_complaints_sustained.metric_type.unit,
-            "COMPLAINTS SUSTAINED",
+            law_enforcement.civilian_complaints_sustained.unit,
+            MetricUnit.COMPLAINTS_SUSTAINED,
         )
         self.assertEqual(
-            law_enforcement.use_of_force_incidents.metric_type.unit,
-            "USE OF FORCE INCIDENTS",
+            law_enforcement.use_of_force_incidents.unit,
+            MetricUnit.INCIDENTS,
         )
 
     def test_display_name(self) -> None:

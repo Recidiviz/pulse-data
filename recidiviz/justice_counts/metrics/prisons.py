@@ -81,6 +81,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     MetricCategory,
     MetricDefinition,
 )
+from recidiviz.justice_counts.utils.constants import MetricUnit
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
@@ -94,6 +95,7 @@ funding = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Funding",
     description="The amount of funding for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+    unit=MetricUnit.AMOUNT,
     includes_excludes=[
         IncludesExcludesSet(
             members=PrisonFundingTimeframeIncludesExcludes,
@@ -161,6 +163,7 @@ staff = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Staff",
     description="The number of full-time equivalent positions budgeted for the agency for the operation and maintenance of the prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+    unit=MetricUnit.FULL_TIME,
     includes_excludes=[
         IncludesExcludesSet(
             members=PrisonStaffIncludesExcludes,
@@ -236,6 +239,7 @@ expenses = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     system=System.PRISONS,
     description="The amount spent by the agency for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+    unit=MetricUnit.AMOUNT,
     metric_type=MetricType.EXPENSES,
     display_name="Expenses",
     measurement_type=MeasurementType.DELTA,
@@ -314,6 +318,7 @@ readmissions = MetricDefinition(
     display_name="Readmissions",
     description="The number of admission events to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within the previous three years (1,096 days).",
     additional_description="For instance, if a person admitted on June 23, 2022, had been incarcerated at any time between June 23, 2019, and June 22, 2022, it would count as a readmission. This metric is based on admission events, so if the same person is readmitted three times in a time period, it would count as three readmissions.",
+    unit=MetricUnit.READMISSIONS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     # TODO(#18071) Implement repeated/reused includes/excludes
@@ -381,6 +386,7 @@ admissions = MetricDefinition(
     additional_description="""Admissions are based on the number of events in which a person was incarcerated in a prison facility, not the number of individual people who entered the facility. If the same person was admitted to prison three times in a time period, it would count as three admissions.
 
 For people who were convicted of multiple offenses, a hierarchy rule determines how they are presented in this analysis. Justice Counts recommends following the summary reporting model of crimes against persons considered most serious, followed by crimes against property, public order offenses,  drug offenses, other offenses, and unknown offenses.""",
+    unit=MetricUnit.ADMISSIONS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -456,6 +462,7 @@ daily_population = MetricDefinition(
     display_name="Daily Population",
     description="A single day count of the number of people incarcerated under the jurisdiction of the prison agency.",
     additional_description="For people who were convicted of multiple offenses, a hierarchy rule determines how they are presented in this analysis. Justice Counts recommends following the summary reporting model of crimes against persons considered most serious, followed by crimes against property, public order offenses, drug offenses, other offenses, and unknown offenses.",
+    unit=MetricUnit.PEOPLE_INCARCERATED,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -553,6 +560,7 @@ releases = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Releases",
     description="The number of release events from the jurisdiction of the prison agency following a period of incarceration.",
+    unit=MetricUnit.RELEASES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -617,6 +625,7 @@ staff_use_of_force_incidents = MetricDefinition(
     display_name="Use of Force Incidents",
     description="The number of incidents in which agency staff use physical force to gain compliance from or control of a person who is under the agency’s jurisdiction.",
     additional_description="Incidents represent unique events where force was used, not the number of people or staff involved in those events.",
+    unit=MetricUnit.INCIDENTS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -634,6 +643,7 @@ grievances_upheld = MetricDefinition(
     display_name="Grievances Upheld",
     description="The number of complaints from people who are incarcerated under the agency’s prison jurisdiction received via the process described in the institution’s grievance policy, which were resolved in a way that affirmed the complaint.",
     additional_description="Count grievances in the time period in which they were resolved, not when they were received or occurred. For instance, if a complaint was received on November 8, 2021, and resolved on January 14, 2022, that grievance would be counted in 2022.",
+    unit=MetricUnit.GRIEVANCES_UPHELD,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[

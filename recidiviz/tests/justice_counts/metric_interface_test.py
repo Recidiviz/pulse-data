@@ -73,6 +73,7 @@ from recidiviz.justice_counts.metrics.metric_interface import (
 )
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.justice_counts.utils.constants import MetricUnit
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
@@ -183,7 +184,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "disaggregated_by_supervision_subsystems": None,
                 "category": "Capacity and Costs",
                 "value": 100000,
-                "unit": "USD",
+                "unit": MetricUnit.AMOUNT.value,
                 "label": "Funding",
                 "enabled": True,
                 "frequency": "ANNUAL",
@@ -226,7 +227,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "disaggregated_by_supervision_subsystems": None,
                 "category": metric_definition.category.human_readable_string,
                 "value": reported_metric.value,
-                "unit": metric_definition.metric_type.unit,
+                "unit": "Calls",
                 "label": "Calls for Service",
                 "enabled": True,
                 "frequency": "MONTHLY",
@@ -349,7 +350,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "includes_excludes": [],
                 "is_includes_excludes_configured": None,
                 "value": reported_metric.value,
-                "unit": metric_definition.metric_type.unit,
+                "unit": "Complaints Sustained",
                 "label": "Civilian Complaints Sustained",
                 "contexts": [],
                 "disaggregations": [],
@@ -377,7 +378,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "datapoints": None,
                 "category": metric_definition.category.human_readable_string,
                 "value": reported_metric.value,
-                "unit": metric_definition.metric_type.unit,
+                "unit": "Arrest Events",
                 "label": "Arrests",
                 "enabled": True,
                 "frequency": "MONTHLY",
@@ -1087,7 +1088,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                         ],
                     },
                 ],
-                "unit": "CALLS",
+                "unit": "Calls",
                 "category": "Populations",
                 "label": "Calls for Service",
                 "enabled": False,
@@ -1341,7 +1342,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                         ],
                     },
                 ],
-                "unit": "CALLS",
+                "unit": "Calls",
                 "category": "Populations",
                 "label": "Calls for Service",
                 "enabled": True,
@@ -1595,7 +1596,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                         ],
                     },
                 ],
-                "unit": "CALLS",
+                "unit": "Calls",
                 "category": "Populations",
                 "label": "Calls for Service",
                 "enabled": True,
@@ -1862,7 +1863,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                     "key": "LAW_ENFORCEMENT",
                     "display_name": "Law Enforcement",
                 },
-                "unit": "CALLS",
+                "unit": "Calls",
                 "value": None,
                 "disaggregations": [
                     {
@@ -2237,7 +2238,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                         ],
                     }
                 ],
-                "unit": "CALLS",
+                "unit": "Calls",
                 "category": "Populations",
                 "label": "Calls for Service",
                 "enabled": False,
@@ -3027,7 +3028,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
             "display_name": prisons.expenses.display_name,
             "description": prisons.expenses.description,
             "disaggregated_by_supervision_subsystems": None,
-            "unit": prisons.expenses.metric_type.unit,
+            "unit": "Amount",
             "category": prisons.expenses.category.human_readable_string,
             "label": prisons.expenses.display_name,
             "frequency": prisons.expenses.reporting_frequencies[0].value,
@@ -3289,7 +3290,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
             "description": law_enforcement.funding.description,
             "disaggregated_by_supervision_subsystems": None,
             "reporting_note": law_enforcement.funding.reporting_note,
-            "unit": law_enforcement.funding.metric_type.unit,
+            "unit": "Amount",
             "category": law_enforcement.funding.category.human_readable_string,
             "label": law_enforcement.funding.display_name,
             "frequency": law_enforcement.funding.reporting_frequencies[0].value,
@@ -4421,6 +4422,6 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                         "key": "LAW_ENFORCEMENT",
                     },
                     "starting_month": None,
-                    "unit": "ARRESTS",
+                    "unit": "Arrest Events",
                 },
             )

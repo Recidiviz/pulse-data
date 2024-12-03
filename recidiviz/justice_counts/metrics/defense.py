@@ -70,6 +70,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     MetricCategory,
     MetricDefinition,
 )
+from recidiviz.justice_counts.utils.constants import MetricUnit
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
@@ -83,6 +84,7 @@ funding = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Funding",
     description="The amount of funding for the operation and maintenance of defense providers and criminal public defense services.",
+    unit=MetricUnit.AMOUNT,
     measurement_type=MeasurementType.INSTANT,
     includes_excludes=[
         IncludesExcludesSet(
@@ -150,6 +152,7 @@ expenses = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Expenses",
     description="The amount spent for the operation and maintenance of defense providers and criminal public defense services.",
+    unit=MetricUnit.AMOUNT,
     measurement_type=MeasurementType.INSTANT,
     includes_excludes=[
         IncludesExcludesSet(
@@ -207,6 +210,7 @@ staff = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Staff",
     description="The number of full-time equivalent positions budgeted for the provider for criminal defense services.",
+    unit=MetricUnit.FULL_TIME,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
@@ -273,6 +277,7 @@ cases_appointed_counsel = MetricDefinition(
     display_name="Cases Appointed Counsel",
     description="The number of criminal cases opened by the provider.",
     additional_description="If the same person is listed as the defendant in multiple cases, these cases are still counted separately if they were appointed an attorney on different dates.",
+    unit=MetricUnit.CASES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -322,6 +327,7 @@ caseload_numerator = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Open Cases",
     description="The number of people with open criminal cases carried by the provider (used as the numerator in the calculation of the caseload metric).",
+    unit=MetricUnit.CASELOAD,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -379,6 +385,7 @@ caseload_denominator = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Staff with Caseload",
     description="The number of legal staff carrying a criminal caseload (used as the denominator in the calculation of the caseload metric).",
+    unit=MetricUnit.CASELOAD,
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
@@ -439,6 +446,7 @@ cases_disposed = MetricDefinition(
     display_name="Cases Disposed",
     description="The number of criminal cases for which representation by the provider ended during the time period.",
     additional_description="If the same person is listed as the defendant in multiple cases, these cases should be counted separately if they were disposed on different dates or with different dispositions.",
+    unit=MetricUnit.CASES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=[
