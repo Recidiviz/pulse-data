@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone has
- completed at least six months of minimum supervision
+"""Defines a criterion span view that shows spans of time during which someone has
+completed at least six months of minimum supervision.
 """
+
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -28,16 +29,13 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "ON_MINIMUM_SUPERVISION_AT_LEAST_SIX_MONTHS"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has
- completed at least six months on minimum supervision"""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     get_minimum_time_served_criteria_query(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         time_served_interval="MONTH",
         minimum_time_served=6,
-        supervision_level_types=["MINIMUM"],
+        supervision_levels=["MINIMUM"],
     )
 )
 

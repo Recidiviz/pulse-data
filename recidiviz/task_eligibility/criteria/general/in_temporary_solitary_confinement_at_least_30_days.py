@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone has
-been in temporary solitary confinement at least 30 days.
+"""Defines a criterion span view that shows spans of time during which someone has been
+in temporary solitary confinement at least 30 days.
 """
+
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -28,13 +29,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "IN_TEMPORARY_SOLITARY_CONFINEMENT_AT_LEAST_30_DAYS"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has
-been in temporary solitary confinement at least 30 days. """
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     get_minimum_time_served_criteria_query(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         minimum_time_served=30,
         time_served_interval="DAY",
         housing_unit_types=["TEMPORARY_SOLITARY_CONFINEMENT"],

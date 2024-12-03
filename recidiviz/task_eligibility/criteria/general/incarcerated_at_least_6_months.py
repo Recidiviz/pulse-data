@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone has
- served at least 6 months incarcerated.
+"""Defines a criterion span view that shows spans of time during which someone has
+served at least 6 months incarcerated.
 """
+
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -28,13 +29,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "INCARCERATED_AT_LEAST_6_MONTHS"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has
- served at least 6 months incarcerated"""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     get_minimum_time_served_criteria_query(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
+        description=__doc__,
         minimum_time_served=6,
         time_served_interval="MONTH",
         compartment_level_1_types=["INCARCERATION"],

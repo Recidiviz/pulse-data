@@ -154,95 +154,97 @@ def get_minimum_time_served_criteria_query(
     description: str,
     minimum_time_served: int,
     time_served_interval: str = "YEAR",
-    compartment_level_0: str = "INCARCERATION",
     compartment_level_1_types: Optional[List[str]] = None,
     compartment_level_2_types: Optional[List[str]] = None,
+    supervision_levels: Optional[List[str]] = None,
     housing_unit_types: Optional[List[str]] = None,
-    supervision_level_types: Optional[List[str]] = None,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
-    """Returns a state agnostic criteria view builder indicating spans of time when a person has served
-    |minimum_time_served| years or more. The compartment level filters can be used to restrict the type of session
-    that counts towards the time served.
+    """Returns a state-agnostic criterion view builder indicating spans of time when a
+    person has served at least some minimum period of time, as determined by
+    |minimum_time_served| and |time_served_interval|. The filters for compartment
+    levels, supervision levels, and housing unit types can be used to restrict the type
+    of session that counts as time served.
+
+    NB: to meet this criterion, the person must have served the minimum period of time
+    continuously. Any departure from the system or from specified compartment level(s),
+    supervision level(s), or housing unit type(s) will "reset the clock" for a person.
 
     Parameters:
     -----------
     criteria_name : str
-        The name of the criteria view.
+        The name of the criterion view.
 
     description : str
-        A brief description of the criteria view.
+        A brief description of the criterion view.
 
     minimum_time_served : int
-        The minimum amount of time served required to meet the criteria.
+        The minimum amount of time served (e.g., 2) required to meet the criterion.
 
     time_served_interval : str, optional
-        The interval type for the time served (e.g., "YEAR", "MONTH"). Defaults to "YEAR".
-
-    compartment_level_0 : str, optional
-        The primary compartment level to filter sessions by. Defaults to "INCARCERATION". If "SUPERVISION" then
-        `prioritized_supervision_sessions` is used instead of `compartment_level_1` or `compartment_sessions`
+        The interval type for the time served. Supports any of the BigQuery `date_part`
+        values: "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR". Defaults to "YEAR".
 
     compartment_level_1_types : Optional[List[str]], optional
-        A list of compartment level 1 types to filter sessions by, e.g., "SUPERVISION",
-        "INCARCERATION". Defaults to None.
+        A list of `compartment_level_1` types by which to filter sessions (e.g.,
+        "SUPERVISION", "INCARCERATION"). Defaults to None.
 
     compartment_level_2_types : Optional[List[str]], optional
-        A list of compartment level 2 types to filter sessions by. If provided, sessions
-        will be filtered based on this level. Defaults to None.
+        A list of `compartment_level_2` types by which to filter sessions (e.g.,
+        "PAROLE", "DUAL"). Defaults to None.
+
+    supervision_levels : Optional[List[str]], optional
+        A list of supervision levels by which to filter sessions. Defaults to None.
 
     housing_unit_types : Optional[List[str]], optional
-        A list of housing unit types to filter sessions by. Defaults to None.
-
-    supervision_level_types : Optional[List[str]], optional
-        A list of supervision level types to filter sessions by. Defaults to None.
+        A list of housing-unit types by which to filter sessions. Defaults to None.
     """
 
-    # Default to `system_sessions` if no compartment type is specified
+    # Default to `system_sessions` if no filters are specified
     sessions_table = "system_sessions_materialized"
     sessions_conditions = []
-    attribute = ""  # Initialize attribute to a default value
 
-    if compartment_level_1_types:
-        attribute = "compartment_level_1"
+    # Check validity of input arguments
+    if supervision_levels is not None or housing_unit_types is not None:
         if (
-            "SUPERVISION" in compartment_level_1_types
-            or "SUPERVISION_OUT_OF_STATE" in compartment_level_1_types
+            compartment_level_1_types is not None
+            or compartment_level_2_types is not None
         ):
-            sessions_table = "prioritized_supervision_sessions_materialized"
-            formatted_values = "', '".join(compartment_level_1_types)
-            sessions_conditions.append(f"compartment_level_1 IN ('{formatted_values}')")
-
-        if "INCARCERATION" in compartment_level_1_types:
-            sessions_table = "compartment_level_1_super_sessions_materialized"
-            formatted_values = "', '".join(compartment_level_1_types)
-            sessions_conditions.append(f"compartment_level_1 IN ('{formatted_values}')")
-
-    if compartment_level_2_types:
-        attribute = "compartment_level_2"
-        if compartment_level_0 == "SUPERVISION":
-            sessions_table = "prioritized_supervision_sessions_materialized"
-            formatted_values = "', '".join(compartment_level_2_types)
-            sessions_conditions.append(f"compartment_level_2 IN ('{formatted_values}')")
-        else:
-            sessions_table = "compartment_sessions_materialized"
-            formatted_values = "', '".join(compartment_level_2_types)
-            sessions_conditions.append(f"compartment_level_2 IN ('{formatted_values}')")
-
-    if supervision_level_types:
-        if compartment_level_1_types or compartment_level_2_types:
             raise ValueError(
-                "Compartment level 1 and 2 values are not supported in supervision level sessions"
+                "Compartment-level values are not supported alongside supervision levels or housing-unit types."
             )
-        sessions_table = "supervision_level_sessions_materialized"
-        formatted_values = "', '".join(supervision_level_types)
-        sessions_conditions.append(f"supervision_level IN ('{formatted_values}')")
-        attribute = "supervision_level"
+        if supervision_levels is not None and housing_unit_types is not None:
+            raise ValueError(
+                "Supervision levels and housing-unit types are not simultaneously supported."
+            )
 
-    if housing_unit_types:
+    if compartment_level_1_types is not None or compartment_level_2_types is not None:
+        sessions_table = "compartment_sessions_materialized"
+        if compartment_level_1_types is not None:
+            if all(
+                compartment in ["SUPERVISION", "SUPERVISION_OUT_OF_STATE"]
+                for compartment in compartment_level_1_types
+            ):
+                sessions_table = "prioritized_supervision_sessions_materialized"
+            elif all(
+                compartment in ["INCARCERATION", "INCARCERATION_OUT_OF_STATE"]
+                for compartment in compartment_level_1_types
+            ):
+                sessions_table = "compartment_level_1_super_sessions_materialized"
+            formatted_values = "', '".join(compartment_level_1_types)
+            sessions_conditions.append(f"compartment_level_1 IN ('{formatted_values}')")
+        if compartment_level_2_types is not None:
+            formatted_values = "', '".join(compartment_level_2_types)
+            sessions_conditions.append(f"compartment_level_2 IN ('{formatted_values}')")
+
+    if supervision_levels is not None:
+        sessions_table = "supervision_level_sessions_materialized"
+        formatted_values = "', '".join(supervision_levels)
+        sessions_conditions.append(f"supervision_level IN ('{formatted_values}')")
+
+    if housing_unit_types is not None:
         sessions_table = "housing_unit_type_sessions_materialized"
         formatted_values = "', '".join(housing_unit_types)
         sessions_conditions.append(f"housing_unit_type IN ('{formatted_values}')")
-        attribute = "housing_unit_type"
 
     if len(sessions_conditions) > 0:
         condition_string = "WHERE " + "\n\t\tAND ".join(sessions_conditions)
@@ -251,39 +253,38 @@ def get_minimum_time_served_criteria_query(
 
     criteria_query = f"""
     WITH filtered_spans AS (
-      SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date_exclusive,
-        {attribute},
-      FROM `{{project_id}}.{{sessions_dataset}}.{sessions_table}`
-      {condition_string}
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive,
+        FROM `{{project_id}}.{{sessions_dataset}}.{sessions_table}`
+        {condition_string}
     ),
     critical_date_spans AS (
-      SELECT
-        state_code,
-        person_id,
-        start_date AS start_datetime,
-        end_date_exclusive AS end_datetime,
-        DATE_ADD(start_date, INTERVAL {minimum_time_served} {time_served_interval}) AS critical_date,
-      FROM ({aggregate_adjacent_spans(
+        SELECT
+            state_code,
+            person_id,
+            start_date AS start_datetime,
+            end_date_exclusive AS end_datetime,
+            DATE_ADD(start_date, INTERVAL {minimum_time_served} {time_served_interval}) AS critical_date,
+        FROM ({aggregate_adjacent_spans(
                 table_name='filtered_spans',
                 end_date_field_name="end_date_exclusive",
-            )})
+                )})
     ),
     {critical_date_has_passed_spans_cte()}
     SELECT
-        cd.state_code,
-        cd.person_id,
-        cd.start_date,
-        cd.end_date,
-        cd.critical_date_has_passed AS meets_criteria,
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        critical_date_has_passed AS meets_criteria,
         TO_JSON(STRUCT(
-            cd.critical_date AS eligible_date
+            critical_date AS eligible_date
         )) AS reason,
-        cd.critical_date AS minimum_time_served_date,
-    FROM critical_date_has_passed_spans cd
+        critical_date AS minimum_time_served_date,
+    FROM critical_date_has_passed_spans
     """
 
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -663,7 +664,7 @@ def incarceration_incidents_within_time_interval_criteria_builder(
             "MONTH", "QUARTER", or "YEAR".
         where_clause_addition (str, optional): Any additional WHERE-clause filters for
             selecting incidents. Example: "AND sii.incident_type='VIOLENCE'". Defaults
-            to "".
+            to None.
         incident_date_name_in_reason_blob (str, optional): Name of the `incident_date`
             field in the reason blob. Defaults to "latest_incidents".
     Returns:
@@ -678,7 +679,9 @@ def incarceration_incidents_within_time_interval_criteria_builder(
     # check validity of input
     if date_part not in ["DAY", "WEEK", "MONTH", "QUARTER", "YEAR"]:
         raise ValueError("Invalid value specified for `date_part`.")
-    if where_clause_addition and not where_clause_addition.startswith("AND "):
+    if where_clause_addition is not None and not where_clause_addition.startswith(
+        "AND "
+    ):
         raise ValueError(
             "Additional WHERE-clause filter(s) in `where_clause_addition` must start with 'AND '."
         )
