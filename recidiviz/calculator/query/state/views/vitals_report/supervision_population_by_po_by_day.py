@@ -18,7 +18,10 @@
 from typing import Dict, Optional, Tuple
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import filter_out_absconsions
+from recidiviz.calculator.query.bq_utils import (
+    filter_out_absconsions,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_view_helpers import (
     state_specific_entity_filter,
@@ -127,12 +130,22 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = f"""
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` completions
             ON supervision_population_metrics.state_code = completions.state_code
             AND supervision_population_metrics.person_id = completions.person_id
-            AND supervision_population_metrics.date_of_supervision BETWEEN completions.start_date AND COALESCE(completions.end_date, CURRENT_DATE('US/Eastern')),
+            AND supervision_population_metrics.date_of_supervision BETWEEN completions.start_date AND COALESCE(completions.end_date, CURRENT_DATE('US/Eastern'))
+        LEFT JOIN `{{project_id}}.reference_views.product_staff_materialized` ps
+            ON supervision_population_metrics.state_code = ps.state_code
+            AND supervising_officer_external_id = ps.external_id
+            AND date_of_supervision BETWEEN ps.start_date AND {nonnull_end_date_exclusive_clause('ps.end_date_exclusive')}
+        LEFT JOIN `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` attr
+            ON supervision_population_metrics.state_code = attr.state_code
+            AND supervising_officer_external_id = attr.officer_id
+            AND date_of_supervision BETWEEN attr.start_date AND {nonnull_end_date_exclusive_clause('attr.end_date_exclusive')},
         UNNEST ([officers.supervising_district_external_id, 'ALL']) AS supervising_district_external_id,
         UNNEST ([officers.supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
         WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
             AND supervision_population_metrics.state_code in {enabled_states}
             AND {state_specific_entity_filter("supervision_population_metrics")}
+        AND ps.is_supervision_officer
+        AND NOT (supervision_population_metrics.state_code = "US_IX" AND (IFNULL(attr.specialized_caseload_type_primary, "") = "TRANSITIONAL" OR ps.is_supervision_officer_supervisor))
         GROUP BY state_code, date_of_supervision, supervising_district_external_id, supervising_officer_external_id, district_id, district_name
     )
     
