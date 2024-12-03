@@ -187,6 +187,9 @@ snapshots[
     "104": GenericRepr(
         "OfficerSupervisorReportData(metrics=[OutlierMetricInfo(metric=OutliersMetricConfig(state_code=None, name='incarceration_starts_and_inferred', event_observation_type=None, outcome_type=<MetricOutcome.ADVERSE: 'ADVERSE'>, title_display_name='Incarceration Rate (CPVs & TPVs)', body_display_name='incarceration rate', event_name='incarcerations', event_name_singular='incarceration', event_name_past_tense='were incarcerated', description_markdown='Incarceration rate description\\n\\n<br />\\nIncarceration rate denominator description', metric_event_conditions_string=None, top_x_pct=None, is_absconsion_metric=False, list_table_text='Clients will appear on this list multiple times if they have been incarcerated more than once under this officer in the time period.'), target=0.13, other_officers={<TargetStatus.FAR: 'FAR'>: [0.333], <TargetStatus.MET: 'MET'>: [0.11, 0.04, 0.0, 0.12], <TargetStatus.NEAR: 'NEAR'>: [0.184, 0.17]}, highlighted_officers=[OfficerMetricEntity(name=PersonName(given_names='Officer', surname='1', middle_names='', name_suffix=''), external_id='01', rate=0.26, target_status=<TargetStatus.FAR: 'FAR'>, prev_rate=0.32, supervisor_external_id='101', supervisor_external_ids=['101', '104'], supervision_district='1', prev_target_status=<TargetStatus.NEAR: 'NEAR'>)], target_status_strategy=<TargetStatusStrategy.IQR_THRESHOLD: 'IQR_THRESHOLD'>)], metrics_without_outliers=[OutliersMetricConfig(state_code=None, name='task_completions_transfer_to_limited_supervision', event_observation_type=None, outcome_type=<MetricOutcome.FAVORABLE: 'FAVORABLE'>, title_display_name='Limited Supervision Unit Transfer Rate', body_display_name='Limited Supervision Unit transfer rate(s)', event_name='LSU transfers', event_name_singular='LSU transfer', event_name_past_tense='were transferred to LSU', description_markdown='', metric_event_conditions_string=None, top_x_pct=None, is_absconsion_metric=False, list_table_text=None)], recipient_email_address='manager4@recidiviz.org', additional_recipients=['manager2@recidiviz.org', 'manager3@recidiviz.org'])"
     ),
+    "105": GenericRepr(
+        "OfficerSupervisorReportData(metrics=[], metrics_without_outliers=[OutliersMetricConfig(state_code=None, name='incarceration_starts_and_inferred', event_observation_type=None, outcome_type=<MetricOutcome.ADVERSE: 'ADVERSE'>, title_display_name='Incarceration Rate (CPVs & TPVs)', body_display_name='incarceration rate', event_name='incarcerations', event_name_singular='incarceration', event_name_past_tense='were incarcerated', description_markdown='Incarceration rate description\\n\\n<br />\\nIncarceration rate denominator description', metric_event_conditions_string=None, top_x_pct=None, is_absconsion_metric=False, list_table_text='Clients will appear on this list multiple times if they have been incarcerated more than once under this officer in the time period.'), OutliersMetricConfig(state_code=None, name='task_completions_transfer_to_limited_supervision', event_observation_type=None, outcome_type=<MetricOutcome.FAVORABLE: 'FAVORABLE'>, title_display_name='Limited Supervision Unit Transfer Rate', body_display_name='Limited Supervision Unit transfer rate(s)', event_name='LSU transfers', event_name_singular='LSU transfer', event_name_past_tense='were transferred to LSU', description_markdown='', metric_event_conditions_string=None, top_x_pct=None, is_absconsion_metric=False, list_table_text=None)], recipient_email_address='supervisor5@recidiviz.org', additional_recipients=['manager2@recidiviz.org', 'manager3@recidiviz.org'])"
+    ),
 }
 
 snapshots[
@@ -436,6 +439,42 @@ Incarceration rate denominator description""",
         ],
         "recipient_email_address": "manager4@recidiviz.org",
     },
+    "105": {
+        "additional_recipients": ["manager2@recidiviz.org", "manager3@recidiviz.org"],
+        "metrics": [],
+        "metrics_without_outliers": [
+            {
+                "body_display_name": "incarceration rate",
+                "description_markdown": """Incarceration rate description
+
+<br />
+Incarceration rate denominator description""",
+                "event_name": "incarcerations",
+                "event_name_past_tense": "were incarcerated",
+                "event_name_singular": "incarceration",
+                "is_absconsion_metric": False,
+                "list_table_text": "Clients will appear on this list multiple times if they have been incarcerated more than once under this officer in the time period.",
+                "name": "incarceration_starts_and_inferred",
+                "outcome_type": "ADVERSE",
+                "title_display_name": "Incarceration Rate (CPVs & TPVs)",
+                "top_x_pct": None,
+            },
+            {
+                "body_display_name": "Limited Supervision Unit transfer rate(s)",
+                "description_markdown": "",
+                "event_name": "LSU transfers",
+                "event_name_past_tense": "were transferred to LSU",
+                "event_name_singular": "LSU transfer",
+                "is_absconsion_metric": False,
+                "list_table_text": None,
+                "name": "task_completions_transfer_to_limited_supervision",
+                "outcome_type": "FAVORABLE",
+                "title_display_name": "Limited Supervision Unit Transfer Rate",
+                "top_x_pct": None,
+            },
+        ],
+        "recipient_email_address": "supervisor5@recidiviz.org",
+    },
 }
 
 snapshots[
@@ -583,6 +622,9 @@ snapshots[
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_supervisor_entities"
 ] = [
+    GenericRepr(
+        "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='5', middle_names='', name_suffix=''), external_id='105', pseudonymized_id='hash5', supervision_district='2', email='supervisor5@recidiviz.org', has_outliers=False, supervision_unit=None)"
+    ),
     GenericRepr(
         "SupervisionOfficerSupervisorEntity(full_name=PersonName(given_names='Supervisor', surname='1', middle_names='', name_suffix=''), external_id='101', pseudonymized_id='hash1', supervision_district=None, email='supervisor1@recidiviz.org', has_outliers=True, supervision_unit='unit1')"
     ),

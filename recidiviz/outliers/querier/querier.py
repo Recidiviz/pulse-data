@@ -445,6 +445,8 @@ class OutliersQuerier:
                         # TODO(#24998): Account for comparing benchmarks by caseload type
                         SupervisionOfficerOutlierStatus.caseload_category == "ALL",
                     ),
+                    # We shouldn't exclude supervisors who don't have outcomes officers
+                    isouter=True,
                 )
                 .filter(SupervisionOfficerSupervisor.full_name.is_not(None))
                 .group_by(
