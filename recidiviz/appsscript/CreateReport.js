@@ -35,12 +35,13 @@ function main(e) {
   const stateCode = itemResponses[0].getResponse();
   const timePeriod = itemResponses[1].getResponse();
   const endDateString = itemResponses[2].getResponse();
-  const workflowsToInclude = itemResponses[3].getResponse();
+  const isTestReport = itemResponses[3].getResponse() === "Yes";
+  const workflowsToInclude = itemResponses[4].getResponse();
 
   Logger.log("stateCode: %s", stateCode);
-  Logger.log("timePeriod: %s", timePeriod);
   Logger.log("endDateString: %s", endDateString);
   Logger.log("workflowsToInclude: %s", workflowsToInclude);
+  Logger.log("isTestReport: %s", isTestReport);
 
   const { startDate, startDateString } = getStartDate(
     stateCode,
@@ -257,7 +258,8 @@ function main(e) {
     workflowToMaxMarkedIneligibleLocation,
     workflowToMauWauByRegionChart,
     workflowToMaxMauWauLocation,
-    workflowToWauByWeekChart
+    workflowToWauByWeekChart,
+    isTestReport
   );
 }
 
@@ -297,19 +299,24 @@ function copyAndPopulateTemplateDoc(
   workflowToMaxMarkedIneligibleLocation,
   workflowToMauWauByRegionChart,
   workflowToMaxMauWauLocation,
-  workflowToWauByWeekChart
+  workflowToWauByWeekChart,
+  isTestReport
 ) {
   const template = DriveApp.getFileById(
     "1nsc_o2fTlldTQavxJveucWgDKkic_clKZjn0GuyF2N8"
   );
-  const destinationFolder = DriveApp.getFolderById(
+  const testFolder = DriveApp.getFolderById(
+    "1oY2zratF9o3lk1Lmj03Y_Jgfwxst85Sf"
+  );
+  const mainFolder = DriveApp.getFolderById(
     "1UzFS4GsbgIqoLBUv0Z314-51pxQznHaJ"
   );
+  const destinationFolder = isTestReport ? testFolder : mainFolder;
 
   const today = Utilities.formatDate(new Date(), "GMT-5", "MM/dd/yyyy");
 
   const copy = template.makeCopy(
-    `${stateCode} ${timePeriod.toLowerCase()}ly Impact Report ending ${endDateString}`,
+    `${isTestReport ? "[TEST] " : ""}${stateCode} ${timePeriod.toLowerCase()}ly Impact Report ending ${endDateString}`,
     destinationFolder
   );
   const doc = DocumentApp.openById(copy.getId());

@@ -102,10 +102,38 @@ function createStateQuestion(currentStates) {
   timePeriodItem.setChoiceValues(["MONTH", "QUARTER", "YEAR"]);
   timePeriodItem.setRequired(true);
 
-  const endDateText = "End Date";
-  const endDateItem = form.addDateItem();
-  endDateItem.setTitle(endDateText);
-  endDateItem.setRequired(true);
+  const getListOfAllowedDates = () => {
+    const TODAY = new Date();
+    const startOfRange = new Date(TODAY.getFullYear(), TODAY.getMonth() - 2, 1);
+    const listOfAllowedDates = [];
+
+    for (
+      let date = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+      date >= startOfRange;
+      date.setMonth(date.getMonth() - 1)
+    )
+      listOfAllowedDates.push(date.toISOString().substring(0, 10));
+
+    return listOfAllowedDates;
+  };
+
+  form
+    .addListItem()
+    .setTitle("End Date")
+    .setChoiceValues(getListOfAllowedDates())
+    .setRequired(true);
+
+  const isTestReportItem = form.addMultipleChoiceItem();
+  isTestReportItem
+    .setTitle("Is this a TEST report?")
+    .setHelpText(
+      "If this is a TEST report, it will be added to the test folder."
+    )
+    .setChoices([
+      isTestReportItem.createChoice("Yes"),
+      isTestReportItem.createChoice("No"),
+    ])
+    .setRequired(true);
 
   const stateToNav = createStateNavItems();
 
@@ -127,7 +155,7 @@ function createStateQuestion(currentStates) {
 /**
  * Create state nav items
  * For each unique state, creates a new navigation item.
- * Each nav item will cotain choices for the Workflows launched in
+ * Each nav item will contain choices for the Workflows launched in
  * the given state.
  * @returns {map} stateToNav A map of state codes to their nav items
  */
