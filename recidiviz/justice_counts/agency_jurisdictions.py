@@ -113,6 +113,7 @@ class AgencyJurisdictionInterface:
                 Each key represents a demographic category, and each inner dictionary maps
                 the year to the corresponding population for each category.
         """
+        populations_dict: Dict[str, Dict[str, Dict[int, int]]] = {}
         # Fetch all jurisdictions associated with the agency
         all_agency_jurisdictions = (
             session.query(schema.AgencyJurisdiction)
