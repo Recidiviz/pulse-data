@@ -23,14 +23,7 @@ from typing import Dict, List, Set
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import (
-    raw_latest_views_dataset_for_region,
-    raw_tables_dataset_for_region,
-)
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_direct_ingest_states,
-)
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.dataset_helpers import get_raw_data_table_and_view_datasets
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     RAW_DATA_LATEST_VIEW_ID_SUFFIX,
 )
@@ -98,16 +91,3 @@ def find_direct_raw_data_references(
                 state_code = raw_datasets[parent_table.dataset_id]
                 raw_data_references[state_code][file_tag].add(view.address)
     return raw_data_references
-
-
-def get_raw_data_table_and_view_datasets() -> Dict[str, StateCode]:
-    raw_datasets: Dict[str, StateCode] = {}
-    for state_code in get_existing_direct_ingest_states():
-        for instance in DirectIngestInstance:
-            raw_tables_dataset = raw_tables_dataset_for_region(state_code, instance)
-            raw_latest_views_dataset = raw_latest_views_dataset_for_region(
-                state_code, instance
-            )
-            raw_datasets[raw_tables_dataset] = state_code
-            raw_datasets[raw_latest_views_dataset] = state_code
-    return raw_datasets

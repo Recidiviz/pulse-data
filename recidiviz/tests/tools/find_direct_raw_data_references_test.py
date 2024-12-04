@@ -46,7 +46,7 @@ class TestFindDirectRawDataReferences(unittest.TestCase):
         self.project_id_patcher.start().return_value = "recidiviz-456"
 
         self.mock_get_existing_direct_ingest_states = patch(
-            "recidiviz.tools.find_direct_raw_data_references.get_existing_direct_ingest_states"
+            "recidiviz.ingest.direct.dataset_helpers.get_existing_direct_ingest_states"
         )
         self.mock_get_existing_direct_ingest_states.start().return_value = [
             StateCode.US_XX,

@@ -36,11 +36,9 @@ from recidiviz.big_query.big_query_view_dag_walker import (
 from recidiviz.big_query.view_update_manager import CreateOrUpdateViewResult
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_helpers import get_raw_data_table_and_view_datasets
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
-)
-from recidiviz.tools.find_direct_raw_data_references import (
-    get_raw_data_table_and_view_datasets,
 )
 from recidiviz.utils import environment, metadata
 from recidiviz.view_registry.address_to_complexity_score_mapping import (

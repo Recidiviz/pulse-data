@@ -21,7 +21,9 @@ according to their conceptual complexity.
 import sqlglot.expressions as expr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.tests.big_query.sqlglot_helpers import does_cte_expression_have_docstring
+from recidiviz.big_query.big_query_sqlglot_helpers import (
+    does_cte_expression_have_docstring,
+)
 
 
 def _join_type_complexity_score(join_expression: expr.Join) -> int:

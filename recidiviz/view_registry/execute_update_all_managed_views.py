@@ -42,10 +42,19 @@ from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
     deployed_view_builders,
 )
+from recidiviz.view_registry.per_view_update_stats import (
+    PerViewUpdateStats,
+    per_view_update_stats_for_view_update_result,
+)
 
-# Table that holds information about update all jobs
+# Table that holds job-level information about successful update_managed_views_all jobs
 VIEW_UPDATE_TRACKER_TABLE_ADDRESS = BigQueryAddress(
     dataset_id=VIEW_UPDATE_METADATA_DATASET, table_id="view_update_tracker"
+)
+
+# Table that holds view-level information about successful update_managed_views_all jobs
+PER_VIEW_UPDATE_STATS_TABLE_ADDRESS = BigQueryAddress(
+    dataset_id=VIEW_UPDATE_METADATA_DATASET, table_id="per_view_update_stats"
 )
 
 
@@ -65,6 +74,7 @@ class AllViewsUpdateSuccessPersister(BigQueryRowStreamer):
 
     def record_success_in_bq(
         self,
+        success_datetime: datetime.datetime,
         deployed_builders: list[BigQueryViewBuilder],
         dataset_override_prefix: str | None,
         runtime_sec: int,
@@ -72,7 +82,7 @@ class AllViewsUpdateSuccessPersister(BigQueryRowStreamer):
         num_deployed_views = len(deployed_builders)
 
         success_row = {
-            "success_timestamp": datetime.datetime.now(tz=pytz.UTC).isoformat(),
+            "success_timestamp": success_datetime.isoformat(),
             "dataset_override_prefix": dataset_override_prefix,
             "num_deployed_views": num_deployed_views,
             "view_update_runtime_sec": runtime_sec,
@@ -81,13 +91,37 @@ class AllViewsUpdateSuccessPersister(BigQueryRowStreamer):
         self.stream_rows([success_row])
 
 
+class PerViewUpdateStatsPersister(BigQueryRowStreamer):
+    def __init__(
+        self,
+        bq_client: BigQueryClient,
+    ):
+        source_table_repository = build_source_table_repository_for_yaml_managed_tables(
+            metadata.project_id()
+        )
+        source_table_config = source_table_repository.build_config(
+            PER_VIEW_UPDATE_STATS_TABLE_ADDRESS
+        )
+        super().__init__(
+            bq_client, source_table_config.address, source_table_config.schema_fields
+        )
+
+    def record_success_in_bq(
+        self,
+        view_update_results: list[PerViewUpdateStats],
+    ) -> None:
+        rows = [view_result.as_table_row() for view_result in view_update_results]
+
+        self.stream_rows(rows)
+
+
 @gcp_only
 def execute_update_all_managed_views(sandbox_prefix: str | None) -> None:
     """
     Updates all views in the view registry. If sandbox_prefix is provided, all views will be deployed to a sandbox
     dataset.
     """
-    start = datetime.datetime.now()
+    start_time = datetime.datetime.now(tz=pytz.UTC)
     view_builders = deployed_view_builders()
 
     view_update_sandbox_context = None
@@ -98,8 +132,10 @@ def execute_update_all_managed_views(sandbox_prefix: str | None) -> None:
             parent_address_formatter_provider=None,
         )
 
-    # TODO(#34767): Return summary and per-view results from here so we can write to BQ.
-    create_managed_dataset_and_deploy_views_for_view_builders(
+    (
+        update_views_result,
+        dag_walker,
+    ) = create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
         view_builders_to_update=view_builders,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
@@ -107,15 +143,26 @@ def execute_update_all_managed_views(sandbox_prefix: str | None) -> None:
         materialize_changed_views_only=False,
         allow_slow_views=False,
     )
-    end = datetime.datetime.now()
-    runtime_sec = int((end - start).total_seconds())
+    success_time = datetime.datetime.now(tz=pytz.UTC)
+    runtime_sec = int((success_time - start_time).total_seconds())
 
-    success_persister = AllViewsUpdateSuccessPersister(bq_client=BigQueryClientImpl())
-    success_persister.record_success_in_bq(
+    job_level_success_persister = AllViewsUpdateSuccessPersister(
+        bq_client=BigQueryClientImpl()
+    )
+    job_level_success_persister.record_success_in_bq(
         deployed_builders=view_builders,
+        success_datetime=success_time,
         dataset_override_prefix=sandbox_prefix,
         runtime_sec=runtime_sec,
     )
-    # TODO(#34767): Write per-view stats to view_update_tracker.per_view_update_stats
-    #  here.
+    view_level_success_persister = PerViewUpdateStatsPersister(
+        bq_client=BigQueryClientImpl()
+    )
+    view_level_success_persister.record_success_in_bq(
+        view_update_results=per_view_update_stats_for_view_update_result(
+            success_datetime=success_time,
+            update_views_result=update_views_result,
+            view_update_dag_walker=dag_walker,
+        ),
+    )
     logging.info("All managed views successfully updated and materialized.")

@@ -29,6 +29,7 @@ import pytz
 from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_sqlglot_helpers import get_undocumented_ctes
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.raw_data.legacy_direct_ingest_raw_file_import_manager import (
@@ -48,7 +49,6 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 from recidiviz.tests.big_query.big_query_test_helper import query_view
 from recidiviz.tests.big_query.sqlglot_helpers import (
     check_query_is_not_ordered_outside_of_windows,
-    get_undocumented_ctes,
 )
 from recidiviz.tests.ingest.direct.direct_ingest_raw_fixture_loader import (
     DirectIngestRawDataFixtureLoader,

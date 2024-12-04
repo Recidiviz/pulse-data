@@ -23,7 +23,6 @@ from recidiviz.tests.big_query.sqlglot_helpers import (
     check_query_is_not_ordered_outside_of_windows,
     check_query_selects_output_columns,
     check_view_has_no_state_specific_logic,
-    get_undocumented_ctes,
 )
 
 
@@ -134,27 +133,6 @@ class TestSqlglotHelpers(unittest.TestCase):
             check_query_is_not_ordered_outside_of_windows(
                 order_struct_outside_of_aggregation_invalid
             )
-
-    def test_get_undocumented_ctes(self) -> None:
-        query = """
-        WITH
-            -- This is a good comment in the right place
-            cte_1 AS (SELECT * FROM a),
-            -- This is another good comment,
-            -- it's even on two lines!
-            cte_2 AS (SELECT * FROM b)
-            SELECT * FROM cte_1 JOIN cte_2 USING(a, b, c)
-        """
-        self.assertEqual(set(), get_undocumented_ctes(query))
-
-        query = """
-        WITH
-            -- This is a good comment in the right place
-            cte_1 AS (SELECT * FROM a),
-            cte_2 AS (SELECT * FROM b)
-            SELECT * FROM cte_1 JOIN cte_2 USING(a, b, c)
-        """
-        self.assertEqual({"cte_2"}, get_undocumented_ctes(query))
 
     def test_check_query_selects_output_columns(self) -> None:
         valid_query_simple = "SELECT a, b FROM table_a"

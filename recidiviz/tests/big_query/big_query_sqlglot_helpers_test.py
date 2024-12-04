@@ -22,6 +22,7 @@ import sqlglot.expressions as expr
 
 from recidiviz.big_query.big_query_sqlglot_helpers import (
     get_state_code_literal_references,
+    get_undocumented_ctes,
 )
 from recidiviz.common.constants.states import StateCode
 
@@ -98,3 +99,24 @@ class TestBigQuerySqlglotHelpers(unittest.TestCase):
             {StateCode.US_XX, StateCode.US_YY},
             get_state_code_literal_references(state_code_subquery_query),
         )
+
+    def test_get_undocumented_ctes(self) -> None:
+        query = """
+        WITH
+            -- This is a good comment in the right place
+            cte_1 AS (SELECT * FROM a),
+            -- This is another good comment,
+            -- it's even on two lines!
+            cte_2 AS (SELECT * FROM b)
+            SELECT * FROM cte_1 JOIN cte_2 USING(a, b, c)
+        """
+        self.assertEqual(set(), get_undocumented_ctes(query))
+
+        query = """
+        WITH
+            -- This is a good comment in the right place
+            cte_1 AS (SELECT * FROM a),
+            cte_2 AS (SELECT * FROM b)
+            SELECT * FROM cte_1 JOIN cte_2 USING(a, b, c)
+        """
+        self.assertEqual({"cte_2"}, get_undocumented_ctes(query))

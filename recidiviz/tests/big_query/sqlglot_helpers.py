@@ -18,8 +18,6 @@
 Utility functions that use the sqlglot library to do advanced checks
 of SQL queries using their ASTs.
 """
-from typing import Set
-
 import sqlglot
 import sqlglot.expressions as expr
 
@@ -69,54 +67,6 @@ def check_query_is_not_ordered_outside_of_windows(query: str) -> None:
             raise ValueError(
                 f"Found ORDER BY statement that isn't applied to window or aggregation: '{order}'"
             )
-
-
-def does_cte_expression_have_docstring(cte_expression: expr.CTE) -> bool:
-    """
-    Returns True if the given CTE expression has a comment, False otherwise.
-
-    We expect to have CTEs in queries documented like:
-    WITH
-    -- this explains table 1
-    table_1 AS (
-        SELECT * FROM A
-    ),
-    -- this explains table 2
-    table_2 AS (
-        SELECT * FROM B JOIN C USING(col)
-    )
-    SELECT * FROM table_1 UNION ALL SELECT * FROM table_2
-    """
-    return bool(cte_expression.args["alias"].comments)
-
-
-def get_undocumented_ctes(query: str) -> Set[str]:
-    """
-    Returns the names of CTEs that do not have a comment.
-
-    We expect to have CTEs in queries documented like:
-        WITH
-        -- this explains table 1
-        table_1 AS (
-            SELECT * FROM A
-        ),
-        -- this explains table 2
-        table_2 AS (
-            SELECT * FROM B JOIN C USING(col)
-        )
-        SELECT * FROM table_1 UNION ALL SELECT * FROM table_2
-
-    """
-    tree = sqlglot.parse_one(query, dialect="bigquery")
-    if not isinstance(tree, expr.Query):
-        raise ValueError("Non-Query SQL expression built from ViewBuilder")
-    return {
-        cte.alias
-        for cte in tree.ctes
-        # TODO(#29272) Update DirectIngestViewQueryBuilder to self document generated views
-        if "generated_view" not in cte.alias
-        and not does_cte_expression_have_docstring(cte)
-    }
 
 
 def check_query_selects_output_columns(
