@@ -546,7 +546,11 @@ function constructUsageAndImpactDistrictColumnChart(
     xAxisClean,
     null, // y-axis
     ["#3697FA", "#BABABA", "#CA2E17"], // this chart will have blue, gray, and red columns
-    true // stacked
+    true, // stacked
+    undefined,
+    undefined,
+    undefined,
+    false // for this chart, we do not want to filter out zero values
   );
 
   return usageAndImpactDistrictColumnChart;

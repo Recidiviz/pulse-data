@@ -16,13 +16,16 @@
 // =============================================================================
 /* Helper file used by CreateReport.gs. */
 
-const REGIONS_AND_FACILITIES_TO_FILTER_OUT = [
+const REGIONS_AND_FACILITIES_SUBSTRINGS_TO_FILTER_OUT = [
   "NOT_APPLICABLE",
   "EXTERNAL_UNKNOWN",
   "UNKNOWN",
   "NULL",
   "UNKNOWN LOCATION",
-  "",
+  "COUNTY JAIL",
+  "FEDERAL",
+  "ARIZONA",
+  "JAIL"
 ];
 
 /**
@@ -106,9 +109,10 @@ function createColumnChart(
 ) {
   const enCollator = new Intl.Collator("en", { numeric: true });
   let buildChart = false;
-  data.sort(enCollator.compare).forEach((newRow) => {
-    if (
-      REGIONS_AND_FACILITIES_TO_FILTER_OUT.includes(newRow[0]) ||
+  data.sort(enCollator.compare).forEach((newRow) =>
+  {
+    if ( !newRow[0] ||
+      REGIONS_AND_FACILITIES_SUBSTRINGS_TO_FILTER_OUT.some((excludeTerm) => newRow[0].toUpperCase().includes(excludeTerm)) ||
       (filterOutZero && parseInt(newRow[1]) === 0)
     ) {
       return;
@@ -122,6 +126,7 @@ function createColumnChart(
   }
 
   chartData.build();
+  
 
   let chart = Charts.newColumnChart()
     .setDataTable(chartData)
@@ -132,7 +137,7 @@ function createColumnChart(
     .setTitleTextStyle(Charts.newTextStyle().setFontSize(28).build())
     .setXAxisTitleTextStyle(Charts.newTextStyle().setFontSize(20))
     .setYAxisTitleTextStyle(Charts.newTextStyle().setFontSize(20))
-    .setXAxisTextStyle(Charts.newTextStyle().setFontSize(20))
+    .setXAxisTextStyle(Charts.newTextStyle().setFontSize(10))
     .setYAxisTextStyle(Charts.newTextStyle().setFontSize(20))
     .setLegendTextStyle(Charts.newTextStyle().setFontSize(20))
     .setOption("chartArea.top", 50)
