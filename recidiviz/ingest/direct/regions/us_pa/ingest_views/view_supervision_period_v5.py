@@ -315,16 +315,21 @@ dbo_ConditionCode AS (
         CndConditionCode,
         SUM(CAST((CndConditionCode = "START") AS INT64)) OVER (wind) AS conditions_started,
         SUM(CAST((CndConditionCode = "END") AS INT64)) OVER (wind) AS conditions_ended,
+        -- sometimes conditions descriptions span multiple rows in dbo_ConditionCodeDescription (ordered by CndDescriptionId), and so we need to concatenate them for each ConditionCodeID
+        STRING_AGG(ConditionDescription, " ") OVER(PARTITION BY ParoleNumber, ParoleCountId, BdActionId, ConditionCodeID 
+                                                   ORDER BY CAST(CndDescriptionId AS INT64) ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS ConditionDescription_full
       FROM {{dbo_ConditionCode}} cc
       -- there are only 6 cases where board action date gets updated for a unique ParoleNumber, ParoleCountId, BdActionID over time, 
       -- and they all happened in the 1990's so going to ignore those changes 
       LEFT JOIN {{dbo_BoardAction}} ba 
         USING(ParoleNumber, ParoleCountId, BdActionID)
+      LEFT JOIN {{dbo_ConditionCodeDescription}} cd
+        USING(ParoleNumber, ParoleCountId, BdActionId, ConditionCodeID)
       WINDOW wind AS (
-        PARTITION BY ParoleNumber, ParoleCountId, BdActionID ORDER BY CAST(ConditionCodeID AS INT64) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        PARTITION BY ParoleNumber, ParoleCountId, BdActionID ORDER BY CAST(ConditionCodeID AS INT64), CAST(CndDescriptionId AS INT64) ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
       )
     )
-    WHERE conditions_started = 1 AND conditions_ended = 0 AND CndConditionCode <> 'START' 
+    WHERE conditions_started = 1 AND conditions_ended = 0 AND CndConditionCode <> 'START'
   ),
   special_conditions_with_pcs AS (
     SELECT DISTINCT * EXCEPT(ParoleCountId),
@@ -356,7 +361,7 @@ dbo_ConditionCode AS (
         special_conditions_with_pcs.ParoleNumber,
         special_conditions_with_pcs.ParoleCountId,
         GREATEST(key_date, pc_keep.parole_start_date) AS key_date,
-        STRING_AGG(DISTINCT CndConditionCode, ',' ORDER BY CndConditionCode) AS condition_codes,
+        STRING_AGG(DISTINCT ConditionDescription_full, '##' ORDER BY ConditionDescription_full) AS condition_codes,
     FROM special_conditions_with_pcs
     INNER JOIN parole_counts_to_keep pc_keep
       ON special_conditions_with_pcs.ParoleNumber = pc_keep.ParoleNumber
