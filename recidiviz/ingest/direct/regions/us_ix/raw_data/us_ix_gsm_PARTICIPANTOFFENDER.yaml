@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: gsm_PARTICIPANTOFFENDER
+file_description: Maps participant information to offender information
+data_classification: source
+separator: †
+custom_line_terminator: ‡
+primary_key_cols:
+  - ParticipantId
+columns:
+  - name: ParticipantId
+    description: Participant Id
+  - name: ClassCode
+    description: Class code
+  - name: OffenderId
+    description: OffenderId
+    field_type: person_external_id
+    external_id_type: US_IX_DOC
+    is_pii: True
+  - name: InsertUserId
+    description: Insert user ID
+    is_pii: True
+  - name: Locking
+    description: Locking number
+  - name: InsertDate
+    description: Insert Date
+    field_type: datetime
+  - name: UpdateUserId
+    description: Update user ID
+    is_pii: True
+  - name: UpdateDate
+    description: Update date
+    field_type: datetime

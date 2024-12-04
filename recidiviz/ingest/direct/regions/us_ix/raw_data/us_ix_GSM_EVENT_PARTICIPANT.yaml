@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: GSM_EVENT_PARTICIPANT
+file_description: Facility program participation info
+data_classification: source
+separator: †
+custom_line_terminator: ‡
+primary_key_cols:
+  - EventParticipantId
+columns:
+  - name: EventParticipantId
+    description: Event participant Id
+  - name: EventId
+    description: Event Id
+  - name: ParticipantId
+    description: Participant Id
+  - name: StartDate
+    description: Start date
+    field_type: datetime
+  - name: EndDate
+    description: End date
+    field_type: datetime
+  - name: IsMasterPass
+    description: Is master pass flag
+  - name: ScheduleOverride
+    description: Schedule overrride
+  - name: EventRank
+    description: Event rank
+  - name: ScheduleOwnerId
+    description: Schedule owner Id
+    is_pii: True
+  - name: InsertUserId
+    description: Insert user ID
+    is_pii: True
+  - name: Locking
+    description: Locking number
+  - name: InsertDate
+    description: Insert Date
+    field_type: datetime
+  - name: UpdateUserId
+    description: Update user ID
+    is_pii: True
+  - name: UpdateDate
+    description: Update date
+    field_type: datetime
+  - name: Inactive
+    description: Inactive flag

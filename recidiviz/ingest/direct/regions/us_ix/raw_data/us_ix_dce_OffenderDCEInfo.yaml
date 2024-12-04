@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: dce_OffenderDCEInfo
+file_description: Atlas table for information on programming course names and descriptions
+data_classification: source
+separator: †
+custom_line_terminator: ‡
+primary_key_cols:
+  - OffenderDCEInfoId
+columns:
+  - name: OffenderDCEInfoId
+    description: Offender DCE info Id
+  - name: OffenderId
+    description: Offender Id
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_IX_DOC
+  - name: ABELevelId
+    description: ABE Level Id
+  - name: ESLLevelId
+    description: ESL Level Id
+  - name: FastTrackEligibleUntilDate
+    description: Fast track eligible until date
+    field_type: datetime
+  - name: GEDEligibleUntilDate
+    description: GED eligible until date
+    field_type: datetime
+  - name: OPTEligibleUntilDate
+    description: OPT eligible until date
+    field_type: datetime
+  - name: IsTeacherDiscretion
+    description: Is teacher discretion flag
+  - name: IsGEDPassed
+    description: Is GED passed flag
+  - name: IsPassed2Of4GED2014Subtest
+    description: Is passed 20f4 GED 2014 subtest flag
+  - name: IsTABEReading8PlusMathAverage8PlusGE
+    description: Is teacher discretion flag
+  - name: IsAdministeredGEDPassed
+    description: Is administered GED passed flag
+  - name: InsertUserId
+    description: Insert user ID
+    is_pii: True
+  - name: Locking
+    description: Locking number
+  - name: InsertDate
+    description: Insert Date
+    field_type: datetime
+  - name: UpdateUserId
+    description: Update user ID
+    is_pii: True
+  - name: UpdateDate
+    description: Update date
+    field_type: datetime
+  - name: IsWaiver
+    description: Is waiver flag
+  - name: IsGEDPassedWithHonor
+    description: Is GED passed with honors flag
+  - name: WaiverDate
+    description: Waiver date
+    field_type: datetime
+  - name: WaiverApproverId
+    description: Waiver approver Id
+    is_pii: True
+  - name: IsCollegeReady
+    description: Is college ready flag
+  - name: IsCollegeCreditEligible
+    description: Is college credit eligible flag
