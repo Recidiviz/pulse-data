@@ -74,7 +74,7 @@ class ParentAddressComplexityScoreMapper:
         """Returns True if references to raw data tables / raw data latest views in the
         |view_builder| query are expected and should not be penalized excessively.
 
-        NOTE: THE ALGORITHM FOR COMPLETING THIS SCORE IS LOCKED FOR 2025 - DO NOT MAKE
+        NOTE: THE ALGORITHM FOR COMPUTING THIS SCORE IS LOCKED FOR 2025 - DO NOT MAKE
         ANY MODIFICATIONS TO THE LOGIC, OTHERWISE WE WON'T BE ABLE TO LEGITIMATELY
         COMPARE HOW COMPLEXITY CHANGES OVER THE COURSE OF THE YEAR.
         """
@@ -94,7 +94,7 @@ class ParentAddressComplexityScoreMapper:
         Most references are given 1 point. State-specific tables that should not be
         referenced in our view graph are given higher point values.
 
-        NOTE: THE ALGORITHM FOR COMPLETING THIS SCORE IS LOCKED FOR 2025 - DO NOT MAKE
+        NOTE: THE ALGORITHM FOR COMPUTING THIS SCORE IS LOCKED FOR 2025 - DO NOT MAKE
         ANY MODIFICATIONS TO THE LOGIC, OTHERWISE WE WON'T BE ABLE TO LEGITIMATELY
         COMPARE HOW COMPLEXITY CHANGES OVER THE COURSE OF THE YEAR.
         """

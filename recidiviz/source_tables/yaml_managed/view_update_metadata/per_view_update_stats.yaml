@@ -93,9 +93,11 @@ schema:
     mode: REQUIRED
     description: >-
       The query complexity score for this view added to all complexity scores for views that feed into this view, 
-      defined using our 2025 definition of complexity. All views in the following are assigned a composite complexity 
-      score of 0: normalized_state, sessions, sentence_sessions. This essentially tells us how much complexity is added
-      outside of the abstractions provided by core Doppler/DSI-managed libraries.
+      defined using our 2025 definition of complexity. All views in the following datasets are assigned a composite 
+      complexity score of 0: normalized_state, sentence_sessions. Select views in sessions and reference_views datasets
+      are also designated "library" status if they provide a meaningful, state- and product-agnostic abstraction on top 
+      of ingested data (see recidiviz/view_registry/infra_library.py). This field essentially tells us how much 
+      complexity is added outside of the abstractions provided by core Doppler/DSI-managed libraries.
 
   # State-specific logic
   - name: has_state_specific_logic

@@ -84,7 +84,7 @@ def find_direct_raw_data_references(
         for builder in view_builders
         if builder.address not in raw_data_validation_views
     ]
-    raw_datasets = _get_raw_datasets()
+    raw_datasets = get_raw_data_table_and_view_datasets()
     for view in views:
         for parent_table in view.parent_tables:
             # We don't count raw data references that are *in* raw data latest views
@@ -100,7 +100,7 @@ def find_direct_raw_data_references(
     return raw_data_references
 
 
-def _get_raw_datasets() -> Dict[str, StateCode]:
+def get_raw_data_table_and_view_datasets() -> Dict[str, StateCode]:
     raw_datasets: Dict[str, StateCode] = {}
     for state_code in get_existing_direct_ingest_states():
         for instance in DirectIngestInstance:

@@ -454,7 +454,7 @@ def get_query_complexity_score_2025(
             possible valid table / view addresses referenced by this query. This
             function will crash if a referenced table is not in this map.
 
-    NOTE: THE ALGORITHM FOR COMPLETING THIS SCORE IS LOCKED FOR 2025 - DO NOT MAKE ANY
+    NOTE: THE ALGORITHM FOR COMPUTING THIS SCORE IS LOCKED FOR 2025 - DO NOT MAKE ANY
     MODIFICATIONS TO THE LOGIC, OTHERWISE WE WON'T BE ABLE TO LEGITIMATELY COMPARE HOW
     COMPLEXITY CHANGES OVER THE COURSE OF THE YEAR.
     """
