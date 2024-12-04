@@ -176,6 +176,17 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
     }
   }
 
+  rule {
+    description = "Allow all traffic to the roster upload endpoint, which has triggered false positives"
+    action      = "allow"
+    priority    = "902"
+    match {
+      expr {
+        expression = "request.path.matches(\"/auth/users\\?state_code=[a-zA-Z_]+\")"
+      }
+    }
+  }
+
   # ----------------------------------------------
   # Static hosts to block
   # ----------------------------------------------
