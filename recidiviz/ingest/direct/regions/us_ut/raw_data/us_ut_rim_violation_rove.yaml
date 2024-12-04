@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: rim_violation_rove
+file_description: |-
+  TODO(#33372): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - rim_violation_rove_id
+columns:
+  - name: rim_violation_rove_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_violation_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_ofndr_violation_event_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: violation_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: violation_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sort_seq
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: created_by_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: created_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: stricken_dismissed_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: wrnt_accepted_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: amend_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: accnt_cond
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

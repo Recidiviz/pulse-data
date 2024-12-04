@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: rim_sanction_routing
+file_description: |-
+  TODO(#33372): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - rim_sanction_routing_id
+columns:
+  - name: rim_sanction_routing_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_sanction_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_approval_routing_id
+    description: |-
+      TODO(#33372): Fill in column description

@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: rim_category_cd
+file_description: |-
+  TODO(#33372): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - rim_category_id
+columns:
+  - name: rim_category_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_category_title
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: rim_category_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

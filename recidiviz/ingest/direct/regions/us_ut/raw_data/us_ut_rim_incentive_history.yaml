@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: rim_incentive_history
+file_description: |-
+  TODO(#33372): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - rim_incentive_history_id
+columns:
+  - name: rim_incentive_history_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_ofndr_accomplishment_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_incentive_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_goal_typ_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_status_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: agent_acknowledge_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rcmnd_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: incentive_cmt
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: sprvsr_dcsn_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: sprvsr_dcsn_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sprvsr_approval_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sprvsr_cmt
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: sent_to
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: court_bopp_dcsn_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: court_bopp_dcsn_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: court_bopp_approval_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: court_bopp_cmt
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: created_by_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: created_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

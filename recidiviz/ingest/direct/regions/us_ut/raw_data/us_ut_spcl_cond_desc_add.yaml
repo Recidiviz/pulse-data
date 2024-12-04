@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: spcl_cond_desc_add
+file_description: |-
+  Description of special conditions of supervision
+data_classification: source
+primary_key_cols:
+  - spcl_cond_desc_id
+columns:
+  - name: spcl_cond_desc_id
+    description: |-
+      Primary key
+  - name: spcl_cond_desc_add
+    description: |-
+      Description of special condition of supervision
+    is_pii: True

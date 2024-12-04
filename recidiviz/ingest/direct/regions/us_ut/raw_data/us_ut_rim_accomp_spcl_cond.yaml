@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: rim_accomp_spcl_cond
+file_description: |-
+  TODO(#33372): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - rim_accomp_spcl_cond_id
+columns:
+  - name: rim_accomp_spcl_cond_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_accomplishment_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: spcl_cond_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

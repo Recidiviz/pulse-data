@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofndr_tst
+file_description: |-
+  Contains records of all "tests" which can include assessments and other types of surveys
+data_classification: source
+primary_key_cols:
+  - ofndr_tst_id
+columns:
+  - name: ofndr_tst_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: body_loc_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: assess_tst_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: tst_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: score_by_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: updt_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime
+  - name: ofn_assess_tst_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofn_ofndr_tst_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: tst_qstn_rspns_id
+    description: |-
+      TODO(#33372): Fill in column description

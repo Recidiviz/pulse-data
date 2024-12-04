@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: wrnt_allgt
+file_description: |-
+  Warrant Allegation
+data_classification: source
+primary_key_cols:
+  - wrnt_allgt_id
+columns:
+  - name: wrnt_allgt_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_wrnt_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: p_p_allgt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: allgt_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: accpt_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

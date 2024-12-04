@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: rim_ofndr_accomplishment
+file_description: |-
+  TODO(#33372): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - rim_ofndr_accomplishment_id
+columns:
+  - name: rim_ofndr_accomplishment_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+  - name: sprvsn_lvl_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_accomplishment_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: accomplishment_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: created_by_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: created_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

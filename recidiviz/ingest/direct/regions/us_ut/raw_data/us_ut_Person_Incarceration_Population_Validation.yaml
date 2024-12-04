@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: Person_Incarceration_Population_Validation
+file_description: |-
+  Person level validation data showing incarceration population with relevant attributes on a given day
+data_classification: validation
+primary_key_cols:
+  - ofndr_num
+  - query_dt
+  - run_dt
+columns:
+  - name: ofndr_num
+    description: |-
+      Person ID for the incarcerated JII
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+  - name: bad_data_flg
+  - name: query_dt
+    description: |-
+      Date for which this population data is accurate
+    field_type: datetime
+  - name: run_dt
+    description: |-
+      Date this query was executed
+    field_type: datetime
+  - name: loc
+  - name: loc_typ
+  - name: cstdy_lvl
+  - name: assgn_prsn_cmplx
+  - name: assgn_prsn_fclty
+  - name: assgn_prsn_unit
+  - name: assgn_prsn_unit_sctn
+  - name: assgn_prsn_cell
+  - name: assgn_prsn_bed
+  - name: cstdy_auth
+  - name: prsn_entry_dt
+  - name: prsn_exit_dt
+  - name: src_data_issue

@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: rim_status_cd
+file_description: |-
+  TODO(#33372): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - rim_status_id
+columns:
+  - name: rim_status_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_status_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: condition_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: final_state_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: denied_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: pending_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_agcy_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description

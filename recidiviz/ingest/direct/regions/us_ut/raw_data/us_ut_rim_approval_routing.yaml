@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: rim_approval_routing
+file_description: |-
+  TODO(#33372): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - rim_approval_routing_id
+columns:
+  - name: rim_approval_routing_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_agcy_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: auto_rqst_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: auto_rspns_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rim_approval_routing_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: allow_deny_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

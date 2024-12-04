@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: emplymt
+file_description: |-
+  Periods of employment for JII.
+data_classification: source
+primary_key_cols:
+  - emplymt_id
+columns:
+  - name: emplymt_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: emplyr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: emplymt_strt_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: job_title
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: emplymt_stat
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: end_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: wage_amt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: wage_per
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: hrs_work_wk
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rsn_left_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cmt
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: shift_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: work_site
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: ph_ext
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: supr_full_name
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: schd_strt_tm
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: schd_end_tm
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: pay_day_cmt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime
+  - name: vrfy_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vrfy_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: vrfy_rslt_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vrfy_mthd_cd
+    description: |-
+      TODO(#33372): Fill in column description

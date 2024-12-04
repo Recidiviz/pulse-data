@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ofndr_sec_assess
+file_description: |-
+  JII security assessments
+data_classification: source
+primary_key_cols:
+  - assess_id
+columns:
+  - name: assess_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ofndr_num
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: ofndr_tst_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assess_rsn_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assess_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: assess_typ
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: case_wrkr_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: security_score
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: eff_strt_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: custody_level
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: override_rsn_cd
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: ovrd_rsn_cmt
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: review_by_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: end_dt
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: updt_usr_id
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime

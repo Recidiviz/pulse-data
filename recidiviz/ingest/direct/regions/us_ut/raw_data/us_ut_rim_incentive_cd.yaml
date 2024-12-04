@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: rim_incentive_cd
+file_description: |-
+  TODO(#33372): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - rim_incentive_id
+columns:
+  - name: rim_incentive_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: incentive_level
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: incentive_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: rcmnd_reqd_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rcmnd_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+  - name: rim_routing_id
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sort_seq
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: cmpt_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: vld_flg
+    description: |-
+      TODO(#33372): Fill in column description
