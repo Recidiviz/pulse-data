@@ -42,7 +42,7 @@ _DATASET_1 = "dataset_1"
 _TABLE_1 = "table_1"
 
 
-class TestSendIDLSUTexts(BigQueryEmulatorTestCase):
+class TestSendJIITexts(BigQueryEmulatorTestCase):
     """Implements tests for helpers.py."""
 
     def setUp(self) -> None:

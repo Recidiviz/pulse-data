@@ -35,7 +35,7 @@ from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatu
 from recidiviz.tests.case_triage.jii.utils import JIITestObjects
 
 
-class TestSendIDLSUTexts(TestCase):
+class TestSendJIITexts(TestCase):
     """Implements tests for send_jii_texts.py."""
 
     def setUp(self) -> None:
