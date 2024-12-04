@@ -435,7 +435,9 @@ def meets_mandatory_literacy(opp_name: str) -> str:
         FROM
           `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment`
         WHERE state_code = 'US_AZ'
-        AND participation_status_raw_text IN ('COMPLETED')
+        AND (participation_status_raw_text IN ('COMPLETED')
+            -- This catches cases where a resident has been exempted from Mandatory Literacy for any reason
+            OR JSON_EXTRACT(referral_metadata, '$.EXEMPTION') != '""')
         AND program_id LIKE '%MAN%LIT%'
         #TODO(#33737): Look into multiple span cases for residents who have completed in MAN-LIT programs
         QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY start_date ASC) = 1
@@ -466,7 +468,7 @@ def meets_mandatory_literacy(opp_name: str) -> str:
             ON ADC_NUMBER = external_id 
             AND pei.state_code = 'US_AZ'
             AND pei.id_type = 'US_AZ_ADC_NUMBER'
-        WHERE MEETS_MANDITORY_LITERACY = 'Y'
+        WHERE (MEETS_MANDITORY_LITERACY = 'Y' OR  LITERACY_EXCEPTION = 'Y')
         GROUP BY 1,2
     ),
     union_cte AS (
