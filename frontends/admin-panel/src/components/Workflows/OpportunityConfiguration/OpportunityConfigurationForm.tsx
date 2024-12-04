@@ -31,15 +31,24 @@ import { FieldsFromSpec } from "../formUtils/FieldsFromSpec";
 import HydrationWrapper from "../HydrationWrapper";
 import { opportunityConfigFormSpec } from "./opportunityConfigurationFormSpec";
 
-const OPTIONAL_FIELDS: (keyof z.input<
+type OpportunityConfigurationField = keyof z.input<
   typeof babyOpportunityConfigurationSchema
->)[] = [
+>;
+
+const OPTIONAL_FIELDS: OpportunityConfigurationField[] = [
   "featureVariant",
   "initialHeader",
   "denialText",
   "eligibilityDateText",
   "tooltipEligibilityText",
   "zeroGrantsTooltip",
+  "denialAdjective",
+  "denialNoun",
+  "submittedTabTitle",
+  "omsCriteriaHeader",
+  "nonOmsCriteriaHeader",
+  "highlightedCaseCtaCopy",
+  "overdueOpportunityCalloutCopy",
 ];
 
 const OpportunityConfigurationForm = ({

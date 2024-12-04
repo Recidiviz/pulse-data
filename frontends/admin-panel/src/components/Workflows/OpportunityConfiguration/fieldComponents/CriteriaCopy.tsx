@@ -59,3 +59,31 @@ export const CriteriaCopyEdit: MultiEntryChild = ({ name }) => (
     </div>
   </div>
 );
+
+export const KeylessCriteriaCopyView: MultiEntryChild = ({ name }) => (
+  <>
+    <Form.Item noStyle name={[name, "text"]}>
+      <StaticValue />
+    </Form.Item>
+    <Form.Item noStyle name={[name, "tooltip"]}>
+      <StaticValue />
+    </Form.Item>
+  </>
+);
+
+export const KeylessCriteriaCopyEdit: MultiEntryChild = ({ name }) => (
+  <div style={{ width: "100%", marginBottom: "0.25em" }}>
+    <div style={{ display: "flex", gap: "0.25em" }}>
+      <Form.Item
+        noStyle
+        name={[name, "text"]}
+        rules={[{ required: true, message: "'text' is required" }]}
+      >
+        <TextArea placeholder="Text" />
+      </Form.Item>
+      <Form.Item noStyle name={[name, "tooltip"]}>
+        <TextArea placeholder="Tooltip" />
+      </Form.Item>
+    </div>
+  </div>
+);

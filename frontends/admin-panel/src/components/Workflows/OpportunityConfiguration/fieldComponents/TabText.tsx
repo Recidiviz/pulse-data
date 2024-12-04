@@ -17,38 +17,37 @@
 
 import { Form, Input } from "antd";
 
-import { MultiEntry, MultiEntryChild } from "../../formUtils/MultiEntry";
-import { ListView } from "../../formUtils/sharedComponents";
+import { MultiEntryChild } from "../../formUtils/MultiEntry";
 import { StaticValue } from "../../formUtils/StaticValue";
 
-export const TabGroupsView: MultiEntryChild = ({ name }) => (
+export const TabTextView: MultiEntryChild = ({ name }) => (
   <>
-    <Form.Item noStyle name={[name, "key"]}>
+    <Form.Item noStyle name={[name, "tab"]}>
       <StaticValue />
     </Form.Item>
-    <MultiEntry label="Tabs" name={[name, "tabs"]} child={ListView} readonly />
+    :
+    <Form.Item noStyle name={[name, "text"]}>
+      <StaticValue />
+    </Form.Item>
   </>
 );
 
-const TabsEdit: MultiEntryChild = ({ name }) => (
-  <Form.Item
-    noStyle
-    name={name}
-    rules={[{ required: true, message: "'title' is required" }]}
-  >
-    <Input placeholder="Title" />
-  </Form.Item>
-);
-
-export const TabGroupsEdit: MultiEntryChild = ({ name }) => (
+export const TabTextEdit: MultiEntryChild = ({ name }) => (
   <>
     <Form.Item
       noStyle
-      name={[name, "key"]}
-      rules={[{ required: true, message: "'group' is required" }]}
+      name={[name, "tab"]}
+      rules={[{ required: true, message: "tab title is required" }]}
     >
-      <Input placeholder="Group" />
+      <Input placeholder="Tab Title" />
     </Form.Item>
-    <MultiEntry label="Tab Groups" name={[name, "tabs"]} child={TabsEdit} />
+    :
+    <Form.Item
+      noStyle
+      name={[name, "text"]}
+      rules={[{ required: true, message: "text is required" }]}
+    >
+      <Input placeholder="Text" />
+    </Form.Item>
   </>
 );

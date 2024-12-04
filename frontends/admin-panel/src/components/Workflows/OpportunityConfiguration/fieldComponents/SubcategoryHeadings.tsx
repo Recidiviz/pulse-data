@@ -17,38 +17,37 @@
 
 import { Form, Input } from "antd";
 
-import { MultiEntry, MultiEntryChild } from "../../formUtils/MultiEntry";
-import { ListView } from "../../formUtils/sharedComponents";
+import { MultiEntryChild } from "../../formUtils/MultiEntry";
 import { StaticValue } from "../../formUtils/StaticValue";
 
-export const TabGroupsView: MultiEntryChild = ({ name }) => (
+export const SubcategoryHeadingsView: MultiEntryChild = ({ name }) => (
   <>
-    <Form.Item noStyle name={[name, "key"]}>
+    <Form.Item noStyle name={[name, "subcategory"]}>
       <StaticValue />
     </Form.Item>
-    <MultiEntry label="Tabs" name={[name, "tabs"]} child={ListView} readonly />
+    :
+    <Form.Item noStyle name={[name, "text"]}>
+      <StaticValue />
+    </Form.Item>
   </>
 );
 
-const TabsEdit: MultiEntryChild = ({ name }) => (
-  <Form.Item
-    noStyle
-    name={name}
-    rules={[{ required: true, message: "'title' is required" }]}
-  >
-    <Input placeholder="Title" />
-  </Form.Item>
-);
-
-export const TabGroupsEdit: MultiEntryChild = ({ name }) => (
+export const SubcategoryHeadingsEdit: MultiEntryChild = ({ name }) => (
   <>
     <Form.Item
       noStyle
-      name={[name, "key"]}
-      rules={[{ required: true, message: "'group' is required" }]}
+      name={[name, "subcategory"]}
+      rules={[{ required: true, message: "subcategory is required" }]}
     >
-      <Input placeholder="Group" />
+      <Input placeholder="Subcategory Identifier" />
     </Form.Item>
-    <MultiEntry label="Tab Groups" name={[name, "tabs"]} child={TabsEdit} />
+    :
+    <Form.Item
+      noStyle
+      name={[name, "text"]}
+      rules={[{ required: true, message: "heading is required" }]}
+    >
+      <Input placeholder="Heading" />
+    </Form.Item>
   </>
 );

@@ -24,6 +24,8 @@ import { CompareByEdit, CompareByView } from "./fieldComponents/CompareBy";
 import {
   CriteriaCopyEdit,
   CriteriaCopyView,
+  KeylessCriteriaCopyEdit,
+  KeylessCriteriaCopyView,
 } from "./fieldComponents/CriteriaCopy";
 import {
   DenialReasonsEdit,
@@ -38,7 +40,16 @@ import {
   SidebarComponentsView,
 } from "./fieldComponents/SidebarComponents";
 import { SnoozeEdit, SnoozeView } from "./fieldComponents/Snooze";
+import {
+  SubcategoryHeadingsEdit,
+  SubcategoryHeadingsView,
+} from "./fieldComponents/SubcategoryHeadings";
 import { TabGroupsEdit, TabGroupsView } from "./fieldComponents/TabGroups";
+import { TabTextEdit, TabTextView } from "./fieldComponents/TabText";
+import {
+  TabTextListEdit,
+  TabTextListView,
+} from "./fieldComponents/TabTextList";
 
 export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
   {
@@ -67,8 +78,20 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
     },
   },
   {
+    sectionHeading: "Opportunity Statuses",
+    fields: {
+      supportsSubmitted: {
+        label: "Supports Submitted status?",
+        Edit: Checkbox,
+      },
+    },
+  },
+  {
     sectionHeading: "Criteria",
     fields: {
+      omsCriteriaHeader: {
+        label: "OMS Criteria Header",
+      },
       eligibleCriteriaCopy: {
         multiple: true,
         Edit: CriteriaCopyEdit,
@@ -79,6 +102,15 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
         multiple: true,
         Edit: CriteriaCopyEdit,
         View: CriteriaCopyView,
+      },
+      nonOmsCriteriaHeader: {
+        label: "Non-OMS Criteria Header",
+      },
+      nonOmsCriteria: {
+        label: "Non-OMS Criteria Copy",
+        multiple: true,
+        Edit: KeylessCriteriaCopyEdit,
+        View: KeylessCriteriaCopyView,
       },
     },
   },
@@ -116,10 +148,63 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
       denialText: {
         label: "Denial Text",
       },
+      denialAdjective: {},
+      denialNoun: {},
       hideDenialRevert: {
         label: "Hide Denial Revert?",
         Edit: Checkbox,
       },
+    },
+  },
+  {
+    sectionHeading: "Tabs",
+    fields: {
+      deniedTabTitle: {},
+      submittedTabTitle: {},
+      emptyTabCopy: {
+        multiple: true,
+        Edit: TabTextEdit,
+        View: TabTextView,
+      },
+      tabPrefaceCopy: {
+        multiple: true,
+        Edit: TabTextEdit,
+        View: TabTextView,
+      },
+    },
+  },
+  {
+    sectionHeading: "Subcategories",
+    sectionSubhead:
+      "Please consult Polaris before editing or adding all-caps labels in these fields",
+    fields: {
+      subcategoryHeadings: {
+        multiple: true,
+        Edit: SubcategoryHeadingsEdit,
+        View: SubcategoryHeadingsView,
+      },
+      subcategoryOrderings: {
+        multiple: true,
+        Edit: TabTextListEdit,
+        View: TabTextListView,
+      },
+      markSubmittedOptionsByTab: {
+        multiple: true,
+        Edit: TabTextListEdit,
+        View: TabTextListView,
+      },
+    },
+  },
+  {
+    sectionHeading: "Workflows Homepage Highlights",
+    fields: {
+      highlightCasesOnHomepage: {
+        Edit: Checkbox,
+      },
+      highlightedCaseCtaCopy: {
+        label: "Highlighted Case CTA Copy",
+      },
+      overdueOpportunityCalloutCopy: {},
     },
   },
   {
