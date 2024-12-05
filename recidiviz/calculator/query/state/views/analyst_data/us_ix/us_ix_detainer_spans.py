@@ -19,6 +19,7 @@ IX. This will be used to create criteria queries for the CRC and XCRC workflows.
 spans, just a present view of detainers """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -33,7 +34,7 @@ US_IX_DETAINER_SPANS_VIEW_DESCRIPTION = """ This view has one record per term an
 IX. This will be used to create criteria queries for the CRC and XCRC workflows. Does not include historical
 spans, just a present view of detainers """
 
-US_IX_DETAINER_SPANS_QUERY_TEMPLATE = """
+US_IX_DETAINER_SPANS_QUERY_TEMPLATE = f"""
 WITH all_detainers AS (
 /* This CTE queries all historical and current detainers, and orders them based on their UpdateDate */
     SELECT
@@ -55,12 +56,12 @@ WITH all_detainers AS (
           AgencyContactName,
           DetainerStatusDesc,
           ds.Abbreviation
-        FROM `{project_id}.us_ix_raw_data.scl_Detainer` d
-        LEFT JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.scl_DetainerStatus_latest` ds 
+        FROM `{{project_id}}.us_ix_raw_data.scl_Detainer` d
+        LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.scl_DetainerStatus_latest` ds 
             USING(DetainerStatusId)
-        LEFT JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.scl_DetainerType_latest` dt 
+        LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.scl_DetainerType_latest` dt 
             USING(DetainerTypeId)
-        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+        LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
             ON pei.external_id = OffenderId
             AND pei.state_code = 'US_IX'
             AND pei.id_type = 'US_IX_DOC'
@@ -77,6 +78,7 @@ SELECT *
 FROM detainer_spans
 --for the final view, only query detainers that are active during that span of time
 WHERE active_status = 1 
+AND start_date != {nonnull_end_date_clause('end_date')}
 """
 
 US_IX_DETAINER_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
