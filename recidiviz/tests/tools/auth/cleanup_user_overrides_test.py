@@ -100,7 +100,9 @@ class CleanupUserOverridesTest(TestCase):
                 district="different district",
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -118,7 +120,9 @@ class CleanupUserOverridesTest(TestCase):
                 external_id="different",
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -136,7 +140,9 @@ class CleanupUserOverridesTest(TestCase):
                 district="different",
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -154,7 +160,9 @@ class CleanupUserOverridesTest(TestCase):
                 district="different",
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -172,7 +180,9 @@ class CleanupUserOverridesTest(TestCase):
                 district="different",
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -190,7 +200,9 @@ class CleanupUserOverridesTest(TestCase):
                 district="different",
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -208,7 +220,9 @@ class CleanupUserOverridesTest(TestCase):
                 district="different",
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -226,7 +240,9 @@ class CleanupUserOverridesTest(TestCase):
                 district="different",
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -244,7 +260,9 @@ class CleanupUserOverridesTest(TestCase):
                 district="different",
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -263,7 +281,9 @@ class CleanupUserOverridesTest(TestCase):
                 district="different",
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -281,7 +301,9 @@ class CleanupUserOverridesTest(TestCase):
                 district="different",
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -296,7 +318,9 @@ class CleanupUserOverridesTest(TestCase):
                 region_code=self.roster_user.state_code,
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -313,7 +337,9 @@ class CleanupUserOverridesTest(TestCase):
                 roles=["supervision_staff"],
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
@@ -329,10 +355,43 @@ class CleanupUserOverridesTest(TestCase):
                 blocked=True,
             )
         )
-        cleanup_user_overrides(self.session, dry_run=False)
+        cleanup_user_overrides(
+            self.session, dry_run=False, state_code=self.roster_user.state_code
+        )
         modified_user = self.session.execute(
             select(UserOverride).where(
                 UserOverride.email_address == self.roster_user.email_address
             )
         ).scalar()
         self.assertIsNotNone(modified_user)
+
+    def test_non_specified_states_not_modified(self) -> None:
+        user_override = generate_fake_user_overrides(
+            email=self.roster_user.email_address,
+            region_code=self.roster_user.state_code,
+            external_id=self.roster_user.external_id,
+            # add one different attribute so it doesn't get deleted
+            district="different district",
+        )
+        self.session.add(user_override)
+        cleanup_user_overrides(self.session, dry_run=False, state_code="US_YY")
+        modified_user = self.session.execute(
+            select(UserOverride).where(
+                UserOverride.email_address == self.roster_user.email_address
+            )
+        ).scalar()
+        self.assertEqual(modified_user, user_override)
+
+    def test_non_specified_states_not_deleted(self) -> None:
+        user_override = generate_fake_user_overrides(
+            email=self.roster_user.email_address,
+            region_code=self.roster_user.state_code,
+        )
+        self.session.add(user_override)
+        cleanup_user_overrides(self.session, dry_run=False, state_code="US_YY")
+        modified_user = self.session.execute(
+            select(UserOverride).where(
+                UserOverride.email_address == self.roster_user.email_address
+            )
+        ).scalar()
+        self.assertEqual(modified_user, user_override)

@@ -45,6 +45,7 @@ from sqlalchemy import and_, delete, or_, select, text, update
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import BinaryExpression
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.case_triage.schema import (
     Roster,
     UserOverride,
@@ -97,10 +98,11 @@ _COLUMN_TO_COMPARISON_CLAUSE: dict[str, BinaryExpression] = {
 
 
 def _run_update_stmt(
-    session: Session, dry_run: bool, key: str, clause: BinaryExpression
+    session: Session, dry_run: bool, state_code: str, key: str, clause: BinaryExpression
 ) -> None:
     where_clause = and_(
         Roster.email_address == UserOverride.email_address,
+        Roster.state_code == state_code,
         clause,
     )
     if dry_run:
@@ -122,13 +124,16 @@ def _run_update_stmt(
         logging.info("set %s to null for %d rows", key, results.rowcount)
 
 
-def cleanup_user_overrides(session: Session, dry_run: bool) -> None:
+def cleanup_user_overrides(session: Session, dry_run: bool, state_code: str) -> None:
     """Clean up the overrides. First, update equivalent columns to null. Then, delete any entries
     where all relevant columns are null."""
     for column, comparison in _COLUMN_TO_COMPARISON_CLAUSE.items():
-        _run_update_stmt(session, dry_run, column, comparison)
+        _run_update_stmt(session, dry_run, state_code, column, comparison)
 
     if dry_run:
+        # In dry run mode we need to check if the Roster/UserOverride columns have equivalent values
+        # because we haven't nulled out the values. When running outside of dry run, we only need to
+        # check if the column is null because we've already set equivalent values to null.
         similar_clauses = [
             or_(getattr(UserOverride, column).is_(None), clause)
             for column, clause in _COLUMN_TO_COMPARISON_CLAUSE.items()
@@ -136,7 +141,13 @@ def cleanup_user_overrides(session: Session, dry_run: bool) -> None:
         results = session.execute(
             select(UserOverride)
             .join(Roster, UserOverride.email_address == Roster.email_address)
-            .where(and_(*similar_clauses, UserOverride.blocked.is_not(True)))
+            .where(
+                and_(
+                    *similar_clauses,
+                    UserOverride.blocked.is_not(True),
+                    Roster.state_code == state_code
+                )
+            )
             .order_by(UserOverride.email_address)
         ).scalars()
         users_to_delete = [user.email_address for user in results]
@@ -154,7 +165,8 @@ def cleanup_user_overrides(session: Session, dry_run: bool) -> None:
                     ],
                     # Blocked users are kept track of in User Overrides, so a blocked user can still
                     # have all other attributes be null
-                    UserOverride.blocked.is_not(True)
+                    UserOverride.blocked.is_not(True),
+                    UserOverride.state_code == state_code
                 )
             )
             .execution_options(synchronize_session="fetch")
@@ -172,6 +184,13 @@ def parse_arguments(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         type=str,
         choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
         required=False,
+    )
+
+    parser.add_argument(
+        "--state_code",
+        type=StateCode,
+        choices=list(StateCode),
+        required=True,
     )
 
     parser.add_argument("--dry_run", dest="dry_run", action="store_true")
@@ -192,7 +211,9 @@ if __name__ == "__main__":
         ), SessionFactory.for_proxy(
             db_key
         ) as global_session:
-            cleanup_user_overrides(global_session, known_args.dry_run)
+            cleanup_user_overrides(
+                global_session, known_args.dry_run, known_args.state_code.value
+            )
     else:
         if not in_development():
             raise RuntimeError(
@@ -200,4 +221,6 @@ if __name__ == "__main__":
             )
         SQLAlchemyEngineManager.init_engine(db_key)
         with SessionFactory.using_database(db_key) as global_session:
-            cleanup_user_overrides(global_session, known_args.dry_run)
+            cleanup_user_overrides(
+                global_session, known_args.dry_run, known_args.state_code.value
+            )
