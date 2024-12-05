@@ -51,6 +51,10 @@ WINDOWS_FILE_CUSTOM_NEWLINES_CUSTOM_DELIM = (
 
 WINDOWS_FILE_MULIBYTE_NEWLINES = "windows_file_with_multibyte_newlines.csv"
 
+WINDOWS_FILE_CUSTOM_TERMINATOR_TRAILING_NEWLINE = (
+    "windows_file_custom_terminator_trailing_newline.csv"
+)
+
 
 class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
     """Tests for DirectIngestRawFileNormalizationPass"""
@@ -205,6 +209,28 @@ class DirectIngestRawFileNormalizationPassTest(unittest.TestCase):
         expected_output = '"á","æ","Ö"\n"ì","ÿ","÷"\n'
 
         self.run_local_test(WINDOWS_FILE_CUSTOM_NEWLINES, chunk, expected_output)
+
+    def test_normalization_pass_simple_custom_terminator_trailing_newline(self) -> None:
+        windows_config = attr.evolve(
+            self.sparse_config,
+            encoding="WINDOWS-1252",
+            custom_line_terminator="‡",
+        )
+        self.us_xx_region_config.raw_file_configs = {"myFile": windows_config}
+
+        chunk = RequiresPreImportNormalizationFileChunk(
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://my-bucket/unprocessed_2024-01-20T16:35:33:617135_raw_myFile.csv"
+            ),
+            pre_import_normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            chunk_boundary=CsvChunkBoundary(
+                start_inclusive=0, end_exclusive=100, chunk_num=0
+            ),
+        )
+        expected_output = '"hello","its","me"\n"i was","wondering","if"\n"you could"," decode"," the following:"'
+        self.run_local_test(
+            WINDOWS_FILE_CUSTOM_TERMINATOR_TRAILING_NEWLINE, chunk, expected_output
+        )
 
     def test_normalization_pass_more_complex_strip_headers(self) -> None:
         windows_config = attr.evolve(

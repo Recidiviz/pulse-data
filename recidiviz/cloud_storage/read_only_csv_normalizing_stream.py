@@ -110,6 +110,14 @@ class ReadOnlyCsvNormalizingStream:
             for full_line in full_lines
         ]
 
+        # If the final line of a file is only a newline, we should not include it in the normalized buffer.
+        if (
+            self._eof
+            and normalized_lines
+            and normalized_lines[-1] == NEWLINE_SURROUNDED_BY_DOUBLE_QUOTES
+        ):
+            normalized_lines = normalized_lines[:-1]
+
         self._normalized_buffer += (
             NEWLINE + NEWLINE.join(normalized_lines)
             if self._num_lines_processed > 0

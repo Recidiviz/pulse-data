@@ -48,6 +48,12 @@ SINGLE_LINE_NO_TRAILING_NEWLINE_FILENAME = "columns_no_contents_no_trailing_newl
 SINGLE_LINE_NO_TRAILING_NEWLINE_EXPECTED_OUTPUT_FILENAME = (
     "columns_no_contents_quoted_no_trailing_newline.csv"
 )
+TRAILING_CUSTOM_LINE_TERMINATOR_TRAILING_NEWLINE_FILENAME = (
+    "windows_file_custom_terminator_trailing_newline.csv"
+)
+TRAILING_CUSTOM_LINE_TERMINATOR_TRAILING_NEWLINE_EXPECTED_OUTPUT_FILENAME = (
+    "windows_file_custom_terminator_trailing_newline_output.csv"
+)
 
 
 class _FakeDfCapturingDelegate(SimpleGcsfsCsvReaderDelegate):
@@ -79,7 +85,7 @@ class TestCsvNormalizingIO(unittest.TestCase):
             )
             contents = preprocessed_fp.read()
 
-        with open(expected_result_path, encoding="utf-8") as fp_expected:
+        with open(expected_result_path, encoding=encoding) as fp_expected:
             expected_contents = fp_expected.read()
 
         self.assertEqual(expected_contents, contents)
@@ -316,6 +322,19 @@ class TestCsvNormalizingIO(unittest.TestCase):
             encoding="WINDOWS-1252",
             line_terminator="†",
             delimiter="‡",
+        )
+
+    def test_read_whole_file_custom_line_terminator_trailing_newline(self) -> None:
+        self.run_read_all_test(
+            input_file_path=fixtures.as_filepath(
+                TRAILING_CUSTOM_LINE_TERMINATOR_TRAILING_NEWLINE_FILENAME
+            ),
+            expected_result_path=fixtures.as_filepath(
+                TRAILING_CUSTOM_LINE_TERMINATOR_TRAILING_NEWLINE_EXPECTED_OUTPUT_FILENAME
+            ),
+            encoding="WINDOWS-1252",
+            line_terminator="‡",
+            delimiter=",",
         )
 
     def test_read_line(self) -> None:
