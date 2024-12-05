@@ -108,7 +108,7 @@ SNOOZE_SPANS_QUERY_TEMPLATE = f"""
             ) as end_date_scheduled,
         FROM `{{project_id}}.{{workflows_dataset}}.clients_opportunity_snoozed_materialized` s
         LEFT JOIN archive_snooze_spans a
-            ON s.person_id = a.person_id and s.opportunity_type = a.opportunity_type and DATETIME(s.timestamp) = a.start_date
+            ON s.person_id = a.person_id and s.opportunity_type = a.opportunity_type and DATE(s.timestamp) = a.start_date
         WHERE a.person_id IS NULL  -- exclude snoozes that are already captured above
         AND DATETIME(timestamp) < "{{first_snooze_archive_date}}"
     ),
@@ -136,9 +136,10 @@ SNOOZE_SPANS_QUERY_TEMPLATE = f"""
             )) as end_date_actual
         FROM `{{project_id}}.{{workflows_dataset}}.clients_referral_status_updated` p
         LEFT JOIN archive_snooze_spans a
-            ON p.person_id = a.person_id and p.opportunity_type = a.opportunity_type and DATETIME(p.timestamp) = a.start_date
+            ON p.person_id = a.person_id and p.opportunity_type = a.opportunity_type and DATE(p.timestamp) = a.start_date
         LEFT JOIN event_snooze_spans e
-            ON p.person_id = e.person_id and p.opportunity_type = e.opportunity_type and DATETIME(p.timestamp) = e.start_date
+            -- opportunity_snoozed and referral_status_updated are distinct events so their timestamps differ by a tiny bit
+            ON p.person_id = e.person_id and p.opportunity_type = e.opportunity_type and DATETIME_DIFF(DATETIME(p.timestamp),e.start_date,MINUTE) = 0
         WHERE status = "DENIED"
         AND a.person_id IS NULL  -- exclude snoozes that are already captured above
         AND e.person_id IS NULL
