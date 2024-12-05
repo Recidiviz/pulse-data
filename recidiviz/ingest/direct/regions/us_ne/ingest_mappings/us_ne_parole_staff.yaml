@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - paroleOfficerId
+  - firstName
+  - lastName
+  - email
+  - argusId
+unused_columns:
+  - argusId #TODO(#35505): Remove or encorporate in view once we get facility staff information
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: paroleOfficerId
+          id_type: $literal("US_NE_PAROLE_STAFF_ID")
+    full_name:
+      $person_name:
+        $given_names: firstName
+        $surname: lastName
+    email: email
