@@ -39,8 +39,12 @@ WITH
 -- and the most recent file that each employee appeared in (last_appearance_datetime).
 staff_from_directory AS (
     SELECT
-        -- Make officer IDs uniform across sources 
-        CAST(OFFICER AS INT64) AS OFFICER,
+        -- Officer external IDs are either all letters or all numbers. If they are 
+        -- numbers, trim leading zeroes by casting to INT64 then back to string.
+        CASE 
+          WHEN REGEXP_CONTAINS(OFFICER , '[0-9]') THEN CAST(CAST(OFFICER AS INT64) AS STRING)
+          ELSE OFFICER
+        END AS OFFICER,
         CAST(update_datetime AS DATETIME) AS edge_date,
         '(1)' AS STATUS, 
         MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,
@@ -57,8 +61,8 @@ staff_from_directory AS (
 staff_from_docstars AS (
     SELECT * FROM (
         SELECT DISTINCT
-        -- Make officer IDs uniform across sources 
-        CAST(OFFICER AS INT64) AS OFFICER,
+        -- This is safe because IDs from docstars_officers are exclusively numeric.
+        CAST(CAST(OFFICER AS INT64) AS STRING) AS OFFICER,
         CAST(RecDate AS DATETIME) AS edge_date, 
         STATUS,
         MAX(CAST(RecDate AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,

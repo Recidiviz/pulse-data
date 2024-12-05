@@ -37,7 +37,8 @@ WITH
 critical_dates AS (
 SELECT * FROM (
     SELECT
-        CAST(OFFICER AS INT64) AS OFFICER,
+        -- This is safe because IDs from docstars_officers are exclusively numeric.
+        CAST(CAST(OFFICER AS INT64) AS STRING) AS OFFICER,
         FNAME,
         LNAME,
         SUPERVISOR,

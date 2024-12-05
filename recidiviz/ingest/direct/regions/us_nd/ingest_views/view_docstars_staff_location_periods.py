@@ -28,8 +28,8 @@ WITH
 -- as above, to the extent possible. In Docstars, RecDate is the date the row was created.
 staff_from_docstars AS (
     SELECT DISTINCT
-        -- Make officer IDs uniform across sources 
-        CAST(OFFICER AS INT64) AS OFFICER,
+        -- This is safe because IDs from docstars_officers are exclusively numeric.
+        CAST(CAST(OFFICER AS INT64) AS STRING) AS OFFICER,
         SITEID AS location,
         CAST(RecDate AS DATETIME) AS edge_date, 
         STATUS
@@ -42,7 +42,7 @@ staff_from_docstars AS (
 critical_dates AS (
 SELECT * FROM (
     SELECT
-        CAST(OFFICER AS INT64) AS OFFICER,
+        OFFICER,
         location,
         LAG(location) OVER (PARTITION BY OFFICER ORDER BY edge_date) AS prev_location, 
         edge_date,

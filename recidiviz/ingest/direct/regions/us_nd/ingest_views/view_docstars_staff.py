@@ -36,7 +36,12 @@ SELECT DISTINCT
     CAST(update_datetime AS DATETIME) AS RecDate
 FROM (
     SELECT
-        CAST(OFFICER AS INT64) AS OFFICER,
+        CASE 
+        -- Officer external IDs are either all letters or all numbers. If they are 
+        -- numbers, trim leading zeroes by casting to INT64 then back to string.
+          WHEN REGEXP_CONTAINS(OFFICER , '[0-9]') THEN CAST(CAST(OFFICER AS INT64) AS STRING)
+          ELSE OFFICER
+        END AS OFFICER,
         UPPER(LastName) AS LastName,
         UPPER(FirstName) AS FirstName,
         email,
@@ -56,7 +61,12 @@ SELECT DISTINCT
     CAST(RecDate AS DATETIME) AS RecDate
 FROM (
     SELECT 
-        CAST(OFFICER AS INT64) AS OFFICER,
+        -- Officer external IDs are either all letters or all numbers. If they are 
+        -- numbers, trim leading zeroes by casting to INT64 then back to string.
+        CASE 
+          WHEN REGEXP_CONTAINS(OFFICER , '[0-9]') THEN CAST(CAST(OFFICER AS INT64) AS STRING)
+          ELSE OFFICER
+        END AS OFFICER,
         LNAME,
         FNAME,
         -- Null out emails for entries like "Bismarck CS", which sometimes appear

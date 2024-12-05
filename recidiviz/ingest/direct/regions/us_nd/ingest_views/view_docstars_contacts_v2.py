@@ -82,6 +82,7 @@ SELECT
   CATEGORY,
   contacts_with_split_supervisor_name.LNAME,
   contacts_with_split_supervisor_name.FNAME,
+  -- This is safe because IDs from docstars_officers are exclusively numeric.
   CAST(OFFICER AS INT64) AS OFFICER, 
   FROM contacts_with_split_supervisor_name LEFT JOIN
   latest_officer_info officers
