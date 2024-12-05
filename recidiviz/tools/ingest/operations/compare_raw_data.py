@@ -260,13 +260,13 @@ def main() -> None:
             cmp_ingest_instance=args.comparison_ingest_instance,
             truncate_update_datetime_part=args.truncate_update_datetime,
             start_date_inclusive=(
-                datetime.datetime.fromisoformat(args.start_date)
-                if args.start_date
+                datetime.datetime.fromisoformat(args.start_date_inclusive)
+                if args.start_date_inclusive
                 else None
             ),
             end_date_exclusive=(
-                datetime.datetime.fromisoformat(args.end_date)
-                if args.end_date
+                datetime.datetime.fromisoformat(args.end_date_exclusive)
+                if args.end_date_exclusive
                 else None
             ),
         ),
