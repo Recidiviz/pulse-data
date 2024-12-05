@@ -41,6 +41,73 @@ from recidiviz.common.constants.state.state_staff_caseload_type import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
+)
+
+new_condition_identifier_strings = [
+    "INCREASED",
+    "NEW CONDITIONS",
+    "NO DRIVING",
+    "TAD",
+    "CAM",
+    "ALCOHOL MONITORING",
+    "GPS",
+    "CURFEW",
+]
+treatment_identifier_strings = [
+    "MEP",
+    "M.E.P.",
+    "MRC",
+    "PRC",
+    "MAT",
+    "CHA",
+    "TLCR",
+    "SAGE",
+    "RCBM",
+    "CHC",
+    "IOP",
+    "OIP",
+    "CBI",
+    "ITH",
+    "AA",
+    "TREATMENT",
+    "INPATIENT",
+    "IN PATIENT",
+    "IN-PATIENT",
+    "IMPATIENT",
+    "RESIDENTIAL",
+    "DETOXIFICATION",
+    "DETOX",
+    "REHAB",
+    "COUNSELING",
+    "ADDICTION RECOVERY PROGRAM",
+    "TELEPRACTICE",
+    "PRODIGY",
+    "THE GUIDANCE CENTER",
+    "OASIS",
+    "OASUS",
+    "DEEP WITHIN",
+    "SPECTRUM",
+    "COMMUNITY BRIDGES",
+    "BORDER HEALTH",
+    "BUENA VISTA RECOVERY",
+    "GRANITE MOUNTAIN",
+    "CROSSROADS",
+    "VIVRE",
+    "AXIOM",
+    "SOBER LIVING",
+    "SOUTHWEST BEHAVIORAL",
+    "POLARA HEALTH",
+    "TERROS",
+    "WEST YAVAPAI GUIDANCE CLINIC",
+    "NARCOTIC ANONYMOUS",
+    "NARCOTICS ANONYMOUS",
+    "12 STEP",
+]
 
 
 def parse_ethnicity(
@@ -302,3 +369,91 @@ def parse_custody_level(
     if level == "UNKNOWN":
         return StateIncarcerationPeriodCustodyLevel.EXTERNAL_UNKNOWN
     return StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN
+
+
+def parse_supervision_violation_type(raw_text: str) -> StateSupervisionViolationType:
+    (
+        violation_type_description,
+        violation_type_misdemeanor,
+        violation_type_felony,
+        sanction_type,
+        intervention_type,
+    ) = raw_text.split("@@")
+
+    if (
+        "Technical Violation Warrant" in violation_type_description
+        or "1071" in violation_type_description
+    ):
+        return StateSupervisionViolationType.TECHNICAL
+    if violation_type_description == "Absconder Warrant":
+        return StateSupervisionViolationType.ABSCONDED
+    if violation_type_felony == "Y":
+        return StateSupervisionViolationType.FELONY
+    if violation_type_misdemeanor == "Y":
+        return StateSupervisionViolationType.MISDEMEANOR
+    if sanction_type or intervention_type:
+        return StateSupervisionViolationType.TECHNICAL
+    return StateSupervisionViolationType.INTERNAL_UNKNOWN
+
+
+def parse_supervision_violation_response_decision(
+    raw_text: str,
+) -> StateSupervisionViolationResponseDecision:
+    """This function parses supervision violation responses based on common values of the free-text
+    sanction, intervention, and violation result fields. There are many options since these
+    fields are not standardized and come from multiple tables."""
+
+    (
+        violation_result,
+        violation_result_status,
+        sanction_type,
+        intervention_type,
+    ) = raw_text.upper().split("@@")
+
+    treatment_identifier_strings_regex = "|".join(treatment_identifier_strings)
+    new_condition_identifier_strings_regex = "|".join(new_condition_identifier_strings)
+
+    if violation_result_status in (
+        "QUASHED",
+        "CANCELLED",
+        "REJECTED",
+        "WAIVED",
+        "WAIVED AT PC HEARING",
+    ):
+        return StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED
+    if (
+        violation_result in ("REVOCATION", "RECISSION")
+        or violation_result_status == "REVOKED"
+    ):
+        return StateSupervisionViolationResponseDecision.REVOCATION
+    if "COMMUNITY SERVICE" in sanction_type or "SANCTION DAYS AT CCRC" in sanction_type:
+        return StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE
+    if "REPRIMAND" in sanction_type:
+        return StateSupervisionViolationResponseDecision.WARNING
+    if (intervention_type and not sanction_type) or (
+        "NONE" in sanction_type and not violation_result
+    ):
+        return StateSupervisionViolationResponseDecision.CONTINUANCE
+
+    # Use list of new condition identifiers in a regex to identify sanctions that
+    # call for new supervision conditions to be imposed.
+    if re.search(new_condition_identifier_strings_regex, sanction_type) is not None:
+        return StateSupervisionViolationResponseDecision.NEW_CONDITIONS
+
+    if "RESTRICT" in sanction_type or "PRIVILEGE" in sanction_type:
+        return StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED
+
+    # Use list of treatment in field identifiers in a regex to identify sanctions that
+    # call for treatment in the field.
+    if re.search(treatment_identifier_strings_regex, sanction_type) is not None:
+        return StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD
+
+    # This will only be used if there is a sanction with type OTHER and no more specific
+    # classification possible.
+    if sanction_type.startswith("OTHER|"):
+        return StateSupervisionViolationResponseDecision.OTHER
+
+    # This will only be used if there is a warrant with no more specific classification possible.
+    if violation_result:
+        return StateSupervisionViolationResponseDecision.WARRANT_ISSUED
+    return StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN

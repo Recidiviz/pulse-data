@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `state_staff`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - violation_external_id
+  - person_external_id
+  - reporting_staff
+  - violation_date
+  - response_date
+  - violation_type_description
+  - violation_type_misdemeanor
+  - violation_type_felony
+  - response_is_completed
+  - violation_result
+  - violation_result_status
+  - sanction_type
+  - intervention_type
+  - source
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: person_external_id
+          id_type: $literal("US_AZ_PERSON_ID")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - violation_external_id
+                - source
+          violation_date: violation_date
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - violation_type_description
+                          - violation_type_misdemeanor
+                          - violation_type_felony
+                          - sanction_type
+                          - intervention_type
+                        $separator: "@@"
+                    $custom_parser: us_az_custom_enum_parsers.parse_supervision_violation_type
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - violation_external_id
+                      - source
+                response_date: response_date
+                response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
+                deciding_body_type:
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - source
+                          - $literal("INT_SANC")
+                      # Sanctions and interventions are decided by individual supervision officers.
+                      $then: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
+                    # Warrants are all handled by the Board of Executive Clemency.
+                    - $else: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD)
+                is_draft:
+                  $conditional:
+                    - $if:
+                        # This will only be relevant for warrants.
+                        # If the response_is_completed says the warrant was not completed, that can mean
+                        # that the decision was not carried out because the warrant was quashed,
+                        # the charges dismissed, or many other things. This checks that the only
+                        # responses being marked as drafts are those that are actively in progress,
+                        # not those that were intentionally never completed.
+                        $and:
+                          - $not_null: response_is_completed
+                          - $equal:
+                              - response_is_completed
+                              - $literal("N")
+                          - $not_in:
+                              $value: violation_result_status
+                              $options:
+                                - $literal("Quashed")
+                                - $literal("Reached CSED/ERCD Prior to Hearing")
+                                - $literal("Cancelled")
+                                - $literal("Rejected")
+                                - $literal("Reached CSED/ERCD Prior to Service")
+                                - $literal("Waived")
+                                - $literal("Deceased")
+                                - $literal("Waived at PC Hearing")
+                      $then: $literal_bool(True)
+                    - $else: $literal_bool(False)
+                violation_response_metadata:
+                  $json_dict:
+                    reporting_staff: reporting_staff
+                supervision_violation_response_decisions:
+                  - StateSupervisionViolationResponseDecisionEntry:
+                      decision:
+                        $enum_mapping:
+                          $raw_text:
+                            $concat:
+                              $values:
+                                - violation_result
+                                - violation_result_status
+                                - sanction_type
+                                - intervention_type
+                              $separator: "@@"
+                          $custom_parser: us_az_custom_enum_parsers.parse_supervision_violation_response_decision
