@@ -9,7 +9,6 @@ input_columns:
   - sent_start_date
   - sent_stop_date
   - sentcing_cnty
-  - offense_code
   - class_of_sent
   - max_cort_sent_yrs
   - max_cort_sent_mths
@@ -20,13 +19,8 @@ input_columns:
   - min_expir_date
   - max_expir_date
   - judge
-  - Offense
-  - Grade_Category
-  - Grade
-  - Category
-  - SubCategory
-  - ASCA_Category___Ranked
   - sig_date
+  - list_of_charges
 unused_columns: []
 output:
   StatePerson:
@@ -203,33 +197,65 @@ output:
             # Consequently, our charge data is about charges which led to sentences to
             # incarceration and parole. There is thus little to no data about charges
             # which led to sentences to probation.
-            - StateCharge:
-                external_id:
-                  $concat:
-                    $values:
-                      - curr_inmate_num
-                      - type_number
-                statute: offense_code
-                description: Offense
-                classification_type:
-                  $enum_mapping:
-                    $raw_text: Grade_Category
-                    $mappings:
-                      StateChargeClassificationType.FELONY:
-                        - Felony
-                      StateChargeClassificationType.MISDEMEANOR:
-                        - Misdemeanor
-                classification_subtype: Grade
-                is_violent:
-                  $equal:
-                    - ASCA_Category___Ranked
-                    - $literal("1-Violent")
-                offense_type:
-                  $concat:
-                    $values:
-                      - Category
-                      - SubCategory
-                    $include_nulls: False
-                judge_full_name:
-                  $person_name:
-                    $full_name: judge
+            - $foreach:
+                $iterable:
+                  $split_json: list_of_charges
+                $result:
+                  $conditional:
+                    - $if:
+                        $not_null:
+                          $json_extract:
+                            $key: charge_sequence_number
+                            $json: $iter_item
+                      $then:
+                        StateCharge:
+                          external_id:
+                            $concat:
+                              $values:
+                                - curr_inmate_num
+                                - type_number
+                                - $json_extract:
+                                    $key: charge_sequence_number
+                                    $json: $iter_item
+                          statute:
+                            $json_extract:
+                              $key: offense_code
+                              $json: $iter_item
+                          description:
+                            $json_extract:
+                              $key: Offense
+                              $json: $iter_item
+                          classification_type:
+                            $enum_mapping:
+                              $raw_text:
+                                $json_extract:
+                                  $key: grade_category
+                                  $json: $iter_item
+                              $mappings:
+                                StateChargeClassificationType.FELONY:
+                                  - Felony
+                                StateChargeClassificationType.MISDEMEANOR:
+                                  - Misdemeanor
+                          classification_subtype:
+                            $json_extract:
+                              $key: grade
+                              $json: $iter_item
+                          is_violent:
+                            $equal:
+                              - $json_extract:
+                                  $key: asca_category
+                                  $json: $iter_item
+                              - $literal("1-Violent")
+                          offense_type:
+                            $concat:
+                              $values:
+                                - $json_extract:
+                                    $key: category
+                                    $json: $iter_item
+                                - $json_extract:
+                                    $key: subcategory
+                                    $json: $iter_item
+                              $include_nulls: False
+                          judge_full_name:
+                            $person_name:
+                              $full_name: judge

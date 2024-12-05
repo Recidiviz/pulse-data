@@ -23,6 +23,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH senrec_combined AS (
     SELECT
         sentences.curr_inmate_num,
         sentences.type_number,
@@ -32,7 +33,6 @@ VIEW_QUERY_TEMPLATE = """
         sentences.sent_start_date,
         sentences.sent_stop_date,
         sentences.sentcing_cnty,
-        sentences.offense_code,
         sentences.class_of_sent,         
         sentences.max_cort_sent_yrs,    
         sentences.max_cort_sent_mths,    
@@ -54,17 +54,106 @@ VIEW_QUERY_TEMPLATE = """
             ELSE 
                 sentences.sig_date
         END AS sig_date,
-        sentences.judge,
-        offense_codes.Offense, 
+        COALESCE(sentences.judge, extended.Judge_Formatted_Name) as judge,
+        COALESCE(sentences.offense_code, extended.Crime_Code) as offense_code,       
+        COALESCE(offense_codes.Offense, extended.Crime_Code_Description) as Offense,
         offense_codes.Category, 
         offense_codes.ASCA_Category___Ranked, 
         offense_codes.SubCategory, 
         offense_codes.Grade_Category,
         offense_codes.Grade
-    FROM 
-        {dbo_Senrec} sentences
+    FROM {dbo_Senrec} sentences
+    LEFT JOIN {dbo_Senrec_extended} extended
+        ON sentences.curr_inmate_num = extended.SEN_CURRENT_INMATE_NUM
+        and sentences.type_number = extended.SEN_TYPE_NUMBER
     LEFT JOIN {offense_codes} offense_codes
-        ON sentences.offense_code = offense_codes.Code
+        ON COALESCE(sentences.offense_code, extended.Crime_Code) = offense_codes.Code
+),
+all_inc_charges AS (
+    SELECT 
+        curr_inmate_num, 
+        type_number,
+        -- Set Indictment_Sequence_No to be 1 for all charges from this table since
+        -- each sentence record in dbo_Senrec only lists one charge.  We'll be using
+        -- Indictment_Sequence_No only for external id creation purposes later
+        "1" AS Indictment_Sequence_No,
+        offense_code,         
+        Offense, 
+        Category, 
+        ASCA_Category___Ranked, 
+        SubCategory, 
+        Grade_Category,
+        Grade
+    FROM senrec_combined
+
+    UNION DISTINCT
+
+    SELECT 
+        Lifecycle_Number,
+        -- Set type_number as "01" for all charges from this table since we don't have type_number
+        -- available in this table.  This means that we'll just attach every charge in this table to
+        -- the the sentence in dbo_Senrec with the first type_number for each curr_inmate_num.
+        "01" AS type_number,
+        Indictment_Sequence_No,
+        Code AS offense_code,
+        Short_Description AS Offense,
+        CAST(NULL AS STRING) AS Category,
+        Ranking_Description AS ASCA_Category___Ranked,
+        SubCategory,
+        CAST(NULL AS STRING) AS Grade_Category,
+        NULLIF(Grade, "NULL") AS Grade
+    FROM {IncarcerationSentence}
+)
+
+
+SELECT 
+    curr_inmate_num,
+    type_number,
+    sent_status_code,
+    type_of_sent,
+    sent_date,
+    sent_start_date,
+    sent_stop_date,
+    sentcing_cnty,
+    class_of_sent,         
+    max_cort_sent_yrs,    
+    max_cort_sent_mths,    
+    max_cort_sent_days,    
+    min_cort_sent_yrs,     
+    min_cort_sent_mths,    
+    min_cort_sent_days,  
+    min_expir_date,
+    max_expir_date,
+    sig_date,
+    judge,
+    TO_JSON_STRING(ARRAY_AGG(STRUCT<charge_sequence_number string,
+                                    Offense string,
+                                    offense_code string,
+                                    category string,
+                                    asca_category string,
+                                    subcategory string,
+                                    grade_category string,
+                                    grade string>
+                                (CAST(charge_sequence_number AS STRING),
+                                 Offense,
+                                 offense_code,
+                                 Category,
+                                 ASCA_Category___Ranked,
+                                 SubCategory,
+                                 Grade_Category,
+                                 Grade ) ORDER BY charge_sequence_number)) AS list_of_charges
+FROM (
+    SELECT *,
+        -- create a charge sequence number for charge external id purposes
+        ROW_NUMBER() OVER(PARTITION BY curr_inmate_num, type_number ORDER BY Indictment_Sequence_No, all_inc_charges.offense_code) AS charge_sequence_number
+    FROM (
+        SELECT * EXCEPT(offense_code, Offense, Category, ASCA_Category___Ranked, SubCategory, Grade_Category, Grade)
+        FROM senrec_combined
+    )
+    LEFT JOIN all_inc_charges 
+    USING(curr_inmate_num, type_number)
+)
+GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
