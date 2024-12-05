@@ -168,14 +168,14 @@ class OpportunityConfigResponse(OpportunityInfo, OpportunityConfig):
 
     @classmethod
     def from_opportunity_and_config(
-        cls, opportunity: OpportunityInfo, config: OpportunityConfig
+        cls, opportunity: FullOpportunityInfo, config: OpportunityConfig
     ) -> "OpportunityConfigResponse":
-        # include all items from both parameters, with the opportunity taking priority
+        # include fields from both parameters that exist on OpportunityConfigResponse
+        # (i.e. only the base OpportunityInfo fields from `opportunity`, dropping the
+        # internal fields not used in the client), with the opportunity info taking priority
 
         conv = cattrs.Converter()
 
-        # TODO(#35533): Check if this is necessary, or if there's something that is incorrectly feeding the `FullOpportunityInfo` instead of `OpportunityInfo`
-        # remove any keys not expected in OpportunityConfigResponse
         return conv.structure(
             conv.unstructure(config) | conv.unstructure(opportunity), cls
         )

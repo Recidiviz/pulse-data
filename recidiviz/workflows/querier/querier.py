@@ -42,7 +42,6 @@ from recidiviz.workflows.types import (
     FullOpportunityConfig,
     FullOpportunityInfo,
     OpportunityConfig,
-    OpportunityInfo,
     WorkflowsSystemType,
 )
 from recidiviz.workflows.utils.utils import get_configs, get_system_for_config
@@ -129,7 +128,7 @@ class WorkflowsQuerier:
         self,
         allowed_systems: List[WorkflowsSystemType],
         active_feature_variants: List[str],
-    ) -> List[OpportunityInfo]:
+    ) -> List[FullOpportunityInfo]:
         """Returns opportunities enabled for the state given the allowed systems
         and active feature variants"""
 
