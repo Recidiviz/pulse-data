@@ -478,7 +478,7 @@ filled_in_last_value AS (
     LAST_VALUE(supervising_officer_id IGNORE NULLS) OVER(term_window_backwards) AS supervising_officer_id,
     LAST_VALUE(district_sub_office_id IGNORE NULLS) OVER(term_window_backwards) AS district_sub_office_id,
     LAST_VALUE(supervision_location_org_code IGNORE NULLS) OVER(term_window_backwards) AS supervision_location_org_code,
-    STRING_AGG(condition_codes, ',') OVER(term_window_backwards) AS condition_codes,
+    STRING_AGG(condition_codes, '##') OVER(term_window_backwards) AS condition_codes,
     edge_type
   FROM dates_by_term
   WINDOW term_window_backwards AS (
