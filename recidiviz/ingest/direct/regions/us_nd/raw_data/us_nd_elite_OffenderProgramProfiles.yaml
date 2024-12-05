@@ -50,10 +50,18 @@ columns:
         description: TODO(#34909) Document this value.
       - value: JRCC
         description: JAMES RIVER CORRECTIONAL CENTER
+      - value: JRMU
+        description: TODO(#34909) Document this value.
+      - value: LRRP
+        description: TODO(#34909) Document this value.
       - value: MRCC
         description: MISSOURI RIVER CORRECTIONAL CENTER
       - value: MTPFAR
         description: MALE TRANSITION PROGRAM - FARGO
+      - value: MTPMDN
+        description: TODO(#34909) Document this value.
+      - value: MTPMND
+        description: TODO(#34909) Document this value.
       - value: NCCRC
         description: TODO(#18645) Fill in with answer from ND
       - value: NDSP
