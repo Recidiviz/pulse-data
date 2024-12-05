@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - Parole_No
+  - Offender_Attribute_Value
+  - Org_Name
+  - Effective_Start_Date
+  - Effective_End_Date
+  - employment_seq_no
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Parole_No
+          id_type: $literal("US_PA_PBPP")
+    employment_periods:
+      - StateEmploymentPeriod:
+          external_id:
+            $concat:
+              $values:
+                - Parole_No
+                - employment_seq_no
+          employment_status:
+            $enum_mapping:
+              $raw_text: Offender_Attribute_Value
+              $mappings:
+                StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME:
+                  - FTIME
+                StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME:
+                  - PTIME
+                StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN:
+                  - UABLE
+                  - UNRUI
+                  - UTWRK
+                  - UNSTU
+          employer_name: Org_Name
+          start_date: Effective_Start_Date
+          end_date: Effective_End_Date
