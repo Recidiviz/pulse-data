@@ -285,10 +285,6 @@ class IsNormalizedStaffBackedgeValidator(EntityBackedgeValidator):
 class NormalizedStatePersonExternalId(NormalizedStateEntity, ExternalIdEntity):
     """Models an external id associated with a particular StatePerson."""
 
-    # State Code
-    # State providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Primary key
     person_external_id_id: int = attr.ib(validator=attr_validators.is_int)
 
@@ -315,9 +311,6 @@ class NormalizedStatePersonExternalId(NormalizedStateEntity, ExternalIdEntity):
 class NormalizedStatePersonAlias(NormalizedStateEntity, Entity):
     """Models an alias associated with a particular StatePerson."""
 
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     full_name: str = attr.ib(validator=attr_validators.is_str)
     alias_type: StatePersonAliasType | None = attr.ib(
@@ -340,9 +333,6 @@ class NormalizedStatePersonAlias(NormalizedStateEntity, Entity):
 class NormalizedStatePersonRace(NormalizedStateEntity, EnumEntity):
     """Models a race associated with a particular StatePerson."""
 
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     race: StateRace = attr.ib(validator=attr.validators.instance_of(StateRace))
     race_raw_text: str | None = attr.ib(
@@ -361,9 +351,6 @@ class NormalizedStatePersonRace(NormalizedStateEntity, EnumEntity):
 @attr.s(eq=False, kw_only=True)
 class NormalizedStatePersonEthnicity(NormalizedStateEntity, EnumEntity):
     """Models an ethnicity associated with a particular StatePerson."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     ethnicity: StateEthnicity = attr.ib(
@@ -387,9 +374,6 @@ class NormalizedStateAssessment(
     NormalizedStateEntity, HasExternalIdEntity, SequencedEntityMixin
 ):
     """Models a StateAssessment conducted about a particular StatePerson."""
-
-    #  State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     # N/A - Always "COMPLETED", for now
@@ -484,8 +468,6 @@ class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
 
     TODO(#26240): Replace NormalizedStateCharge with this entity
     """
-
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     status: StateChargeV2Status = attr.ib(
         validator=attr.validators.instance_of(StateChargeV2Status)
@@ -632,8 +614,6 @@ class NormalizedStateSentenceStatusSnapshot(
 ):
     """Represents a historical snapshot for when a given sentence had a given status."""
 
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # The start of the period of time over which the sentence status is valid
     status_update_datetime: datetime = attr.ib(
         validator=attr_validators.is_not_future_datetime
@@ -680,8 +660,6 @@ class NormalizedStateSentenceLength(NormalizedStateEntity, LedgerEntityMixin, En
     dates for all sentences in a sentence group. If that is the case, hydrate the projected
     date fields on StateSentenceGroup.
     """
-
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # The start of the period of time over which the set of all sentence length attributes are valid
     length_update_datetime: datetime = attr.ib(
@@ -764,8 +742,6 @@ class NormalizedStateSentenceGroupLength(
     NormalizedStateEntity, LedgerEntityMixin, Entity
 ):
     """Represents a historical ledger of attributes relating to a state designated group of sentences."""
-
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # The date when all sentence term attributes are updated
     group_update_datetime: datetime = attr.ib(
@@ -861,7 +837,6 @@ class NormalizedStateSentenceInferredGroup(NormalizedStateEntity, HasExternalIdE
         associated NormalizedStateSentence entity
     """
 
-    state_code: str = attr.ib(validator=attr_validators.is_str)
     sentence_inferred_group_id: int = attr.ib(
         validator=attr_validators.is_int,
         # TODO(#32690) Update this when PK PK generation is consistent across
@@ -899,7 +874,6 @@ class NormalizedStateSentenceGroup(NormalizedStateEntity, HasExternalIdEntity):
     to be hydrated.
     """
 
-    state_code: str = attr.ib(validator=attr_validators.is_str)
     # Unique internal identifier for a sentence group
     # Primary key
     sentence_group_id: int = attr.ib(validator=attr_validators.is_int)
@@ -924,9 +898,6 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
     This table contains all the attributes we can observe about the sentence at the time of sentence imposition,
     all of which will remain static over the course of the sentence being served.
     """
-
-    # State code of the state providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Unique internal identifier for a sentence
     # Primary key
@@ -1077,9 +1048,6 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
 class NormalizedStateEarlyDischarge(NormalizedStateEntity, HasExternalIdEntity):
     """Models a person's sentenced-level early discharge requests."""
 
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     #   - When
     request_date: date | None = attr.ib(
@@ -1156,9 +1124,6 @@ class NormalizedStateEarlyDischarge(NormalizedStateEntity, HasExternalIdEntity):
 @attr.s(eq=False, kw_only=True)
 class NormalizedStateCharge(NormalizedStateEntity, HasExternalIdEntity):
     """Models a StateCharge against a particular StatePerson."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     status: StateChargeStatus = attr.ib(
@@ -1313,9 +1278,6 @@ class NormalizedStateSupervisionSentence(NormalizedStateEntity, HasExternalIdEnt
     """Models a sentence for a supervisory period associated with one or more Charges
     against a StatePerson."""
 
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Status
     status: StateSentenceStatus = attr.ib(
         validator=attr.validators.instance_of(StateSentenceStatus)
@@ -1398,9 +1360,6 @@ class NormalizedStateSupervisionSentence(NormalizedStateEntity, HasExternalIdEnt
 class NormalizedStateIncarcerationSentence(NormalizedStateEntity, HasExternalIdEntity):
     """Models a sentence for prison/jail time associated with one or more Charges
     against a StatePerson."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     status: StateSentenceStatus = attr.ib(
@@ -1520,9 +1479,6 @@ class NormalizedStateIncarcerationPeriod(
     """Models an uninterrupted period of time that a StatePerson is incarcerated at a
     single facility as a result of a particular sentence.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Type
     incarceration_type: StateIncarcerationType | None = attr.ib(
@@ -1676,8 +1632,6 @@ class NormalizedStateIncarcerationPeriod(
 
 @attr.s(eq=False, kw_only=True)
 class NormalizedStateSupervisionCaseTypeEntry(NormalizedStateEntity, EnumEntity):
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     #   - What
@@ -1707,9 +1661,6 @@ class NormalizedStateSupervisionPeriod(
 ):
     """Models a distinct period of time that a StatePerson is under supervision as a
     result of a particular sentence."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Type
     supervision_type: StateSupervisionPeriodSupervisionType | None = attr.ib(
@@ -1855,9 +1806,6 @@ class NormalizedStateIncarcerationIncidentOutcome(
 ):
     """Models the documented outcome in response to some StateIncarcerationIncident."""
 
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Type
     outcome_type: StateIncarcerationIncidentOutcomeType | None = attr.ib(
         default=None,
@@ -1918,9 +1866,6 @@ class NormalizedStateIncarcerationIncidentOutcome(
 @attr.s(eq=False, kw_only=True)
 class NormalizedStateIncarcerationIncident(NormalizedStateEntity, HasExternalIdEntity):
     """Models a documented incident for a StatePerson while incarcerated."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     # N/A
@@ -1996,9 +1941,6 @@ class NormalizedStateSupervisionViolationTypeEntry(NormalizedStateEntity, EnumEn
     """Models a violation type associated with a particular
     StateSupervisionViolation."""
 
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     violation_type: StateSupervisionViolationType = attr.ib(
         validator=attr.validators.instance_of(StateSupervisionViolationType)
@@ -2027,9 +1969,6 @@ class NormalizedStateSupervisionViolatedConditionEntry(
     """Models a condition applied to a supervision sentence, whose violation may be
     recorded in a StateSupervisionViolation.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     # An enum corresponding to the condition
@@ -2064,9 +2003,6 @@ class NormalizedStateSupervisionViolationResponseDecisionEntry(
     """Models the type of decision resulting from a response to a
     StateSupervisionViolation."""
 
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     decision: StateSupervisionViolationResponseDecision = attr.ib(
         validator=attr.validators.instance_of(StateSupervisionViolationResponseDecision)
@@ -2097,9 +2033,6 @@ class NormalizedStateSupervisionViolationResponse(
     NormalizedStateEntity, HasExternalIdEntity, SequencedEntityMixin
 ):
     """Models a response to a StateSupervisionViolation"""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     # N/A
@@ -2210,10 +2143,6 @@ class NormalizedStateSupervisionViolation(NormalizedStateEntity, HasExternalIdEn
     conditions of their StateSupervisionSentence.
     """
 
-    # State Code
-    # State that recorded this violation, not necessarily where the violation took place
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Status
     # N/A
 
@@ -2286,9 +2215,6 @@ class NormalizedStateProgramAssignment(
     NormalizedStateEntity, HasExternalIdEntity, SequencedEntityMixin
 ):
     """Models an person's assignment to a particular program."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     participation_status: StateProgramAssignmentParticipationStatus = attr.ib(
@@ -2370,9 +2296,6 @@ class NormalizedStateProgramAssignment(
 @attr.s(eq=False, kw_only=True)
 class NormalizedStateSupervisionContact(NormalizedStateEntity, HasExternalIdEntity):
     """Models a person's contact with their supervising officer."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     status: StateSupervisionContactStatus | None = attr.ib(
@@ -2483,9 +2406,6 @@ class NormalizedStateEmploymentPeriod(NormalizedStateEntity, HasExternalIdEntity
     time.
     """
 
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Status
     employment_status: StateEmploymentPeriodEmploymentStatus | None = attr.ib(
         default=None,
@@ -2543,9 +2463,6 @@ class NormalizedStateEmploymentPeriod(NormalizedStateEntity, HasExternalIdEntity
 class NormalizedStateDrugScreen(NormalizedStateEntity, HasExternalIdEntity):
     """The StateDrugScreen object represents information about a person's drug screen results for a given date."""
 
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Status
     drug_screen_result: StateDrugScreenResult | None = attr.ib(
         default=None,
@@ -2599,9 +2516,6 @@ class NormalizedStateTaskDeadline(NormalizedStateEntity, LedgerEntityMixin, Enti
     part of someone’s supervision or incarceration term, along with an associated date
     that task can be started and/or a deadline when that task must be completed.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     #   - When
@@ -2668,9 +2582,6 @@ class NormalizedStateTaskDeadline(NormalizedStateEntity, LedgerEntityMixin, Enti
 class NormalizedStatePersonAddressPeriod(NormalizedStateEntity, EnumEntity):
     """Models an address associated with a particular StatePerson."""
 
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     address_line_1: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
@@ -2727,9 +2638,6 @@ class NormalizedStatePersonAddressPeriod(NormalizedStateEntity, EnumEntity):
 class NormalizedStatePersonHousingStatusPeriod(NormalizedStateEntity, EnumEntity):
     """Models a housing status period associated with a particular StatePerson."""
 
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     housing_status_start_date: date = attr.ib(validator=attr_validators.is_date)
 
@@ -2761,9 +2669,6 @@ class NormalizedStatePerson(
     RootEntity,
 ):
     """Models a StatePerson moving through the criminal justice system."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
 
@@ -2902,10 +2807,6 @@ class NormalizedStatePerson(
 class NormalizedStateStaffExternalId(NormalizedStateEntity, ExternalIdEntity):
     """Models an external id associated with a particular StateStaff."""
 
-    # State Code
-    # State providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     #   - What
     id_type: str = attr.ib(validator=attr_validators.is_str)
@@ -2933,10 +2834,6 @@ class NormalizedStateStaffRolePeriod(NormalizedStateEntity, HasExternalIdEntity)
     """Represents information about a staff member’s role in the justice system during a
     particular period of time.
     """
-
-    # State Code
-    # State providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     #   - When
@@ -2981,10 +2878,6 @@ class NormalizedStateStaffSupervisorPeriod(NormalizedStateEntity, HasExternalIdE
     particular period of time.
     """
 
-    # State Code
-    # State providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     #   - When
     start_date: date = attr.ib(validator=attr_validators.is_date)
@@ -3018,10 +2911,6 @@ class NormalizedStateStaffLocationPeriod(NormalizedStateEntity, HasExternalIdEnt
     a given assigned location.
     """
 
-    # State Code
-    # State providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     #   - When
     start_date: date = attr.ib(validator=attr_validators.is_date)
@@ -3054,10 +2943,6 @@ class NormalizedStateStaffCaseloadTypePeriod(
 ):
     """Represents information about a staff member’s caseload type over a period."""
 
-    # State Code
-    # State providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
     # The caseload type that the officer supervises
     caseload_type: StateStaffCaseloadType = attr.ib(
         validator=attr.validators.instance_of(StateStaffCaseloadType),
@@ -3088,9 +2973,6 @@ class NormalizedStateStaff(
     RootEntity,
 ):
     """Models a staff member working within a justice system."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     #   - What

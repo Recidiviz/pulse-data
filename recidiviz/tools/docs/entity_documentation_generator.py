@@ -20,6 +20,8 @@
 
 Can be run on-demand via:
     $ pipenv run python -m recidiviz.tools.docs.entity_documentation_generator
+
+# TODO(#32863) Generate docs for normalized state tables.
 """
 
 import logging

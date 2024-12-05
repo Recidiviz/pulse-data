@@ -140,11 +140,12 @@ from recidiviz.persistence.entity.state.entity_field_validators import (
     appears_with,
     parsing_opt_only,
 )
-from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
+from recidiviz.persistence.entity.state.state_entity_mixins import (
+    LedgerEntityMixin,
+    StateEntityMixin,
+)
 
 # **** Entity ordering template *****:
-
-# State Code
 
 # Status
 
@@ -163,16 +164,15 @@ from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityM
 
 
 @attr.s(eq=False, kw_only=True)
-class StatePersonAddressPeriod(EnumEntity, BuildableAttr, DefaultableAttr):
+class StatePersonAddressPeriod(
+    StateEntityMixin, EnumEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StatePersonAddressPeriod object represents information about
     a person’s address during a particular period of time.
     This object can be used to identify a person’s physical residence over
     time or their contact information for receiving mail.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     address_line_1: Optional[str] = attr.ib(
@@ -230,7 +230,9 @@ class StatePersonAddressPeriod(EnumEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StatePersonHousingStatusPeriod(EnumEntity, BuildableAttr, DefaultableAttr):
+class StatePersonHousingStatusPeriod(
+    StateEntityMixin, EnumEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StatePersonHousingStatusPeriod object represents
     information about a person’s housing status during a particular
@@ -238,9 +240,6 @@ class StatePersonHousingStatusPeriod(EnumEntity, BuildableAttr, DefaultableAttr)
     is currently, or has been previously, unhoused or living
     in temporary housing
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     housing_status_start_date: Optional[datetime.date] = attr.ib(
@@ -271,17 +270,15 @@ class StatePersonHousingStatusPeriod(EnumEntity, BuildableAttr, DefaultableAttr)
 
 
 @attr.s(eq=False, kw_only=True)
-class StatePersonExternalId(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StatePersonExternalId(
+    StateEntityMixin, ExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     Each StatePersonExternalId holds a single external id provided by the source data system being
     ingested. An external id is a unique identifier for an individual, unique within the scope of
     the source data system. We include information denoting the source of the id to make this into
     a globally unique identifier.
     """
-
-    # State Code
-    # State providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
@@ -307,7 +304,7 @@ class StatePersonExternalId(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
+class StatePersonAlias(StateEntityMixin, Entity, BuildableAttr, DefaultableAttr):
     """
     Each StatePersonAlias holds the naming information for an alias for a particular
     person. Because a given name is an alias of sorts, we copy over the name fields
@@ -316,9 +313,6 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
     raw string -- systems storing aliases are raw strings should provide those in
     the full_name field below.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     full_name: str = attr.ib(validator=attr_validators.is_str)
@@ -340,15 +334,12 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StatePersonRace(EnumEntity, BuildableAttr, DefaultableAttr):
+class StatePersonRace(StateEntityMixin, EnumEntity, BuildableAttr, DefaultableAttr):
     """
     Each StatePersonRace holds a single reported race for a single person. A
     StatePerson may have multiple StatePersonRace objects because they may be
     multi-racial, or because different data sources may report different races.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     race: StateRace = attr.ib(validator=attr.validators.instance_of(StateRace))
@@ -367,15 +358,14 @@ class StatePersonRace(EnumEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StatePersonEthnicity(EnumEntity, BuildableAttr, DefaultableAttr):
+class StatePersonEthnicity(
+    StateEntityMixin, EnumEntity, BuildableAttr, DefaultableAttr
+):
     """
     Each StatePersonEthnicity holds a single reported ethnicity for a single person.
     A StatePerson may have multiple StatePersonEthnicity objects, because they may be
     multi-ethnic, or because different data sources may report different ethnicities.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     ethnicity: StateEthnicity = attr.ib(
@@ -399,6 +389,7 @@ class StatePersonEthnicity(EnumEntity, BuildableAttr, DefaultableAttr):
 class StatePerson(
     HasMultipleExternalIdsEntity[StatePersonExternalId],
     RootEntity,
+    StateEntityMixin,
     BuildableAttr,
     DefaultableAttr,
 ):
@@ -408,9 +399,6 @@ class StatePerson(
     e.g. Race is its own entity as opposed to a single field, to allow for the
     inclusion/tracking of multiple such entities or sources of such information.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
 
@@ -528,7 +516,9 @@ class StatePerson(
 
 
 @attr.s(eq=False, kw_only=True)
-class StateCharge(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateCharge(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateCharge object holds information on a single charge that a person has been accused of.
     A single StateCharge can reference multiple Incarceration/Supervision Sentences (e.g. multiple
@@ -537,9 +527,6 @@ class StateCharge(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     charges). Thus, the relationship between StateCharge and each distinct Supervision/Incarceration
     Sentence type is many:many.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     status: StateChargeStatus = attr.ib(
@@ -652,7 +639,9 @@ class StateCharge(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateAssessment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateAssessment(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateAssessment object represents information about an
     assessment conducted for some person. Assessments are used in various stages
@@ -660,9 +649,6 @@ class StateAssessment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     determine what course of action to take, such as pretrial sentencing or
     program reference.
     """
-
-    #  State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     # N/A - Always "COMPLETED", for now
@@ -732,7 +718,9 @@ class StateAssessment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSupervisionSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateSupervisionSentence(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateSupervisionSentence object represents information about a single sentence to a period of
     supervision imposed as part of a group of related sentences. Multiple distinct, related sentences
@@ -749,9 +737,6 @@ class StateSupervisionSentence(HasExternalIdEntity, BuildableAttr, DefaultableAt
     revoked and the person being re-incarcerated, for example. In some jurisdictions, this would be
     modeled as distinct sentences of supervision and incarceration, but this is not universal.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     status: StateSentenceStatus = attr.ib(
@@ -834,7 +819,9 @@ class StateSupervisionSentence(HasExternalIdEntity, BuildableAttr, DefaultableAt
 
 
 @attr.s(eq=False, kw_only=True)
-class StateIncarcerationSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateIncarcerationSentence(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateIncarcerationSentence object represents information about a single sentence to a
     period of incarceration imposed as part of a group of related sentences. Multiple distinct, related
@@ -850,9 +837,6 @@ class StateIncarcerationSentence(HasExternalIdEntity, BuildableAttr, Defaultable
     being paroled, for example. In some jurisdictions, this would be modeled as distinct sentences of
     incarceration and supervision, but this is not universal.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     status: StateSentenceStatus = attr.ib(
@@ -969,7 +953,7 @@ class StateIncarcerationSentence(HasExternalIdEntity, BuildableAttr, Defaultable
 
 @attr.s(eq=False, kw_only=True)
 class StateIncarcerationPeriod(
-    HasExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin
 ):
     """
     The StateIncarcerationPeriod object represents information
@@ -989,9 +973,6 @@ class StateIncarcerationPeriod(
     matching, and calculation. Fortunately, this means that we have practice
     working with varied representations of this information.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Type
     incarceration_type: Optional[StateIncarcerationType] = attr.ib(
@@ -1130,7 +1111,7 @@ class StateIncarcerationPeriod(
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionPeriod(
-    HasExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin
 ):
     """
     The StateSupervisionPeriod object represents information about a
@@ -1142,9 +1123,6 @@ class StateSupervisionPeriod(
     temporarily interrupted by, say, periods of incarceration, or periods of
     supervision stemming from different charges.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Type
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
@@ -1281,7 +1259,9 @@ class StateSupervisionPeriod(
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSupervisionCaseTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
+class StateSupervisionCaseTypeEntry(
+    StateEntityMixin, EnumEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateSupervisionCaseTypeEntry object represents a particular case type that applies to this
     period of supervision. A case type implies certain conditions of supervision that may apply, or
@@ -1290,9 +1270,6 @@ class StateSupervisionCaseTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
     supervised by particular kinds of officers with particular types of caseloads they are
     responsible for. A StateSupervisionPeriod may have zero to many distinct case types.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     #   - What
@@ -1315,7 +1292,9 @@ class StateSupervisionCaseTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateIncarcerationIncident(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateIncarcerationIncident(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateIncarcerationIncident object represents any behavioral incidents recorded against a
     person during a period of incarceration, such as a fight with another incarcerated individual
@@ -1323,9 +1302,6 @@ class StateIncarcerationIncident(HasExternalIdEntity, BuildableAttr, Defaultable
     StateIncarcerationIncidentOutcome children, indicating any official outcomes
     (e.g. disciplinary responses) due to the incident.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     # N/A
@@ -1396,7 +1372,7 @@ class StateIncarcerationIncident(HasExternalIdEntity, BuildableAttr, Defaultable
 
 @attr.s(eq=False, kw_only=True)
 class StateIncarcerationIncidentOutcome(
-    HasExternalIdEntity, BuildableAttr, DefaultableAttr
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
 ):
     """
     The StateIncarcerationIncidentOutcome object represents the outcomes in response to a particular
@@ -1404,9 +1380,6 @@ class StateIncarcerationIncidentOutcome(
     be empty or null -- an incident that has no outcomes should simply have no
     StateIncarcerationIncidentOutcome children objects.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Type
     outcome_type: Optional[StateIncarcerationIncidentOutcomeType] = attr.ib(
@@ -1466,7 +1439,9 @@ class StateIncarcerationIncidentOutcome(
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSupervisionViolationTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
+class StateSupervisionViolationTypeEntry(
+    StateEntityMixin, EnumEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateSupervisionViolationTypeEntry object represents each specific violation
     type that was composed within a single violation. Each supervision violation has
@@ -1479,9 +1454,6 @@ class StateSupervisionViolationTypeEntry(EnumEntity, BuildableAttr, DefaultableA
     then it will be ingested into our schema as a single supervision violation with
     multiple supervision violation type entries.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     violation_type: StateSupervisionViolationType = attr.ib(
@@ -1504,7 +1476,7 @@ class StateSupervisionViolationTypeEntry(EnumEntity, BuildableAttr, DefaultableA
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionViolatedConditionEntry(
-    EnumEntity, BuildableAttr, DefaultableAttr
+    StateEntityMixin, EnumEntity, BuildableAttr, DefaultableAttr
 ):
     """
     The StateSupervisionViolatedConditionEntry object represents a particular condition of supervision
@@ -1512,9 +1484,6 @@ class StateSupervisionViolatedConditionEntry(
     to many violated conditions. For example, a violation may be recorded because a brand new charge
     has been brought against the supervised person.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     # An enum corresponding to the condition
@@ -1540,7 +1509,9 @@ class StateSupervisionViolatedConditionEntry(
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSupervisionViolation(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateSupervisionViolation(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateSupervisionViolation object represents any violations recorded against a person
     during a period of supervision, such as technical violation or a new offense. A
@@ -1548,10 +1519,6 @@ class StateSupervisionViolation(HasExternalIdEntity, BuildableAttr, DefaultableA
     indicating any official response to the violation, e.g. a disciplinary response such as a
     revocation back to prison or extension of supervision.
     """
-
-    # State Code
-    # State that recorded this violation, not necessarily where the violation took place
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     # N/A
@@ -1607,7 +1574,7 @@ class StateSupervisionViolation(HasExternalIdEntity, BuildableAttr, DefaultableA
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionViolationResponseDecisionEntry(
-    EnumEntity, BuildableAttr, DefaultableAttr
+    StateEntityMixin, EnumEntity, BuildableAttr, DefaultableAttr
 ):
     """
     The StateSupervisionViolationResponseDecisionEntry object represents each
@@ -1616,9 +1583,6 @@ class StateSupervisionViolationResponseDecisionEntry(
     essentially the final consequences of a violation, actions such as continuance,
     privileges revoked, or revocation.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     decision: StateSupervisionViolationResponseDecision = attr.ib(
@@ -1643,7 +1607,7 @@ class StateSupervisionViolationResponseDecisionEntry(
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionViolationResponse(
-    HasExternalIdEntity, BuildableAttr, DefaultableAttr
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
 ):
     """
     The StateSupervisionViolationResponse object represents the official responses to a
@@ -1657,12 +1621,6 @@ class StateSupervisionViolationResponse(
     be marked explicitly in incoming data, either here or
     on the incarceration period as the case may be.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    # Status
-    # N/A
 
     # Type
     response_type: Optional[StateSupervisionViolationResponseType] = attr.ib(
@@ -1744,7 +1702,9 @@ class StateSupervisionViolationResponse(
 
 
 @attr.s(eq=False, kw_only=True)
-class StateProgramAssignment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateProgramAssignment(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateProgramAssignment object represents information about
     the assignment of a person to some form of rehabilitative programming --
@@ -1757,9 +1717,6 @@ class StateProgramAssignment(HasExternalIdEntity, BuildableAttr, DefaultableAttr
     programming-related portion of our schema is still being constructed and
     will be added to in the near future.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     participation_status: StateProgramAssignmentParticipationStatus = attr.ib(
@@ -1828,7 +1785,9 @@ class StateProgramAssignment(HasExternalIdEntity, BuildableAttr, DefaultableAttr
 
 
 @attr.s(eq=False, kw_only=True)
-class StateEarlyDischarge(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateEarlyDischarge(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateEarlyDischarge object represents a request and its associated decision to discharge
     a sentence before its expected end date. This includes various metadata surrounding the
@@ -1836,9 +1795,6 @@ class StateEarlyDischarge(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     decision for early discharge. It is possible for a sentence to be discharged early without
     ending someone's supervision / incarceration term if that person is serving multiple sentences.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     #   - When
@@ -1910,7 +1866,9 @@ class StateEarlyDischarge(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSupervisionContact(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateSupervisionContact(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateSupervisionContact object represents information about a point of contact between a
     person under supervision and some agent representing the department, typically a
@@ -1923,9 +1881,6 @@ class StateSupervisionContact(HasExternalIdEntity, BuildableAttr, DefaultableAtt
     periods of supervision simultaneously in rare cases, and a given point of contact may apply
     to both.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     status: Optional[StateSupervisionContactStatus] = attr.ib(
@@ -2019,7 +1974,9 @@ class StateSupervisionContact(HasExternalIdEntity, BuildableAttr, DefaultableAtt
 
 
 @attr.s(eq=False, kw_only=True)
-class StateEmploymentPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateEmploymentPeriod(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateEmploymentPeriod object represents information about a
     person's employment status during a particular period of time. This
@@ -2027,9 +1984,6 @@ class StateEmploymentPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr)
     of unemployment if we have positive confirmation from the state that
     a person was unemployed at a given period.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     employment_status: Optional[StateEmploymentPeriodEmploymentStatus] = attr.ib(
@@ -2090,11 +2044,10 @@ class StateEmploymentPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr)
 
 
 @attr.s(eq=False, kw_only=True)
-class StateDrugScreen(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateDrugScreen(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """The StateDrugScreen object represents information about a person's drug screen results for a given date."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
     drug_screen_result: Optional[StateDrugScreenResult] = attr.ib(
@@ -2147,15 +2100,14 @@ class StateDrugScreen(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateTaskDeadline(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity):
+class StateTaskDeadline(
+    StateEntityMixin, LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity
+):
     """
     The StateTaskDeadline object represents a single task that should be performed as
     part of someone’s supervision or incarceration term, along with an associated date
     that task can be started and/or a deadline when that task must be completed.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     #   - When
@@ -2222,7 +2174,9 @@ class StateTaskDeadline(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entit
 
 
 @attr.s(eq=False, kw_only=True)
-class StateStaffExternalId(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateStaffExternalId(
+    StateEntityMixin, ExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     Each StateStaffExternalId holds a single external id for a given
     staff member provided by the source data system being ingested. An
@@ -2232,10 +2186,6 @@ class StateStaffExternalId(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     A staff member may have multiple StateStaffExternalId, but cannot
     have multiple with the same id_type.
     """
-
-    # State Code
-    # State providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     #   - What
@@ -2262,6 +2212,7 @@ class StateStaffExternalId(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 @attr.s(eq=False, kw_only=True)
 class StateStaff(
+    StateEntityMixin,
     HasMultipleExternalIdsEntity[StateStaffExternalId],
     RootEntity,
     BuildableAttr,
@@ -2276,9 +2227,6 @@ class StateStaff(
     and so on. This is not intended to be used to represent justice impacted
     individuals who are employed by the state as part of some work program.
     """
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     #   - What
@@ -2321,15 +2269,13 @@ class StateStaff(
 
 
 @attr.s(eq=False, kw_only=True)
-class StateStaffRolePeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateStaffRolePeriod(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     Represents information about a staff member’s role in the justice system during a
     particular period of time.
     """
-
-    # State Code
-    # State providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     #   - When
@@ -2372,15 +2318,13 @@ class StateStaffRolePeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateStaffSupervisorPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateStaffSupervisorPeriod(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     Represents information about a staff member’s direct supervisor during a
     particular period of time.
     """
-
-    # State Code
-    # State providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     #   - When
@@ -2417,7 +2361,9 @@ class StateStaffSupervisorPeriod(HasExternalIdEntity, BuildableAttr, Defaultable
 
 
 @attr.s(eq=False, kw_only=True)
-class StateStaffLocationPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateStaffLocationPeriod(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     The StateStaffLocationPeriod models a period of time during which a
     staff member has a given assigned location. For now, this should be
@@ -2425,10 +2371,6 @@ class StateStaffLocationPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAt
     future be expanded to allow for multiple overlapping location periods
     for cases where staff members have primary, secondary etc locations.
     """
-
-    # State Code
-    # State providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
     #   - When
@@ -2460,7 +2402,9 @@ class StateStaffLocationPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAt
 
 
 @attr.s(eq=False, kw_only=True)
-class StateStaffCaseloadTypePeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateStaffCaseloadTypePeriod(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     This table will have one row for each period in which one officer
     had a particular type of caseload. If the nature of their caseload
@@ -2469,10 +2413,6 @@ class StateStaffCaseloadTypePeriod(HasExternalIdEntity, BuildableAttr, Defaultab
     corresponded to each period of their employment. Eventually, correctional
     officers who work in facilities will also be included in this table.
     """
-
-    # State Code
-    # State providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # The caseload type that the officer supervises
     caseload_type: StateStaffCaseloadType = attr.ib(
@@ -2501,16 +2441,15 @@ class StateStaffCaseloadTypePeriod(HasExternalIdEntity, BuildableAttr, Defaultab
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateSentence(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     Represents a formal judgement imposed by the court that details the form of time served
     in response to the set of charges for which someone was convicted.
     This table contains all the attributes we can observe about the sentence at the time of sentence imposition,
     all of which will remain static over the course of the sentence being served.
     """
-
-    # State code of the state providing the external id
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Unique internal identifier for a sentence
     # Primary key - Only optional when hydrated in the parsing layer,
@@ -2632,15 +2571,15 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateChargeV2(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateChargeV2(
+    StateEntityMixin, HasExternalIdEntity, BuildableAttr, DefaultableAttr
+):
     """
     A formal allegation of an offense with information about the context for how that allegation was brought forth.
       - `date_charged` can be null for charges that have statuses like `DROPPED`.
       - `offense_date` can be null because of erroneous data from states
     TODO(#26240): Replace StateCharge with this entity
     """
-
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     status: StateChargeV2Status = attr.ib(
         validator=attr.validators.instance_of(StateChargeV2Status)
@@ -2746,11 +2685,9 @@ class StateChargeV2(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 @attr.s(eq=False, kw_only=True)
 class StateSentenceStatusSnapshot(
-    LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity
+    StateEntityMixin, LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity
 ):
     """Represents a historical snapshot for when a given sentence had a given status."""
-
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # The start of the period of time over which the sentence status is valid
     status_update_datetime: datetime.datetime = attr.ib(
@@ -2782,7 +2719,9 @@ class StateSentenceStatusSnapshot(
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSentenceLength(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity):
+class StateSentenceLength(
+    StateEntityMixin, LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity
+):
     """
     Represents a historical ledger of time attributes for a single sentence,
     including sentence length, accrued amount of days earned off, key dates, etc.
@@ -2792,8 +2731,6 @@ class StateSentenceLength(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Ent
     dates for all sentences in a sentence group. If that is the case, hydrate the projected
     date fields on StateSentenceGroup.
     """
-
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # The start of the period of time over which the set of all sentence length attributes are valid
     length_update_datetime: datetime.datetime = attr.ib(
@@ -2870,7 +2807,9 @@ class StateSentenceLength(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Ent
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSentenceGroup(BuildableAttr, DefaultableAttr, HasExternalIdEntity):
+class StateSentenceGroup(
+    StateEntityMixin, BuildableAttr, DefaultableAttr, HasExternalIdEntity
+):
     """
     Represents a logical grouping of sentences that encompass an
     individual's interactions with a department of corrections.
@@ -2882,7 +2821,6 @@ class StateSentenceGroup(BuildableAttr, DefaultableAttr, HasExternalIdEntity):
     (StateSentence.sentence_external_id) to be hydrated.
     """
 
-    state_code: str = attr.ib(validator=attr_validators.is_str)
     # Unique internal identifier for a sentence group
     # Primary key - Only optional when hydrated in the parsing layer,
     # before we have written this entity to the persistence layer
@@ -2898,11 +2836,9 @@ class StateSentenceGroup(BuildableAttr, DefaultableAttr, HasExternalIdEntity):
 
 @attr.s(eq=False, kw_only=True)
 class StateSentenceGroupLength(
-    LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity
+    StateEntityMixin, LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity
 ):
     """Represents a historical ledger of attributes relating to a state designated group of sentences."""
-
-    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # The date when all sentence term attributes are updated
     group_update_datetime: datetime.datetime = attr.ib(

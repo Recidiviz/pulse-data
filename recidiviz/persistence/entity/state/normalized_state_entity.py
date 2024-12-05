@@ -17,11 +17,12 @@
 """NormalizedStateEntity is the common class to all normalized entities in the state dataset."""
 
 from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.persistence.entity.state.state_entity_mixins import StateEntityMixin
 
 NORMALIZED_PREFIX = "Normalized"
 
 
-class NormalizedStateEntity(BuildableAttr):
+class NormalizedStateEntity(StateEntityMixin, BuildableAttr):
     """Models an entity in state/entities.py that has been normalized and is prepared
     to be used in calculations.
     """

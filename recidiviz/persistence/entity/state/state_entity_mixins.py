@@ -24,6 +24,15 @@ from recidiviz.common.date import DateOrDateTime, assert_datetime_less_than
 
 
 @attr.s(eq=False)
+class StateEntityMixin:
+    """Set of attributes and methods that we expect all entities to have in the state and normalized_state datasets."""
+
+    # TODO(#5508) Change type to StateCode. We can use a converter
+    # function here to still take strings from ingest views.
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+
+@attr.s(eq=False)
 class SequencedEntityMixin:
     """Set of attributes for an entity that can be ordered in a sequence."""
 

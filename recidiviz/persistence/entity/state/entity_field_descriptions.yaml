@@ -17,6 +17,12 @@ state_assessment:
       The ID type associated with external id of
       the staff member conducting this assessment. This field with the conducting_staff_external_id
       field make up a primary key for the state_staff_external_id table.
+  normalization_only_fields:
+    assessment_score_bucket: A string representing an interval category based on assessment score.
+    conducting_staff_id: StateStaff ID for the conducting officer.
+    sequence_num: >-
+      The ordinal position of this observation in the sequence of StateAssessment
+      observations for this NormalizedStatePerson.
 
 state_charge:
   fields:
@@ -58,6 +64,16 @@ state_charge:
     status: The status of the charge.
     status_raw_text: The raw text value of the status of the charge.
     statute: The identifier of the charge in the state or federal code.
+  normalization_only_fields:
+    description_external: A text description of the charge.
+    is_drug_external: Whether this charge was for a drug-related crime or not.
+    is_sex_offense_external: Whether or not the violation involved a sex offense.
+    is_violent_external: Whether this charge was for a violent crime or not.
+    ncic_code_external: >-
+      The standardized NCIC (National Crime Information Center) code for
+      the charged offense. NCIC codes are a set of nationally recognized codes for
+      certain types of crimes.
+    ncic_category_external: A high-level category associated with the state-provided NCIC code (e.g. Kidnapping, Bribery, etc).
 
 state_charge_v2:
   fields:
@@ -98,6 +114,16 @@ state_charge_v2:
     status: The status of the charge.
     status_raw_text: The raw text value of the status of the charge.
     statute: The identifier of the charge in the state or federal code.
+  normalization_only_fields:
+    description_external: A text description of the charge.
+    is_drug_external: Whether this charge was for a drug-related crime or not.
+    is_sex_offense_external: Whether or not the violation involved a sex offense.
+    is_violent_external: Whether this charge was for a violent crime or not.
+    ncic_code_external: >-
+      The standardized NCIC (National Crime Information Center) code for
+      the charged offense. NCIC codes are a set of nationally recognized codes for
+      certain types of crimes.
+    ncic_category_external: A high-level category associated with the state-provided NCIC code (e.g. Kidnapping, Bribery, etc).
 
 state_drug_screen:
   fields:
@@ -199,6 +225,10 @@ state_incarceration_period:
       The specialized purpose for incarceration
       for this particular incarceration period.
     specialized_purpose_for_incarceration_raw_text: The raw text value of the specialized purpose for incarceration.
+  normalization_only_fields:
+    incarceration_admission_violation_type: A supervision violation type that lead to this period of incarceration. It is null if this incarceration period did not result in a supervision violation.
+    purpose_for_incarceration_subtype: Defines why this period of incarceration is being served beyond admission reason.
+    sequence_num: The ordinal position of this incarceration period in the sequence of incarceration periods for this person.
 
 state_incarceration_sentence:
   fields:
@@ -323,6 +353,9 @@ state_program_assignment:
       of the staff member who made the program referral. This field with the referring_staff_external_id
       field make up a primary key for the state_staff_external_id table.
     start_date: The date the person started the program, if applicable.
+  normalization_only_fields:
+    sequence_num: The ordinal position of this program assignment over the sequence of all program assignments for this person.
+    referring_staff_id: StateStaff ID for the referring officer.
 
 state_sentence:
   fields:
@@ -356,9 +389,13 @@ state_sentence:
     sentence_type_raw_text: Raw text indicating whether a sentence is supervision/incarceration/etc
     sentencing_authority: The class of authority imposing the sentence (COUNTY, STATE, etc.)
     sentencing_authority_raw_text: Raw text used to hydrate sentencing_authority.
+  normalization_only_fields:
+    sentence_inferred_group_id: The unique ID of the StateSentenceInferredGroup that this sentence belongs to.
 
 state_sentence_group:
   fields: {}
+  normalization_only_fields:
+    sentence_inferred_group_id: The unique ID of the StateSentenceInferredGroup that this sentence group belongs to.
 
 state_sentence_group_length:
   fields:
@@ -424,6 +461,8 @@ state_sentence_status_snapshot:
     status_update_datetime: >-
       The start of the period of time over which the sentence
       status is valid
+  normalization_only_fields:
+    status_end_datetime: The datetime (exclusive) when the current STATUS is no longer valid.
 
 state_staff:
   fields:
@@ -516,6 +555,8 @@ state_supervision_contact:
     status_raw_text: The raw text value of the contact status.
     supervision_contact_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of this supervision contact.
     verified_employment: Whether or not the person's current employment status was verified at this contact.
+  normalization_only_fields:
+    contacting_staff_id: StateStaff ID for the contacting officer.
 
 state_supervision_period:
   fields:
@@ -561,6 +602,9 @@ state_supervision_period:
     termination_date: The date the period of supervision was terminated, either positively or negatively.
     termination_reason: The reason the period of supervision was terminated.
     termination_reason_raw_text: The raw text value of the supervision period's termination reason.
+  normalization_only_fields:
+    sequence_num: The ordinal position of this supervision period in the sequence of all supervision periods for this person.
+    supervising_officer_staff_id: StateStaff ID for the supervising officer.
 
 state_supervision_sentence:
   fields:
@@ -630,6 +674,9 @@ state_supervision_violation_response:
       Arbitrary JSON-formatted metadata relevant to a fine
       understanding of a particular violation response. It can be provided in any
       format, but will be transformed into JSON prior to persistence.
+  normalization_only_fields:
+    deciding_staff_id: StateStaff ID for the deciding officer.
+    sequence_num: The ordinal position of this violation response in the sequence of all violation responses for this person.
 
 state_supervision_violation_response_decision_entry:
   fields:
@@ -672,3 +719,7 @@ state_task_deadline:
       The the time at which this deadline was updated for this person.
       Will generally correspond to the time we received the raw data file with this
       deadline from the state.
+
+state_sentence_inferred_group:
+  fields: {}
+  normalization_only_fields: {}
