@@ -95,7 +95,12 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
                 SchemaField("state_code", "STRING", "NULLABLE"),
                 SchemaField("another_entity_id", "INTEGER", "NULLABLE"),
                 SchemaField("another_name", "STRING", "NULLABLE"),
-                SchemaField("fake_person_id", "INTEGER", "NULLABLE"),
+                SchemaField(
+                    "fake_person_id",
+                    "INTEGER",
+                    "NULLABLE",
+                    description="Foreign key reference to fake_person",
+                ),
             ],
             "fake_another_entity_fake_entity_association": [
                 SchemaField("state_code", "STRING", "NULLABLE"),
@@ -106,7 +111,12 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
                 SchemaField("state_code", "STRING", "NULLABLE"),
                 SchemaField("entity_id", "INTEGER", "NULLABLE"),
                 SchemaField("name", "STRING", "NULLABLE"),
-                SchemaField("fake_person_id", "INTEGER", "NULLABLE"),
+                SchemaField(
+                    "fake_person_id",
+                    "INTEGER",
+                    "NULLABLE",
+                    description="Foreign key reference to fake_person",
+                ),
             ],
             "fake_person": [
                 SchemaField("state_code", "STRING", "NULLABLE"),
@@ -123,7 +133,12 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
                 SchemaField("state_code", "STRING", "NULLABLE"),
                 SchemaField("another_entity_id", "INTEGER", "NULLABLE"),
                 SchemaField("another_name", "STRING", "NULLABLE"),
-                SchemaField("fake_person_id", "INTEGER", "NULLABLE"),
+                SchemaField(
+                    "fake_person_id",
+                    "INTEGER",
+                    "NULLABLE",
+                    description="Foreign key reference to fake_person",
+                ),
             ],
             get_bq_schema_for_entity_table(fake_entities, "fake_another_entity"),
         )

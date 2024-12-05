@@ -71,9 +71,11 @@ def description_for_field(entity_cls: type[StateEntityMixin], field_name: str) -
         )
 
     table_descriptions = get_entity_field_descriptions()[entity_cls.get_table_id()]
-    descriptions = table_descriptions[FIELD_KEY]
+    # Make a copy so we don't mutate the cache reference
+    descriptions = table_descriptions[FIELD_KEY].copy()
     if issubclass(entity_cls, NormalizedStateEntity):
-        descriptions |= table_descriptions[NORMALIZATION_FIELD_KEY]
+        if norm_only_fields := table_descriptions.get(NORMALIZATION_FIELD_KEY):
+            descriptions |= norm_only_fields
     if field_name not in descriptions:
         raise ValueError(
             f"Didn't find description for field [{field_name}] in class "

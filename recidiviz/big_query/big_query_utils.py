@@ -84,12 +84,22 @@ def _schema_column_type_for_attribute(attribute: attr.Attribute) -> str:
 
 
 def schema_field_for_attribute(
-    field_name: str, attribute: attr.Attribute
+    field_name: str, attribute: attr.Attribute, description: str | None = None
 ) -> bigquery.SchemaField:
     """Returns a BigQuery SchemaField object with the information needed for a column
     with the name of |field_name| storing the values in the |attribute|."""
+    if description:
+        return bigquery.SchemaField(
+            field_name,
+            _schema_column_type_for_attribute(attribute),
+            mode="NULLABLE",
+            description=format_description_for_big_query(description),
+        )
+    # BigQuery uses a default sentinel Enum so we can't pass description=None
     return bigquery.SchemaField(
-        field_name, _schema_column_type_for_attribute(attribute), mode="NULLABLE"
+        field_name,
+        _schema_column_type_for_attribute(attribute),
+        mode="NULLABLE",
     )
 
 

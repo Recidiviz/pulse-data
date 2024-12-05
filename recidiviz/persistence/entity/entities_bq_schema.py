@@ -38,6 +38,10 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.root_entity_utils import (
     get_root_entity_class_for_entity,
 )
+from recidiviz.persistence.entity.state.entity_documentation_utils import (
+    description_for_field,
+)
+from recidiviz.persistence.entity.state.state_entity_mixins import StateEntityMixin
 
 STATE_CODE_COL = "state_code"
 
@@ -66,19 +70,32 @@ def get_bq_schema_for_entity_table(
     return get_bq_schema_for_entities_module(entities_module)[table_id]
 
 
+def _get_field_definition(entity_cls: Type[Entity], field_name: str) -> str | None:
+    if issubclass(entity_cls, StateEntityMixin):
+        return description_for_field(entity_cls, field_name)
+    return None
+
+
 def _get_bq_schema_for_entity_class(
     entities_module: ModuleType, entity_cls: Type[Entity]
 ) -> list[SchemaField]:
     """Derives a BQ table schema for the provided Entity class."""
     schema = []
     attr_class_reference = attribute_field_type_reference_for_class(entity_cls)
+
     # Sort fields by their declaration order so we produce schemas with
     # deterministic column orders.
     for field in attr_class_reference.sorted_fields:
         field_info = attr_class_reference.get_field_info(field)
         if not field_info.referenced_cls_name:
             # This is a flat field
-            schema.append(schema_field_for_attribute(field, field_info.attribute))
+            schema.append(
+                schema_field_for_attribute(
+                    field,
+                    field_info.attribute,
+                    _get_field_definition(entity_cls, field),
+                )
+            )
             continue
 
         referenced_cls = get_entity_class_in_module_with_name(
@@ -97,6 +114,7 @@ def _get_bq_schema_for_entity_class(
                 foreign_key_field_name,
                 bigquery.enums.SqlTypeNames.INTEGER.value,
                 mode="NULLABLE",
+                description=f"Foreign key reference to {referenced_cls.get_table_id()}",
             )
         )
 
