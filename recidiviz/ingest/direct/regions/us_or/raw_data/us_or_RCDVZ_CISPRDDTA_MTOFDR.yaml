@@ -23,6 +23,10 @@ columns:
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+    import_blocking_column_validation_exemptions:
+      - validation_type: DATETIME_PARSERS
+        exemption_reason: |-
+          TODO(#35651) Column uses '0' as a placeholder for null dates, which is not a valid date format.
   - name: MTA_APPLNID
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -99,6 +103,10 @@ columns:
   - name: PROG_ID
     description: |-
       TODO(#17148): Fill in with answer from OR
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra, remove when we document this field
   - name: LOCATION_CODE
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -114,6 +122,10 @@ columns:
   - name: IMMEDIATE_ACTION
     description: |-
       TODO(#17148): Fill in with answer from OR
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra, remove when we document this field
   - name: USER_TITLE
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -177,6 +189,10 @@ columns:
   - name: DELIVERY_TITLE
     description: |-
       TODO(#17148): Fill in with answer from OR
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          Exempting to unblock enabling the new infra, remove when we document this field
   - name: DELIVERY_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
