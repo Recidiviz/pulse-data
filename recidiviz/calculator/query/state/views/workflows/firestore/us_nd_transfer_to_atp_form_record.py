@@ -164,7 +164,7 @@ case_notes_cte AS (
             ),
             ' - ' ORDER BY ma.QUESTION_SEQ
             ) AS parole_board_notes,
-            MAX(PARSE_DATE('%m/%d/%Y', IFNULL(ma.MODIFY_DATETIME, ma.CREATE_DATETIME))) AS event_date,
+            MAX(EXTRACT(DATE FROM CAST(IFNULL(ma.MODIFY_DATETIME, ma.CREATE_DATETIME) AS DATETIME))) AS event_date,
         FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.elite_offender_medical_screenings_6i_latest` ms
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
             ON peid.external_id = REPLACE(REPLACE(ms.OFFENDER_BOOK_ID,',',''), '.00', '')
