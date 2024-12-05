@@ -47,7 +47,7 @@ WITH sex_offense_spans AS (
         False AS meets_criteria,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
     WHERE state_code = 'US_PA'
-        AND conditions like '%SEXP%'
+        AND (conditions LIKE '%SEX OFFENDER%' AND conditions LIKE '%PROTOCOL%')
         AND start_date <> termination_date -- exclude zero-day sessions
 ),
 {create_sub_sessions_with_attributes('sex_offense_spans')}

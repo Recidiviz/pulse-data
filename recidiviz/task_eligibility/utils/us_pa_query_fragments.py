@@ -145,3 +145,20 @@ def us_pa_supervision_super_sessions() -> str:
                                                 session_id_output_name='super_session_id',
                                                 end_date_field_name='end_date_exclusive')})                                                                                    
     """
+
+
+def case_notes_helper() -> str:
+    return """
+    /* pull special conditions for the current supervision period related to treatment and/or evaluations */
+    SELECT DISTINCT SPLIT(external_id, '-')[OFFSET(0)] AS external_id,
+      'Special Conditions' AS criteria,
+      CASE WHEN condition LIKE '%EVALUATION%' THEN 'EVALUATION' ELSE 'TREATMENT' END AS note_title,
+      condition AS note_body,
+      '' AS event_date,
+    FROM `{project_id}.{normalized_state_dataset}.state_supervision_period`,
+    UNNEST(SPLIT(conditions, '##')) condition
+    WHERE state_code = 'US_PA' 
+      AND termination_date IS NULL
+      AND ((condition LIKE '%TREATMENT%' AND condition LIKE '%SPECIAL CONDITION%')
+        OR condition LIKE '%EVALUATION%')
+    """
