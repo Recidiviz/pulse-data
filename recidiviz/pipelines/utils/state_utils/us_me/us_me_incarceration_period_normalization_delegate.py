@@ -31,6 +31,9 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.pipelines.utils.incarceration_period_utils import (
+    legacy_standardize_purpose_for_incarceration_values,
+)
 
 INCARCERATION_SENTENCE_PERIOD_LOOKBACK = 7
 
@@ -77,3 +80,15 @@ class UsMeIncarcerationNormalizationDelegate(
             ):
                 return StateIncarcerationPeriodAdmissionReason.REVOCATION
         return incarceration_period.admission_reason
+
+    def standardize_purpose_for_incarceration_values(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Standardizing PFI using _standardize_purpose_for_incarceration_values
+        for US_ME since this was previously the default normalization behavior
+        and there hasn't been a use case for skipping this inferrence yet"""
+
+        return legacy_standardize_purpose_for_incarceration_values(
+            incarceration_periods
+        )

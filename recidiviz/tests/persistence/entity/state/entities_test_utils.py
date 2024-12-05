@@ -52,6 +52,7 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity, StateRace
 from recidiviz.common.constants.state.state_person_address_period import (
@@ -622,6 +623,7 @@ def generate_full_graph_state_person(
         admission_reason_raw_text="NEW ADMISSION",
         release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         release_reason_raw_text="CONDITIONAL RELEASE",
+        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
     )
 
     person.incarceration_periods = [incarceration_period]

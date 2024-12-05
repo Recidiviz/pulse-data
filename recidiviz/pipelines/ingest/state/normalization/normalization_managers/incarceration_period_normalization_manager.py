@@ -260,6 +260,15 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         """
         return incarceration_periods
 
+    def standardize_purpose_for_incarceration_values(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Some states may want to standardize PFI values based on custom logic
+        or based on the legacy _standardize_purpose_for_incarceration_values function
+        that was previously the default for all states"""
+        return incarceration_periods
+
 
 class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
     """Interface for generalized and state-specific normalization of
@@ -382,8 +391,10 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
 
         # Ensure that the purpose_for_incarceration values on all periods is
         # what we expect
-        mid_processing_periods = self._standardize_purpose_for_incarceration_values(
-            mid_processing_periods
+        mid_processing_periods = (
+            self.normalization_delegate.standardize_purpose_for_incarceration_values(
+                mid_processing_periods
+            )
         )
 
         # Process fields on final incarceration period set
@@ -976,45 +987,6 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             ] = pfi_info.purpose_for_incarceration_subtype
 
         return updated_periods, ip_id_to_pfi_subtype
-
-    @staticmethod
-    def _standardize_purpose_for_incarceration_values(
-        incarceration_periods: List[StateIncarcerationPeriod],
-    ) -> List[StateIncarcerationPeriod]:
-        """For any period that doesn't have a set purpose_for_incarceration value,
-        sets the default value of GENERAL.
-        """
-
-        updated_ips: List[StateIncarcerationPeriod] = []
-
-        for index, ip in enumerate(incarceration_periods):
-            pfi_override = None
-
-            if index > 0:
-                previous_ip = updated_ips[-1]
-
-                if period_edges_are_valid_transfer(
-                    first_incarceration_period=previous_ip,
-                    second_incarceration_period=ip,
-                ):
-                    # We propagate the pfi from the previous period if the edge
-                    # between these two periods is a valid transfer. All edges that
-                    # are valid STATUS_CHANGE edges have already been updated at this
-                    # point.
-                    pfi_override = previous_ip.specialized_purpose_for_incarceration
-
-            if not pfi_override and not ip.specialized_purpose_for_incarceration:
-                pfi_override = StateSpecializedPurposeForIncarceration.GENERAL
-
-            updated_ip = deep_entity_update(
-                ip,
-                specialized_purpose_for_incarceration=(
-                    pfi_override or ip.specialized_purpose_for_incarceration
-                ),
-            )
-            updated_ips.append(updated_ip)
-
-        return updated_ips
 
     def _generate_incarceration_admission_violation_types(
         self,

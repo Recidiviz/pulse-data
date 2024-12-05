@@ -28,6 +28,9 @@ from more_itertools import one
 
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
@@ -133,6 +136,7 @@ class TestMergeIngestViewRootEntityTrees(
                                     incarceration_type=StateIncarcerationType.STATE_PRISON,
                                     admission_date=date(2018, 1, 1),
                                     release_date=date(2019, 1, 1),
+                                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                                 ),
                                 StateIncarcerationPeriod(
                                     state_code=self.state_code().value,
@@ -140,6 +144,7 @@ class TestMergeIngestViewRootEntityTrees(
                                     incarceration_type=StateIncarcerationType.STATE_PRISON,
                                     admission_date=date(2020, 1, 1),
                                     release_date=date(2021, 1, 1),
+                                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                                 ),
                                 StateIncarcerationPeriod(
                                     state_code=self.state_code().value,
@@ -147,6 +152,7 @@ class TestMergeIngestViewRootEntityTrees(
                                     incarceration_type=StateIncarcerationType.STATE_PRISON,
                                     admission_date=date(2021, 6, 1),
                                     release_date=date(2021, 12, 1),
+                                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                                 ),
                                 StateIncarcerationPeriod(
                                     state_code=self.state_code().value,
@@ -154,6 +160,7 @@ class TestMergeIngestViewRootEntityTrees(
                                     incarceration_type=StateIncarcerationType.STATE_PRISON,
                                     admission_date=date(2022, 1, 1),
                                     release_date=date(2023, 1, 1),
+                                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                                 ),
                             ],
                         ),

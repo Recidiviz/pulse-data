@@ -18,3 +18,4 @@ output:
           admission_date: start_date
           release_date: end_date
           incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
+          specialized_purpose_for_incarceration: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)

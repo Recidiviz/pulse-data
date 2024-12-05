@@ -31,6 +31,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import CriticalRangesBuilder, DateRangeDiff
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.normalized_entities_utils import (
     update_normalized_entity_with_globally_unique_id,
 )
@@ -323,3 +324,43 @@ def infer_incarceration_periods_from_in_custody_sps(
         inferred_incarceration_periods.append(new_incarceration_period)
 
     return incarceration_periods + inferred_incarceration_periods
+
+
+def legacy_standardize_purpose_for_incarceration_values(
+    incarceration_periods: List[StateIncarcerationPeriod],
+) -> List[StateIncarcerationPeriod]:
+    """For any period that doesn't have a set purpose_for_incarceration value,
+    sets the default value of GENERAL.  This was previously the default normalization
+    behavior for all states.
+    """
+
+    updated_ips: List[StateIncarcerationPeriod] = []
+
+    for index, ip in enumerate(incarceration_periods):
+        pfi_override = None
+
+        if index > 0:
+            previous_ip = updated_ips[-1]
+
+            if period_edges_are_valid_transfer(
+                first_incarceration_period=previous_ip,
+                second_incarceration_period=ip,
+            ):
+                # We propagate the pfi from the previous period if the edge
+                # between these two periods is a valid transfer. All edges that
+                # are valid STATUS_CHANGE edges have already been updated at this
+                # point.
+                pfi_override = previous_ip.specialized_purpose_for_incarceration
+
+        if not pfi_override and not ip.specialized_purpose_for_incarceration:
+            pfi_override = StateSpecializedPurposeForIncarceration.GENERAL
+
+        updated_ip = deep_entity_update(
+            ip,
+            specialized_purpose_for_incarceration=(
+                pfi_override or ip.specialized_purpose_for_incarceration
+            ),
+        )
+        updated_ips.append(updated_ip)
+
+    return updated_ips

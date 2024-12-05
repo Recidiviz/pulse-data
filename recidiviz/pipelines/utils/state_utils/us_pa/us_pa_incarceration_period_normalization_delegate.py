@@ -38,6 +38,9 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incar
     PurposeForIncarcerationInfo,
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.pipelines.utils.incarceration_period_utils import (
+    legacy_standardize_purpose_for_incarceration_values,
+)
 from recidiviz.pipelines.utils.violation_response_utils import (
     responses_on_most_recent_response_date,
 )
@@ -86,6 +89,18 @@ class UsPaIncarcerationNormalizationDelegate(
             incarceration_period_list_index,
             sorted_incarceration_periods,
             violation_responses,
+        )
+
+    def standardize_purpose_for_incarceration_values(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Standardizing PFI using the legacy _standardize_purpose_for_incarceration_values function
+        for US_PA since this was previously the default normalization behavior
+        and there hasn't been a use case for skipping this inferrence yet"""
+
+        return legacy_standardize_purpose_for_incarceration_values(
+            incarceration_periods
         )
 
 

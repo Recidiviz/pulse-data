@@ -31,6 +31,9 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incar
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
+from recidiviz.pipelines.utils.incarceration_period_utils import (
+    legacy_standardize_purpose_for_incarceration_values,
+)
 from recidiviz.pipelines.utils.period_utils import (
     find_last_terminated_period_on_or_before_date,
 )
@@ -72,6 +75,18 @@ class UsArIncarcerationNormalizationDelegate(
                 admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
             )
         return sorted_incarceration_periods[incarceration_period_list_index]
+
+    def standardize_purpose_for_incarceration_values(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Standardizing PFI using the legacy _standardize_purpose_for_incarceration_values function
+        for US_AR since this was previously the default normalization behavior
+        and there hasn't been a use case for skipping this inferrence yet"""
+
+        return legacy_standardize_purpose_for_incarceration_values(
+            incarceration_periods
+        )
 
 
 def _is_revocation_admission(

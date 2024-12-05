@@ -74,7 +74,7 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
         self,
         # pylint: disable=unused-argument
         sorted_supervision_periods: List[StateSupervisionPeriod],
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        incarceration_periods: List[StateIncarcerationPeriod],
     ) -> List[StateSupervisionPeriod]:
         """States may have specific logic to close periods that should closed
         before the rest of supervision period normalization proceeds.

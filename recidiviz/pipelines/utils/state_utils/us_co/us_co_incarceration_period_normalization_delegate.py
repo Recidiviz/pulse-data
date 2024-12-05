@@ -16,7 +16,7 @@
 # =============================================================================
 """Contains US_CO implementation of the StateSpecificIncarcerationNormalizationDelegate."""
 import datetime
-from typing import Optional
+from typing import List, Optional
 
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -24,6 +24,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.incarceration_period_utils import (
+    legacy_standardize_purpose_for_incarceration_values,
 )
 
 
@@ -52,3 +55,15 @@ class UsCoIncarcerationNormalizationDelegate(
             incarceration_period.facility = "FUG-INMATE"
 
         return incarceration_period.facility
+
+    def standardize_purpose_for_incarceration_values(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Standardizing PFI using the legacy standardize_purpose_for_incarceration_values function
+        for US_CO since this was previously the default normalization behavior
+        and there hasn't been a use case for skipping this inferrence yet"""
+
+        return legacy_standardize_purpose_for_incarceration_values(
+            incarceration_periods
+        )

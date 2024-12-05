@@ -28,6 +28,9 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incar
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
+from recidiviz.pipelines.utils.incarceration_period_utils import (
+    legacy_standardize_purpose_for_incarceration_values,
+)
 
 
 class UsOzIncarcerationNormalizationDelegate(
@@ -83,3 +86,15 @@ class UsOzIncarcerationNormalizationDelegate(
         ):
             return "THE-CRIB"
         return incarceration_period.facility
+
+    def standardize_purpose_for_incarceration_values(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Standardizing PFI using the legacy standardize_purpose_for_incarceration_values function
+        for US_OZ since this was previously the default normalization behavior
+        and there hasn't been a use case for skipping this inferrence yet"""
+
+        return legacy_standardize_purpose_for_incarceration_values(
+            incarceration_periods
+        )

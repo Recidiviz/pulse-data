@@ -32,6 +32,9 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
+from recidiviz.pipelines.utils.incarceration_period_utils import (
+    standard_date_sort_for_incarceration_periods,
+)
 
 
 class UsTnSupervisionNormalizationDelegate(
@@ -75,7 +78,7 @@ class UsTnSupervisionNormalizationDelegate(
         self,
         # superivision_period_list_index: int,
         sorted_supervision_periods: List[StateSupervisionPeriod],
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        incarceration_periods: List[StateIncarcerationPeriod],
         # incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         # incarceration_period: StateIncarcerationPeriod,
         # supervision_period: StateSupervisionPeriod,
@@ -84,6 +87,11 @@ class UsTnSupervisionNormalizationDelegate(
         View so there are a number of open Supervision Periods that need to be closed. We use Incarceration Periods
         that end with SENTENCE_SERVED and overlap with Supervision Periods to close these out as expected.
         """
+
+        sorted_incarceration_periods = standard_date_sort_for_incarceration_periods(
+            incarceration_periods
+        )
+
         # if open supervision period, close
 
         if (

@@ -43,6 +43,7 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_perio
 )
 from recidiviz.pipelines.utils.incarceration_period_utils import (
     incarceration_periods_with_admissions_between_dates,
+    legacy_standardize_purpose_for_incarceration_values,
     periods_are_temporally_adjacent,
 )
 from recidiviz.pipelines.utils.period_utils import (
@@ -174,6 +175,18 @@ class UsNdIncarcerationNormalizationDelegate(
         return (
             incarceration_period.specialized_purpose_for_incarceration
             == StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
+        )
+
+    def standardize_purpose_for_incarceration_values(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Standardizing PFI using the legacy standardize_purpose_for_incarceration_values function
+        for US_ND since this was previously the default normalization behavior
+        and there hasn't been a use case for skipping this inferrence yet"""
+
+        return legacy_standardize_purpose_for_incarceration_values(
+            incarceration_periods
         )
 
 

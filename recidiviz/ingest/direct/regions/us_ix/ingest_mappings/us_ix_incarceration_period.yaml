@@ -65,6 +65,9 @@ output:
                     - SecurityLevelName
                     - $literal("Rider")
                 $then: $literal_enum(StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON)
+              - $else_if:
+                  $is_null: LegalStatusDesc
+                $then: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)
               - $else:
                   $enum_mapping:
                     $raw_text: LegalStatusDesc
