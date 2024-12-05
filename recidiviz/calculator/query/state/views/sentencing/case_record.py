@@ -72,6 +72,7 @@ SENTENCING_CASE_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "lsir_level",
         "report_type",
         "external_id",
+        "district",
     ],
 )
 

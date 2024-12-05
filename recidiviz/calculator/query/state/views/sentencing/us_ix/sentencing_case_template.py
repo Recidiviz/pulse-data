@@ -30,7 +30,8 @@ WITH
         AssignedDate AS assigned_date,
         countyLoc.LocationName AS county,
         PSIReportId AS external_id,
-        id.person_id
+        id.person_id,
+        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_district_name') as district
     FROM 
     `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
     LEFT JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ref_Location_latest` loc 
@@ -41,8 +42,10 @@ WITH
         ON psi.OffenderId = id.external_id and id_type = 'US_IX_DOC'
     LEFT JOIN  `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ref_Employee_latest` e 
         ON psi.AssignedToUserId = e.EmployeeId 
+    LEFT JOIN `{project_id}.reference_views.location_metadata_materialized` lmm
+        ON lmm.state_code = "US_IX" AND lmm.location_external_id =  CONCAT("ATLAS-",loc.LocationId)
     WHERE e.Inactive = "0" AND
-    -- Make sure that case is either not completed or completed within the last two years 
+    -- Make sure that case is either not completed or completed within the last 3 months 
     (DATE(CompletedDate) > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH) OR CompletedDate IS NULL)
     ),
     -- this CTE uses the OffenderNote table to infer the type of PSI report requested
