@@ -37,18 +37,19 @@ from recidiviz.airflow.dags.operators.cloud_sql_proxy_sidecar import (
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
 from recidiviz.airflow.dags.utils.environment import (
     COMPOSER_ENVIRONMENT,
+    DATA_PLATFORM_VERSION,
+    get_app_engine_image_from_airflow_env,
     get_composer_environment,
+    get_data_platform_version_from_airflow_env,
     get_project_id,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.environment import (
     DAG_ID,
-    DATA_PLATFORM_VERSION,
     MAP_INDEX,
     RECIDIVIZ_ENV,
     RUN_ID,
     TASK_ID,
-    get_data_platform_version,
     get_environment_for_project,
 )
 
@@ -129,7 +130,7 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
             namespace=COMPOSER_USER_WORKLOADS,
             # Do not delete pods after running, its handled `recidiviz.airflow.dags.monitoring.cleanup_exited_pods`
             on_finish_action="keep_pod",
-            image=os.getenv("RECIDIVIZ_APP_ENGINE_IMAGE"),
+            image=get_app_engine_image_from_airflow_env(),
             image_pull_policy="Always",
             # This config is provided by Cloud Composer
             config_file="/home/airflow/composer_kube_config",
@@ -157,7 +158,8 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
                     name=COMPOSER_ENVIRONMENT, value=get_composer_environment()
                 ),
                 k8s.V1EnvVar(
-                    name=DATA_PLATFORM_VERSION, value=get_data_platform_version()
+                    name=DATA_PLATFORM_VERSION,
+                    value=get_data_platform_version_from_airflow_env(),
                 ),
                 k8s.V1EnvVar(
                     name=RECIDIVIZ_ENV,
