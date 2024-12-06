@@ -150,7 +150,7 @@ US_IX_SUPERVISION_EMPLOYMENT_VERIFICATION_FREQUENCY_REQUIREMENTS: Dict[
     StateSupervisionCaseType, Dict[StateSupervisionLevel, Tuple[int, int]]
 ] = {
     StateSupervisionCaseType.SEX_OFFENSE: {
-        StateSupervisionLevel.MINIMUM: (1, 60),
+        StateSupervisionLevel.MINIMUM: (1, 90),
         StateSupervisionLevel.MEDIUM: (1, 60),
         StateSupervisionLevel.HIGH: (1, 30),
     },
