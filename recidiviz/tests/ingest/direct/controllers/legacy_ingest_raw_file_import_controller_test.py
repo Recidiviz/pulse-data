@@ -214,12 +214,19 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.metadata_patcher.start().return_value = "recidiviz-staging"
 
+        self.enabled_patcher = patch(
+            "recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller.is_raw_data_import_dag_enabled",
+        )
+        self.enabled_mock = self.enabled_patcher.start()
+        self.enabled_mock.return_value = False
+
     def tearDown(self) -> None:
         self.otl_mock.tear_down()
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.operations_database_key
         )
         self.metadata_patcher.stop()
+        self.enabled_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -370,11 +377,8 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
             expected_count, len(controller.raw_file_import_manager.imported_paths)
         )
 
-    @patch(
-        "recidiviz.ingest.direct.controllers.legacy_ingest_raw_file_import_controller.is_raw_data_import_dag_enabled",
-        Mock(return_value=True),
-    )
     def test_raw_data_dag_enabled(self) -> None:
+        self.enabled_mock.return_value = True
         with self.assertRaises(DirectIngestGatingError):
             _ = build_fake_ingest_raw_file_import_controller(
                 state_code=StateCode.US_XX,

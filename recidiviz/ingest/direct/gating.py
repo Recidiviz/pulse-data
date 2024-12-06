@@ -60,6 +60,8 @@ STAGING_SECONDARY_ENABLED_STATES: Set[StateCode] = {
     *STAGING_PRIMARY_ENABLED_STATES,
 }
 
+ALL_STATES_WITH_GATING: Set[StateCode] = STAGING_SECONDARY_ENABLED_STATES
+
 
 # TODO(#28239): delete once raw data import DAG is live
 def is_raw_data_import_dag_enabled(
@@ -67,6 +69,10 @@ def is_raw_data_import_dag_enabled(
     raw_data_instance: DirectIngestInstance,
     project_id: Optional[str] = None,
 ) -> bool:
+    """Gating logic for raw data import DAG. By default, all new states will be enabled
+    everywhere where ingest is enabled; otherwise, it is only enabled where we enumerate
+    it to be.
+    """
 
     if not project_id:
         project_id = metadata.project_id()
@@ -78,7 +84,10 @@ def is_raw_data_import_dag_enabled(
             else PRODUCTION_SECONDARY_ENABLED_STATES
         )
 
-        return state_code in enabled_states_for_project_and_raw_data_instance
+        return (
+            state_code in enabled_states_for_project_and_raw_data_instance
+            or state_code not in ALL_STATES_WITH_GATING
+        )
 
     if project_id == GCP_PROJECT_STAGING:
         enabled_states_for_project_and_raw_data_instance = (
@@ -87,7 +96,10 @@ def is_raw_data_import_dag_enabled(
             else STAGING_SECONDARY_ENABLED_STATES
         )
 
-        return state_code in enabled_states_for_project_and_raw_data_instance
+        return (
+            state_code in enabled_states_for_project_and_raw_data_instance
+            or state_code not in ALL_STATES_WITH_GATING
+        )
 
     # returns false for testing envs
     return False

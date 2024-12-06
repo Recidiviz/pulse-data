@@ -119,6 +119,11 @@ class IngestOperationsStoreTestBase(TestCase):
         )
         self.mock_redis_patcher = self.redis_patcher.start()
         self.mock_redis_patcher.return_value = FakeRedis()
+        self.enabled_patcher = patch(
+            "recidiviz.admin_panel.ingest_operations_store.is_raw_data_import_dag_enabled",
+        )
+        self.enabled_mock = self.enabled_patcher.start()
+        self.enabled_mock.return_value = False
 
     def tearDown(self) -> None:
         local_persistence_helpers.teardown_on_disk_postgresql_database(
@@ -130,6 +135,7 @@ class IngestOperationsStoreTestBase(TestCase):
         self.cloud_task_patcher.stop()
         self.bq_client_patcher.stop()
         self.mock_redis_patcher.stop()
+        self.enabled_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:
