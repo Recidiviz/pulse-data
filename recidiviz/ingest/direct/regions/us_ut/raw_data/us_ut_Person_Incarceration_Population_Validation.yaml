@@ -36,3 +36,7 @@ columns:
   - name: prsn_entry_dt
   - name: prsn_exit_dt
   - name: src_data_issue
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 12/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)

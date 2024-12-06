@@ -60,6 +60,10 @@ columns:
   - name: super_agnt_id
     description: |-
       TODO(#33372): Fill in column description. After we get root table for staff, flag this field with field_type: staff_external_id and external_id_type: US_UT_USR_ID.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 12/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
     is_pii: True
   - name: updt_usr_id
     description: |-
