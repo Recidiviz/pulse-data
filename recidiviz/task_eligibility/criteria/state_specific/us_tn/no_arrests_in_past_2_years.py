@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Spans of time when a client in TN has not had a positive arrest check within the past
-12 months."""
+2 years."""
 
 from google.cloud import bigquery
 
@@ -33,10 +33,10 @@ from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TN_NO_ARRESTS_IN_PAST_YEAR"
+_CRITERIA_NAME = "US_TN_NO_ARRESTS_IN_PAST_2_YEARS"
 
 _QUERY_TEMPLATE = no_positive_arrest_check_within_time_interval(
-    date_interval=12, date_part="MONTH"
+    date_interval=2, date_part="YEAR"
 )
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(

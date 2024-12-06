@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a client has had at least 12 months since the most recent positive drug test."""
+"""Describes the spans of time when a client has not had a positive drug test within the
+past 12 months.
+"""
 
 from google.cloud import bigquery
 
@@ -31,13 +33,9 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "AT_LEAST_12_MONTHS_SINCE_MOST_RECENT_POSITIVE_DRUG_TEST"
 
-_DESCRIPTION = """Describes the spans of time when a client has had at least 12 months since the most recent positive
-drug test.
-"""
-
 _QUERY_TEMPLATE = f"""
    {at_least_X_time_since_positive_drug_screen(date_interval=12,
-                                                 date_part="MONTH")
+                                               date_part="MONTH")
     }
 """
 
@@ -45,7 +43,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
+        description=__doc__,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
         reasons_fields=[
@@ -57,7 +55,6 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         ],
     )
 )
-
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

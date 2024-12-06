@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,11 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Helper SQL queries for Tennessee
+"""Create helper SQL queries for Tennessee.
 """
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
+)
 
 DISCIPLINARY_HISTORY_MONTH_LOOKBACK = "60"
 
@@ -28,6 +31,102 @@ DISCIPLINARY_HISTORY_MONTH_LOOKBACK = "60"
 # risk assessments, etc
 EXCLUDED_MEDIUM_RAW_TEXT = ["6P1", "6P2", "6P3", "6P4", "3D3"]
 EXCLUDED_HIGH_RAW_TEXT = ["1D1", "2D2"]
+
+
+def no_positive_arrest_check_within_time_interval(
+    *,
+    date_interval: int,
+    date_part: str,
+) -> str:
+    """Identify spans of time during which individuals in TN have NOT had a POSITIVE
+    arrest check within a specified time interval (e.g., within the past 2 years).
+
+    Args:
+        date_interval (int): Number of <date_part> when a positive arrest check will
+        remain valid/relevant.
+        date_part (str): Supports any of the BigQuery `date_part` values: "DAY", "WEEK",
+            "MONTH", "QUARTER", or "YEAR".
+    Returns:
+        str: SQL query as a string.
+    """
+
+    return f"""
+    WITH arrp_sessions_cte AS
+    (
+        SELECT  
+            DISTINCT
+            pei.state_code,
+            pei.person_id, 
+            CAST(CAST(contact.ContactNoteDateTime AS datetime) AS DATE) AS start_date,
+            DATE_ADD(CAST(CAST(contact.ContactNoteDateTime AS DATETIME) AS DATE), INTERVAL {date_interval} {date_part}) AS end_date,
+            /* Create this field to keep track of the actual positive arrest check date
+            even after we sub-sessionize to handle overlapping periods (cases when a
+            person has more than 1 positive check in the lookback period). */
+            CAST(CAST(contact.ContactNoteDateTime AS DATETIME) AS DATE) AS latest_positive_arrest_check_date,
+            FALSE AS meets_criteria,
+        FROM
+            `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ContactNoteType_latest` contact
+        INNER JOIN 
+            `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON
+            contact.OffenderID = pei.external_id
+        AND
+            pei.state_code = 'US_TN'
+        WHERE
+            contact.ContactNoteType = 'ARRP'
+    )
+    ,
+    /*
+    If a person has more than 1 positive arrest check in the lookback period, they will
+    have overlapping sessions created in the above CTE. Therefore, we use
+    `create_sub_sessions_with_attributes` to break these up.
+    */
+    {create_sub_sessions_with_attributes('arrp_sessions_cte')}
+    ,
+    dedup_cte AS
+    /*
+    If a person has more than 1 positive arrest check in the lookback period, they will
+    have duplicate sub-sessions for the period of time where there was more than 1
+    relevant positive check. For example, if a person has a positive check on January 1
+    and another on March 1, there would be duplicate sessions for the period from March
+    1 to December 31 because both positive checks are relevant at that time. We
+    deduplicate below so that we surface the most recent positive check that is relevant
+    at each time.
+    */
+    (
+        SELECT
+            *,
+        FROM sub_sessions_with_attributes
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date 
+            ORDER BY latest_positive_arrest_check_date DESC) = 1
+    )
+    ,
+    sessionized_cte AS 
+    /*
+    Sessionize so that we have continuous periods of time for which a person is not
+    eligible due to a positive check. A new session starts either when a person becomes
+    eligible or when a person has an additional positive check within the specified time
+    period, which changes the `latest_positive_arrest_check_date` value.
+    */
+    (
+        {aggregate_adjacent_spans(
+            table_name='dedup_cte',
+            attribute=['latest_positive_arrest_check_date','meets_criteria'],
+            end_date_field_name='end_date'
+        )}
+    )
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        meets_criteria,
+        TO_JSON(STRUCT(
+            latest_positive_arrest_check_date AS latest_positive_arrest_check
+        )) AS reason,
+        latest_positive_arrest_check_date,
+    FROM sessionized_cte
+    """
 
 
 def detainers_cte() -> str:

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a client's latest drug screen is negative."""
+"""Describes the spans of time when a client's latest drug screen is negative.
+
+Note that if a client has not yet had any drug screens, they will not yet meet this
+criterion.
+"""
 
 from google.cloud import bigquery
 
@@ -28,11 +32,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "LATEST_DRUG_TEST_IS_NEGATIVE"
-
-_DESCRIPTION = (
-    """Describes the spans of time when a client's latest drug screen is negative."""
-)
-
 
 _QUERY_TEMPLATE = f"""
     WITH screens AS (
@@ -52,13 +51,15 @@ _QUERY_TEMPLATE = f"""
                 -- For the purposes of this criteria we just want to keep 1 test per person-day and prioritize positive
                 -- results
                 QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, drug_screen_date ORDER BY is_positive_result DESC,
-                                                                                             sample_type) = 1
+                                                                                            sample_type) = 1
             )
     ),
     sessionized_cte AS (
-    {aggregate_adjacent_spans(table_name='screens',
-                       attribute=['latest_drug_screen_result','latest_drug_screen_date','meets_criteria'],
-                       end_date_field_name='end_date')}
+        {aggregate_adjacent_spans(
+            table_name='screens',
+            attribute=['latest_drug_screen_result', 'latest_drug_screen_date', 'meets_criteria'],
+            end_date_field_name='end_date',
+        )}
     )
     SELECT 
         state_code,
@@ -66,8 +67,9 @@ _QUERY_TEMPLATE = f"""
         start_date,
         end_date,
         meets_criteria,
-        TO_JSON(STRUCT(latest_drug_screen_result AS latest_drug_screen_result,
-                        latest_drug_screen_date AS latest_drug_screen_date
+        TO_JSON(STRUCT(
+            latest_drug_screen_result AS latest_drug_screen_result,
+            latest_drug_screen_date AS latest_drug_screen_date
         )) AS reason,
         latest_drug_screen_result,
         latest_drug_screen_date,
@@ -78,7 +80,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
+        description=__doc__,
         sessions_dataset=SESSIONS_DATASET,
         reasons_fields=[
             ReasonsField(

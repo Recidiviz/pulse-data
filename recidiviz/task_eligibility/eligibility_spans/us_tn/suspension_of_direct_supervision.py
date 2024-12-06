@@ -15,9 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Task eligibility spans view that shows the spans of time when someone in TN is
-eligible for Suspension of Direct Supervision (SDS). NB: this is for SDS specifically
-(the parole version of release from active supervision in TN) and not for the parallel
-probation version, Judicial Suspension of Direct Supervision (JSS)."""
+eligible for Suspension of Direct Supervision (SDS).
+
+NB: this is for SDS specifically (the parole version of release from active supervision
+in TN) and not for the parallel probation version, Judicial Suspension of Direct
+Supervision (JSS).
+"""
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -34,6 +37,7 @@ from recidiviz.task_eligibility.criteria.general import (
     on_supervision_at_least_2_years,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
+    no_arrests_in_past_2_years,
     no_supervision_sanction_within_1_year,
     no_warrant_within_2_years,
     not_interstate_compact_incoming,
@@ -46,20 +50,19 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#34432): Figure out how to set up the tool for ISC-out cases, which can be
+# eligible for SDS. (This may involve updating the candidate population to include
+# `SUPERVISION_OUT_OF_STATE` clients and/or changes to criteria.)
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="SUSPENSION_OF_DIRECT_SUPERVISION",
     description=__doc__,
-    # TODO(#34432): Since ISC-out cases would be eligible for SDS, we probably want to
-    # update the candidate population to include `SUPERVISION_OUT_OF_STATE` clients
-    # (which may require the creation of a new candidate population).
     candidate_population_view_builder=parole_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         assessed_risk_low_at_least_2_years.VIEW_BUILDER,
         # TODO(#33636): Create additional criterion to assess whether individuals are
         # meeting financial obligations as outlined in payment plan. May be able to
-        # reuse existing existing criterion/criteria, or may need to create a new
-        # criterion.
+        # reuse existing criterion/criteria, or may need to create a new criterion.
         at_least_12_months_since_most_recent_positive_drug_test.VIEW_BUILDER,
         # TODO(#33640): Double-check that this existing general criterion is correct for
         # the specific SDS requirement related to an individual's latest drug screen.
@@ -72,12 +75,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # state-specific criterion, then? (If so, check that nobody has starting using
         # the general criterion before deleting it.)
         on_supervision_at_least_2_years.VIEW_BUILDER,
+        no_arrests_in_past_2_years.VIEW_BUILDER,
         no_supervision_sanction_within_1_year.VIEW_BUILDER,
         no_warrant_within_2_years.VIEW_BUILDER,
         not_interstate_compact_incoming.VIEW_BUILDER,
-        # TODO(#33641): Double-check that this existing state-specific criterion is
-        # correct for the specific SDS requirement that individuals not be supervised
-        # under a Community Supervision for Life certificate.
         not_on_life_sentence_or_lifetime_supervision.VIEW_BUILDER,
         # TODO(#33635): Double-check that this existing state-specific criterion is
         # correct for the specific SDS requirement that individuals must have completed

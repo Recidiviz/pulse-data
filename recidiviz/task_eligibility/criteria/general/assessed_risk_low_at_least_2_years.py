@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone's assessed
-risk level has continuously been `LOW` for at least 2 years."""
+"""Defines a criterion span view that shows spans of time during which someone's
+assessed risk level has continuously been `LOW` for at least 2 years.
+"""
 
 from google.cloud import bigquery
 
@@ -32,9 +33,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "ASSESSED_RISK_LOW_AT_LEAST_2_YEARS"
-
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone's assessed risk level has continuously been `LOW` for at least 2 years."""
 
 # TODO(#34709): Move this criterion logic into a criterion builder in the
 # `general_criteria_builders.py` file, where it can be generalized/parameterized.
@@ -113,7 +111,7 @@ _QUERY_TEMPLATE = f"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
-    description=_DESCRIPTION,
+    description=__doc__,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     meets_criteria_default=False,
     sessions_dataset=SESSIONS_DATASET,
