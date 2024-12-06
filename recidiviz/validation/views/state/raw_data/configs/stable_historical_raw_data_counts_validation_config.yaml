@@ -46,6 +46,10 @@ PERMANENT:
       exclusion_reason:
         Small reference file that is updated infrequently -- small changes in file size
         cause large % changes
+    - file_tag: RECIDIVIZ_REFERENCE_supervision_locations
+      exclusion_reason:
+        Small reference file that is updated infrequently -- small changes in file size
+        cause large % changes
   US_MI:
     - file_tag: RECIDIVIZ_REFERENCE_offense_exclusion_list
       exclusion_reason:
