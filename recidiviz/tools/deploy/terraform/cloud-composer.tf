@@ -32,33 +32,6 @@ data "google_secret_manager_secret_version" "airflow_sendgrid_api_key" {
   secret = "airflow_sendgrid_api_key"
 }
 
-resource "google_secret_manager_secret" "recidiviz_app_engine_image" {
-  # In order to use a secret as an Airflow variable, it must be prefixed with "airflow-variables-"
-  # https://cloud.google.com/composer/docs/composer-2/configure-secret-manager#add
-  secret_id = "airflow-variables-RECIDIVIZ_APP_ENGINE_IMAGE"
-  replication {
-    auto {}
-  }
-}
-
-resource "google_secret_manager_secret_version" "recidiviz_app_engine_image" {
-  secret      = google_secret_manager_secret.recidiviz_app_engine_image.name
-  secret_data = "us-docker.pkg.dev/${var.project_id}/appengine/default:${var.docker_image_tag}"
-}
-
-resource "google_secret_manager_secret" "data_platform_version" {
-  secret_id = "airflow-variables-DATA_PLATFORM_VERSION"
-  replication {
-    auto {}
-  }
-}
-
-resource "google_secret_manager_secret_version" "data_platform_version" {
-  secret      = google_secret_manager_secret.data_platform_version.name
-  secret_data = var.docker_image_tag
-}
-
-
 resource "google_composer_environment" "default_v2" {
   provider = google-beta
   name     = "orchestration-v2"
@@ -87,12 +60,12 @@ resource "google_composer_environment" "default_v2" {
         "secrets-backend_kwargs"                    = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
       }
       env_variables = {
-        # DO NOT add variables that change with any frequency here. Updating these values causes Airflow tasks
-        # to be interrupted. Instead, add it as a secret like RECIDIVIZ_APP_ENGINE_IMAGE defined above.
-        "RECIDIVIZ_ENV"        = var.project_id == "recidiviz-123" ? "production" : "staging"
-        "SENDGRID_API_KEY"     = data.google_secret_manager_secret_version.airflow_sendgrid_api_key.secret_data,
-        "SENDGRID_MAIL_FROM"   = var.project_id == "recidiviz-staging" ? "alerts+airflow-staging@recidiviz.org" : "alerts+airflow-production@recidiviz.org"
-        "SENDGRID_MAIL_SENDER" = var.project_id == "recidiviz-staging" ? "Airflow Alerts (staging)" : "Airflow Alerts (production)"
+        "RECIDIVIZ_APP_ENGINE_IMAGE" = "us-docker.pkg.dev/${var.project_id}/appengine/default:${var.docker_image_tag}"
+        "RECIDIVIZ_ENV"              = var.project_id == "recidiviz-123" ? "production" : "staging"
+        "DATA_PLATFORM_VERSION"      = var.docker_image_tag
+        "SENDGRID_API_KEY"           = data.google_secret_manager_secret_version.airflow_sendgrid_api_key.secret_data,
+        "SENDGRID_MAIL_FROM"         = var.project_id == "recidiviz-staging" ? "alerts+airflow-staging@recidiviz.org" : "alerts+airflow-production@recidiviz.org"
+        "SENDGRID_MAIL_SENDER"       = var.project_id == "recidiviz-staging" ? "Airflow Alerts (staging)" : "Airflow Alerts (production)"
       }
       pypi_packages = {
         "us"                              = "==3.1.1"

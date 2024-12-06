@@ -17,13 +17,9 @@
 import os
 from typing import Optional
 
-from airflow.models.variable import Variable
-
 # Environment variable that returns the name of the compsoer environment
 # https://cloud.google.com/composer/docs/how-to/managing/environment-variables
 COMPOSER_ENVIRONMENT = "COMPOSER_ENVIRONMENT"
-RECIDIVIZ_APP_ENGINE_IMAGE = "RECIDIVIZ_APP_ENGINE_IMAGE"
-DATA_PLATFORM_VERSION = "DATA_PLATFORM_VERSION"
 
 
 def get_composer_environment() -> Optional[str]:
@@ -43,28 +39,3 @@ def get_project_id() -> str:
         raise ValueError("environment variable GCP_PROJECT not set.")
 
     return project_id_opt
-
-
-def get_app_engine_image_from_airflow_env() -> Optional[str]:
-    """
-    Retrieves the app engine image name airflow variable. If the environment is an experiment environment,
-    we read the image name from an environment variable instead of the airflow variable so we are able to
-    override the app image for testing.
-
-    https://cloud.google.com/composer/docs/composer-2/configure-secret-manager#read-custom-operators
-    """
-    if is_experiment_environment():
-        if not (image_name := os.environ.get(RECIDIVIZ_APP_ENGINE_IMAGE)):
-            raise ValueError(
-                f"environment variable {RECIDIVIZ_APP_ENGINE_IMAGE} not set."
-            )
-        return image_name
-
-    return Variable.get(RECIDIVIZ_APP_ENGINE_IMAGE, None)
-
-
-def get_data_platform_version_from_airflow_env() -> Optional[str]:
-    """
-    Retrieves the data platform version airflow variable.
-    """
-    return Variable.get(DATA_PLATFORM_VERSION, None)
