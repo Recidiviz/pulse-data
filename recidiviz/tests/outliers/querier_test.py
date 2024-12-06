@@ -475,12 +475,12 @@ class TestOutliersQuerier(InsightsDbTestCase):
 
         self.assertIsNone(actual)
 
-    def test_get_supervisor_from_external_id_no_match(self) -> None:
+    def test_supervisor_exists_with_external_id_no_match(self) -> None:
         # If matching supervisor doesn't exist, return None
-        actual = OutliersQuerier(StateCode.US_PA).get_supervisor_from_external_id(
+        actual = OutliersQuerier(StateCode.US_PA).supervisor_exists_with_external_id(
             external_id="invalidid"
         )
-        self.assertIsNone(actual)
+        self.assertFalse(actual)
 
     def test_get_supervision_officer_entity_no_metrics(self) -> None:
         # Return None because none found
@@ -635,13 +635,13 @@ class TestOutliersQuerier(InsightsDbTestCase):
         )
         self.assertIsNone(actual)  # type: ignore[attr-defined]
 
-    def test_get_supervisor_from_external_id_found_match(self) -> None:
+    def test_supervisor_exists_with_external_id_found_match(self) -> None:
         # Return matching supervisor
-        actual = OutliersQuerier(StateCode.US_PA).get_supervisor_from_external_id(
+        actual = OutliersQuerier(StateCode.US_PA).supervisor_exists_with_external_id(
             external_id="101"
         )
 
-        self.assertEqual("101", actual.external_id)  # type: ignore[union-attr]
+        self.assertTrue(actual)  # type: ignore[union-attr]
 
     def test_get_events_by_client(self) -> None:
         # Return matching event

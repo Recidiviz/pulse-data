@@ -1035,20 +1035,18 @@ class OutliersQuerier:
 
             return id_to_entities[officer_external_id]
 
-    def get_supervisor_from_external_id(
-        self, external_id: str
-    ) -> Optional[SupervisionOfficerSupervisor]:
+    def supervisor_exists_with_external_id(self, external_id: str) -> bool:
         """
-        Returns the SupervisionOfficerSupervisor given the external_id.
+        Returns whether there exists a SupervisionOfficerSupervisor with the given external_id.
         """
         with self.insights_database_session() as session:
             supervisor = (
-                session.query(SupervisionOfficerSupervisor)
+                session.query(SupervisionOfficerSupervisor.external_id)
                 .filter(SupervisionOfficerSupervisor.external_id == external_id)
                 .scalar()
             )
 
-            return supervisor
+            return supervisor is not None
 
     def get_supervision_officer_from_pseudonymized_id(
         self, pseudonymized_id: str
