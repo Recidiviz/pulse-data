@@ -18,6 +18,7 @@
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     array_agg_case_notes_by_external_id,
     join_current_task_eligibility_spans_with_external_id,
@@ -66,6 +67,7 @@ US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW
         StateCode.US_PA
     ),
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 

@@ -20,6 +20,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 
 # from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     array_agg_case_notes_by_external_id,
     join_current_task_eligibility_spans_with_external_id,
@@ -132,6 +133,7 @@ US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER = SimpleBi
         StateCode.US_PA
     ),
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 

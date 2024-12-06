@@ -417,17 +417,65 @@ In this case, we don't know whether the strangulation charges were graded as fel
 
 
 def case_notes_helper() -> str:
-    return """
+    return f"""
     /* pull special conditions for the current supervision period related to treatment and/or evaluations */
     SELECT DISTINCT SPLIT(external_id, '-')[OFFSET(0)] AS external_id,
       'Special Conditions' AS criteria,
       CASE WHEN condition LIKE '%EVALUATION%' THEN 'EVALUATION' ELSE 'TREATMENT' END AS note_title,
       condition AS note_body,
-      '' AS event_date,
-    FROM `{project_id}.{normalized_state_dataset}.state_supervision_period`,
+      CAST(NULL AS DATE) AS event_date,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`,
     UNNEST(SPLIT(conditions, '##')) condition
     WHERE state_code = 'US_PA' 
       AND termination_date IS NULL
       AND ((condition LIKE '%TREATMENT%' AND condition LIKE '%SPECIAL CONDITION%')
         OR condition LIKE '%EVALUATION%')
+    
+    UNION ALL 
+    
+    /* pull all treatments that were referred, started, or discharged during the current supervision period */ 
+    (
+    WITH supervision_starts AS (
+      SELECT person_id, 
+        start_date, 
+      FROM ({us_pa_supervision_super_sessions()})
+      WHERE state_code = 'US_PA'
+        AND end_date_exclusive IS NULL
+    )
+    
+    SELECT DISTINCT
+      SPLIT(external_id, '-')[OFFSET(0)] AS external_id,
+      'Treatments' AS criteria,
+      JSON_EXTRACT_SCALAR(referral_metadata, "$.PROGRAM_NAME") AS note_title,
+      CASE WHEN participation_status_raw_text IN ('ASSIGNED')
+            THEN CONCAT('Assigned - Referred on ', COALESCE(CAST(referral_date AS STRING), 'Unknown Date')) 
+          WHEN participation_status IN ('DISCHARGED_SUCCESSFUL') AND discharge_date IS NOT NULL
+            THEN CONCAT('Completed - Discharged on ', COALESCE(CAST(discharge_date AS STRING), 'Unknown Date')) 
+          WHEN participation_status IN ('DISCHARGED_SUCCESSFUL')
+            THEN CONCAT('Completed - Referred on ', COALESCE(CAST(referral_date AS STRING), 'Unknown Date')) 
+            -- using referral date here because sometimes the discharge date is missing in old OMS       
+          WHEN participation_status_raw_text IN ('IN PROGRESS') 
+          -- note - using raw text here means we only display in progress records from vantage. in progress records from the old OMS are probably not 
+          -- still actually in progress (since it stopped being used in 2022) so displaying those records in "unknown status" bucket instead
+            THEN CONCAT('In progress - Started on ', COALESCE(CAST(tre.start_date AS STRING), 'Unknown Date')) 
+          WHEN participation_status IN ('DISCHARGED_UNSUCCESSFUL', 'REFUSED') AND discharge_date IS NOT NULL
+            THEN CONCAT('Failed to complete - Discharged on ', COALESCE(CAST(discharge_date AS STRING), 'Unknown Date')) 
+          WHEN participation_status IN ('DISCHARGED_UNSUCCESSFUL') 
+            THEN CONCAT('Failed to complete - Referred on ', COALESCE(CAST(referral_date AS STRING), 'Unknown Date'))   
+            -- using referral date here because sometimes the discharge date is missing in old OMS       
+          WHEN participation_status_raw_text IN ('DISCHARGED PRIOR TO COMPLETION')
+            THEN CONCAT('Discharged prior to completion - Discharged on ', COALESCE(CAST(discharge_date AS STRING), 'Unknown Date')) 
+          ELSE CONCAT('Unknown Status - Referred on ', COALESCE(CAST(referral_date AS STRING), 'Unknown Date')) 
+        END AS note_body,
+      CASE WHEN participation_status_raw_text IN ('IN PROGRESS') THEN tre.start_date
+          WHEN (participation_status IN ('DISCHARGED_SUCCESSFUL', 'DISCHARGED_UNSUCCESSFUL', 'REFUSED') AND discharge_date IS NOT NULL)
+            OR participation_status_raw_text IN ('DISCHARGED PRIOR TO COMPLETION') THEN discharge_date
+          ELSE referral_date
+        END AS event_date,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` tre
+    INNER JOIN supervision_starts sup 
+      ON sup.person_id = tre.person_id
+      AND COALESCE(tre.discharge_date, tre.start_date, tre.referral_date) >= sup.start_date
+        -- one or more of these dates are often missing depending on the program status, so using all 3 
+    ) 
     """
