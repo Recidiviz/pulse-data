@@ -25,7 +25,7 @@ Related views are:
 
 Output fields for this view are:
 
-    - sentence_inferred_group_id: 
+    - sentence_inferred_group_id:
         The ID for the inferred sentence group. This can be used to link back to the
         constituent sentences and state provided sentence groups.
 
@@ -39,12 +39,13 @@ Output fields for this view are:
         The maximum projected parole release date across sentences affiliated with this inferred group.
 
     - projected_full_term_release_date_min:
-        The maximum full term release date (min) across sentences affiliated with this inferred group. 
+        The maximum full term release date (min) across sentences affiliated with this inferred group.
 
     - projected_full_term_release_date_max:
         The maximum full term release date (max) across the sentences affiliated with this inferred group.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.sessions_query_fragments import sessionize_ledger_data
 from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_group_projected_dates import (
     INFERRED_GROUP_AGGREGATED_SENTENCE_GROUP_PROJECTED_DATES_VIEW_BUILDER,
@@ -55,20 +56,24 @@ from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_agg
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-COLUMNS = ",".join(
-    [
-        "state_code",
-        "person_id",
-        "sentence_inferred_group_id",
-        "inferred_group_update_datetime",
-        "parole_eligibility_date",
-        "projected_parole_release_date",
-        "projected_full_term_release_date_min",
-        "projected_full_term_release_date_max",
-    ]
+_INDEX_COLUMNS = [
+    "state_code",
+    "person_id",
+    "sentence_inferred_group_id",
+]
+_UPDATE_COLUMN_NAME = "inferred_group_update_datetime"
+_ATTRIBUTE_COLUMNS = [
+    "parole_eligibility_date",
+    "projected_parole_release_date",
+    "projected_full_term_release_date_min",
+    "projected_full_term_release_date_max",
+]
+COLUMNS = ",".join(_INDEX_COLUMNS + [_UPDATE_COLUMN_NAME] + _ATTRIBUTE_COLUMNS)
+
+SENTENCE_INFERRED_GROUP_PROJECTED_DATE_SESSIONS = (
+    "sentence_inferred_group_projected_date_sessions"
 )
 
-SENTENCE_INFERRED_GROUP_PROJECTED_DATES = "sentence_inferred_group_projected_dates"
 
 QUERY_TEMPLATE = f"""
 WITH
@@ -86,6 +91,9 @@ all_aggregated_projected_dates AS (
     FROM 
         `{{project_id}}.{INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER.table_for_query.to_str()}`
 )
+,
+ledger_cte AS
+(
 SELECT
     state_code,
     person_id,
@@ -98,17 +106,32 @@ SELECT
 FROM
     all_aggregated_projected_dates
 GROUP BY state_code, person_id, sentence_inferred_group_id, inferred_group_update_datetime
+)
+,
+sessionized_cte AS
+(
+{sessionize_ledger_data(
+    table_name='ledger_cte',
+    index_columns=_INDEX_COLUMNS,
+    update_column_name=_UPDATE_COLUMN_NAME,
+    attribute_columns=_ATTRIBUTE_COLUMNS,
+)})
+SELECT
+    *
+FROM sessionized_cte
 """
 
 
-SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=SENTENCE_SESSIONS_DATASET,
-    view_id=SENTENCE_INFERRED_GROUP_PROJECTED_DATES,
-    view_query_template=QUERY_TEMPLATE,
-    description=__doc__,
-    should_materialize=True,
+SENTENCE_INFERRED_GROUP_PROJECTED_DATE_SESSIONS_VIEW_BUILDER = (
+    SimpleBigQueryViewBuilder(
+        dataset_id=SENTENCE_SESSIONS_DATASET,
+        view_id=SENTENCE_INFERRED_GROUP_PROJECTED_DATE_SESSIONS,
+        view_query_template=QUERY_TEMPLATE,
+        description=__doc__,
+        should_materialize=True,
+    )
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SENTENCE_INFERRED_GROUP_PROJECTED_DATES_VIEW_BUILDER.build_and_print()
+        SENTENCE_INFERRED_GROUP_PROJECTED_DATE_SESSIONS_VIEW_BUILDER.build_and_print()

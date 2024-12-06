@@ -542,3 +542,47 @@ def convert_cols_to_json_string(cols: List[str]) -> str:
     return f"""TO_JSON_STRING(STRUCT(
 {attribute_cols_str_with_cast}
     ))"""
+
+
+def sessionize_ledger_data(
+    table_name: str,
+    index_columns: List[str],
+    update_column_name: str,
+    attribute_columns: List[str],
+) -> str:
+    """Return a view query that sessionizes a ledger style table across the set of attribute columns"""
+    index_columns_string = list_to_query_string(index_columns)
+    attribute_columns_string = list_to_query_string(attribute_columns)
+    return f"""
+WITH 
+-- Convert the update date column into start_date and end_date columns
+parsed_spans AS (
+    SELECT
+        {index_columns_string},
+        {attribute_columns_string},
+        {update_column_name} AS start_date,
+        LEAD({update_column_name}) OVER (
+            PARTITION BY {index_columns_string}
+            ORDER BY {update_column_name}
+        ) AS end_date_exclusive,
+    FROM {table_name}
+),
+-- Collapse any adjacent spans that have the same attribute values
+collapsed_spans AS (
+{aggregate_adjacent_spans(
+    table_name="parsed_spans",
+    index_columns=index_columns,
+    attribute=attribute_columns,
+    end_date_field_name="end_date_exclusive",
+)}
+)
+-- Format the query output and drop 0 day spans
+SELECT
+    {index_columns_string},
+    DATE(start_date) AS start_date,
+    DATE(end_date_exclusive) AS end_date_exclusive,
+    {attribute_columns_string},
+FROM collapsed_spans
+-- Drop zero day spans
+WHERE CAST(start_date AS DATE) != {nonnull_end_date_clause("CAST(end_date_exclusive AS DATE)")}
+"""

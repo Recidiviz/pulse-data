@@ -25,10 +25,8 @@ from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
     nonnull_end_date_clause,
 )
+from recidiviz.calculator.query.sessions_query_fragments import sessionize_ledger_data
 from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DATASET
-from recidiviz.calculator.query.state.views.sentence_sessions.sentence_sessions_query_utils import (
-    convert_normalized_ledger_data_to_sessions_query,
-)
 from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
     STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
 )
@@ -38,7 +36,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _VIEW_ID = "sentence_status_raw_text_sessions"
 
-_NORMALIZED_STATE_SOURCE_TABLE = "state_sentence_status_snapshot"
+_SOURCE_LEDGER_TABLE = "`{project_id}.normalized_state.state_sentence_status_snapshot`"
 
 _INDEX_COLUMNS = [
     "state_code",
@@ -73,8 +71,8 @@ _VIEW_TEMPLATE = f"""
 WITH
 -- Create the status spans from the
 v2_sentence_statuses AS (
-{convert_normalized_ledger_data_to_sessions_query(
-    table_name=_NORMALIZED_STATE_SOURCE_TABLE,
+{sessionize_ledger_data(
+    table_name=_SOURCE_LEDGER_TABLE,
     index_columns=_INDEX_COLUMNS,
     update_column_name=_UPDATE_COLUMN_NAME,
     attribute_columns=_ATTRIBUTE_COLUMNS,

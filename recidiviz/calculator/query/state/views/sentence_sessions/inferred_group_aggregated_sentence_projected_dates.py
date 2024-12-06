@@ -23,7 +23,7 @@ and does not include any NormalizedStateSentenceGroupLength data.
 
 Related views are:
 - inferred_sentence_group_aggregated_sentence_projected_dates
-- sentence_inferred_group_projected_dates
+- sentence_inferred_group_projected_date_sessions
 - inferred_group_aggregated_projected_dates_validation
 
 Rows can have null projected dates if the inferred sentence group consists
