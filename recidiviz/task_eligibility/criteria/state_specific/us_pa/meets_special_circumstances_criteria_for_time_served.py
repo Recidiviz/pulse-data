@@ -41,6 +41,7 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 )
 from recidiviz.task_eligibility.utils.us_pa_query_fragments import (
     case_when_special_case,
+    offense_is_violent,
     us_pa_supervision_super_sessions,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -67,6 +68,7 @@ WITH sentence_spans AS (
         span.start_date,
         span.end_date,
         LOGICAL_OR(life_sentence) AS life_sentence_ind,
+        LOGICAL_OR({offense_is_violent()}) AS violent_offense_ind,
     FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
     UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
@@ -76,24 +78,18 @@ WITH sentence_spans AS (
 ),
 us_pa_supervision_super_sessions AS ({us_pa_supervision_super_sessions()}),
 supervision_spans AS (
-/* This CTE pulls supervision super sessions and joins
-        1) the first assessment done within each supervision period
-        2) the sentence span that overlaps with the beginning of each supervision period */
+/* This CTE pulls supervision super sessions and joins the sentence span that overlaps with the beginning of each supervision period */
     SELECT
         sup.state_code,
         sup.person_id,
         sup.start_date,
         sup.end_date_exclusive AS end_date,
         CASE WHEN life_sentence_ind THEN 'life sentence'
-            WHEN assessment_level IN ('MINIMUM', 'MEDIUM') THEN  'non-life sentence (violent case)' -- placeholder while we wait for strong-r data
+            WHEN violent_offense_ind THEN 'non-life sentence (violent case)'
             ELSE 'non-life sentence (non-violent case)' 
         END AS case_type,
         sup.start_date AS supervision_super_session_start_date,
     FROM us_pa_supervision_super_sessions sup
-    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` sap
-        ON sup.state_code = sap.state_code
-        AND sup.person_id = sap.person_id 
-        AND sap.assessment_date BETWEEN sup.start_date AND {nonnull_end_date_clause('sup.end_date_exclusive')}
     LEFT JOIN sentence_spans sent
     --sentence spans are joined such that they overlap with the start of a supervision super session 
     --this way, there is only one sentence span associated with a supervision super session 
@@ -102,8 +98,6 @@ supervision_spans AS (
         AND sent.start_date <= sup.start_date
         AND {nonnull_end_date_clause('sent.end_date')} > sup.start_date
     WHERE sup.state_code = "US_PA"
-    --only choose the first assessment score within a supervision super session
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY sup.person_id, sup.start_date, sup.end_date_exclusive ORDER BY sap.assessment_date)=1
 ),
 special_case_spans AS (
 /* This CTE pulls all spans where someone is serving a special case */

@@ -101,7 +101,18 @@ def statute_is_conspiracy_or_attempt() -> str:
               OR statute LIKE '%CC901%' 
               OR statute LIKE '%CC903%'    
               OR statute LIKE '%CS0901%' 
-              OR statute LIKE '%CS0903%') 
+              OR statute LIKE '%CS0903%'
+              OR statute LIKE '%1001%')
+              """
+
+
+def statute_is_solicitation() -> str:
+    return """(statute LIKE '%C0902%'
+              OR statute LIKE '%18.902%'
+              OR statute LIKE '0902%' 
+              OR statute LIKE '18902%'               
+              OR statute LIKE '%CC902%' 
+              OR statute LIKE '%CS0902%') 
               """
 
 
@@ -113,6 +124,13 @@ def description_refers_to_assault() -> str:
                 OR description LIKE '%ASSLT%'
                 OR description LIKE '%ASS\\'LT%'
                 OR description LIKE 'ASS%')"""
+
+
+def description_refers_to_serious_bodily_injury() -> str:
+    return """
+        ((description LIKE '%SER%' AND (description LIKE '%INJ%' OR REGEXP_REPLACE(description, r'[^a-zA-Z]', '') LIKE '%BI%'))
+        OR REGEXP_REPLACE(description, r'[^a-zA-Z ]', '') LIKE '%SBI%')
+    """
 
 
 def us_pa_supervision_super_sessions() -> str:
@@ -143,7 +161,258 @@ def us_pa_supervision_super_sessions() -> str:
                 end_date_exclusive,
                 FROM ({aggregate_adjacent_spans(table_name='supervision_periods',
                                                 session_id_output_name='super_session_id',
-                                                end_date_field_name='end_date_exclusive')})                                                                                    
+                                                end_date_field_name='end_date_exclusive')})  
+    """
+
+
+def offense_is_violent() -> str:
+    # TODO(#33754) -  Move ineligible offense flags upstream
+    return f"""
+/* Policy note: This list of violent crimes is taken from 42 PA. C.S. §9714(g), which is a sentencing guideline for cases 
+where someone has a previous violent crime on their record. You'll notice that some more severe violent crimes were left
+off of this list, presumably because they automatically come with a life sentence (e.g. first degree murder is not on 
+the list because it mandates a life sentence, but third degree murder is on the list). In writing this criteria, I 
+included things like first degree murder because they should still be considered violent crimes for the purposes of 
+special circumstances eligibility. Per policy, this also includes attempt, solicitation, or conspiracy to commit any of 
+these offenses. */
+
+/* Methodology note: This follows the same methodology as the not_serving_ineligible_offense_for_admin_supervision
+criteria. In a nutshell, statute/descriptions are a bit messy and often missing. So for each violent offense, we pull
+records where: 
+1. the statute matches what we expect and the description is null 
+2. the description matches what we expect and the statute is null
+3. both match what we expect */ 
+
+(description IS NOT NULL OR statute IS NOT NULL) --one field can be missing but not both
+AND NOT (({statute_is_conspiracy_or_attempt()} OR {statute_is_solicitation()}) AND description IS NULL)
+-- exclude rare cases where statute is conspiracy/attempt/solicitation but description is missing 
+AND ( 
+-- What the policy lists: 18 Pa.C.S. § 2502(c) Murder of the Third Degree
+-- What we're going to check for: 18 Pa.C.S. § 2502 - Murder + 18 Pa.C.S. § 1102 - sentencing related to murder
+    ((statute LIKE '%2502%'
+        OR statute LIKE '%1102%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (description LIKE '%MUR%'
+        OR description IS NULL))
+
+--18 Pa.C.S. § 2503 Voluntary Manslaughter
+    OR ((statute LIKE '%2503%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (((description LIKE '%MANS%' OR description LIKE '%MNSL%') AND description LIKE '%VOL%' AND description NOT LIKE '%INV%')
+        OR description IS NULL))
+        
+-- What policy lists:
+-- 18 Pa.C.S. § 2507(c) Manslaughter of a Law Enforcement Officer in The First Degree 
+-- 18 Pa.C.S. § 2507(d) Manslaughter of a Law Enforcement Officer in The Second Degree
+-- What we're going to check for: 
+-- 18 Pa.C.S. § 2507 - including both murder and manslaughter of law enforcement officers
+    OR ((statute LIKE '%2507%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (((description LIKE '%MANS%' OR description LIKE '%MNSL%' OR description LIKE '%MUR%') AND description LIKE '%OFFICER%')
+        OR description IS NULL))
+
+-- What policy lists: 18 Pa.C.S. § 2604(c) Murder of The Third Degree Involving an Unborn Child
+-- What we're going to check for: 18 Pa.C.S. § 2604 - including murder of all degrees involving an unborn child 
+    OR ((statute LIKE '%2604%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND ((description LIKE '%MUR%' AND description LIKE '%UNB%')
+        OR description IS NULL))
+
+-- 18 Pa.C.S. § 2606 Aggravated Assault of An Unborn Child
+    OR ((statute LIKE '%2606%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (({description_refers_to_assault()} AND description LIKE '%AG%' AND description LIKE '%UNB%')
+        OR description IS NULL))
+
+-- 18 Pa.C.S. § 2702(a)(1) or (2) Aggravated Assault- Serious Bodily Injury
+    OR ((statute LIKE '%2702A1%'
+          OR statute LIKE '%2702.A1%'
+          OR statute LIKE '%2702AI%'
+          OR statute LIKE '%2702A2%'
+          OR statute LIKE '%2702.A2%'
+          OR statute LIKE '%2702AII%'
+          OR {statute_is_conspiracy_or_attempt()}
+          OR {statute_is_solicitation()}
+          OR statute IS NULL)
+        AND (((description LIKE '%AG%' OR description LIKE '%AA%')
+          AND {description_refers_to_serious_bodily_injury()}
+          AND description NOT LIKE '%FEAR%' -- fear of serious bodily injury is not included)
+          AND description NOT LIKE '%ANIMAL%') -- agg cruelty to animals is not included
+          OR description IS NULL))
+
+-- 18 Pa.C.S. § 2702.1(a)(1) Assault of Law Enforcement Officer
+    OR ((statute LIKE '%27021A1%'
+        OR statute LIKE '%2702.1.A1%'
+        OR statute LIKE '%CC2702.1%' 
+        -- seems like people are just using CC2702.1 statute rather than specifying A/B most of the time
+        -- just going to air on the side of including all of these since there are no instances of 2702.1(b) being used at all
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (({description_refers_to_assault()} AND description LIKE '%OFFICER%')
+        OR description IS NULL))
+        
+-- 18 Pa.C.S. § 2716(b) Use of Weapons of Mass Destruction
+    OR (statute LIKE '%2716B%' OR statute LIKE '%2716.B%') -- there don't seem to be any examples of this actually being used 
+
+-- 18 Pa.C.S. § 2717(b)(2) Terrorism When Graded as a Felony in the First Degree  -- there don't seem to be any examples of this actually being used 
+    OR (statute LIKE '%2717B2%'
+          OR statute LIKE '%2717.B2%'
+          OR statute LIKE '%2717.BII%')
+
+-- 18 Pa.C.S. § 2718 Strangulation When Graded as a Felony
+/* TODO(#33420) Flag cases that could make someone ineligible but where we don't have enough info to determine 
+In this case, we don't know whether the strangulation charges were graded as felonies
+    OR ((statute LIKE '%2718%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (description LIKE '%STRANG%'
+        OR description IS NULL)
+      AND classification_type = 'FELONY') */ 
+
+-- 18 Pa.C.S. § 3011 Trafficking of Persons When Graded as a Felony of the First Degree
+-- only 3011.1.A1 & A2 are specified as felonies of the first degree
+-- however there don't seem to be any examples of statute 3011 actually being used 
+    OR (statute LIKE '%3011.A1%'
+          OR statute LIKE '%3011A1%'
+          OR statute LIKE '%3011.A2%'
+          OR statute LIKE '%3011A2%')
+
+-- 18 Pa.C.S. § 3121 Rape 
+    OR ((statute LIKE '%3121%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND ((description LIKE '%RAPE%' AND description NOT LIKE '%PARAPERNALIA%' AND description NOT LIKE '%STAT%') -- statutory rape is covered under 3122
+        OR description IS NULL))
+
+-- 18 Pa.C.S. § 3123 Involuntary Deviate Sexual Intercourse
+    OR ((statute LIKE '%3123%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND ((description LIKE '%INV%' AND description LIKE '%DEV%' AND description LIKE '%SEX%')
+        OR REGEXP_REPLACE(description, r'[^a-zA-Z]', '') like '%IDSI%'
+        OR description IS NULL))
+
+-- 18 Pa.C.S. § 3125 Aggravated Indecent Assault
+    OR ((statute LIKE '%3125%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (((description LIKE '%AGG%' OR description LIKE '%AGRVTD%')
+              AND description LIKE '%IND%'
+              AND description <> '%CORRUPTION OF MINORS%') -- 3125 used to refer to corruption of minors
+        OR description IS NULL))
+
+-- 18 Pa.C.S. § 4302 Incest
+    OR ((statute LIKE '%4302%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (description LIKE '%INCES%'
+        OR description IS NULL))
+
+-- 18 Pa.C.S. § 3124.1 Sexual Assault
+    OR ((statute LIKE '%3124.1%'
+        OR statute like '%31241%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (({description_refers_to_assault()}
+          AND description LIKE '%SEX%'
+          AND description NOT LIKE '%STAT%' -- stat sexual assault is covered in 3122
+          AND description NOT LIKE '%INST%' -- institutional sexual assault is covered in 3124.2
+          AND description NOT LIKE '%SPOUS%' -- spousal sexual assault is covered in 3128
+          AND description NOT LIKE '%VOLUNTEER%') -- Sexual assault by sports official, volunteer or employee of nonprofit association is covered in 3124.3
+        OR description IS NULL))
+
+-- 18 Pa.C.S. § 3301(a) OR 18 Pa.C.S. §3301(a.1) Arson Endangering Persons OR Aggravated Arson
+    OR ((((statute LIKE '%3301A%' OR statute LIKE '%3301.A%') AND (statute NOT LIKE '%A.2%' AND statute NOT LIKE '%A.11%'))
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (
+        ((description LIKE '%ARSON%' OR description LIKE '%ARSN%') 
+          AND ((description LIKE '%END%' AND (description like '%PER%' or description like '%PRSN%') AND description NOT LIKE '%PROP%') -- endangering person 3301(a) 
+          OR (description like '%INJ%' OR description LIKE '%DEA%' OR description LIKE '%DTH%') -- places another person in danger of death or bodily injury 3301(a)(1)(i)
+          OR description like '%INHAB%')) -- with the purpose of destroying an inhabited building 3301(a)(1)(ii)
+        OR description IS NULL))
+
+-- 18 Pa.C.S. § 3311(b)(3) Ecoterrorism
+    OR (statute LIKE '%3311B3%' OR statute LIKE '%3311.B3%') -- no examples of this actually occurring
+
+-- 18 Pa.C.S § 2901 Kidnapping
+    OR ((statute LIKE '%2901%'
+        OR statute LIKE '%XX0975%' -- other random statute used for kidnapping
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (description LIKE '%KID%'
+        OR description IS NULL))
+
+-- 18 Pa.C.S. § 3502(a)(1) Burglary- Adapted for Overnight Accommodation and Person Present (Felony of the First Degree)
+    OR ((statute LIKE '%3502A1%'
+        OR statute LIKE '%3502.A1%'
+        OR statute = 'CC3502A2' -- based on the description i think this means 3502(a)(1)(ii), since it specifies that a person is present 
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND ((description LIKE '%BURG%'
+          AND (REGEXP_REPLACE(description, r'[^a-zA-Z]', '') LIKE '%OVERNIGHTACCOMMODATIONPERSONPRESENT%'
+              OR REGEXP_REPLACE(description, r'[^a-zA-Z]', '') LIKE '%OVERNIGHTACCOMMODATIONSPERSONPRESENT%'   
+              OR REGEXP_REPLACE(description, r'[^a-zA-Z]', '') LIKE '%OAPP%'
+              OR description LIKE '%ANY PERSON%'))
+        OR description IS NULL))
+
+-- 18 Pa.C.S. § 3701(a)(1)(i), (ii) or (iii) Robbery- Cause/Threaten to Cause Serious Bodily Injury or Threaten to Commit Felony of the First or Second Degree (Felony of the First Degree)
+   OR ((statute LIKE '%CC3701A1%'
+        OR statute LIKE '%CC3701A2%'
+        OR statute LIKE '%CC3701A3%'
+        OR statute LIKE '%3701.A1I%'
+        OR statute LIKE '%3701.A1II%'
+        OR statute LIKE '%3701.A1III%'
+        OR statute LIKE '%3701A1I%'
+        OR statute LIKE '%3701A1II%'
+        OR statute LIKE '%3701A1III%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (((description LIKE '%ROB%' AND description NOT LIKE '%PROB%') -- refers to robbery 
+          AND ({description_refers_to_serious_bodily_injury()} -- 3701(a)(1)(i) & (ii) refer to serious bodily injury 
+              OR description LIKE '%FEL%')) -- 3701(a)(1)(iii) refers to committing or threatening to commit a felony
+        OR description IS NULL))
+
+-- 18 Pa.C.S. § 3702 Robbery of a Motor Vehicle
+    OR ((statute LIKE '%3702%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND (((description LIKE '%ROB%' AND description NOT LIKE '%PROB%')
+              AND (description LIKE '%MOT%' OR REGEXP_REPLACE(description, r'[^a-zA-Z]', '') LIKE '%MV%' OR description LIKE '%VEH%'))
+        OR description LIKE '%CARJACK%'
+        OR description IS NULL))
+
+-- 18 Pa.C.S. § 2506(a) Drug Delivery Resulting in Death 
+-- not really sure what they mean by specifically 2506(a) here, since (a) includes the entire offense 
+    OR ((statute LIKE '%2506%'
+        OR {statute_is_conspiracy_or_attempt()}
+        OR {statute_is_solicitation()}
+        OR statute IS NULL)
+      AND ((description like '%DEL%' and (description like '%DEA%' or description like '%DTH%'))
+        OR description IS NULL))
+)
     """
 
 

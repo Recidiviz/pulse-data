@@ -61,6 +61,8 @@ _REASON_QUERY = f"""
             state_code = 'US_PA'
             AND description NOT LIKE '%SOL%' --criminal solicitation of crimes is not included
             AND (description IS NOT NULL OR statute IS NOT NULL) --one field can be missing but not both
+            AND NOT ({statute_is_conspiracy_or_attempt()} AND description IS NULL)
+                -- exclude rare cases where statute is conspiracy/attempt but description is missing 
             AND (
             --18 Pa. C.S. Ch. 25 relating to Crim. Homicide
             --Per Ch 25, criminal homicide includes murder, voluntary manslaughter, & involuntary manslaughter
@@ -76,7 +78,8 @@ _REASON_QUERY = f"""
               AND ((description LIKE '%CR%' AND description LIKE '%HOM%')
                 OR description LIKE '%HOMI%'
                 OR description LIKE '%MUR%'
-                OR description LIKE '%MANSLAUGHTER%'
+                OR description LIKE '%MANS%'
+                OR description LIKE '%MNSL%'
                 OR description IS NULL))
                 
             -- 18 Pa. C.S. Ch. 27 rel. to Assault
@@ -107,6 +110,7 @@ _REASON_QUERY = f"""
               
             -- 18 Pa. C.S. Ch. 29 rel. to Kidnapping
             OR((statute LIKE '%2901%' --kidnapping
+                OR statute LIKE '%XX0975%' -- other random statute used for kidnapping
                 OR {statute_is_conspiracy_or_attempt()}
                 OR statute IS NULL)
               AND (description LIKE '%KID%'
