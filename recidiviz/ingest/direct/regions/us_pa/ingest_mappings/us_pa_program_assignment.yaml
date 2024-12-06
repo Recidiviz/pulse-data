@@ -36,19 +36,29 @@ output:
             # TODO(#15000) - Remap TrtStatusCode to enums with more context from PA
             $conditional:
               - $if:
-                  $not_null: TrtStatusCode
-                $then:
+                  # Status code is supposed to remain blank until the client exits the program, but sometimes
+                  # we don't see a status code even when we see an end date, so we'll only map to in progress
+                  # status if end date is missing and status code is missing
+                  $and:
+                    - $is_null: TrtEndDateYear
+                    - $is_null: TrtEndDateMonth
+                    - $is_null: TrtEndDateDay
+                    - $is_null: TrtStatusCode
+                $then: $literal_enum(StateProgramAssignmentParticipationStatus.IN_PROGRESS)
+              - $else:
                   $enum_mapping:
                     $raw_text: TrtStatusCode
                     $mappings:
+                      StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                        - "S" # Successful
+                      StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                        - "U" # Unsuccessful
                       StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN:
                         - "Q"
-                        - "U"
                         - "N"
                         - "K"
                         - "X"
                         - "*"
-                        - "S"
                         - "A"
           program_id:
             $concat:
@@ -76,5 +86,5 @@ output:
               $include_nulls: False
           referral_metadata:
             $json_dict:
-              TrtProgramCode: TrtProgramCode
-              TrtProgramDescription: TrtProgramDescription
+              program_code: TrtProgramCode
+              program_name: TrtProgramDescription

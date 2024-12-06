@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - Parole_No
+  - Inmate_No
+  - ProgramName
+  - most_recent_LocationId
+  - most_recent_Status
+  - referral_date
+  - start_date
+  - discharge_date
+  - treatment_seq_no
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - $conditional:
+          - $if:
+              $not_null: Parole_No
+            $then:
+              StatePersonExternalId:
+                external_id: Parole_No
+                id_type: $literal("US_PA_PBPP")
+          - $else:
+              StatePersonExternalId:
+                external_id: Inmate_No
+                id_type: $literal("US_PA_INMATE")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id:
+            $conditional:
+              - $if:
+                  $not_null: Parole_No
+                $then:
+                  $concat:
+                    $values:
+                      - Parole_No
+                      - treatment_seq_no
+              - $else:
+                  $concat:
+                    $values:
+                      - Inmate_No
+                      - treatment_seq_no
+          participation_status:
+            $enum_mapping:
+              $raw_text: most_recent_Status
+              $mappings:
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                  - Completed
+                  - Removed with Credit
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                  - Failed to Complete
+                StateProgramAssignmentParticipationStatus.IN_PROGRESS:
+                  - In Progress
+                StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN:
+                  - Assigned
+                  - Discharged Prior to Completion
+                StateProgramAssignmentParticipationStatus.REFUSED:
+                  - Failed to Complete - Refused
+          program_id: ProgramName
+          program_location_id: most_recent_LocationId
+          referral_date: referral_date
+          start_date: start_date
+          discharge_date: discharge_date
+          referral_metadata:
+            $json_dict:
+              program_name: ProgramName
