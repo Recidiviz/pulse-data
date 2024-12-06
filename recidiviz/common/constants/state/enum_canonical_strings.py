@@ -98,6 +98,7 @@ state_assessment_type_tx_cst = "TX_CST"
 state_assessment_type_tx_srt = "TX_SRT"
 state_assessment_type_tx_rt = "TX_RT"
 state_assessment_type_accat = "ACCAT"
+state_assessment_type_rsls = "RSLS"
 
 state_assessment_level_minimum = "MINIMUM"
 state_assessment_level_low = "LOW"

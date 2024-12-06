@@ -111,6 +111,7 @@ class StateAssessmentType(StateEntityEnum):
     TX_SRT = state_enum_strings.state_assessment_type_tx_srt
     TX_RT = state_enum_strings.state_assessment_type_tx_rt
     ACCAT = state_enum_strings.state_assessment_type_accat
+    RSLS = state_enum_strings.state_assessment_type_rsls
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -172,6 +173,7 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.TX_SRT: "Supplementary Reentry Tool (SRT)",
     StateAssessmentType.TX_RT: "Reentry Tool (RT)",
     StateAssessmentType.ACCAT: "Arizona Community Corrections Assessment Tool",
+    StateAssessmentType.RSLS: "Reclassification Security Level Scoresheet (RSLS)",
 }
 
 

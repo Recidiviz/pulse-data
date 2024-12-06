@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_oras_assessment_weekly_v2` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ClassificationId
+  - OffenderId
+  - AdministrativeDutyOfficerId
+  - ClassificationTypeDesc
+  - ScoreSheetTypeId
+  - AssessmentDate
+  - score
+  - section_one_score
+  - section_two_score
+  - section_three_score
+unused_columns:
+  - ScoreSheetTypeId
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    assessments:
+      - StateAssessment:
+          external_id: ClassificationId
+          assessment_date: AssessmentDate
+          conducting_staff_external_id: AdministrativeDutyOfficerId
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: AdministrativeDutyOfficerId
+                $then: $literal("US_IX_EMPLOYEE")
+          assessment_type: $literal_enum(StateAssessmentType.RSLS)
+          assessment_score: score
+          assessment_metadata:
+            $json_dict:
+              ClassificationType: ClassificationTypeDesc
+              SectionOneScore: section_one_score
+              SectionTwoScore: section_two_score
+              SectionThreeScore: section_three_score
