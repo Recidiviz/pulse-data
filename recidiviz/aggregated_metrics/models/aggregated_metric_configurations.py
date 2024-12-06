@@ -351,7 +351,7 @@ AVG_DAILY_POPULATION_MENTAL_HEALTH_CASE_TYPE = DailyAvgSpanCountMetric(
         span_conditions_dict={
             "compartment_level_1": ["SUPERVISION"],
             "case_type_start": [
-                "SERIOUS_MENTAL_ILLNESS",
+                "SERIOUS_MENTAL_ILLNESS_OR_DISABILITY",
                 "MENTAL_HEALTH_COURT",
             ],
         },
@@ -401,7 +401,7 @@ AVG_DAILY_POPULATION_OTHER_CASE_TYPE = DailyAvgSpanCountMetric(
             "compartment_level_1": ["SUPERVISION"],
             "case_type_start": """NOT IN (
     "GENERAL", "DOMESTIC_VIOLENCE", "SEX_OFFENSE", "DRUG_COURT",
-    "SERIOUS_MENTAL_ILLNESS", "MENTAL_HEALTH_COURT"
+    "SERIOUS_MENTAL_ILLNESS_OR_DISABILITY", "MENTAL_HEALTH_COURT"
 )""",
         },
     ),

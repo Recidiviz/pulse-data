@@ -36,11 +36,21 @@ class StateSupervisionCaseType(StateEntityEnum):
     MENTAL_HEALTH_COURT = (
         state_enum_strings.state_supervision_case_type_mental_health_court
     )
-    SERIOUS_MENTAL_ILLNESS = (
-        state_enum_strings.state_supervision_case_type_serious_mental_illness
+    SERIOUS_MENTAL_ILLNESS_OR_DISABILITY = (
+        state_enum_strings.state_supervision_case_type_serious_mental_illness_or_disability
     )
     SEX_OFFENSE = state_enum_strings.state_supervision_case_type_sex_offense
     VETERANS_COURT = state_enum_strings.state_supervision_case_type_veterans_court
+    INTENSE_SUPERVISION = (
+        state_enum_strings.state_supervision_case_type_intense_supervision
+    )
+    PHYSICAL_ILLNESS_OR_DISABILITY = (
+        state_enum_strings.state_supervision_case_type_physical_illness_or_disability
+    )
+    DAY_REPORTING = state_enum_strings.state_supervision_case_type_day_reporting
+    ELECTRONIC_MONITORING = (
+        state_enum_strings.state_supervision_case_type_electronic_monitoring
+    )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -71,11 +81,20 @@ _STATE_SUPERVISION_CASE_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateSupervisionCaseType.MENTAL_HEALTH_COURT: "Describes a period of supervision "
     "that someone is on as a participation requirement of a Mental Health Court "
     "diversionary program.",
-    StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS: "Used when the person on "
-    "supervision struggles with a serious mental illness.",
+    StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS_OR_DISABILITY: "Used when the person on "
+    "supervision struggles with a serious mental illness or with a significant mental disability.",
     StateSupervisionCaseType.SEX_OFFENSE: "Used when the person on supervision has "
     "sex offense convictions.",
     StateSupervisionCaseType.VETERANS_COURT: "Describes a period of supervision that "
     "someone is on as a participation requirement of a Veterans Court diversionary "
     "program.",
+    StateSupervisionCaseType.INTENSE_SUPERVISION: "Describes a period of supervision that "
+    "someone is on intense or hightened supervision.",
+    StateSupervisionCaseType.PHYSICAL_ILLNESS_OR_DISABILITY: "Used when the person on "
+    "supervision struggles with a physical disability or with a significant physical "
+    "illness, including being terminally ill.",
+    StateSupervisionCaseType.DAY_REPORTING: "Describes a period of supervision where "
+    "someone has to visit a reporting center daily",
+    StateSupervisionCaseType.ELECTRONIC_MONITORING: "Describes a period of supervision where "
+    "someone is under electronic monitoring",
 }

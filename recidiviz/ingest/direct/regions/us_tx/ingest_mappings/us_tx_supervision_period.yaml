@@ -80,14 +80,18 @@ output:
                         - Mentally ill
                       StateSupervisionCaseType.INTERNAL_UNKNOWN:
                         - Administrative
-                        - Electronic monitoring
                         - Annual
-                        - Day/district resource center
-                        - Terminally Ill / Physically Handicapped
                         - Non-reporting
-                        - Medically recommended intensive supervision
-                        - Super-intensive supervision
                       StateSupervisionCaseType.EXTERNAL_UNKNOWN:
                         - Unknown
-                      StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS:
+                      StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS_OR_DISABILITY:
                         - Intellectually Disabled
+                      StateSupervisionCaseType.ELECTRONIC_MONITORING:
+                        - Electronic monitoring
+                      StateSupervisionCaseType.INTENSE_SUPERVISION:
+                        - Super-intensive supervision
+                        - Medically recommended intensive supervision
+                      StateSupervisionCaseType.DAY_REPORTING:
+                        - Day/district resource center
+                      StateSupervisionCaseType.PHYSICAL_ILLNESS_OR_DISABILITY:
+                        - Terminally Ill / Physically Handicapped

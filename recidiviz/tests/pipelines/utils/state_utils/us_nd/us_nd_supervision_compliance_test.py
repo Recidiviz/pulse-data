@@ -498,7 +498,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             self.person,
             supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
+            case_type=StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS_OR_DISABILITY,
             start_of_supervision=start_of_supervision,
             assessments_by_date=RangeQuerier(
                 [], lambda assessment: assessment.assessment_date

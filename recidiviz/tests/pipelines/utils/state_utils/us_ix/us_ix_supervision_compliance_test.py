@@ -1673,7 +1673,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             sequence_num=0,
         )
 
-        case_type = StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS
+        case_type = StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS_OR_DISABILITY
 
         us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             self.person,

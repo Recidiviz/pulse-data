@@ -452,9 +452,17 @@ state_supervision_case_type_drug_court = "DRUG_COURT"
 state_supervision_case_type_family_court = "FAMILY_COURT"
 state_supervision_case_type_general = "GENERAL"
 state_supervision_case_type_mental_health_court = "MENTAL_HEALTH_COURT"
-state_supervision_case_type_serious_mental_illness = "SERIOUS_MENTAL_ILLNESS"
+state_supervision_case_type_serious_mental_illness_or_disability = (
+    "SERIOUS_MENTAL_ILLNESS_OR_DISABILITY"
+)
 state_supervision_case_type_sex_offense = "SEX_OFFENSE"
 state_supervision_case_type_veterans_court = "VETERANS_COURT"
+state_supervision_case_type_intense_supervision = "INTENSE_SUPERVISION"
+state_supervision_case_type_physical_illness_or_disability = (
+    "PHYSICAL_ILLNESS_OR_DISABILITY"
+)
+state_supervision_case_type_day_reporting = "DAY_REPORTING"
+state_supervision_case_type_electronic_monitoring = "ELECTRONIC_MONITORING"
 
 # state_supervision_violation.py
 state_supervision_violation_type_absconded = "ABSCONDED"

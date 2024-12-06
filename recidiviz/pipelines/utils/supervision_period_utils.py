@@ -48,7 +48,11 @@ from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate i
 CASE_TYPE_SEVERITY_ORDER = [
     StateSupervisionCaseType.SEX_OFFENSE,
     StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-    StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
+    StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS_OR_DISABILITY,
+    StateSupervisionCaseType.ELECTRONIC_MONITORING,
+    StateSupervisionCaseType.DAY_REPORTING,
+    StateSupervisionCaseType.PHYSICAL_ILLNESS_OR_DISABILITY,
+    StateSupervisionCaseType.INTENSE_SUPERVISION,
     # Diversionary courts
     StateSupervisionCaseType.DRUG_COURT,
     StateSupervisionCaseType.MENTAL_HEALTH_COURT,

@@ -1024,7 +1024,7 @@ def parse_case_types(raw_text: str) -> Optional[StateSupervisionCaseType]:
             return StateSupervisionCaseType.DOMESTIC_VIOLENCE
 
         if case_type in SERIOUS_MENTAL_ILLNESS_CASE_TYPES:
-            return StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS
+            return StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS_OR_DISABILITY
 
         if case_type in SEX_OFFENSE_CASE_TYPES:
             return StateSupervisionCaseType.SEX_OFFENSE
