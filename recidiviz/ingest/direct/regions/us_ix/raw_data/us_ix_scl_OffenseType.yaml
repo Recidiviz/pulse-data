@@ -34,7 +34,6 @@ columns:
   - name: OffenseClassId
     description: |-
       TODO(#15329): Fill in column description
-    known_values: []
   - name: OffenseCategoryId
     description: |-
       ID for the offense category. Can be joined with 
@@ -51,7 +50,6 @@ columns:
   - name: OffenseModifierId
     description: |-
       TODO(#15329): Fill in column description
-    known_values: []
   - name: OFFENSE_STATUTE
     description: |-
       Statute code corresponding to OffenseTypeId. Identical to OFFENSE_TYPE_STATE_CD 
