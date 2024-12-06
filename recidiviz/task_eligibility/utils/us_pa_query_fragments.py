@@ -478,4 +478,19 @@ def case_notes_helper() -> str:
       AND COALESCE(tre.discharge_date, tre.start_date, tre.referral_date) >= sup.start_date
         -- one or more of these dates are often missing depending on the program status, so using all 3 
     ) 
+    
+    UNION ALL 
+    
+    /* pull all currently open employment periods */ 
+    SELECT DISTINCT
+      SPLIT(external_id, '-')[OFFSET(0)] AS external_id,
+      'Employment' AS criteria,
+      CASE WHEN employment_status = 'EMPLOYED_FULL_TIME' THEN 'EMPLOYED - FULL-TIME'
+        WHEN employment_status = 'EMPLOYED_PART_TIME' THEN 'EMPLOYED - PART-TIME'
+        ELSE 'EMPLOYED' END AS note_title,
+      employer_name AS note_body,
+      start_date AS event_date,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period`
+    WHERE state_code = 'US_PA'
+      AND end_date IS NULL
     """
