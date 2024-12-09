@@ -103,15 +103,14 @@ backfilled_product_roster_sessions AS (
         {product_name_str}_user_email_address,
         DATE("{MAGIC_START_DATE}") AS start_date,
         # Use first validated product roster date as the end date of backfill session
-        # If product roster archive session only starts after 
-        # PRODUCT_ROSTER_ARCHIVE_FIRST_VALIDATED_DATE, use the start date of the archive
-        GREATEST(start_date, "{first_validated_roster_date_str}") AS end_date_exclusive,
+        DATE("{first_validated_roster_date_str}") AS end_date_exclusive,
         roles_as_string,
         location_id,
     FROM
         product_roster_sessions
     WHERE
-        "{first_validated_roster_date_str}" < {nonnull_end_date_clause("end_date_exclusive")}
+        # Backfill any archive session that overlaps the roster validation date
+        "{first_validated_roster_date_str}" BETWEEN start_date AND {nonnull_end_date_clause("end_date_exclusive")}
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY state_code, {product_name_str}_user_email_address ORDER BY start_date) = 1
 )
@@ -196,6 +195,8 @@ SELECT
     location_id,
     IFNULL(is_registered, FALSE) AS is_registered,
     is_primary_user,
+    staff.staff_id,
+    staff_external_id.external_id AS staff_external_id,
     ANY_VALUE(
         CASE system_type 
         WHEN "SUPERVISION" THEN supervision_district_name 
@@ -203,6 +204,15 @@ SELECT
     ) AS location_name,
 FROM
     registration_sessions
+LEFT JOIN
+    `{{project_id}}.normalized_state.state_staff` staff
+ON
+    registration_sessions.state_code = staff.state_code
+    AND LOWER(registration_sessions.{product_name_str}_user_email_address) = LOWER(staff.email)
+LEFT JOIN
+    `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff_external_id
+USING
+    (staff_id)
 LEFT JOIN
     `{{project_id}}.sessions.session_location_names_materialized` AS sessions
 ON
@@ -226,7 +236,7 @@ ON
             AND location_id = facility
         )
     )
-GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
     """
     return SimpleBigQueryViewBuilder(
         dataset_id=ANALYST_VIEWS_DATASET,

@@ -219,6 +219,21 @@ WHERE
     is_registered
     AND is_primary_user""",
     (
+        MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+    ): """SELECT
+    state_code,
+    workflows_user_email_address AS email_address,
+    start_date,
+    end_date_exclusive,
+    staff_external_id AS officer_id,
+FROM
+    `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+WHERE
+    system_type = "SUPERVISION"
+    AND is_registered
+    AND is_primary_user""",
+    (
         MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER,
         MetricUnitOfAnalysisType.STATE_CODE,
     ): """SELECT
