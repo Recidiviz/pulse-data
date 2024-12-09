@@ -927,16 +927,24 @@ def load_collected_views_to_sandbox(
                 else None
             ),
         )
-
-    create_managed_dataset_and_deploy_views_for_view_builders(
-        view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
-        view_builders_to_update=collected_builders,
-        view_update_sandbox_context=view_update_sandbox_context,
-        # Don't clean up datasets when running a sandbox script
-        historically_managed_datasets_to_clean=None,
-        allow_slow_views=allow_slow_views,
-        materialize_changed_views_only=materialize_changed_views_only,
-    )
+    try:
+        create_managed_dataset_and_deploy_views_for_view_builders(
+            view_source_table_datasets=get_source_table_datasets(metadata.project_id()),
+            view_builders_to_update=collected_builders,
+            view_update_sandbox_context=view_update_sandbox_context,
+            # Don't clean up datasets when running a sandbox script
+            historically_managed_datasets_to_clean=None,
+            allow_slow_views=allow_slow_views,
+            materialize_changed_views_only=materialize_changed_views_only,
+        )
+    except exceptions.Forbidden as e:
+        if "Permission denied while getting Drive credentials" in str(e):
+            raise ValueError(
+                "Permission denied while accessing Drive credentials during view update."
+                " If the failing view is backed by a google sheet, and you have view permissions for the sheet,"
+                " try running:\n  gcloud auth login --enable-gdrive-access --update-adc"
+            ) from e
+        raise e
 
 
 def parse_arguments() -> argparse.Namespace:
