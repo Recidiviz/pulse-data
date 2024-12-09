@@ -22,6 +22,9 @@ release. This is the earliest possible date they could be released on whichever 
 of transition is denoted in the task_subtype field, according to ACIS. It is possible 
 that a person is approved for both programs; they will have a separate row for each 
 transition program, with the released date stored in ACIS for that program. 
+
+If a person is approved or tentatively approved and later denied, their eligibility
+date will be cleared from this table.
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -46,7 +49,8 @@ SELECT
   IF(transition_release_eligibility_date BETWEEN '1900-01-01' AND '2100-01-01', transition_release_eligibility_date, NULL) AS transition_release_eligibility_date,
   update_datetime_elig,
   CHANGE_ID,
-  SC_CALC_HISTORY_ID
+  SC_CALC_HISTORY_ID,
+  approval_status
   FROM (
     SELECT DISTINCT 
       CAST(COALESCE(
@@ -63,16 +67,15 @@ SELECT
       sc.SC_EPISODE_ID,
       off.CHANGE_ID,
       off.SC_CALC_HISTORY_ID,
+      lookups.DESCRIPTION AS approval_status,
       'Standard Transition Release' AS task_subtype
     FROM {AZ_DOC_SC_OFFENSE@ALL} off
     JOIN {AZ_DOC_SC_EPISODE} sc
       ON(sc.FINAL_OFFENSE_ID = off.OFFENSE_ID)
     JOIN {DOC_EPISODE} ep
       USING(DOC_ID)
-    WHERE TRANSITION_PROGRAM_STATUS_ID IN (
-      '10650', -- Approved
-      '10652' -- Tentative
-    )
+    JOIN {LOOKUPS} lookups
+      ON(TRANSITION_PROGRAM_STATUS_ID = LOOKUP_ID)
   )
 ),
 -- Return one row per person, per incarceration stint, when the person has been approved
@@ -90,6 +93,7 @@ PERSON_ID,
   update_datetime_elig,
   CHANGE_ID,
   SC_CALC_HISTORY_ID,
+  approval_status
   FROM (
     SELECT DISTINCT 
       CAST(COALESCE(
@@ -106,16 +110,15 @@ PERSON_ID,
       sc.SC_EPISODE_ID,
       off.CHANGE_ID,
       off.SC_CALC_HISTORY_ID,
+      lookups.DESCRIPTION AS approval_status,
       'Drug Transition Release' AS task_subtype
     FROM {AZ_DOC_SC_OFFENSE@ALL} off
     JOIN {AZ_DOC_SC_EPISODE} sc
     ON(sc.FINAL_OFFENSE_ID = off.OFFENSE_ID)
     JOIN {DOC_EPISODE} ep
-    USING(DOC_ID)
-    WHERE DRUG_TRANSITION_PROGRAM_STATUS_ID IN (
-      '10650', -- Approved
-      '10652' -- Tentative
-    )
+    USING(DOC_ID) 
+    JOIN {LOOKUPS} lookups
+      ON(DRUG_TRANSITION_PROGRAM_STATUS_ID = LOOKUP_ID)
   )
 ),
 -- Maintain rows where the eligibility date for TPR changed; discard the rest. 

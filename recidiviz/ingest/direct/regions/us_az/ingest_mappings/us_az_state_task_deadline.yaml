@@ -8,6 +8,7 @@ input_columns:
   - FINAL_OFFENSE_ID
   - SC_EPISODE_ID
   - task_subtype
+  - approval_status
 unused_columns: []
 output:
   StatePerson:
@@ -26,3 +27,4 @@ output:
               DOC_ID: DOC_ID
               sentence_external_id: FINAL_OFFENSE_ID
               sentence_group_external_id: SC_EPISODE_ID
+              status: approval_status
