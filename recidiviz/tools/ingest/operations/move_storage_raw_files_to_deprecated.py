@@ -43,6 +43,7 @@ import logging
 from datetime import date
 from typing import List, Optional
 
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
@@ -52,6 +53,9 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import (
     DirectIngestRawFileMetadata,
+)
+from recidiviz.tools.ingest.operations.delete_bq_raw_table_rows_controller import (
+    DeleteBQRawTableRowsController,
 )
 from recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller import (
     InvalidateOperationsDBFilesController,
@@ -120,14 +124,6 @@ class MoveFilesToDeprecatedController:
                 dry_run=self.dry_run,
             )
 
-            # TODO(#3666): Update this script to make updates to BigQuery (if necessary)
-            prompt_for_confirmation(
-                f"All associated rows in the BigQuery dataset "
-                f"`{self.region_code.lower()}_raw_data` must be deleted before moving "
-                f"these files to a deprecated location.\nHave you already done so?",
-                dry_run=self.dry_run,
-            )
-
             # TODO(#28239): delete once raw data import DAG is live
             # The invalidation logic only supports the new operations tables
             if not is_raw_data_import_dag_enabled(
@@ -141,8 +137,15 @@ class MoveFilesToDeprecatedController:
                     "location.\nHave you already done so?",
                     dry_run=self.dry_run,
                 )
+
+                prompt_for_confirmation(
+                    f"All associated rows in the BigQuery dataset "
+                    f"`{self.region_code.lower()}_raw_data` must be deleted before moving "
+                    f"these files to a deprecated location.\nHave you already done so?",
+                    dry_run=self.dry_run,
+                )
             else:
-                InvalidateOperationsDBFilesController(
+                invalidated_files = InvalidateOperationsDBFilesController(
                     project_id=self.project_id,
                     state_code=StateCode(self.region_code.upper()),
                     ingest_instance=self.ingest_instance,
@@ -153,6 +156,17 @@ class MoveFilesToDeprecatedController:
                     dry_run=self.dry_run,
                     skip_prompts=self.skip_prompts,
                 ).run()
+
+                if invalidated_files:
+                    DeleteBQRawTableRowsController(
+                        bq_client=BigQueryClientImpl(project_id=self.project_id),
+                        state_code=StateCode(self.region_code.upper()),
+                        ingest_instance=self.ingest_instance,
+                        dry_run=self.dry_run,
+                        skip_prompts=self.skip_prompts,
+                    ).run(
+                        file_tag_to_file_ids_to_delete=invalidated_files.file_tag_to_file_ids
+                    )
 
         OperateOnStorageRawFilesController(
             region_code=self.region_code,

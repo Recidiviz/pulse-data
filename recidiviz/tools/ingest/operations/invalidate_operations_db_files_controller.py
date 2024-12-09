@@ -109,7 +109,8 @@ class RawFilesGroupedByTagAndId:
     def empty(self) -> bool:
         return not any(self.file_tag_to_file_id_dict.values())
 
-    def get_file_ids(self) -> Set[int]:
+    @property
+    def file_ids(self) -> Set[int]:
         return {
             file_id
             for files in self.file_tag_to_file_id_dict.values()
@@ -117,7 +118,8 @@ class RawFilesGroupedByTagAndId:
             if file_id
         }
 
-    def get_gcs_file_ids(self) -> Set[int]:
+    @property
+    def gcs_file_ids(self) -> Set[int]:
         return {
             gcs_file_id
             for files in self.file_tag_to_file_id_dict.values()
@@ -125,8 +127,16 @@ class RawFilesGroupedByTagAndId:
             for gcs_file_id in file_ids
         }
 
-    def get_normalized_file_names(self) -> Set[str]:
+    @property
+    def normalized_file_names(self) -> Set[str]:
         return set(self.gcs_file_id_to_file_name.values())
+
+    @property
+    def file_tag_to_file_ids(self) -> Dict[str, List[int]]:
+        return {
+            file_tag: list(filter(None, file_ids.keys()))
+            for file_tag, file_ids in self.file_tag_to_file_id_dict.items()
+        }
 
 
 @attr.define
@@ -163,6 +173,7 @@ class InvalidateOperationsDBFilesController:
     )
     dry_run: bool = attr.ib(default=True, validator=attr_validators.is_bool)
     skip_prompts: bool = attr.ib(default=False, validator=attr_validators.is_bool)
+    log_output_path: str = attr.ib(init=False, validator=attr_validators.is_str)
 
     def __attrs_post_init__(self) -> None:
         if not is_raw_data_import_dag_enabled(self.state_code, self.ingest_instance):
@@ -174,6 +185,12 @@ class InvalidateOperationsDBFilesController:
             raise ValueError(
                 "Cannot provide both file_tag_filters and file_tag_regex. Please provide only one."
             )
+        self.log_output_path = make_log_output_path(
+            operation_name="invalidate_operations_db_files",
+            region_code=self.state_code.value,
+            date_string=f"start_bound_{self.start_date_bound}_end_bound_{self.end_date_bound}",
+            dry_run=self.dry_run,
+        )
 
     def _write_log_file(
         self, log_output_path: str, parsed_results: RawFilesGroupedByTagAndId
@@ -217,7 +234,8 @@ class InvalidateOperationsDBFilesController:
 
     def _get_file_tag_clause(self) -> str:
         if self.file_tag_filters:
-            return f"AND file_tag IN ({','.join(self.file_tag_filters)})"
+            file_tag_str = ",".join(f"'{tag}'" for tag in self.file_tag_filters)
+            return f"AND file_tag IN ({file_tag_str})"
         if self.file_tag_regex:
             return f"AND file_tag ~ '{self.file_tag_regex}'"
         return ""
@@ -236,9 +254,11 @@ class InvalidateOperationsDBFilesController:
 
         return RawFilesGroupedByTagAndId.from_file_tag_id_name_tuples(result.fetchall())
 
-    def run(self) -> None:
+    def run(self) -> Optional[RawFilesGroupedByTagAndId]:
         """This operation will update the is_invalidated column in the direct_ingest_raw_big_query_file_metadata
         and direct_ingest_raw_gcs_file_metadata tables to True for the rows that match the relevant filters.
+        Returns a RawFilesGroupedByTagAndId object representing the files that were invalidated or None if no
+        files were invalidated.
         """
         schema_type = SchemaType.OPERATIONS
         database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
@@ -252,11 +272,11 @@ class InvalidateOperationsDBFilesController:
                 files_to_be_invalidated = self._fetch_files_to_be_invalidated(session)
                 if files_to_be_invalidated.empty():
                     logging.info("No files to invalidate.")
-                    return
+                    return None
 
                 if not self.skip_prompts:
                     prompt_for_confirmation(
-                        f"This operation will invalidate [{len(files_to_be_invalidated.get_normalized_file_names())}] files.",
+                        f"This operation will invalidate [{len(files_to_be_invalidated.normalized_file_names)}] files.",
                         accepted_response_override="yes",
                         dry_run=self.dry_run,
                     )
@@ -264,25 +284,21 @@ class InvalidateOperationsDBFilesController:
                 if not self.dry_run:
                     self._execute_invalidation(
                         session,
-                        file_ids=files_to_be_invalidated.get_file_ids(),
-                        gcs_file_ids=files_to_be_invalidated.get_gcs_file_ids(),
+                        file_ids=files_to_be_invalidated.file_ids,
+                        gcs_file_ids=files_to_be_invalidated.gcs_file_ids,
                     )
 
-                log_output_path = make_log_output_path(
-                    operation_name="invalidate_operations_db_files",
-                    region_code=self.state_code.value,
-                    date_string=f"start_bound_{self.start_date_bound}_end_bound_{self.end_date_bound}",
-                    dry_run=self.dry_run,
-                )
-                self._write_log_file(log_output_path, files_to_be_invalidated)
+                invalidated_files = files_to_be_invalidated
+                self._write_log_file(self.log_output_path, invalidated_files)
                 if self.dry_run:
                     logging.info(
                         "[DRY RUN] See results in [%s].\n"
                         "Rerun with [--dry-run False] to execute invalidation.",
-                        log_output_path,
+                        self.log_output_path,
                     )
                 else:
                     logging.info(
                         "Invalidation complete! See results in [%s].\n",
-                        log_output_path,
+                        self.log_output_path,
                     )
+                return invalidated_files

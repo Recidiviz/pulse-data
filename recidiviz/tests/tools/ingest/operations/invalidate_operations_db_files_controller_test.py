@@ -54,7 +54,7 @@ class TestRawFilesGroupedByTagAndId(unittest.TestCase):
         grouped_files = RawFilesGroupedByTagAndId.from_file_tag_id_name_tuples(
             self.tuple_list
         )
-        self.assertSetEqual({1, 2, 3}, grouped_files.get_file_ids())
+        self.assertSetEqual({1, 2, 3}, grouped_files.file_ids)
 
     def test_get_normalized_file_names(self) -> None:
         grouped_files = RawFilesGroupedByTagAndId.from_file_tag_id_name_tuples(
@@ -62,14 +62,14 @@ class TestRawFilesGroupedByTagAndId(unittest.TestCase):
         )
         self.assertSetEqual(
             {"file1.csv", "file2.csv", "file3.csv", "file4.csv", "file5.csv"},
-            grouped_files.get_normalized_file_names(),
+            grouped_files.normalized_file_names,
         )
 
     def test_get_gcs_file_ids(self) -> None:
         grouped_files = RawFilesGroupedByTagAndId.from_file_tag_id_name_tuples(
             self.tuple_list
         )
-        self.assertSetEqual({11, 12, 13, 14, 15}, grouped_files.get_gcs_file_ids())
+        self.assertSetEqual({11, 12, 13, 14, 15}, grouped_files.gcs_file_ids)
 
 
 class TestInvalidateOperationsDBFilesController(unittest.TestCase):
