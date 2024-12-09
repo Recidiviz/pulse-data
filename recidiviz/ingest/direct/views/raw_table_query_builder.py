@@ -16,7 +16,7 @@
 # =============================================================================
 """Helper class for building views over state raw data tables."""
 import datetime
-from typing import Optional
+from typing import List, Optional
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address_formatter import (
@@ -100,13 +100,18 @@ DEFAULT_DATETIME_COL_NORMALIZATION_TEMPLATE = """
             CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', {col_name}) AS DATETIME) AS STRING),
             CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name}) AS DATETIME) AS STRING),
             {col_name}
-        ) AS {col_name}"""
+        )"""
 DATETIME_SQL_CAST_TEMPLATE = """
-            CAST(SAFE_CAST({col_sql} AS DATETIME) AS STRING),"""
+            CAST(SAFE_CAST({col_sql} AS DATETIME) AS STRING)"""
 DATETIME_COL_NORMALIZATION_TEMPLATE = """
-        COALESCE({datetime_casts}
+        COALESCE({datetime_casts},
             {col_name}
-        ) AS {col_name}"""
+        )"""
+CASE_STATEMENT_TEMPLATE = """
+    CASE
+        {null_clause}
+        ELSE {else_clause}
+    END AS {col_name}"""
 
 
 class RawTableQueryBuilder:
@@ -157,7 +162,7 @@ class RawTableQueryBuilder:
                 columns that have associated `descriptions` in the raw YAML files.
         """
         if normalized_column_values:
-            columns_clause = self.normalized_columns_for_config(
+            columns_clause = self._normalized_columns_for_config(
                 raw_file_config, filter_to_only_documented_columns
             )
         else:
@@ -258,58 +263,100 @@ class RawTableQueryBuilder:
         return columns_str
 
     @staticmethod
-    def normalized_columns_for_config(
+    def _build_datetime_normalization_clause(
+        column_name: str, datetime_sql_parsers: Optional[List[str]]
+    ) -> str:
+        """Builds a clause to parse a datetime column using datetime_sql_parsers, cast the result to a datetime then to a string,
+        and coalesce to the original column. If no parsers are provided, we attempt parsing using a default set of datetime formats.
+        """
+        if not datetime_sql_parsers:
+            return StrictStringFormatter().format(
+                DEFAULT_DATETIME_COL_NORMALIZATION_TEMPLATE, col_name=column_name
+            )
+
+        return StrictStringFormatter().format(
+            DATETIME_COL_NORMALIZATION_TEMPLATE,
+            col_name=column_name,
+            datetime_casts=", ".join(
+                [
+                    StrictStringFormatter().format(
+                        DATETIME_SQL_CAST_TEMPLATE,
+                        col_sql=StrictStringFormatter().format(
+                            datetime_parser, col_name=column_name
+                        ),
+                    )
+                    for datetime_parser in datetime_sql_parsers
+                ]
+            ),
+        )
+
+    @staticmethod
+    def _build_cast_to_null_case_clause(
+        column_name: str, null_values: List[str]
+    ) -> str:
+        """Builds a clause to be used in a CASE statement that casts null_values to NULL for a column."""
+        if not null_values:
+            raise ValueError(
+                f"null_values must be provided to build a null clause for [{column_name}]"
+            )
+
+        null_values_str = ", ".join([f"'{value}'" for value in null_values])
+        return f"WHEN {column_name} IN ({null_values_str}) THEN NULL"
+
+    @classmethod
+    def _normalized_columns_for_config(
+        cls,
         raw_file_config: DirectIngestRawFileConfig,
         filter_to_only_documented_columns: bool,
     ) -> str:
-        """Returns list of columns with normalized datetimes."""
+        """For each column in the config, this function builds a column query that first casts the column's specified
+        null_values to NULL (if present), then normalizes the column to a DATETIME-formatted string if it is a datetime column.
+        If neither apply, no special logic is included in the column's query clause. If filter_to_only_documented_columns is True,
+        then only documented columns will be included in the query.
+
+        Returns a string of comma-separated column queries.
+        """
         if filter_to_only_documented_columns and not raw_file_config.documented_columns:
             raise ValueError(
                 f"Found no available (documented) columns for file [{raw_file_config.file_tag}]"
             )
 
-        non_datetime_cols_to_format = (
-            raw_file_config.documented_non_datetime_cols
+        # TODO(#35844) update to use current columns
+        columns = (
+            raw_file_config.documented_columns
             if filter_to_only_documented_columns
-            else raw_file_config.non_datetime_cols
-        )
-        non_datetime_col_str = ", ".join(non_datetime_cols_to_format)
-        datetime_cols_to_format = (
-            raw_file_config.documented_datetime_cols
-            if filter_to_only_documented_columns
-            else raw_file_config.datetime_cols
+            else raw_file_config.columns
         )
 
-        if not datetime_cols_to_format:
-            return non_datetime_col_str
+        column_queries = []
+        for column in columns:
+            null_clause = (
+                cls._build_cast_to_null_case_clause(column.name, column.null_values)
+                if column.null_values
+                else None
+            )
 
-        result = ""
-        if non_datetime_col_str:
-            result += f"{non_datetime_col_str}, "
-        # Right now this only performs normalization for datetime columns, but in the future
-        # this method can be expanded to normalize other values.
-        result += ", ".join(
-            [
-                StrictStringFormatter().format(
-                    DEFAULT_DATETIME_COL_NORMALIZATION_TEMPLATE, col_name=col_name
+            datetime_query = (
+                cls._build_datetime_normalization_clause(
+                    column_name=column.name,
+                    datetime_sql_parsers=column.datetime_sql_parsers,
                 )
-                if not col_sql_opt
-                else StrictStringFormatter().format(
-                    DATETIME_COL_NORMALIZATION_TEMPLATE,
-                    col_name=col_name,
-                    datetime_casts="".join(
-                        [
-                            StrictStringFormatter().format(
-                                DATETIME_SQL_CAST_TEMPLATE,
-                                col_sql=StrictStringFormatter().format(
-                                    col_sql, col_name=col_name
-                                ),
-                            )
-                            for col_sql in col_sql_opt
-                        ]
-                    ),
+                if column.is_datetime
+                else None
+            )
+
+            if null_clause:
+                column_query = StrictStringFormatter().format(
+                    CASE_STATEMENT_TEMPLATE,
+                    null_clause=null_clause,
+                    else_clause=datetime_query or column.name,
+                    col_name=column.name,
                 )
-                for col_name, col_sql_opt in datetime_cols_to_format
-            ]
-        )
-        return result
+            elif datetime_query:
+                column_query = f"{datetime_query} AS {column.name}"
+            else:
+                column_query = column.name
+
+            column_queries.append(column_query)
+
+        return ", ".join(column_queries)

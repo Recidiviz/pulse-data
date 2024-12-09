@@ -526,7 +526,7 @@ WITH filtered_rows AS (
         recency_rank = 1
         AND is_deleted = False
 )
-SELECT col1, undocumented_column_2, 
+SELECT col1, 
         COALESCE(
             CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
             CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
@@ -546,9 +546,10 @@ SELECT col1, undocumented_column_2,
             CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', undocumented_column) AS DATETIME) AS STRING),
             CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', undocumented_column) AS DATETIME) AS STRING),
             undocumented_column
-        ) AS undocumented_column
+        ) AS undocumented_column, undocumented_column_2
 FROM filtered_rows
 """
+
         self.assertEqual(expected_view_query, query)
 
     def test_only_datetime_documented_columns(self) -> None:
@@ -617,4 +618,82 @@ SELECT
 FROM filtered_rows
 """
 
+        self.assertEqual(expected_view_query, query)
+
+    def test_null_values(self) -> None:
+        raw_file_config = attr.evolve(
+            self.raw_file_config,
+            primary_key_cols=["undocumented_column"],
+            columns=[
+                RawTableColumnInfo(
+                    name="datetime_col",
+                    field_type=RawTableColumnFieldType.DATETIME,
+                    is_pii=False,
+                    description="description",
+                    datetime_sql_parsers=[
+                        "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\:\d\d\d.*', ''))"
+                    ],
+                    null_values=["0000"],
+                ),
+                RawTableColumnInfo(
+                    name="documented_column",
+                    field_type=RawTableColumnFieldType.STRING,
+                    is_pii=False,
+                    description="description",
+                    null_values=["00", "N/A"],
+                ),
+                RawTableColumnInfo(
+                    name="undocumented_column",
+                    field_type=RawTableColumnFieldType.DATETIME,
+                    is_pii=False,
+                    description=None,
+                    null_values=[],
+                ),
+            ],
+        )
+        self.load_empty_raw_table(raw_file_config)
+        query = self.query_builder.build_query(
+            raw_file_config,
+            parent_address_overrides=None,
+            parent_address_formatter_provider=None,
+            normalized_column_values=True,
+            raw_data_datetime_upper_bound=None,
+            filter_to_latest=True,
+            filter_to_only_documented_columns=True,
+        )
+        # Make sure query is valid SQL by running it
+        self.bq_client.run_query_async(query_str=query, use_query_cache=False).result()
+
+        expected_view_query = """
+WITH filtered_rows AS (
+    SELECT
+        * EXCEPT (recency_rank)
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY undocumented_column
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-bq-emulator-project.us_xx_raw_data.table_name`
+        
+    ) a
+    WHERE
+        recency_rank = 1
+        AND is_deleted = False
+)
+SELECT 
+    CASE
+        WHEN datetime_col IN ('0000') THEN NULL
+        ELSE 
+        COALESCE(
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(datetime_col, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
+            datetime_col
+        )
+    END AS datetime_col, 
+    CASE
+        WHEN documented_column IN ('00', 'N/A') THEN NULL
+        ELSE documented_column
+    END AS documented_column
+FROM filtered_rows
+"""
         self.assertEqual(expected_view_query, query)

@@ -730,6 +730,7 @@ class DirectIngestRawFileConfig:
         """Filters to only documented columns."""
         return [column for column in self.columns if column.description]
 
+    # TODO(#35651) Remove unused properties previously used by normalized_columns_for_config
     @property
     def documented_datetime_cols(
         self,
