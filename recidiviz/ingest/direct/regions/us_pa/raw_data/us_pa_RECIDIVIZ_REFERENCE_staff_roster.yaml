@@ -126,6 +126,7 @@ columns:
     known_values:
       - value: Administrative Assistant 1
       - value: Administrative Officer 5
+      - value: Business Partner/Contractor
       - value: Clerical Assistant 2
       - value: Clerical Assistant 3
       - value: Clerical Supervisor 2
@@ -133,6 +134,7 @@ columns:
       - value: Deputy Secretary for Field Services
       - value: Deputy Secretary for Reentry
       - value: District Director
+      - value: Executive Assistant
       - value: Institutional Parole Assistant
       - value: Parole Agent 1
       - value: Parole Agent 2
@@ -140,6 +142,8 @@ columns:
       - value: Parole Agt 2
       - value: Parole Auditor
       - value: Parole Auditor Supervisor
+      - value: Parole Communications Operator
+      - value: Parole Communications Supervisor
       - value: Parole Manager 1
       - value: Parole Manager 2
       - value: Parole Spvr
@@ -148,9 +152,11 @@ columns:
       - value: Pbtn Prl Dep Dstr Dir
       - value: Pbtn Prl Dstr Dir 1
       - value: Pbtn Prl Dstr Dir 2
+      - value: Probation and Parole Deputy District Director
       - value: Probation and Parole District Director 1
       - value: Probation and Parole District Director 2
       - value: Regional Institutional Parole Director
+      - value: Regional Probation and Parole Director
   - name: Supervisor_EmpNum
     is_pii: True
     description: |-
