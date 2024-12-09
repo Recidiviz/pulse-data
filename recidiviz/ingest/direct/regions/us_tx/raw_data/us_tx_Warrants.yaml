@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: Warrants
+file_description: |-
+  This table contains information on warrant statuses.
+data_classification: source
+primary_key_cols:
+  - SID_Number
+  - WARRANT_DATE
+  - WARRANT_FLAG
+columns:
+  - name: SID_Number
+    description: |-
+      This is a unique identifier assigned to a particular client.
+    field_type: person_external_id
+    external_id_type: US_TX_SID
+    is_pii: True
+  - name: WARRANT_DATE
+    description: |-
+      Warrant date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S.%f', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: WARRANT_FLAG
+    description: |-
+      Warrant flag boolean
