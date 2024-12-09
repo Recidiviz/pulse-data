@@ -74,6 +74,10 @@ class MetricTimePeriodConfig:
     # The value for the period column of the output query.
     period_name_type: MetricTimePeriod = attr.ib(default=MetricTimePeriod.CUSTOM)
 
+    # Unique name for this config which can be used when naming views, etc that produce
+    # metrics use this set of time periods.
+    config_name: str | None = attr.ib(default=None)
+
     def __attrs_post_init__(self) -> None:
         # Both rolling_period_unit and rolling_period_length must be provided together
         if (self.rolling_period_unit and not self.rolling_period_length) or (
@@ -162,6 +166,7 @@ class MetricTimePeriodConfig:
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
             period_name_type=MetricTimePeriod.WEEK,
+            config_name=f"last_{lookback_weeks}_weeks",
         )
 
     @staticmethod
@@ -189,6 +194,7 @@ class MetricTimePeriodConfig:
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
             period_name_type=MetricTimePeriod.MONTH,
+            config_name=f"last_{lookback_months}_months",
         )
 
     @staticmethod
@@ -216,6 +222,7 @@ class MetricTimePeriodConfig:
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
             period_name_type=MetricTimePeriod.QUARTER,
+            config_name=f"quarters_rolling_last_{lookback_months}_months",
         )
 
     @staticmethod
@@ -244,6 +251,7 @@ class MetricTimePeriodConfig:
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
             period_name_type=MetricTimePeriod.YEAR,
+            config_name=f"years_rolling_last_{lookback_months}_months",
         )
 
     def build_query(self) -> str:

@@ -16,7 +16,16 @@
 # =============================================================================
 """Dataset configuration for aggregated metrics views"""
 
+
+# Dataset defining views that join unit of analysis assignment sessions views (views
+# that connect units of analysis with units of observation for periods of time) to
+# metric time periods (e.g. year-long, month-long, etc) for all relevant populations,
+# units of analysis, etc that our deployed aggregated metrics collections will
+# reference.
+UNIT_OF_ANALYSIS_ASSIGNMENTS_BY_TIME_PERIOD_DATASET_ID = (
+    "unit_of_analysis_assignments_by_time_period"
+)
+
 # Dataset with views that define populations, time periods, and metrics at various
 # levels of aggregation
-
 AGGREGATED_METRICS_DATASET_ID = "aggregated_metrics"

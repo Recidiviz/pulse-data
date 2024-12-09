@@ -14,9 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates AggregatedMetric objects with properties of spans/events required to calculate a metric"""
+"""Creates AggregatedMetric objects with properties of spans/events required to
+calculate a metric
+"""
 import abc
 import re
+from enum import Enum
 from typing import Generic, List, Optional
 
 import attr
@@ -42,6 +45,18 @@ from recidiviz.observations.observation_type_utils import (
 )
 from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
+
+
+class MetricTimePeriodJoinType(Enum):
+    """Describes the type of join logic we'll use to associate metric time periods
+    with unit of observation to unit of assignment periods.
+    """
+
+    # If the PERIOD of assignment overlaps at all with the metric period, we count it.
+    PERIOD = "PERIOD"
+
+    # If the ASSIGNMENT START DATE overlaps with the metric period, we count it.
+    ASSIGNMENT = "ASSIGNMENT"
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -73,6 +88,13 @@ class AggregatedMetric:
         short_cls_name = cls.__mro__[1].__name__.replace("Aggregated", "")
         # Solution taken from here: https://stackoverflow.com/questions/199059/a-pythonic-way-to-insert-a-space-before-capital-letters
         return re.sub(r"(\w)([A-Z])", r"\1 \2", short_cls_name)
+
+    @classmethod
+    @abc.abstractmethod
+    def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
+        """Returns the type of join logic we'll use to associate metric time periods
+        with unit of observation to unit of assignment periods.
+        """
 
     @classmethod
     @abc.abstractmethod
@@ -200,6 +222,10 @@ class MiscAggregatedMetric(AggregatedMetric):
     def pretty_name(cls) -> str:
         return "Misc. Metric"
 
+    @classmethod
+    def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
+        raise NotImplementedError("TODO(#29291): No support for MiscAggregatedMetric")
+
 
 @attr.define(frozen=True, kw_only=True)
 class PeriodSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin):
@@ -211,6 +237,10 @@ class PeriodSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin):
     @classmethod
     def metric_class_name_lower(cls) -> str:
         return "period_span"
+
+    @classmethod
+    def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
+        return MetricTimePeriodJoinType.PERIOD
 
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
@@ -248,6 +278,10 @@ class AssignmentSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin
     def metric_class_name_lower(cls) -> str:
         return "assignment_span"
 
+    @classmethod
+    def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
+        return MetricTimePeriodJoinType.ASSIGNMENT
+
     # Length (in days) of the window following assignment date over which to calculate metric
     window_length_days: int = 365
 
@@ -282,6 +316,10 @@ class PeriodEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMixin):
     def metric_class_name_lower(cls) -> str:
         return "period_event"
 
+    @classmethod
+    def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
+        return MetricTimePeriodJoinType.PERIOD
+
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
         self,
@@ -313,6 +351,10 @@ class AssignmentEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMix
     @classmethod
     def metric_class_name_lower(cls) -> str:
         return "assignment_event"
+
+    @classmethod
+    def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
+        return MetricTimePeriodJoinType.ASSIGNMENT
 
     # Length (in days) of the window following assignment date over which to calculate metric
     window_length_days: int = 365
