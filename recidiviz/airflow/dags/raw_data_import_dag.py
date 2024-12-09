@@ -77,6 +77,7 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     HEADER_VERIFICATION_ERRORS,
     IMPORT_READY_FILES,
     PROCESSED_PATHS_TO_RENAME,
+    RAW_DATA_BRANCHING,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA,
@@ -488,7 +489,7 @@ def create_raw_data_import_dag() -> None:
     # by default, we run w/ only primary branches selected. when state code and ingest
     # instance filters are both applied, only the specified branch will be selected
 
-    with TaskGroup("raw_data_branching") as raw_data_branching:
+    with TaskGroup(RAW_DATA_BRANCHING) as raw_data_branching:
         create_branching_by_key(
             create_raw_data_branch_map(
                 create_single_state_code_ingest_instance_raw_data_import_branch

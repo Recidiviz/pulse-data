@@ -105,10 +105,11 @@ def create_raw_data_branch_map(
         str, Union[TaskGroupOrOperator, List[TaskGroupOrOperator]]
     ] = {}
 
-    for (
-        state_code,
-        ingest_instance,
-    ) in get_raw_data_dag_enabled_state_and_instance_pairs():
+    # sort to maintain DAG insertion order in topological_sort which determines ui visual sorting
+    for (state_code, ingest_instance,) in sorted(
+        get_raw_data_dag_enabled_state_and_instance_pairs(),
+        key=lambda x: x[0].value + x[1].value,
+    ):
         task_group_by_task_id[
             get_raw_data_import_branch_key(state_code, ingest_instance)
         ] = branched_task_function(state_code, ingest_instance)

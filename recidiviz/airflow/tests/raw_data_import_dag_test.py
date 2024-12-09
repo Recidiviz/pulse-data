@@ -28,6 +28,7 @@ from airflow.models.mappedoperator import OperatorPartial
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 from airflow.utils.state import DagRunState
+from airflow.utils.task_group import TaskGroup
 from google.cloud.bigquery import Row
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -39,6 +40,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 from recidiviz.airflow.dags.raw_data.metadata import (
     CHUNKING_ERRORS,
     IMPORT_READY_FILES,
+    RAW_DATA_BRANCHING,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_METADATA,
 )
@@ -151,6 +153,23 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         # pylint: disable=C0415 import-outside-toplevel
         # pylint: disable=unused-import
         from recidiviz.airflow.dags.raw_data_import_dag import raw_data_import_dag
+
+    def test_branch_sorting(self) -> None:
+        """Tests that branches are sorted in alphabetical order in topological_sort
+        which determines ui visual sorting.
+        """
+        dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
+        branching_topological_sorted_groups = [
+            maybe_group.group_id
+            for maybe_group in dag.task_group.get_task_group_dict()[
+                RAW_DATA_BRANCHING
+            ].topological_sort()
+            if isinstance(maybe_group, TaskGroup)
+        ]
+
+        assert branching_topological_sorted_groups == list(
+            sorted(branching_topological_sorted_groups)
+        )
 
     def test_lock_before_anything_else(self) -> None:
         """Tests that we acquire the resource locks before we do anything else in

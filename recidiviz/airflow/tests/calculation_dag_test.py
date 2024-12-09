@@ -130,6 +130,42 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.environment_patcher.stop()
         self.project_environment_patcher.stop()
 
+    def test_branch_sorting(self) -> None:
+        """Tests that state-specific task groups are sorted in alphabetical order in
+        topological_sort which determines ui visual sorting.
+        """
+        dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[
+            self.CALCULATION_DAG_ID
+        ]
+        for task_group_container in [
+            "dataflow_pipelines",
+            "metric_exports.state_specific_metric_exports",
+        ]:
+            branching_topological_sorted_groups = [
+                maybe_group.group_id
+                for maybe_group in dag.task_group.get_task_group_dict()[
+                    task_group_container
+                ].topological_sort()
+                if isinstance(maybe_group, TaskGroup)
+            ]
+
+            assert branching_topological_sorted_groups == list(
+                sorted(branching_topological_sorted_groups)
+            )
+
+        # validations
+        validations_topological_sorted_groups = [
+            task.task_id
+            for task in dag.task_group.get_task_group_dict()[
+                "validations"
+            ].topological_sort()
+            if "branch_" not in task.task_id
+        ]
+
+        assert validations_topological_sorted_groups == list(
+            sorted(validations_topological_sorted_groups)
+        )
+
     def update_reference_views_downstream_initialize_dag(self) -> None:
         """Tests that the `update_managed_views_reference_views_only` task is downstream of
         initialize_dag.

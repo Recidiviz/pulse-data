@@ -31,6 +31,7 @@ RESOURCE_LOCK_ACQUISITION_DESCRIPTION = (
 RESOURCE_LOCK_TTL_SECONDS_PRIMARY = 3 * 60 * 60  # 3 hours
 RESOURCE_LOCK_TTL_SECONDS_SECONDARY = 3 * 60 * 60  # 6 hours
 
+RAW_DATA_BRANCHING: str = "raw_data_branching"
 IMPORT_RUN_ID: str = "import_run_id"
 SKIPPED_FILE_ERRORS: str = "skipped_file_errors"
 APPEND_READY_FILE_BATCHES: str = "append_ready_file_batches"

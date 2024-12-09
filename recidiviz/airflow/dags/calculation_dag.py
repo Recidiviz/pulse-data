@@ -218,7 +218,10 @@ def dataflow_pipeline_branches_by_state() -> Dict[str, TaskGroup]:
     )
 
     branches_by_state_code = {}
-    for state_code in get_direct_ingest_states_launched_in_env():
+    # sort to maintain DAG insertion order in topological_sort which determines ui visual sorting
+    for state_code in sorted(
+        get_direct_ingest_states_launched_in_env(), key=lambda x: x.value
+    ):
         with TaskGroup(
             f"{state_code.value}_dataflow_pipelines"
         ) as state_pipelines_group:
