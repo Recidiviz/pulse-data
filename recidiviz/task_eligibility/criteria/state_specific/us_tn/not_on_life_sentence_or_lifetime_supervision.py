@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,18 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time during which someone in TN
-is not on lifetime supervision or serving a life sentence.
+"""Describes the spans of time during which someone in TN is not serving a life sentence
+or on lifetime supervision.
 """
-from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
-from recidiviz.calculator.query.sessions_query_fragments import (
-    create_sub_sessions_with_attributes,
-)
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -34,83 +29,39 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_NOT_ON_LIFE_SENTENCE_OR_LIFETIME_SUPERVISION"
 
-_DESCRIPTION = """Describes the spans of time during which someone in TN
-is not on lifetime supervision or serving a life sentence.
-"""
-
+# TODO(#35808): Account for scenarios in which a life sentence might actually end (i.e.,
+# commutation, if the sentence is vacated, or if someone under Community Supervision for
+# Life successfully petitions for discharge).
 _QUERY_TEMPLATE = f"""
-    WITH sentences AS (
-      SELECT 
-        state_code, 
-        person_id,
-        date_imposed AS start_date,
-        DATE_ADD(projected_completion_date_max, INTERVAL 1 DAY) AS end_date,
-        life_sentence AS lifetime_flag,
-      FROM `{{project_id}}.{{sessions_dataset}}.us_tn_sentences_preprocessed_materialized`
-      WHERE {nonnull_end_date_exclusive_clause('projected_completion_date_max')} > date_imposed
-    ),
-    {create_sub_sessions_with_attributes('sentences')}
-    , 
-    collapse_sub_sessions AS (
-    -- This CTE prioritizes any life sentences or lifetime supervision on any sentence during a given sub-session
-        SELECT  
-                person_id, 
-                state_code, 
-                start_date, 
-                end_date,
-                LOGICAL_OR(COALESCE(lifetime_flag, FALSE)) AS lifetime_flag,
-        FROM sub_sessions_with_attributes
-        GROUP BY 1,2,3,4
-    ),
-    get_earliest_start_with_lifetime AS (
-    -- If someone has a life sentence or lifetime supervision on a sentence, we want to treat all following 
-    -- spans of time as failing to meet the criteria, even if future sentences accrued don't have that condition
-        SELECT 
-            state_code,
-            person_id,
-            MIN(start_date) AS min_start_with_lifetime,
-        FROM collapse_sub_sessions
-        WHERE lifetime_flag
-        GROUP BY 1,2
-    )
     SELECT
         state_code,
         person_id,
-        start_date,
-        IF(
-            MAX({nonnull_end_date_exclusive_clause('end_date')}) OVER(PARTITION BY person_id) = {nonnull_end_date_exclusive_clause('end_date')},
-            NULL, 
-            end_date
-        ) AS end_date,
-        -- if a span starts after the earliest span with a life sentence, then criteria is not met. Else, if lifetime_flag
-        -- is true than criteria is not met, otherwise it is
-        CASE WHEN start_date >= min_start_with_lifetime THEN FALSE ELSE NOT COALESCE(lifetime_flag, FALSE) END AS meets_criteria,
-        TO_JSON(STRUCT(lifetime_flag)) AS reason,
-        lifetime_flag,
-    FROM collapse_sub_sessions
-    LEFT JOIN
-        get_earliest_start_with_lifetime
-    USING(person_id, state_code)
-    WHERE start_date != {nonnull_end_date_exclusive_clause('end_date')}    
-    
+        -- person becomes ineligible once any life sentence is imposed for them
+        MIN(date_imposed) AS start_date,
+        -- person will remain ineligible forever after a life sentence is imposed
+        CAST(NULL AS DATE) AS end_date,
+        FALSE AS meets_criteria,
+        CAST(NULL AS JSON) AS reason,
+    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
+    WHERE state_code='US_TN'
+        AND life_sentence
+        /* Drop zero-day sentences and sentences where the `date_imposed` is after the
+        `projected_completion_date_max`. */
+        AND {nonnull_end_date_exclusive_clause('projected_completion_date_max')}>date_imposed
+    GROUP BY 1, 2
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        state_code=StateCode.US_TN,
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
-        reasons_fields=[
-            ReasonsField(
-                name="lifetime_flag",
-                type=bigquery.enums.StandardSqlTypeNames.BOOL,
-                description="#TODO(#29059): Add reasons field description",
-            ),
-        ],
-    )
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    state_code=StateCode.US_TN,
+    criteria_name=_CRITERIA_NAME,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    description=__doc__,
+    sessions_dataset=SESSIONS_DATASET,
+    # Set default to True because we only created spans of *ineligibility* in the
+    # query above, and we want to assume that folks are eligible by default
+    # otherwise.
+    meets_criteria_default=True,
+    reasons_fields=[],
 )
 
 if __name__ == "__main__":
