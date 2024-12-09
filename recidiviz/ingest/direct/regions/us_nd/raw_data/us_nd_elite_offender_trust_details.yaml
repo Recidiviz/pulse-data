@@ -84,9 +84,6 @@ columns:
   - name: WORK_TYPE
     description: |-
       Type of work being done that led to the financial transaction.
-  - name: TXN_TYPE_1
-    description: |-
-      The sub-type of financial transaction.
   - name: DEDUCTION_TYPE
     description: |-
       Type of deduction taken from the transaction, if applicable.
