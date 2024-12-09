@@ -102,6 +102,10 @@ class RawDataConfigWriter:
                     column_string += (
                         f"\n        previous_value: {update.previous_value}"
                     )
+        if column.null_values:
+            column_string += "\n    null_values:"
+            for null_value in column.null_values:
+                column_string += f"\n      - {get_properly_quoted_yaml_str(null_value)}"
         return column_string
 
     def _generate_columns_string(self, columns: List[RawTableColumnInfo]) -> str:

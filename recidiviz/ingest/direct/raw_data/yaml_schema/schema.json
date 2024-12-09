@@ -108,6 +108,11 @@
                 }
               }
             }
+          },
+          "null_values": {
+            "description": "A list of strings that should be treated as NULL values for this column.",
+            "type": "array",
+            "items": { "type": "string" }
           }
         }
       },

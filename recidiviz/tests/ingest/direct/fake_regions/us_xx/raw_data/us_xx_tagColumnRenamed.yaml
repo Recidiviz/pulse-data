@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: tagColumnRenamed
 file_description: |-
-  tag testing column renaming
+  tag testing column renaming and null values list
 data_classification: source
 primary_key_cols:
   - COL1
@@ -16,3 +16,7 @@ columns:
   - name: COL2
     description: |-
       column 2 description
+    null_values:
+      - "0"
+      - N/A
+      - NONE

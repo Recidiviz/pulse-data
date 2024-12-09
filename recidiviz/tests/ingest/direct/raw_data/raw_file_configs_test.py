@@ -98,11 +98,13 @@ class TestRawTableColumnInfo(unittest.TestCase):
             is_pii=False,
             description=None,
             known_values=None,
+            null_values=["0"],
         )
 
         self.assertFalse(column_info.is_enum)
         self.assertFalse(column_info.is_datetime)
         self.assertEqual(None, column_info.datetime_sql_parsers)
+        self.assertEqual(["0"], column_info.null_values)
 
     def test_known_values_non_string(self) -> None:
         with self.assertRaisesRegex(

@@ -233,6 +233,10 @@ class RawTableColumnInfo:
     update_history: Optional[List[ColumnUpdateInfo]] = attr.ib(
         default=None, validator=attr_validators.is_opt_list
     )
+    # Stores a list of values signifying null for this column
+    null_values: Optional[List[str]] = attr.ib(
+        default=None, validator=attr_validators.is_opt_list
+    )
 
     def __attrs_post_init__(self) -> None:
         # Known values should not be present unless this is a string field
@@ -1033,6 +1037,7 @@ class DirectIngestRawFileConfig:
                     or False,
                     import_blocking_column_validation_exemptions=import_blocking_column_validation_exemptions,
                     update_history=update_history,
+                    null_values=column.pop_list_optional("null_values", str),
                 )
             )
             if len(column) > 0:
