@@ -36,8 +36,10 @@ function getWauAndMauByWeekData(
   const weeklyActiveUsers = "weekly_active_users";
   const monthlyActiveUsers = "monthly_active_users";
 
-  const wauTable = "justice_involved_state_week_rolling_weekly_aggregated_metrics_materialized";
-  const mauTable = "justice_involved_state_month_rolling_weekly_aggregated_metrics_materialized";
+  const wauTable =
+    "justice_involved_state_week_rolling_weekly_aggregated_metrics_materialized";
+  const mauTable =
+    "justice_involved_state_month_rolling_weekly_aggregated_metrics_materialized";
 
   const queryString = `
     SELECT
@@ -182,29 +184,151 @@ function getUsageAndImpactDistrictData(
 }
 
 /**
- * Construct MAU and WAU Text
+ * Construct Statewide MAU and WAU Text
+ * Given parameters provided by the user, constructs a query string and call RunQuery
+ * to query the BiqQuery database. Fetches and returns the total number of statewide distinct monthly active users, statewide distinct monthly registered users, statewide distinct weekly active users, statewide distinct weekly registered users for each system
+ * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
+ * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
+ * @returns {map} an object that contains the number of distinctMonthlyActiveUsersSupervisionTotal, distinctMonthlyRegisteredUsersSupervisionTotal, distinctMonthlyActiveUsersFacilitiesTotal, distinctMonthlyRegisteredUsersFacilitiesTotal, distinctWeeklyActiveUsersSupervisionTotal, distinctWeeklyRegisteredUsersSupervisionTotal, distinctWeeklyActiveUsersFacilitiesTotal, and distinctWeeklyRegisteredUsersFacilitiesTotal
+ **/
+function constructStatewideMauAndWauText(stateCode, endDateString) {
+  const distinctActiveUsersSupervisionTotal = `distinct_active_users_supervision`;
+  const distinctRegisteredUsersSupervisionTotal = `distinct_registered_users_supervision`
+  const distinctActiveUsersFacilitiesTotal = `distinct_active_users_incarceration`;
+  const distinctRegisteredUsersFacilitiesTotal = `distinct_registered_users_incarceration`
+  const mauTable = `justice_involved_state_month_aggregated_metrics_materialized`;
+  const wauTable = `justice_involved_state_week_aggregated_metrics_materialized`;
+
+  const queryStringMonthly = `
+    SELECT
+      ${distinctActiveUsersSupervisionTotal},
+      ${distinctRegisteredUsersSupervisionTotal},
+      ${distinctActiveUsersFacilitiesTotal},
+      ${distinctRegisteredUsersFacilitiesTotal}
+    FROM \`impact_reports.${mauTable}\`
+    WHERE state_code = '${stateCode}'
+    AND end_date = '${endDateString}'`;
+
+  const queryOutputMonthly = runQuery(queryStringMonthly)[0];
+  const queryOutputLengthMonthly = queryOutputMonthly.length;
+  if (queryOutputLengthMonthly !== 4) {
+    throw new Error(
+      `Expected 4 columns in query output, but got length: ${queryOutputLengthMonthly}. Query output: ${queryOutputMonthly}.`
+    );
+  }
+
+  const queryStringWeekly = `
+    SELECT
+      ${distinctActiveUsersSupervisionTotal},
+      ${distinctRegisteredUsersSupervisionTotal},
+      ${distinctActiveUsersFacilitiesTotal},
+      ${distinctRegisteredUsersFacilitiesTotal}
+    FROM \`impact_reports.${wauTable}\`
+    WHERE state_code = '${stateCode}'
+    AND end_date = '${endDateString}'`;
+
+  const queryOutputWeekly = runQuery(queryStringWeekly)[0];
+  const queryOutputLengthWeekly = queryOutputWeekly.length;
+  if (queryOutputLengthWeekly !== 4) {
+    throw new Error(
+      `Expected 4 columns in query output, but got length: ${queryOutputLengthWeekly}. Query output: ${queryOutputWeekly}.`
+    );
+  }
+
+  const distinctMonthlyActiveUsersSupervisionTotal = parseInt(
+    queryOutputMonthly[0]
+  );
+  const distinctMonthlyRegisteredUsersSupervisionTotal = parseInt(
+    queryOutputMonthly[1]
+  );
+  const distinctMonthlyActiveUsersFacilitiesTotal = parseInt(
+    queryOutputMonthly[2]
+  );
+  const distinctMonthlyRegisteredUsersFacilitiesTotal = parseInt(
+    queryOutputMonthly[3]
+  );
+  Logger.log(
+    "Distinct Monthly Active Users Supervision Total: %s",
+    distinctMonthlyActiveUsersSupervisionTotal
+  );
+  Logger.log(
+    "Distinct Monthly Registered Users Supervision Total: %s",
+    distinctMonthlyRegisteredUsersSupervisionTotal
+  );
+  Logger.log(
+    "Distinct Monthly Active Users Facilities Total: %s",
+    distinctMonthlyActiveUsersFacilitiesTotal
+  );
+  Logger.log(
+    "Distinct Monthly Registered Users Facilities Total: %s",
+    distinctMonthlyRegisteredUsersFacilitiesTotal
+  );
+
+  const distinctWeeklyActiveUsersSupervisionTotal = parseInt(
+    queryOutputWeekly[0]
+  );
+  const distinctWeeklyRegisteredUsersSupervisionTotal = parseInt(
+    queryOutputWeekly[1]
+  );
+  const distinctWeeklyActiveUsersFacilitiesTotal = parseInt(
+    queryOutputWeekly[2]
+  );
+    const distinctWeeklyRegisteredUsersFacilitiesTotal = parseInt(
+    queryOutputWeekly[3]
+  );
+  Logger.log(
+    "Distinct Weekly Active Users Supervision Total: %s",
+    distinctWeeklyActiveUsersSupervisionTotal
+  );
+  Logger.log(
+    "Distinct Weekly Registered Users Supervision Total: %s",
+    distinctWeeklyRegisteredUsersSupervisionTotal
+  );
+  Logger.log(
+    "Distinct Weekly Active Users Facilities Total: %s",
+    distinctWeeklyActiveUsersFacilitiesTotal
+  );
+  Logger.log(
+    "Distinct Weekly Registered Users Facilities Total: %s",
+    distinctWeeklyRegisteredUsersFacilitiesTotal
+  );
+
+  return {
+    distinctMonthlyActiveUsersSupervisionTotal,
+    distinctMonthlyRegisteredUsersSupervisionTotal,
+    distinctMonthlyActiveUsersFacilitiesTotal,
+    distinctMonthlyRegisteredUsersFacilitiesTotal,
+    distinctWeeklyActiveUsersSupervisionTotal,
+    distinctWeeklyRegisteredUsersSupervisionTotal,
+    distinctWeeklyActiveUsersFacilitiesTotal,
+    distinctWeeklyRegisteredUsersFacilitiesTotal,
+  };
+}
+
+/**
+ * Construct MAU and WAU By Workflow Text
  * Given parameters provided by the user, constructs a query string and call RunQuery
  * to query the BiqQuery database. Fetches and returns the total number of distinct monthly active users, distinct monthly registered users, distinct weekly active users, and distinct weekly registered users for the given workflow
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
  * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
  * @param {string} system The system of the workflow (ex: 'SUPERVISION' or 'INCARCERATION')
- * @returns {map} an object that contains the number of distinctMonthlyActiveUsers, distinctMonthlyRegisteredUsers, distinctWeeklyActiveUsers, and distinctWeeklyRegisteredUsers
+ * @returns {map} an object that contains the number of distinctMonthlyActiveUsersByWorkflow, distinctMonthlyRegisteredUsers, distinctWeeklyActiveUsersByWorkflow, and distinctWeeklyRegisteredUsers
  **/
-function constructMauAndWauText(
+function constructMauAndWauByWorkflowText(
   stateCode,
   endDateString,
   completionEventType,
   system
 ) {
-  const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
+  const distinctActiveUsersByWorkflow = `distinct_active_users_${completionEventType.toLowerCase()}`;
   const distinctRegisteredUsers = `distinct_registered_users_${system.toLowerCase()}`;
   const mauTable = `justice_involved_state_month_aggregated_metrics_materialized`;
   const wauTable = `justice_involved_state_week_aggregated_metrics_materialized`;
 
   const queryStringMonthly = `
     SELECT
-      ${distinctActiveUsers},
+      ${distinctActiveUsersByWorkflow},
       ${distinctRegisteredUsers}
     FROM \`impact_reports.${mauTable}\`
     WHERE state_code = '${stateCode}'
@@ -220,7 +344,7 @@ function constructMauAndWauText(
 
   const queryStringWeekly = `
     SELECT
-      ${distinctActiveUsers},
+      ${distinctActiveUsersByWorkflow},
       ${distinctRegisteredUsers}
     FROM \`impact_reports.${wauTable}\`
     WHERE state_code = '${stateCode}'
@@ -234,26 +358,32 @@ function constructMauAndWauText(
     );
   }
 
-  const distinctMonthlyActiveUsers = parseInt(queryOutputMonthly[0]);
+  const distinctMonthlyActiveUsersByWorkflow = parseInt(queryOutputMonthly[0]);
   const distinctMonthlyRegisteredUsers = parseInt(queryOutputMonthly[1]);
-  Logger.log("Distinct Monthly Active Users: %s", distinctMonthlyActiveUsers);
+  Logger.log(
+    "Distinct Monthly Active Users by Workflow: %s",
+    distinctMonthlyActiveUsersByWorkflow
+  );
   Logger.log(
     "Distinct Monthly Registered Users: %s",
     distinctMonthlyRegisteredUsers
   );
 
-  const distinctWeeklyActiveUsers = parseInt(queryOutputWeekly[0]);
+  const distinctWeeklyActiveUsersByWorkflow = parseInt(queryOutputWeekly[0]);
   const distinctWeeklyRegisteredUsers = parseInt(queryOutputWeekly[1]);
-  Logger.log("Distinct Weekly Active Users: %s", distinctWeeklyActiveUsers);
+  Logger.log(
+    "Distinct Weekly Active Users by Workflow: %s",
+    distinctWeeklyActiveUsersByWorkflow
+  );
   Logger.log(
     "Distinct Weekly Registered Users: %s",
     distinctWeeklyRegisteredUsers
   );
 
   return {
-    distinctMonthlyActiveUsers,
+    distinctMonthlyActiveUsersByWorkflow,
     distinctMonthlyRegisteredUsers,
-    distinctWeeklyActiveUsers,
+    distinctWeeklyActiveUsersByWorkflow,
     distinctWeeklyRegisteredUsers,
   };
 }

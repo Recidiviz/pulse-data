@@ -25,7 +25,7 @@ const REGIONS_AND_FACILITIES_SUBSTRINGS_TO_FILTER_OUT = [
   "COUNTY JAIL",
   "FEDERAL",
   "ARIZONA",
-  "JAIL"
+  "JAIL",
 ];
 
 /**
@@ -109,10 +109,12 @@ function createColumnChart(
 ) {
   const enCollator = new Intl.Collator("en", { numeric: true });
   let buildChart = false;
-  data.sort(enCollator.compare).forEach((newRow) =>
-  {
-    if ( !newRow[0] ||
-      REGIONS_AND_FACILITIES_SUBSTRINGS_TO_FILTER_OUT.some((excludeTerm) => newRow[0].toUpperCase().includes(excludeTerm)) ||
+  data.sort(enCollator.compare).forEach((newRow) => {
+    if (
+      !newRow[0] ||
+      REGIONS_AND_FACILITIES_SUBSTRINGS_TO_FILTER_OUT.some((excludeTerm) =>
+        newRow[0].toUpperCase().includes(excludeTerm)
+      ) ||
       (filterOutZero && parseInt(newRow[1]) === 0)
     ) {
       return;
@@ -126,7 +128,6 @@ function createColumnChart(
   }
 
   chartData.build();
-  
 
   let chart = Charts.newColumnChart()
     .setDataTable(chartData)

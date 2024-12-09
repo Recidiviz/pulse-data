@@ -208,11 +208,11 @@ function main(e) {
     workflowToWauByWeekChart[workflow] = wauByWeekColumnChart;
 
     const {
-      distinctMonthlyActiveUsers,
+      distinctMonthlyActiveUsersByWorkflow,
       distinctMonthlyRegisteredUsers,
-      distinctWeeklyActiveUsers,
+      distinctWeeklyActiveUsersByWorkflow,
       distinctWeeklyRegisteredUsers,
-    } = constructMauAndWauText(
+    } = constructMauAndWauByWorkflowText(
       stateCode,
       endDateString,
       completionEventType,
@@ -223,9 +223,9 @@ function main(e) {
       districtOrFacilitiesColumnChart;
     workflowToOpportunityGrantedAndMauAndWau[workflow] = {
       opportunityGranted,
-      distinctMonthlyActiveUsers,
+      distinctMonthlyActiveUsersByWorkflow,
       distinctMonthlyRegisteredUsers,
-      distinctWeeklyActiveUsers,
+      distinctWeeklyActiveUsersByWorkflow,
       distinctWeeklyRegisteredUsers,
     };
     workflowToUsageAndImpactText[workflow] = {
@@ -243,6 +243,28 @@ function main(e) {
     };
   });
 
+  const {
+    distinctMonthlyActiveUsersSupervisionTotal,
+    distinctMonthlyRegisteredUsersSupervisionTotal,
+    distinctMonthlyActiveUsersFacilitiesTotal,
+    distinctMonthlyRegisteredUsersFacilitiesTotal,
+    distinctWeeklyActiveUsersSupervisionTotal,
+    distinctWeeklyRegisteredUsersSupervisionTotal,
+    distinctWeeklyActiveUsersFacilitiesTotal,
+    distinctWeeklyRegisteredUsersFacilitiesTotal,
+  } = constructStatewideMauAndWauText(stateCode, endDateString);
+
+  const statewideMauWauBySystem = {
+    distinctMonthlyActiveUsersSupervisionTotal,
+    distinctMonthlyRegisteredUsersSupervisionTotal,
+    distinctMonthlyActiveUsersFacilitiesTotal,
+    distinctMonthlyRegisteredUsersFacilitiesTotal,
+    distinctWeeklyActiveUsersSupervisionTotal,
+    distinctWeeklyRegisteredUsersSupervisionTotal,
+    distinctWeeklyActiveUsersFacilitiesTotal,
+    distinctWeeklyRegisteredUsersFacilitiesTotal,
+  };
+
   copyAndPopulateTemplateDoc(
     workflowToDistrictOrFacilitiesColumnChart,
     stateCode,
@@ -259,7 +281,8 @@ function main(e) {
     workflowToMauWauByRegionChart,
     workflowToMaxMauWauLocation,
     workflowToWauByWeekChart,
-    isTestReport
+    isTestReport,
+    statewideMauWauBySystem
   );
 }
 
@@ -283,6 +306,7 @@ function main(e) {
  * @param {map} workflowToMauWauByRegionChart An object that maps the workflow name to its mauWauByLocationChart
  * @param {map} workflowToMaxMauWauLocation An object that maps the worfklow name to highestMAULocations and highestWAULocations
  * @param {map} workflowToWauByWeekChart An object that maps the workflow name to its wauByWeekColumnChart
+ * @param {map} statewideMauWauBySystem An object that contains distinctMonthlyActiveUsersSupervisionTotal distinctMonthlyRegisteredUsersSupervisionTotal, distinctMonthlyActiveUsersFacilitiesTotal, distinctMonthlyRegisteredUsersFacilitiesTotal, distinctWeeklyActiveUsersSupervisionTotal, distinctWeeklyRegisteredUsersSupervisionTotal, distinctWeeklyActiveUsersFacilitiesTotal, and distinctWeeklyRegisteredUsersFacilitiesTotal
  */
 function copyAndPopulateTemplateDoc(
   workflowToDistrictOrFacilitiesColumnChart,
@@ -300,7 +324,8 @@ function copyAndPopulateTemplateDoc(
   workflowToMauWauByRegionChart,
   workflowToMaxMauWauLocation,
   workflowToWauByWeekChart,
-  isTestReport
+  isTestReport,
+  statewideMauWauBySystem
 ) {
   const template = DriveApp.getFileById(
     "1nsc_o2fTlldTQavxJveucWgDKkic_clKZjn0GuyF2N8"
@@ -316,7 +341,9 @@ function copyAndPopulateTemplateDoc(
   const today = Utilities.formatDate(new Date(), "GMT-5", "MM/dd/yyyy");
 
   const copy = template.makeCopy(
-    `${isTestReport ? "[TEST] " : ""}${stateCode} ${timePeriod.toLowerCase()}ly Impact Report ending ${endDateString}`,
+    `${
+      isTestReport ? "[TEST] " : ""
+    }${stateCode} ${timePeriod.toLowerCase()}ly Impact Report ending ${endDateString}`,
     destinationFolder
   );
   const doc = DocumentApp.openById(copy.getId());
@@ -337,9 +364,9 @@ function copyAndPopulateTemplateDoc(
 
   const workflowToMauWauNumAndPercent = copyAndPopulateOpportunityGrants(
     body,
-    timePeriod,
     workflowToOpportunityGrantedAndMauAndWau,
-    workflowToSystem
+    workflowToSystem,
+    statewideMauWauBySystem
   );
 
   copyAndPopulateWorkflowSection(
@@ -405,14 +432,14 @@ function addWorkflowsRows(
     mauTextCopy.replaceText(
       "{{mau}}",
       calculateActiveUsersPercent(
-        opportunityGrantedAndMauAndWau.distinctMonthlyActiveUsers,
+        opportunityGrantedAndMauAndWau.distinctMonthlyActiveUsersByWorkflow,
         opportunityGrantedAndMauAndWau.distinctMonthlyRegisteredUsers
       )
     );
     wauTextCopy.replaceText(
       "{{wau}}",
       calculateActiveUsersPercent(
-        opportunityGrantedAndMauAndWau.distinctWeeklyActiveUsers,
+        opportunityGrantedAndMauAndWau.distinctWeeklyActiveUsersByWorkflow,
         opportunityGrantedAndMauAndWau.distinctWeeklyRegisteredUsers
       )
     );
@@ -439,54 +466,47 @@ function addWorkflowsRows(
  * @param {Body} body The template document body
  * @param {map} workflowToOpportunityGrantedAndMauAndWau An object that maps the workflow name to the number of opportunities granted, the number of distinct monthly and weekly active users, and the number of distinct monthly and weekly registered users for that workflow
  * @param {map} workflowToSystem An object that maps the workflow name to its system ('SUPERVISION' or 'INCARCERATION')
- * @returns {map} workflowToMauWauNumAndPercent An object that maps the workflow name to its distinctMonthlyRegisteredUsers, distinctMonthlyActiveUsers, distinctWeeklyActiveUsers, workflowPercentMAU, and workflowPercentWAU
+ * @param {map} statewideMauWauBySystem An object that contains distinctMonthlyActiveUsersSupervisionTotal distinctMonthlyRegisteredUsersSupervisionTotal, distinctMonthlyActiveUsersFacilitiesTotal, distinctMonthlyRegisteredUsersFacilitiesTotal, distinctWeeklyActiveUsersSupervisionTotal, distinctWeeklyRegisteredUsersSupervisionTotal, distinctWeeklyActiveUsersFacilitiesTotal, and distinctWeeklyRegisteredUsersFacilitiesTotal
+ * @returns {map} workflowToMauWauNumAndPercent An object that maps the workflow name to its distinctMonthlyRegisteredUsers, distinctMonthlyActiveUsersByWorkflow, distinctWeeklyActiveUsersByWorkflow, workflowPercentMAU, and workflowPercentWAU
  */
 function copyAndPopulateOpportunityGrants(
   body,
-  timePeriod,
   workflowToOpportunityGrantedAndMauAndWau,
-  workflowToSystem
+  workflowToSystem,
+  statewideMauWauBySystem
 ) {
   const workflowToMauWauNumAndPercent = {};
 
   // First, populate the sum of all Opportunities Granted, MAU, and WAU (for all Workflows)
   var totalSupervisionOpportunitiesGranted = 0;
   var totalFacilitiesOpportunitiesGranted = 0;
-  var totalSupervisionMonthlyActiveUsers = 0;
-  var totalSupervisionMonthlyRegisteredUsers = 0;
-  var totalFacilitiesMonthlyActiveUsers = 0;
-  var totalFacilitiesMonthlyRegisteredUsers = 0;
-  var totalSupervisionWeeklyActiveUsers = 0;
-  var totalSupervisionWeeklyRegisteredUsers = 0;
-  var totalFacilitiesWeeklyActiveUsers = 0;
-  var totalFacilitiesWeeklyRegisteredUsers = 0;
   var numSupervisionWorkflows = 0;
   var numFacilitiesWorkflows = 0;
 
   Object.entries(workflowToOpportunityGrantedAndMauAndWau).forEach(
     ([workflow, opportunityGrantedAndMauAndWau]) => {
-      const distinctMonthlyActiveUsers =
-        opportunityGrantedAndMauAndWau.distinctMonthlyActiveUsers;
+      const distinctMonthlyActiveUsersByWorkflow =
+        opportunityGrantedAndMauAndWau.distinctMonthlyActiveUsersByWorkflow;
       const distinctMonthlyRegisteredUsers =
         opportunityGrantedAndMauAndWau.distinctMonthlyRegisteredUsers;
-      const distinctWeeklyActiveUsers =
-        opportunityGrantedAndMauAndWau.distinctWeeklyActiveUsers;
+      const distinctWeeklyActiveUsersByWorkflow =
+        opportunityGrantedAndMauAndWau.distinctWeeklyActiveUsersByWorkflow;
       const distinctWeeklyRegisteredUsers =
         opportunityGrantedAndMauAndWau.distinctWeeklyRegisteredUsers;
 
       const workflowPercentMAU = calculateActiveUsersPercent(
-        distinctMonthlyActiveUsers,
+        distinctMonthlyActiveUsersByWorkflow,
         distinctMonthlyRegisteredUsers
       );
       const workflowPercentWAU = calculateActiveUsersPercent(
-        distinctWeeklyActiveUsers,
+        distinctWeeklyActiveUsersByWorkflow,
         distinctWeeklyRegisteredUsers
       );
 
       workflowToMauWauNumAndPercent[workflow] = {
         distinctMonthlyRegisteredUsers,
-        distinctMonthlyActiveUsers,
-        distinctWeeklyActiveUsers,
+        distinctMonthlyActiveUsersByWorkflow,
+        distinctWeeklyActiveUsersByWorkflow,
         workflowPercentMAU,
         workflowPercentWAU,
       };
@@ -494,19 +514,10 @@ function copyAndPopulateOpportunityGrants(
       if (workflowToSystem[workflow] === "SUPERVISION") {
         totalSupervisionOpportunitiesGranted +=
           opportunityGrantedAndMauAndWau.opportunityGranted;
-        totalSupervisionMonthlyActiveUsers += distinctMonthlyActiveUsers;
-        totalSupervisionMonthlyRegisteredUsers +=
-          distinctMonthlyRegisteredUsers;
-        totalSupervisionWeeklyActiveUsers += distinctWeeklyActiveUsers;
-        totalSupervisionWeeklyRegisteredUsers += distinctWeeklyRegisteredUsers;
         numSupervisionWorkflows += 1;
       } else if (workflowToSystem[workflow] === "INCARCERATION") {
         totalFacilitiesOpportunitiesGranted +=
           opportunityGrantedAndMauAndWau.opportunityGranted;
-        totalFacilitiesMonthlyActiveUsers += distinctMonthlyActiveUsers;
-        totalFacilitiesMonthlyRegisteredUsers += distinctMonthlyRegisteredUsers;
-        totalFacilitiesWeeklyActiveUsers += distinctWeeklyActiveUsers;
-        totalFacilitiesWeeklyRegisteredUsers += distinctWeeklyRegisteredUsers;
         numFacilitiesWorkflows += 1;
       }
     }
@@ -516,21 +527,22 @@ function copyAndPopulateOpportunityGrants(
     totalSupervisionOpportunitiesGranted.toLocaleString();
   totalFacilitiesOpportunitiesGranted =
     totalFacilitiesOpportunitiesGranted.toLocaleString();
+
   const totalSupervisionMAU = calculateActiveUsersPercent(
-    totalSupervisionMonthlyActiveUsers,
-    totalSupervisionMonthlyRegisteredUsers
+    statewideMauWauBySystem.distinctMonthlyActiveUsersSupervisionTotal,
+    statewideMauWauBySystem.distinctMonthlyRegisteredUsersSupervisionTotal
   );
   const totalFacilitiesMAU = calculateActiveUsersPercent(
-    totalFacilitiesMonthlyActiveUsers,
-    totalFacilitiesMonthlyRegisteredUsers
+    statewideMauWauBySystem.distinctMonthlyActiveUsersFacilitiesTotal,
+    statewideMauWauBySystem.distinctMonthlyRegisteredUsersFacilitiesTotal
   );
   const totalSupervisionWAU = calculateActiveUsersPercent(
-    totalSupervisionWeeklyActiveUsers,
-    totalSupervisionWeeklyRegisteredUsers
+    statewideMauWauBySystem.distinctWeeklyActiveUsersSupervisionTotal,
+    statewideMauWauBySystem.distinctWeeklyRegisteredUsersSupervisionTotal
   );
   const totalFacilitiesWAU = calculateActiveUsersPercent(
-    totalFacilitiesWeeklyActiveUsers,
-    totalFacilitiesWeeklyRegisteredUsers
+    statewideMauWauBySystem.distinctWeeklyActiveUsersFacilitiesTotal,
+    statewideMauWauBySystem.distinctWeeklyRegisteredUsersFacilitiesTotal
   );
 
   Logger.log(
@@ -584,16 +596,6 @@ function copyAndPopulateOpportunityGrants(
   body.replaceText("{{mau_pp}}", totalSupervisionMAU);
   body.replaceText("{{wau_pp}}", totalSupervisionWAU);
 
-  addWorkflowsRows(
-    supervisionChild,
-    templateRowIdx,
-    filterWorkflowsBySystem(
-      workflowToOpportunityGrantedAndMauAndWau,
-      workflowToSystem,
-      "SUPERVISION"
-    )
-  );
-
   const facilitiesChild = body.getChild(
     getIndexOfElementToReplace(
       body,
@@ -609,6 +611,16 @@ function copyAndPopulateOpportunityGrants(
   body.replaceText("{{mau_facility}}", totalFacilitiesMAU);
   body.replaceText("{{wau_facility}}", totalFacilitiesWAU);
 
+  addWorkflowsRows(
+    supervisionChild,
+    templateRowIdx,
+    filterWorkflowsBySystem(
+      workflowToOpportunityGrantedAndMauAndWau,
+      workflowToSystem,
+      "SUPERVISION"
+    )
+  );
+  
   addWorkflowsRows(
     facilitiesChild,
     templateRowIdx,
@@ -636,7 +648,7 @@ function copyAndPopulateOpportunityGrants(
  * @param {map} workflowToUsageAndImpactText An object that maps the workflow name to its number of people almost eligible, eligible, marked ineligible, eligible and viewed, and eligible and not viewed
  * @param {string} endDateClean The end date (provided by the user via Google Form) (ex: '2023-03-01')
  * @param {map} workflowToUsageAndImpactChart An object that maps the workflow name to its usageAndImpactColumnChart
- * @param {map} workflowToMauWauNumAndPercent An object that maps the workflow name to its distinctMonthlyRegisteredUsers, distinctMonthlyActiveUsers, distinctWeeklyActiveUsers, workflowPercentMAU, and workflowPercentWAU
+ * @param {map} workflowToMauWauNumAndPercent An object that maps the workflow name to its distinctMonthlyRegisteredUsers, distinctMonthlyActiveUsersByWorkflow, distinctWeeklyActiveUsersByWorkflow, workflowPercentMAU, and workflowPercentWAU
  * @param {map} workflowToMaxMarkedIneligibleLocation An object that maps the workflow name to an object containing maxLocation (the location associated with the max number of people marked ineligible) and maxValue (the max number of people marked ineligible)
  * @param {map} workflowToMauWauByRegionChart An object that maps the workflow name to its mauWauByLocationChart
  * @param {map} workflowToMaxMauWauLocation An object that maps the worfklow name to highestMAULocations and highestWAULocations
@@ -750,7 +762,8 @@ function copyAndPopulateWorkflowSection(
         );
         elementCopy.replaceText(
           "{{num_mau}}",
-          workflowToMauWauNumAndPercent[workflow].distinctMonthlyActiveUsers
+          workflowToMauWauNumAndPercent[workflow]
+            .distinctMonthlyActiveUsersByWorkflow
         );
         elementCopy.replaceText(
           "{{percent_mau}}",
@@ -758,7 +771,8 @@ function copyAndPopulateWorkflowSection(
         );
         elementCopy.replaceText(
           "{{num_wau}}",
-          workflowToMauWauNumAndPercent[workflow].distinctWeeklyActiveUsers
+          workflowToMauWauNumAndPercent[workflow]
+            .distinctWeeklyActiveUsersByWorkflow
         );
         elementCopy.replaceText(
           "{{percent_wau}}",
