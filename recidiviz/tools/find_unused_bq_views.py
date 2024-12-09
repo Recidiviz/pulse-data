@@ -62,6 +62,21 @@ from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import 
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q1 import (
+    US_IX_SLS_Q1_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q2 import (
+    US_IX_SLS_Q2_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q3 import (
+    US_IX_SLS_Q3_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q4 import (
+    US_IX_SLS_Q4_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q5 import (
+    US_IX_SLS_Q5_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_groups import (
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER,
 )
@@ -239,6 +254,21 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "Not currently referenced but has been used for ad-hoc related research questions "
         "in the past and could become useful for census-based looker dashboards in the future"
         "(mayukas 12/21/23)"
+    ),
+    US_IX_SLS_Q1_VIEW_BUILDER.address: (
+        "These views will be referenced in ID CLD workflows shortly! (Samantha Norcia 12/2/24)"
+    ),
+    US_IX_SLS_Q2_VIEW_BUILDER.address: (
+        "These views will be referenced in ID CLD workflows shortly! (Samantha Norcia 12/5/24)"
+    ),
+    US_IX_SLS_Q3_VIEW_BUILDER.address: (
+        "These views will be referenced in ID CLD workflows shortly! (Samantha Norcia 12/2/24)"
+    ),
+    US_IX_SLS_Q4_VIEW_BUILDER.address: (
+        "These views will be referenced in ID CLD workflows shortly! (Samantha Norcia 12/2/24)"
+    ),
+    US_IX_SLS_Q5_VIEW_BUILDER.address: (
+        "These views will be referenced in ID CLD workflows shortly! (Samantha Norcia 12/2/24)"
     ),
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER.address: (
         "Used for ongoing MOSOP work (n-damiani 12/21/23)"
