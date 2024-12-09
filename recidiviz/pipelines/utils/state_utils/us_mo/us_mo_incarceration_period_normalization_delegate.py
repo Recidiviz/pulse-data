@@ -38,6 +38,9 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.incar
     PurposeForIncarcerationInfo,
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.pipelines.utils.incarceration_period_utils import (
+    legacy_standardize_purpose_for_incarceration_values,
+)
 
 
 class UsMoIncarcerationNormalizationDelegate(
@@ -167,6 +170,18 @@ class UsMoIncarcerationNormalizationDelegate(
     ) -> bool:
         """The only periods of temporary custody in US_MO are parole board holds."""
         return False
+
+    def standardize_purpose_for_incarceration_values(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Standardizing PFI using _standardize_purpose_for_incarceration_values
+        for US_MO since this was previously the default normalization behavior
+        and there hasn't been a use case for skipping this inferrence yet"""
+
+        return legacy_standardize_purpose_for_incarceration_values(
+            incarceration_periods
+        )
 
 
 # TODO(#8118): Move this logic to ingest once we're putting the status codes in the
