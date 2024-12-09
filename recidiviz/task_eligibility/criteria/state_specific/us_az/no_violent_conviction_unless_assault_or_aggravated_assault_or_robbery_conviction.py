@@ -29,6 +29,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    _ADDL_INELIGIBLE_VIOLENT_STATUTES,
     no_current_or_prior_convictions,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -83,7 +84,11 @@ _ELIGIBLE_STATUTES = [
 _QUERY_TEMPLATE = no_current_or_prior_convictions(
     statutes_list=_ELIGIBLE_STATUTES,
     exclude_statutes=True,
-    additional_where_clauses="AND sent.is_violent",
+    additional_where_clauses="AND (sent.is_violent OR "
+    + " OR ".join(
+        [f"charge.statute LIKE '%{s}%'" for s in _ADDL_INELIGIBLE_VIOLENT_STATUTES]
+    )
+    + ")",
 )
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(

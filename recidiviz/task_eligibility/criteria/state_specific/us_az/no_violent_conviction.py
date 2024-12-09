@@ -27,6 +27,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    _ADDL_INELIGIBLE_VIOLENT_STATUTES,
     no_current_or_prior_convictions,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -34,13 +35,9 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_AZ_NO_VIOLENT_CONVICTION"
 
-_INELIGIBLE_STATUTES = [
-    "13-1304",  # KIDNAPPING
-    "13-1211",  # FIREARM OFFENSES
-]
-
 _QUERY_TEMPLATE = no_current_or_prior_convictions(
-    statutes_list=_INELIGIBLE_STATUTES,
+    # Some offenses considered violent need to be added into our filter as they are not covered by sent.is_violent
+    statutes_list=_ADDL_INELIGIBLE_VIOLENT_STATUTES,
     additional_where_clauses="OR (sent.is_violent AND span.state_code = 'US_AZ')",
 )
 
