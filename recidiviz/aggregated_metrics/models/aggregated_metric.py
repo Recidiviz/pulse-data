@@ -60,7 +60,7 @@ class MetricTimePeriodJoinType(Enum):
 
 
 @attr.define(frozen=True, kw_only=True)
-class AggregatedMetric:
+class AggregatedMetric(Generic[ObservationTypeT]):
     """Class that stores information about an aggregated metric."""
 
     # The name of the metric as found in GBQ tables (must be lowercase and without spaces)
@@ -102,10 +102,6 @@ class AggregatedMetric:
         """Subclasses should return a lowercase name that can be used in view_ids that
         represents the metric class for this metric.
         """
-
-
-class MetricConditionsMixin(Generic[ObservationTypeT]):
-    """Attributes and functions to derive query snippets for defining a metric"""
 
     @property
     @abc.abstractmethod
@@ -164,15 +160,11 @@ class MetricConditionsMixin(Generic[ObservationTypeT]):
 
 
 @attr.define(frozen=True, kw_only=True, slots=False)
-class SpanMetricConditionsMixin(MetricConditionsMixin[SpanType]):
+class SpanMetricConditionsMixin:
     """Attributes and functions to derive query snippets applied to spans"""
 
     # The SpanSelector specifying the spans to include in this metric
     span_selector: SpanSelector
-
-    @property
-    def observation_selector(self) -> SpanSelector:
-        return self.span_selector
 
     @property
     def span_type(self) -> SpanType:
@@ -180,7 +172,7 @@ class SpanMetricConditionsMixin(MetricConditionsMixin[SpanType]):
 
 
 @attr.define(frozen=True, kw_only=True, slots=False)
-class EventMetricConditionsMixin(MetricConditionsMixin[EventType]):
+class EventMetricConditionsMixin:
     """Attributes and functions to derive query snippets applied to events"""
 
     # The EventSelector specifying the events to include in this metric
@@ -215,6 +207,10 @@ class MiscAggregatedMetric(AggregatedMetric):
     def referenced_observation_attributes(self) -> list[str]:
         raise NotImplementedError("TODO(#29291): No support for MiscAggregatedMetric")
 
+    @property
+    def observation_selector(self) -> ObservationSelector[ObservationTypeT]:
+        raise NotImplementedError("TODO(#29291): No support for MiscAggregatedMetric")
+
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"ARRAY_AGG({self.name} ORDER BY {self.name}) AS {self.name}"
 
@@ -228,7 +224,7 @@ class MiscAggregatedMetric(AggregatedMetric):
 
 
 @attr.define(frozen=True, kw_only=True)
-class PeriodSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin):
+class PeriodSpanAggregatedMetric(AggregatedMetric[SpanType], SpanMetricConditionsMixin):
     """
     Class that stores information about metrics that involve spans and calculate
     aggregations across an entire analysis period.
@@ -241,6 +237,10 @@ class PeriodSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin):
     @classmethod
     def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
         return MetricTimePeriodJoinType.PERIOD
+
+    @property
+    def observation_selector(self) -> SpanSelector:
+        return self.span_selector
 
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
@@ -268,7 +268,9 @@ class PeriodSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin):
 
 
 @attr.define(frozen=True, kw_only=True)
-class AssignmentSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin):
+class AssignmentSpanAggregatedMetric(
+    AggregatedMetric[SpanType], SpanMetricConditionsMixin
+):
     """
     Class that stores information about metrics that involve spans and calculate
     aggregations over some window following assignment, for all assignments during an analysis period.
@@ -284,6 +286,10 @@ class AssignmentSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin
 
     # Length (in days) of the window following assignment date over which to calculate metric
     window_length_days: int = 365
+
+    @property
+    def observation_selector(self) -> SpanSelector:
+        return self.span_selector
 
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
@@ -306,7 +312,9 @@ class AssignmentSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin
 
 
 @attr.define(frozen=True, kw_only=True)
-class PeriodEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMixin):
+class PeriodEventAggregatedMetric(
+    AggregatedMetric[EventType], EventMetricConditionsMixin
+):
     """
     Class that stores information about metrics that involve `events` and calculate
     aggregations across an entire analysis period.
@@ -319,6 +327,10 @@ class PeriodEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMixin):
     @classmethod
     def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
         return MetricTimePeriodJoinType.PERIOD
+
+    @property
+    def observation_selector(self) -> EventSelector:
+        return self.event_selector
 
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
@@ -342,7 +354,9 @@ class PeriodEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMixin):
 
 
 @attr.define(frozen=True, kw_only=True)
-class AssignmentEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMixin):
+class AssignmentEventAggregatedMetric(
+    AggregatedMetric[EventType], EventMetricConditionsMixin
+):
     """
     Class that stores information about metrics that involve `events` and calculate
     aggregations over some window following assignment, for all assignments during an analysis period.
@@ -361,6 +375,10 @@ class AssignmentEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMix
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"SUM({self.name}) AS {self.name}"
+
+    @property
+    def observation_selector(self) -> EventSelector:
+        return self.event_selector
 
     @abc.abstractmethod
     def generate_aggregation_query_fragment(

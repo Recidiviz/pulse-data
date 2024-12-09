@@ -27,12 +27,12 @@ import os
 
 import recidiviz.tools.looker.aggregated_metrics.custom_workflows_metrics_configurations as workflows_metrics
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
+    AggregatedMetric,
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
-    EventMetricConditionsMixin,
+    MiscAggregatedMetric,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
-    SpanMetricConditionsMixin,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     DEDUPED_TASK_COMPLETION_EVENT_VB,
@@ -60,7 +60,7 @@ from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils impor
     generate_person_assignments_with_attributes_view,
 )
 
-WORKFLOWS_IMPACT_LOOKER_METRICS = [
+WORKFLOWS_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     workflows_metrics.AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER,
     *workflows_metrics.AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER_FUNNEL_METRICS,
     workflows_metrics.AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER,
@@ -158,7 +158,7 @@ def main(
             [
                 metric
                 for metric in metrics
-                if hasattr(metric, "unit_of_observation_type")
+                if not isinstance(metric, MiscAggregatedMetric)
             ],
             view_name,
             additional_view_fields=[],
@@ -177,9 +177,7 @@ def main(
         for unit_of_observation_type in set(
             metric.unit_of_observation_type
             for metric in metrics
-            if isinstance(
-                metric, (EventMetricConditionsMixin, SpanMetricConditionsMixin)
-            )
+            if not isinstance(metric, MiscAggregatedMetric)
         ):
             unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
             generate_assignments_view(

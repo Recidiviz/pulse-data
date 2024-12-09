@@ -27,12 +27,12 @@ import os
 
 import recidiviz.tools.looker.aggregated_metrics.custom_insights_metrics_configurations as insights_metrics
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
+    AggregatedMetric,
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
-    EventMetricConditionsMixin,
+    MiscAggregatedMetric,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
-    SpanMetricConditionsMixin,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
@@ -81,7 +81,7 @@ INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES = {
 }
 
 
-INSIGHTS_IMPACT_LOOKER_METRICS = [
+INSIGHTS_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
     insights_metrics.ABSCONSIONS_AND_BENCH_WARRANTS_LOOKER,
     insights_metrics.AVG_DAILY_POPULATION_LOOKER,
     insights_metrics.DISTINCT_PROVISIONED_INSIGHTS_USERS_LOOKER,
@@ -127,7 +127,7 @@ def main(
             [
                 metric
                 for metric in metrics
-                if hasattr(metric, "unit_of_observation_type")
+                if not isinstance(metric, MiscAggregatedMetric)
             ],
             view_name,
             additional_view_fields=[],
@@ -137,9 +137,7 @@ def main(
         for unit_of_observation_type in set(
             metric.unit_of_observation_type
             for metric in metrics
-            if isinstance(
-                metric, (EventMetricConditionsMixin, SpanMetricConditionsMixin)
-            )
+            if not isinstance(metric, MiscAggregatedMetric)
         ):
             unit_of_observation = MetricUnitOfObservation(type=unit_of_observation_type)
             generate_assignments_view(
