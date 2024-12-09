@@ -31,7 +31,9 @@ def get_existing_region_dir_paths() -> List[str]:
 
 
 def get_existing_region_codes() -> Set[str]:
-    """Returns list of region directories existing in ingest/direct/regions."""
+    """Returns a set of region codes that have a corresponding region directory in
+    ingest/direct/regions.
+    """
     return {
         d
         for d in os.listdir(_REGIONS_DIR)
@@ -41,15 +43,20 @@ def get_existing_region_codes() -> Set[str]:
 
 
 def get_existing_direct_ingest_states() -> List[StateCode]:
+    """Returns an alphabetically sorted list of state codes that have a corresponding
+    region directory in ingest/direct/regions.
+    """
     return [
         StateCode(region_code.upper())
-        for region_code in get_existing_region_codes()
+        for region_code in sorted(get_existing_region_codes())
         if StateCode.is_state_code(region_code)
     ]
 
 
 def get_direct_ingest_states_existing_in_env() -> List[StateCode]:
-    """Returns list of states that have existing direct ingest infrastructure in the environment"""
+    """Returns list of states that have existing direct ingest infrastructure in the
+    environment.
+    """
     return [
         state_code
         for state_code in get_existing_direct_ingest_states()
@@ -60,7 +67,7 @@ def get_direct_ingest_states_existing_in_env() -> List[StateCode]:
 
 
 def get_direct_ingest_states_launched_in_env() -> List[StateCode]:
-    """Returns list of states that have direct ingest launched in the environment"""
+    """Returns list of states that have direct ingest launched in the environment."""
     return [
         state_code
         for state_code in get_existing_direct_ingest_states()
