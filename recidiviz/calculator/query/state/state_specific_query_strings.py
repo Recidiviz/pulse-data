@@ -798,6 +798,14 @@ def workflows_state_specific_supervision_level() -> str:
                     THEN session_attributes.correctional_level_raw_text
                     ELSE sl.most_recent_active_supervision_level 
                 END)
+            WHEN sl.state_code = 'US_TN' THEN 
+                (CASE 
+                    -- US_TN has specific supervision levels for those on sex offense caseloads. We map them to MEDIUM in
+                    -- ingest but need to separate them out in tools
+                    WHEN session_attributes.correctional_level_raw_text IN ('6P1','6P2','6P3','6P4')
+                    THEN session_attributes.correctional_level_raw_text
+                    ELSE sl.most_recent_active_supervision_level 
+                END)
             ELSE most_recent_active_supervision_level
         END
     """
