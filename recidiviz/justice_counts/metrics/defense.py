@@ -516,6 +516,7 @@ client_complaints_sustained = MetricDefinition(
     category=MetricCategory.FAIRNESS,
     display_name="Client Complaints Sustained",
     description="The number of formal, written complaints made against criminal defense counsel that were subsequently sustained by the disciplinary board.",
+    unit=MetricUnit.COMPLAINTS_SUSTAINED,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[

@@ -570,6 +570,7 @@ new_offenses_while_on_pretrial_release = MetricDefinition(
     display_name="New Offenses While on Pretrial Release",
     description="The number of new arrests involving a person awaiting criminal trial in the community that are unrelated to their pending disposition.",
     additional_description="New offenses while on pretrial release are counted by the number of incidents that result in a new arrest. If a person has multiple charges under the same arrest, it should be counted as one new offense. If a person has three discrete incidents that result in arrests, that should count as three new offenses in this metric. If a person is arrested for a violation of their pretrial release, that is not considered a new offense in this metric.",
+    unit=MetricUnit.ARRESTS_ON_PRETRIAL_RELEASE,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[

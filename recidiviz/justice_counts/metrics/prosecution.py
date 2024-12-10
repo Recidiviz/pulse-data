@@ -702,6 +702,7 @@ violations = MetricDefinition(
     category=MetricCategory.FAIRNESS,
     display_name="Violations Filed Resulting in Discipline",
     description="The number of violations filed against any attorney with a criminal caseload in the office that resulted in a disciplinary action imposed on the attorney by the local or state disciplinary board during the time period.",
+    unit=MetricUnit.VIOLATIONS,
     measurement_type=MeasurementType.DELTA,
     includes_excludes=[
         IncludesExcludesSet(

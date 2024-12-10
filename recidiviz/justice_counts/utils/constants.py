@@ -63,6 +63,7 @@ class MetricUnit(enum.Enum):
     ADMISSIONS = "Admission Events"
     AMOUNT = "Amount"
     ARRESTS = "Arrest Events"
+    ARRESTS_ON_PRETRIAL_RELEASE = "Arrests on Pretrial Release"
     CALLS = "Calls"
     CASELOAD = "Caseload"
     CASES = "Cases"

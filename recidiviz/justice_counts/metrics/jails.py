@@ -339,6 +339,7 @@ readmissions = MetricDefinition(
     display_name="Readmissions",
     description="The number of admission events to the agency’s jurisdiction of people who were incarcerated in the agency’s jurisdiction within the previous year (365 days).",
     additional_description="For instance, if a person admitted on June 23, 2022, had been incarcerated at any time between June 23, 2021, and June 23, 2022, it would be counted as a readmission. This metric is based on admission events, so if a person is admitted four times in the time period, that would count as one admission and three readmissions. To state it another way, agencies should count the number of times each person has been admitted in the last 365 days and remove anyone with one admission from the count.",
+    unit=MetricUnit.READMISSIONS,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     # TODO(#18071) implement reused includes/excludes
