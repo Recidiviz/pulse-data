@@ -290,6 +290,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 pseudonymized_id="hash2",
                 supervision_district="2",
                 supervision_unit="central",
+                supervision_location_for_list_page="region 2",
+                supervision_location_for_supervisor_page="unit 2",
                 email="supervisor2@recidiviz.org",
                 has_outliers=True,
             ),
@@ -3312,6 +3314,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             pseudonymized_id="hashhash",
             supervision_district="2",
             supervision_unit="central",
+            supervision_location_for_list_page="region 2",
+            supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
         )
@@ -3377,6 +3381,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             pseudonymized_id="hashhash",
             supervision_district="2",
             supervision_unit="central",
+            supervision_location_for_list_page="region 2",
+            supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
         )
@@ -3416,6 +3422,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             pseudonymized_id="hashhash",
             supervision_district="2",
             supervision_unit="central",
+            supervision_location_for_list_page="region 2",
+            supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
         )
@@ -3793,6 +3801,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             pseudonymized_id="hashhash",
             supervision_district="2",
             supervision_unit="central",
+            supervision_location_for_list_page="region 2",
+            supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=False,
         )
@@ -3847,6 +3857,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             pseudonymized_id="hashhash",
             supervision_district="2",
             supervision_unit="central",
+            supervision_location_for_list_page="region 2",
+            supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
         )
@@ -3896,6 +3908,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             pseudonymized_id="hashhash",
             supervision_district="2",
             supervision_unit="central",
+            supervision_location_for_list_page="region 2",
+            supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
         )
@@ -3945,6 +3959,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             pseudonymized_id="hashhash",
             supervision_district="2",
             supervision_unit="central",
+            supervision_location_for_list_page="region 2",
+            supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
         )
@@ -3994,6 +4010,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             pseudonymized_id="officerhash",
             supervision_district="2",
             supervision_unit="central",
+            supervision_location_for_list_page="region 2",
+            supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=False,
         )
@@ -4047,6 +4065,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             pseudonymized_id="hashhash",
             supervision_district="2",
             supervision_unit="central",
+            supervision_location_for_list_page="region 2",
+            supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
         )
@@ -4099,6 +4119,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             pseudonymized_id="hashhash",
             supervision_district="2",
             supervision_unit="central",
+            supervision_location_for_list_page="region 2",
+            supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
         )
@@ -4151,6 +4173,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             pseudonymized_id="hashhash",
             supervision_district="2",
             supervision_unit="central",
+            supervision_location_for_list_page="region 2",
+            supervision_location_for_supervisor_page="unit 2",
             email="supervisor2@recidiviz.org",
             has_outliers=True,
         )
