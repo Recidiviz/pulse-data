@@ -280,8 +280,10 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             f"{cls._event_applies_to_period_end_date_exclusive_clause()} AS {cls.EVENT_APPLIES_TO_PERIOD_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME}"
         )
 
-        # TODO(#29291): Add other useful calculated date fields as we need them for
-        #  other types of queries.
+        # TODO(#35895): Add other useful calculated date fields if needed for PeriodSpanAggregatedMetric
+        # TODO(#35897): Add other useful calculated date fields if needed for AssignmentEventAggregatedMetric
+        # TODO(#35898): Add other useful calculated date fields if needed for AssignmentSpanAggregatedMetric
+
         return columns
 
     @classmethod
@@ -335,7 +337,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
 
         if metric_time_period_join_type is MetricTimePeriodJoinType.ASSIGNMENT:
             raise NotImplementedError(
-                f"TODO(#29291): Build assignment periods join logic for Assignment* "
+                f"TODO(#35897), TODO(#35898): Build assignment periods join logic for Assignment* "
                 f"type metrics ({metric_time_period_join_type})"
             )
 

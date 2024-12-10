@@ -387,9 +387,18 @@ class ViewDagInvariantTests(unittest.TestCase):
             *{
                 b.address
                 for b in [
+                    # TODO(#35895), TODO(#35897), TODO(#35898), TODO(#35913): We should
+                    #  be able to delete this entirely once all deployed views that use
+                    #  the standard collector have been migrated over.
                     *collect_standard_legacy_aggregated_metric_views(),
+                    # TODO(#35911): We should be able to delete this entirely once we
+                    #  migrate impact reports metrics to the new format.
                     *get_impact_reports_aggregated_metrics_view_builders(),
+                    # TODO(#35895): We should be able to delete this entirely once we
+                    #  support PeriodSpanAggregatedMetric
                     *collect_insights_legacy_aggregated_metrics_view_builders(),
+                    # TODO(#35910): We should be able to delete this entirely once we migrate vitals report metrics to
+                    #  the new format.
                     *VITALS_AGGREGATED_METRIC_VIEW_BUILDERS,
                 ]
                 if b.address

@@ -50,8 +50,8 @@ def get_aggregated_metrics_view_builders() -> Sequence[BigQueryViewBuilder]:
     return [
         METRIC_TIME_PERIODS_VIEW_BUILDER,
         SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
-        # TODO(#29291): Remove these builders entirely once metrics are fully covered by the
-        #  new optimized metrics.
+        # TODO(#35895), TODO(#35897), TODO(#35898), TODO(#35913): Remove these builders
+        #  entirely once metrics are fully covered by the new optimized metrics.
         *collect_standard_legacy_aggregated_metric_views(),
         *collect_assignment_sessions_view_builders(),
         *collect_assignments_by_time_period_builders_for_collections(

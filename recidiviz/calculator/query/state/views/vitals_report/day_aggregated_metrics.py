@@ -51,7 +51,7 @@ def get_view_builders() -> list[SimpleBigQueryViewBuilder]:
         MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
         MetricUnitOfAnalysisType.STATE_CODE,
     ]:
-        # TODO(#29291): Migrate to use an optimized custom metrics template builder
+        # TODO(#35910): Migrate to use an optimized custom metrics template builder
         #  once it exists.
         query_template = get_legacy_custom_aggregated_metrics_query_template(
             metrics=[

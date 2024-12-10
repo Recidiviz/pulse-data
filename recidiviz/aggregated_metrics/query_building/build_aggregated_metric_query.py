@@ -165,8 +165,10 @@ def _metric_output_column_clause(metric: AggregatedMetric) -> str:
     if isinstance(metric, EventValueMetric):
         return metric.name
 
-    # TODO(#29291): Add support for other metric types as we support other metric class
-    #  types.
+    # TODO(#35895): Add support for PeriodSpanAggregatedMetric metric types.
+    # TODO(#35897): Add support for AssignmentEventAggregatedMetric metric types.
+    # TODO(#35898): Add support for AssignmentSpanAggregatedMetric metric types.
+
     raise ValueError(f"Unexpected metric type [{type(metric)}]")
 
 

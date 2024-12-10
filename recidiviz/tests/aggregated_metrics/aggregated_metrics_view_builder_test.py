@@ -105,9 +105,9 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
 """
         self.assertEqual(expected_docstring, docstring)
 
-    # TODO(#29291): Add tests for PeriodSpanAggregatedMetric
-    # TODO(#29291): Add tests for AssignmentEventAggregatedMetric
-    # TODO(#29291): Add tests for AssignmentSpanAggregatedMetric
+    # TODO(#35895): Add tests for PeriodSpanAggregatedMetric
+    # TODO(#35897): Add tests for AssignmentEventAggregatedMetric
+    # TODO(#35898): Add tests for AssignmentSpanAggregatedMetric
 
 
 class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):

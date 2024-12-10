@@ -59,7 +59,7 @@ def get_custom_aggregated_metrics(
     project_id: str = "recidiviz-staging",
 ) -> pd.DataFrame:
     """Returns a dataframe consisting of all metrics for specified unit of analysis, population, and time periods"""
-    # TODO(#29291): Migrate to use an optimized custom metrics template builder
+    # TODO(#35909): Migrate to use an optimized custom metrics template builder
     #  once it exists.
     query_template = get_legacy_custom_aggregated_metrics_query_template(
         metrics,

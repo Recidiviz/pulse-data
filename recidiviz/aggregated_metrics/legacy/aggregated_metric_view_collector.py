@@ -65,7 +65,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
-# TODO(#29291): Delete this once all callers use a collector that builds optimized
+# TODO(#35914): Delete this once all callers use a collector that builds optimized
 #  queries instead.
 def collect_legacy_aggregated_metrics_view_builders(
     *,
@@ -80,9 +80,6 @@ def collect_legacy_aggregated_metrics_view_builders(
     """
     view_builders = []
 
-    # TODO(#29291): Filter all_metrics list down to only metrics we use downstream in
-    #  products / Looker, then make it easier for DAs, etc to query configured metrics
-    #  in an ad-hoc way from notebooks, etc.
     for population_type, all_metrics in metrics_by_population_dict.items():
         if not all_metrics:
             continue

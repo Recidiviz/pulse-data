@@ -46,7 +46,7 @@ from recidiviz.observations.metric_unit_of_observation_type import (
 )
 
 
-# TODO(#29291): This function should become unused once we've migrated over to optimized
+# TODO(#35914): This function should become unused once we've migrated over to optimized
 #  aggregated metrics queries.
 def get_assignment_event_time_specific_cte(
     unit_of_analysis: MetricUnitOfAnalysis,
@@ -156,8 +156,8 @@ def get_assignment_event_time_specific_cte(
     )
 
 
-# TODO(#29291): This function should become unused once we've migrated over to optimized
-#  aggregated metrics queries.
+# TODO(#35897): This function should become unused once we've migrated over to optimized
+#  aggregated metrics queries for AssignmentEventAggregatedMetrics.
 def generate_assignment_event_aggregated_metrics_view_builder(
     unit_of_analysis: MetricUnitOfAnalysis,
     population_type: MetricPopulationType,

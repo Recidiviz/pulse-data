@@ -69,7 +69,7 @@ class ObservationSelector(Generic[ObservationTypeT]):
     def generate_observation_conditions_query_fragment(
         self,
         filter_by_observation_type: bool,
-        # TODO(#29291): Shouldn't need this value (always assume it is
+        # TODO(#35914): Shouldn't need this value (always assume it is
         #  False) once we are only reading from single observation tables.
         read_attributes_from_json: bool,
         strip_newlines: bool,
@@ -88,7 +88,7 @@ class ObservationSelector(Generic[ObservationTypeT]):
         """
         condition_strings = []
 
-        # TODO(#29291): Shouldn't need to filter by observation_type once we're always
+        # TODO(#35914): Shouldn't need to filter by observation_type once we're always
         #  querying from the type-specific view.
         if filter_by_observation_type:
             name_column = observation_type_name_column_for_observation_type(

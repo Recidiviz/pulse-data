@@ -59,7 +59,7 @@ METRIC_CLASSES: list[AggregatedMetricClassType] = [
     PeriodSpanAggregatedMetric,
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
-    # TODO(#29291): Figure out what to do with MiscAggregatedMetric
+    # TODO(#35913): Figure out what to do with MiscAggregatedMetric
 ]
 
 
@@ -133,16 +133,16 @@ def _build_time_periods_unioned_view_builder(
     )
 
 
-# TODO(#29291): Remove this function once aggregated metrics ship for all metric classes
+# TODO(#35914): Remove this function once aggregated metrics ship for all metric classes
 def is_metric_class_supported_by_optimized_format(
     metric_class: AggregatedMetricClassType,
 ) -> bool:
     if metric_class in {
-        # TODO(#29291): Add support for PeriodSpanAggregatedMetric
+        # TODO(#35895): Add support for PeriodSpanAggregatedMetric
         PeriodSpanAggregatedMetric,
-        # TODO(#29291): Add support for AssignmentEventAggregatedMetric
+        # TODO(#35897): Add support for AssignmentEventAggregatedMetric
         AssignmentEventAggregatedMetric,
-        # TODO(#29291): Add support for AssignmentSpanAggregatedMetric
+        # TODO(#35898): Add support for AssignmentSpanAggregatedMetric
         AssignmentSpanAggregatedMetric,
     }:
         return False

@@ -205,11 +205,11 @@ class MiscAggregatedMetric(AggregatedMetric):
     unit_of_analysis_types: List[MetricUnitOfAnalysisType]
 
     def referenced_observation_attributes(self) -> list[str]:
-        raise NotImplementedError("TODO(#29291): No support for MiscAggregatedMetric")
+        raise NotImplementedError("TODO(#35913): No support for MiscAggregatedMetric")
 
     @property
     def observation_selector(self) -> ObservationSelector[ObservationTypeT]:
-        raise NotImplementedError("TODO(#29291): No support for MiscAggregatedMetric")
+        raise NotImplementedError("TODO(#35913): No support for MiscAggregatedMetric")
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"ARRAY_AGG({self.name} ORDER BY {self.name}) AS {self.name}"
@@ -220,7 +220,7 @@ class MiscAggregatedMetric(AggregatedMetric):
 
     @classmethod
     def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
-        raise NotImplementedError("TODO(#29291): No support for MiscAggregatedMetric")
+        raise NotImplementedError("TODO(#35913): No support for MiscAggregatedMetric")
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -246,13 +246,13 @@ class PeriodSpanAggregatedMetric(AggregatedMetric[SpanType], SpanMetricCondition
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
-        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        # TODO(#35914): Remove this variable once we've fully migrated to optimized
         #  aggregated metrics queries.
         observations_cte_name: str,
         span_start_date_col: str,
@@ -295,10 +295,10 @@ class AssignmentSpanAggregatedMetric(
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
         span_start_date_col: str,
@@ -336,13 +336,13 @@ class PeriodEventAggregatedMetric(
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         observations_cte_name: str,
         event_date_col: str,
@@ -384,13 +384,13 @@ class AssignmentEventAggregatedMetric(
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
-        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        # TODO(#35914): Remove this variable once we've fully migrated to optimized
         #  aggregated metrics queries.
         observations_cte_name: str,
         event_date_col: str,
@@ -414,13 +414,13 @@ class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
-        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        # TODO(#35914): Remove this variable once we've fully migrated to optimized
         #  aggregated metrics queries.
         observations_cte_name: str,
         span_start_date_col: str,
@@ -470,13 +470,13 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
-        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        # TODO(#35914): Remove this variable once we've fully migrated to optimized
         #  aggregated metrics queries.
         observations_cte_name: str,
         span_start_date_col: str,
@@ -540,13 +540,13 @@ class DailyAvgTimeSinceSpanStartMetric(PeriodSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
-        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        # TODO(#35914): Remove this variable once we've fully migrated to optimized
         #  aggregated metrics queries.
         observations_cte_name: str,
         span_start_date_col: str,
@@ -615,13 +615,13 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
-        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        # TODO(#35914): Remove this variable once we've fully migrated to optimized
         #  aggregated metrics queries.
         observations_cte_name: str,
         span_start_date_col: str,
@@ -672,13 +672,13 @@ class SpanDistinctUnitCountMetric(PeriodSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
-        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        # TODO(#35914): Remove this variable once we've fully migrated to optimized
         #  aggregated metrics queries.
         observations_cte_name: str,
         span_start_date_col: str,
@@ -716,10 +716,10 @@ class AssignmentSpanDaysMetric(AssignmentSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
         span_start_date_col: str,
@@ -763,10 +763,10 @@ class AssignmentSpanMaxDaysMetric(AssignmentSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
         span_start_date_col: str,
@@ -819,10 +819,10 @@ class AssignmentSpanValueAtStartMetric(AssignmentSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
         span_start_date_col: str,
@@ -864,10 +864,10 @@ class AssignmentCountMetric(AssignmentSpanAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
         span_start_date_col: str,
@@ -903,13 +903,13 @@ class EventCountMetric(PeriodEventAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
-        # TODO(#29291): Remove this variable once we've fully migrated to optimized
+        # TODO(#35914): Remove this variable once we've fully migrated to optimized
         #  aggregated metrics queries.
         observations_cte_name: str,
         event_date_col: str,
@@ -973,10 +973,10 @@ class EventValueMetric(PeriodEventAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
         observations_cte_name: str,
@@ -1015,10 +1015,10 @@ class EventDistinctUnitCountMetric(PeriodEventAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
         observations_cte_name: str,
@@ -1053,10 +1053,10 @@ class AssignmentDaysToFirstEventMetric(AssignmentEventAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
         observations_cte_name: str,
@@ -1096,10 +1096,10 @@ class AssignmentEventCountMetric(AssignmentEventAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
         observations_cte_name: str,
@@ -1137,10 +1137,10 @@ class AssignmentEventBinaryMetric(AssignmentEventAggregatedMetric):
     def generate_aggregation_query_fragment(
         self,
         *,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         filter_observations_by_type: bool,
-        # TODO(#29291): Remove this flag once we've fully migrated to optimized
+        # TODO(#35914): Remove this flag once we've fully migrated to optimized
         #  aggregated metrics queries.
         read_observation_attributes_from_json: bool,
         observations_cte_name: str,

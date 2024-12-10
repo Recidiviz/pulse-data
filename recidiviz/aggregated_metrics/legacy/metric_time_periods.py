@@ -17,7 +17,7 @@
 """End-date exclusive time ranges at month, quarter, and year intervals, starting on the
 provided date.
 
-TODO(#29291): Deprecate this view entirely, instead using optimized aggregated metrics
+TODO(#35914): Deprecate this view entirely, instead using optimized aggregated metrics
  queries that are built off of MetricTimePeriodConfig.
 """
 

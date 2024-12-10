@@ -123,7 +123,7 @@ def liquid_wrap_json_field(query_fragment: str, field_name: str, view_name: str)
     return f"""{{% if {view_name}.{field_name}._in_query or {view_name}.{field_name}._is_filtered %}}{query_fragment}{{% endif %}}"""
 
 
-# TODO(#29291): Adapt this LookML generation helper to use optimized aggregated metrics
+# TODO(#35917): Adapt this LookML generation helper to use optimized aggregated metrics
 #  queries.
 def generate_period_span_metric_view(
     metrics: List[PeriodSpanAggregatedMetric],
@@ -299,7 +299,7 @@ def generate_period_span_metric_view(
     )
 
 
-# TODO(#29291): Adapt this LookML generation helper to use optimized aggregated metrics
+# TODO(#35917): Adapt this LookML generation helper to use optimized aggregated metrics
 #  queries.
 def generate_period_event_metric_view(
     metrics: List[PeriodEventAggregatedMetric],
@@ -419,7 +419,7 @@ def generate_period_event_metric_view(
     )
 
 
-# TODO(#29291): Adapt this LookML generation helper to use optimized aggregated metrics
+# TODO(#35917): Adapt this LookML generation helper to use optimized aggregated metrics
 #  queries.
 def generate_assignment_span_metric_view(
     metrics: List[AssignmentSpanAggregatedMetric],
@@ -547,7 +547,7 @@ def generate_assignment_span_metric_view(
     )
 
 
-# TODO(#29291): Adapt this LookML generation helper to use optimized aggregated metrics
+# TODO(#35917): Adapt this LookML generation helper to use optimized aggregated metrics
 #  queries.
 def generate_assignment_event_metric_view(
     metrics: List[AssignmentEventAggregatedMetric],

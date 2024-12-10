@@ -70,7 +70,7 @@ def attributes_column_name_for_observation_type(
     )
 
 
-# TODO(#29291): We should be able to delete this clause (it will become
+# TODO(#35914): We should be able to delete this clause (it will become
 #  trivial) once we are only reading from single observation tables.
 def observation_attribute_value_clause(
     *,

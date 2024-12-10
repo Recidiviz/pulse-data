@@ -155,8 +155,13 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
 
-# Metrics should be added only if necessary for products or analyses, since additions will have
-# a meaningful impact on view update performance.
+# TODO(#29291): Filter this metrics list down to only metrics we use downstream in
+#  products / Looker, then make it easier for DAs, etc to query configured metrics
+#  in an ad-hoc way from notebooks, etc.
+
+
+# Metrics should be added only if necessary for products or analyses, since additions
+# will have a meaningful impact on view update performance.
 METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] = {
     MetricPopulationType.INCARCERATION: [
         # Average daily population

@@ -187,7 +187,7 @@ def get_impact_reports_aggregated_metrics_view_builders() -> (
             # daily would be:
             #   August report: 2024-08-31 - 2024-09-01
             #   September report: 2024-09-30 - 2024-10-01
-            # TODO(#29291): Migrate to use an optimized custom metrics template builder
+            # TODO(#35911): Migrate to use an optimized custom metrics template builder
             #  once it exists.
             query_template = get_legacy_custom_aggregated_metrics_query_template(
                 metrics=metrics,
@@ -252,7 +252,7 @@ def construct_weekly_rolling_agg_metric_view_builder(
         # (e.g. 2024-09-30 - 2024-10-07)
         max_end_date = min_end_date + relativedelta(months=1) - relativedelta(days=1)
 
-        # TODO(#29291): Migrate to use an optimized custom metrics template builder once
+        # TODO(#35911): Migrate to use an optimized custom metrics template builder once
         #  it exists.
         query_template = get_legacy_custom_aggregated_metrics_query_template(
             metrics=metrics,

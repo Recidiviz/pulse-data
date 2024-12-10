@@ -97,15 +97,15 @@ def _aggregation_clause_for_metric(metric: AggregatedMetric) -> str:
 
     if isinstance(metric, PeriodSpanAggregatedMetric):
         raise NotImplementedError(
-            "TODO(#29291): Implement aggregation clause logic for PeriodSpanAggregatedMetric"
+            "TODO(#35895): Implement aggregation clause logic for PeriodSpanAggregatedMetric"
         )
     if isinstance(metric, AssignmentEventAggregatedMetric):
         raise NotImplementedError(
-            "TODO(#29291): Implement aggregation clause for AssignmentEventAggregatedMetric"
+            "TODO(#35897): Implement aggregation clause for AssignmentEventAggregatedMetric"
         )
     if isinstance(metric, AssignmentSpanAggregatedMetric):
         raise NotImplementedError(
-            "TODO(#29291): Implement aggregation clause for AssignmentSpanAggregatedMetric"
+            "TODO(#35898): Implement aggregation clause for AssignmentSpanAggregatedMetric"
         )
 
     raise ValueError(f"Unexpected metric class type: [{type(metric)}]")
@@ -144,15 +144,15 @@ def _observation_to_assignment_periods_join_logic(
 
     if issubclass(metric_class, PeriodSpanAggregatedMetric):
         raise NotImplementedError(
-            "TODO(#29291): Implement JOIN logic for PeriodSpanAggregatedMetric"
+            "TODO(#35895): Implement JOIN logic for PeriodSpanAggregatedMetric"
         )
     if issubclass(metric_class, AssignmentEventAggregatedMetric):
         raise NotImplementedError(
-            "TODO(#29291): Implement JOIN logic for AssignmentEventAggregatedMetric"
+            "TODO(#35897): Implement JOIN logic for AssignmentEventAggregatedMetric"
         )
     if issubclass(metric_class, AssignmentSpanAggregatedMetric):
         raise NotImplementedError(
-            "TODO(#29291): Implement JOIN logic for AssignmentSpanAggregatedMetric"
+            "TODO(#35898): Implement JOIN logic for AssignmentSpanAggregatedMetric"
         )
 
     raise ValueError(f"Unexpected metric class type: [{metric_class}]")

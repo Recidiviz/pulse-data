@@ -154,7 +154,7 @@ def collect_insights_legacy_aggregated_metrics_view_builders() -> list[
 
 
 INSIGHTS_AGGREGATED_METRICS_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = [
-    # TODO(#29291): Remove these builders entirely once metrics are fully covered by the
+    # TODO(#35895): Remove these builders entirely once metrics are fully covered by the
     #  new optimized metrics.
     *collect_insights_legacy_aggregated_metrics_view_builders(),
     *collect_aggregated_metric_view_builders_for_collection(

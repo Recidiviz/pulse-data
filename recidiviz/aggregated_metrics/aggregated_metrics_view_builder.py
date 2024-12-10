@@ -118,15 +118,15 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
 """
     elif issubclass(metric_class, PeriodSpanAggregatedMetric):
         raise NotImplementedError(
-            "TODO(#29291): Implement description for PeriodSpanAggregatedMetric"
+            "TODO(#35895): Implement description for PeriodSpanAggregatedMetric"
         )
     elif issubclass(metric_class, AssignmentEventAggregatedMetric):
         raise NotImplementedError(
-            "TODO(#29291): Implement description for AssignmentEventAggregatedMetric"
+            "TODO(#35897): Implement description for AssignmentEventAggregatedMetric"
         )
     elif issubclass(metric_class, AssignmentSpanAggregatedMetric):
         raise NotImplementedError(
-            "TODO(#29291): Implement description for AssignmentSpanAggregatedMetric"
+            "TODO(#35898): Implement description for AssignmentSpanAggregatedMetric"
         )
     else:
         raise ValueError(f"Unexpected metric class type: [{metric_class}]")
