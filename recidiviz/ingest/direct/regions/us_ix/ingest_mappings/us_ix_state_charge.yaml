@@ -17,7 +17,9 @@ input_columns:
   - OffenseDate
   - SentenceId
   - ChargeOutcomeTypeDesc
-unused_columns: []
+unused_columns:
+  # TODO(#17184): Consider include this for hydrating ChargeV2Status
+  - ChargeOutcomeTypeDesc
 variables:
   - violent_bool:
       $equal:
@@ -57,39 +59,8 @@ output:
                     given_names: FirstName
                     middle_name: MiddleName
                     surname: LastName
-                status:
-                  $conditional:
-                    - $if:
-                        $not_null: ChargeOutcomeTypeDesc
-                      $then:
-                        $enum_mapping:
-                          $raw_text: ChargeOutcomeTypeDesc
-                          $mappings:
-                            StateChargeV2Status.CONVICTED:
-                              - Convicted
-                            StateChargeV2Status.PENDING:
-                              - Court Retains Jurisdiction
-                            StateChargeV2Status.ACQUITTED:
-                              - Discharged
-                            StateChargeV2Status.DROPPED:
-                              - Dismissed
-                              - Expired
-                              - Vacated Conviction
-                              - Relinquished
-                              - Revoked
-                              - Suspended Sent
-                              - Vacated Sentence
-                            StateChargeV2Status.INTERNAL_UNKNOWN:
-                              - Amended
-                              - Unsupervised
-                              - Interstate Probation
-                              - Reduced to a Misdemeanor
-                              - WHJ
-                              - Interstate Parole
-                              - Correctional Compact
-                              - Satisfied
-                              - Sealed
-                            StateChargeV2Status.ADJUDICATED:
-                              - Released to Probation
-                              - Commuted Sentence
-                    - $else: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
+                # Based on current ID mapping
+                # #TODO(#17184): We would like more granularity, but the previous hydration
+                # attempt resulted in individuals with only DROPPED or ACQUITTED charges
+                # still having incarceration periods.
+                status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)

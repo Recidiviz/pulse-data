@@ -20,6 +20,7 @@ from collections import defaultdict
 from typing import Dict, Iterable, List, Optional, Sequence, Type
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
+from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
@@ -276,8 +277,14 @@ def _sentencing_entities_checks(
         ):
             yield f"Found sentence {sentence.limited_pii_repr()} with no imposed_date."
 
-        if not any(sentence.charges):
-            yield f"Found sentence {sentence.limited_pii_repr()} with no charges."
+        if not any(
+            charge.status
+            # States that we assume provide convicted charges can be hydrated with
+            # PRESENT WITHOUT INFO, our de-facto default.
+            in (StateChargeV2Status.CONVICTED, StateChargeV2Status.PRESENT_WITHOUT_INFO)
+            for charge in sentence.charges
+        ):
+            yield f"Found sentence {sentence.limited_pii_repr()} with no CONVICTED charges."
 
         # If this sentence has consecutive sentences before it, check
         # that they exist for this person.

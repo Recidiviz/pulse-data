@@ -749,7 +749,30 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         errors = validate_root_entity(self.state_person)
         self.assertEqual(len(errors), 1)
         self.assertEqual(
-            "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no charges.",
+            "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no CONVICTED charges.",
+            errors[0],
+        )
+        sentence.charges = [
+            state_entities.StateChargeV2(
+                external_id="CHARGE",
+                state_code=self.state_code,
+                status=StateChargeV2Status.DROPPED,
+            ),
+            state_entities.StateChargeV2(
+                external_id="CHARGE",
+                state_code=self.state_code,
+                status=StateChargeV2Status.ACQUITTED,
+            ),
+            state_entities.StateChargeV2(
+                external_id="CHARGE",
+                state_code=self.state_code,
+                status=StateChargeV2Status.PENDING,
+            ),
+        ]
+        errors = validate_root_entity(self.state_person)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(
+            "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no CONVICTED charges.",
             errors[0],
         )
 
@@ -1215,6 +1238,24 @@ class TestIncarcerationPeriodRootEntityChecks(unittest.TestCase):
                     id_type="US_XX_TEST_PERSON",
                 ),
             ],
+            sentences=[
+                state_entities.StateSentence(
+                    state_code=self.state_code,
+                    external_id="SENT-EXTERNAL-1",
+                    sentence_type=StateSentenceType.STATE_PRISON,
+                    sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
+                    imposed_date=date(2022, 1, 1),
+                    parole_possible=None,
+                    charges=[
+                        state_entities.StateChargeV2(
+                            external_id="CHARGE",
+                            state_code=self.state_code,
+                            status=StateChargeV2Status.CONVICTED,
+                        )
+                    ],
+                    parent_sentence_external_id_array=None,
+                )
+            ],
         )
 
     def test_valid_incarceration_period(self) -> None:
@@ -1267,6 +1308,24 @@ class TestSupervisionPeriodRootEntityChecks(unittest.TestCase):
                     state_code="US_XX",
                     id_type="US_XX_TEST_PERSON",
                 ),
+            ],
+            sentences=[
+                state_entities.StateSentence(
+                    state_code=self.state_code,
+                    external_id="SENT-EXTERNAL-1",
+                    sentence_type=StateSentenceType.STATE_PRISON,
+                    sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
+                    imposed_date=date(2022, 1, 1),
+                    parole_possible=None,
+                    charges=[
+                        state_entities.StateChargeV2(
+                            external_id="CHARGE",
+                            state_code=self.state_code,
+                            status=StateChargeV2Status.CONVICTED,
+                        )
+                    ],
+                    parent_sentence_external_id_array=None,
+                )
             ],
         )
 

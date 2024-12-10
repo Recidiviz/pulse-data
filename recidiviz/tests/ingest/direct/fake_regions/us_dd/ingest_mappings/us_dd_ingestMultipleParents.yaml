@@ -23,7 +23,7 @@ output:
           charges:
             - StateChargeV2:
                 external_id: CHARGE_ID
-                status: $literal_enum(StateChargeV2Status.INTERNAL_UNKNOWN)
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
     supervision_sentences:
       - $conditional:
           - $if:
