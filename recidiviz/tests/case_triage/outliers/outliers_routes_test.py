@@ -3683,6 +3683,30 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
+    def test_patch_action_strategy_without_officer_pseudonymized_id(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.maxDiff = None
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="101", pseudonymized_id="hashhash"
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        response = self.test_client.patch(
+            "/outliers/US_PA/action_strategies/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "userPseudonymizedId": "hashhash",
+                "actionStrategy": ActionStrategyType.ACTION_STRATEGY_60_PERC_OUTLIERS.value,
+            },
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
     def test_get_events_by_client_no_date(
         self,
         mock_enabled_states: MagicMock,

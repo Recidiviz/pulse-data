@@ -994,10 +994,13 @@ def create_outliers_api_blueprint() -> Blueprint:
                 f"Invalid request body. Expected keys: {[snake_to_camel(k) for k in sorted(expected_keys)]}. Found keys: {[snake_to_camel(k) for k in request_json]}",
                 HTTPStatus.BAD_REQUEST,
             )
+
         event = ActionStrategySurfacedEvent(
             state_code=state_code.value,
             user_pseudonymized_id=request_json["user_pseudonymized_id"],
-            officer_pseudonymized_id=request_json["officer_pseudonymized_id"],
+            officer_pseudonymized_id=request_json["officer_pseudonymized_id"]
+            if "officer_pseudonymized_id" in request_json
+            else None,
             action_strategy=request_json["action_strategy"],
             timestamp=datetime.now(),
         )
