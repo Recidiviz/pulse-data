@@ -357,6 +357,7 @@ function copyAndPopulateTemplateDoc(
   body.editAsText().deleteText(startOffset, endOffset);
 
   body.replaceText("{{today_date}}", today);
+  body.replaceText("{{time_period}}", timePeriod.toLowerCase());
 
   const endDateClean = cleanDate(endDateString);
   const timeRange = `${startDate}-${endDateClean}`;
@@ -620,7 +621,7 @@ function copyAndPopulateOpportunityGrants(
       "SUPERVISION"
     )
   );
-  
+
   addWorkflowsRows(
     facilitiesChild,
     templateRowIdx,
