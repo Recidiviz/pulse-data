@@ -328,32 +328,35 @@ class DirectIngestViewQueryBuilder:
     def build_and_print(
         self,
         raw_data_source_instance: DirectIngestInstance = DirectIngestInstance.PRIMARY,
+        date_bounded: bool = False,
     ) -> None:
-        """For local testing, prints out the date-bounded and latest versions of the
-        view's query.
-        """
-        print(
-            "****************************** DATE BOUNDED ******************************"
-        )
-        print(
-            self.build_query(
-                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_data_source_instance=raw_data_source_instance,
-                    raw_data_datetime_upper_bound=datetime.datetime.now(tz=pytz.UTC),
+        """For local testing, prints out either the date-bounded or the latest version of the view's query."""
+        if date_bounded:
+            print(
+                "/****************************** DATE BOUNDED ******************************/"
+            )
+            print(
+                self.build_query(
+                    config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                        raw_data_source_instance=raw_data_source_instance,
+                        raw_data_datetime_upper_bound=datetime.datetime.now(
+                            tz=pytz.UTC
+                        ),
+                    )
                 )
             )
-        )
-        print(
-            "********************************* LATEST *********************************"
-        )
-        print(
-            self.build_query(
-                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_data_source_instance=raw_data_source_instance,
-                    raw_data_datetime_upper_bound=None,
+        else:
+            print(
+                "/********************************* LATEST *********************************/"
+            )
+            print(
+                self.build_query(
+                    config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                        raw_data_source_instance=raw_data_source_instance,
+                        raw_data_datetime_upper_bound=None,
+                    )
                 )
             )
-        )
 
     @staticmethod
     def _table_subbquery_name(
