@@ -42,6 +42,10 @@ STAGING_PRIMARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_MA,
     StateCode.US_CO,
     StateCode.US_ID,
+    StateCode.US_MO,
+    StateCode.US_ND,
+    StateCode.US_PA,
+    StateCode.US_AR,
     *PRODUCTION_SECONDARY_ENABLED_STATES,
 }
 # all states enabled in staging primary must be enabled in staging secondary, plus the
@@ -50,13 +54,9 @@ STAGING_SECONDARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_AZ,
     StateCode.US_ME,
     StateCode.US_MI,
-    StateCode.US_MO,
-    StateCode.US_ND,
     StateCode.US_OR,
-    StateCode.US_PA,
     StateCode.US_TN,
     StateCode.US_TX,
-    StateCode.US_AR,
     *STAGING_PRIMARY_ENABLED_STATES,
 }
 
