@@ -25,6 +25,7 @@ from recidiviz.observations.event_type import EventType
 from recidiviz.observations.observation_big_query_view_collector import (
     ObservationBigQueryViewCollector,
 )
+from recidiviz.observations.observation_type_utils import ObservationType
 from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
 )
@@ -74,9 +75,9 @@ class ObservationBigQueryViewCollectorTest(unittest.TestCase):
 
     def test_all_observation_types_covered(self) -> None:
         builders = ObservationBigQueryViewCollector().collect_view_builders()
-        seen_types: set[EventType | SpanType] = set()
+        seen_types: set[ObservationType] = set()
         for builder in builders:
-            observation_type: EventType | SpanType
+            observation_type: ObservationType
             if isinstance(builder, EventObservationBigQueryViewBuilder):
                 observation_type = builder.event_type
             elif isinstance(builder, SpanObservationBigQueryViewBuilder):

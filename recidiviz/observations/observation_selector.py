@@ -23,19 +23,18 @@ from typing import Generic, Sequence
 from more_itertools import one
 
 from recidiviz.calculator.query.bq_utils import list_to_query_string
-from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
 from recidiviz.observations.observation_type_utils import (
+    ObservationType,
     ObservationTypeT,
     date_column_names_for_observation_type,
     materialized_view_address_for_observation,
     observation_attribute_value_clause,
     observation_type_name_column_for_observation_type,
 )
-from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.string_formatting import fix_indent
 
 
@@ -135,7 +134,7 @@ class ObservationSelector(Generic[ObservationTypeT]):
     def build_selected_observations_query_template(
         cls,
         *,
-        observation_type: EventType | SpanType,
+        observation_type: ObservationType,
         observation_selectors: Sequence["ObservationSelector"],
         output_attribute_columns: list[str],
     ) -> str:

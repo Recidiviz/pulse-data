@@ -28,11 +28,13 @@ from recidiviz.observations.span_observation_big_query_view_builder import (
 )
 from recidiviz.observations.span_type import SpanType
 
-ObservationTypeT = TypeVar("ObservationTypeT", SpanType, EventType)
+ObservationType = EventType | SpanType
+
+ObservationTypeT = TypeVar("ObservationTypeT", bound=ObservationType)
 
 
 def date_column_names_for_observation_type(
-    observation_type: EventType | SpanType,
+    observation_type: ObservationType,
 ) -> list[str]:
     """Returns the column in any observation view that contains JSON-packaged attributes
     about that observation.
@@ -52,7 +54,7 @@ def date_column_names_for_observation_type(
 
 
 def attributes_column_name_for_observation_type(
-    observation_type: EventType | SpanType,
+    observation_type: ObservationType,
 ) -> str:
     """Returns the column in any observation view that contains JSON-packaged attributes
     about that observation.
@@ -72,7 +74,7 @@ def attributes_column_name_for_observation_type(
 #  trivial) once we are only reading from single observation tables.
 def observation_attribute_value_clause(
     *,
-    observation_type: EventType | SpanType,
+    observation_type: ObservationType,
     attribute: str,
     read_attributes_from_json: bool,
 ) -> str:
@@ -86,7 +88,7 @@ def observation_attribute_value_clause(
 
 
 def observation_type_name_column_for_observation_type(
-    observation_type: EventType | SpanType,
+    observation_type: ObservationType,
 ) -> str:
     """Returns the column in any unioned all_* observation views (e.g. all_person_spans)
     that gives the observation type for a given row.
@@ -103,7 +105,7 @@ def observation_type_name_column_for_observation_type(
 
 
 def materialized_view_address_for_observation(
-    observation_type: EventType | SpanType,
+    observation_type: ObservationType,
 ) -> BigQueryAddress:
     """The BigQuery address that should be used to query for observations of the given
     type.
