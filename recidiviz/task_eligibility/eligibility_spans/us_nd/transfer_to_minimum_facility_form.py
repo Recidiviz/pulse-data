@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_nd import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
+    housing_unit_type_is_solitary_confinement,
     incarceration_within_3_months_of_full_term_completion_date,
     incarceration_within_42_months_of_full_term_completion_date,
     no_escape_in_current_incarceration,
@@ -54,6 +55,9 @@ for a transfer into a minimum security facility.
 INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD = InvertedTaskCriteriaBigQueryViewBuilder(
     sub_criteria=incarceration_within_3_months_of_full_term_completion_date.VIEW_BUILDER,
 )
+HOUSING_UNIT_TYPE_IS_NOT_SOLITARY_CONFINEMENT = InvertedTaskCriteriaBigQueryViewBuilder(
+    sub_criteria=housing_unit_type_is_solitary_confinement.VIEW_BUILDER,
+)
 
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
@@ -71,6 +75,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         INCARCERATION_NOT_WITHIN_3_MONTHS_OF_FTCD,
         not_enrolled_in_relevant_program.VIEW_BUILDER,
         no_escape_in_current_incarceration.VIEW_BUILDER,
+        HOUSING_UNIT_TYPE_IS_NOT_SOLITARY_CONFINEMENT,
     ],
     completion_event_builder=transfer_to_minimum_facility.VIEW_BUILDER,
 )
