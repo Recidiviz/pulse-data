@@ -49,7 +49,6 @@ from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
-from recidiviz.utils.string_formatting import fix_indent
 from recidiviz.utils.types import assert_type
 
 
@@ -91,26 +90,30 @@ def aggregated_metric_view_description(
     population_type: MetricPopulationType,
     unit_of_analysis_type: MetricUnitOfAnalysisType,
     metric_class: AggregatedMetricClassType,
-    time_period: MetricTimePeriodConfig,
+    time_period: MetricTimePeriodConfig | None,
     metrics: list[AggregatedMetric] | None,
 ) -> str:
     """Builds a docstring for an aggregated metrics view with the given parameters."""
-    max_end_date_str = (
-        time_period.max_period_end_date.isoformat()
-        if time_period.max_period_end_date
-        else "<today's date>"
-    )
-    time_period_clause = f"""Contains metrics only for {time_period.period_name_type.value}-length time periods with
+
+    if time_period:
+        max_end_date_str = (
+            time_period.max_period_end_date.isoformat()
+            if time_period.max_period_end_date
+            else "<today's date>"
+        )
+        time_period_clause = f"""
+Contains metrics only for {time_period.period_name_type.value}-length time periods with
 the most recent period ending on {max_end_date_str} and the
-least recent period ending on {time_period.min_period_end_date.isoformat()}."""
+least recent period ending on {time_period.min_period_end_date.isoformat()}.
+"""
+    else:
+        time_period_clause = ""
 
     if issubclass(metric_class, PeriodEventAggregatedMetric):
         base_description = f"""
 Metrics for the {population_type.population_name_short} population calculated using
 event observations across an entire analysis period, disaggregated by {unit_of_analysis_type.short_name}.
-
-{fix_indent(time_period_clause, indent_level=0)}
-
+{time_period_clause}
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 """
     elif issubclass(metric_class, PeriodSpanAggregatedMetric):

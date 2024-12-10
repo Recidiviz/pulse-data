@@ -43,6 +43,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         dataset_id: str,
         view_id: str,
         description: str,
+        bq_description: str | None = None,
         parents: Sequence[BigQueryViewBuilderType] | Sequence[BigQueryAddress],
         clustering_fields: list[str],
         custom_select_statement: Optional[str] = None,
@@ -56,6 +57,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             dataset_id: The view address dataset_id
             view_id: The view address table_id
             description: Description for this view
+            bq_description: Description for this view, truncated to get around BQ limits
             parents: The list of view builders or tables to select from.
             clustering_fields: Columns by which to cluster this view's materialized
                 table.
@@ -89,6 +91,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         self.dataset_id = dataset_id
         self.view_id = view_id
         self.description = description
+        self.bq_description = bq_description
         self.parents = parents
         self.clustering_fields = clustering_fields
         self.custom_select_statement = custom_select_statement
@@ -200,7 +203,9 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             dataset_id=self.dataset_id,
             view_id=self.view_id,
             description=self.description,
-            bq_description=self.description,
+            bq_description=self.bq_description
+            if self.bq_description
+            else self.description,
             view_query_template=view_query_template,
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,
