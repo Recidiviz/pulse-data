@@ -32,6 +32,7 @@ from recidiviz.case_triage.jii.jii_texts_routes import create_jii_api_blueprint
 from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization,
 )
+from recidiviz.tools.jii.hydrate_test_data import TEST_COLLECTION_GROUP
 
 
 class JIIBlueprintTestCase(TestCase):
@@ -426,4 +427,35 @@ class TestJIIRoutes(JIIBlueprintTestCase):
                 ),
             },
             merge=True,
+        )
+
+    @freeze_time("2023-01-01 01:23:45")
+    @patch("recidiviz.case_triage.jii.jii_texts_routes.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
+    def test_twilio_status_test_collection_group(
+        self,
+        mock_twilio_validator: MagicMock,
+        mock_firestore: MagicMock,
+    ) -> None:
+        account_sid = "XYZ"
+        mock_twilio_validator.return_value = True
+
+        self.test_client.post(
+            "/jii/webhook/twilio_status",
+            headers={
+                "Origin": "http://localhost:5000",
+                "X-Twilio-Signature": "1234567a",
+            },
+            data={
+                "MessageSid": "ABC",
+                "MessageStatus": "delivered",
+                "AccountSid": account_sid,
+                "IsTest": "true",
+            },
+        )
+
+        # Assert the collection path used points to a test collection when
+        # the request has IsTest="true"
+        mock_firestore.return_value.get_collection_group.assert_called_once_with(
+            collection_path=(TEST_COLLECTION_GROUP)
         )

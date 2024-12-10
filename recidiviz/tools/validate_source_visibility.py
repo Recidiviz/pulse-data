@@ -576,6 +576,7 @@ def main() -> int:
                 "recidiviz.outliers",
                 "recidiviz.workflows",
                 "recidiviz.persistence",
+                "recidiviz.tools.jii.hydrate_test_data",
                 "recidiviz.tools.utils.fixture_helpers",
                 "recidiviz.utils",
             }

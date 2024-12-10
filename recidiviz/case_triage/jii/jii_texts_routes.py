@@ -38,10 +38,11 @@ from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization_recidiviz_only,
 )
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
+from recidiviz.tools.jii.hydrate_test_data import TEST_COLLECTION_GROUP
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.metadata import CloudRunMetadata
-from recidiviz.utils.params import get_str_param_value
+from recidiviz.utils.params import get_bool_param_value, get_str_param_value
 
 if in_gcp():
     cloud_run_metadata = CloudRunMetadata.build_from_metadata_server("case-triage-web")
@@ -97,12 +98,15 @@ def create_jii_api_blueprint() -> Blueprint:
         error_code = get_str_param_value(
             "ErrorCode", request.values, preserve_case=True
         )
+        is_test = get_bool_param_value("IsTest", request.values, default=False)
 
         firestore_client = FirestoreClientImpl(project_id="jii-pilots")
 
         # Get the previously stored message
         jii_messages_ref = firestore_client.get_collection_group(
-            collection_path="lsu_eligibility_messages"
+            collection_path=(
+                "lsu_eligibility_messages" if not is_test else TEST_COLLECTION_GROUP
+            )
         )
         query = jii_messages_ref.where(
             filter=FieldFilter("message_sid", "==", message_sid)
