@@ -17,6 +17,9 @@
 """Joins together all aggregated metric views for the specified population and unit of analysis"""
 from typing import List, Optional
 
+from recidiviz.aggregated_metrics.aggregated_metrics_view_collector import (
+    is_metric_class_supported_by_optimized_format,
+)
 from recidiviz.aggregated_metrics.assignment_sessions_view_builder import (
     get_assignment_query_for_unit_of_analysis,
 )
@@ -163,9 +166,18 @@ Static attribute columns: `{unit_of_analysis.get_static_attribute_columns_query_
                 if not misc_metrics_view_builder:
                     continue
 
+            dataset_id = (
+                dataset_id_override
+                if dataset_id_override
+                and not issubclass(metric_class, MiscAggregatedMetric)
+                and is_metric_class_supported_by_optimized_format(metric_class)
+                else AGGREGATED_METRICS_DATASET_ID
+            )
+
             table_name = metric_class.metric_class_name_lower()
+
             # Add table to the FROM clause
-            table_ref = f"`{{project_id}}.aggregated_metrics.{population_name}_{unit_of_analysis_name}_{table_name}_aggregated_metrics_materialized` {table_name}"
+            table_ref = f"`{{project_id}}.{dataset_id}.{population_name}_{unit_of_analysis_name}_{table_name}_aggregated_metrics_materialized` {table_name}"
             if not from_clause:
                 join_type = "FROM"
                 join_condition = ""

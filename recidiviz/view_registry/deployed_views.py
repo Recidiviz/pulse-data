@@ -201,6 +201,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "task_eligibility_spans_us_az",
     "task_eligibility_spans_us_tx",
     "task_eligibility_spans_us_ut",
+    "unit_of_analysis_assignments_by_time_period",
     "us_ar_raw_data_up_to_date_views",
     "us_ar_raw_data_up_to_date_views_secondary",
     "us_ca_raw_data_up_to_date_views",
