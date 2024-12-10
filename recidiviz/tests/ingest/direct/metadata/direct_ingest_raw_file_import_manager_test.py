@@ -1064,13 +1064,13 @@ class DirectIngestRawFileImportManagerTest(TestCase):
 class DirectIngestRawFileImportStatusBucketsTest(TestCase):
     def test_all_statuses_covered(self) -> None:
         for status in DirectIngestRawFileImportStatus:
-            DirectIngestRawFileImportStatusBucket.from_session_status(status)
+            DirectIngestRawFileImportStatusBucket.from_import_status(status)
 
     def test_missing_status_fails(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
             re.escape(
-                "Unrecognized import status: eeek; please add it to the list of values in recidiviz/ingest/direct/metadata/direct_ingest_raw_file_import_manager.py"
+                "Unrecognized import status: eeek; please add it to the list of values in recidiviz.common.constants.operations.direct_ingest_raw_file_import"
             ),
         ):
-            DirectIngestRawFileImportStatusBucket.from_session_status("eeek")  # type: ignore
+            DirectIngestRawFileImportStatusBucket.from_import_status("eeek")  # type: ignore

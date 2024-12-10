@@ -487,7 +487,7 @@ class DirectIngestRawFileImportManager:
                 if not import_run_start:
                     import_run_start = result.import_run_start
                 count_by_status_bucket[
-                    DirectIngestRawFileImportStatusBucket.from_session_status(
+                    DirectIngestRawFileImportStatusBucket.from_import_status(
                         DirectIngestRawFileImportStatus(result.file_import_status)
                     )
                 ] += result.num_file_imports

@@ -54,30 +54,40 @@ const rawDataImportStatusColorDict: {
     sortRank: 1,
     status: "Started",
   },
+  DEFERRED: {
+    color: "default",
+    sortRank: 2,
+    status: "Deferred",
+  },
   SUCCEEDED: {
     color: "success",
-    sortRank: 2,
+    sortRank: 3,
     status: "Succeeded",
   },
   FAILED_UNKNOWN: {
     color: "error",
-    sortRank: 3,
+    sortRank: 4,
     status: "Failed (Unknown Reason)",
   },
   FAILED_LOAD_STEP: {
     color: "error",
-    sortRank: 4,
+    sortRank: 5,
     status: "Failed BQ Load Step",
   },
   FAILED_PRE_IMPORT_NORMALIZATION_STEP: {
     color: "error",
-    sortRank: 5,
+    sortRank: 6,
     status: "Failed Pre-Import Normalization Step",
   },
   FAILED_VALIDATION_STEP: {
     color: "error",
-    sortRank: 6,
+    sortRank: 7,
     status: "Failed Pre-Import Validation Step",
+  },
+  FAILED_IMPORT_BLOCKED: {
+    color: "error",
+    sortRank: 7,
+    status: "Failed Import Blocked",
   },
 };
 

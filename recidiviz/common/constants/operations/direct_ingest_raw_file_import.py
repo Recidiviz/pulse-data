@@ -28,6 +28,7 @@ class DirectIngestRawFileImportStatus(OperationsEnum):
 
     STARTED = operations_enum_strings.direct_ingest_raw_file_import_status_started
     SUCCEEDED = operations_enum_strings.direct_ingest_raw_file_import_status_succeeded
+    DEFERRED = operations_enum_strings.direct_ingest_raw_file_import_status_deferred
     FAILED_UNKNOWN = (
         operations_enum_strings.direct_ingest_raw_file_import_status_failed_unknown
     )
@@ -66,6 +67,12 @@ _DIRECT_INGEST_RAW_FILE_IMPORT_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, s
         "well as the rows added to the updated table and the raw data files associated "
         "with the file_id have been moved to storage."
     ),
+    DirectIngestRawFileImportStatus.DEFERRED: (
+        "The DEFERRED status means that the raw data import DAG found this file in the"
+        "ingest bucket, but decided to not import it during this run of the DAG. This"
+        "is expected to happen during secondary reimport to limit the length of any "
+        "single DAG run."
+    ),
     DirectIngestRawFileImportStatus.FAILED_UNKNOWN: (
         "The FAILED_UNKNOWN status is a catch-all for an import failing without the "
         "import DAG identifying what the specific issue is."
@@ -103,7 +110,10 @@ class DirectIngestRawFileImportStatusBucket(Enum):
     FAILED: str = "FAILED"
 
     __IN_PROGRESS_STATUSES: frozenset[DirectIngestRawFileImportStatus] = frozenset(
-        [DirectIngestRawFileImportStatus.STARTED]
+        [
+            DirectIngestRawFileImportStatus.STARTED,
+            DirectIngestRawFileImportStatus.DEFERRED,
+        ]
     )
     __SUCCEEDED_STATUSES: frozenset[DirectIngestRawFileImportStatus] = frozenset(
         [DirectIngestRawFileImportStatus.SUCCEEDED]
@@ -131,7 +141,7 @@ class DirectIngestRawFileImportStatusBucket(Enum):
         return cls.__FAILED_STATUSES
 
     @classmethod
-    def from_session_status(
+    def from_import_status(
         cls, status: DirectIngestRawFileImportStatus
     ) -> "DirectIngestRawFileImportStatusBucket":
 
@@ -145,8 +155,7 @@ class DirectIngestRawFileImportStatusBucket(Enum):
             return cls.FAILED
 
         raise ValueError(
-            f"Unrecognized import status: {status}; please add it to the list "
-            f"of values in recidiviz/ingest/direct/metadata/direct_ingest_raw_file_import_manager.py"
+            f"Unrecognized import status: {status}; please add it to the list of values in {__name__}"
         )
 
     def for_api(self) -> str:
