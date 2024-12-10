@@ -65,8 +65,18 @@ columns:
     description: |-
       ID for the type of parole. Can be joined with `scl_ParoleType.ParoleTypeId`.
     known_values:
+      - value: 130
+        description: Administrative
       - value: 131
         description: Release to Parole
+      - value: 132
+        description: Early
+      - value: 133
+        description: Geriatric
+      - value: 134
+        description: Mandatory
+      - value: 135
+        description: Pardon
   - name: ViolationTypeId
     description: |-
       TODO(#15329): Fill in column description
