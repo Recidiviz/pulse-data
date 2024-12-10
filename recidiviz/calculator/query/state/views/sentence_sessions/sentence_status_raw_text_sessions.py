@@ -113,7 +113,7 @@ FROM `{{project_id}}.sessions.sentences_preprocessed_materialized`
 WHERE state_code IN ({{v2_non_migrated_states}})
     -- Drop rows with imposed date in the future
     AND date_imposed <= CURRENT_DATE("US/Eastern")
-    AND date_imposed != {nonnull_end_date_clause("completion_date")}
+    AND date_imposed < {nonnull_end_date_clause("completion_date")}
 
 UNION ALL
 
