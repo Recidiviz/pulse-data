@@ -44,6 +44,7 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
 from recidiviz.common.constants.state.state_person import StateGender, StateRace
+from recidiviz.common.decarceral_impact_type import DecarceralImpactType
 from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.metric_unit_of_observation_type import (
@@ -168,6 +169,11 @@ def main(
                     for builder in DEDUPED_TASK_COMPLETION_EVENT_VB
                 ),
                 "system_type": ["Incarceration", "Supervision"],
+                "decarceral_impact_type": sorted(
+                    snake_to_title(decarceral_impact_type.name)
+                    for decarceral_impact_type in DecarceralImpactType
+                ),
+                "is_jii_decarceral_transition": ["True", "False"],
                 "task_type_is_live": ["True", "False"],
                 "task_type_is_fully_launched": ["True", "False"],
                 "denial_reasons": [],
@@ -220,6 +226,8 @@ def main(
                 json_field_filters=[
                     "task_type",
                     "system_type",
+                    "decarceral_impact_type",
+                    "is_jii_decarceral_transition",
                     "task_type_is_live",
                     "task_type_is_fully_launched",
                     "denial_reasons",
@@ -238,6 +246,8 @@ def main(
                 json_field_filters=[
                     "task_type",
                     "system_type",
+                    "decarceral_impact_type",
+                    "is_jii_decarceral_transition",
                     "task_type_is_live",
                     "task_type_is_fully_launched",
                     "denial_reasons",
@@ -256,6 +266,8 @@ def main(
                 json_field_filters=[
                     "task_type",
                     "system_type",
+                    "decarceral_impact_type",
+                    "is_jii_decarceral_transition",
                     "task_type_is_live",
                     "task_type_is_fully_launched",
                     "denial_reasons",
@@ -274,6 +286,8 @@ def main(
                 json_field_filters=[
                     "task_type",
                     "system_type",
+                    "decarceral_impact_type",
+                    "is_jii_decarceral_transition",
                     "task_type_is_live",
                     "task_type_is_fully_launched",
                     "denial_reasons",
