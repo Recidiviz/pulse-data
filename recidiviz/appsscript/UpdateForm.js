@@ -16,7 +16,27 @@
 // =============================================================================
 /* File to update the Automated Leadership Report Google Form Questions. */
 
-const form = FormApp.openById("13fUGObQutXrluX0IRDwRyQaueWbpOlawrh36nfty9tg");
+/**
+ * The script ids associated with each duplicated project.
+ * Replace the `scriptId` in the `.clasp.json` file with the AppScript project
+ * you like to point to when using clasp commands.
+ * 
+ * RECOMMENDATIONS:
+ * * `clasp pull` from the PRODUCTION environment before you begin.
+ */
+
+const PRODUCTION = "1AnEHCrYIo_P_PN-aLalyKYFK6CAzm3QO9-vkEEsvy84AxS9cX9IpuAE8"
+const TEST_XYZ = "1vKr8a-bfqMOp-WDfFfiVlHiyOKmAYdjIgoKfyXYX753-V8xcZpvLyTQU"
+const TEST_ABC = "1U0oqC1gRN163Pxmmhw2q-qpHsQ-hA7WO1uW8mvj0JehblKWOZ_zF5Wmc"
+
+const FORM_MAPPING = {
+  [PRODUCTION]: "13fUGObQutXrluX0IRDwRyQaueWbpOlawrh36nfty9tg",
+  [TEST_XYZ]: "1gAMUn2rTARlx3jsvPKRfo8Z2fq6L6lyUyiuSd_4XzuI",
+  [TEST_ABC]: "1J__6Ai9_0jtpAt1lkUnNgwJZ3zSPEswqr2Zw-WX9Vko",
+  }
+
+
+const form = FormApp.openById(FORM_MAPPING[ScriptApp.getScriptId()]);
 const sheet = SpreadsheetApp.openById(
   "1LW_wd4IzFXwUHgGSVAE2NCUHgNjccAAw_dUkg3qcXGE"
 ).getSheets()[0];
