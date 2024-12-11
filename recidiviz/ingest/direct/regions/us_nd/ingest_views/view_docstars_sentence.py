@@ -68,7 +68,11 @@ USING(CASE_NUMBER)
 LEFT JOIN
   {recidiviz_docstars_cst_ncic_code} xref
 ON
-  (COALESCE(ot.Common_Statute_NCIC_Code, ot.CODE) = xref.CODE)
+  (COALESCE(ot.Common_Statute_NCIC_Code, ot.CODE) = xref.CODE)  
+  -- We do not have any charges ingested with a CONVICTED status for sentences that are 
+  -- still Pre-Trial, so we do not want to include them here.
+  -- For information about pre-trial cases, see the docstars_psi raw data table.
+WHERE oc.DESCRIPTION != 'Pre-Trial'
 ),
 -- This CTE collects all updates made over time to the dates associated with each 
 -- sentence. This information will be used to hydrate the state_sentence_length entity.

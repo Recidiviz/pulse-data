@@ -90,7 +90,6 @@ output:
                 StateSentenceType.COMMUNITY_CORRECTIONS: "Community Placement Pgrm"
                 StateSentenceType.INTERNAL_UNKNOWN:
                   - "CCC"
-                  - "Pre-Trial"
                 StateSentenceType.PAROLE:
                   - "IC Parole"
                   - "Parole"
@@ -161,15 +160,7 @@ output:
                     $function: us_nd_custom_parsers.classification_subtype_from_raw_text
                     $args:
                       raw_charge_text: LEVEL
-                status:
-                  $conditional:
-                    - $if:
-                        $equal:
-                          - CASE_DESCRIPTION
-                          - $literal("Pre-Trial")
-                      $then: $literal_enum(StateChargeV2Status.PENDING)
-                      # IF the trial ends with a non-guilty verdict, this should go straight to completed. Can only know this from TA_TYPE.
-                    - $else: $literal_enum(StateChargeV2Status.CONVICTED)
+                status: $literal_enum(StateChargeV2Status.CONVICTED)
                 ncic_code: $variable(normalized_offense_code)
                 # This description is pulled directly from the Docstars-specific cross-reference
                 # file sent nightly from ND (recidiviz_docstars_cst_ncic_code).
