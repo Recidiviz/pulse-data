@@ -233,46 +233,15 @@ every metric time period where there is some overlap with an assignment span. If
 assignments that overlap with a metric period, multiple rows will be returned.
 
 Key column descriptions:
-╒════════════════════════════════════════════════════╤════════════════════════════════════════════════════╕
-│ Column                                             │ Description                                        │
-╞════════════════════════════════════════════════════╪════════════════════════════════════════════════════╡
-│ assignment_start_date                              │ The start date (inclusive) of the full unit of     │
-│                                                    │ observation to unit of analysis assignment period  │
-│                                                    │ being associated with this metric time period.     │
-├────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
-│ assignment_end_date_exclusive_nonnull              │ The end date (exclusive) of the full unit of       │
-│                                                    │ observation to unit of analysis assignment period  │
-│                                                    │ being associated with this metric time period.     │
-│                                                    │ This field is always non-null. If the assignment   │
-│                                                    │ is currently valid (no end date), the end date has │
-│                                                    │ value 9999-12-31.                                  │
-├────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
-│ metric_period_start_date                           │ The start date (inclusive) for the metric time     │
-│                                                    │ period. May come before the assignment_start_date  │
-│                                                    │ if the assignment starts in the middle of this     │
-│                                                    │ metric period, or after if the assignment spans    │
-│                                                    │ multiple metric periods.                           │
-├────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
-│ metric_period_end_date_exclusive                   │ The end date (exclusive) for the metric time       │
-│                                                    │ period. May come after the                         │
-│                                                    │ assignment_end_date_exclusive_nonnull if the       │
-│                                                    │ assignment ends in the middle of this metric       │
-│                                                    │ period, or before if the assignment spans multiple │
-│                                                    │ metric periods.                                    │
-├────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
-│ event_applies_to_period_start_date                 │ This column is pre-computed for use later in       │
-│                                                    │ aggregated metrics queries. This is the first date │
-│                                                    │ (inclusive) when an event observation would count  │
-│                                                    │ towards this metric period when calculating a      │
-│                                                    │ PeriodEventAggregatedMetric.                       │
-├────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
-│ event_applies_to_period_end_date_exclusive_nonnull │ This column is pre-computed for use later in       │
-│                                                    │ aggregated metrics queries. This is the day after  │
-│                                                    │ the last date when an event observation would      │
-│                                                    │ count towards this metric period when calculating  │
-│                                                    │ a PeriodEventAggregatedMetric. This field is       │
-│                                                    │ always non-null.                                   │
-╘════════════════════════════════════════════════════╧════════════════════════════════════════════════════╛"""
+|                      Column                      |                                                                                                                            Description                                                                                                                            |
+|--------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|assignment_start_date                             |The start date (inclusive) of the full unit of observation to unit of analysis assignment period being associated with this metric time period.                                                                                                                    |
+|assignment_end_date_exclusive_nonnull             |The end date (exclusive) of the full unit of observation to unit of analysis assignment period being associated with this metric time period. This field is always non-null. If the assignment is currently valid (no end date), the end date has value 9999-12-31.|
+|metric_period_start_date                          |The start date (inclusive) for the metric time period. May come before the assignment_start_date if the assignment starts in the middle of this metric period, or after if the assignment spans multiple metric periods.                                           |
+|metric_period_end_date_exclusive                  |The end date (exclusive) for the metric time period. May come after the assignment_end_date_exclusive_nonnull if the assignment ends in the middle of this metric period, or before if the assignment spans multiple metric periods.                               |
+|event_applies_to_period_start_date                |This column is pre-computed for use later in aggregated metrics queries. This is the first date (inclusive) when an event observation would count towards this metric period when calculating a PeriodEventAggregatedMetric.                                       |
+|event_applies_to_period_end_date_exclusive_nonnull|This column is pre-computed for use later in aggregated metrics queries. This is the day after the last date when an event observation would count towards this metric period when calculating a PeriodEventAggregatedMetric. This field is always non-null.       |
+"""
         self.assertEqual(expected_description, builder.description)
 
     def test_query_building(self) -> None:

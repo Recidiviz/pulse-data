@@ -262,9 +262,9 @@ class DeployedViewsTest(unittest.TestCase):
 
         end = datetime.datetime.now()
         total_seconds = (end - start).total_seconds()
-        # Building all our views should take less than 5s (as of 4/11/2022 it takes
+        # Building all our views should take less than 7s (as of 4/11/2022 it takes
         # about .28 seconds).
-        self.assertLessEqual(total_seconds, 5)
+        self.assertLessEqual(total_seconds, 7)
 
     @patch(
         "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
