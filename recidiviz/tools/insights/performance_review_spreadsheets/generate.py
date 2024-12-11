@@ -19,11 +19,12 @@ Script for generating Excel spreadsheets with staff metrics for supervisors in I
 performance reviews. See https://www.notion.so/recidiviz/Design-Doc-ID-2025-Performance-Reviews-1517889f4d198077b276fc1fc5569165
 for details.
 
-Usage: python -m recidiviz.tools.insights.generate_perf_review_spreadsheets
+Usage: python -m recidiviz.tools.insights.performance_review_spreadsheets.generate
 This will generate spreadsheets in the root directory of pulse-data.
 """
 
 import logging
+import os
 from enum import Enum
 from random import random
 
@@ -32,6 +33,13 @@ from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Font, PatternFill
 from openpyxl.styles.numbers import FORMAT_PERCENTAGE
 from openpyxl.worksheet.worksheet import Worksheet
+
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.tools.insights.performance_review_spreadsheets.supervisors_and_officers import (
+    SupervisorsAndOfficers,
+)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
+from recidiviz.utils.metadata import local_project_id_override
 
 
 class RowHeadingEnum(Enum):
@@ -185,28 +193,32 @@ def write_random_data(sheet: Worksheet) -> None:
 
 
 def generate_sheets() -> None:
-    wb = Workbook()
-    # TODO(#35928): Create one spreadsheet per supervisor with one sheet per officer
-    for i in range(0, 3):
-        sheet = wb.create_sheet()
-        sheet.title = f"Sheet {i}"
+    output_dir = os.path.join(os.path.dirname(__file__), "output")
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
 
-        create_headers(sheet)
-        apply_conditional_formatting(sheet)
-        # TODO(#35926): Write real data instead of random data
-        write_random_data(sheet)
+    bq_client = BigQueryClientImpl()
+    supervisors_to_officers = SupervisorsAndOfficers.from_bigquery(bq_client).data
+    for supervisor, officers in supervisors_to_officers.items():
+        wb = Workbook()
+        for officer in officers:
+            sheet = wb.create_sheet(title=officer.officer_name.formatted())
+            create_headers(sheet)
+            apply_conditional_formatting(sheet)
+            # TODO(#35926): Write real data instead of random data
+            write_random_data(sheet)
 
-        # Format numerical data as a percentage
-        for row in range(2, 50):
-            for col in range(ord("B"), ord("O")):
-                sheet[f"{chr(col)}{row}"].number_format = FORMAT_PERCENTAGE
+            # Format numerical data as a percentage
+            for row in range(2, 50):
+                for col in range(ord("B"), ord("O")):
+                    sheet[f"{chr(col)}{row}"].number_format = FORMAT_PERCENTAGE
 
-    # Remove the default sheet, since we created new sheets for our data.
-    wb.remove(wb.worksheets[0])
-    wb.save("test_spreadsheet.xlsx")
+        # Remove the default sheet, since we created new sheets for our data.
+        wb.remove(wb.worksheets[0])
+        wb.save(f"{output_dir}/{supervisor.formatted()}.xlsx")
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-
-    generate_sheets()
+    with local_project_id_override(GCP_PROJECT_PRODUCTION):
+        generate_sheets()
