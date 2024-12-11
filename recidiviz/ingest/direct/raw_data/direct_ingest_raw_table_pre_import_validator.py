@@ -23,6 +23,7 @@ from google.api_core import retry
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.big_query.big_query_job_labels import RawDataImportStepBQLabel
 from recidiviz.big_query.big_query_utils import bq_query_job_result_to_list_of_row_dicts
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.retry_predicate import ssl_error_retry_predicate
@@ -137,10 +138,14 @@ class DirectIngestRawTablePreImportValidator:
     def _execute_validation_queries_concurrently(
         self, validations_to_run: List[RawDataImportBlockingValidation]
     ) -> List[RawDataImportBlockingValidationFailure]:
+        """Executes |validations_to_run| concurrently, returning any errors we encounter."""
         job_to_validation = {
             self.big_query_client.run_query_async(
                 query_str=validation.query,
                 use_query_cache=True,
+                job_labels=[
+                    RawDataImportStepBQLabel.RAW_DATA_PRE_IMPORT_VALIDATIONS.value
+                ],
             ): validation
             for validation in validations_to_run
         }

@@ -32,21 +32,28 @@ LOCAL_MACHINE: str = "local_machine"
 # this is the process that orchestrated (scheduled / kicked off) the bq query to run
 # - key
 PLATFORM_ORCHESTRATION_MECHANISM: str = "platform_orchestration_mechanism"
-# values
+# - values
 RAW_DATA_IMPORT_DAG: str = "raw_data_import_dag"
 CALCULATION_DAG: str = "calculation_dag"
 LOCAL_SCRIPT: str = "local_script"
+
+# -- RAW DATA IMPORT STEP --
+# these are the conceptually distinct steps that happen during raw data import
+# - key
+RAW_DATA_IMPORT_STEP: str = "raw_data_import_step"
+# - values
+RAW_DATA_TEMP_LOAD: str = "raw_data_temp_load"
+RAW_DATA_PRE_IMPORT_TRANSFORMATIONS: str = "raw_data_pre_import_transformations"
+RAW_DATA_MIGRATIONS: str = "raw_data_migrations"
+RAW_DATA_PRE_IMPORT_VALIDATIONS = "raw_data_pre_import_validations"
+RAW_DATA_PRUNING = "raw_data_pruning"
+RAW_DATA_TABLE_APPEND = "raw_data_table_append"
 
 
 # -- AIRFLOW DAG PHASE --
 # this is a conceptually distinct step within an airflow dag that we want to be able to track
 # key
 AIRFLOW_DAG_PHASE: str = "airflow_dag_phase"
-# raw data values
-RAW_DATA_PRE_IMPORT_TRANSFORMATIONS: str = "raw_data_pre_import_transformations"
-RAW_DATA_MIGRATIONS: str = "raw_data_migrations"
-RAW_DATA_PRE_IMPORT_VALIDATIONS = "raw_data_pre_import_validations"
-
 # calc dag values
 BQ_REFRESH: str = "bq_refresh"
 VIEW_UPDATE: str = "view_update"

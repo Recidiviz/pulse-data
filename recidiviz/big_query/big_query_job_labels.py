@@ -68,6 +68,11 @@ class BigQueryStateCodeJobLabel(BigQueryJobLabel):
 
 
 @attrs.define(kw_only=True)
+class BigQueryIngestInstanceJobLabel(BigQueryJobLabel):
+    key: str = attrs.field(default=platform_logging_strings.INGEST_INSTANCE)
+
+
+@attrs.define(kw_only=True)
 class BigQueryStateAgnosticJobLabel(BigQueryJobLabel):
     key: str = attrs.field(default=platform_logging_strings.STATE_CODE)
     value: str = attrs.field(default=platform_logging_strings.STATE_AGNOSTIC)
@@ -152,26 +157,42 @@ class PlatformOrchestrationBQLabel(Enum):
     )
 
 
+class RawDataImportStepBQLabel(Enum):
+    """Enum of BQ job labels with the "raw_data_import_step" key. This is meant to represent
+    conceptual phases during the raw data import process.
+    """
+
+    RAW_DATA_TEMP_LOAD: BigQueryJobLabel = BigQueryJobLabel(
+        key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
+        value=platform_logging_strings.RAW_DATA_PRE_IMPORT_TRANSFORMATIONS,
+    )
+    RAW_DATA_PRE_IMPORT_TRANSFORMATIONS: BigQueryJobLabel = BigQueryJobLabel(
+        key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
+        value=platform_logging_strings.RAW_DATA_PRE_IMPORT_TRANSFORMATIONS,
+    )
+    RAW_DATA_MIGRATIONS: BigQueryJobLabel = BigQueryJobLabel(
+        key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
+        value=platform_logging_strings.RAW_DATA_MIGRATIONS,
+    )
+    RAW_DATA_PRE_IMPORT_VALIDATIONS: BigQueryJobLabel = BigQueryJobLabel(
+        key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
+        value=platform_logging_strings.RAW_DATA_PRE_IMPORT_VALIDATIONS,
+    )
+    RAW_DATA_PRUNING: BigQueryJobLabel = BigQueryJobLabel(
+        key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
+        value=platform_logging_strings.RAW_DATA_PRE_IMPORT_VALIDATIONS,
+    )
+    RAW_DATA_TABLE_APPEND: BigQueryJobLabel = BigQueryJobLabel(
+        key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
+        value=platform_logging_strings.RAW_DATA_PRE_IMPORT_VALIDATIONS,
+    )
+
+
 class AirflowDAGPhaseBQLabel(Enum):
     """Enum of BQ job labels with the "airflow_dag_phase" key. This is meant to represent
     conceptual phases that are orchestrated by an airflow dag.
     """
 
-    RAW_DATA_PRE_IMPORT_TRANSFORMATIONS: BigQueryJobLabel = BigQueryJobLabel(
-        key=platform_logging_strings.AIRFLOW_DAG_PHASE,
-        value=platform_logging_strings.RAW_DATA_PRE_IMPORT_TRANSFORMATIONS,
-        parents=[PlatformOrchestrationBQLabel.RAW_DATA_IMPORT_DAG.value],
-    )
-    RAW_DATA_MIGRATIONS: BigQueryJobLabel = BigQueryJobLabel(
-        key=platform_logging_strings.AIRFLOW_DAG_PHASE,
-        value=platform_logging_strings.RAW_DATA_MIGRATIONS,
-        parents=[PlatformOrchestrationBQLabel.RAW_DATA_IMPORT_DAG.value],
-    )
-    RAW_DATA_PRE_IMPORT_VALIDATIONS: BigQueryJobLabel = BigQueryJobLabel(
-        key=platform_logging_strings.AIRFLOW_DAG_PHASE,
-        value=platform_logging_strings.RAW_DATA_PRE_IMPORT_VALIDATIONS,
-        parents=[PlatformOrchestrationBQLabel.RAW_DATA_IMPORT_DAG.value],
-    )
     BQ_REFRESH: BigQueryJobLabel = BigQueryJobLabel(
         key=platform_logging_strings.AIRFLOW_DAG_PHASE,
         value=platform_logging_strings.BQ_REFRESH,
