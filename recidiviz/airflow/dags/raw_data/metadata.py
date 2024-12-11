@@ -50,6 +50,8 @@ HEADER_VERIFICATION_ERRORS: str = "header_verification_errors"
 CHUNKING_RESULTS: str = "chunking_results"
 CHUNKING_ERRORS: str = "chunking_errors"
 BQ_METADATA: str = "bq_metadata"
+BQ_METADATA_TO_IMPORT_THIS_RUN: str = "bq_metadata_to_import_this_run"
+BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS: str = "bq_metadata_to_import_in_future_runs"
 
 
 def get_resource_lock_ttl(raw_data_instance: DirectIngestInstance) -> int:

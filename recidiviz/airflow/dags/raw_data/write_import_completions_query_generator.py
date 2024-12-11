@@ -54,6 +54,7 @@ GET_FILE_IMPORTS_FOR_IMPORT_RUN_ID = """
 SELECT file_import_id, import_run_id, file_id, import_status
 FROM direct_ingest_raw_file_import
 WHERE import_run_id = {import_run_id}
+AND import_status != 'DEFERRED'
 """
 
 
@@ -241,20 +242,21 @@ class WriteImportCompletionsSqlQueryGenerator(CloudSqlQueryGenerator[List[str]])
         existing_file_imports: List[FileImport],
         file_import_results: List[RawFileImport],
     ) -> Dict[FileImport, Optional[RawFileImport]]:
-        file_id_to_file_import = {
+        imported_file_id_to_file_import = {
             file_import.file_id: file_import for file_import in existing_file_imports
         }
+
         existing_file_import_to_file_import_result: Dict[
             FileImport, Optional[RawFileImport]
         ] = {file_import: None for file_import in existing_file_imports}
 
         for file_import_result in file_import_results:
-            if file_import_result.file_id not in file_id_to_file_import:
+            if file_import_result.file_id not in imported_file_id_to_file_import:
                 raise ValueError(
                     f"Found file_id [{file_import_result.file_id}] that does not have a corresponding file import object"
                 )
             existing_file_import_to_file_import_result[
-                file_id_to_file_import[file_import_result.file_id]
+                imported_file_id_to_file_import[file_import_result.file_id]
             ] = file_import_result
 
         return existing_file_import_to_file_import_result

@@ -25,6 +25,8 @@ from more_itertools import distribute
 
 from recidiviz.airflow.dags.raw_data.metadata import (
     APPEND_READY_FILE_BATCHES,
+    BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS,
+    BQ_METADATA_TO_IMPORT_THIS_RUN,
     FILE_IMPORTS,
     IMPORT_READY_FILES,
     PROCESSED_PATHS_TO_RENAME,
@@ -68,6 +70,7 @@ from recidiviz.utils.airflow_types import (
 from recidiviz.utils.types import assert_type
 
 MAX_BQ_LOAD_JOBS = 8  # TODO(#29946) determine reasonable default
+MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS = 1500
 
 
 @task
@@ -159,6 +162,45 @@ def split_by_pre_import_normalization_type(
     }
 
 
+@task
+def get_files_to_import_this_run(
+    *, raw_data_instance: DirectIngestInstance, serialized_bq_metadata: List[str]
+) -> Dict[str, List[str]]:
+    """Limits the number of files we are going to import in a single run of the raw
+    data import DAG, due to the scale of full secondary re-imports.
+    """
+
+    metadata_to_run: list[str] = []
+    metadata_to_defer: list[str] = []
+    if raw_data_instance == DirectIngestInstance.PRIMARY:
+        metadata_to_run = serialized_bq_metadata
+    else:
+        # TODO(#35694): make this smarter -- we want to cap at the total number of file
+        # chunks we expect to be able to import as a proxy for both scale and time, so
+        # limit by a combination of the number of file tags, files and file size
+
+        sorted_bq_metadata: list[RawBigQueryFileMetadata] = sorted(
+            (
+                RawBigQueryFileMetadata.deserialize(serialized_bq)
+                for serialized_bq in serialized_bq_metadata
+            ),
+            key=lambda x: (x.update_datetime, x.file_tag),
+        )
+        metadata_to_run = [
+            bq_metadata.serialize()
+            for bq_metadata in sorted_bq_metadata[:MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS]
+        ]
+        metadata_to_defer = [
+            bq_metadata.serialize()
+            for bq_metadata in sorted_bq_metadata[MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS:]
+        ]
+
+    return {
+        BQ_METADATA_TO_IMPORT_THIS_RUN: metadata_to_run,
+        BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS: metadata_to_defer,
+    }
+
+
 @task(trigger_rule=TriggerRule.ALL_DONE)
 def coalesce_import_ready_files(
     maybe_serialized_import_ready_files_no_normalization: Optional[List[str]],
@@ -218,10 +260,6 @@ def coalesce_results_and_errors(
         - processed_paths_to_rename: a list of GcsfsFilePath objects that need their
             processed state renamed from unprocessed to processed after successfully
             being imported
-        - temporary_paths_to_clean: a list of GcsfsFilePath objects that need to be
-            deleted
-        - temporary_tables_to_clean: a list of BigQueryAddress objects that need to be
-            deleted
     """
 
     (

@@ -16,6 +16,7 @@
 # =============================================================================
 """Class for starting an import run and opening file import objects in the operations db"""
 import datetime
+import logging
 from typing import Dict, List
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -25,7 +26,11 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.raw_data.metadata import IMPORT_RUN_ID
+from recidiviz.airflow.dags.raw_data.metadata import (
+    BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS,
+    BQ_METADATA_TO_IMPORT_THIS_RUN,
+    IMPORT_RUN_ID,
+)
 from recidiviz.airflow.dags.utils.cloud_sql import postgres_formatted_datetime_with_tz
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
@@ -52,14 +57,12 @@ class WriteImportStartCloudSqlGenerator(CloudSqlQueryGenerator[Dict[str, int]]):
         self,
         region_code: str,
         raw_data_instance: DirectIngestInstance,
-        get_all_unprocessed_bq_file_metadata_task_id: str,
+        files_to_import_this_run_task_id: str,
     ) -> None:
         super().__init__()
         self._region_code = region_code
         self._raw_data_instance = raw_data_instance
-        self._get_all_unprocessed_bq_file_metadata_task_id = (
-            get_all_unprocessed_bq_file_metadata_task_id
-        )
+        self._files_to_import_this_run_task_id = files_to_import_this_run_task_id
 
     def execute_postgres_query(
         self,
@@ -68,15 +71,33 @@ class WriteImportStartCloudSqlGenerator(CloudSqlQueryGenerator[Dict[str, int]]):
         context: Context,
     ) -> Dict[str, int]:
 
-        bq_file_metadata_to_import = [
+        bq_file_metadata_to_import_this_run = [
             RawBigQueryFileMetadata.deserialize(bq_metadata_str)
             for bq_metadata_str in operator.xcom_pull(
-                context,
-                task_ids=self._get_all_unprocessed_bq_file_metadata_task_id,
+                context=context,
+                task_ids=self._files_to_import_this_run_task_id,
+                key=BQ_METADATA_TO_IMPORT_THIS_RUN,
+            )
+        ]
+        bq_file_metadata_to_import_in_future_runs = [
+            RawBigQueryFileMetadata.deserialize(bq_metadata_str)
+            for bq_metadata_str in operator.xcom_pull(
+                context=context,
+                task_ids=self._files_to_import_this_run_task_id,
+                key=BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS,
             )
         ]
 
-        if not bq_file_metadata_to_import:
+        if (
+            not bq_file_metadata_to_import_this_run
+            and bq_file_metadata_to_import_in_future_runs
+        ):
+            raise ValueError(
+                "We should never defer files to run until future imports without having files to run during this import!"
+            )
+
+        if not bq_file_metadata_to_import_this_run:
+            logging.info("Found no metadata to import this run; returning.")
             return {}
 
         dag_run = context["dag_run"]
@@ -88,8 +109,6 @@ class WriteImportStartCloudSqlGenerator(CloudSqlQueryGenerator[Dict[str, int]]):
         dag_run_start_time = assert_type(dag_run.start_date, datetime.datetime)
         dag_run_id = assert_type(dag_run.run_id, str)
 
-        # TODO(#30169) is there a scale where we would not want to insert them all at
-        # once and instead do batches?
         import_run_id_result = postgres_hook.get_records(
             self._create_insert_into_import_run_sql_query(
                 dag_run_id, dag_run_start_time
@@ -102,37 +121,60 @@ class WriteImportStartCloudSqlGenerator(CloudSqlQueryGenerator[Dict[str, int]]):
         import_run_id = assert_type(import_run_id_result[0][0], int)
 
         postgres_hook.get_records(
-            self._create_start_file_import_file_import_sql_query(
-                import_run_id, bq_file_metadata_to_import
+            self._create_file_import_sql_query(
+                import_run_id=import_run_id,
+                bq_metadata=bq_file_metadata_to_import_this_run,
+                status=DirectIngestRawFileImportStatus.STARTED,
             )
         )
 
+        if bq_file_metadata_to_import_in_future_runs:
+            # TODO(#30169) is there a scale where we would not want to insert them all at
+            # once and instead do batches?
+            postgres_hook.get_records(
+                self._create_file_import_sql_query(
+                    import_run_id=import_run_id,
+                    bq_metadata=bq_file_metadata_to_import_in_future_runs,
+                    status=DirectIngestRawFileImportStatus.DEFERRED,
+                )
+            )
+
         return {IMPORT_RUN_ID: import_run_id}
 
-    def _start_file_import_row_from_metadata(
+    def _file_import_row_from_metadata(
         self,
+        *,
         import_run_id: int,
-        bq_metadata: RawBigQueryFileMetadata,
+        bq_metadata_item: RawBigQueryFileMetadata,
+        status: DirectIngestRawFileImportStatus,
     ) -> str:
         # n.b. the order of the values in this column MUST match the order of the columns
         # specified in ADD_FILE_IMPORT_SQL_QUERY
         row = [
-            f"{assert_type(bq_metadata.file_id, int)}",
+            f"{assert_type(bq_metadata_item.file_id, int)}",
             f"{import_run_id}",
-            f"'{DirectIngestRawFileImportStatus.STARTED.value}'",
+            f"'{status.value}'",
             f"'{self._region_code}'",
             f"'{self._raw_data_instance.value}'",
         ]
 
         return f"({','.join(row)})"
 
-    def _create_start_file_import_file_import_sql_query(
-        self, import_run_id: int, bq_metadata: List[RawBigQueryFileMetadata]
+    def _create_file_import_sql_query(
+        self,
+        *,
+        import_run_id: int,
+        bq_metadata: List[RawBigQueryFileMetadata],
+        status: DirectIngestRawFileImportStatus,
     ) -> str:
         start_file_import_rows = ",\n ".join(
             [
-                self._start_file_import_row_from_metadata(import_run_id, metadata)
-                for metadata in bq_metadata
+                self._file_import_row_from_metadata(
+                    import_run_id=import_run_id,
+                    bq_metadata_item=bq_metadata_item,
+                    status=status,
+                )
+                for bq_metadata_item in bq_metadata
             ]
         )
 

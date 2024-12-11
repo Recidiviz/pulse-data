@@ -103,7 +103,30 @@ class WriteImportCompletionsSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest
             """
         )
 
-    def _seed_import_run(self, file_imports: List[RawFileImport]) -> None:
+    def _seed_deferred(self, file_ids: list[int], import_run_id: int) -> None:
+        dt = datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC)
+        bq_values = [
+            f"({file_id},'US_XX','PRIMARY','tag_a','{postgres_formatted_datetime_with_tz(dt)}',False)"
+            for file_id in file_ids
+        ]
+        self.mock_pg_hook.run(
+            f""" INSERT INTO direct_ingest_raw_big_query_file_metadata (file_id, region_code, raw_data_instance, file_tag, update_datetime, is_invalidated)
+            VALUES {','.join(bq_values)}
+            """
+        )
+        import_values = ",".join(
+            [
+                f"({file_id}, {import_run_id}, 'DEFERRED', 'US_XX', 'PRIMARY')"
+                for file_id in file_ids
+            ]
+        )
+        self.mock_pg_hook.run(
+            f"""INSERT INTO direct_ingest_raw_file_import (file_id, import_run_id, import_status, region_code, raw_data_instance)
+                VALUES {import_values};
+        """
+        )
+
+    def _seed_import_run(self, file_imports: List[RawFileImport]) -> int:
         dt = datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC)
         import_run_id_result = assert_type(
             self.mock_pg_hook.get_records(
@@ -129,6 +152,8 @@ class WriteImportCompletionsSqlQueryGeneratorTest(CloudSqlQueryGeneratorUnitTest
         )
 
         self.import_run_id_xcom = {IMPORT_RUN_ID: import_run_id}
+
+        return import_run_id
 
     def test_write_no_import_written(self) -> None:
         mock_hook = create_autospec(PostgresHook)
@@ -432,7 +457,8 @@ ValueError: known_values for tagBasic must not be empty""",
         all_file_imports = [*self.file_imports, *missing_file_imports]
 
         self._seed_bq_metadata(all_file_imports)
-        self._seed_import_run(all_file_imports)
+        import_run_id = self._seed_import_run(all_file_imports)
+        self._seed_deferred(file_ids=[6, 7, 8], import_run_id=import_run_id)
 
         with freeze_time(end_time):
             result = self.generator.execute_postgres_query(
@@ -484,7 +510,7 @@ ValueError: known_values for tagBasic must not be empty""",
                 )
                 assert record.error_message == self.file_imports[i].error_message
             # import summaries that were missing that we will just close out w/ FAILED UNKNOWN
-            else:
+            elif i < 5:
                 assert (
                     record.file_id
                     == missing_file_imports[i - len(self.file_imports)].file_id
@@ -501,6 +527,15 @@ ValueError: known_values for tagBasic must not be empty""",
                     "despite it being marked as STARTED. This likely means that there was a "
                     "DAG-level failure occurred during this import run."
                 )
+            else:
+                assert record.import_status == "DEFERRED"
+                assert record.region_code == "US_XX"
+                assert record.raw_data_instance == "PRIMARY"
+                assert record.historical_diffs_active is None
+                assert record.raw_rows is None
+                assert record.net_new_or_updated_rows is None
+                assert record.deleted_rows is None
+                assert record.error_message is None
 
         import_runs = assert_type(
             self.mock_pg_hook.get_records(

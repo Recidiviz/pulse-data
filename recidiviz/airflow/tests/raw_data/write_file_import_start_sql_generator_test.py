@@ -16,7 +16,8 @@
 # =============================================================================
 """Unit tests for WriteFileImportStartCloudSqlGenerator"""
 import datetime
-from typing import List, NamedTuple
+import re
+from typing import Any, List, NamedTuple
 from unittest.mock import create_autospec
 
 from airflow.models import DagRun
@@ -27,7 +28,11 @@ from more_itertools import one
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.raw_data.metadata import IMPORT_RUN_ID
+from recidiviz.airflow.dags.raw_data.metadata import (
+    BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS,
+    BQ_METADATA_TO_IMPORT_THIS_RUN,
+    IMPORT_RUN_ID,
+)
 from recidiviz.airflow.dags.raw_data.write_file_import_start_sql_query_generator import (
     WriteImportStartCloudSqlGenerator,
 )
@@ -71,7 +76,6 @@ class WriteFileImportStartCloudSqlGeneratorTest(CloudSqlQueryGeneratorUnitTest):
     """Unit tests for WriteFileImportStartCloudSqlGenerator"""
 
     metas = [OperationsBase]
-    mock_operator = create_autospec(CloudSqlQueryOperator)
     mock_context = create_autospec(Context)
 
     def setUp(self) -> None:
@@ -79,12 +83,24 @@ class WriteFileImportStartCloudSqlGeneratorTest(CloudSqlQueryGeneratorUnitTest):
         self.generator = WriteImportStartCloudSqlGenerator(
             region_code="US_XX",
             raw_data_instance=DirectIngestInstance.PRIMARY,
-            get_all_unprocessed_bq_file_metadata_task_id="task_id",
+            files_to_import_this_run_task_id="task_id",
         )
         self.mock_pg_hook = PostgresHook(postgres_conn_id=self.conn_id)
+        self.this_run: list[str] = []
+        self.deferred: list[str] = []
+        self.mock_operator = create_autospec(CloudSqlQueryOperator)
+        self.mock_operator.xcom_pull.side_effect = self._xcom_pull
+
+    def _xcom_pull(self, **kwargs: Any) -> list[str]:
+        xcom_key = kwargs["key"]
+        if xcom_key == BQ_METADATA_TO_IMPORT_THIS_RUN:
+            return self.this_run
+        if xcom_key == BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS:
+            return self.deferred
+
+        raise ValueError("!!!")
 
     def test_write_no_runs(self) -> None:
-        self.mock_operator.xcom_pull.return_value = []
         mock_hook = create_autospec(PostgresHook)
         result = self.generator.execute_postgres_query(
             self.mock_operator, mock_hook, self.mock_context
@@ -92,6 +108,38 @@ class WriteFileImportStartCloudSqlGeneratorTest(CloudSqlQueryGeneratorUnitTest):
 
         assert not result
         assert mock_hook.get_records.assert_not_called
+
+    def test_defer_none_now(self) -> None:
+        mock_hook = create_autospec(PostgresHook)
+        self.deferred = [
+            bq_metadata.serialize()
+            for bq_metadata in self._seed_bq_metadata(["deferred"])
+        ]
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "We should never defer files to run until future imports without having files to run during this import!"
+            ),
+        ):
+            self.generator.execute_postgres_query(
+                self.mock_operator, mock_hook, self.mock_context
+            )
+
+    def test_defer_no_dag_run(self) -> None:
+        mock_hook = create_autospec(PostgresHook)
+        self.mock_context.__getitem__.return_value = None
+        self.this_run = [
+            bq_metadata.serialize() for bq_metadata in self._seed_bq_metadata(["now"])
+        ]
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                "Dag run not passed to task. Should be automatically set due to function being a task."
+            ),
+        ):
+            self.generator.execute_postgres_query(
+                self.mock_operator, mock_hook, self.mock_context
+            )
 
     def _seed_bq_metadata(self, file_tags: List[str]) -> List[RawBigQueryFileMetadata]:
         dt = datetime.datetime(2024, 1, 1, 1, 2, 1, tzinfo=datetime.UTC)
@@ -119,7 +167,7 @@ class WriteFileImportStartCloudSqlGeneratorTest(CloudSqlQueryGeneratorUnitTest):
             for record in records
         ]
 
-    def test_write_file_imports(self) -> None:
+    def test_write_file_imports_all_this_run(self) -> None:
         start_time = datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC)
 
         dag_run = create_autospec(DagRun)
@@ -131,9 +179,7 @@ class WriteFileImportStartCloudSqlGeneratorTest(CloudSqlQueryGeneratorUnitTest):
 
         bq_files = self._seed_bq_metadata(file_tags)
 
-        self.mock_operator.xcom_pull.return_value = [
-            bq_file.serialize() for bq_file in bq_files
-        ]
+        self.this_run = [bq_file.serialize() for bq_file in bq_files]
 
         result = self.generator.execute_postgres_query(
             self.mock_operator, self.mock_pg_hook, self.mock_context
@@ -242,5 +288,107 @@ class WriteFileImportStartCloudSqlGeneratorTest(CloudSqlQueryGeneratorUnitTest):
             assert record.import_run_id == persisted_import_run2[i % 2].import_run_id
             assert record.file_id == bq_files[i // 2].file_id
             assert record.import_status == DirectIngestRawFileImportStatus.STARTED.value
+            assert record.region_code == "US_XX"
+            assert record.raw_data_instance == "PRIMARY"
+
+    def test_write_defer_some(self) -> None:
+        start_time = datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC)
+
+        dag_run = create_autospec(DagRun)
+        dag_run.start_date = start_time
+        dag_run.run_id = "run123"
+        self.mock_context.__getitem__.return_value = dag_run
+
+        file_tags_now = ["tag_a", "tag_b", "tag_c"]
+        bq_files_now = self._seed_bq_metadata(file_tags_now)
+
+        file_tags_later = ["tag_d"]  # d is for deferred
+        bq_files_later = self._seed_bq_metadata(file_tags_later)
+
+        self.this_run = [bq_file.serialize() for bq_file in bq_files_now]
+        self.deferred = [bq_file.serialize() for bq_file in bq_files_later]
+
+        result = self.generator.execute_postgres_query(
+            self.mock_operator, self.mock_pg_hook, self.mock_context
+        )
+
+        assert IMPORT_RUN_ID in result
+        assert isinstance(result[IMPORT_RUN_ID], int)
+
+        persisted_import_run = one(
+            [
+                ImportRun(*row)
+                for row in assert_type(
+                    self.mock_pg_hook.get_records(
+                        """SELECT 
+                import_run_id, 
+                dag_run_id, 
+                import_run_start, 
+                import_run_end, 
+                region_code, 
+                raw_data_instance
+            FROM direct_ingest_raw_file_import_run 
+            ORDER BY import_run_id;"""
+                    ),
+                    list,
+                )
+            ]
+        )
+
+        assert persisted_import_run.import_run_id == result[IMPORT_RUN_ID]
+
+        persisted_now_file_imports = [
+            FileImport(*row)
+            for row in assert_type(
+                self.mock_pg_hook.get_records(
+                    """SELECT 
+                file_import_id, 
+                file_id, 
+                import_run_id,
+                import_status, 
+                region_code, 
+                raw_data_instance
+            FROM direct_ingest_raw_file_import
+            WHERE import_status = 'STARTED'
+            ORDER BY file_id;"""
+                ),
+                list,
+            )
+        ]
+
+        for i, record in enumerate(persisted_now_file_imports):
+            assert isinstance(record.file_import_id, int)
+            assert record.import_run_id == persisted_import_run.import_run_id
+            assert record.file_id == bq_files_now[i].file_id
+            assert record.import_status == DirectIngestRawFileImportStatus.STARTED.value
+            assert record.region_code == "US_XX"
+            assert record.raw_data_instance == "PRIMARY"
+
+        persisted_later_file_imports = [
+            FileImport(*row)
+            for row in assert_type(
+                self.mock_pg_hook.get_records(
+                    """SELECT 
+                file_import_id, 
+                file_id, 
+                import_run_id,
+                import_status, 
+                region_code, 
+                raw_data_instance
+            FROM direct_ingest_raw_file_import
+            WHERE import_status = 'DEFERRED'
+            ORDER BY file_id;"""
+                ),
+                list,
+            )
+        ]
+
+        for i, record in enumerate(persisted_later_file_imports):
+            assert isinstance(record.file_import_id, int)
+            assert record.import_run_id == persisted_import_run.import_run_id
+            assert record.file_id == bq_files_later[i].file_id
+            assert (
+                record.import_status == DirectIngestRawFileImportStatus.DEFERRED.value
+            )
             assert record.region_code == "US_XX"
             assert record.raw_data_instance == "PRIMARY"

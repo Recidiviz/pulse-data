@@ -25,15 +25,19 @@ from more_itertools import one
 
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
     MAX_BQ_LOAD_JOBS,
+    MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS,
     _build_file_imports_for_errors,
     _build_file_imports_for_results,
     _reconcile_file_imports_and_bq_metadata,
     coalesce_import_ready_files,
     coalesce_results_and_errors,
+    get_files_to_import_this_run,
     split_by_pre_import_normalization_type,
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
     APPEND_READY_FILE_BATCHES,
+    BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS,
+    BQ_METADATA_TO_IMPORT_THIS_RUN,
     FILE_IMPORTS,
     IMPORT_READY_FILES,
     PROCESSED_PATHS_TO_RENAME,
@@ -274,7 +278,128 @@ class SplitByPreImportNormalizationTest(TestCase):
         }
 
 
-class CoalesceImportReadyFiles(TestCase):
+class GetFilesToImportThisRunTest(TestCase):
+    """Tests for get_files_to_import_this_run task"""
+
+    def test_empty(self) -> None:
+        assert get_files_to_import_this_run.function(
+            raw_data_instance=DirectIngestInstance.PRIMARY, serialized_bq_metadata=[]
+        ) == {
+            BQ_METADATA_TO_IMPORT_THIS_RUN: [],
+            BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS: [],
+        }
+
+    def test_less_than_max(self) -> None:
+        oldest = RawBigQueryFileMetadata(
+            file_id=1,
+            file_tag="tagBasicData",
+            gcs_files=[
+                RawGCSFileMetadata(
+                    gcs_file_id=1,
+                    file_id=1,
+                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
+                )
+            ],
+            update_datetime=datetime.datetime(2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC),
+        ).serialize()
+
+        newest = RawBigQueryFileMetadata(
+            file_id=3,
+            file_tag="tagCustomLineTerminatorNonUTF8",
+            gcs_files=[
+                RawGCSFileMetadata(
+                    gcs_file_id=2,
+                    file_id=2,
+                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob1_2.csv"),
+                ),
+            ],
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+        ).serialize()
+
+        bq_metadata = [newest, oldest]
+
+        result = get_files_to_import_this_run.function(
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+            serialized_bq_metadata=bq_metadata,
+        )
+
+        assert len(result[BQ_METADATA_TO_IMPORT_THIS_RUN]) == len(bq_metadata)
+        assert set(result[BQ_METADATA_TO_IMPORT_THIS_RUN]) == {oldest, newest}
+
+        assert len(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == 0
+        assert set(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == set()
+
+        result = get_files_to_import_this_run.function(
+            raw_data_instance=DirectIngestInstance.SECONDARY,
+            serialized_bq_metadata=bq_metadata,
+        )
+
+        assert len(result[BQ_METADATA_TO_IMPORT_THIS_RUN]) == len(bq_metadata)
+        assert set(result[BQ_METADATA_TO_IMPORT_THIS_RUN]) == {oldest, newest}
+
+        assert len(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == 0
+        assert set(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == set()
+
+    def test_split_sort(self) -> None:
+        oldest = RawBigQueryFileMetadata(
+            file_id=1,
+            file_tag="tagBasicData",
+            gcs_files=[
+                RawGCSFileMetadata(
+                    gcs_file_id=1,
+                    file_id=1,
+                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
+                )
+            ],
+            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+        ).serialize()
+
+        newest = RawBigQueryFileMetadata(
+            file_id=3,
+            file_tag="tagCustomLineTerminatorNonUTF8",
+            gcs_files=[
+                RawGCSFileMetadata(
+                    gcs_file_id=2,
+                    file_id=2,
+                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob1_2.csv"),
+                ),
+            ],
+            update_datetime=datetime.datetime(2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC),
+        ).serialize()
+
+        bq_metadata = [newest] + [
+            oldest for _ in range(MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS + 1)
+        ]
+
+        result = get_files_to_import_this_run.function(
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+            serialized_bq_metadata=bq_metadata,
+        )
+
+        assert len(result[BQ_METADATA_TO_IMPORT_THIS_RUN]) == len(bq_metadata)
+        assert set(result[BQ_METADATA_TO_IMPORT_THIS_RUN]) == {oldest, newest}
+
+        assert len(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == 0
+        assert set(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == set()
+
+        result = get_files_to_import_this_run.function(
+            raw_data_instance=DirectIngestInstance.SECONDARY,
+            serialized_bq_metadata=bq_metadata,
+        )
+
+        assert (
+            len(result[BQ_METADATA_TO_IMPORT_THIS_RUN])
+            == MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS
+        )
+        # should be MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS of oldest file
+        assert set(result[BQ_METADATA_TO_IMPORT_THIS_RUN]) == set([oldest])
+
+        # should be 1 of the older file and 1 of the newer file
+        assert len(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == 2
+        assert set(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == {newest, oldest}
+
+
+class CoalesceImportReadyFilesTest(TestCase):
     """Tests for coalesce_import_ready_files task"""
 
     def test_empty(self) -> None:

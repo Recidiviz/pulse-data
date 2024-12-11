@@ -46,6 +46,7 @@ from recidiviz.airflow.dags.raw_data.clean_up_tasks import (
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
     coalesce_import_ready_files,
     coalesce_results_and_errors,
+    get_files_to_import_this_run,
     raise_operations_registration_errors,
     split_by_pre_import_normalization_type,
 )
@@ -71,6 +72,7 @@ from recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group import (
     initialize_raw_data_dag_group,
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
+    BQ_METADATA_TO_IMPORT_THIS_RUN,
     CHUNKING_ERRORS,
     CHUNKING_RESULTS,
     FILE_IDS_TO_HEADERS,
@@ -221,7 +223,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         )
 
         # should_run_import is upstream of (set further down in the dag):
-        #   - write_import_start
+        #   - files_to_import_this_run
         #   - serialized_import_ready_files
         #   - write_import_completions
         should_run_import = has_files_to_import(
@@ -234,9 +236,16 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ]
         )
 
+        # here, we bifurcate between files we ARE importing and files we are deferring
+        files_to_import_this_run = get_files_to_import_this_run(
+            raw_data_instance=raw_data_instance,
+            serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
+        )
+
         get_all_unprocessed_bq_file_metadata >> [
             should_run_import,
             skipped_file_errors,
+            files_to_import_this_run,
         ]
 
         write_import_start = CloudSqlQueryOperator(
@@ -245,13 +254,15 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             query_generator=WriteImportStartCloudSqlGenerator(
                 region_code=state_code.value,
                 raw_data_instance=raw_data_instance,
-                get_all_unprocessed_bq_file_metadata_task_id=get_all_unprocessed_bq_file_metadata.task_id,
+                files_to_import_this_run_task_id=files_to_import_this_run.operator.task_id,
             ),
         )
 
         file_headers = read_and_verify_column_headers(
             region_code=state_code.value,
-            serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
+            serialized_bq_metadata=files_to_import_this_run[
+                BQ_METADATA_TO_IMPORT_THIS_RUN
+            ],
         )
 
         header_errors = raise_header_verification_errors(
@@ -260,7 +271,9 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         files_to_process = split_by_pre_import_normalization_type(
             region_code=state_code.value,
-            serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
+            serialized_bq_metadata=files_to_import_this_run[
+                BQ_METADATA_TO_IMPORT_THIS_RUN
+            ],
             file_ids_to_headers=file_headers[FILE_IDS_TO_HEADERS],
         )
 
@@ -269,6 +282,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             list_normalized_unprocessed_gcs_file_paths
             >> get_all_unprocessed_gcs_file_metadata
             >> get_all_unprocessed_bq_file_metadata
+            >> files_to_import_this_run
             >> write_import_start
             >> file_headers
             >> [
@@ -367,7 +381,9 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             clean_and_storage_jobs = coalesce_results_and_errors(
                 region_code=state_code.value,
                 raw_data_instance=raw_data_instance,
-                serialized_bq_metadata=get_all_unprocessed_bq_file_metadata.output,
+                serialized_bq_metadata=files_to_import_this_run[
+                    BQ_METADATA_TO_IMPORT_THIS_RUN
+                ],
                 serialized_header_verification_errors=file_headers[
                     HEADER_VERIFICATION_ERRORS
                 ],
@@ -444,7 +460,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # if we didn't have files to import, let's cascade our skip down through ALL_SUCCESS
         # trigger rules and have the short circuit override (skip without respecting) the ALL_DONE trigger rules
         should_run_import >> [
-            write_import_start,  # if we short circuit, will cascade skip through ALL_SUCCESS trigger rules
+            files_to_import_this_run,  # if we short circuit, will cascade skip through ALL_SUCCESS trigger rules
             serialized_import_ready_files,  # if we short circuit, will skip task despite ALL_DONE trigger rule
             write_import_completions,  # if we short circuit, will skip task despite ALL_DONE trigger rule of clean_and_storage_jobs
         ]
@@ -459,6 +475,8 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         ]
 
         # ------------------------------------------------------------------------------
+
+        # TODO(#35694): trigger another run here? conditionally?
 
     return [
         raw_data_branch,
