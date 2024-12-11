@@ -632,7 +632,13 @@ function constructSupervisionDistrictColumnChart(
     chartData,
     title,
     xAxisClean,
-    yAxisClean
+    yAxisClean,
+    undefined, // set colors to default
+    undefined, // default stack setting
+    undefined, // default width
+    undefined, // default height
+    undefined, // default legend position
+    false // do not filter out zero values
   );
 
   return supervisionColumnChart;
@@ -720,7 +726,8 @@ function constructMauWauByLocationColumnChart(
     false, // we do not want to stack columns
     1022, // this chart has a custom width
     618, // this chart has a custom height
-    Charts.Position.BOTTOM // this chart has a legend
+    Charts.Position.BOTTOM, // this chart has a legend
+    false // for this chart, we do not want to filter out zero values
   );
 
   return mauWauByLocationColumnChart;
