@@ -7,11 +7,10 @@ input_columns:
   - CorrectionsCompactEndDate
   - CorrectionsCompactStartDate
   - OffenseSentenceTypeName
-  - relationships
   - TermId
   - SentenceId
   - inState
-  - SentenceOrderCategoryId
+  - SentenceOrderTypeId
 unused_columns: []
 output:
   StatePerson:
@@ -52,13 +51,18 @@ output:
                       proj_completion_date: CorrectionsCompactEndDate
           external_id: SentenceId # Never null in scl_Sentence table
           sentence_type:
-            $conditional:
-              - $if:
-                  $equal:
-                    - SentenceOrderCategoryId
-                    - $literal("2")
-                $then: $literal_enum(StateSentenceType.STATE_PRISON)
-              - $else: $literal_enum(StateSentenceType.PROBATION)
+            $enum_mapping:
+              $raw_text: SentenceOrderTypeId
+              $mappings:
+                StateSentenceType.STATE_PRISON:
+                  - "1" # Commitment
+                  - "2" # Retained Jurisdiction
+                  - "3" # Corrections Compact
+                StateSentenceType.PROBATION:
+                  - "4" # Drug Court
+                  - "5" # Suspended Sentence
+                  - "6" # Withheld Judgment
+                  - "7" # Unsupervised Probation
           sentence_group_external_id: TermId
           is_capital_punishment:
             $conditional:
@@ -68,4 +72,3 @@ output:
                     - $literal("Death")
                 $then: $literal_bool(True)
               - $else: $literal_bool(False)
-          parent_sentence_external_id_array: relationships

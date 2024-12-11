@@ -288,11 +288,7 @@ def _sentencing_entities_checks(
 
         # If this sentence has consecutive sentences before it, check
         # that they exist for this person.
-        if (
-            sentence.parent_sentence_external_id_array is not None
-            # TODO(#32140) Update state_sentence view in US_IX so that all consecutive sentence exist.
-            and state_person.state_code != StateCode.US_IX.value
-        ):
+        if sentence.parent_sentence_external_id_array is not None:
             for p_id in sentence.parent_sentence_external_id_array.split(","):
                 if p_id not in external_ids:
                     yield (

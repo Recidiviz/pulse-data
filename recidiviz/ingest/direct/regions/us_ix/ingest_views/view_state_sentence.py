@@ -26,6 +26,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 sentences_base = new_sentence_view_template()
 
+# TODO(#32140) Update state_sentence view in US_IX so that all consecutive sentence exist.
 VIEW_QUERY_TEMPLATE = f"""
     WITH
         {sentences_base}
@@ -36,10 +37,9 @@ VIEW_QUERY_TEMPLATE = f"""
             SentenceDate,
             CorrectionsCompactEndDate,
             CorrectionsCompactStartDate,
-            relationships,
             TermId,
             OffenseSentenceTypeName,
-            SentenceOrderCategoryId,
+            SentenceOrderTypeId,
             inState
         FROM final_sentences
         WHERE SentenceOrderEventTypeId IN ('1', '2', '3', '5') -- keep "Initial", "Amendment", and "Error Correction" sentences
