@@ -225,11 +225,7 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_raw_file_import",
             "direct_ingest_raw_data_flash_status",
         ]
-        workflows_table_names = [
-            "opportunity",
-            "opportunity_configuration",
-            "case_note_search_record",
-        ]
+        workflows_table_names = ["opportunity", "opportunity_configuration"]
         insights_table_names = [
             "metric_benchmarks",
             "supervision_client_events",
