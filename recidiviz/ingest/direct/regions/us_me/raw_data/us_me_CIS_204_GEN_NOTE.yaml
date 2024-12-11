@@ -12,9 +12,14 @@ columns:
     field_type: person_external_id
     external_id_type: US_ME_DOC
   - name: Cis_2040_Contact_Mode_Cd
-    description: Contact mode code. Some CMs use this field to group their notes. E.g. if related to programming, could be set as <Program/Service>
+    description: >-
+      Contact mode code. Some CMs use this field to group their notes. E.g. if related
+      to programming, could be set as <Program/Service>
   - name: Cis_2041_Note_Type_Cd
-    description: Note type code. It usually gives an idea of where the note came from. E.g. CMs usually put theirs as <Case Plan/Management>. Program teachers use <Education Notes>.
+    description: >-
+      Note type code. It usually gives an idea of where the note came from. E.g. CMs
+      usually put theirs as <Case Plan/Management>. Program teachers use <Education
+      Notes>.
   - name: Cis_2042_Person_Contacted_Cd
   - name: Cis_900_Empl_Create_Id
     is_pii: True
@@ -23,7 +28,10 @@ columns:
   - name: Cis_908_Ccs_Location_Id
   - name: Created_By_Tx
     is_pii: True
+    description: User who created this record.
   - name: Created_On_Date
+    field_type: datetime
+    description: Date the record was created.
   - name: Message_Hi_Rca_Ind
   - name: Message_Hi_Risk_Ind
   - name: Message_Ind
@@ -31,7 +39,10 @@ columns:
   - name: Message_Lo_Risk_Ind
   - name: Modified_By_Tx
     is_pii: True
+    description: User who last modified this record.
   - name: Modified_On_Date
+    description: Date the record was last modified.
+    field_type: datetime
   - name: Note_Date
     description: This is the date the note was entered.
     field_type: datetime
