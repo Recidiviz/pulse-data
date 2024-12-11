@@ -186,6 +186,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         # which makes the difference in period stars between June and July even more pronounced
                         date(2024, 6, 1),
                         date(2024, 7, 1),
+                        # We received a full historical transfer in Nov 2024, which caused ingest to artificially close and start a bunch of new periods
+                        # due to the way ingest uses update_datetime from the @ALL version of the views
+                        date(2024, 11, 1),
                     ],
                     StateCode.US_ND: [
                         date(2023, 2, 1),
@@ -217,6 +220,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         # The number of supervision starts has been increasing slightly in the past few months, with an all time high in 9/2023 (due to more officer assignment changes than usual)
                         # And so the number of supervision starts in 10/2023 is actually closer to the usual, and it's only failing cause 9/2023 had crept up so high
                         date(2023, 10, 1),
+                        # The number of supervision starts has increased higher in 10/2024, and 11/2024 is slightly lower than usual but actually closer to the average than 10/2024
+                        # The fluctuation was only 26% compared to 10/2024, so not that big of a difference.
+                        date(2024, 11, 1),
                     ],
                 },
             ),
@@ -254,6 +260,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         # which makes the difference in period stars between June and July even more pronounced
                         date(2024, 6, 1),
                         date(2024, 7, 1),
+                        # We received a full historical transfer in Nov, which caused ingest to artificially close and start a bunch of new periods
+                        # due to the way ingest uses update_datetime from the @ALL version of the views
+                        date(2024, 11, 1),
                     ],
                     StateCode.US_TN: [
                         date(2023, 1, 1),
@@ -281,6 +290,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         # The number of supervision terminations has been increasing slightly in the past few months, with an all time high in 9/2023 (due to more officer assignment changes than usual)
                         # And so the number of supervision terminations in 10/2023 is actually closer to the usual, and it's only failing cause 9/2023 had crept up so high
                         date(2023, 10, 1),
+                        # The number of supervision terminations has increased higher in 10/2024, and 11/2024 is slightly lower than usual but actually closer to the average than 10/2024
+                        # The fluctuation was only 27% compared to 10/2024, so not that big of a difference.
+                        date(2024, 11, 1),
                     ],
                     StateCode.US_ND: [
                         date(2023, 11, 1),  # Stale data in staging, no issue in prod
@@ -313,6 +325,11 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(
                             2023, 9, 1
                         ),  # This is the date MI went through a database migration and then violations data started getting entered differently.
+                    ],
+                    StateCode.US_IX: [
+                        # The number of violation responses had increased higher in 10/2024, and 11/2024 is slightly lower than usual but not abnormally low
+                        # and only triggered this validation because 10/2024 was abnormally high.
+                        date(2024, 11, 1),
                     ],
                 },
             )

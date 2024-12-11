@@ -104,9 +104,9 @@ num_allowed_rows_overrides:
       getting ingested with almost all info missing.  We should re-evaluate this when we do the sentence refactor
       #TODO(#27541) #TODO(#29701)
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 210000
+    hard_num_allowed_rows_override: 280000
     override_reason:
-      Current failing level as of 9/23/24 is 205458 rows because we added a new source with open text charge descriptions.
+      Current failing level as of 12/10/24 is 270074 rows because we added a new source with open text charge descriptions.
       We currently don't use uniform offense labels so this is not a concern, and we plan to replace state charge ingest
       with a more complete data source once we receive Captor data. #TODO(#33154)
   - validation_name: sessions_missing_closest_sentence_imposed_group

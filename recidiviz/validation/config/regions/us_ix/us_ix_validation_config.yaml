@@ -60,6 +60,12 @@ max_allowed_error_overrides:
       because the external data is not changing. Could have to do with recent IP work.
       Needs to be investigated. error rate at 2.00% as of 10/28/24, and has not changed in a year.
       Status of ticket is to revisit if error rate changes.
+  - validation_name: incarceration_population_person_level_external_comparison
+    hard_max_allowed_error_override: 0.06
+    override_reason:
+      We now infer incarceration periods for periods during which folks are in federal or other state custody, which Idaho does not
+      in their external validation data, which leads our incarceration population to be greater
+      than their numbers.
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 2000
@@ -98,3 +104,9 @@ num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 9
     override_reason: TODO(#23965) Just a few cases, to investigate later
+  - validation_name: current_impact_funnel_status_duplicate_external_ids
+    hard_num_allowed_rows_override: 2000
+    override_reason:
+      Consequence of migrating LSU JII to the TES almost eligible infrastructure.
+      See comment here (https://github.com/Recidiviz/pulse-data/issues/32322#issuecomment-2286728820).
+      The underlying view is going to be deprecated so it's not really important to fix this.
