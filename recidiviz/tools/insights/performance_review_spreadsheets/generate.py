@@ -25,16 +25,21 @@ This will generate spreadsheets in the root directory of pulse-data.
 
 import logging
 import os
+from datetime import date
 from enum import Enum
 from random import random
 
+from dateutil.relativedelta import relativedelta
 from openpyxl import Workbook
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Font, PatternFill
-from openpyxl.styles.numbers import FORMAT_PERCENTAGE
+from openpyxl.styles.numbers import FORMAT_NUMBER
 from openpyxl.worksheet.worksheet import Worksheet
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.tools.insights.performance_review_spreadsheets.officer_aggregated_metrics import (
+    OfficerAggregatedMetrics,
+)
 from recidiviz.tools.insights.performance_review_spreadsheets.supervisors_and_officers import (
     SupervisorsAndOfficers,
 )
@@ -43,6 +48,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 class RowHeadingEnum(Enum):
+    AVG_DAILY_CASELOAD = "# Average Daily Caseload"
     TIMELY_RISK_ASSESSMENTS = "Timely Risk Assessments"
     TIMELY_F2F_CONTACTS = "Timely F2F Contacts"
     SUPERVISION_LEVEL_MISMATCH = "Supervision & Risk Level Mismatch"
@@ -59,7 +65,7 @@ _ROW_HEADINGS = [
     "Caseload Type",
     None,
     "Outcomes Metrics",
-    "# Average Daily Caseload",
+    RowHeadingEnum.AVG_DAILY_CASELOAD.value,
     "# Absconsions",
     "Months flagged as having a high absconsion rate",
     "# Incarcerations",
@@ -103,21 +109,12 @@ _ROW_HEADINGS = [
     RowHeadingEnum.SUPERVISION_LEVEL_MISMATCH.value,
 ]
 
+_COLUMN_DATE_FORMAT = "%b %Y"
+
 _COLUMN_HEADINGS = [
     None,
     ColumnHeadingEnum.YEARLY.value,
-    "Jan 2024",
-    "Feb 2024",
-    "Mar 2024",
-    "Apr 2024",
-    "May 2024",
-    "Jun 2024",
-    "Jul 2024",
-    "Aug 2024",
-    "Sep 2024",
-    "Oct 2024",
-    "Nov 2024",
-    "Dec 2024",
+    *[date(2024, month, 1).strftime(_COLUMN_DATE_FORMAT) for month in range(1, 13)],
 ]
 
 # Row numbers (1-indexed) that represent a section header
@@ -163,14 +160,14 @@ def get_row_index(heading: RowHeadingEnum) -> int:
     )
 
 
-def get_column_index(heading: ColumnHeadingEnum) -> str:
-    return chr(ord("A") + _COLUMN_HEADINGS.index(heading.value))
+def get_column_index(heading: str) -> str:
+    return chr(ord("A") + _COLUMN_HEADINGS.index(heading))
 
 
 def apply_conditional_formatting(sheet: Worksheet) -> None:
     for row_heading, threshold in CONDITIONAL_FORMAT_THRESHOLDS.items():
         row_idx = get_row_index(row_heading)
-        col_idx = get_column_index(ColumnHeadingEnum.YEARLY)
+        col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
 
         cell = f"{col_idx}{row_idx}"
 
@@ -192,6 +189,32 @@ def write_random_data(sheet: Worksheet) -> None:
             sheet[f"{chr(col)}{row}"] = random()
 
 
+def write_metrics(
+    sheet: Worksheet,
+    officer_id: str,
+    officer_aggregated_metrics: OfficerAggregatedMetrics,
+) -> None:
+    avg_daily_caseload_row = get_row_index(RowHeadingEnum.AVG_DAILY_CASELOAD)
+    for metric in officer_aggregated_metrics.monthly_data[officer_id]:
+        parsed_date = (metric.end_date_exclusive - relativedelta(days=1)).strftime(
+            _COLUMN_DATE_FORMAT
+        )
+        col_idx = get_column_index(parsed_date)
+        if metric.avg_daily_population:
+            cell = sheet[f"{col_idx}{avg_daily_caseload_row}"]
+            cell.value = metric.avg_daily_population
+            cell.number_format = FORMAT_NUMBER
+
+    yearly_avg_daily_population = officer_aggregated_metrics.yearly_data[
+        officer_id
+    ].avg_daily_population
+    if yearly_avg_daily_population:
+        col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
+        cell = sheet[f"{col_idx}{avg_daily_caseload_row}"]
+        cell.value = yearly_avg_daily_population
+        cell.number_format = FORMAT_NUMBER
+
+
 def generate_sheets() -> None:
     output_dir = os.path.join(os.path.dirname(__file__), "output")
     if not os.path.exists(output_dir):
@@ -199,19 +222,14 @@ def generate_sheets() -> None:
 
     bq_client = BigQueryClientImpl()
     supervisors_to_officers = SupervisorsAndOfficers.from_bigquery(bq_client).data
+    officer_aggregated_metrics = OfficerAggregatedMetrics.from_bigquery(bq_client)
     for supervisor, officers in supervisors_to_officers.items():
         wb = Workbook()
         for officer in officers:
             sheet = wb.create_sheet(title=officer.officer_name.formatted())
             create_headers(sheet)
             apply_conditional_formatting(sheet)
-            # TODO(#35926): Write real data instead of random data
-            write_random_data(sheet)
-
-            # Format numerical data as a percentage
-            for row in range(2, 50):
-                for col in range(ord("B"), ord("O")):
-                    sheet[f"{chr(col)}{row}"].number_format = FORMAT_PERCENTAGE
+            write_metrics(sheet, officer.officer_id, officer_aggregated_metrics)
 
         # Remove the default sheet, since we created new sheets for our data.
         wb.remove(wb.worksheets[0])
