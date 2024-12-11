@@ -108,6 +108,7 @@ urllib3 = "==1.26.15"
 docker = "*"
 docker-stubs = "*"
 types-tabulate = "*"
+types-openpyxl = "*"
 
 [packages]
 annotated-types="*"
