@@ -50,6 +50,7 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
             description="description",
             is_pii=True,
             field_type=RawTableColumnFieldType.STRING,
+            null_values=["0000"],
         )
         self.sad_col = RawTableColumnInfo(
             name=self.sad_col_name,

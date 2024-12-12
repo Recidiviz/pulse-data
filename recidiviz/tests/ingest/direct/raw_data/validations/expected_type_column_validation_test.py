@@ -47,7 +47,9 @@ class TestExpectedTypeColumnValidation(ColumnValidationTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.column_type = RawTableColumnFieldType.INTEGER
-        self.happy_col = attr.evolve(self.happy_col, field_type=self.column_type)
+        self.happy_col = attr.evolve(
+            self.happy_col, field_type=self.column_type, null_values=["N/A"]
+        )
         self.sad_col = attr.evolve(self.sad_col, field_type=self.column_type)
 
     def get_validation_class(self) -> Type[RawDataColumnImportBlockingValidation]:
@@ -57,6 +59,7 @@ class TestExpectedTypeColumnValidation(ColumnValidationTestCase):
         return [
             {self.happy_col_name: "1", self.sad_col_name: "5"},
             {self.happy_col_name: "2", self.sad_col_name: "5D"},
+            {self.happy_col_name: "N/A", self.sad_col_name: "50"},
         ]
 
     def test_dont_validate_string_type(self) -> None:
@@ -74,6 +77,7 @@ class TestExpectedTypeColumnValidation(ColumnValidationTestCase):
                     temp_table_address=self.temp_table_address,
                     column_name=self.sad_col_name,
                     column_type=column_type,
+                    null_values=None,
                 )
             self.assertEqual(
                 str(context_manager.exception),

@@ -16,7 +16,7 @@
 # =============================================================================
 """Validation that checks if a datetime column has values that don't match any of its datetime parsers."""
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import attr
 
@@ -35,7 +35,9 @@ from recidiviz.utils.string import StrictStringFormatter
 DATETIME_PARSERS_CHECK_TEMPLATE = """
 SELECT {column_name}
 FROM {project_id}.{dataset_id}.{table_id}
-WHERE {column_name} IS NOT NULL AND COALESCE({datetime_sql_parsers}) IS NULL
+WHERE {column_name} IS NOT NULL
+  AND COALESCE({datetime_sql_parsers}) IS NULL
+  {null_values_filter}
 LIMIT 1
 """
 
@@ -47,6 +49,7 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
     """
 
     datetime_sql_parsers: List[str]
+    null_values: Optional[List[str]]
 
     @classmethod
     def create_column_validation(
@@ -72,6 +75,11 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
             file_tag=file_tag,
             column_name=temp_table_col_name,
             datetime_sql_parsers=column.datetime_sql_parsers,
+            null_values=(
+                cls._escape_values_for_query(column.null_values)
+                if column.null_values
+                else None
+            ),
         )
 
     @staticmethod
@@ -104,6 +112,9 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
                     formatter.format(parser, col_name=self.column_name)
                     for parser in self.datetime_sql_parsers
                 ]
+            ),
+            null_values_filter=self._build_null_values_filter(
+                self.column_name, self.null_values
             ),
         )
 

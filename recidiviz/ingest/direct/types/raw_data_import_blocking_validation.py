@@ -17,7 +17,7 @@
 """Classes for raw table validations."""
 import abc
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import attr
 
@@ -114,6 +114,19 @@ class RawDataColumnImportBlockingValidation(RawDataImportBlockingValidation):
         raw_file_config: DirectIngestRawFileConfig,
     ) -> bool:
         """Implemented by subclasses to determine if the validation applies to the given column"""
+
+    @staticmethod
+    def _escape_values_for_query(values: List[str]) -> List[str]:
+        return [value.replace("\\", "\\\\") for value in values]
+
+    @staticmethod
+    def _build_null_values_filter(
+        column_name: str, null_values: Optional[List[str]]
+    ) -> str:
+        if null_values:
+            null_values_str = ", ".join([f'"{value}"' for value in null_values])
+            return f"AND {column_name} NOT IN ({null_values_str})"
+        return ""
 
 
 @attr.define

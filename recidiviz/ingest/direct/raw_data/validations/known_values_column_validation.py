@@ -16,7 +16,7 @@
 # =============================================================================
 """Validation to check if a column has values that are not one of the known_values supplied in the column config."""
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import attr
 
@@ -36,7 +36,9 @@ from recidiviz.utils.string import StrictStringFormatter
 KNOWN_VALUES_CHECK_TEMPLATE = """
 SELECT {column_name}
 FROM {project_id}.{dataset_id}.{table_id}
-WHERE {column_name} IS NOT NULL AND {column_name} NOT IN ({known_values})
+WHERE {column_name} IS NOT NULL
+    AND {column_name} NOT IN ({known_values})
+    {null_values_filter}
 LIMIT 1
 """
 
@@ -48,6 +50,7 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
     """
 
     known_values: List[str]
+    null_values: Optional[List[str]]
 
     @staticmethod
     def _get_escaped_known_values(known_values: List[ColumnEnumValueInfo]) -> List[str]:
@@ -74,7 +77,14 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
             temp_table_address=temp_table_address,
             file_tag=file_tag,
             column_name=temp_table_col_name,
-            known_values=cls._get_escaped_known_values(column.known_values),
+            known_values=cls._escape_values_for_query(
+                [enum.value for enum in column.known_values]
+            ),
+            null_values=(
+                cls._escape_values_for_query(column.null_values)
+                if column.null_values
+                else None
+            ),
         )
 
     @staticmethod
@@ -99,6 +109,9 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
             table_id=self.temp_table_address.table_id,
             column_name=self.column_name,
             known_values=", ".join([f'"{value}"' for value in self.known_values]),
+            null_values_filter=self._build_null_values_filter(
+                self.column_name, self.null_values
+            ),
         )
 
     def get_error_from_results(

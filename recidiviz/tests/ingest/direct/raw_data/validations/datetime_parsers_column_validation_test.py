@@ -70,6 +70,7 @@ class TestDatetimeParsersColumnValidation(ColumnValidationTestCase):
                 self.sad_col_name: "01/01/2022",
             },
             {self.happy_col_name: "01/01/2022", self.sad_col_name: "5D"},
+            {self.happy_col_name: "0000", self.sad_col_name: "02/01/2022"},
         ]
 
     def test_build_query_empty_datetime_sql_parsers(self) -> None:
@@ -83,6 +84,7 @@ class TestDatetimeParsersColumnValidation(ColumnValidationTestCase):
                 temp_table_address=self.temp_table_address,
                 column_name=self.sad_col_name,
                 datetime_sql_parsers=[],
+                null_values=[],
             )
 
     def test_validation_success(self) -> None:

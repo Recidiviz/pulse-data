@@ -16,7 +16,7 @@
 # =============================================================================
 """Validation to check if a column has values that can't be cast to the expected type."""
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import attr
 from google.cloud.bigquery.enums import StandardSqlTypeNames as BigQueryFieldType
@@ -37,7 +37,9 @@ from recidiviz.utils.string import StrictStringFormatter
 EXPECTED_TYPE_CHECK_TEMPLATE = """
 SELECT {column_name}
 FROM {project_id}.{dataset_id}.{table_id}
-WHERE {column_name} IS NOT NULL AND SAFE_CAST({column_name} AS {type}) IS NULL
+WHERE {column_name} IS NOT NULL
+    AND SAFE_CAST({column_name} AS {type}) IS NULL
+    {null_values_filter}
 LIMIT 1
 """
 
@@ -55,6 +57,7 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
     """Validation that checks if a column has values that can't be cast to the expected type"""
 
     column_type: RawTableColumnFieldType
+    null_values: Optional[List[str]]
 
     @classmethod
     def create_column_validation(
@@ -75,6 +78,11 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
             temp_table_address=temp_table_address,
             column_name=temp_table_col_name,
             column_type=column.field_type,
+            null_values=(
+                cls._escape_values_for_query(column.null_values)
+                if column.null_values
+                else None
+            ),
         )
 
     @staticmethod
@@ -113,6 +121,9 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
             table_id=self.temp_table_address.table_id,
             column_name=self.column_name,
             type=big_query_type.value,
+            null_values_filter=self._build_null_values_filter(
+                self.column_name, self.null_values
+            ),
         )
 
     def get_error_from_results(

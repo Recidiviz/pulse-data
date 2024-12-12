@@ -63,6 +63,7 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
         return [
             {self.happy_col_name: "a", self.sad_col_name: "b"},
             {self.happy_col_name: "b", self.sad_col_name: "z"},
+            {self.happy_col_name: "0000", self.sad_col_name: "a"},
         ]
 
     def _known_values_strings_to_enums(
@@ -83,6 +84,7 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
                 temp_table_address=self.temp_table_address,
                 column_name=self.sad_col_name,
                 known_values=[],
+                null_values=None,
             )
 
     def test_validation_success(self) -> None:
@@ -137,9 +139,11 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
 
     def test_query_properly_escapes_backslash(self) -> None:
         known_values = ["a\\b", "c\\d"]
+        null_values = ["0000", "\\NA"]
         happy_col = attr.evolve(
             self.happy_col,
             known_values=self._known_values_strings_to_enums(known_values),
+            null_values=null_values,
         )
         validation = KnownValuesColumnValidation.create_column_validation(
             file_tag=self.file_tag,
@@ -148,10 +152,12 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
             file_upload_datetime=datetime.datetime.now(),
             column=happy_col,
         )
-        expected_query = rf"""
-SELECT {self.happy_col_name}
-FROM {self.project_id}.{self.temp_table_address.dataset_id}.{self.temp_table_address.table_id}
-WHERE {self.happy_col_name} IS NOT NULL AND {self.happy_col_name} NOT IN ("a\\b", "c\\d")
+        expected_query = r"""
+SELECT happy_col
+FROM recidiviz-bq-emulator-project.test_dataset.test_table
+WHERE happy_col IS NOT NULL
+    AND happy_col NOT IN ("a\\b", "c\\d")
+    AND happy_col NOT IN ("0000", "\\NA")
 LIMIT 1
 """
         self.assertEqual(validation.build_query(), expected_query)
@@ -168,10 +174,12 @@ LIMIT 1
             file_upload_datetime=datetime.datetime.now(),
             column=happy_col,
         )
-        expected_query = rf"""
-SELECT {self.happy_col_name}
-FROM {self.project_id}.{self.temp_table_address.dataset_id}.{self.temp_table_address.table_id}
-WHERE {self.happy_col_name} IS NOT NULL AND {self.happy_col_name} NOT IN ("\\")
+        expected_query = r"""
+SELECT happy_col
+FROM recidiviz-bq-emulator-project.test_dataset.test_table
+WHERE happy_col IS NOT NULL
+    AND happy_col NOT IN ("\\")
+    AND happy_col NOT IN ("0000")
 LIMIT 1
 """
         self.assertEqual(validation.build_query(), expected_query)
