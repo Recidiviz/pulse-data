@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: hsn_CounselorAssignment
+file_description: |-
+  A table describing resident <> case manager assignments in facilities
+data_classification: source
+primary_key_cols:
+  - CounselorAssignmentId
+columns:
+  - name: CounselorAssignmentId
+    description: |-
+      Identifier for each possible counselor assignment.
+  - name: EmployeeId
+    description: |-
+      Employee Id of case manager.
+    is_pii: True
+  - name: CounselorAssignmentClassId
+    description: |-
+      Class of case manager assigment.
+  - name: CounselorAssignmentTypeId
+    description: |-
+      Type of case manager assignment.
+  - name: FromDate
+    description: |-
+      Start date of case manager assignment.
+    field_type: datetime
+  - name: ToDate
+    description: |-
+      End date of case manager assignment.
+    field_type: datetime
+  - name: FacilityId
+    description: |-
+      Facility Id.
+  - name: FacilityLevelId
+    description: |-
+      Facility level Id.
+  - name: BedId
+    description: |-
+      Bed Id.
+  - name: LocationId
+    description: |-
+      Location Id.
+  - name: OffenderID
+    description: |-
+      Offender Id.
+    field_type: person_external_id
+    external_id_type: US_IX_DOC
+    is_pii: True
+  - name: Locking
+    description: Locking number for record
+  - name: InsertDate
+    description: Record insert date
+    field_type: datetime
+  - name: InsertUserId
+    description: User ID of employee who entered record
+    is_pii: True
+  - name: UpdateDate
+    description: Record update date
+    field_type: datetime
+  - name: UpdateUserId
+    description: User ID of employee who updated record
+    is_pii: True

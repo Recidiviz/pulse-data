@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: hsn_CounselorAssignmentType
+file_description: |-
+  A code table describing counselor assigment types.
+data_classification: source
+primary_key_cols:
+  - CounselorAssignmentTypeId
+columns:
+  - name: CounselorAssignmentTypeId
+    description: |-
+      Identifier for each possible counselor type assignment.
+  - name: CounselorAssignmentTypeName
+    description: |-
+      Coounselor assignment type name.
+  - name: Inactive
+    description: Inactive flag.
+  - name: Locking
+    description: Locking number for record
+  - name: InsertDate
+    description: Record insert date
+    field_type: datetime
+  - name: InsertUserId
+    description: User ID of employee who entered record
+    is_pii: True
+  - name: UpdateDate
+    description: Record update date
+    field_type: datetime
+  - name: UpdateUserId
+    description: User ID of employee who updated record
+    is_pii: True
+  - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description
+is_code_file: True
