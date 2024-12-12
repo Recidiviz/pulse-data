@@ -412,7 +412,11 @@ class ActionStrategySurfacedEvents(InsightsBase):
 
     __table_args__ = (
         UniqueConstraint(
-            "user_pseudonymized_id", "officer_pseudonymized_id", "action_strategy"
+            "user_pseudonymized_id",
+            "officer_pseudonymized_id",
+            "action_strategy",
+            "timestamp",
+            name="action_strategy_surfaced_events_uniq_constraint",
         ),
         {"info": {RUN_MIGRATIONS: True}},
     )

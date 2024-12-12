@@ -25,6 +25,9 @@ snapshots[
         "ActionStrategySurfacedEvent(state_code='US_PA', user_pseudonymized_id='hash1', officer_pseudonymized_id='officerhash1', action_strategy='ACTION_STRATEGY_OUTLIER_ABSCONSION', timestamp=datetime.date(2024, 4, 4))"
     ),
     GenericRepr(
+        "ActionStrategySurfacedEvent(state_code='US_PA', user_pseudonymized_id='hash1', officer_pseudonymized_id='officerhash1', action_strategy='ACTION_STRATEGY_OUTLIER_ABSCONSION', timestamp=datetime.date(2024, 4, 5))"
+    ),
+    GenericRepr(
         "ActionStrategySurfacedEvent(state_code='US_PA', user_pseudonymized_id='hash1', officer_pseudonymized_id='officerhash1', action_strategy='ACTION_STRATEGY_OUTLIER_NEW_OFFICER', timestamp=datetime.date(2024, 4, 5))"
     ),
     GenericRepr(
