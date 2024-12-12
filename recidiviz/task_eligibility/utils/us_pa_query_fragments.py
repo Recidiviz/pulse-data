@@ -419,14 +419,18 @@ In this case, we don't know whether the strangulation charges were graded as fel
 def case_notes_helper() -> str:
     return f"""
     /* pull special conditions for the current supervision period related to treatment and/or evaluations */
-    SELECT DISTINCT SPLIT(external_id, '-')[OFFSET(0)] AS external_id,
+    SELECT DISTINCT pei.external_id,
       'Special Conditions' AS criteria,
       CASE WHEN condition LIKE '%EVALUATION%' THEN 'EVALUATION' ELSE 'TREATMENT' END AS note_title,
       condition AS note_body,
       CAST(NULL AS DATE) AS event_date,
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sup
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+      ON sup.person_id = pei.person_id
+      AND sup.state_code = pei.state_code
+      AND id_type = 'US_PA_PBPP',
     UNNEST(SPLIT(conditions, '##')) condition
-    WHERE state_code = 'US_PA' 
+    WHERE sup.state_code = 'US_PA' 
       AND termination_date IS NULL
       AND ((condition LIKE '%TREATMENT%' AND condition LIKE '%SPECIAL CONDITION%')
         OR condition LIKE '%EVALUATION%')
@@ -444,7 +448,7 @@ def case_notes_helper() -> str:
     )
     
     SELECT DISTINCT
-      SPLIT(external_id, '-')[OFFSET(0)] AS external_id,
+      pei.external_id,
       'Treatments' AS criteria,
       JSON_EXTRACT_SCALAR(referral_metadata, "$.PROGRAM_NAME") AS note_title,
       CASE WHEN participation_status_raw_text IN ('ASSIGNED')
@@ -477,20 +481,28 @@ def case_notes_helper() -> str:
       ON sup.person_id = tre.person_id
       AND COALESCE(tre.discharge_date, tre.start_date, tre.referral_date) >= sup.start_date
         -- one or more of these dates are often missing depending on the program status, so using all 3 
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+      ON tre.person_id = pei.person_id
+      AND tre.state_code = pei.state_code
+      AND id_type = 'US_PA_PBPP'
     ) 
     
     UNION ALL 
     
     /* pull all currently open employment periods */ 
     SELECT DISTINCT
-      SPLIT(external_id, '-')[OFFSET(0)] AS external_id,
+      pei.external_id,
       'Employment' AS criteria,
       CASE WHEN employment_status = 'EMPLOYED_FULL_TIME' THEN 'EMPLOYED - FULL-TIME'
         WHEN employment_status = 'EMPLOYED_PART_TIME' THEN 'EMPLOYED - PART-TIME'
         ELSE 'EMPLOYED' END AS note_title,
       employer_name AS note_body,
       start_date AS event_date,
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period`
-    WHERE state_code = 'US_PA'
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` emp
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+      ON emp.person_id = pei.person_id
+      AND emp.state_code = pei.state_code
+      AND id_type = 'US_PA_PBPP'
+    WHERE emp.state_code = 'US_PA'
       AND end_date IS NULL
     """
