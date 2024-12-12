@@ -48,44 +48,49 @@ SELECT DISTINCT
         WHEN status.DESCRIPTION = 'Cancelled' THEN 'Home Plan Cancelled'
         WHEN app.IS_RETURN_TO_COIII = 'Y' THEN 'Return to COIII'
         WHEN app.IS_RE_INVESTIGATE = 'Y' THEN 'Return to CC Supervisor'
-        WHEN status.DESCRIPTION = 'Address Denied' THEN 'Denied' 
+        WHEN status.DESCRIPTION = 'Address Denied' AND (app.IS_RETURN_TO_COIII !='Y' or app.IS_RETURN_TO_COIII IS NULL) THEN 'Denied' 
         WHEN status.description IN ('CCO SUP', 'COIII', 'CCO', 'COIV', 'Release Unit', 'CCL') THEN 'Home Plan In Progress'
         WHEN status.DESCRIPTION IS NULL THEN 'Home Plan Not Started'
     END AS PLAN_STATUS,
-    CASE WHEN 
+    CASE  
     -- AZ told us to use the date value from the APPROVAL table if and only if the plan was approved. 
+        WHEN status.DESCRIPTION = 'Address Approved' AND COALESCE(app.UPDT_DTM, app.CREATE_DTM) IS NOT NULL THEN COALESCE(app.UPDT_DTM, app.CREATE_DTM) 
+    -- In cases where there are no dates in the APPROVAL table for approved plans, use dates from the DETAIL table.
+        WHEN status.DESCRIPTION = 'Address Approved' AND COALESCE(app.UPDT_DTM, app.CREATE_DTM) IS NULL THEN COALESCE(det.UPDT_DTM, det.CREATE_DTM) 
+    -- If a plan has not been started, there will not be a row in the DETAIL table. Use dates from the base table.
+        WHEN status.DESCRIPTION IS NULL THEN COALESCE(hp.UPDT_DTM, hp.CREATE_DTM)
     -- Otherwise, we get the date from the DETAIL table that signifies a plan was submitted.
-        status.DESCRIPTION = 'Address Approved' THEN COALESCE(app.UPDT_DTM, app.CREATE_DTM) 
         ELSE COALESCE(det.UPDT_DTM, det.CREATE_DTM) 
     END AS UPDATE_DATE
 FROM 
 -- Base home plan table
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_HOME_PLAN_latest` hp
-JOIN 
+LEFT JOIN 
 -- There will be a new row in this table each time an individual home plan is resubmitted
 -- for consideration after correction. 
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_HOME_PLAN_DETAIL_latest` det
 ON
     (hp.HOME_PLAN_ID = det.HOME_PLAN_ID 
     AND hp.ACTIVE_FLAG = 'Y' 
-    AND det.ACTIVE_FLAG = 'Y')
-JOIN 
+    AND (det.ACTIVE_FLAG = 'Y' OR det.ACTIVE_FLAG IS NULL))
+LEFT JOIN 
 -- Rows in this table are relevant if and only if a plan is approved. 
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_HOME_PLAN_APPROVAL_latest` app
 ON
     (det.HOME_PLAN_DETAIL_ID = app.HOME_PLAN_DETAIL_ID
-    AND app.ACTIVE_FLAG = 'Y'
-    AND det.ACTIVE_FLAG = 'Y')
-JOIN 
+    AND (app.ACTIVE_FLAG = 'Y' OR app.ACTIVE_FLAG IS NULL)
+    AND (det.ACTIVE_FLAG = 'Y' OR det.ACTIVE_FLAG IS NULL))
+LEFT JOIN 
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LOOKUPS_latest` status
 ON
     (det.APPROVAL_STATUS_ID = status.LOOKUP_ID)
 QUALIFY 
 -- This is the most recent set of details for this person's home plan
-    CAST(det.HOME_PLAN_DETAIL_ID AS INT64) = MAX(CAST(det.HOME_PLAN_DETAIL_ID AS INT64)) OVER (PARTITION BY DOC_ID) 
+   (CAST(det.HOME_PLAN_DETAIL_ID AS INT64) = MAX(CAST(det.HOME_PLAN_DETAIL_ID AS INT64)) OVER (PARTITION BY DOC_ID) OR det.HOME_PLAN_DETAIL_ID IS NULL)
 -- Limits to the most recent set of dates associated with a plan's approval, where applicable.
 -- This is necessary because there can be many rows in the APPROVAL table for each HOME_PLAN_DETAIL_ID entry. 
-    AND COALESCE(app.UPDT_DTM, app.CREATE_DTM) = MAX(COALESCE(app.UPDT_DTM, app.CREATE_DTM)) OVER (PARTITION BY det.HOME_PLAN_DETAIL_ID) 
+    AND (COALESCE(app.UPDT_DTM, app.CREATE_DTM) = MAX(COALESCE(app.UPDT_DTM, app.CREATE_DTM)) OVER (PARTITION BY det.HOME_PLAN_DETAIL_ID) 
+    OR COALESCE(app.UPDT_DTM, app.CREATE_DTM) IS NULL)
 ),
 status_joined_to_sessions AS (
 SELECT 
