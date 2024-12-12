@@ -37,9 +37,17 @@ columns:
   - name: GENDER
     description: |-
       Gender
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#36026) Verify that we expect this column to be always null
   - name: ETHNICITY
     description: |-
       Ethnicity
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#36026) Verify that we expect this column to be always null
   - name: RISK_LEVEL
     description: |-
       Assessment Level
