@@ -124,12 +124,17 @@ def get_task_query(
             d.prioritized_race_or_ethnicity AS race,
             d.birthdate AS birthdate,
             d.gender AS gender,
-            IF(s.start_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.start_date) AS start_date,
+            IF(
+                --If the date is 1000-01-01, then set it to 1900-01-01:
+                s.start_date = '1000-01-01', '1900-01-01', 
+                --If the date is after 3000-01-01, then set it to the current date:
+                IF(s.start_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.start_date)
+            ) AS start_date,
             IF(s.end_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.end_date) AS end_date
         FROM `{project_id}.{tes_address.to_str()}` s
         LEFT JOIN (
             SELECT * FROM `{project_id}.sessions.person_demographics_materialized`
-            WHERE s.state_code = '{state_code}'
+            WHERE state_code = '{state_code}'
         ) d
         ON s.person_id = d.person_id
         ORDER BY 1,2,3

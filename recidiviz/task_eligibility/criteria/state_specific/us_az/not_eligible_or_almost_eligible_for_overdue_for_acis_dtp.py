@@ -26,7 +26,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_AZ_ELIGIBLE_OR_ALMOST_ELIGIBLE_FOR_OVERDUE_FOR_ACIS_DTP"
+_CRITERIA_NAME = "US_AZ_NOT_ELIGIBLE_OR_ALMOST_ELIGIBLE_FOR_OVERDUE_FOR_ACIS_DTP"
 
 _QUERY_TEMPLATE = """
 SELECT

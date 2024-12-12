@@ -30,13 +30,14 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     at_least_24_months_since_last_csed,
-    eligible_or_almost_eligible_for_overdue_for_recidiviz_dtp,
     meets_functional_literacy_tpr,
     no_active_felony_detainers,
     no_ineligible_tpr_offense_convictions,
     no_tpr_denial_in_current_incarceration,
     no_tpr_removals_from_self_improvement_programs,
     no_transition_release_in_current_sentence_span,
+    not_eligible_or_almost_eligible_for_overdue_for_acis_dtp,
+    not_eligible_or_almost_eligible_for_overdue_for_recidiviz_dtp,
     within_6_months_of_recidiviz_tpr_date,
 )
 from recidiviz.task_eligibility.criteria_condition import (
@@ -84,8 +85,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # e. Time
         at_least_24_months_since_last_csed.VIEW_BUILDER,
         within_6_months_of_recidiviz_tpr_date.VIEW_BUILDER,
-        # f. Not already eligible for overdue_for_recidiviz_dtp
-        eligible_or_almost_eligible_for_overdue_for_recidiviz_dtp.VIEW_BUILDER,
+        # f. Not already eligible for DTP opps
+        not_eligible_or_almost_eligible_for_overdue_for_recidiviz_dtp.VIEW_BUILDER,
+        not_eligible_or_almost_eligible_for_overdue_for_acis_dtp.VIEW_BUILDER,
     ],
     completion_event_builder=early_release_to_community_confinement_supervision_not_overdue.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
