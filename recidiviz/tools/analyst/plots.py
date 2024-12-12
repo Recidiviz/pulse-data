@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -211,36 +211,41 @@ def add_legend(
     title: Optional[str] = None,
     location: tuple[float, float] = (1, 0.5),
     labels: Optional[List[str]] = None,
+    format_labels: bool = False,
     label_formatter: Callable = lambda s: s.title().replace("_", " ").replace("-", " "),
     **kwargs: Optional[Any],
 ) -> None:
-
     """
-    Adds a legend to the plot with the option to customize the title, location, and labels.
+    Add a legend to the plot with the option to customize title, location, and labels.
 
     Args:
-        ax (Optional[plt.Axes]): The axes object to add the legend to (default: None).
-        title (Optional[str]): The title of the legend.
+        ax (Optional[plt.Axes]): The Axes object to add the legend to (default: None).
+        title (Optional[str]): The title of the legend (default: None).
         location (tuple[float, float]): The location of the legend on the plot.
-        labels (Optional[List[str]]): A list of labels to replace the original labels in the legend.
-        format_labels (bool): Whether to format the legend labels (default: True).
-            This will title case the labels and replace underscores with spaces.
-        **kwargs: Additional keyword arguments to pass to the legend function.
+        labels (Optional[List[str]]): A list of labels to replace the original labels in
+            the legend (default: None).
+        format_labels (bool): Whether to format the legend labels (default: False). If
+            True, the labels will be formatted using the formatting function.
+        label_formatter (Callable): Function to use to format the legend labels.
+            Default title-cases the labels and replaces underscores and hyphens with
+            spaces.
+        **kwargs: Additional keyword arguments to pass to the `plt.legend()` function.
     """
+
     if ax is None:
         ax = plt.gca()
 
     # Get handles and original labels
-    handles, original_labels = ax.get_legend_handles_labels()
+    handles, legend_labels = ax.get_legend_handles_labels()
 
-    ### Change legend labels if requested
-    # Overwrite legend labels if provided
+    # Overwrite legend labels (if provided)
     if labels:
         legend_labels = labels
-    # Otherwise, use the original labels with optional formatting
-    else:
+
+    # Format labels (if selected)
+    if format_labels:
         legend_labels = [
-            label_formatter(str(original_label)) for original_label in original_labels
+            label_formatter(str(legend_label)) for legend_label in legend_labels
         ]
 
     # Add the legend
