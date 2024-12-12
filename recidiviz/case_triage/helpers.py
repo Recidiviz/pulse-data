@@ -32,6 +32,7 @@ from werkzeug.http import parse_set_header
 from recidiviz.case_triage.workflows.twilio_validation import TwilioValidator
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import CloudRunMetadata
+from recidiviz.utils.params import get_bool_param_value
 
 if in_gcp():
     cloud_run_metadata = CloudRunMetadata.build_from_metadata_server("case-triage-web")
@@ -72,6 +73,10 @@ def validate_request_helper(
     if request.method == "OPTIONS":
         return
     if request.endpoint in webhook_endpoints:
+        # If the request is a test, ensure the user is a Recidiviz user
+        if get_bool_param_value("IsTest", request.values, default=False):
+            handle_recidiviz_only_authorization()
+
         logging.info("Twilio webhook endpoint request origin: [%s]", request.origin)
 
         signature = request.headers["X-Twilio-Signature"]
