@@ -30,6 +30,10 @@ columns:
     description: Indictment ID
   - name: Crime_Code
     description: Crime Code
+    update_history:
+      - update_type: RENAME
+        update_datetime: 2024-11-18T00:00:00Z
+        previous_value: Criame_Code
   - name: Crime_Code_Description
     description: Crime Code Description
   - name: Grade
