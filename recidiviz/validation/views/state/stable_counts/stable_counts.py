@@ -320,6 +320,10 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_ND: [
                         date(2023, 11, 1),  # Stale data in staging, no issue in prod
                         date(2023, 12, 1),  # Stale data in staging, no issue in prod
+                        date(
+                            2024, 11, 1
+                        ),  # This may be standard fluctuation, or it may be an outlier.
+                        # Exclude for now until we can see if this rate of violations persists. TODO(#36038)
                     ],
                     StateCode.US_MI: [
                         date(
