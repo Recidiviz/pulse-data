@@ -387,3 +387,10 @@ class SupervisionRevocationsIncludesExcludes(Enum):
     NEW_SUPERVISION = "Revocation to a new supervision term"
     TERMINATION = "Revocation to supervision termination"
     SHORT_TERM_INCARCERATION = "Short-term incarceration with a return to the same term of supervision (e.g., “dips,” “dunks,” etc.)"
+
+
+class SupervisionRevocationsDataIncludesExcludes(Enum):
+    REFLECTS = "Data reflects the most recent violation type"
+    DOES_NOT_REFLECT = (
+        "Data reflects the most serious violation type in a person’s supervision term"
+    )

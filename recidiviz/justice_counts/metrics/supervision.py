@@ -68,6 +68,7 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     SupervisionPersonnelExpensesIncludesExcludes,
     SupervisionProgrammaticStaffIncludesExcludes,
     SupervisionReconvictionsIncludesExcludes,
+    SupervisionRevocationsDataIncludesExcludes,
     SupervisionRevocationsIncludesExcludes,
     SupervisionStaffDimIncludesExcludes,
     SupervisionStaffIncludesExcludes,
@@ -695,6 +696,11 @@ revocations = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     # TODO(#17579)
     includes_excludes=[
+        IncludesExcludesSet(
+            members=SupervisionRevocationsDataIncludesExcludes,
+            multiselect=False,
+            description="If reporting breakdowns for the Revocations metric, please select what your data represents.",
+        ),
         IncludesExcludesSet(
             members=SupervisionRevocationsIncludesExcludes,
             excluded_set={
