@@ -456,6 +456,8 @@ columns:
         description: Other/Miscellaneous
       - value: ZN
         description: Financial Obligations
+      - value: M1
+        description: Unknown
   - name: PAROLEBOARDACTIONRSN2
     description: |-
       Parole board action reason 2

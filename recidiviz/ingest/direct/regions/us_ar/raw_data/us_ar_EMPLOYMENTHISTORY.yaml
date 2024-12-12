@@ -61,13 +61,28 @@ columns:
     description: |-
       Employment comments
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          This column had data the first time we received this table, but appears to be 
+          getting scrubbed now, since it has only contained nulls in subsequent transfers.
   - name: WORKDIRECTIONS
     description: |-
       Work directions
     is_pii: True
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          This column had data the first time we received this table, but appears to be 
+          getting scrubbed now, since it has only contained nulls in subsequent transfers.
   - name: WORKSCHEDULE
     description: |-
       Work schedule
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          This column had data the first time we received this table, but appears to be 
+          getting scrubbed now, since it has only contained nulls in subsequent transfers.
   - name: DATELASTUPDATE
     description: |-
       Date last updated
