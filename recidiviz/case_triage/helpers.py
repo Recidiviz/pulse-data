@@ -76,6 +76,7 @@ def validate_request_helper(
         # If the request is a test, ensure the user is a Recidiviz user
         if get_bool_param_value("IsTest", request.values, default=False):
             handle_recidiviz_only_authorization()
+            return
 
         logging.info("Twilio webhook endpoint request origin: [%s]", request.origin)
 
