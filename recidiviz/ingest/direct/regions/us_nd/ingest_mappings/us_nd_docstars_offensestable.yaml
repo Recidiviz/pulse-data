@@ -29,7 +29,6 @@ unused_columns:
   - LAST_UPDATE # No apparent use for these
   - CREATED_BY # No apparent use for these
   - MASTER_OFFENSE_IND # Not in consistent use within source
-  - REQUIRES_REGISTRATION
   - Common_Statute_Number
 output:
   StatePerson:
@@ -86,6 +85,15 @@ output:
                     $function: us_nd_custom_parsers.extract_is_drug_from_ncic_code
                     $args:
                       ncic_code: ncic_code
+                # This source field in raw data is not well hydrated, but is hydrated to some extent.
+                is_sex_offense:
+                  $conditional:
+                    - $if:
+                        $not_null: REQUIRES_REGISTRATION
+                      $then:
+                        $equal:
+                          - REQUIRES_REGISTRATION
+                          - $literal("Y")
                 county_code:
                   $custom:
                     $function: us_nd_custom_parsers.normalize_county_code
