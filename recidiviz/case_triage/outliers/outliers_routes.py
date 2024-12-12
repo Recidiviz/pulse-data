@@ -902,7 +902,8 @@ def create_outliers_api_blueprint() -> Blueprint:
         user_pseudonymized_id = user_context.pseudonymized_id
 
         if (
-            supervisor_pseudonymized_id != user_pseudonymized_id
+            not user_context.can_access_all_supervisors
+            and supervisor_pseudonymized_id != user_pseudonymized_id
             and user_external_id != "RECIDIVIZ"
         ):
             # Return an unauthorized error if the requesting user is requesting information about someone else
@@ -917,10 +918,7 @@ def create_outliers_api_blueprint() -> Blueprint:
         )
 
         if supervisor is None:
-            return jsonify_response(
-                f"User with pseudonymized_id doesn't exist in DB. Pseudonymized id: {supervisor_pseudonymized_id}",
-                HTTPStatus.NOT_FOUND,
-            )
+            return jsonify({supervisor_pseudonymized_id: None})
 
         category_type_to_compare = querier.get_product_configuration(
             user_context
