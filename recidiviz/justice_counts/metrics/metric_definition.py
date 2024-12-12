@@ -77,6 +77,11 @@ class IncludesExcludesSet:
     # the default IncludesExcludesSetting
     # (i.e {PrisonsStaffIncludesExcludes.STAFF_ON_LEAVE: IncludesExcludesSetting.YES, ...})
     member_to_default_inclusion_setting: Dict[enum.Enum, IncludesExcludesSetting]
+    # Indicates whether the user should select all applicable options from the includes/excludes set.
+    # Defaults to True, meaning users are generally encouraged to select all relevant options that
+    # apply. If set to False, the interface or logic may assume a different selection behavior,
+    # such as single-choice or predefined default behavior without explicit user selection.
+    multiselect: bool
     # Optional string to store the specific explanation for what the set includes
     # This will be filled out when there are multiple includes/excludes tables for a given metric
     description: Optional[str]
@@ -86,10 +91,12 @@ class IncludesExcludesSet:
         members: Type[enum.Enum],
         excluded_set: Optional[Set[enum.Enum]] = None,
         description: Optional[str] = None,
+        multiselect: bool = True,
     ):
         self.members = members
         self.member_to_default_inclusion_setting = {}
         self.description = description
+        self.multiselect = multiselect
         for member in self.members:
             setting = IncludesExcludesSetting.YES
             if excluded_set is not None and member in excluded_set:

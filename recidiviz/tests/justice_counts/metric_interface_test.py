@@ -1030,6 +1030,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "includes_excludes": [
                     {
                         "description": None,
+                        "multiselect": True,
                         "settings": [
                             {
                                 "key": "SERVICE_911",
@@ -1119,6 +1120,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                 ],
                                 "includes_excludes": [
                                     {
+                                        "multiselect": True,
                                         "description": None,
                                         "settings": [
                                             {
@@ -1189,6 +1191,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                 ],
                                 "includes_excludes": [
                                     {
+                                        "multiselect": True,
                                         "description": None,
                                         "settings": [
                                             {
@@ -1284,6 +1287,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "includes_excludes": [
                     {
                         "description": None,
+                        "multiselect": True,
                         "settings": [
                             {
                                 "key": "SERVICE_911",
@@ -1373,6 +1377,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                 ],
                                 "includes_excludes": [
                                     {
+                                        "multiselect": True,
                                         "description": None,
                                         "settings": [
                                             {
@@ -1443,6 +1448,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                 ],
                                 "includes_excludes": [
                                     {
+                                        "multiselect": True,
                                         "description": None,
                                         "settings": [
                                             {
@@ -1538,6 +1544,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "includes_excludes": [
                     {
                         "description": None,
+                        "multiselect": True,
                         "settings": [
                             {
                                 "key": "SERVICE_911",
@@ -1627,6 +1634,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                 ],
                                 "includes_excludes": [
                                     {
+                                        "multiselect": True,
                                         "description": None,
                                         "settings": [
                                             {
@@ -1697,6 +1705,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                 ],
                                 "includes_excludes": [
                                     {
+                                        "multiselect": True,
                                         "description": None,
                                         "settings": [
                                             {
@@ -1795,6 +1804,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "includes_excludes": [
                     {
                         "description": None,
+                        "multiselect": True,
                         "settings": [
                             {
                                 "default": "Yes",
@@ -1890,6 +1900,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                 ],
                                 "includes_excludes": [
                                     {
+                                        "multiselect": True,
                                         "description": None,
                                         "settings": [
                                             {
@@ -1958,6 +1969,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                 ],
                                 "includes_excludes": [
                                     {
+                                        "multiselect": True,
                                         "description": None,
                                         "settings": [
                                             {
@@ -2180,6 +2192,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "includes_excludes": [
                     {
                         "description": None,
+                        "multiselect": True,
                         "settings": [
                             {
                                 "key": "SERVICE_911",
@@ -2285,6 +2298,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                 ],
                                 "includes_excludes": [
                                     {
+                                        "multiselect": True,
                                         "description": None,
                                         "settings": [
                                             {
@@ -2371,6 +2385,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                 ],
                                 "includes_excludes": [
                                     {
+                                        "multiselect": True,
                                         "description": None,
                                         "settings": [
                                             {
@@ -2682,6 +2697,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                     "includes_excludes": [
                         {
                             "description": None,
+                            "multiselect": True,
                             "settings": [
                                 {
                                     "key": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.name,
@@ -2720,6 +2736,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                     "includes_excludes": [
                         {
                             "description": None,
+                            "multiselect": True,
                             "settings": [
                                 {
                                     "key": PrisonReleasesToProbationIncludesExcludes.COMPLETED_SENTENCE.name,
@@ -2764,6 +2781,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                     "includes_excludes": [
                         {
                             "description": None,
+                            "multiselect": True,
                             "settings": [
                                 {
                                     "key": PrisonReleasesCommunitySupervisionIncludesExcludes.RELEASED_TO_OTHER_AGENCY.name,
@@ -2790,6 +2808,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                     "includes_excludes": [
                         {
                             "description": None,
+                            "multiselect": True,
                             "settings": [
                                 {
                                     "key": PrisonReleasesNoControlIncludesExcludes.NO_POST_RELEASE.name,
@@ -2816,6 +2835,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                     "includes_excludes": [
                         {
                             "description": None,
+                            "multiselect": True,
                             "settings": [
                                 {
                                     "key": PrisonReleasesDeathIncludesExcludes.DEATH.name,
@@ -3042,6 +3062,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
             "reporting_note": None,
             "includes_excludes": [
                 {
+                    "multiselect": True,
                     "description": "Expenses timeframe and spend-down",
                     "settings": [
                         {
@@ -3065,6 +3086,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                     ],
                 },
                 {
+                    "multiselect": True,
                     "description": "Expense type",
                     "settings": [
                         {
@@ -3303,6 +3325,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
             "includes_excludes": [
                 {
                     "description": "Funding timeframe and spend-down",
+                    "multiselect": True,
                     "settings": [
                         {
                             "default": "Yes",
@@ -3325,6 +3348,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                     ],
                 },
                 {
+                    "multiselect": True,
                     "description": "Funding purpose",
                     "settings": [
                         {
@@ -3693,6 +3717,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                     "includes_excludes": [
                                         {
                                             "description": None,
+                                            "multiselect": True,
                                             "settings": [
                                                 {
                                                     "default": "Yes",
@@ -3763,6 +3788,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                     "includes_excludes": [
                                         {
                                             "description": None,
+                                            "multiselect": True,
                                             "settings": [
                                                 {
                                                     "default": "Yes",
@@ -3881,6 +3907,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                     "includes_excludes": [
                                         {
                                             "description": None,
+                                            "multiselect": True,
                                             "settings": [
                                                 {
                                                     "default": "Yes",
@@ -4053,6 +4080,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                                     "includes_excludes": [
                                         {
                                             "description": None,
+                                            "multiselect": True,
                                             "settings": [
                                                 {
                                                     "default": "Yes",
@@ -4376,6 +4404,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                     "includes_excludes": [
                         {
                             "description": None,
+                            "multiselect": True,
                             "settings": [
                                 {
                                     "default": "Yes",

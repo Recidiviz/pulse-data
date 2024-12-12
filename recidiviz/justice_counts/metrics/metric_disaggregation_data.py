@@ -701,6 +701,7 @@ class MetricAggregatedDimensionData:
         for includes_excludes_set in includes_excludes_set_lst:
             includes_excludes_dict: Dict[str, Any] = {
                 "settings": [],
+                "multiselect": includes_excludes_set.multiselect,
                 "description": includes_excludes_set.description,
             }
             for (

@@ -370,6 +370,7 @@ class MetricInterface:
             for includes_excludes in self.metric_definition.includes_excludes:
                 includes_excludes_json: Dict[str, Any] = {
                     "description": includes_excludes.description,
+                    "multiselect": includes_excludes.multiselect,
                     "settings": [],
                 }
                 for (
