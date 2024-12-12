@@ -280,28 +280,12 @@ class SpreadsheetInterface:
             updated_reports=uploader.updated_reports,
         )
 
-        # If there are ingest-blocking errors, log errors to console and set the spreadsheet status to ERRORED
-        if not is_ingest_successful:
-            logging.error(
-                (
-                    "Ingestion failed without errors for agency_id: %i. "
-                    "Details about the errors and warnings are available in the "
-                    "justice-counts-<environment>-bulk-upload-errors-warnings-json file: %s"
-                ),
-                agency.id,
-                spreadsheet.standardized_name.replace("xlsx", "json"),
-            )
-            spreadsheet.status = schema.SpreadsheetStatus.ERRORED
-
-        else:
-            logging.info(
-                "Ingest successful for agency_id %i, spreadsheet_id: %i",
-                agency.id,
-                spreadsheet.id,
-            )
+        if is_ingest_successful:
             spreadsheet.ingested_by = auth0_user_id
             spreadsheet.ingested_at = datetime.datetime.now(tz=datetime.timezone.utc)
             spreadsheet.status = schema.SpreadsheetStatus.INGESTED
+        else:
+            spreadsheet.status = schema.SpreadsheetStatus.ERRORED
 
         unchanged_reports = {
             report
