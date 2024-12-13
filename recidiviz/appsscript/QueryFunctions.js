@@ -43,7 +43,7 @@ function getWauAndMauByWeekData(
 
   const queryString = `
     SELECT
-      FORMAT_DATE('%m/%d/%y', end_date) AS formatted_date,
+      FORMAT_DATE('%m/%d/%y', DATE_SUB(w.end_date, INTERVAL 1 DAY)) AS formatted_date,
       w.${distinctActiveUsers} AS ${weeklyActiveUsers},
       m.${distinctActiveUsers} AS ${monthlyActiveUsers}
     FROM \`impact_reports.${mauTable}\` m 

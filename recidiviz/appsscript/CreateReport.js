@@ -359,7 +359,11 @@ function copyAndPopulateTemplateDoc(
   body.replaceText("{{today_date}}", today);
   body.replaceText("{{time_period}}", timePeriod.toLowerCase());
 
-  const endDateClean = cleanDate(endDateString);
+  const exclusiveEndDate = new Date(endDateString);
+  exclusiveEndDate.setDate(exclusiveEndDate.getDate() - 1);
+  const endDateClean = cleanDate(
+    Utilities.formatDate(exclusiveEndDate, "GMT-5", "yyyy-MM-dd")
+  );
   const timeRange = `${startDate}-${endDateClean}`;
   body.replaceText("{{time_range}}", timeRange);
 
