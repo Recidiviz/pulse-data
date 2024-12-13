@@ -22,7 +22,7 @@ multiple assignments that overlap with a metric period, multiple rows will be re
 import re
 import textwrap
 
-from pytablewriter import MarkdownTableWriter
+from tabulate import tabulate
 
 from recidiviz.aggregated_metrics.assignment_sessions_view_builder import (
     get_metric_assignment_sessions_materialized_table_address,
@@ -224,18 +224,16 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         with a metric period, multiple rows will be returned.""",
             new_width=100,
         )
-
-        columns_str = MarkdownTableWriter(
-            value_matrix=[
-                [col, textwrap.fill(descr, width=50)]
+        columns_str = tabulate(
+            [
+                [col, descr]
                 for col, descr in self.docstring_output_columns_to_descriptions().items()
             ],
             headers=["Column", "Description"],
-            # Margin values other than 0 have nondeterministic spacing. Do not change.
-            margin=0,
-        ).dumps()
+            tablefmt="github",
+        )
 
-        return f"{base_description}\n\nKey column descriptions:\n{columns_str}"
+        return f"{base_description}\n\nKey column descriptions:\n{columns_str}\n"
 
     def _build(
         self, *, sandbox_context: BigQueryViewSandboxContext | None

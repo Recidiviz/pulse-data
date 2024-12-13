@@ -20,7 +20,7 @@ configurations and the specified |population_type|, |unit_of_analysis_type| and
 """
 
 from more_itertools import one
-from pytablewriter import MarkdownTableWriter
+from tabulate import tabulate
 
 from recidiviz.aggregated_metrics.metric_time_period_config import (
     MetricTimePeriodConfig,
@@ -71,19 +71,16 @@ def _metrics_description_table(metrics: list[AggregatedMetric]) -> str:
             )
         )
 
-    table_writer = MarkdownTableWriter(
+    return tabulate(
+        [row for row in table_data if row is not None],
         headers=[
             "Name",
             "Column",
             "Description",
             f"{observation_type_category.capitalize()} observation type",
         ],
-        value_matrix=[row for row in table_data if row is not None],
-        # Margin values other than 0 have nondeterministic spacing. Do not change.
-        margin=0,
+        tablefmt="github",
     )
-
-    return table_writer.dumps()
 
 
 def aggregated_metric_view_description(
@@ -136,7 +133,8 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
 
     return f"""{base_description}
 # Metrics
-{_metrics_description_table(metrics)}"""
+{_metrics_description_table(metrics)}
+"""
 
 
 class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):

@@ -97,11 +97,11 @@ least recent period ending on 2024-01-01.
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 
 # Metrics
-|               Name               |             Column             |                     Description                     |Event observation type|
-|----------------------------------|--------------------------------|-----------------------------------------------------|----------------------|
-|My Drug Screens                   |my_drug_screens                 |Number of my drug screens                            |DRUG_SCREEN           |
-|Contacts: Completed               |my_contacts_completed           |Number of completed contacts                         |SUPERVISION_CONTACT   |
-|My Logins, Primary Workflows Users|my_logins_primary_workflows_user|Number of logins performed by primary Workflows users|WORKFLOWS_USER_LOGIN  |
+| Name                               | Column                           | Description                                           | Event observation type   |
+|------------------------------------|----------------------------------|-------------------------------------------------------|--------------------------|
+| My Drug Screens                    | my_drug_screens                  | Number of my drug screens                             | DRUG_SCREEN              |
+| Contacts: Completed                | my_contacts_completed            | Number of completed contacts                          | SUPERVISION_CONTACT      |
+| My Logins, Primary Workflows Users | my_logins_primary_workflows_user | Number of logins performed by primary Workflows users | WORKFLOWS_USER_LOGIN     |
 """
         self.assertEqual(expected_docstring, docstring)
 

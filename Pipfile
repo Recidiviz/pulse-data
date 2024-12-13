@@ -100,7 +100,6 @@ scikit-learn = "*"
 sentry-cli = "*"
 shapely = "<2.0.0"
 SyntheticControlMethods = "*"
-tabulate = "*"
 ydata-profiling = "*"
 # end recidiviz-research dependencies
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
@@ -253,6 +252,8 @@ asyncpg ="*"
 pygit2 = "*"
 matplotx = "*"
 sqlglot = "==23.11.2"
+tabulate = "*"
+
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
