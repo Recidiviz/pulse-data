@@ -450,11 +450,12 @@ def simulate_rollout(
             )
             .reset_index()
         )
+        df_agg.set_index(date_column, inplace=True)
         # iterate over boolean treatment column, may be only True for event studies
         for t in df_agg[treatment_column].unique():
             dfsub = df_agg.loc[(df_agg[treatment_column] == t)]
             label = "Treated" if t else "Control"
-            plt.plot(dfsub[date_column], dfsub[outcome_column], label=label)
+            dfsub[outcome_column].plot(label=label)
         plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
         plt.title(plot_title)
         plt.ylim(0)
