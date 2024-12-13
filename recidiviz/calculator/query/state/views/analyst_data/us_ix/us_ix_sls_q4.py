@@ -38,7 +38,7 @@ US_IX_SLS_Q4_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date_exclusive,
+            end_date_exclusive AS end_date,
             age,
             CASE 
               WHEN age <=23 THEN 3
@@ -56,11 +56,10 @@ US_IX_SLS_Q4_QUERY_TEMPLATE = f"""
         state_code,
         person_id,
         start_date,
-        end_date_exclusive,
+        end_date,
         q4_score
     FROM ({aggregate_adjacent_spans(table_name = 'age_spans', 
-                                    attribute='q4_score', 
-                                    end_date_field_name= 'end_date_exclusive')})
+                                    attribute='q4_score')})
 """
 
 US_IX_SLS_Q4_VIEW_BUILDER = SimpleBigQueryViewBuilder(

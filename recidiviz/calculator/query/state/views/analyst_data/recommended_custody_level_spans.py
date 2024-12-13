@@ -37,6 +37,18 @@ RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = """
     FROM
         `{project_id}.{analyst_dataset}.us_tn_recommended_custody_level_spans`
         
+    UNION ALL 
+    
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date AS end_date_exclusive,
+        recommended_custody_level,
+        score_metadata
+    FROM
+        `{project_id}.{analyst_dataset}.us_ix_recommended_custody_level_spans`  
+        
 """
 
 RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

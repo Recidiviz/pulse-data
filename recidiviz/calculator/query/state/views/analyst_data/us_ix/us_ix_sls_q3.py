@@ -39,9 +39,10 @@ US_IX_SLS_Q3_QUERY_TEMPLATE = """
         span.state_code,
         span.person_id,
         --find the earliest high severity felony sentence date for each person 
-        MIN(imposed_date) AS start_date,
-        --once completed, a high severity felony will always result in a score of 3
-        NULL AS end_date,
+        --once completed, a high severity felony will always result in a score of 3, so the start date should be the 
+        --earliest date a high severity sentence ended
+        MIN(end_date_exclusive) AS start_date,
+        DATE(NULL) AS end_date,
         3 AS q3_score,
     FROM `{project_id}.{sentence_sessions_dataset}.sentence_serving_period_materialized` span
     INNER JOIN `{project_id}.{sentence_sessions_dataset}.sentences_and_charges_materialized` sent
