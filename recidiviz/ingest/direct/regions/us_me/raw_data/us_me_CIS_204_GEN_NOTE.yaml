@@ -25,6 +25,7 @@ columns:
     is_pii: True
   - name: Cis_900_Employee_Id
     is_pii: True
+    description: Employee otherwise related to the record. Unsure of relationship.
   - name: Cis_908_Ccs_Location_Id
   - name: Created_By_Tx
     is_pii: True
