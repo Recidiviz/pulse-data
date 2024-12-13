@@ -29,9 +29,9 @@ INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_DESCRIPTION = (
 )
 INCARCERATION_INCIDENTS_PREPROCESSED_QUERY_TEMPLATE = """
     SELECT 
-    #TODO(#35459) Clean up incarceration incidents preprocessed
-        NULL AS external_id, 
+    #TODO(#35459) Clean up incarceration incidents preprocessed 
         p.state_code, 
+        NULL AS external_id,
         p.incident_type, 
         p.incident_type_raw_text,
         NULL AS incident_severity, 
