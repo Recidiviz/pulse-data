@@ -98,6 +98,8 @@ columns:
     known_values:
       - value: NDSP
         description: NORTH DAKOTA STATE PENITENTIARY
+      - value: INST
+        description: Unknown. Likely "Institution".
   - name: CODE
     description: |-
       Code for the activity described in this row. TODO(#18645): get codebook for these values from ND.
