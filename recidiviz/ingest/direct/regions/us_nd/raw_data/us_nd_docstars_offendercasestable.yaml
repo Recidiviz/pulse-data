@@ -5,7 +5,6 @@ file_description: |-
   some person for some reason. This includes metadata about the sentence length, the actual period being served, the
   needs of the person during this period, and whether a revocation has occurred and why.
 data_classification: source
-always_historical_export: True
 primary_key_cols:
   - CASE_NUMBER
 columns:

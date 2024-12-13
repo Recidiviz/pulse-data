@@ -38,7 +38,7 @@ SELECT DISTINCT
   -- is never used as a unique identifier, so these sentences will still be uniquely
   -- identifiable. They will also still end up in the appropriate inferred sentence groups
   -- by virtue of sharing charges and offense dates.
-  IF((oc.TB_CTY IS NOT NULL AND CAST(oc.TB_CTY AS INT64) > 100) OR (ot.COUNTY IS NOT NULL AND CAST(ot.COUNTY AS INT64) > 100), NULL, ot.COURT_NUMBER) AS COURT_NUMBER,
+  IF((ot.COUNTY IS NOT NULL AND CAST(ot.COUNTY AS INT64) > 100), NULL, ot.COURT_NUMBER) AS COURT_NUMBER,
   -- Tom told us to use the CST NCIC code if there is one, and otherwise to use the CODE value.
   -- Only one of these is ever hydrated.
   COALESCE(ot.COMMON_STATUTE_NCIC_CODE,ot.CODE) AS OFFENSE_CODE,

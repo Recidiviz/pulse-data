@@ -87,13 +87,13 @@ output:
             $enum_mapping:
               $raw_text: CASE_DESCRIPTION
               $mappings:
-                StateSentenceType.COMMUNITY_CORRECTIONS: "Community Placement Pgrm"
                 StateSentenceType.INTERNAL_UNKNOWN:
                   - "CCC"
                 StateSentenceType.PAROLE:
                   - "IC Parole"
                   - "Parole"
                   - "SSOP"
+                  - "Community Placement Pgrm"
                 StateSentenceType.PROBATION:
                   - "Deferred"
                   - "IC Probation"

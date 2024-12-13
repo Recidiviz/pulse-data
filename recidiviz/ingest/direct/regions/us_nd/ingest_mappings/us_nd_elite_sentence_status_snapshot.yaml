@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDER_BOOK_ID
+  - SENTENCE_SEQ
+  - status_processed
+  - STATUS_UPDATE_DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDER_BOOK_ID
+          id_type: $literal("US_ND_ELITE_BOOKING")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDER_BOOK_ID
+                - SENTENCE_SEQ
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                status_update_datetime: STATUS_UPDATE_DATETIME
+                status:
+                  $enum_mapping:
+                    $raw_text: status_processed
+                    $mappings:
+                      StateSentenceStatus.SERVING: [ACTIVE]
+                      StateSentenceStatus.COMPLETED: [INACTIVE]
+                      StateSentenceStatus.SUSPENDED: [ESCAPE]
