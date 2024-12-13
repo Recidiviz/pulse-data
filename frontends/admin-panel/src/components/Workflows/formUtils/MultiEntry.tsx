@@ -51,7 +51,7 @@ export const MultiEntry = ({
                 marginBottom: "0.5em",
               }}
             >
-              {child(field)}{" "}
+              <Form.Item style={{ width: "100%" }}>{child(field)}</Form.Item>
               {!readonly && (
                 <div
                   style={{

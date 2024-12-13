@@ -16,10 +16,64 @@
 // =============================================================================
 
 import { Form, Input } from "antd";
+import { RuleObject } from "antd/lib/form";
 import TextArea from "antd/lib/input/TextArea";
+import Handlebars from "handlebars";
 
 import { MultiEntryChild } from "../../formUtils/MultiEntry";
 import { StaticValue } from "../../formUtils/StaticValue";
+
+// How many arguments does each helper take?
+// Using helpers not in this list will cause a validation error
+const helperArities = {
+  lowerCase: 1,
+  upperCase: 1,
+  titleCase: 1,
+  date: 1,
+  daysPast: 1,
+  daysUntil: 1,
+  monthsUntil: 1,
+  yearsMonthsUntil: 1,
+  daysToYearsMonthsPast: 1,
+  eq: 2,
+  length: 1,
+  monthsOrDaysRemainingFromToday: 1,
+
+  usMiSegregationDisplayName: 1,
+};
+
+const helpers = Object.fromEntries(
+  Object.entries(helperArities).map(([h, arity]) => [
+    h,
+    (...args: unknown[]) => {
+      if (args.length !== arity + 1) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const info = args[args.length - 1] as any;
+        const raw = info.data.root.value as string;
+        const {
+          loc: { start, end },
+        } = info;
+        let snippet = raw.split("\n")[start.line - 1];
+        if (start.line === end.line) {
+          snippet = snippet.slice(start.column, end.column);
+        } else {
+          snippet = snippet.slice(start.column);
+        }
+        throw new Error(
+          `Helper "${h}" expects ${arity} argument${
+            arity > 1 ? "s" : ""
+          } at line ${start.line}, column ${start.column}: ${snippet}`
+        );
+      }
+    },
+  ])
+);
+
+const handlebarsValidator: RuleObject["validator"] = async (_, value) => {
+  if (!value) return;
+  const template = Handlebars.compile(value, { noEscape: true });
+  template({ value }, { helpers });
+};
 
 export const CriteriaCopyView: MultiEntryChild = ({ name }) => (
   <>
@@ -49,11 +103,18 @@ export const CriteriaCopyEdit: MultiEntryChild = ({ name }) => (
       <Form.Item
         noStyle
         name={[name, "text"]}
-        rules={[{ required: true, message: "'text' is required" }]}
+        rules={[
+          { required: true, message: "'text' is required" },
+          { validator: handlebarsValidator },
+        ]}
       >
         <TextArea placeholder="Text" />
       </Form.Item>
-      <Form.Item noStyle name={[name, "tooltip"]}>
+      <Form.Item
+        noStyle
+        name={[name, "tooltip"]}
+        rules={[{ validator: handlebarsValidator }]}
+      >
         <TextArea placeholder="Tooltip" />
       </Form.Item>
     </div>
@@ -77,11 +138,18 @@ export const KeylessCriteriaCopyEdit: MultiEntryChild = ({ name }) => (
       <Form.Item
         noStyle
         name={[name, "text"]}
-        rules={[{ required: true, message: "'text' is required" }]}
+        rules={[
+          { required: true, message: "'text' is required" },
+          { validator: handlebarsValidator },
+        ]}
       >
         <TextArea placeholder="Text" />
       </Form.Item>
-      <Form.Item noStyle name={[name, "tooltip"]}>
+      <Form.Item
+        noStyle
+        name={[name, "tooltip"]}
+        rules={[{ validator: handlebarsValidator }]}
+      >
         <TextArea placeholder="Tooltip" />
       </Form.Item>
     </div>
