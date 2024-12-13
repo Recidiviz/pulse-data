@@ -203,136 +203,176 @@ USING (state_code, officer_id, metric_period_start_date, metric_period_end_date_
 
         expected_result = """
 WITH 
-person_assignments_by_time_period AS (
-    SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_district__by_period__last_12_months_materialized`
+all_metrics__person_unit_of_observation AS (
+    WITH 
+    person_assignments_by_time_period AS (
+        SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_district__by_period__last_12_months_materialized`
+    ),
+    output_row_keys AS (
+        SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+        FROM person_assignments_by_time_period
+    ),
+    drug_screen_metrics AS (
+        WITH
+        observations AS (
+            SELECT
+                person_id,
+                state_code,
+                event_date
+            FROM 
+                `{project_id}.observations__person_event.drug_screen_materialized`
+            WHERE
+                TRUE
+        )
+        SELECT
+            person_assignments_by_time_period.state_code,
+            person_assignments_by_time_period.district,
+            person_assignments_by_time_period.metric_period_start_date,
+            person_assignments_by_time_period.metric_period_end_date_exclusive,
+            person_assignments_by_time_period.period,
+            COUNT(DISTINCT IF(
+                (TRUE),
+                CONCAT(
+                    observations.person_id, observations.state_code, 
+                    observations.event_date
+                ), NULL
+            )) AS my_drug_screens
+        FROM 
+            person_assignments_by_time_period
+        JOIN 
+            observations
+        ON
+            observations.person_id = person_assignments_by_time_period.person_id
+            AND observations.state_code = person_assignments_by_time_period.state_code
+            -- Include events occurring on the last date of an end-date exclusive span,
+            -- but exclude events occurring on the last date of an end-date exclusive 
+            -- analysis period.
+            AND observations.event_date >= person_assignments_by_time_period.event_applies_to_period_start_date
+            AND observations.event_date <  person_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
+        GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+    ),
+    supervision_contact_metrics AS (
+        WITH
+        observations AS (
+            SELECT
+                person_id,
+                state_code,
+                event_date,
+                status
+            FROM 
+                `{project_id}.observations__person_event.supervision_contact_materialized`
+            WHERE
+                status IN ("COMPLETED")
+        )
+        SELECT
+            person_assignments_by_time_period.state_code,
+            person_assignments_by_time_period.district,
+            person_assignments_by_time_period.metric_period_start_date,
+            person_assignments_by_time_period.metric_period_end_date_exclusive,
+            person_assignments_by_time_period.period,
+            COUNT(DISTINCT IF(
+                (status IN ("COMPLETED")),
+                CONCAT(
+                    observations.person_id, observations.state_code, 
+                    observations.event_date
+                ), NULL
+            )) AS my_contacts_completed
+        FROM 
+            person_assignments_by_time_period
+        JOIN 
+            observations
+        ON
+            observations.person_id = person_assignments_by_time_period.person_id
+            AND observations.state_code = person_assignments_by_time_period.state_code
+            -- Include events occurring on the last date of an end-date exclusive span,
+            -- but exclude events occurring on the last date of an end-date exclusive 
+            -- analysis period.
+            AND observations.event_date >= person_assignments_by_time_period.event_applies_to_period_start_date
+            AND observations.event_date <  person_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
+        GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+    )
+    SELECT
+        state_code,
+        district,
+        metric_period_start_date,
+        metric_period_end_date_exclusive,
+        period,
+        IFNULL(my_contacts_completed, 0) AS my_contacts_completed,
+        IFNULL(my_drug_screens, 0) AS my_drug_screens
+    FROM output_row_keys
+    LEFT OUTER JOIN
+        drug_screen_metrics
+    USING (state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period)
+    LEFT OUTER JOIN
+        supervision_contact_metrics
+    USING (state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period)
 ),
-workflows_primary_user_assignments_by_time_period AS (
-    SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__workflows_primary_user_to_district__by_period__last_12_months_materialized`
+all_metrics__workflows_primary_user_unit_of_observation AS (
+    WITH 
+    workflows_primary_user_assignments_by_time_period AS (
+        SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__workflows_primary_user_to_district__by_period__last_12_months_materialized`
+    ),
+    output_row_keys AS (
+        SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+        FROM workflows_primary_user_assignments_by_time_period
+    ),
+    workflows_user_login_metrics AS (
+        WITH
+        observations AS (
+            SELECT
+                email_address,
+                state_code,
+                event_date
+            FROM 
+                `{project_id}.observations__workflows_primary_user_event.workflows_user_login_materialized`
+            WHERE
+                TRUE
+        )
+        SELECT
+            workflows_primary_user_assignments_by_time_period.state_code,
+            workflows_primary_user_assignments_by_time_period.district,
+            workflows_primary_user_assignments_by_time_period.metric_period_start_date,
+            workflows_primary_user_assignments_by_time_period.metric_period_end_date_exclusive,
+            workflows_primary_user_assignments_by_time_period.period,
+            COUNT(DISTINCT IF(
+                (TRUE),
+                CONCAT(
+                    observations.email_address, observations.state_code, 
+                    observations.event_date
+                ), NULL
+            )) AS my_logins_primary_workflows_user
+        FROM 
+            workflows_primary_user_assignments_by_time_period
+        JOIN 
+            observations
+        ON
+            observations.email_address = workflows_primary_user_assignments_by_time_period.email_address
+            AND observations.state_code = workflows_primary_user_assignments_by_time_period.state_code
+            -- Include events occurring on the last date of an end-date exclusive span,
+            -- but exclude events occurring on the last date of an end-date exclusive 
+            -- analysis period.
+            AND observations.event_date >= workflows_primary_user_assignments_by_time_period.event_applies_to_period_start_date
+            AND observations.event_date <  workflows_primary_user_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
+        GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+    )
+    SELECT
+        state_code,
+        district,
+        metric_period_start_date,
+        metric_period_end_date_exclusive,
+        period,
+        IFNULL(my_logins_primary_workflows_user, 0) AS my_logins_primary_workflows_user
+    FROM output_row_keys
+    LEFT OUTER JOIN
+        workflows_user_login_metrics
+    USING (state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period)
 ),
 output_row_keys AS (
     SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
-    FROM person_assignments_by_time_period
+    FROM all_metrics__person_unit_of_observation
     UNION DISTINCT
     SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
-    FROM workflows_primary_user_assignments_by_time_period
-),
-drug_screen_metrics AS (
-    WITH
-    observations AS (
-        SELECT
-            person_id,
-            state_code,
-            event_date
-        FROM 
-            `{project_id}.observations__person_event.drug_screen_materialized`
-        WHERE
-            TRUE
-    )
-    SELECT
-        person_assignments_by_time_period.state_code,
-        person_assignments_by_time_period.district,
-        person_assignments_by_time_period.metric_period_start_date,
-        person_assignments_by_time_period.metric_period_end_date_exclusive,
-        person_assignments_by_time_period.period,
-        COUNT(DISTINCT IF(
-            (TRUE),
-            CONCAT(
-                observations.person_id, observations.state_code, 
-                observations.event_date
-            ), NULL
-        )) AS my_drug_screens
-    FROM 
-        person_assignments_by_time_period
-    JOIN 
-        observations
-    ON
-        observations.person_id = person_assignments_by_time_period.person_id
-        AND observations.state_code = person_assignments_by_time_period.state_code
-        -- Include events occurring on the last date of an end-date exclusive span,
-        -- but exclude events occurring on the last date of an end-date exclusive 
-        -- analysis period.
-        AND observations.event_date >= person_assignments_by_time_period.event_applies_to_period_start_date
-        AND observations.event_date <  person_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
-    GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
-),
-supervision_contact_metrics AS (
-    WITH
-    observations AS (
-        SELECT
-            person_id,
-            state_code,
-            event_date,
-            status
-        FROM 
-            `{project_id}.observations__person_event.supervision_contact_materialized`
-        WHERE
-            status IN ("COMPLETED")
-    )
-    SELECT
-        person_assignments_by_time_period.state_code,
-        person_assignments_by_time_period.district,
-        person_assignments_by_time_period.metric_period_start_date,
-        person_assignments_by_time_period.metric_period_end_date_exclusive,
-        person_assignments_by_time_period.period,
-        COUNT(DISTINCT IF(
-            (status IN ("COMPLETED")),
-            CONCAT(
-                observations.person_id, observations.state_code, 
-                observations.event_date
-            ), NULL
-        )) AS my_contacts_completed
-    FROM 
-        person_assignments_by_time_period
-    JOIN 
-        observations
-    ON
-        observations.person_id = person_assignments_by_time_period.person_id
-        AND observations.state_code = person_assignments_by_time_period.state_code
-        -- Include events occurring on the last date of an end-date exclusive span,
-        -- but exclude events occurring on the last date of an end-date exclusive 
-        -- analysis period.
-        AND observations.event_date >= person_assignments_by_time_period.event_applies_to_period_start_date
-        AND observations.event_date <  person_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
-    GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
-),
-workflows_user_login_metrics AS (
-    WITH
-    observations AS (
-        SELECT
-            email_address,
-            state_code,
-            event_date
-        FROM 
-            `{project_id}.observations__workflows_primary_user_event.workflows_user_login_materialized`
-        WHERE
-            TRUE
-    )
-    SELECT
-        workflows_primary_user_assignments_by_time_period.state_code,
-        workflows_primary_user_assignments_by_time_period.district,
-        workflows_primary_user_assignments_by_time_period.metric_period_start_date,
-        workflows_primary_user_assignments_by_time_period.metric_period_end_date_exclusive,
-        workflows_primary_user_assignments_by_time_period.period,
-        COUNT(DISTINCT IF(
-            (TRUE),
-            CONCAT(
-                observations.email_address, observations.state_code, 
-                observations.event_date
-            ), NULL
-        )) AS my_logins_primary_workflows_user
-    FROM 
-        workflows_primary_user_assignments_by_time_period
-    JOIN 
-        observations
-    ON
-        observations.email_address = workflows_primary_user_assignments_by_time_period.email_address
-        AND observations.state_code = workflows_primary_user_assignments_by_time_period.state_code
-        -- Include events occurring on the last date of an end-date exclusive span,
-        -- but exclude events occurring on the last date of an end-date exclusive 
-        -- analysis period.
-        AND observations.event_date >= workflows_primary_user_assignments_by_time_period.event_applies_to_period_start_date
-        AND observations.event_date <  workflows_primary_user_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
-    GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+    FROM all_metrics__workflows_primary_user_unit_of_observation
 )
 SELECT
     state_code,
@@ -340,18 +380,15 @@ SELECT
     metric_period_start_date AS start_date,
     metric_period_end_date_exclusive AS end_date,
     period,
-    IFNULL(my_contacts_completed, 0) AS my_contacts_completed,
-    IFNULL(my_drug_screens, 0) AS my_drug_screens,
-    IFNULL(my_logins_primary_workflows_user, 0) AS my_logins_primary_workflows_user
+    my_contacts_completed,
+    my_drug_screens,
+    my_logins_primary_workflows_user
 FROM output_row_keys
 LEFT OUTER JOIN
-    drug_screen_metrics
+    all_metrics__person_unit_of_observation
 USING (state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period)
 LEFT OUTER JOIN
-    supervision_contact_metrics
-USING (state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period)
-LEFT OUTER JOIN
-    workflows_user_login_metrics
+    all_metrics__workflows_primary_user_unit_of_observation
 USING (state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period)
 """
 
