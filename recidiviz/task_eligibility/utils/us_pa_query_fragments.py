@@ -495,8 +495,12 @@ def case_notes_helper() -> str:
       'Employment' AS criteria,
       CASE WHEN employment_status = 'EMPLOYED_FULL_TIME' THEN 'EMPLOYED - FULL-TIME'
         WHEN employment_status = 'EMPLOYED_PART_TIME' THEN 'EMPLOYED - PART-TIME'
+        WHEN employment_status_raw_text = 'UABLE' THEN 'UNEMPLOYED'
+        WHEN employment_status_raw_text = 'UNRUI' THEN 'UNEMPLOYED - RECEIVES UNEARNED INCOME'
+        WHEN employment_status_raw_text = 'UNSTU' THEN 'UNEMPLOYED - STUDENT'
+        WHEN employment_status_raw_text = 'UTWRK' THEN 'UNEMPLOYED - UNABLE TO WORK'
         ELSE 'EMPLOYED' END AS note_title,
-      employer_name AS note_body,
+      CASE WHEN employment_status IN ('EMPLOYED_FULL_TIME', 'EMPLOYED_PART_TIME') THEN employer_name ELSE '' END AS note_body,
       start_date AS event_date,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` emp
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
