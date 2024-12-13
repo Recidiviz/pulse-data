@@ -43,6 +43,7 @@ SELECT
     d.system_type,
     d.decarceral_impact_type,
     d.is_jii_decarceral_transition,
+    d.has_mandatory_due_date,
     launches.first_access_date IS NOT NULL AS task_type_is_live,
     IFNULL(launches.is_fully_launched, FALSE) AS task_type_is_fully_launched,
 FROM
@@ -79,6 +80,7 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
         "system_type",
         "decarceral_impact_type",
         "is_jii_decarceral_transition",
+        "has_mandatory_due_date",
         "task_type_is_live",
         "task_type_is_fully_launched",
         "usage_event_type",
