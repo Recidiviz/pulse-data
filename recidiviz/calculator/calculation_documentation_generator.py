@@ -306,6 +306,13 @@ class CalculationDocumentationGenerator:
             if not v.address.dataset_id in DATASETS_TO_SKIP_VIEW_DOCUMENTATION
         ]
 
+        # Cached results of calls to _big_query_address_formatter_for_gitbook().
+        # Boolean keys are the value of the `products_section` argument.
+        self.formatted_address_cache: dict[bool, dict[BigQueryAddress, str]] = {
+            True: {},
+            False: {},
+        }
+
     @staticmethod
     def _get_all_source_table_datasets_to_descriptions() -> dict[str, str]:
         all_datasets_to_descriptions: dict[str, str] = {}
@@ -944,6 +951,10 @@ class CalculationDocumentationGenerator:
         products_section: bool,
     ) -> str:
         """Gitbook-specific formatting for the generated dependency tree."""
+
+        if address in self.formatted_address_cache[products_section]:
+            return self.formatted_address_cache[products_section][address]
+
         is_source_table = address.dataset_id in self.all_source_table_datasets or (
             address.dataset_id
             in {
@@ -1006,6 +1017,7 @@ class CalculationDocumentationGenerator:
             table_name_str += (
                 f" ([BQ Staging]({staging_link})) ([BQ Prod]({prod_link}))"
             )
+        self.formatted_address_cache[products_section][address] = table_name_str
         return table_name_str
 
     def _get_view_tree_string(
