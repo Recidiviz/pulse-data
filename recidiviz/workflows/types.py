@@ -102,8 +102,8 @@ class OpportunityConfig:
     tab_preface_copy: list[dict[str, str]] = attr.ib()
 
     subcategory_headings: list[dict[str, str]] = attr.ib()
-    subcategory_orderings: list[dict[str, list[str]]] = attr.ib()
-    mark_submitted_options_by_tab: list[dict[str, list[str]]] = attr.ib()
+    subcategory_orderings: list[dict[str, Any]] = attr.ib()
+    mark_submitted_options_by_tab: list[dict[str, Any]] = attr.ib()
 
     oms_criteria_header: Optional[str] = attr.ib()
     non_oms_criteria_header: Optional[str] = attr.ib()

@@ -71,6 +71,12 @@ def load_model_fixture(
                         "tab_groups",
                         "compare_by",
                         "notifications",
+                        "empty_tab_copy",
+                        "tab_preface_copy",
+                        "subcategory_headings",
+                        "subcategory_orderings",
+                        "mark_submitted_options_by_tab",
+                        "non_oms_criteria",
                     }
                     and v != ""
                 ):
@@ -99,8 +105,21 @@ def make_add_config_arguments(
         "methodology_url": "methodology_url",
         "initial_header": "initial_header",
         "denial_reasons": {},
-        "eligible_criteria_copy": {},
-        "ineligible_criteria_copy": {},
+        "eligible_criteria_copy": [
+            {
+                "key": "TESTING_CRITERIA_1",
+                "text": "test text",
+                "tooltip": "test tooltip",
+            },
+            {"key": "TESTING_CRITERIA_2", "text": "more text"},
+        ],
+        "ineligible_criteria_copy": [
+            {
+                "key": "TESTING_ALMOST_ELIGIBLE_CRITERIA",
+                "text": "test text",
+                "tooltip": "test tooltip",
+            },
+        ],
         "dynamic_eligibility_text": "dynamic_eligibility_text",
         "call_to_action": "call_to_action",
         "subheading": "subheading",
@@ -122,14 +141,26 @@ def make_add_config_arguments(
         "denial_noun": "Ineligibility",
         "supports_submitted": True,
         "submitted_tab_title": "Submitted",
-        "empty_tab_copy": [],
-        "tab_preface_copy": [],
-        "subcategory_headings": [],
-        "subcategory_orderings": [],
-        "mark_submitted_options_by_tab": [],
+        "empty_tab_copy": [{"tab": "Eligible Now", "text": "No people are eligible"}],
+        "tab_preface_copy": [{"tab": "Pending", "text": "Pending people"}],
+        "subcategory_headings": [
+            {"subcategory": "PENDING_1", "text": "Pending type 1"},
+            {"subcategory": "PENDING_2", "text": "Pending type 2"},
+        ],
+        "subcategory_orderings": [
+            {"tab": "Pending", "texts": ["PENDING_1", "PENDING_2"]},
+            {"tab": "Eligible Now", "texts": ["ELIGIBLE_1", "ELIGIBLE_2"]},
+        ],
+        "mark_submitted_options_by_tab": [
+            {"tab": "Pending", "texts": ["PENDING_1", "PENDING_2", "PENDING_3"]},
+            {"tab": "Eligible Now", "texts": ["PENDING_1"]},
+        ],
         "oms_criteria_header": "Validated by data from OMS",
         "non_oms_criteria_header": "Requirements to check",
-        "non_oms_criteria": [{}],
+        "non_oms_criteria": [
+            {"text": "test text"},
+            {"text": "test criteria with tooltip", "tooltip": "test tooltip"},
+        ],
         "highlight_cases_on_homepage": False,
         "highlighted_case_cta_copy": "Opportunity name",
         "overdue_opportunity_callout_copy": "overdue for opportunity",
@@ -659,12 +690,11 @@ class TestWorkflowsQuerier(TestCase):
     def test_activate_config(self) -> None:
         # create a config
         querier = WorkflowsQuerier(StateCode.US_ID)
-        config_id = querier.add_config(
-            **make_add_config_arguments(
-                "usIdSupervisionLevelDowngrade",
-                feature_variant="someNewVariant",
-            )
+        config_fields = make_add_config_arguments(
+            "usIdSupervisionLevelDowngrade",
+            feature_variant="someNewVariant",
         )
+        config_id = querier.add_config(**config_fields)
 
         # deactivate the config and ensure it is deactivated
         querier.deactivate_config("usIdSupervisionLevelDowngrade", config_id)
