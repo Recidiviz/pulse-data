@@ -530,16 +530,18 @@ def line_labels(
     horizontal_distance: float = 0.98,
     color: str = "auto",
     weight: Union[int, str] = 551,
+    format_labels: bool = False,
     label_formatter: Callable = lambda s: s.title().replace("_", " ").replace("-", " "),
     **text_kwargs: Optional[Any],
 ) -> None:
     """
-    Adds labels next to lines rather than in a traditional legend
+    Adds labels next to lines rather than in a traditional legend.
+
     Params:
     -------
-    ax : plt.Axes
+    ax: plt.Axes
         axes of existing plot. if no axes is passed in, this fxn creates one using plt.gca()
-    vertical_distance : float
+    vertical_distance: float
         min distance that labels should be separated from one another, larger values means more vertical separation
         default is set to nan, which automatically calculates an ideal vertical separation
     horizontal_distance: float
@@ -549,6 +551,9 @@ def line_labels(
     weight: int
         specifies label weight. 400 is normal font, 700 is bold
         default is 551, which is an arbitrary number chosen to look a little bit heavier due to the use of light colors
+    format_labels: bool
+        Whether to format the legend labels (default: False). If True, the labels will
+        be formatted using the formatting function.
     label_formatter: lambda
         specifies the string formatting of the line labels (e.g. line_labels(label_formatter = lambda s: s.lower()))
         by default, converts labels to title case and replaces hyphens and underscores with spaces
@@ -556,6 +561,7 @@ def line_labels(
     **text_kwargs
         the user can specify any other matplotlib text arguments (font, size, etc.)
         see https://matplotlib.org/stable/api/text_api.html for all options
+
     Example usage:
     ----------
     # make sure to run recidiviz/tools/analyst/notebook_utils.py in your notebook first
@@ -632,7 +638,10 @@ def line_labels(
     xpos = axis_to_data.transform([horizontal_distance, 1.0])[0]
 
     for label, ypos, col in zip(labels, moved_targets_t, colors):
-        label_string = label_formatter(str(label))
+        if format_labels:
+            label_string = label_formatter(str(label))
+        else:
+            label_string = str(label)
         ax.text(
             xpos,
             ypos,
