@@ -17,7 +17,10 @@
 """Sessionized view assigning clients to spans based on various compliance metrics."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.vitals_report.supervision_population_by_po_by_day import (
@@ -55,8 +58,8 @@ WITH risk_assessment_eligibility_levels_by_state AS (
 )
 , compliance_metrics AS (
     SELECT
-        state_code,
-        person_id,
+        m.state_code,
+        m.person_id,
         date_of_supervision AS start_date,
         DATE_ADD(date_of_supervision, INTERVAL 1 DAY) AS end_date_exclusive,
         supervision_level IN UNNEST(r.supervision_levels) AS assessment_required,
@@ -65,17 +68,21 @@ WITH risk_assessment_eligibility_levels_by_state AS (
         supervision_level IN UNNEST(c.supervision_levels) AS contact_required,
         LOGICAL_OR(IFNULL(next_recommended_face_to_face_date < date_of_supervision, FALSE)) AS contact_overdue
     FROM
-        `{{project_id}}.shared_metric_views.supervision_case_compliance_metrics_materialized`
+        `{{project_id}}.shared_metric_views.supervision_case_compliance_metrics_materialized` m
     INNER JOIN
         risk_assessment_eligibility_levels_by_state r
         USING (state_code)
     INNER JOIN
         contact_eligibility_levels_by_state c
         USING (state_code)
-    -- We only need data for the last 6 months for Operations, so filter earlier dates out now to
-    -- avoid needing to do extra processing for data we aren't actually using
+    LEFT JOIN `{{project_id}}.sessions.location_sessions_materialized` l
+        ON m.person_id = l.person_id
+        AND date_of_supervision BETWEEN l.start_date AND {nonnull_end_date_exclusive_clause("l.end_date_exclusive")}
     WHERE
+        -- We only need data for the last 6 months for Operations, so filter earlier dates out now to
+        -- avoid needing to do extra processing for data we aren't actually using
         date_of_supervision >= DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 6 MONTH)
+        AND NOT (m.state_code="US_ND" AND IFNULL(l.supervision_office_name, "") LIKE "%PRETRIAL")
     GROUP BY 1, 2, 3, 4, 5, 7
 )
 , aggregated_compliance_spans AS (
