@@ -67,6 +67,7 @@ _QUERY_TEMPLATE = f"""
           ADC_NUMBER = external_id
         WHERE
           status.DESCRIPTION = 'Detainer Saved'
+          AND is_finalized = 'Y'
           AND pei.state_code = 'US_AZ'
           AND pei.id_type = 'US_AZ_ADC_NUMBER'
     ),
