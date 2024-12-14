@@ -39,10 +39,14 @@ from recidiviz.tools.analyst.aggregated_metrics_utils import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string_formatting import fix_indent
 
 
-def get_view_builders() -> list[SimpleBigQueryViewBuilder]:
-    """Creates view builders for single day aggregated metrics"""
+def get_view_builders(
+    time_interval_length_in_days: int,
+) -> list[SimpleBigQueryViewBuilder]:
+    """Creates view builders for vitals aggregated metrics calculated daily across the given length
+    of time."""
     current_datetime = current_datetime_us_eastern()
     view_builders = []
     for unit_of_analysis_type in [
@@ -53,7 +57,7 @@ def get_view_builders() -> list[SimpleBigQueryViewBuilder]:
     ]:
         # TODO(#35910): Migrate to use an optimized custom metrics template builder
         #  once it exists.
-        query_template = get_legacy_custom_aggregated_metrics_query_template(
+        agg_metrics_query_template = get_legacy_custom_aggregated_metrics_query_template(
             metrics=[
                 AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED,
                 AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE,
@@ -63,16 +67,29 @@ def get_view_builders() -> list[SimpleBigQueryViewBuilder]:
             unit_of_analysis_type=unit_of_analysis_type,
             population_type=MetricPopulationType.SUPERVISION,
             time_interval_unit=MetricTimePeriod.DAY,
-            time_interval_length=1,
+            # How long to calculate the averages over. For example, if
+            # time_interval_length_in_days is 30, we calculate a 30 day rate. If
+            # time_interval_length_in_days is 1, we have a point-in-time count.
+            time_interval_length=time_interval_length_in_days,
             min_end_date=current_datetime - relativedelta(days=30),
             max_end_date=current_datetime,
+            # How often to calculate metrics. Since the rolling period is set to 1 DAY, we
+            # calculate values for each day in the time period.
+            rolling_period_unit=MetricTimePeriod.DAY,
+            rolling_period_length=1,
         )
-        view_id = (
-            f"supervision_{unit_of_analysis_type.short_name}_day_aggregated_metrics"
-        )
+        query_template = f"""
+WITH agg_metrics AS (
+{fix_indent(agg_metrics_query_template, indent_level=4)}
+)
+SELECT * FROM agg_metrics
+WHERE state_code IN ("US_IX", "US_ND")
+"""
+        view_id = f"supervision_{unit_of_analysis_type.short_name}_{f'{time_interval_length_in_days}_' if time_interval_length_in_days != 1 else ''}day_aggregated_metrics"
         view_description = f"""
         Vitals metrics for the {MetricPopulationType.SUPERVISION.population_name_short} population,
-        disaggregated by {unit_of_analysis_type.short_name} and calculated for each day.
+        over a {time_interval_length_in_days} time interval, disaggregated by
+        {unit_of_analysis_type.short_name}, and calculated for each day.
 
         All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
         """
@@ -90,5 +107,7 @@ def get_view_builders() -> list[SimpleBigQueryViewBuilder]:
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        for vb in get_view_builders():
+        for vb in get_view_builders(time_interval_length_in_days=1):
+            vb.build_and_print()
+        for vb in get_view_builders(time_interval_length_in_days=30):
             vb.build_and_print()

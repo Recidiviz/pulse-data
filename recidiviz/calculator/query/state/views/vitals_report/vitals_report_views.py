@@ -18,7 +18,9 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.vitals_report import day_aggregated_metrics
+from recidiviz.calculator.query.state.views.vitals_report import (
+    vitals_aggregated_metrics,
+)
 from recidiviz.calculator.query.state.views.vitals_report.overdue_lsir_by_po_by_day import (
     OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER,
 )
@@ -44,7 +46,10 @@ from recidiviz.calculator.query.state.views.vitals_report.timely_contact_by_po_b
 # NOTE: These views must be listed in order of dependency. For example, if view Y depends on view X, then view X should
 # appear in the list before view Y.
 
-VITALS_AGGREGATED_METRIC_VIEW_BUILDERS = day_aggregated_metrics.get_view_builders()
+VITALS_AGGREGATED_METRIC_VIEW_BUILDERS = [
+    *vitals_aggregated_metrics.get_view_builders(time_interval_length_in_days=1),
+    *vitals_aggregated_metrics.get_view_builders(time_interval_length_in_days=30),
+]
 
 VITALS_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_OFFICERS_AND_DISTRICTS_VIEW_BUILDER,
