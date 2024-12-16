@@ -40,7 +40,6 @@ from recidiviz.ingest.direct.views.raw_data_diff_query_builder import (
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.big_query.big_query_test_helper import BigQueryTestHelper
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fixture_util import load_dataframe_from_path
 from recidiviz.tests.ingest.direct.raw_data import raw_data_diff_fixtures
@@ -218,6 +217,4 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         expected_results = self._get_raw_data_from_fixture(
             fixture_directory_name, RawDataDiffFixtureType.EXPECTED_RESULTS
         )
-        BigQueryTestHelper.compare_expected_and_result_dfs(
-            expected=expected_results, results=results
-        )
+        self.compare_expected_and_result_dfs(expected=expected_results, results=results)

@@ -46,7 +46,6 @@ from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.big_query.big_query_test_helper import query_view
 from recidiviz.tests.big_query.sqlglot_helpers import (
     check_query_is_not_ordered_outside_of_windows,
 )
@@ -241,7 +240,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
                 raw_data_datetime_upper_bound=query_run_dt,
             )
         )
-        return query_view(self, ingest_view.ingest_view_name, view_query)
+        return self.query_view(ingest_view.ingest_view_name, view_query)
 
     def check_ingest_view_ctes_are_documented(
         self,
