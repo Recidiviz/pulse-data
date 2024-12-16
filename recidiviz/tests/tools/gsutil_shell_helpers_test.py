@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests various gsutil helper functions (mv, cp, ls)."""
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 from recidiviz.tools.gsutil_shell_helpers import (
     GSUTIL_DEFAULT_TIMEOUT_SEC,
@@ -94,6 +94,20 @@ class TestGsutilErrorHandling(unittest.TestCase):
             assert_success=True,
             timeout_sec=GSUTIL_DEFAULT_TIMEOUT_SEC,
         )
+
+    @patch("recidiviz.tools.gsutil_shell_helpers.run_command")
+    def test_gsutil_ls_files_only(self, mock_run: MagicMock) -> None:
+        mock_run.return_value = "gs://some-bucket/file\ngs://some-bucket/directory/"
+        self.assertEqual(
+            gsutil_ls("gs://some-bucket", files_only=True),
+            ["gs://some-bucket/file"],
+        )
+
+    def test_gsutil_ls_files_only_and_directories_only(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, "files_only and directories_only cannot both be True"
+        ):
+            gsutil_ls("gs://some-bucket", files_only=True, directories_only=True)
 
 
 if __name__ == "__main__":

@@ -37,7 +37,11 @@ GSUTIL_DEFAULT_TIMEOUT_SEC = 60 * 20  # 20 minutes
 
 
 def gsutil_ls(
-    gs_path: str, directories_only: bool = False, allow_empty: bool = False
+    gs_path: str,
+    *,
+    directories_only: bool = False,
+    files_only: bool = False,
+    allow_empty: bool = False,
 ) -> List[str]:
     """Returns list of paths returned by 'gsutil ls <gs_path>.
     E.g.
@@ -47,6 +51,9 @@ def gsutil_ls(
     See more documentation here:
     https://cloud.google.com/storage/docs/gsutil/commands/ls
     """
+    if directories_only and files_only:
+        raise ValueError("files_only and directories_only cannot both be True.")
+
     flags = ""
     if directories_only:
         if "**" in gs_path:
@@ -66,7 +73,11 @@ def gsutil_ls(
             return []
         raise e
 
-    return [p for p in res.splitlines() if p != gs_path]
+    paths = [p for p in res.splitlines() if p != gs_path]
+    if files_only:
+        return [p for p in paths if not p.endswith("/")]
+
+    return paths
 
 
 # See https://github.com/GoogleCloudPlatform/gsutil/issues/464#issuecomment-633334888
