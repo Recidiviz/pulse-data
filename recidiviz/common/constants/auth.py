@@ -24,4 +24,5 @@ class RosterPredefinedRoles(Enum):
     # recidiviz.common.constants.state.state_staff_role_period.StateStaffRoleSubtype
     SUPERVISION_LINE_STAFF = "SUPERVISION_LINE_STAFF"
     SUPERVISION_OFFICER_SUPERVISOR = "SUPERVISION_OFFICER_SUPERVISOR"
+    SUPERVISION_LEADERSHIP = "SUPERVISION_LEADERSHIP"
     UNKNOWN = "UNKNOWN"
