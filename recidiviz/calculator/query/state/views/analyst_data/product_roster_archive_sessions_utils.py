@@ -192,14 +192,21 @@ SELECT
     start_date,
     end_date_exclusive,
     system_type,
-    location_id,
     IFNULL(is_registered, FALSE) AS is_registered,
     is_primary_user,
     staff.staff_id,
     staff_external_id.external_id AS staff_external_id,
+    -- Convert the location_id to supervision district for states
+    -- that use office as the location ID in the product roster
     ANY_VALUE(
-        CASE system_type 
-        WHEN "SUPERVISION" THEN supervision_district_name 
+        CASE system_type
+        WHEN "SUPERVISION" THEN IFNULL(supervision_district, location_id)
+        WHEN "INCARCERATION" THEN IFNULL(facility, location_id)
+        ELSE location_id END
+    ) AS location_id,
+    ANY_VALUE(
+        CASE system_type
+        WHEN "SUPERVISION" THEN supervision_district_name
         WHEN "INCARCERATION" THEN facility_name END
     ) AS location_name,
 FROM
@@ -236,7 +243,7 @@ ON
             AND location_id = facility
         )
     )
-GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
     """
     return SimpleBigQueryViewBuilder(
         dataset_id=ANALYST_VIEWS_DATASET,
