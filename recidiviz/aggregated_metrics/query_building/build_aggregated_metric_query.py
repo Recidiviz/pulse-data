@@ -90,7 +90,7 @@ def _build_assignments_by_time_period_cte_queries(
             population_type=population_type,
             unit_of_observation_type=unit_of_observation_type,
             unit_of_analysis_type=unit_of_analysis_type,
-            metric_time_period_join_type=metric_class.metric_time_period_join_type(),
+            metric_time_period_to_assignment_join_type=metric_class.metric_time_period_to_assignment_join_type(),
         )
 
         assignments_by_time_period_query = assignments_address.select_query_template()
@@ -271,7 +271,7 @@ def _build_unit_of_observation_aggregated_metric_query_template(
         population_type=population_type,
         unit_of_observation_type=unit_of_observation_type,
         unit_of_analysis_type=unit_of_analysis_type,
-        metric_time_period_join_type=metric_class.metric_time_period_join_type(),
+        metric_time_period_to_assignment_join_type=metric_class.metric_time_period_to_assignment_join_type(),
     )
     assignments_by_time_period_cte_name = _get_assignments_by_time_period_cte_name(
         unit_of_observation_type

@@ -110,8 +110,8 @@ ON
     -- Include events occurring on the last date of an end-date exclusive span,
     -- but exclude events occurring on the last date of an end-date exclusive 
     -- analysis period.
-    AND observations.event_date >= person_assignments_by_time_period.event_applies_to_period_start_date
-    AND observations.event_date <  person_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
+    AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
+    AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
 GROUP BY state_code, facility, metric_period_start_date, metric_period_end_date_exclusive, period
 """
 
@@ -173,8 +173,8 @@ ON
     -- Include events occurring on the last date of an end-date exclusive span,
     -- but exclude events occurring on the last date of an end-date exclusive 
     -- analysis period.
-    AND observations.event_date >= person_assignments_by_time_period.event_applies_to_period_start_date
-    AND observations.event_date <  person_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
+    AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
+    AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
 GROUP BY state_code, unit_supervisor, metric_period_start_date, metric_period_end_date_exclusive, period
 """
 

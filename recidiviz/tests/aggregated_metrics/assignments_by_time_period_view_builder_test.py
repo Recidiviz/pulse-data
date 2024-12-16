@@ -31,7 +31,7 @@ from recidiviz.aggregated_metrics.metric_time_period_config import (
     MetricTimePeriodConfig,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
-    MetricTimePeriodJoinType,
+    MetricTimePeriodToAssignmentJoinType,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
@@ -96,7 +96,7 @@ class TestAssignmentsByTimePeriodViewBuilder(BigQueryEmulatorTestCase):
             unit_of_analysis_type=MetricUnitOfAnalysisType.FACILITY,
             unit_of_observation_type=MetricUnitOfObservationType.PERSON_ID,
             time_period=self.two_months_time_period_config,
-            metric_time_period_join_type=MetricTimePeriodJoinType.PERIOD,
+            metric_time_period_to_assignment_join_type=MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED,
         )
 
         self._create_assignments_table(
@@ -116,7 +116,7 @@ class TestAssignmentsByTimePeriodViewBuilder(BigQueryEmulatorTestCase):
             unit_of_analysis_type=MetricUnitOfAnalysisType.FACILITY,
             unit_of_observation_type=MetricUnitOfObservationType.PERSON_ID,
             time_period=self.two_months_time_period_config,
-            metric_time_period_join_type=MetricTimePeriodJoinType.PERIOD,
+            metric_time_period_to_assignment_join_type=MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED,
         )
 
         input_assignments: list[dict[str, Any]] = [
@@ -155,8 +155,8 @@ class TestAssignmentsByTimePeriodViewBuilder(BigQueryEmulatorTestCase):
                 "metric_period_start_date": datetime.date(2024, 9, 1),
                 "metric_period_end_date_exclusive": datetime.date(2024, 10, 1),
                 "period": "MONTH",
-                "event_applies_to_period_start_date": datetime.date(2024, 9, 1),
-                "event_applies_to_period_end_date_exclusive_nonnull": datetime.date(
+                "intersection_start_date": datetime.date(2024, 9, 1),
+                "intersection_extended_end_date_exclusive_nonnull": datetime.date(
                     2024, 9, 17
                 ),
             },
@@ -170,8 +170,8 @@ class TestAssignmentsByTimePeriodViewBuilder(BigQueryEmulatorTestCase):
                 "metric_period_start_date": datetime.date(2024, 9, 1),
                 "metric_period_end_date_exclusive": datetime.date(2024, 10, 1),
                 "period": "MONTH",
-                "event_applies_to_period_start_date": datetime.date(2024, 9, 15),
-                "event_applies_to_period_end_date_exclusive_nonnull": datetime.date(
+                "intersection_start_date": datetime.date(2024, 9, 15),
+                "intersection_extended_end_date_exclusive_nonnull": datetime.date(
                     2024, 10, 1
                 ),
             },
@@ -184,8 +184,8 @@ class TestAssignmentsByTimePeriodViewBuilder(BigQueryEmulatorTestCase):
                 "metric_period_start_date": datetime.date(2024, 10, 1),
                 "metric_period_end_date_exclusive": datetime.date(2024, 11, 1),
                 "period": "MONTH",
-                "event_applies_to_period_start_date": datetime.date(2024, 10, 1),
-                "event_applies_to_period_end_date_exclusive_nonnull": datetime.date(
+                "intersection_start_date": datetime.date(2024, 10, 1),
+                "intersection_extended_end_date_exclusive_nonnull": datetime.date(
                     2024, 11, 1
                 ),
             },
@@ -200,20 +200,20 @@ class TestAssignmentsByTimePeriodViewBuilder(BigQueryEmulatorTestCase):
             unit_of_analysis_type=MetricUnitOfAnalysisType.FACILITY,
             unit_of_observation_type=MetricUnitOfObservationType.PERSON_ID,
             time_period=self.two_months_time_period_config,
-            metric_time_period_join_type=MetricTimePeriodJoinType.PERIOD,
+            metric_time_period_to_assignment_join_type=MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED,
         )
 
         self.assertEqual(
             BigQueryAddress(
                 dataset_id="unit_of_analysis_assignments_by_time_period",
-                table_id="incarceration__person_to_facility__by_period__last_2_months",
+                table_id="incarceration__person_to_facility__by_intersection_extended__last_2_months",
             ),
             builder.address,
         )
         self.assertEqual(
             BigQueryAddress(
                 dataset_id="unit_of_analysis_assignments_by_time_period",
-                table_id="incarceration__person_to_facility__by_period__last_2_months_materialized",
+                table_id="incarceration__person_to_facility__by_intersection_extended__last_2_months_materialized",
             ),
             builder.materialized_address,
         )
@@ -224,23 +224,24 @@ class TestAssignmentsByTimePeriodViewBuilder(BigQueryEmulatorTestCase):
             unit_of_analysis_type=MetricUnitOfAnalysisType.FACILITY,
             unit_of_observation_type=MetricUnitOfObservationType.PERSON_ID,
             time_period=self.two_months_time_period_config,
-            metric_time_period_join_type=MetricTimePeriodJoinType.PERIOD,
+            metric_time_period_to_assignment_join_type=MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED,
         )
 
         expected_description = """Joins a collection of [MONTH] metric time periods with assignment periods that associate [FACILITY]
 unit of analysis to [PERSON] unit of observation assignment spans, returning one result row for
-every metric time period where there is some overlap with an assignment span. If there are multiple
-assignments that overlap with a metric period, multiple rows will be returned.
+every metric time period where there is some overlap with an assignment span (treating the end date
+of the assignment span as *inclusive*, not *exclusive*). If there are multiple assignments that
+overlap with a metric period, multiple rows will be returned.
 
 Key column descriptions:
-| Column                                             | Description                                                                                                                                                                                                                                                         |
-|----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| assignment_start_date                              | The start date (inclusive) of the full unit of observation to unit of analysis assignment period being associated with this metric time period.                                                                                                                     |
-| assignment_end_date_exclusive_nonnull              | The end date (exclusive) of the full unit of observation to unit of analysis assignment period being associated with this metric time period. This field is always non-null. If the assignment is currently valid (no end date), the end date has value 9999-12-31. |
-| metric_period_start_date                           | The start date (inclusive) for the metric time period. May come before the assignment_start_date if the assignment starts in the middle of this metric period, or after if the assignment spans multiple metric periods.                                            |
-| metric_period_end_date_exclusive                   | The end date (exclusive) for the metric time period. May come after the assignment_end_date_exclusive_nonnull if the assignment ends in the middle of this metric period, or before if the assignment spans multiple metric periods.                                |
-| event_applies_to_period_start_date                 | This column is pre-computed for use later in aggregated metrics queries. This is the first date (inclusive) when an event observation would count towards this metric period when calculating a PeriodEventAggregatedMetric.                                        |
-| event_applies_to_period_end_date_exclusive_nonnull | This column is pre-computed for use later in aggregated metrics queries. This is the day after the last date when an event observation would count towards this metric period when calculating a PeriodEventAggregatedMetric. This field is always non-null.        |
+| Column                                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+|--------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| metric_period_start_date                         | The start date (inclusive) for the metric time period. May come before the assignment_start_date if the assignment starts in the middle of this metric period, or after if the assignment spans multiple metric periods.                                                                                                                                                                                                                                                  |
+| metric_period_end_date_exclusive                 | The end date (exclusive) for the metric time period. May come after the assignment_end_date_exclusive_nonnull if the assignment ends in the middle of this metric period, or before if the assignment spans multiple metric periods.                                                                                                                                                                                                                                      |
+| assignment_start_date                            | The start date (inclusive) of the full unit of observation to unit of analysis assignment period being associated with this metric time period.                                                                                                                                                                                                                                                                                                                           |
+| assignment_end_date_exclusive_nonnull            | The end date (exclusive) of the full unit of observation to unit of analysis assignment period being associated with this metric time period. This field is always non-null. If the assignment is currently valid (no end date), the end date has value 9999-12-31.                                                                                                                                                                                                       |
+| intersection_start_date                          | This column is pre-computed for use later in aggregated metrics queries. This is the start date (inclusive) of the period of time where the assignment and metric periods overlap. This is first date (inclusive) when an event observation would count towards this metric period when calculating a PeriodEventAggregatedMetric.                                                                                                                                        |
+| intersection_extended_end_date_exclusive_nonnull | This column is pre-computed for use later in aggregated metrics queries. This is the end date (exclusive) of the period of time where the assignment and metric periods overlap, with one day added past the assignment end date (if that date still falls within the metric period). This is the day after the last date when an event observation would count towards this metric period when calculating a PeriodEventAggregatedMetric. This field is always non-null. |
 """
         self.assertEqual(expected_description, builder.description)
 
@@ -250,7 +251,7 @@ Key column descriptions:
             unit_of_analysis_type=MetricUnitOfAnalysisType.FACILITY,
             unit_of_observation_type=MetricUnitOfObservationType.PERSON_ID,
             time_period=self.two_months_time_period_config,
-            metric_time_period_join_type=MetricTimePeriodJoinType.PERIOD,
+            metric_time_period_to_assignment_join_type=MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED,
         )
 
         expected_query = """WITH
@@ -288,11 +289,11 @@ SELECT
     GREATEST(
         assignment_start_date,
         metric_period_start_date
-    ) AS event_applies_to_period_start_date,
+    ) AS intersection_start_date,
     LEAST(
         -- If an event observation occurs on the exclusive end date of an 
         -- assignment period we still want to count it. However, if the event 
-        -- occurs on the exlcusive end date of the metric period, we don't count
+        -- occurs on the exclusive end date of the metric period, we don't count
         -- it.
         metric_period_end_date_exclusive,
         IF(
@@ -303,7 +304,7 @@ SELECT
                 INTERVAL 1 DAY
             )
         )
-    ) AS event_applies_to_period_end_date_exclusive_nonnull
+    ) AS intersection_extended_end_date_exclusive_nonnull
 FROM
     time_periods
 JOIN
@@ -315,7 +316,7 @@ ON
     ) < LEAST(
         -- If an event observation occurs on the exclusive end date of an 
         -- assignment period we still want to count it. However, if the event 
-        -- occurs on the exlcusive end date of the metric period, we don't count
+        -- occurs on the exclusive end date of the metric period, we don't count
         -- it.
         metric_period_end_date_exclusive,
         IF(

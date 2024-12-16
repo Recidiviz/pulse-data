@@ -138,8 +138,8 @@ def _observation_to_assignment_periods_join_logic(
         -- Include events occurring on the last date of an end-date exclusive span,
         -- but exclude events occurring on the last date of an end-date exclusive 
         -- analysis period.
-        AND {OBSERVATIONS_CTE_NAME}.event_date >= {assignments_by_time_period_cte_name}.{AssignmentsByTimePeriodViewBuilder.EVENT_APPLIES_TO_PERIOD_START_DATE_COLUMN_NAME}
-        AND {OBSERVATIONS_CTE_NAME}.event_date <  {assignments_by_time_period_cte_name}.{AssignmentsByTimePeriodViewBuilder.EVENT_APPLIES_TO_PERIOD_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME}
+        AND {OBSERVATIONS_CTE_NAME}.event_date >= {assignments_by_time_period_cte_name}.{AssignmentsByTimePeriodViewBuilder.INTERSECTION_START_DATE_COLUMN_NAME}
+        AND {OBSERVATIONS_CTE_NAME}.event_date <  {assignments_by_time_period_cte_name}.{AssignmentsByTimePeriodViewBuilder.INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME}
         """
 
     if issubclass(metric_class, PeriodSpanAggregatedMetric):

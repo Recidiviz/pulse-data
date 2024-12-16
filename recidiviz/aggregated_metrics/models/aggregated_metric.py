@@ -19,11 +19,13 @@ calculate a metric
 """
 import abc
 import re
-from enum import Enum
 from typing import Generic, List, Optional
 
 import attr
 
+from recidiviz.aggregated_metrics.assignments_by_time_period_view_builder import (
+    MetricTimePeriodToAssignmentJoinType,
+)
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
@@ -45,18 +47,6 @@ from recidiviz.observations.observation_type_utils import (
 )
 from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
-
-
-class MetricTimePeriodJoinType(Enum):
-    """Describes the type of join logic we'll use to associate metric time periods
-    with unit of observation to unit of assignment periods.
-    """
-
-    # If the PERIOD of assignment overlaps at all with the metric period, we count it.
-    PERIOD = "PERIOD"
-
-    # If the ASSIGNMENT START DATE overlaps with the metric period, we count it.
-    ASSIGNMENT = "ASSIGNMENT"
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -91,7 +81,9 @@ class AggregatedMetric(Generic[ObservationTypeT]):
 
     @classmethod
     @abc.abstractmethod
-    def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
+    def metric_time_period_to_assignment_join_type(
+        cls,
+    ) -> MetricTimePeriodToAssignmentJoinType:
         """Returns the type of join logic we'll use to associate metric time periods
         with unit of observation to unit of assignment periods.
         """
@@ -219,7 +211,9 @@ class MiscAggregatedMetric(AggregatedMetric):
         return "Misc. Metric"
 
     @classmethod
-    def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
+    def metric_time_period_to_assignment_join_type(
+        cls,
+    ) -> MetricTimePeriodToAssignmentJoinType:
         raise NotImplementedError("TODO(#35913): No support for MiscAggregatedMetric")
 
 
@@ -235,8 +229,10 @@ class PeriodSpanAggregatedMetric(AggregatedMetric[SpanType], SpanMetricCondition
         return "period_span"
 
     @classmethod
-    def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
-        return MetricTimePeriodJoinType.PERIOD
+    def metric_time_period_to_assignment_join_type(
+        cls,
+    ) -> MetricTimePeriodToAssignmentJoinType:
+        return MetricTimePeriodToAssignmentJoinType.INTERSECTION
 
     @property
     def observation_selector(self) -> SpanSelector:
@@ -281,8 +277,10 @@ class AssignmentSpanAggregatedMetric(
         return "assignment_span"
 
     @classmethod
-    def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
-        return MetricTimePeriodJoinType.ASSIGNMENT
+    def metric_time_period_to_assignment_join_type(
+        cls,
+    ) -> MetricTimePeriodToAssignmentJoinType:
+        return MetricTimePeriodToAssignmentJoinType.ASSIGNMENT
 
     # Length (in days) of the window following assignment date over which to calculate metric
     window_length_days: int = 365
@@ -325,8 +323,10 @@ class PeriodEventAggregatedMetric(
         return "period_event"
 
     @classmethod
-    def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
-        return MetricTimePeriodJoinType.PERIOD
+    def metric_time_period_to_assignment_join_type(
+        cls,
+    ) -> MetricTimePeriodToAssignmentJoinType:
+        return MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED
 
     @property
     def observation_selector(self) -> EventSelector:
@@ -367,8 +367,10 @@ class AssignmentEventAggregatedMetric(
         return "assignment_event"
 
     @classmethod
-    def metric_time_period_join_type(cls) -> MetricTimePeriodJoinType:
-        return MetricTimePeriodJoinType.ASSIGNMENT
+    def metric_time_period_to_assignment_join_type(
+        cls,
+    ) -> MetricTimePeriodToAssignmentJoinType:
+        return MetricTimePeriodToAssignmentJoinType.ASSIGNMENT
 
     # Length (in days) of the window following assignment date over which to calculate metric
     window_length_days: int = 365

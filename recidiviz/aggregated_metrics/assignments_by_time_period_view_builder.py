@@ -21,6 +21,7 @@ multiple assignments that overlap with a metric period, multiple rows will be re
 """
 import re
 import textwrap
+from enum import Enum
 
 from tabulate import tabulate
 
@@ -32,9 +33,6 @@ from recidiviz.aggregated_metrics.dataset_config import (
 )
 from recidiviz.aggregated_metrics.metric_time_period_config import (
     MetricTimePeriodConfig,
-)
-from recidiviz.aggregated_metrics.models.aggregated_metric import (
-    MetricTimePeriodJoinType,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
@@ -57,6 +55,25 @@ from recidiviz.utils.string_formatting import fix_indent
 from recidiviz.utils.types import assert_type
 
 
+class MetricTimePeriodToAssignmentJoinType(Enum):
+    """Describes the type of join logic we'll use to associate metric time periods
+    with unit of assignment periods.
+    """
+
+    # If the PERIOD of assignment overlaps at all with the metric period, we count it.
+    INTERSECTION = "INTERSECTION"
+
+    # If the PERIOD of assignment overlaps at all with the metric period, we associate
+    # the assignment with the metric period. Additionally, if the metric period overlaps
+    # with the day *after* the assignments ends, we associate the assignment with the
+    # metric period.
+    INTERSECTION_EXTENDED = "INTERSECTION_EXTENDED"
+
+    # If the ASSIGNMENT START DATE of assignment overlaps at all with the metric period,
+    # we associate the assignment with the metric period.
+    ASSIGNMENT = "ASSIGNMENT"
+
+
 class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
     """Builds a view that joins a collection of metric time periods with unit of
     analysis to unit of observation periods assignment periods, returning one result row
@@ -68,11 +85,9 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
     ASSIGNMENT_START_DATE_COLUMN_NAME = "assignment_start_date"
     ASSIGNMENT_END_DATE_EXCLUSIVE_COLUMN_NAME = "assignment_end_date_exclusive_nonnull"
 
-    EVENT_APPLIES_TO_PERIOD_START_DATE_COLUMN_NAME = (
-        "event_applies_to_period_start_date"
-    )
-    EVENT_APPLIES_TO_PERIOD_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME = (
-        "event_applies_to_period_end_date_exclusive_nonnull"
+    INTERSECTION_START_DATE_COLUMN_NAME = "intersection_start_date"
+    INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME = (
+        "intersection_extended_end_date_exclusive_nonnull"
     )
 
     @classmethod
@@ -104,15 +119,19 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 f"assignment ends in the middle of this metric period, or before if "
                 f"the assignment spans multiple metric periods."
             ),
-            cls.EVENT_APPLIES_TO_PERIOD_START_DATE_COLUMN_NAME: (
+            cls.INTERSECTION_START_DATE_COLUMN_NAME: (
                 "This column is pre-computed for use later in aggregated metrics "
-                "queries. This is the first date (inclusive) when an event observation "
-                "would count towards this metric period when calculating a "
-                "PeriodEventAggregatedMetric."
+                "queries. This is the start date (inclusive) of the period of time "
+                "where the assignment and metric periods overlap. This is first date "
+                "(inclusive) when an event observation would count towards this metric "
+                "period when calculating a PeriodEventAggregatedMetric."
             ),
-            cls.EVENT_APPLIES_TO_PERIOD_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME: (
+            cls.INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME: (
                 "This column is pre-computed for use later in aggregated metrics "
-                "queries. This is the day after the last date when an event "
+                "queries. This is the end date (exclusive) of the period of time where "
+                "the assignment and metric periods overlap, with one day added past "
+                "the assignment end date (if that date still falls within the metric "
+                "period). This is the day after the last date when an event "
                 "observation would count towards this metric period when calculating a "
                 "PeriodEventAggregatedMetric. This field is always non-null."
             ),
@@ -125,20 +144,22 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         unit_of_analysis_type: MetricUnitOfAnalysisType,
         unit_of_observation_type: MetricUnitOfObservationType,
         time_period: MetricTimePeriodConfig,
-        metric_time_period_join_type: MetricTimePeriodJoinType,
+        metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
     ) -> None:
         self.dataset_id = UNIT_OF_ANALYSIS_ASSIGNMENTS_BY_TIME_PERIOD_DATASET_ID
         self.view_id = self._build_view_id(
             population_type=population_type,
             unit_of_analysis_type=unit_of_analysis_type,
             unit_of_observation_type=unit_of_observation_type,
-            metric_time_period_join_type=metric_time_period_join_type,
+            metric_time_period_to_assignment_join_type=metric_time_period_to_assignment_join_type,
             time_period=time_period,
         )
         self.population_type = population_type
         self.unit_of_observation_type = unit_of_observation_type
         self.unit_of_analysis_type = unit_of_analysis_type
-        self.metric_time_period_join_type = metric_time_period_join_type
+        self.metric_time_period_to_assignment_join_type = (
+            metric_time_period_to_assignment_join_type
+        )
         self.time_period = time_period
 
         self.clustering_fields = MetricUnitOfObservation(
@@ -149,7 +170,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             population_type=population_type,
             unit_of_analysis_type=unit_of_analysis_type,
             unit_of_observation_type=unit_of_observation_type,
-            metric_time_period_join_type=metric_time_period_join_type,
+            metric_time_period_to_assignment_join_type=metric_time_period_to_assignment_join_type,
             time_period=time_period,
         )
         self.projects_to_deploy = None
@@ -157,7 +178,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             population_type=population_type,
             unit_of_analysis_type=unit_of_analysis_type,
             unit_of_observation_type=unit_of_observation_type,
-            metric_time_period_join_type=metric_time_period_join_type,
+            metric_time_period_to_assignment_join_type=metric_time_period_to_assignment_join_type,
             time_period=time_period,
         )
 
@@ -168,7 +189,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         unit_of_analysis_type: MetricUnitOfAnalysisType,
         unit_of_observation_type: MetricUnitOfObservationType,
         time_period: MetricTimePeriodConfig,
-        metric_time_period_join_type: MetricTimePeriodJoinType,
+        metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
     ) -> BigQueryAddress:
         return assert_type(
             cls._build_materialized_address(
@@ -177,7 +198,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
                     population_type=population_type,
                     unit_of_analysis_type=unit_of_analysis_type,
                     unit_of_observation_type=unit_of_observation_type,
-                    metric_time_period_join_type=metric_time_period_join_type,
+                    metric_time_period_to_assignment_join_type=metric_time_period_to_assignment_join_type,
                     time_period=time_period,
                 ),
                 materialized_address_override=None,
@@ -191,13 +212,13 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         population_type: MetricPopulationType,
         unit_of_analysis_type: MetricUnitOfAnalysisType,
         unit_of_observation_type: MetricUnitOfObservationType,
-        metric_time_period_join_type: MetricTimePeriodJoinType,
+        metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
         time_period: MetricTimePeriodConfig,
     ) -> str:
         population_name = population_type.population_name_short
         unit_of_observation_name = unit_of_observation_type.short_name
         unit_of_analysis_name = unit_of_analysis_type.short_name
-        join_type = metric_time_period_join_type.value.lower()
+        join_type = metric_time_period_to_assignment_join_type.value.lower()
 
         return (
             f"{population_name}"
@@ -214,21 +235,68 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
 
     @property
     def description(self) -> str:
+        """Returns a description for this view"""
+        unit_of_analysis = MetricUnitOfAnalysis.for_type(self.unit_of_analysis_type)
+        unit_of_observation = MetricUnitOfObservation(
+            type=self.unit_of_observation_type
+        )
+
+        output_columns = self._get_output_columns(
+            unit_of_analysis,
+            unit_of_observation,
+            self.metric_time_period_to_assignment_join_type,
+        )
+
+        output_columns_to_document = [
+            c
+            for c in output_columns
+            if c
+            not in {
+                *unit_of_analysis.primary_key_columns,
+                *unit_of_observation.primary_key_columns,
+                MetricTimePeriodConfig.METRIC_TIME_PERIOD_PERIOD_COLUMN,
+            }
+        ]
+        columns_to_descriptions = self.docstring_output_columns_to_descriptions()
+
+        if (
+            self.metric_time_period_to_assignment_join_type
+            is MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED
+        ):
+            join_description = (
+                "where there is some overlap with an assignment span (treating the end "
+                "date of the assignment span as *inclusive*, not *exclusive*)"
+            )
+        elif (
+            self.metric_time_period_to_assignment_join_type
+            is MetricTimePeriodToAssignmentJoinType.INTERSECTION
+        ):
+            join_description = "where there is some overlap with an assignment span"
+        elif (
+            self.metric_time_period_to_assignment_join_type
+            is MetricTimePeriodToAssignmentJoinType.ASSIGNMENT
+        ):
+            raise NotImplementedError(
+                "TODO(#35897), TODO(#35898): Add description for ASSIGNMENT join type"
+            )
+        else:
+            raise ValueError(
+                f"Unexpected MetricTimePeriodToAssignmentJoinType "
+                f"[{self.metric_time_period_to_assignment_join_type}]"
+            )
+
         base_description = self._reformat_multi_line_paragraph(
             f"""Joins a collection of [{self.time_period.period_name_type.value}] metric
         time periods with assignment periods that associate 
         [{self.unit_of_analysis_type.value}] unit of analysis to 
         [{self.unit_of_observation_type.value}] unit of observation assignment spans,
-        returning one result row for every metric time period where there is some 
-        overlap with an assignment span. If there are multiple assignments that overlap
-        with a metric period, multiple rows will be returned.""",
+        returning one result row for every metric time period {join_description}. If 
+        there are multiple assignments that overlap with a metric period, multiple 
+        rows will be returned.""",
             new_width=100,
         )
         columns_str = tabulate(
-            [
-                [col, descr]
-                for col, descr in self.docstring_output_columns_to_descriptions().items()
-            ],
+            [[col, columns_to_descriptions[col]] for col in output_columns_to_document],
             headers=["Column", "Description"],
             tablefmt="github",
         )
@@ -251,19 +319,59 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         )
 
     @classmethod
-    def _get_output_column_clauses(
+    def _additional_output_columns_for_join_type(
+        cls,
+        metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
+    ) -> list[str]:
+        """Returns the names of the columns output by a view builder with the given
+        join type which are not present in all views.
+        """
+        if (
+            metric_time_period_to_assignment_join_type
+            is MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED
+        ):
+            return [
+                cls.INTERSECTION_START_DATE_COLUMN_NAME,
+                cls.INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME,
+            ]
+        if (
+            metric_time_period_to_assignment_join_type
+            is MetricTimePeriodToAssignmentJoinType.INTERSECTION
+        ):
+            raise NotImplementedError(
+                "TODO(#35895): Add additional time output columns list for "
+                "MetricTimePeriodToAssignmentJoinType.INTERSECTION"
+            )
+
+        if (
+            metric_time_period_to_assignment_join_type
+            is MetricTimePeriodToAssignmentJoinType.ASSIGNMENT
+        ):
+            raise NotImplementedError(
+                "TODO(#35897), TODO(#35898): Add additional time output columns list "
+                "for MetricTimePeriodToAssignmentJoinType.ASSIGNMENT"
+            )
+        raise ValueError(
+            f"Unexpected metric_time_period_to_assignment_join_type: "
+            f"[{metric_time_period_to_assignment_join_type}]"
+        )
+
+    @classmethod
+    def _get_output_columns(
         cls,
         unit_of_analysis: MetricUnitOfAnalysis,
         unit_of_observation: MetricUnitOfObservation,
+        metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
     ) -> list[str]:
-        """Returns output column clauses for the assignments by time period query."""
+        """Returns the names of the columns output by a view builder with the given
+        unit of analysis, unit of observation, and join type.
+        """
         columns = [*unit_of_observation.primary_key_columns_ordered]
         # There may be overlap between unit_of_analysis and unit_of_observation PKs -
         # only add non-overlapping columns.
         for column in unit_of_analysis.primary_key_columns:
             if column not in columns:
                 columns.append(column)
-
         columns.extend(MetricTimePeriodConfig.query_output_columns())
         columns.extend(
             [
@@ -271,24 +379,57 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 cls.ASSIGNMENT_END_DATE_EXCLUSIVE_COLUMN_NAME,
             ],
         )
+        columns.extend(
+            cls._additional_output_columns_for_join_type(
+                metric_time_period_to_assignment_join_type
+            )
+        )
 
-        columns.append(
-            f"{cls._event_applies_to_period_start_date_clause()} AS {cls.EVENT_APPLIES_TO_PERIOD_START_DATE_COLUMN_NAME}"
+        return columns
+
+    @classmethod
+    def _get_output_column_clauses(
+        cls,
+        unit_of_analysis: MetricUnitOfAnalysis,
+        unit_of_observation: MetricUnitOfObservation,
+        metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
+    ) -> list[str]:
+        """Returns output column clauses for the assignments by time period query."""
+        output_columns = cls._get_output_columns(
+            unit_of_analysis=unit_of_analysis,
+            unit_of_observation=unit_of_observation,
+            metric_time_period_to_assignment_join_type=metric_time_period_to_assignment_join_type,
         )
-        columns.append(
-            f"{cls._event_applies_to_period_end_date_exclusive_clause()} AS {cls.EVENT_APPLIES_TO_PERIOD_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME}"
-        )
+
+        output_column_clauses = []
+        for output_column in output_columns:
+            if output_column == cls.INTERSECTION_START_DATE_COLUMN_NAME:
+                output_column_clauses.append(
+                    f"{cls._intersection_start_date_clause()} AS "
+                    f"{cls.INTERSECTION_START_DATE_COLUMN_NAME}"
+                )
+                continue
+            if (
+                output_column
+                == cls.INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME
+            ):
+                output_column_clauses.append(
+                    f"{cls._intersection_extended_end_date_exclusive_nonnull_clause()} AS "
+                    f"{cls.INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME}"
+                )
+                continue
+            output_column_clauses.append(output_column)
 
         # TODO(#35895): Add other useful calculated date fields if needed for PeriodSpanAggregatedMetric
         # TODO(#35897): Add other useful calculated date fields if needed for AssignmentEventAggregatedMetric
         # TODO(#35898): Add other useful calculated date fields if needed for AssignmentSpanAggregatedMetric
 
-        return columns
+        return output_column_clauses
 
     @classmethod
-    def _event_applies_to_period_start_date_clause(cls) -> str:
+    def _intersection_start_date_clause(cls) -> str:
         """Returns a SQL logic that gives us the value of the
-        event_applies_to_period_start_date column.
+        intersection_start_date column.
         """
         return fix_indent(
             f"""
@@ -301,16 +442,16 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         )
 
     @classmethod
-    def _event_applies_to_period_end_date_exclusive_clause(cls) -> str:
+    def _intersection_extended_end_date_exclusive_nonnull_clause(cls) -> str:
         """Returns a SQL logic that gives us the value of the
-        event_applies_to_period_end_date_exclusive_nonnull column.
+        intersection_extended_end_date_exclusive_nonnull column.
         """
         return fix_indent(
             f"""
             LEAST(
                 -- If an event observation occurs on the exclusive end date of an 
                 -- assignment period we still want to count it. However, if the event 
-                -- occurs on the exlcusive end date of the metric period, we don't count
+                -- occurs on the exclusive end date of the metric period, we don't count
                 -- it.
                 {MetricTimePeriodConfig.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN},
                 IF(
@@ -329,19 +470,34 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
     @classmethod
     def _get_join_condition_clause(
         cls,
-        metric_time_period_join_type: MetricTimePeriodJoinType,
+        metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
     ) -> str:
-        if metric_time_period_join_type is MetricTimePeriodJoinType.PERIOD:
-            return f"{cls._event_applies_to_period_start_date_clause()} < {cls._event_applies_to_period_end_date_exclusive_clause()}"
+        if (
+            metric_time_period_to_assignment_join_type
+            is MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED
+        ):
+            return f"{cls._intersection_start_date_clause()} < {cls._intersection_extended_end_date_exclusive_nonnull_clause()}"
 
-        if metric_time_period_join_type is MetricTimePeriodJoinType.ASSIGNMENT:
+        if (
+            metric_time_period_to_assignment_join_type
+            is MetricTimePeriodToAssignmentJoinType.INTERSECTION
+        ):
+            raise NotImplementedError(
+                f"TODO(#35895): Build assignment periods join logic for PeriodSpan* "
+                f"type metrics ({metric_time_period_to_assignment_join_type})"
+            )
+
+        if (
+            metric_time_period_to_assignment_join_type
+            is MetricTimePeriodToAssignmentJoinType.ASSIGNMENT
+        ):
             raise NotImplementedError(
                 f"TODO(#35897), TODO(#35898): Build assignment periods join logic for Assignment* "
-                f"type metrics ({metric_time_period_join_type})"
+                f"type metrics ({metric_time_period_to_assignment_join_type})"
             )
 
         raise ValueError(
-            f"Unexpected metric_time_period_join_type: [{metric_time_period_join_type}]"
+            f"Unexpected metric_time_period_to_assignment_join_type: [{metric_time_period_to_assignment_join_type}]"
         )
 
     @classmethod
@@ -352,7 +508,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         population_type: MetricPopulationType,
         unit_of_observation_type: MetricUnitOfObservationType,
         unit_of_analysis_type: MetricUnitOfAnalysisType,
-        metric_time_period_join_type: MetricTimePeriodJoinType,
+        metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
     ) -> str:
         """Builds a query template (with project_id format argument) that joins a collection
         of metric time periods with assignment periods, returning one result row for every
@@ -370,9 +526,15 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             )
         )
 
-        columns = cls._get_output_column_clauses(unit_of_analysis, unit_of_observation)
+        columns = cls._get_output_column_clauses(
+            unit_of_analysis,
+            unit_of_observation,
+            metric_time_period_to_assignment_join_type,
+        )
         columns_str = ",\n".join(columns)
-        join_clause = cls._get_join_condition_clause(metric_time_period_join_type)
+        join_clause = cls._get_join_condition_clause(
+            metric_time_period_to_assignment_join_type
+        )
 
         query_template = f"""
 WITH

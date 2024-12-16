@@ -34,7 +34,7 @@ from recidiviz.aggregated_metrics.assignments_by_time_period_view_builder import
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
-    MetricTimePeriodJoinType,
+    MetricTimePeriodToAssignmentJoinType,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
@@ -152,14 +152,14 @@ def collect_assignments_by_time_period_builders_for_collections(
             population_config,
         ) in collection_config.population_configs.items():
             observation_types_by_join_type: dict[
-                MetricTimePeriodJoinType, set[MetricUnitOfObservationType]
+                MetricTimePeriodToAssignmentJoinType, set[MetricUnitOfObservationType]
             ] = defaultdict(set)
             for metric_class in METRIC_CLASSES:
                 if not is_metric_class_supported_by_optimized_format(metric_class):
                     continue
 
-                join_type: MetricTimePeriodJoinType = (
-                    metric_class.metric_time_period_join_type()
+                join_type: MetricTimePeriodToAssignmentJoinType = (
+                    metric_class.metric_time_period_to_assignment_join_type()
                 )
                 metrics = population_config.metrics_of_class(metric_class)
                 if not metrics:
@@ -171,7 +171,7 @@ def collect_assignments_by_time_period_builders_for_collections(
                     )
 
             for (
-                metric_time_period_join_type,
+                metric_time_period_to_assignment_join_type,
                 unit_of_observation_types,
             ) in observation_types_by_join_type.items():
                 for (
@@ -187,7 +187,7 @@ def collect_assignments_by_time_period_builders_for_collections(
                         population_type=population_type,
                         unit_of_analysis_type=unit_of_analysis_type,
                         unit_of_observation_type=unit_of_observation_type,
-                        metric_time_period_join_type=metric_time_period_join_type,
+                        metric_time_period_to_assignment_join_type=metric_time_period_to_assignment_join_type,
                         time_period=time_period,
                     )
                     if builder.address in builders_by_address:

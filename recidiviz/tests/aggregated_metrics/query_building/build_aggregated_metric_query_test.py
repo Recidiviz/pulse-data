@@ -85,7 +85,7 @@ class TestBuildSingleObservationTypeAggregatedMetricQueryTemplate(unittest.TestC
         expected_result = """
 WITH 
 person_assignments_by_time_period AS (
-    SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_officer__by_period__last_12_months_materialized`
+    SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_officer__by_intersection_extended__last_12_months_materialized`
 ),
 output_row_keys AS (
     SELECT DISTINCT state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
@@ -126,8 +126,8 @@ drug_screen_metrics AS (
         -- Include events occurring on the last date of an end-date exclusive span,
         -- but exclude events occurring on the last date of an end-date exclusive 
         -- analysis period.
-        AND observations.event_date >= person_assignments_by_time_period.event_applies_to_period_start_date
-        AND observations.event_date <  person_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
+        AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
+        AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
     GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
 ),
 supervision_contact_metrics AS (
@@ -166,8 +166,8 @@ supervision_contact_metrics AS (
         -- Include events occurring on the last date of an end-date exclusive span,
         -- but exclude events occurring on the last date of an end-date exclusive 
         -- analysis period.
-        AND observations.event_date >= person_assignments_by_time_period.event_applies_to_period_start_date
-        AND observations.event_date <  person_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
+        AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
+        AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
     GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
 )
 SELECT
@@ -206,7 +206,7 @@ WITH
 all_metrics__person_unit_of_observation AS (
     WITH 
     person_assignments_by_time_period AS (
-        SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_district__by_period__last_12_months_materialized`
+        SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_district__by_intersection_extended__last_12_months_materialized`
     ),
     output_row_keys AS (
         SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
@@ -247,8 +247,8 @@ all_metrics__person_unit_of_observation AS (
             -- Include events occurring on the last date of an end-date exclusive span,
             -- but exclude events occurring on the last date of an end-date exclusive 
             -- analysis period.
-            AND observations.event_date >= person_assignments_by_time_period.event_applies_to_period_start_date
-            AND observations.event_date <  person_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
+            AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
+            AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
         GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
     ),
     supervision_contact_metrics AS (
@@ -287,8 +287,8 @@ all_metrics__person_unit_of_observation AS (
             -- Include events occurring on the last date of an end-date exclusive span,
             -- but exclude events occurring on the last date of an end-date exclusive 
             -- analysis period.
-            AND observations.event_date >= person_assignments_by_time_period.event_applies_to_period_start_date
-            AND observations.event_date <  person_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
+            AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
+            AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
         GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
     )
     SELECT
@@ -310,7 +310,7 @@ all_metrics__person_unit_of_observation AS (
 all_metrics__workflows_primary_user_unit_of_observation AS (
     WITH 
     workflows_primary_user_assignments_by_time_period AS (
-        SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__workflows_primary_user_to_district__by_period__last_12_months_materialized`
+        SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__workflows_primary_user_to_district__by_intersection_extended__last_12_months_materialized`
     ),
     output_row_keys AS (
         SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
@@ -351,8 +351,8 @@ all_metrics__workflows_primary_user_unit_of_observation AS (
             -- Include events occurring on the last date of an end-date exclusive span,
             -- but exclude events occurring on the last date of an end-date exclusive 
             -- analysis period.
-            AND observations.event_date >= workflows_primary_user_assignments_by_time_period.event_applies_to_period_start_date
-            AND observations.event_date <  workflows_primary_user_assignments_by_time_period.event_applies_to_period_end_date_exclusive_nonnull
+            AND observations.event_date >= workflows_primary_user_assignments_by_time_period.intersection_start_date
+            AND observations.event_date <  workflows_primary_user_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
         GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
     )
     SELECT
