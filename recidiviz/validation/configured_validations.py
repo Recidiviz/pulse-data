@@ -109,6 +109,9 @@ from recidiviz.validation.views.state.incarceration_release_reason_no_release_da
 from recidiviz.validation.views.state.incarceration_releases_by_type_by_period_internal_consistency import (
     INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.insights_primary_users_not_in_state_staff import (
+    INSIGHTS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.invalid_admission_reason_and_pfi import (
     INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER,
 )
@@ -293,6 +296,9 @@ from recidiviz.validation.views.state.workflows.flag_new_offense_codes import (
 )
 from recidiviz.validation.views.state.workflows.person_record_missing_opportunities import (
     OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.workflows_primary_users_not_in_state_staff import (
+    WORKFLOWS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER,
 )
 from recidiviz.validation.views.static_reference_tables.experiment_assignments_unit_of_analysis_validation import (
     EXPERIMENT_ASSIGNMENTS_UNIT_OF_ANALYSIS_VALIDATION_VIEW_BUILDER,
@@ -528,6 +534,14 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=COMPLETION_EVENT_TYPE_MISMATCH_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=INSIGHTS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=WORKFLOWS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
