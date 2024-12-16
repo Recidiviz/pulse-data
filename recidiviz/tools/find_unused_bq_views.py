@@ -185,6 +185,10 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     #  day_zero_overdue_supervision_discharge dashboard and can be deleted when that is
     #  deleted.
     PROJECTED_DISCHARGES_VIEW_BUILDER.address,
+    # TODO(#29291): Remove once Looker queries from observation-specific tables
+    BigQueryAddress(
+        dataset_id="observations__officer_span", table_id="all_officer_spans"
+    ),
 }
 
 # List of views that are not referenced in Looker but should still be kept around,

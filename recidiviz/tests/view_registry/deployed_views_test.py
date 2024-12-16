@@ -61,9 +61,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.outliers.outliers_views import (
-    collect_insights_legacy_aggregated_metrics_view_builders,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
     SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
 )
@@ -387,16 +384,13 @@ class ViewDagInvariantTests(unittest.TestCase):
             *{
                 b.address
                 for b in [
-                    # TODO(#35895), TODO(#35897), TODO(#35898), TODO(#35913): We should
+                    # TODO(#35897), TODO(#35898), TODO(#35913): We should
                     #  be able to delete this entirely once all deployed views that use
                     #  the standard collector have been migrated over.
                     *collect_standard_legacy_aggregated_metric_views(),
                     # TODO(#35911): We should be able to delete this entirely once we
                     #  migrate impact reports metrics to the new format.
                     *get_impact_reports_aggregated_metrics_view_builders(),
-                    # TODO(#35895): We should be able to delete this entirely once we
-                    #  support PeriodSpanAggregatedMetric
-                    *collect_insights_legacy_aggregated_metrics_view_builders(),
                     # TODO(#35910): We should be able to delete this entirely once we migrate vitals report metrics to
                     #  the new format.
                     *VITALS_AGGREGATED_METRIC_VIEW_BUILDERS,

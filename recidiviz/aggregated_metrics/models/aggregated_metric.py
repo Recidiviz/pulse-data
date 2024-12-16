@@ -614,6 +614,11 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric):
     # person_days_weighted_justice_impact
     weight_col: Optional[str] = None
 
+    def referenced_observation_attributes(self) -> list[str]:
+        return super().referenced_observation_attributes() + (
+            [self.weight_col] if self.weight_col else []
+        )
+
     def generate_aggregation_query_fragment(
         self,
         *,

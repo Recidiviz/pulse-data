@@ -23,9 +23,6 @@ from recidiviz.aggregated_metrics.aggregated_metric_collection_config import (
 from recidiviz.aggregated_metrics.aggregated_metrics_view_collector import (
     collect_aggregated_metric_view_builders_for_collection,
 )
-from recidiviz.aggregated_metrics.legacy.aggregated_metric_view_collector import (
-    collect_legacy_aggregated_metrics_view_builders,
-)
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
@@ -39,10 +36,7 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
 from recidiviz.aggregated_metrics.standard_aggregated_metrics_collection_config import (
     STANDARD_TIME_PERIODS,
 )
-from recidiviz.big_query.big_query_view import (
-    BigQueryViewBuilder,
-    SimpleBigQueryViewBuilder,
-)
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import OUTLIERS_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
@@ -142,24 +136,11 @@ OUTLIERS_AGGREGATED_METRICS_COLLECTION_CONFIG = AggregatedMetricsCollection.buil
     metrics_by_population_type=_METRICS_BY_POPULATION_TYPE,
 )
 
-
-def collect_insights_legacy_aggregated_metrics_view_builders() -> list[
-    SimpleBigQueryViewBuilder
-]:
-    return collect_legacy_aggregated_metrics_view_builders(
-        metrics_by_population_dict=_METRICS_BY_POPULATION_TYPE,
-        units_of_analysis_by_population_dict=_UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
-    )
-
-
-INSIGHTS_AGGREGATED_METRICS_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = [
-    # TODO(#35895): Remove these builders entirely once metrics are fully covered by the
-    #  new optimized metrics.
-    *collect_insights_legacy_aggregated_metrics_view_builders(),
-    *collect_aggregated_metric_view_builders_for_collection(
-        OUTLIERS_AGGREGATED_METRICS_COLLECTION_CONFIG
-    ),
-]
+INSIGHTS_AGGREGATED_METRICS_VIEW_BUILDERS: Sequence[
+    BigQueryViewBuilder
+] = collect_aggregated_metric_view_builders_for_collection(
+    OUTLIERS_AGGREGATED_METRICS_COLLECTION_CONFIG
+)
 
 OUTLIERS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     *INSIGHTS_VIEW_BUILDERS_TO_EXPORT,

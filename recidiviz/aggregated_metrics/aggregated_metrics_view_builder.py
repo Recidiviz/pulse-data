@@ -114,9 +114,12 @@ event observations across an entire analysis period, disaggregated by {unit_of_a
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 """
     elif issubclass(metric_class, PeriodSpanAggregatedMetric):
-        raise NotImplementedError(
-            "TODO(#35895): Implement description for PeriodSpanAggregatedMetric"
-        )
+        base_description = f"""
+Metrics for the {population_type.population_name_short} population calculated using
+span observations across an entire analysis period, disaggregated by {unit_of_analysis_type.short_name}.
+{time_period_clause}
+All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
+"""
     elif issubclass(metric_class, AssignmentEventAggregatedMetric):
         raise NotImplementedError(
             "TODO(#35897): Implement description for AssignmentEventAggregatedMetric"

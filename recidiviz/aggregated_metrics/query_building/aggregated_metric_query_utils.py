@@ -54,8 +54,6 @@ def is_metric_class_supported_by_optimized_format(
     metric_class: AggregatedMetricClassType,
 ) -> bool:
     if metric_class in {
-        # TODO(#35895): Add support for PeriodSpanAggregatedMetric
-        PeriodSpanAggregatedMetric,
         # TODO(#35897): Add support for AssignmentEventAggregatedMetric
         AssignmentEventAggregatedMetric,
         # TODO(#35898): Add support for AssignmentSpanAggregatedMetric

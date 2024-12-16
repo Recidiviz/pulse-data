@@ -86,6 +86,9 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
     ASSIGNMENT_END_DATE_EXCLUSIVE_COLUMN_NAME = "assignment_end_date_exclusive_nonnull"
 
     INTERSECTION_START_DATE_COLUMN_NAME = "intersection_start_date"
+    INTERSECTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME = (
+        "intersection_end_date_exclusive_nonnull"
+    )
     INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME = (
         "intersection_extended_end_date_exclusive_nonnull"
     )
@@ -124,7 +127,18 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 "queries. This is the start date (inclusive) of the period of time "
                 "where the assignment and metric periods overlap. This is first date "
                 "(inclusive) when an event observation would count towards this metric "
-                "period when calculating a PeriodEventAggregatedMetric."
+                "period when calculating a PeriodEventAggregatedMetric. This is the "
+                "start date (inclusive) that should be used to determine if a span "
+                "observation overlaps and should be counted when calculating a "
+                "PeriodSpanAggregatedMetric."
+            ),
+            cls.INTERSECTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME: (
+                "This column is pre-computed for use later in aggregated metrics "
+                "queries. This is the end date (exclusive) of the period of time where "
+                "the assignment and metric periods overlap. This is the end date "
+                "(exclusive) that should be used to determine if a span observation "
+                "overlaps and should be counted when calculating a "
+                "PeriodSpanAggregatedMetric. This field is always non-null."
             ),
             cls.INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME: (
                 "This column is pre-computed for use later in aggregated metrics "
@@ -334,14 +348,15 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 cls.INTERSECTION_START_DATE_COLUMN_NAME,
                 cls.INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME,
             ]
+
         if (
             metric_time_period_to_assignment_join_type
             is MetricTimePeriodToAssignmentJoinType.INTERSECTION
         ):
-            raise NotImplementedError(
-                "TODO(#35895): Add additional time output columns list for "
-                "MetricTimePeriodToAssignmentJoinType.INTERSECTION"
-            )
+            return [
+                cls.INTERSECTION_START_DATE_COLUMN_NAME,
+                cls.INTERSECTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME,
+            ]
 
         if (
             metric_time_period_to_assignment_join_type
@@ -409,6 +424,12 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
                     f"{cls.INTERSECTION_START_DATE_COLUMN_NAME}"
                 )
                 continue
+            if output_column == cls.INTERSECTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME:
+                output_column_clauses.append(
+                    f"{cls._intersection_end_date_exclusive_nonnull_clause()} AS "
+                    f"{cls.INTERSECTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME}"
+                )
+                continue
             if (
                 output_column
                 == cls.INTERSECTION_EXTENDED_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME
@@ -420,7 +441,6 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 continue
             output_column_clauses.append(output_column)
 
-        # TODO(#35895): Add other useful calculated date fields if needed for PeriodSpanAggregatedMetric
         # TODO(#35897): Add other useful calculated date fields if needed for AssignmentEventAggregatedMetric
         # TODO(#35898): Add other useful calculated date fields if needed for AssignmentSpanAggregatedMetric
 
@@ -468,6 +488,21 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         )
 
     @classmethod
+    def _intersection_end_date_exclusive_nonnull_clause(cls) -> str:
+        """Returns a SQL logic that gives us the value of the
+        intersection_end_date_exclusive_nonnull column.
+        """
+        return fix_indent(
+            f"""
+            LEAST(
+                {cls.ASSIGNMENT_END_DATE_EXCLUSIVE_COLUMN_NAME},
+                {MetricTimePeriodConfig.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN}
+            )
+            """,
+            indent_level=0,
+        )
+
+    @classmethod
     def _get_join_condition_clause(
         cls,
         metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
@@ -482,10 +517,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             metric_time_period_to_assignment_join_type
             is MetricTimePeriodToAssignmentJoinType.INTERSECTION
         ):
-            raise NotImplementedError(
-                f"TODO(#35895): Build assignment periods join logic for PeriodSpan* "
-                f"type metrics ({metric_time_period_to_assignment_join_type})"
-            )
+            return f"{cls._intersection_start_date_clause()} < {cls._intersection_end_date_exclusive_nonnull_clause()}"
 
         if (
             metric_time_period_to_assignment_join_type

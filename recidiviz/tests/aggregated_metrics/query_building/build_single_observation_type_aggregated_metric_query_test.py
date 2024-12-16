@@ -18,8 +18,8 @@
 import unittest
 
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
-    EventCountMetric,
     PeriodEventAggregatedMetric,
+    PeriodSpanAggregatedMetric,
 )
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
@@ -27,37 +27,15 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
 from recidiviz.aggregated_metrics.query_building.build_single_observation_type_aggregated_metric_query import (
     build_single_observation_type_aggregated_metric_query_template,
 )
-from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.event_type import EventType
-
-MY_DRUG_SCREENS_METRIC = EventCountMetric(
-    name="my_drug_screens",
-    display_name="My Drug Screens",
-    description="Number of my drug screens",
-    event_selector=EventSelector(
-        event_type=EventType.DRUG_SCREEN,
-        event_conditions_dict={},
-    ),
-)
-
-MY_CONTACTS_ATTEMPTED_METRIC = EventCountMetric(
-    name="my_contacts_attempted",
-    display_name="Contacts: Attempted",
-    description="Number of attempted contacts",
-    event_selector=EventSelector(
-        event_type=EventType.SUPERVISION_CONTACT,
-        event_conditions_dict={"status": ["ATTEMPTED"]},
-    ),
-)
-
-MY_CONTACTS_COMPLETED_METRIC = EventCountMetric(
-    name="my_contacts_completed",
-    display_name="Contacts: Completed",
-    description="Number of completed contacts",
-    event_selector=EventSelector(
-        event_type=EventType.SUPERVISION_CONTACT,
-        event_conditions_dict={"status": ["COMPLETED"]},
-    ),
+from recidiviz.observations.span_type import SpanType
+from recidiviz.tests.aggregated_metrics.fixture_aggregated_metrics import (
+    MY_AVG_DAILY_POPULATION,
+    MY_AVG_DAILY_POPULATION_GENERAL_INCARCERATION,
+    MY_AVG_LSIR_SCORE,
+    MY_CONTACTS_ATTEMPTED_METRIC,
+    MY_CONTACTS_COMPLETED_METRIC,
+    MY_DRUG_SCREENS_METRIC,
 )
 
 
@@ -180,6 +158,166 @@ GROUP BY state_code, unit_supervisor, metric_period_start_date, metric_period_en
 
         self.assertEqual(expected_result, result)
 
-    # TODO(#35895): Add tests for PeriodSpanAggregatedMetric
+    def test_build_period_span_metric__single(self) -> None:
+        result = build_single_observation_type_aggregated_metric_query_template(
+            observation_type=SpanType.ASSESSMENT_SCORE_SESSION,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            metric_class=PeriodSpanAggregatedMetric,
+            single_observation_type_metrics=[
+                MY_AVG_LSIR_SCORE,
+            ],
+            assignments_by_time_period_cte_name="person_assignments_by_time_period",
+        )
+
+        expected_result = """
+WITH
+observations AS (
+    SELECT
+        person_id,
+        state_code,
+        start_date,
+        end_date,
+        assessment_score,
+        assessment_type
+    FROM 
+        `{project_id}.observations__person_span.assessment_score_session_materialized`
+    WHERE
+        assessment_type IN ("LSIR")
+)
+SELECT
+    person_assignments_by_time_period.state_code,
+    person_assignments_by_time_period.officer_id,
+    person_assignments_by_time_period.metric_period_start_date,
+    person_assignments_by_time_period.metric_period_end_date_exclusive,
+    person_assignments_by_time_period.period,
+    SAFE_DIVIDE(
+            SUM(
+                DATE_DIFF(
+                    LEAST(metric_period_end_date_exclusive, COALESCE(LEAST(
+        IFNULL(observations.end_date, "9999-12-31"),
+        assignment_end_date_exclusive_nonnull
+    ), DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))),
+                    GREATEST(metric_period_start_date, GREATEST(
+        observations.start_date,
+        assignment_start_date
+    )),
+                    DAY
+                ) * IF(
+                    (assessment_type IN ("LSIR")),
+                    CAST(assessment_score AS FLOAT64),
+                    0
+                )
+            ),
+            SUM(
+                DATE_DIFF(
+                    LEAST(metric_period_end_date_exclusive, COALESCE(LEAST(
+        IFNULL(observations.end_date, "9999-12-31"),
+        assignment_end_date_exclusive_nonnull
+    ), DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))),
+                    GREATEST(metric_period_start_date, GREATEST(
+        observations.start_date,
+        assignment_start_date
+    )),
+                    DAY
+                ) * IF((assessment_type IN ("LSIR")), 1, 0)
+            )
+        ) AS my_avg_lsir_score
+FROM 
+    person_assignments_by_time_period
+JOIN 
+    observations
+ON
+    observations.person_id = person_assignments_by_time_period.person_id
+    AND observations.state_code = person_assignments_by_time_period.state_code
+    AND observations.start_date <= person_assignments_by_time_period.intersection_end_date_exclusive_nonnull
+    AND (
+        observations.end_date IS NULL OR
+        observations.end_date > person_assignments_by_time_period.intersection_start_date
+    )
+GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
+"""
+
+        self.assertEqual(expected_result, result)
+
+    def test_build_period_span_metric__multiple(self) -> None:
+        result = build_single_observation_type_aggregated_metric_query_template(
+            observation_type=SpanType.COMPARTMENT_SESSION,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            metric_class=PeriodSpanAggregatedMetric,
+            single_observation_type_metrics=[
+                MY_AVG_DAILY_POPULATION,
+                MY_AVG_DAILY_POPULATION_GENERAL_INCARCERATION,
+            ],
+            assignments_by_time_period_cte_name="person_assignments_by_time_period",
+        )
+
+        expected_result = """
+WITH
+observations AS (
+    SELECT
+        person_id,
+        state_code,
+        start_date,
+        end_date,
+        compartment_level_1,
+        compartment_level_2
+    FROM 
+        `{project_id}.observations__person_span.compartment_session_materialized`
+    WHERE
+        ( TRUE )
+        OR ( compartment_level_1 IN ("INCARCERATION") AND compartment_level_2 IN ("GENERAL") )
+)
+SELECT
+    person_assignments_by_time_period.state_code,
+    person_assignments_by_time_period.officer_id,
+    person_assignments_by_time_period.metric_period_start_date,
+    person_assignments_by_time_period.metric_period_end_date_exclusive,
+    person_assignments_by_time_period.period,
+    SUM(
+        (
+            DATE_DIFF(
+                LEAST(metric_period_end_date_exclusive, COALESCE(LEAST(
+        IFNULL(observations.end_date, "9999-12-31"),
+        assignment_end_date_exclusive_nonnull
+    ), DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))),
+                GREATEST(metric_period_start_date, GREATEST(
+        observations.start_date,
+        assignment_start_date
+    )),
+                DAY)
+            ) * (IF((TRUE), 1, 0)) / DATE_DIFF(metric_period_end_date_exclusive, metric_period_start_date, DAY)
+        ) AS my_avg_daily_population,
+    SUM(
+        (
+            DATE_DIFF(
+                LEAST(metric_period_end_date_exclusive, COALESCE(LEAST(
+        IFNULL(observations.end_date, "9999-12-31"),
+        assignment_end_date_exclusive_nonnull
+    ), DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))),
+                GREATEST(metric_period_start_date, GREATEST(
+        observations.start_date,
+        assignment_start_date
+    )),
+                DAY)
+            ) * (IF((compartment_level_1 IN ("INCARCERATION")
+    AND compartment_level_2 IN ("GENERAL")), 1, 0)) / DATE_DIFF(metric_period_end_date_exclusive, metric_period_start_date, DAY)
+        ) AS my_avg_population_general_incarceration
+FROM 
+    person_assignments_by_time_period
+JOIN 
+    observations
+ON
+    observations.person_id = person_assignments_by_time_period.person_id
+    AND observations.state_code = person_assignments_by_time_period.state_code
+    AND observations.start_date <= person_assignments_by_time_period.intersection_end_date_exclusive_nonnull
+    AND (
+        observations.end_date IS NULL OR
+        observations.end_date > person_assignments_by_time_period.intersection_start_date
+    )
+GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
+"""
+
+        self.assertEqual(expected_result, result)
+
     # TODO(#35897): Add tests for AssignmentEventAggregatedMetric
     # TODO(#35898): Add tests for AssignmentSpanAggregatedMetric

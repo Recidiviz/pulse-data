@@ -18,6 +18,9 @@
 from recidiviz.aggregated_metrics.assignments_by_time_period_view_builder import (
     AssignmentsByTimePeriodViewBuilder,
 )
+from recidiviz.aggregated_metrics.metric_time_period_config import (
+    MetricTimePeriodConfig,
+)
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
     AssignmentEventAggregatedMetric,
@@ -32,13 +35,19 @@ from recidiviz.aggregated_metrics.query_building.aggregated_metric_query_utils i
     AggregatedMetricClassType,
     metric_group_by_columns,
 )
-from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
+    nonnull_end_date_clause,
+)
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.observation_selector import ObservationSelector
 from recidiviz.observations.observation_type_utils import ObservationTypeT
+from recidiviz.observations.span_observation_big_query_view_builder import (
+    SpanObservationBigQueryViewBuilder,
+)
 from recidiviz.utils.string_formatting import fix_indent
 
 OBSERVATIONS_CTE_NAME = "observations"
@@ -96,8 +105,24 @@ def _aggregation_clause_for_metric(metric: AggregatedMetric) -> str:
         )
 
     if isinstance(metric, PeriodSpanAggregatedMetric):
-        raise NotImplementedError(
-            "TODO(#35895): Implement aggregation clause logic for PeriodSpanAggregatedMetric"
+        span_start_date_col_clause = f"""GREATEST(
+            {OBSERVATIONS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME},
+            {AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME}
+        )"""
+
+        span_end_date_col_clause = f"""LEAST(
+            {nonnull_end_date_clause(f"{OBSERVATIONS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.END_DATE_OUTPUT_COL_NAME}")},
+            {AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_END_DATE_EXCLUSIVE_COLUMN_NAME}
+        )"""
+        return metric.generate_aggregation_query_fragment(
+            filter_observations_by_type=False,
+            read_observation_attributes_from_json=False,
+            observations_cte_name=OBSERVATIONS_CTE_NAME,
+            period_start_date_col=MetricTimePeriodConfig.METRIC_TIME_PERIOD_START_DATE_COLUMN,
+            period_end_date_col=MetricTimePeriodConfig.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN,
+            original_span_start_date=f"{OBSERVATIONS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME}",
+            span_start_date_col=span_start_date_col_clause,
+            span_end_date_col=span_end_date_col_clause,
         )
     if isinstance(metric, AssignmentEventAggregatedMetric):
         raise NotImplementedError(
@@ -143,9 +168,14 @@ def _observation_to_assignment_periods_join_logic(
         """
 
     if issubclass(metric_class, PeriodSpanAggregatedMetric):
-        raise NotImplementedError(
-            "TODO(#35895): Implement JOIN logic for PeriodSpanAggregatedMetric"
+        return f"""
+        {fix_indent(shared_join_clause, indent_level=8)}
+        AND {OBSERVATIONS_CTE_NAME}.start_date <= {assignments_by_time_period_cte_name}.{AssignmentsByTimePeriodViewBuilder.INTERSECTION_END_DATE_EXCLUSIVE_NONNULL_COLUMN_NAME}
+        AND (
+            {OBSERVATIONS_CTE_NAME}.end_date IS NULL OR
+            {OBSERVATIONS_CTE_NAME}.end_date > {assignments_by_time_period_cte_name}.{AssignmentsByTimePeriodViewBuilder.INTERSECTION_START_DATE_COLUMN_NAME}
         )
+        """
     if issubclass(metric_class, AssignmentEventAggregatedMetric):
         raise NotImplementedError(
             "TODO(#35897): Implement JOIN logic for AssignmentEventAggregatedMetric"

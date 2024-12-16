@@ -35,46 +35,6 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
         dataset_id="sessions",
         table_id="dataflow_sessions",
     ): (60 * 10),
-    # TODO(#35895): Improve the performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="supervision_district_period_span_aggregated_metrics",
-    ): (60 * 45),
-    # TODO(#35895): Improve the performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="supervision_officer_period_span_aggregated_metrics",
-    ): (60 * 30),
-    # TODO(#35895): Improve the performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="supervision_state_period_span_aggregated_metrics",
-    ): (60 * 45),
-    # TODO(#35895): Improve the performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="incarceration_facility_period_span_aggregated_metrics",
-    ): (60 * 45),
-    # TODO(#35895): Improve the performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="supervision_office_period_span_aggregated_metrics",
-    ): (60 * 45),
-    # TODO(#35895): Improve the performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="justice_involved_state_period_span_aggregated_metrics",
-    ): (60 * 30),
-    # TODO(#35895): Improve the performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="incarceration_state_period_span_aggregated_metrics",
-    ): (60 * 30),
-    # TODO(#35895): Improve the performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="supervision_unit_period_span_aggregated_metrics",
-    ): (60 * 45),
     # TODO(#35898): Improve the performance of this view
     BigQueryAddress(
         dataset_id="aggregated_metrics",
@@ -85,26 +45,6 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
         dataset_id="population_projection_data",
         table_id="supervision_remaining_sentences",
     ): (60 * 10),
-    # TODO(#35895) Improve performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="incarceration_facility_counselor_period_span_aggregated_metrics",
-    ): (60 * 30),
-    # TODO(#35895) Improve performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="justice_involved_facility_period_span_aggregated_metrics",
-    ): (60 * 30),
-    # TODO(#35895) Improve performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="supervision_insights_caseload_category_period_span_aggregated_metrics",
-    ): (60 * 30),
-    # TODO(#35895) Improve performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="justice_involved_district_period_span_aggregated_metrics",
-    ): (60 * 30),
 }
 
 
