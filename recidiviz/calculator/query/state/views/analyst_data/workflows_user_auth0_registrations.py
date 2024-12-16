@@ -30,29 +30,14 @@ View that represents the date on which every workflows user (identified via emai
 address) first logged in to a Recidiviz tool while having access to Workflows."""
 
 _QUERY_TEMPLATE = """
-WITH all_auth_events AS (
-    SELECT
-        state_code,
-        email_address,
-        signup_date AS event_date,
-    FROM `{project_id}.analyst_data.all_auth0_signup_events_materialized`
-    WHERE has_workflows_access
-
-    UNION ALL
-
-    SELECT 
-        state_code,
-        email_address,
-        login_date AS event_date,
-    FROM `{project_id}.analyst_data.all_auth0_login_events_materialized`
-    WHERE has_workflows_access
-)
 SELECT
     state_code,
     email_address AS workflows_user_email_address,
-    MIN(event_date) AS workflows_registration_date,
+    MIN(login_date) AS workflows_registration_date,
 FROM
-    all_auth_events
+    `{project_id}.analyst_data.all_auth0_login_events_materialized`
+WHERE
+    has_workflows_access
 GROUP BY
     1, 2
 """

@@ -26,8 +26,8 @@ from recidiviz.utils.metadata import local_project_id_override
 _VIEW_NAME = "all_auth0_login_events"
 
 _VIEW_DESCRIPTION = """
-View that contains all auth0 login events, formatted with flags indicating
-which tools a user had access to at time of login."""
+View that contains all auth0 login/signup events, formatted with flags indicating
+which tools a user had access to at time of login/signup."""
 
 _QUERY_TEMPLATE = """
 WITH all_logins AS (
@@ -39,9 +39,9 @@ WITH all_logins AS (
         routes_insights AS has_insights_access,
     FROM
         `{project_id}.auth0_events.success_login`
-    
+
     UNION ALL
-    
+
     SELECT
         UPPER(state_code) AS state_code,
         LOWER(email) AS email_address,
@@ -50,6 +50,32 @@ WITH all_logins AS (
         routes_insights AS has_insights_access,
     FROM
         `{project_id}.auth0_prod_action_logs.success_login`
+
+    UNION ALL
+
+    -- Include any auth0 signup events as a login so that
+    -- the first tool access date is also counted as a login
+    SELECT
+        UPPER(state_code) AS state_code,
+        LOWER(email) AS email_address,
+        timestamp,
+        -- Note: legacy signup view does not contain flags for for routes_insights or
+        -- routes_workflows_facilities.
+        (routes_workflows OR routes_workflows_supervision) AS has_workflows_access,
+        FALSE AS has_insights_access,
+    FROM
+        `{project_id}.auth0_events.success_signup`
+
+    UNION ALL
+
+    SELECT
+        UPPER(state_code) AS state_code,
+        LOWER(email) AS email_address,
+        timestamp,
+        (routes_workflows OR routes_workflows_supervision OR routes_workflows_facilities) AS has_workflows_access,
+        routes_insights AS has_insights_access,
+    FROM
+        `{project_id}.auth0_prod_action_logs.success_signup`
 )
 SELECT
     CASE state_code WHEN "US_ID" THEN "US_IX" ELSE state_code END AS state_code,
