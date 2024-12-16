@@ -35,7 +35,7 @@
     "styled-components": "^6.1.13",
     "vite": "^4.5.5",
     "vite-node": "^0.34.7",
-    "zod": "^3.23.8",
+    "zod": "^3.24.1",
     "zod-validation-error": "^2.1.0"
   },
   "devDependencies": {
