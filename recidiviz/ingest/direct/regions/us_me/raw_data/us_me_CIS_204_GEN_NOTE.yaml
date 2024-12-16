@@ -23,6 +23,7 @@ columns:
   - name: Cis_2042_Person_Contacted_Cd
   - name: Cis_900_Empl_Create_Id
     is_pii: True
+    description: Employee who created this record.
   - name: Cis_900_Employee_Id
     is_pii: True
     description: Employee otherwise related to the record. Unsure of relationship.
