@@ -2578,6 +2578,7 @@ class StateChargeV2(
     A formal allegation of an offense with information about the context for how that allegation was brought forth.
       - `date_charged` can be null for charges that have statuses like `DROPPED`.
       - `offense_date` can be null because of erroneous data from states
+
     TODO(#26240): Replace StateCharge with this entity
     """
 

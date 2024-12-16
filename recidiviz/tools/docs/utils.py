@@ -16,14 +16,28 @@
 # =============================================================================
 """Utils for documentation generation."""
 import os
+import re
 
 import recidiviz
+from recidiviz.repo.issue_references import TO_DO_REGEX
 
 DOCS_ROOT_PATH = os.path.normpath(
     os.path.join(os.path.dirname(recidiviz.__file__), "..", "docs")
 )
-
 PLACEHOLDER_TO_DO_STRING = "TO" + "DO"
+ISSUES_URL = "https://github.com/Recidiviz/pulse-data/issues/"
+
+
+def hyperlink_todos(text: str) -> str:
+    """Given any text, returns that text with todos linked."""
+
+    def _link_todo(match_obj: re.Match) -> str:
+        """Adds a markdown link to the found todo."""
+        og_text = match_obj.group(0)
+        digits = og_text[len(f"{PLACEHOLDER_TO_DO_STRING}(#") : -1]
+        return f"[{og_text}]({ISSUES_URL+digits})"
+
+    return re.sub(TO_DO_REGEX, _link_todo, text)
 
 
 def persist_file_contents(documentation: str, markdown_path: str) -> bool:

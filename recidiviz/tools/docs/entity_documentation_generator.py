@@ -28,27 +28,40 @@ import logging
 import os
 import re
 import sys
-from functools import lru_cache
-from typing import List, Set, Type
+import textwrap
+from types import ModuleType
 
-import sqlalchemy
-from pytablewriter import MarkdownTableWriter
+import pandas as pd
+from google.cloud.bigquery import SchemaField
+from jinja2 import BaseLoader, Environment
 
-from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
+from recidiviz.common.attr_mixins import (
+    CachedAttributeInfo,
+    CachedClassAttributeReference,
+    attribute_field_type_reference_for_class,
+)
 from recidiviz.common.constants.state.enum_canonical_strings import (
     SHARED_ENUM_VALUE_DESCRIPTIONS,
 )
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
-from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
+from recidiviz.common.str_field_utils import to_snake_case
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entities_module,
+)
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_all_enum_classes_in_module,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.repo.issue_references import TO_DO_REGEX
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
-from recidiviz.tools.docs.utils import DOCS_ROOT_PATH, persist_file_contents
+from recidiviz.tools.docs.utils import (
+    DOCS_ROOT_PATH,
+    hyperlink_todos,
+    persist_file_contents,
+)
+from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.types import assert_type
 
 SCHEMA_DOCS_ROOT = os.path.join(DOCS_ROOT_PATH, "schema")
 ENTITIES_PACKAGE_NAME = "entities"
@@ -56,121 +69,123 @@ ENTITY_DOCS_ROOT = os.path.join(SCHEMA_DOCS_ROOT, ENTITIES_PACKAGE_NAME)
 ENUMS_PACKAGE_NAME = "enums"
 ENUM_DOCS_ROOT = os.path.join(SCHEMA_DOCS_ROOT, ENUMS_PACKAGE_NAME)
 
-
-@lru_cache(maxsize=None)
-def _get_all_entity_enum_classes() -> Set[Type[StateEntityEnum]]:
-    """Returns the set of StateEntityEnums used in
-    recidiviz/persistence/entity/state/entities.py"""
-    entity_classes = get_all_entity_classes_in_module(state_entities)
-
-    state_enum_classes: Set[Type[StateEntityEnum]] = set()
-    for entity_class in entity_classes:
-        class_reference = attribute_field_type_reference_for_class(entity_class)
-        for field in class_reference.fields:
-            field_info = class_reference.get_field_info(field)
-            if not (enum_class := field_info.enum_cls):
-                continue
-
-            if not issubclass(enum_class, StateEntityEnum):
-                raise TypeError(
-                    "Found enum class used in state/entities.py that is not of "
-                    f"type StateEntityEnum: {enum_class}."
-                )
-            state_enum_classes.add(enum_class)
-
-    return state_enum_classes
-
-
-def generate_entity_documentation() -> bool:
+ENTITY_DOC_TEMPLATE = textwrap.dedent(
     """
-    Parses `persistence/entity/state/entities_docs.yaml` to produce documentation. Overwrites or creates the
-    corresponding Markdown file.
-
-    Returns True if files were modified, False otherwise.
+    ## {table_name}
+    {table_description}
+ 
+    ### Table Schema
+    {field_table}
     """
-    all_enum_classes = _get_all_entity_enum_classes()
-    all_enum_names = [enum_class.__name__ for enum_class in all_enum_classes]
+)
 
-    def _camel_case_enum_name_from_field(field: sqlalchemy.Column) -> str:
-        field_name = field.type.name
-        enum_name = snake_to_camel(field_name, capitalize_first_letter=True)
+ENUM_DOC_TEMPLATE = textwrap.dedent(
+    """
+    ## {enum_name}
+    {enum_description}
+ 
+    ### Entity Values
+    {value_table}
+    """
+)
 
-        if enum_name not in all_enum_names:
-            raise ValueError(f"Enum not found in list of state enums: {enum_name}")
 
-        return enum_name
+class ModuleSchemaInformation:
+    """
+    Instantiate this class to have references to the different ways we view our schema.
 
-    def _get_fields(fields: List[sqlalchemy.Column]) -> str:
-        """Returns a table of the entity's fields and their corresponding descriptions."""
-        if fields is None:
-            return "No Fields"
-        if not fields:
-            return "<No columns>"
+    bq_schema: A dict mapping the table name to the SchemaFields in that table.
+    table_to_entity_info: A dict mapping the table name to our cached entity information.
+    enum_classes: A set of StateEntityEnum classes
+    """
 
-        table_matrix = []
-        for field in fields:
-            if field.comment is None:
-                raise ValueError(
-                    f"Every entity field must have an associated comment. "
-                    f"Field {field.name} has no comment."
-                )
+    def __init__(self, module: ModuleType):
+        self.bq_schema = get_bq_schema_for_entities_module(module)
+        self.table_to_entity_info: dict[str, CachedClassAttributeReference] = {}
+        self.enum_classes: set[type[StateEntityEnum]] = set()
+        for entity_class in get_all_entity_classes_in_module(module):
+            class_reference = attribute_field_type_reference_for_class(entity_class)
+            self.table_to_entity_info[entity_class.get_table_id()] = class_reference
+            for field in class_reference.fields:
+                field_info = class_reference.get_field_info(field)
+                if not (enum_class := field_info.enum_cls):
+                    continue
+                if not issubclass(enum_class, StateEntityEnum):
+                    raise TypeError(
+                        "Found enum class used in state/entities.py that is not of "
+                        f"type StateEntityEnum: {enum_class}."
+                    )
+                self.enum_classes.add(enum_class)
 
-            if hasattr(field.type, "enums"):
-                enum_name = _camel_case_enum_name_from_field(field)
-                entity_type_contents = (
-                    f"[{enum_name}](../{ENUMS_PACKAGE_NAME}/{enum_name}.md)"
-                )
 
-            else:
-                entity_type_contents = field.type.python_type.__name__.upper()
-
-            field_values = [
-                field.name,
-                field.comment,
-                entity_type_contents,
-            ]
-            table_matrix.append(field_values)
-
-        writer = MarkdownTableWriter(
-            headers=[
-                "Entity Field",
-                "Entity Description",
-                "Entity Type",
-            ],
-            value_matrix=table_matrix,
-            margin=0,
+def _add_entity_links(
+    row: pd.Series, field_refs: dict[str, CachedAttributeInfo]
+) -> pd.Series:
+    """Updates the Type and Description columns of table field info with links."""
+    if match := re.match(r"Foreign key reference to (\w+)", row.Description):
+        linked_table = match.group(1)
+        row.Description = re.sub(
+            linked_table, f"[{linked_table}](./{linked_table}.md)", row.Description
         )
-        return writer.dumps()
+    elif enum_cls := field_refs[row.Name].enum_cls:
+        enum_name = enum_cls.__name__
+        row.Type = f"[{enum_name}](../{ENUMS_PACKAGE_NAME}/{enum_name}.md)"
+    return row
 
-    if not os.path.isdir(ENTITY_DOCS_ROOT):
-        os.mkdir(ENTITY_DOCS_ROOT)
-    old_file_names = set(os.listdir(ENTITY_DOCS_ROOT))
-    generated_file_names = set()
+
+def document_table(
+    table_name: str,
+    table_schema: list[SchemaField],
+    table_to_entity_info: dict[str, CachedClassAttributeReference],
+) -> str:
+    """Creates the markdown content to document a single BigQuery table."""
+    df = pd.DataFrame([field.to_api_repr() for field in table_schema])
+    df.columns = [c.title() for c in df.columns]
+    # TODO(#30204) Include 'mode' when schema has required columns
+    df = df.drop(columns=["Mode"])
+    table_description = ""
+    if "association" not in table_name:
+        entity_info = table_to_entity_info[table_name]
+        df = df.apply(
+            _add_entity_links, axis=1, field_refs=entity_info.field_to_attribute_info
+        )
+        table_description = textwrap.dedent(
+            hyperlink_todos(entity_info.attr_cls.__doc__ or "")
+        )
+    return StrictStringFormatter().format(
+        ENTITY_DOC_TEMPLATE,
+        table_name=table_name,
+        table_description=table_description,
+        field_table=df.to_markdown(index=False),
+    )
+
+
+def remove_extra_files(doc_path: str, generated_file_names: set[str]) -> bool:
     anything_modified = False
-    for t in get_all_table_classes_in_schema(SchemaType.STATE):
-        if t.comment is None:
-            raise ValueError(
-                f"Every entity must have an associated comment. "
-                f"Entity {t.name} has no comment."
-            )
-        documentation = f"## {t.name}\n\n"
-        documentation += f"{t.comment}\n\n"
-        documentation += f"{_get_fields(t.columns)}\n\n"
-        markdown_file_name = f"{t.name}.md"
-        markdown_file_path = os.path.join(ENTITY_DOCS_ROOT, markdown_file_name)
-        anything_modified |= persist_file_contents(documentation, markdown_file_path)
-        generated_file_names.add(markdown_file_name)
-
-    extra_files = old_file_names.difference(generated_file_names)
+    extra_files = set(os.listdir(doc_path)).difference(generated_file_names)
     for extra_file in extra_files:
         anything_modified |= True
-        os.remove(os.path.join(ENTITY_DOCS_ROOT, extra_file))
+        os.remove(os.path.join(doc_path, extra_file))
+    return anything_modified
 
+
+def generate_entity_documentation(module_schema_info: ModuleSchemaInformation) -> bool:
+    generated_file_names = set()
+    anything_modified = False
+    for table_name, table_schema in module_schema_info.bq_schema.items():
+        documentation = document_table(
+            table_name, table_schema, module_schema_info.table_to_entity_info
+        )
+        anything_modified |= persist_file_contents(
+            documentation, os.path.join(ENTITY_DOCS_ROOT, f"{table_name}.md")
+        )
+        generated_file_names.add(f"{table_name}.md")
+    anything_modified |= remove_extra_files(ENTITY_DOCS_ROOT, generated_file_names)
     return anything_modified
 
 
 def _add_entity_and_enum_links_to_enum_description(
-    text: str, all_enum_names: List[str], all_entity_names: List[str]
+    text: str, all_enum_names: set[str], all_entity_names: set[str]
 ) -> str:
     """Updates the provided |text| string to have hyperlinks to other enum and entity
     docs for any enum/entity references in the string. Handles references in the
@@ -211,128 +226,112 @@ def _add_entity_and_enum_links_to_enum_description(
     return text
 
 
-def generate_enum_documentation() -> bool:
+def _get_enum_value_descriptions(enum_type: type[StateEntityEnum]) -> str:
+    data = []
+    value_descriptions = enum_type.get_value_descriptions()
+    for en in sorted(list(enum_type), key=lambda e: e.value):
+        try:
+            if not (description := value_descriptions.get(en)):
+                description = SHARED_ENUM_VALUE_DESCRIPTIONS[en.value]
+        except KeyError as e:
+            raise KeyError(
+                "Must implement get_value_descriptions() for enum "
+                f"class {enum_type.__name__} with descriptions "
+                f"for each enum value. Missing description for "
+                f"value: [{en.value}]."
+            ) from e
+        data.append(
+            {
+                "Value": en.value,
+                "Description": description,
+            }
+        )
+    return assert_type(pd.DataFrame(data).to_markdown(index=False), str)
+
+
+def generate_enum_documentation(module_schema_info: ModuleSchemaInformation) -> bool:
     """
     Parses enum files to produce documentation. Overwrites or creates the
     corresponding Markdown file.
 
     Returns True if files were modified, False otherwise.
     """
-    all_enum_classes = _get_all_entity_enum_classes()
-    all_enum_names = [enum_class.__name__ for enum_class in all_enum_classes]
-    all_entity_names = [
-        snake_to_camel(t.name, capitalize_first_letter=True)
-        for t in get_all_table_classes_in_schema(SchemaType.STATE)
-    ]
+    all_enum_names = {
+        enum_class.__name__ for enum_class in module_schema_info.enum_classes
+    }
+    all_entity_names = {
+        t for t in module_schema_info.bq_schema if "association" not in t
+    }
 
-    def _get_value_descriptions(enum_type: Type[StateEntityEnum]) -> str:
-        table_matrix = []
-
-        enum_descriptions = {
-            **enum_type.get_value_descriptions(),
-            **{
-                enum_value: SHARED_ENUM_VALUE_DESCRIPTIONS[enum_value.value]
-                for enum_value in enum_type
-                if SHARED_ENUM_VALUE_DESCRIPTIONS.get(enum_value.value)
-            },
-        }
-
-        sorted_values: List[StateEntityEnum] = sorted(
-            list(enum_type), key=lambda e: e.value
-        )
-
-        for enum_value in sorted_values:
-            try:
-                enum_value_description = enum_descriptions[enum_value]
-            except KeyError as e:
-                raise KeyError(
-                    "Must implement get_value_descriptions() for enum "
-                    f"class {enum_type.__name__} with descriptions "
-                    f"for each enum value. Missing description for "
-                    f"value: [{enum_value}]."
-                ) from e
-
-            enum_value_description = _add_entity_and_enum_links_to_enum_description(
-                enum_value_description, all_enum_names, all_entity_names
-            )
-
-            table_row = [enum_value.value, enum_value_description]
-            table_matrix.append(table_row)
-
-        writer = MarkdownTableWriter(
-            headers=[
-                "Enum Value",
-                "Description",
-            ],
-            value_matrix=table_matrix,
-            margin=0,
-        )
-        return writer.dumps()
-
-    if not os.path.isdir(ENUM_DOCS_ROOT):
-        os.mkdir(ENUM_DOCS_ROOT)
-    old_file_names = set(os.listdir(ENUM_DOCS_ROOT))
     generated_file_names = set()
     anything_modified = False
-    for enum_class in _get_all_entity_enum_classes():
-        documentation = f"## {enum_class.__name__}\n\n"
-        documentation += f"{_add_entity_and_enum_links_to_enum_description(enum_class.get_enum_description(),all_enum_names, all_entity_names)}\n\n"
-        documentation += f"{_get_value_descriptions(enum_class)}\n\n"
-        markdown_file_name = f"{enum_class.__name__}.md"
-        markdown_file_path = os.path.join(ENUM_DOCS_ROOT, markdown_file_name)
+    for enum_class in module_schema_info.enum_classes:
+        documentation = StrictStringFormatter().format(
+            ENUM_DOC_TEMPLATE,
+            enum_name=enum_class.__name__,
+            enum_description=textwrap.dedent(
+                hyperlink_todos(enum_class.get_enum_description())
+            ),
+            value_table=_get_enum_value_descriptions(enum_class),
+        )
+        documentation = _add_entity_and_enum_links_to_enum_description(
+            documentation, all_enum_names, all_entity_names
+        )
+        markdown_file_path = os.path.join(ENUM_DOCS_ROOT, f"{enum_class.__name__}.md")
         anything_modified |= persist_file_contents(documentation, markdown_file_path)
-        generated_file_names.add(markdown_file_name)
+        generated_file_names.add(f"{enum_class.__name__}.md")
 
-    extra_files = old_file_names.difference(generated_file_names)
-    for extra_file in extra_files:
-        anything_modified |= True
-        os.remove(os.path.join(ENUM_DOCS_ROOT, extra_file))
-
+    anything_modified |= remove_extra_files(ENUM_DOCS_ROOT, generated_file_names)
     return anything_modified
+
+
+def _update_schema_catalog_page(module_schema_info: ModuleSchemaInformation) -> None:
+    list_of_tables: str = "\n".join(
+        sorted(
+            f"\t - [{entity_table}](schema/{ENTITIES_PACKAGE_NAME}/{entity_table}.md)"
+            for entity_table in module_schema_info.bq_schema
+        )
+    )
+    list_of_tables += "\n"
+
+    list_of_enums: str = "\n".join(
+        sorted(
+            f"\t - [{enum_class.__name__}](schema/{ENUMS_PACKAGE_NAME}/"
+            f"{enum_class.__name__}.md)"
+            for enum_class in get_all_enum_classes_in_module(state_entities)
+        )
+    )
+    list_of_enums += "\n"
+
+    update_summary_file(
+        [
+            "## Schema Catalog\n\n",
+            f"- {ENTITIES_PACKAGE_NAME}\n",
+            *list_of_tables,
+            f"- {ENUMS_PACKAGE_NAME}\n",
+            *list_of_enums,
+        ],
+        "## Schema Catalog",
+    )
+
+
+def _make_schema_doc_directories() -> None:
+    for path in [ENTITY_DOCS_ROOT, ENTITY_DOCS_ROOT]:
+        if not os.path.isdir(path):
+            os.mkdir(path)
 
 
 def main() -> int:
     """Generates entity documentation, cleaning up any obsolete docs files."""
-
-    def _generate_entity_documentation_summary() -> str:
-        list_of_tables: str = "\n".join(
-            sorted(
-                f"\t - [{entity_table}](schema/{ENTITIES_PACKAGE_NAME}/{entity_table}.md)"
-                for entity_table in get_all_table_classes_in_schema(SchemaType.STATE)
-            )
-        )
-        list_of_tables += "\n"
-        return list_of_tables
-
-    def _generate_enum_documentation_summary() -> str:
-        list_of_enums: str = "\n".join(
-            sorted(
-                f"\t - [{enum_class.__name__}](schema/{ENUMS_PACKAGE_NAME}/"
-                f"{enum_class.__name__}.md)"
-                for enum_class in get_all_enum_classes_in_module(state_entities)
-            )
-        )
-        list_of_enums += "\n"
-        return list_of_enums
-
-    def _generate_summary_strings() -> List[str]:
-        entity_documentation_summary = ["## Schema Catalog\n\n"]
-        entity_documentation_summary.extend([f"- {ENTITIES_PACKAGE_NAME}\n"])
-        entity_documentation_summary.extend(_generate_entity_documentation_summary())
-        entity_documentation_summary.extend([f"- {ENUMS_PACKAGE_NAME}\n"])
-        entity_documentation_summary.extend(_generate_enum_documentation_summary())
-        return entity_documentation_summary
-
-    modified = generate_entity_documentation()
-    modified |= generate_enum_documentation()
-
+    # TODO(#32863) Generate docs for normalized state tables.
+    module_schema_info = ModuleSchemaInformation(state_entities)
+    _make_schema_doc_directories()
+    modified = generate_entity_documentation(module_schema_info)
+    modified |= generate_enum_documentation(module_schema_info)
     if modified:
-        update_summary_file(
-            _generate_summary_strings(),
-            "## Schema Catalog",
-        )
-
-    return 1 if modified else 0
+        _update_schema_catalog_page(module_schema_info)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

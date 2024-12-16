@@ -69,7 +69,7 @@ class CodeReference:
         return f"{self.filepath}:{self.line_number}"
 
 
-TODO_REGEX = rf"TODO\({GithubIssue.ISSUE_REGEX}\)"
+TO_DO_REGEX = rf"TODO\({GithubIssue.ISSUE_REGEX}\)"
 
 
 def _read_todo_lines_from_codebase() -> List[str]:
@@ -98,7 +98,7 @@ def _read_todo_lines_from_codebase() -> List[str]:
 
 
 def get_issue_references() -> Dict[GithubIssue, List[CodeReference]]:
-    todo_regex = re.compile(TODO_REGEX)
+    todo_regex = re.compile(TO_DO_REGEX)
     issue_references: Dict[GithubIssue, List[CodeReference]] = DefaultDict(list)
 
     for todo_line in _read_todo_lines_from_codebase():
