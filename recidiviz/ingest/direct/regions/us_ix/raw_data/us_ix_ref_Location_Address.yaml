@@ -25,9 +25,11 @@ columns:
       - value: "2"
         description: Local Address
       - value: "40"
-        description: TODO(#34964) Document this value.
+        description: Business Mailing
       - value: "41"
-        description: TODO(#34964) Document this value.
+        description: Business Actual
+      - value: "50"
+        description: DOC Facility/District-Mailing
   - name: StartDate
     description: |-
       TODO(#15329): Fill in column description
