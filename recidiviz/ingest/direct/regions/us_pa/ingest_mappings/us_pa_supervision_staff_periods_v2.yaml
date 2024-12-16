@@ -79,6 +79,9 @@ output:
                         - "Dir Bur Ctrl Srvs Pbtn Prl"
                         - "Parole Communications Operator"
                         - "Parole Communications Supervisor"
+                        - "Executive Deputy Secretary for Reentry, Community Corrections, and"
+                        - "Corrections Community Center Monitor"
+                        - "Community Corrections Center Director 1"
                       StateStaffRoleType.INTERNAL_UNKNOWN:
                         - "Administrative Assistant 1"
                         - "Administrative Officer 5"
@@ -131,6 +134,10 @@ output:
                         - "Cmy Corr Ctr Dir 2"
                         - "Corr Trmt Srvs Prgm Adm"
                         - "Rgnl Cmy Corr Dir"
+                        - "Legislative Liaison 3"
+                        - "Corrections Counselor 2"
+                        - "Corrections Classification Program Manager"
+                        - "Press Secretary"
                 role_subtype:
                   $enum_mapping:
                     $raw_text: role_description
@@ -150,6 +157,7 @@ output:
                         - "Deputy Secretary for Reentry"
                         - "Probation and Parole District Director 1"
                         - "Probation and Parole District Director 2"
+                        - "Executive Deputy Secretary for Reentry, Community Corrections, and"
                       StateStaffRoleSubtype.INTERNAL_UNKNOWN:
                         - "Administrative Assistant 1"
                         - "Administrative Officer 5"
@@ -206,6 +214,12 @@ output:
                         - "Rgnl Cmy Corr Dir"
                         - "Parole Communications Operator"
                         - "Parole Communications Supervisor"
+                        - "Legislative Liaison 3"
+                        - "Corrections Counselor 2"
+                        - "Corrections Classification Program Manager"
+                        - "Corrections Community Center Monitor"
+                        - "Community Corrections Center Director 1"
+                        - "Press Secretary"
                       StateStaffRoleSubtype.SUPERVISION_OFFICER:
                         - "Parole Agent 1"
                         - "Parole Agent 2"

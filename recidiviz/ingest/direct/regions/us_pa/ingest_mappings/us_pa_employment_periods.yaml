@@ -29,10 +29,13 @@ output:
                   - FTIME
                 StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME:
                   - PTIME
-                StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN:
+                StateEmploymentPeriodEmploymentStatus.UNEMPLOYED:
                   - UABLE
-                  - UNRUI
+                StateEmploymentPeriodEmploymentStatus.UNABLE_TO_WORK:
                   - UTWRK
+                StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE:
+                  - UNRUI
+                StateEmploymentPeriodEmploymentStatus.STUDENT:
                   - UNSTU
           employer_name: Org_Name
           start_date: Effective_Start_Date
