@@ -11,6 +11,11 @@ primary_key_cols:
 columns:
   - name: FurloughId
     description: Primary key.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          TODO(#25762) Temporarily exempting this column to unblock enabling the new infra
+          We should remove this exemption once we sort out the null values issue in #25762
   - name: MDOC
     description: MDOC ID of the person who was furloughed.
   - name: FurloughBeginDt

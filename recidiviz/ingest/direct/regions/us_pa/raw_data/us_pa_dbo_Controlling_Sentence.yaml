@@ -36,6 +36,10 @@ columns:
         previous_value: Criame_Code
   - name: Crime_Code_Description
     description: Crime Code Description
+    update_history:
+      - update_type: RENAME
+        update_datetime: 2024-11-18T00:00:00Z
+        previous_value: Criame_Code_Description
   - name: Grade
     description: Grade
   - name: Sentence_Date
