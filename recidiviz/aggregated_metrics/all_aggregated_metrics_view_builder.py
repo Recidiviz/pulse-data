@@ -17,9 +17,6 @@
 """Joins together all aggregated metric views for the specified population and unit of analysis"""
 from typing import List, Optional
 
-from recidiviz.aggregated_metrics.aggregated_metrics_view_collector import (
-    is_metric_class_supported_by_optimized_format,
-)
 from recidiviz.aggregated_metrics.assignment_sessions_view_builder import (
     get_assignment_query_for_unit_of_analysis,
 )
@@ -45,21 +42,25 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
     get_static_attributes_query_for_unit_of_analysis,
 )
+from recidiviz.aggregated_metrics.query_building.aggregated_metric_query_utils import (
+    is_metric_class_supported_by_optimized_format,
+)
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
 
 
-def generate_aggregated_metrics_view_builder(
+def generate_all_aggregated_metrics_view_builder(
     unit_of_analysis: MetricUnitOfAnalysis,
     population_type: MetricPopulationType,
     metrics: List[AggregatedMetric],
     dataset_id_override: Optional[str] = None,
 ) -> SimpleBigQueryViewBuilder:
     """
-    Returns a SimpleBigQueryViewBuilder that joins together all metric views into a
-    single materialized view for the specified unit of analysis and population.
+    Returns a SimpleBigQueryViewBuilder that joins together all metric views for
+    individual metric class types into a single materialized view for the specified unit
+    of analysis and population.
     """
     unit_of_analysis_name = unit_of_analysis.type.short_name
     population_name = population_type.population_name_short

@@ -149,7 +149,6 @@ def collect_insights_legacy_aggregated_metrics_view_builders() -> list[
     return collect_legacy_aggregated_metrics_view_builders(
         metrics_by_population_dict=_METRICS_BY_POPULATION_TYPE,
         units_of_analysis_by_population_dict=_UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
-        dataset_id_override=OUTLIERS_VIEWS_DATASET,
     )
 
 

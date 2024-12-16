@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for aggregated_metrics.py"""
+"""Tests for all_aggregated_metrics_view_builder.py"""
 
 import unittest
 
-from recidiviz.aggregated_metrics.legacy.aggregated_metrics import (
-    generate_aggregated_metrics_view_builder,
+from recidiviz.aggregated_metrics.all_aggregated_metrics_view_builder import (
+    generate_all_aggregated_metrics_view_builder,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
@@ -30,12 +30,14 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
 )
 
 
-class GenerateAggregatedMetricsViewBuilderTest(unittest.TestCase):
+class GenerateAggregatedAllMetricsViewBuilderTest(unittest.TestCase):
     # verify that generate_aggregated_metrics_view_builder called with no metrics
     # raises an error
     def test_no_metrics(self) -> None:
-        with self.assertRaises(ValueError):
-            generate_aggregated_metrics_view_builder(
+        with self.assertRaisesRegex(
+            ValueError, "No metrics found for justice_involved metrics"
+        ):
+            generate_all_aggregated_metrics_view_builder(
                 unit_of_analysis=MetricUnitOfAnalysis.for_type(
                     MetricUnitOfAnalysisType.STATE_CODE
                 ),

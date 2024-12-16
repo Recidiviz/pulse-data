@@ -25,6 +25,9 @@ from recidiviz.aggregated_metrics.aggregated_metrics_view_builder import (
     AggregatedMetricsBigQueryViewBuilder,
     aggregated_metric_view_description,
 )
+from recidiviz.aggregated_metrics.all_aggregated_metrics_view_builder import (
+    generate_all_aggregated_metrics_view_builder,
+)
 from recidiviz.aggregated_metrics.assignments_by_time_period_view_builder import (
     AssignmentsByTimePeriodViewBuilder,
 )
@@ -44,8 +47,10 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
 )
 from recidiviz.aggregated_metrics.query_building.aggregated_metric_query_utils import (
     AggregatedMetricClassType,
+    is_metric_class_supported_by_optimized_format,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
@@ -133,22 +138,6 @@ def _build_time_periods_unioned_view_builder(
     )
 
 
-# TODO(#35914): Remove this function once aggregated metrics ship for all metric classes
-def is_metric_class_supported_by_optimized_format(
-    metric_class: AggregatedMetricClassType,
-) -> bool:
-    if metric_class in {
-        # TODO(#35895): Add support for PeriodSpanAggregatedMetric
-        PeriodSpanAggregatedMetric,
-        # TODO(#35897): Add support for AssignmentEventAggregatedMetric
-        AssignmentEventAggregatedMetric,
-        # TODO(#35898): Add support for AssignmentSpanAggregatedMetric
-        AssignmentSpanAggregatedMetric,
-    }:
-        return False
-    return True
-
-
 def collect_assignments_by_time_period_builders_for_collections(
     collection_configs: list[AggregatedMetricsCollection],
 ) -> list[AssignmentsByTimePeriodViewBuilder]:
@@ -210,18 +199,26 @@ def collect_assignments_by_time_period_builders_for_collections(
 
 def collect_aggregated_metric_view_builders_for_collection(
     collection_config: AggregatedMetricsCollection,
-) -> list[AggregatedMetricsBigQueryViewBuilder | UnionAllBigQueryViewBuilder]:
+) -> list[
+    AggregatedMetricsBigQueryViewBuilder
+    | UnionAllBigQueryViewBuilder
+    | SimpleBigQueryViewBuilder
+]:
     """For the given collection config, returns all view builders that must be deployed
-    to calculate these metrics. Returns both the AggregatedMetricsBigQueryViewBuilder
-    views which actually calculate the metrics and the UnionAllBigQueryViewBuilder views
-    which union the metrics from different time period configs into one view.
+    to calculate these metrics. Returns the AggregatedMetricsBigQueryViewBuilder
+    views which actually calculate the metrics, the UnionAllBigQueryViewBuilder views
+    which union the metrics from different time period configs into one view and the
+    view that joins all metric type-specific view with *all* metrics specified in the
+    config.
 
     Assumes that collect_assignments_by_time_period_builders_for_collections() has
     already been called with this config to produce the appropriate
     AssignmentsByTimePeriodViewBuilder views referenced by this collection.
     """
     builders: list[
-        AggregatedMetricsBigQueryViewBuilder | UnionAllBigQueryViewBuilder
+        AggregatedMetricsBigQueryViewBuilder
+        | UnionAllBigQueryViewBuilder
+        | SimpleBigQueryViewBuilder
     ] = []
 
     for metric_class in METRIC_CLASSES:
@@ -259,5 +256,21 @@ def collect_aggregated_metric_view_builders_for_collection(
                         parents=time_period_specific_builders,
                     )
                 )
+
+    for (
+        population_type,
+        population_config,
+    ) in collection_config.population_configs.items():
+        for unit_of_analysis_type in population_config.units_of_analysis:
+            builders.append(
+                generate_all_aggregated_metrics_view_builder(
+                    unit_of_analysis=MetricUnitOfAnalysis.for_type(
+                        unit_of_analysis_type
+                    ),
+                    population_type=population_type,
+                    metrics=population_config.metrics,
+                    dataset_id_override=population_config.output_dataset_id,
+                )
+            )
 
     return builders

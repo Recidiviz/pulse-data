@@ -47,3 +47,19 @@ def metric_group_by_columns(
         *unit_of_analysis.primary_key_columns,
         *MetricTimePeriodConfig.query_output_columns(),
     ]
+
+
+# TODO(#35914): Remove this function once aggregated metrics ship for all metric classes
+def is_metric_class_supported_by_optimized_format(
+    metric_class: AggregatedMetricClassType,
+) -> bool:
+    if metric_class in {
+        # TODO(#35895): Add support for PeriodSpanAggregatedMetric
+        PeriodSpanAggregatedMetric,
+        # TODO(#35897): Add support for AssignmentEventAggregatedMetric
+        AssignmentEventAggregatedMetric,
+        # TODO(#35898): Add support for AssignmentSpanAggregatedMetric
+        AssignmentSpanAggregatedMetric,
+    }:
+        return False
+    return True

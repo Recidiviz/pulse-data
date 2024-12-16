@@ -15,14 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Returns all aggregated metric view builders for specified populations and units of analysis"""
-from typing import Dict, List, Optional
+from typing import Dict, List
 
-from recidiviz.aggregated_metrics.aggregated_metrics_view_collector import (
-    is_metric_class_supported_by_optimized_format,
-)
-from recidiviz.aggregated_metrics.legacy.aggregated_metrics import (
-    generate_aggregated_metrics_view_builder,
-)
 from recidiviz.aggregated_metrics.legacy.assignment_event_aggregated_metrics import (
     generate_assignment_event_aggregated_metrics_view_builder,
 )
@@ -54,6 +48,9 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
 )
+from recidiviz.aggregated_metrics.query_building.aggregated_metric_query_utils import (
+    is_metric_class_supported_by_optimized_format,
+)
 from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
     METRICS_BY_POPULATION_TYPE,
 )
@@ -73,7 +70,6 @@ def collect_legacy_aggregated_metrics_view_builders(
     units_of_analysis_by_population_dict: Dict[
         MetricPopulationType, List[MetricUnitOfAnalysisType]
     ],
-    dataset_id_override: Optional[str] = None,
 ) -> List[SimpleBigQueryViewBuilder]:
     """
     Collects all aggregated metrics view builders at all available units of analysis and populations
@@ -179,16 +175,6 @@ def collect_legacy_aggregated_metrics_view_builders(
                 )
                 if misc_metric_view_builder:
                     view_builders.append(misc_metric_view_builder)
-
-            # Build aggregated metrics table combining all
-            view_builders.append(
-                generate_aggregated_metrics_view_builder(
-                    unit_of_analysis=unit_of_analysis,
-                    population_type=population_type,
-                    metrics=all_metrics,
-                    dataset_id_override=dataset_id_override,
-                )
-            )
 
     return view_builders
 
