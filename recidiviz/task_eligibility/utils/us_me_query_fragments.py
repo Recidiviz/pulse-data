@@ -97,7 +97,7 @@ def disciplinary_reports_helper() -> str:
       LEFT JOIN
         `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_1810_VIOLATION_DISPOSITION_CLASS_latest` vdc
       ON
-        vd.Cis_1810_Disposition_Class_Cd = vdc.Violation_Disposition_Class_Cd
+        IFNULL(vd.Cis_1810_Disposition_Class_Cd, vd.Cis_1810_Violation_Class_Cd) = vdc.Violation_Disposition_Class_Cd
       LEFT JOIN
         `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_462_CLIENTS_INVOLVED_latest` ci
       ON
