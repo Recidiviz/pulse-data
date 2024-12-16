@@ -42,6 +42,7 @@ class MetricUnitOfAnalysisType(Enum):
     LOCATION = "LOCATION"
     LOCATION_DETAIL = "LOCATION_DETAIL"
     PERSON_ID = "PERSON"
+    ALL_STATES = "ALL_STATES"
 
     @property
     def short_name(self) -> str:
@@ -175,6 +176,12 @@ class MetricUnitOfAnalysis:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.PERSON_ID,
                     primary_key_columns=["state_code", "person_id"],
+                    static_attribute_columns=[],
+                )
+            case MetricUnitOfAnalysisType.ALL_STATES:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.ALL_STATES,
+                    primary_key_columns=["in_signed_state"],
                     static_attribute_columns=[],
                 )
 

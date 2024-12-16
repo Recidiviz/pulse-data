@@ -55,6 +55,7 @@ def _relevant_units_of_analysis_for_population_type(
                 MetricUnitOfAnalysisType.FACILITY,
                 MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
                 MetricUnitOfAnalysisType.STATE_CODE,
+                MetricUnitOfAnalysisType.ALL_STATES,
             ]
         case MetricPopulationType.SUPERVISION:
             return [
@@ -64,6 +65,7 @@ def _relevant_units_of_analysis_for_population_type(
                 MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
                 MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
                 MetricUnitOfAnalysisType.STATE_CODE,
+                MetricUnitOfAnalysisType.ALL_STATES,
             ]
         case MetricPopulationType.JUSTICE_INVOLVED:
             return [
@@ -73,6 +75,7 @@ def _relevant_units_of_analysis_for_population_type(
                 MetricUnitOfAnalysisType.STATE_CODE,
                 MetricUnitOfAnalysisType.FACILITY,
                 MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+                MetricUnitOfAnalysisType.ALL_STATES,
             ]
 
 
