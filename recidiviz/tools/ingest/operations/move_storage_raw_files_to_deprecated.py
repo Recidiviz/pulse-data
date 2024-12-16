@@ -144,29 +144,32 @@ class MoveFilesToDeprecatedController:
                     f"these files to a deprecated location.\nHave you already done so?",
                     dry_run=self.dry_run,
                 )
-            else:
-                invalidated_files = InvalidateOperationsDBFilesController(
-                    project_id=self.project_id,
+
+        if is_raw_data_import_dag_enabled(
+            StateCode(self.region_code.upper()), DirectIngestInstance.PRIMARY
+        ):
+            invalidated_files = InvalidateOperationsDBFilesController.create_controller(
+                project_id=self.project_id,
+                state_code=StateCode(self.region_code.upper()),
+                ingest_instance=self.ingest_instance,
+                file_tag_filters=self.file_tag_filters,
+                file_tag_regex=self.file_tag_regex,
+                start_date_bound=self.start_date_bound,
+                end_date_bound=self.end_date_bound,
+                dry_run=self.dry_run,
+                skip_prompts=self.skip_prompts,
+            ).run()
+
+            if invalidated_files:
+                DeleteBQRawTableRowsController(
+                    bq_client=BigQueryClientImpl(project_id=self.project_id),
                     state_code=StateCode(self.region_code.upper()),
                     ingest_instance=self.ingest_instance,
-                    file_tag_filters=self.file_tag_filters,
-                    file_tag_regex=self.file_tag_regex,
-                    start_date_bound=self.start_date_bound,
-                    end_date_bound=self.end_date_bound,
                     dry_run=self.dry_run,
                     skip_prompts=self.skip_prompts,
-                ).run()
-
-                if invalidated_files:
-                    DeleteBQRawTableRowsController(
-                        bq_client=BigQueryClientImpl(project_id=self.project_id),
-                        state_code=StateCode(self.region_code.upper()),
-                        ingest_instance=self.ingest_instance,
-                        dry_run=self.dry_run,
-                        skip_prompts=self.skip_prompts,
-                    ).run(
-                        file_tag_to_file_ids_to_delete=invalidated_files.file_tag_to_file_ids
-                    )
+                ).run(
+                    file_tag_to_file_ids_to_delete=invalidated_files.file_tag_to_file_ids
+                )
 
         OperateOnStorageRawFilesController(
             region_code=self.region_code,

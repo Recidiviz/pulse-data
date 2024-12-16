@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Controller for invalidating files in the operations database."""
+import abc
 import logging
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
@@ -41,8 +42,7 @@ FROM direct_ingest_raw_gcs_file_metadata
 WHERE region_code = '{region_code}' 
     AND raw_data_instance = '{raw_data_instance}' 
     AND is_invalidated IS NOT True
-    {file_tag_clause}
-    {optional_date_filter}
+    {query_filters}
 """
 
 UPDATE_BQ_METADATA_QUERY = """
@@ -140,6 +140,66 @@ class RawFilesGroupedByTagAndId:
 
 
 @attr.define
+class MetadataTableQueryFilter:
+    @abc.abstractmethod
+    def get_filter_clause(self) -> str:
+        """Returns a string representing the filter clause to include in querying
+        a metadata table in the operations database."""
+
+
+@attr.define
+class FilenameFilter(MetadataTableQueryFilter):
+    normalized_filenames_filter: List[str] = attr.ib(validator=attr_validators.is_list)
+
+    def get_filter_clause(self) -> str:
+        filename_str = ",".join(
+            f"'{filename}'" for filename in self.normalized_filenames_filter
+        )
+        return f"AND normalized_file_name IN ({filename_str})"
+
+
+@attr.define
+class FileTagFilter(MetadataTableQueryFilter):
+    file_tag_filters: List[str] = attr.ib(validator=attr_validators.is_list)
+
+    def get_filter_clause(self) -> str:
+        file_tag_str = ",".join(f"'{tag}'" for tag in self.file_tag_filters)
+        return f"AND file_tag IN ({file_tag_str})"
+
+
+@attr.define
+class FileTagRegexFilter(MetadataTableQueryFilter):
+    file_tag_regex: str = attr.ib(validator=attr_validators.is_str)
+
+    def get_filter_clause(self) -> str:
+        return f"AND file_tag ~ '{self.file_tag_regex}'"
+
+
+@attr.define
+class UpdateDateFilter(MetadataTableQueryFilter):
+    """Filters by the update_datetime column in the metadata tables."""
+
+    start_date_bound: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    end_date_bound: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    def get_filter_clause(self) -> str:
+        datetime_filter_clause = ""
+        if self.start_date_bound:
+            datetime_filter_clause = (
+                f"AND DATE(update_datetime) >= '{self.start_date_bound}' "
+            )
+        if self.end_date_bound:
+            datetime_filter_clause += (
+                f"AND DATE(update_datetime) <= '{self.end_date_bound}'"
+            )
+        return datetime_filter_clause
+
+
+@attr.define
 class InvalidateOperationsDBFilesController:
     """Invalidates entries in the operations db corresponding to the files that match the provided filters.
     This class only supports updating operations tables for states/ingest_instances with the raw data import DAG enabled.
@@ -148,10 +208,8 @@ class InvalidateOperationsDBFilesController:
         project_id: The GCP project ID.
         state_code: The state code.
         ingest_instance: The ingest instance.
-        file_tag_filters: A list of file tags to filter by.
-        file_tag_regex: A regex pattern to filter by.
-        start_date_bound: The isoformatted start date bound for the update_datetime column.
-        end_date_bound: The isoformatted end date bound for the update_datetime column.
+        query_filters: A list of MetadataTableQueryFilter objects to filter by.
+        log_output_path: The path to write the log output to.
         dry_run: Whether to perform a dry run.
         skip_prompts: Whether to skip confirmation prompts.
     """
@@ -161,19 +219,12 @@ class InvalidateOperationsDBFilesController:
     ingest_instance: DirectIngestInstance = attr.ib(
         validator=attr.validators.instance_of(DirectIngestInstance)
     )
-    file_tag_filters: List[str] = attr.ib(validator=attr_validators.is_list)
-    file_tag_regex: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
+    query_filters: List[MetadataTableQueryFilter] = attr.ib(
+        validator=attr_validators.is_list
     )
-    start_date_bound: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-    end_date_bound: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
+    log_output_path: str = attr.ib(validator=attr_validators.is_str)
     dry_run: bool = attr.ib(default=True, validator=attr_validators.is_bool)
     skip_prompts: bool = attr.ib(default=False, validator=attr_validators.is_bool)
-    log_output_path: str = attr.ib(init=False, validator=attr_validators.is_str)
 
     def __attrs_post_init__(self) -> None:
         if not is_raw_data_import_dag_enabled(self.state_code, self.ingest_instance):
@@ -181,15 +232,77 @@ class InvalidateOperationsDBFilesController:
                 "Invalidation operation only supports updating operations tables "
                 "for states/ingest_instances with the raw data import DAG enabled."
             )
-        if self.file_tag_filters and self.file_tag_regex:
+
+    @classmethod
+    def create_controller(
+        cls,
+        *,
+        project_id: str,
+        ingest_instance: DirectIngestInstance,
+        state_code: StateCode,
+        dry_run: bool,
+        skip_prompts: bool,
+        start_date_bound: Optional[str] = None,
+        end_date_bound: Optional[str] = None,
+        file_tag_filters: Optional[List[str]] = None,
+        file_tag_regex: Optional[str] = None,
+        normalized_filenames_filter: Optional[List[str]] = None,
+    ) -> "InvalidateOperationsDBFilesController":
+        """Factory method to create an instance of InvalidateOperationsDBFilesController.
+
+        Args:
+            project_id: The GCP project ID.
+            state_code: The state code.
+            ingest_instance: The ingest instance.
+            normalized_filenames_filter: A list of normalized filenames to filter by.
+            file_tag_filters: A list of file tags to filter by.
+            file_tag_regex: A regex pattern to filter by.
+            start_date_bound: The isoformatted start date bound for the update_datetime column.
+            end_date_bound: The isoformatted end date bound for the update_datetime column.
+            dry_run: Whether to perform a dry run.
+            skip_prompts: Whether to skip confirmation prompts.
+        """
+        if normalized_filenames_filter and (
+            file_tag_filters or file_tag_regex or start_date_bound or end_date_bound
+        ):
+            raise ValueError(
+                "If providing normalized_filenames_filter, do not provide any other filters."
+            )
+        if file_tag_filters and file_tag_regex:
             raise ValueError(
                 "Cannot provide both file_tag_filters and file_tag_regex. Please provide only one."
             )
-        self.log_output_path = make_log_output_path(
+
+        query_filters: List[MetadataTableQueryFilter] = []
+        if file_tag_filters:
+            query_filters.append(FileTagFilter(file_tag_filters=file_tag_filters))
+        if file_tag_regex:
+            query_filters.append(FileTagRegexFilter(file_tag_regex=file_tag_regex))
+        if start_date_bound or end_date_bound:
+            query_filters.append(
+                UpdateDateFilter(
+                    start_date_bound=start_date_bound, end_date_bound=end_date_bound
+                )
+            )
+        if normalized_filenames_filter:
+            query_filters.append(
+                FilenameFilter(normalized_filenames_filter=normalized_filenames_filter)
+            )
+
+        log_output_path = make_log_output_path(
             operation_name="invalidate_operations_db_files",
-            region_code=self.state_code.value,
-            date_string=f"start_bound_{self.start_date_bound}_end_bound_{self.end_date_bound}",
-            dry_run=self.dry_run,
+            region_code=state_code.value,
+            date_string=f"start_bound_{start_date_bound}_end_bound_{end_date_bound}",
+            dry_run=dry_run,
+        )
+        return cls(
+            project_id=project_id,
+            state_code=state_code,
+            ingest_instance=ingest_instance,
+            query_filters=query_filters,
+            dry_run=dry_run,
+            skip_prompts=skip_prompts,
+            log_output_path=log_output_path,
         )
 
     def _write_log_file(
@@ -220,26 +333,6 @@ class InvalidateOperationsDBFilesController:
 
         session.commit()
 
-    def _get_datetime_filter_clause(self) -> str:
-        datetime_filter_clause = ""
-        if self.start_date_bound:
-            datetime_filter_clause = (
-                f"AND DATE(update_datetime) >= '{self.start_date_bound}' "
-            )
-        if self.end_date_bound:
-            datetime_filter_clause += (
-                f"AND DATE(update_datetime) <= '{self.end_date_bound}'"
-            )
-        return datetime_filter_clause
-
-    def _get_file_tag_clause(self) -> str:
-        if self.file_tag_filters:
-            file_tag_str = ",".join(f"'{tag}'" for tag in self.file_tag_filters)
-            return f"AND file_tag IN ({file_tag_str})"
-        if self.file_tag_regex:
-            return f"AND file_tag ~ '{self.file_tag_regex}'"
-        return ""
-
     def _fetch_files_to_be_invalidated(
         self, session: Session
     ) -> RawFilesGroupedByTagAndId:
@@ -247,8 +340,9 @@ class InvalidateOperationsDBFilesController:
             SELECT_FILES_QUERY,
             region_code=self.state_code.value,
             raw_data_instance=self.ingest_instance.value,
-            file_tag_clause=self._get_file_tag_clause(),
-            optional_date_filter=self._get_datetime_filter_clause(),
+            query_filters="\n    ".join(
+                filter.get_filter_clause() for filter in self.query_filters
+            ),
         )
         result = session.execute(text(query_str))
 

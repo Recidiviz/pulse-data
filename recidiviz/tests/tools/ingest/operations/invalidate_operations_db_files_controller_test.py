@@ -86,7 +86,7 @@ class TestInvalidateOperationsDBFilesController(unittest.TestCase):
         )
         self.dag_enabled_patcher.start()
 
-        self.controller = InvalidateOperationsDBFilesController(
+        self.controller = InvalidateOperationsDBFilesController.create_controller(
             project_id="test-project",
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -161,6 +161,70 @@ WHERE gcs_file_id in (8, 6, 7)
         actual_queries = [
             call[0][0].text for call in mock_session.execute.call_args_list
         ]
+        assert any(
+            expected_bq_query in query for query in actual_queries
+        ), "BQ query not found in execute calls."
+        assert any(
+            expected_gcs_query in query for query in actual_queries
+        ), "GCS query not found in execute calls."
+
+    @patch(
+        "recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
+    )
+    @patch(
+        "recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller.cloudsql_proxy_control.connection"
+    )
+    def test_run_execute_invalidation_filename_filter(
+        self, _mock_proxy_control: MagicMock, mock_session_factory: MagicMock
+    ) -> None:
+        file_data = [
+            ("tag1", 1, "file1.csv", 6),
+        ]
+        mock_session = MagicMock()
+        mock_session.execute.side_effect = [
+            MagicMock(fetchall=lambda: file_data),
+            None,
+            None,
+        ]
+        mock_session_factory.return_value.__enter__.return_value = mock_session
+        controller = InvalidateOperationsDBFilesController.create_controller(
+            project_id="test-project",
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            normalized_filenames_filter=["file1.csv"],
+            dry_run=False,
+            skip_prompts=True,
+        )
+
+        controller.run()
+
+        expected_file_query = """
+SELECT file_tag, file_id, normalized_file_name, gcs_file_id
+FROM direct_ingest_raw_gcs_file_metadata
+WHERE region_code = 'US_XX' 
+    AND raw_data_instance = 'PRIMARY' 
+    AND is_invalidated IS NOT True
+    AND normalized_file_name IN ('file1.csv')
+"""
+
+        expected_bq_query = """
+UPDATE direct_ingest_raw_big_query_file_metadata
+SET is_invalidated = True
+WHERE file_id in (1)
+"""
+        expected_gcs_query = """
+UPDATE direct_ingest_raw_gcs_file_metadata
+SET is_invalidated = True
+WHERE gcs_file_id in (6)
+"""
+
+        # Assertions to check if both queries are in the captured execute calls
+        actual_queries = [
+            call[0][0].text for call in mock_session.execute.call_args_list
+        ]
+        assert any(
+            expected_file_query in query for query in actual_queries
+        ), "File query not found in execute calls."
         assert any(
             expected_bq_query in query for query in actual_queries
         ), "BQ query not found in execute calls."
