@@ -224,7 +224,9 @@ class InvalidateOperationsDBFilesController:
     )
     log_output_path: str = attr.ib(validator=attr_validators.is_str)
     dry_run: bool = attr.ib(default=True, validator=attr_validators.is_bool)
-    skip_prompts: bool = attr.ib(default=False, validator=attr_validators.is_bool)
+    skip_prompts: Optional[bool] = attr.ib(
+        default=False, validator=attr_validators.is_bool
+    )
 
     def __attrs_post_init__(self) -> None:
         if not is_raw_data_import_dag_enabled(self.state_code, self.ingest_instance):
@@ -241,7 +243,7 @@ class InvalidateOperationsDBFilesController:
         ingest_instance: DirectIngestInstance,
         state_code: StateCode,
         dry_run: bool,
-        skip_prompts: bool,
+        skip_prompts: Optional[bool] = False,
         start_date_bound: Optional[str] = None,
         end_date_bound: Optional[str] = None,
         file_tag_filters: Optional[List[str]] = None,
