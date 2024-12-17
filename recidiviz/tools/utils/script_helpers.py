@@ -49,7 +49,7 @@ def prompt_for_confirmation(
         logging.info("[DRY RUN] %s **DRY RUN - SKIPPED CONFIRMATION**", input_prompt)
         return None
     check = input(input_prompt)
-    if not (confirm := check.lower() == accepted_response.lower()):
+    if not (confirm := check.lower().strip() == accepted_response.lower()):
         logging.warning("\nResponded with [%s]. Confirmation aborted.", check)
         if exit_on_cancel:
             sys.exit(exit_code)

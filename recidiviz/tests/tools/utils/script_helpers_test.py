@@ -80,6 +80,26 @@ from recidiviz.tools.utils.script_helpers import (
         ),
         pytest.param(
             {
+                "call_args": {"accepted_response_override": "YES"},
+                "user_input": """
+                
+                
+                yes """,
+                "logging_results": [],
+                "input_mock_check": lambda m: m.mock_calls
+                == [
+                    mock.call(
+                        "test input"
+                        '\nPlease type "YES" to confirm. '
+                        "(Anything else exits):\n"
+                    )
+                ],
+                "exit_mock_check": lambda m: not m.called,
+            },
+            id="yes with override",
+        ),
+        pytest.param(
+            {
                 "call_args": {"dry_run": True},
                 "user_input": None,
                 "logging_results": [
