@@ -59,7 +59,10 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
             CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(update_datetime) OVER (PARTITION BY state_code, person_id, JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') ORDER BY update_datetime)) AS DATE) AS end_date,
             CAST(NULL AS DATE) AS csbd_date,
             CAST(NULL AS DATE) AS ercd_date,
-            eligible_date AS acis_tpr_date,
+            CASE WHEN JSON_EXTRACT(task_metadata, '$.status') != '"DENIED"'
+              THEN eligible_date
+              ELSE NULL
+            END AS acis_tpr_date,
             CAST(NULL AS DATE) AS acis_dtp_date,
             update_datetime AS update_datetime
           FROM
@@ -77,7 +80,10 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
             CAST(NULL AS DATE) AS csbd_date,
             CAST(NULL AS DATE) AS ercd_date,
             CAST(NULL AS DATE) AS acis_tpr_date,
-            eligible_date AS acis_dtp_date,
+            CASE WHEN JSON_EXTRACT(task_metadata, '$.status') != '"DENIED"'
+              THEN eligible_date
+              ELSE NULL
+            END AS acis_dtp_date,
             update_datetime AS update_datetime
           FROM
             `{{project_id}}.{{normalized_state_dataset}}.state_task_deadline`
