@@ -22,14 +22,36 @@ columns:
     description: |-
       ID for the address type. Can be joined to `ref_AddressType.AddressTypeId`.
     known_values:
-      - value: "2"
-        description: Local Address
+      - value: "55"
+        description: Alternate Proposed
+      - value: "1"
+        description: Permanent Address
+      - value: "57"
+        description: Unknown (Absconded)
+      - value: "3"
+        description: Mailing Address
+      - value: "51"
+        description: DOC Facility/District-Local
+      - value: "4"
+        description: Temporary
+      - value: "52"
+        description: Voucher Address
+      - value: "5"
+        description: Proposed
+      - value: "56"
+        description: Medicaid Service Address
+      - value: "42"
+        description: Mailing Address
       - value: "40"
         description: Business Mailing
+      - value: "2"
+        description: Local Address
       - value: "41"
         description: Business Actual
       - value: "50"
         description: DOC Facility/District-Mailing
+      - value: "43"
+        description: Interstate Compact
   - name: StartDate
     description: |-
       TODO(#15329): Fill in column description
