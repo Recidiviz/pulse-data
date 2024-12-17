@@ -37,3 +37,6 @@ MATERIALIZATION_TIME_COL_NAME = "__materialization_time"
 # Constants used in the raw data imports
 DIRECT_INGEST_UNPROCESSED_PREFIX = "unprocessed"
 DIRECT_INGEST_PROCESSED_PREFIX = "processed"
+
+# expected size of each raw data file chunk
+RAW_DATA_EXPECTED_CHUNK_SIZE_IN_BYTES = 100 * 1024 * 1024

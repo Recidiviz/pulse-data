@@ -283,6 +283,7 @@ def build_mapped_kubernetes_pod_task(
     trigger_rule: Optional[TriggerRule] = TriggerRule.ALL_SUCCESS,
     retries: int = 0,
     cloud_sql_connections: Optional[List[SchemaType]] = None,
+    max_active_tis_per_dag: int | None = None,
 ) -> MappedOperator:
     """Builds a MappedOperator that launches len(expand_arguments) RecidivizKubernetesPodOperator pods.
     This is useful for running a dynamic number of tasks in parallel.
@@ -301,6 +302,7 @@ def build_mapped_kubernetes_pod_task(
             trigger_rule=trigger_rule,
             retries=retries,
             cloud_sql_connections=cloud_sql_connections,
+            max_active_tis_per_dag=max_active_tis_per_dag,
         )
     ).expand(arguments=expand_arguments)
 
@@ -312,6 +314,7 @@ def get_kubernetes_pod_kwargs(
     retries: int = 0,
     do_xcom_push: bool = False,
     cloud_sql_connections: Optional[List[SchemaType]] = None,
+    max_active_tis_per_dag: int | None = None,
 ) -> Dict[str, Any]:
     container_name = container_name or task_id
     return {
@@ -326,4 +329,5 @@ def get_kubernetes_pod_kwargs(
         "retries": retries,
         "do_xcom_push": do_xcom_push,
         "cloud_sql_connections": cloud_sql_connections,
+        "max_active_tis_per_dag": max_active_tis_per_dag,
     }

@@ -24,7 +24,7 @@ from unittest.mock import patch
 from more_itertools import one
 
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
-    MAX_BQ_LOAD_JOBS,
+    MAX_BQ_LOAD_AIRFLOW_TASKS,
     MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS,
     _build_file_imports_for_errors,
     _build_file_imports_for_results,
@@ -477,11 +477,11 @@ class CoalesceImportReadyFilesTest(TestCase):
             errors=[], results=[]
         )
 
-        serialized_files = [file for _ in range(MAX_BQ_LOAD_JOBS * 3)]
+        serialized_files = [file for _ in range(MAX_BQ_LOAD_AIRFLOW_TASKS * 3)]
 
         assert coalesce_import_ready_files.function(
             serialized_files, output.serialize()
-        ) == [[file, file, file] for _ in range(MAX_BQ_LOAD_JOBS)]
+        ) == [[file, file, file] for _ in range(MAX_BQ_LOAD_AIRFLOW_TASKS)]
 
 
 class CoalesceResultsAndErrorsTest(TestCase):

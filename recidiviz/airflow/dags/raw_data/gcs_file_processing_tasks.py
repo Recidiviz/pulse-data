@@ -25,7 +25,6 @@ from typing import Any, Dict, List, Tuple
 
 from airflow.decorators import task
 from airflow.exceptions import AirflowException
-from more_itertools import distribute
 
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     ENTRYPOINT_ARGUMENTS,
@@ -37,7 +36,10 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     FILE_IDS_TO_HEADERS,
     HEADER_VERIFICATION_ERRORS,
 )
-from recidiviz.airflow.dags.raw_data.utils import n_evenly_weighted_buckets
+from recidiviz.airflow.dags.raw_data.utils import (
+    evenly_weighted_buckets_with_max,
+    max_number_of_buckets_with_target,
+)
 from recidiviz.airflow.dags.utils.constants import (
     RAISE_CHUNK_NORMALIZATION_ERRORS,
     RAISE_FILE_CHUNKING_ERRORS,
@@ -57,6 +59,9 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.raw_data.read_raw_file_column_headers import (
     DirectIngestRawFileHeaderReader,
 )
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    RAW_DATA_EXPECTED_CHUNK_SIZE_IN_BYTES,
+)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     PreImportNormalizedCsvChunkResult,
@@ -73,15 +78,18 @@ from recidiviz.utils.airflow_types import (
 from recidiviz.utils.crc32c import digest_ordered_checksum_and_size_pairs
 from recidiviz.utils.types import assert_type
 
-MAX_THREADS = 16  # TODO(#29946) determine reasonable default
+MAX_GCS_FILE_SIZE_REQUEST_THREADS = 16  # TODO(#29946) determine reasonable default
 ENTRYPOINT_ARG_LIST_DELIMITER = "^"
+BYTES_IN_MB = 1024 * 1024
 
 
 @task
 def generate_file_chunking_pod_arguments(
+    *,
     region_code: str,
     serialized_requires_pre_import_normalization_file_paths: List[str],
-    num_batches: int,
+    target_num_chunking_airflow_tasks: int,
+    max_chunks_per_airflow_task: int,
 ) -> List[List[str]]:
     return [
         [
@@ -91,14 +99,18 @@ def generate_file_chunking_pod_arguments(
             f"--requires_normalization_files={ENTRYPOINT_ARG_LIST_DELIMITER.join(batch)}",
         ]
         for batch in create_file_batches(
-            serialized_requires_pre_import_normalization_file_paths,
-            num_batches,
+            serialized_requires_pre_import_normalization_file_paths=serialized_requires_pre_import_normalization_file_paths,
+            target_num_chunking_airflow_tasks=target_num_chunking_airflow_tasks,
+            max_chunks_per_airflow_task=max_chunks_per_airflow_task,
         )
     ]
 
 
 def create_file_batches(
-    serialized_requires_pre_import_normalization_file_paths: List[str], num_batches: int
+    *,
+    serialized_requires_pre_import_normalization_file_paths: List[str],
+    target_num_chunking_airflow_tasks: int,
+    max_chunks_per_airflow_task: int,
 ) -> List[List[str]]:
     fs = GcsfsFactory.build()
     requires_pre_import_normalization_file_paths = [
@@ -107,7 +119,10 @@ def create_file_batches(
     ]
 
     batches = _batch_files_by_size(
-        fs, requires_pre_import_normalization_file_paths, num_batches
+        fs,
+        requires_pre_import_normalization_file_paths,
+        target_num_chunking_airflow_tasks=target_num_chunking_airflow_tasks,
+        max_chunks_per_airflow_task=max_chunks_per_airflow_task,
     )
     serialized_batches = [[path.abs_path() for path in batch] for batch in batches]
 
@@ -117,27 +132,33 @@ def create_file_batches(
 def _batch_files_by_size(
     fs: GCSFileSystem,
     requires_pre_import_normalization_file_paths: List[GcsfsFilePath],
-    num_batches: int,
+    *,
+    target_num_chunking_airflow_tasks: int,
+    max_chunks_per_airflow_task: int,
 ) -> List[List[GcsfsFilePath]]:
     """Divide files into batches with approximately equal cumulative size"""
-    # If get_file_size returns None, set size to 0 and don't worry about sorting correctly
-    # If the file doesn't exist we'll return an error downstream
-    files_with_sizes = _get_files_with_sizes_concurrently(
+    files_with_sizes = _get_est_number_of_chunks_concurrently(
         fs, requires_pre_import_normalization_file_paths
     )
-    return n_evenly_weighted_buckets(files_with_sizes, num_batches)
+    return evenly_weighted_buckets_with_max(
+        files_with_sizes,
+        target_n=target_num_chunking_airflow_tasks,
+        max_weight_per_bucket=max_chunks_per_airflow_task,
+    )
 
 
-def _get_files_with_sizes_concurrently(
+def _get_est_number_of_chunks_concurrently(
     fs: GCSFileSystem,
     requires_normalization_files: List[GcsfsFilePath],
 ) -> List[Tuple[GcsfsFilePath, int]]:
     files_with_sizes: List[Tuple[GcsfsFilePath, int]] = []
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=MAX_GCS_FILE_SIZE_REQUEST_THREADS
+    ) as executor:
         future_to_file_path = {
             executor.submit(
-                _get_file_size, fs, requires_normalization_file
+                _get_est_number_of_chunks, fs, requires_normalization_file
             ): requires_normalization_file
             for requires_normalization_file in requires_normalization_files
         }
@@ -148,19 +169,36 @@ def _get_files_with_sizes_concurrently(
                 size = future.result()
                 files_with_sizes.append((requires_normalization_file, size))
             except Exception:
-                files_with_sizes.append((requires_normalization_file, 0))
+                # If get_file_size returns None, set number of chunks to 1; if the file
+                # doesn't exist we'll return an error downstream
+                files_with_sizes.append((requires_normalization_file, 1))
 
     return files_with_sizes
 
 
-def _get_file_size(fs: GCSFileSystem, file_path: GcsfsFilePath) -> int:
-    return fs.get_file_size(file_path) or 0
+def _get_est_number_of_chunks(fs: GCSFileSystem, file_path: GcsfsFilePath) -> int:
+    return max(
+        (fs.get_file_size(file_path) or 0) // RAW_DATA_EXPECTED_CHUNK_SIZE_IN_BYTES, 1
+    )
 
 
 @task
 def generate_chunk_processing_pod_arguments(
-    region_code: str, file_chunks: List[str], num_batches: int
+    *,
+    region_code: str,
+    serialized_pre_import_files: List[str],
+    target_num_normalization_airflow_tasks: int,
+    max_file_chunks_per_airflow_task: int,
 ) -> List[List[str]]:
+    """Builds file chunk normalization kubernetes pod arguments by expanding |serialized_pre_import_files|
+    into file chunks, batching no more than |max_file_chunks_per_airflow_task| file chunks
+    for independent airflow task consumption.
+    """
+    all_pre_import_files = [
+        RequiresPreImportNormalizationFile.deserialize(file)
+        for file in serialized_pre_import_files
+    ]
+
     return [
         [
             *ENTRYPOINT_ARGUMENTS,
@@ -168,40 +206,40 @@ def generate_chunk_processing_pod_arguments(
             f"--state_code={region_code}",
             f"--file_chunks={ENTRYPOINT_ARG_LIST_DELIMITER.join(batch)}",
         ]
-        for batch in _divide_file_chunks_into_batches(file_chunks, num_batches)
+        for batch in divide_file_chunks_into_batches(
+            all_pre_import_files=all_pre_import_files,
+            target_num_normalization_airflow_tasks=target_num_normalization_airflow_tasks,
+            max_file_chunks_per_airflow_task=max_file_chunks_per_airflow_task,
+        )
     ]
 
 
-def _divide_file_chunks_into_batches(
-    file_chunking_result: List[str], num_batches: int
+def divide_file_chunks_into_batches(
+    *,
+    all_pre_import_files: List[RequiresPreImportNormalizationFile],
+    target_num_normalization_airflow_tasks: int,
+    max_file_chunks_per_airflow_task: int,
 ) -> List[List[str]]:
-    all_results = [
-        RequiresPreImportNormalizationFile.deserialize(result)
-        for result in file_chunking_result
-    ]
-    batches = create_chunk_batches(all_results, num_batches)
+    """Distribute files into file chunk batches for consumption by airflow normalization
+    tasks.
+
+    This function will target |target_num_normalization_airflow_tasks| concurrent airflow tasks;
+    however, if we have more than |max_file_chunks_per_airflow_task| file chunks per batch, we will
+    expand to however many tasks are necessary to assign |max_file_chunks_per_airflow_task| chunks
+    per task. From anecdotal testing, any more than |max_file_chunks_per_airflow_task| exceeds python's
+    max command length.
+    """
+    all_pre_import_file_chunks = _create_individual_chunk_objects_list(
+        all_pre_import_files
+    )
+    batches = max_number_of_buckets_with_target(
+        items=all_pre_import_file_chunks,
+        target_number_of_buckets=target_num_normalization_airflow_tasks,
+        max_per_bucket=max_file_chunks_per_airflow_task,
+    )
     serialized_batches = [[chunk.serialize() for chunk in batch] for batch in batches]
 
     return serialized_batches
-
-
-def create_chunk_batches(
-    file_chunks: List[RequiresPreImportNormalizationFile], num_batches: int
-) -> List[List[RequiresPreImportNormalizationFileChunk]]:
-    """Distribute file chunks into a specified number of batches in a round-robin fashion.
-
-    This function takes a list of file chunks, each potentially containing multiple chunk boundaries,
-    and distributes these chunks into the specified number of batches. If the number of batches
-    exceeds the number of chunks, the number of batches is reduced to match the number of chunks.
-    """
-    all_chunks = _create_individual_chunk_objects_list(file_chunks)
-    if not all_chunks:
-        return []
-
-    num_batches = min(len(all_chunks), num_batches)
-
-    batches = distribute(num_batches, all_chunks)
-    return [list(batch) for batch in batches]
 
 
 def _create_individual_chunk_objects_list(
@@ -520,7 +558,9 @@ def read_and_verify_column_headers_concurrently(
 
     results: Dict[str, List[str]] = {}
     errors: Dict[str, RawFileProcessingError] = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=MAX_GCS_FILE_SIZE_REQUEST_THREADS
+    ) as executor:
         futures = {
             executor.submit(
                 _read_and_validate_headers,

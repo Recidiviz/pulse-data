@@ -36,6 +36,9 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
     get_region_raw_file_config,
 )
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    RAW_DATA_EXPECTED_CHUNK_SIZE_IN_BYTES,
+)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     PreImportNormalizationType,
     RawFileProcessingError,
@@ -122,6 +125,7 @@ def _extract_file_chunks(
         separator=raw_file_config.separator,
         encoding=raw_file_config.encoding,
         quoting_mode=raw_file_config.quoting_mode,
+        chunk_size=RAW_DATA_EXPECTED_CHUNK_SIZE_IN_BYTES,
     )
     chunks = chunker.get_chunks_for_gcs_path(
         requires_pre_import_normalization_file_path,

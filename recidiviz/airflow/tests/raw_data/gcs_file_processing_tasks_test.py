@@ -25,8 +25,8 @@ import google_crc32c
 
 from recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks import (
     build_import_ready_files,
-    create_chunk_batches,
     create_file_batches,
+    divide_file_chunks_into_batches,
     filter_normalization_results_based_on_errors,
     read_and_verify_column_headers_concurrently,
     regroup_normalized_file_chunks,
@@ -70,7 +70,9 @@ class TestCreateFileBatches(unittest.TestCase):
 
         cls.fs = MagicMock()
         # Hackily assign size by using the last character (containing file_num) in the file path
-        cls.fs.get_file_size.side_effect = lambda x: int(x.abs_path()[-1])
+        cls.fs.get_file_size.side_effect = (
+            lambda x: int(x.abs_path()[-1]) * 1024 * 1024 * 100
+        )
         fs_patcher = patch(
             "recidiviz.airflow.dags.raw_data.gcs_file_processing_tasks.GcsfsFactory.build",
             return_value=cls.fs,
@@ -90,7 +92,11 @@ class TestCreateFileBatches(unittest.TestCase):
                 self._get_serialized_file(file_num=2),
             ],
         ]
-        batches = create_file_batches(self.requires_normalization_files, num_batches)
+        batches = create_file_batches(
+            serialized_requires_pre_import_normalization_file_paths=self.requires_normalization_files,
+            target_num_chunking_airflow_tasks=num_batches,
+            max_chunks_per_airflow_task=100,
+        )
         self.assertEqual(batches, expected_batches)
 
     def test_two_batches(self) -> None:
@@ -106,7 +112,11 @@ class TestCreateFileBatches(unittest.TestCase):
                 self._get_serialized_file(file_num=3),
             ],
         ]
-        batches = create_file_batches(self.requires_normalization_files, num_batches)
+        batches = create_file_batches(
+            serialized_requires_pre_import_normalization_file_paths=self.requires_normalization_files,
+            target_num_chunking_airflow_tasks=num_batches,
+            max_chunks_per_airflow_task=100,
+        )
         self.assertEqual(batches, expected_batches)
 
     def test_fewer_files_than_batches(self) -> None:
@@ -118,19 +128,27 @@ class TestCreateFileBatches(unittest.TestCase):
             [self._get_serialized_file(file_num=2)],
             [self._get_serialized_file(file_num=1)],
         ]
-        batches = create_file_batches(self.requires_normalization_files, num_batches)
+        batches = create_file_batches(
+            serialized_requires_pre_import_normalization_file_paths=self.requires_normalization_files,
+            target_num_chunking_airflow_tasks=num_batches,
+            max_chunks_per_airflow_task=100,
+        )
         self.assertEqual(batches, expected_batches)
 
     def test_no_files(self) -> None:
-        batches = create_file_batches([], 3)
+        batches = create_file_batches(
+            serialized_requires_pre_import_normalization_file_paths=[],
+            target_num_chunking_airflow_tasks=3,
+            max_chunks_per_airflow_task=100,
+        )
         self.assertEqual(batches, [])
 
     def test_file_size_not_found(self) -> None:
         def side_effect(file_path: GcsfsFilePath) -> Optional[int]:
-            # file3 returns None for size so it's size is treated as 0
-            if file_path.abs_path() == "test/file3":
+            # file1 returns None for size so it's size is treated as 1 chunk
+            if file_path.abs_path() == "test/file1":
                 return None
-            return int(file_path.abs_path()[-1])
+            return int(file_path.abs_path()[-1]) * 1024 * 1024 * 100
 
         fs = MagicMock()
         fs.get_file_size.side_effect = side_effect
@@ -139,12 +157,12 @@ class TestCreateFileBatches(unittest.TestCase):
         expected_batches = [
             [
                 self._get_serialized_file(file_num=5),
+                self._get_serialized_file(file_num=2),
                 self._get_serialized_file(file_num=1),
-                self._get_serialized_file(file_num=3),
             ],
             [
                 self._get_serialized_file(file_num=4),
-                self._get_serialized_file(file_num=2),
+                self._get_serialized_file(file_num=3),
             ],
         ]
         with patch(
@@ -152,16 +170,18 @@ class TestCreateFileBatches(unittest.TestCase):
             return_value=fs,
         ):
             batches = create_file_batches(
-                self.requires_normalization_files, num_batches
+                serialized_requires_pre_import_normalization_file_paths=self.requires_normalization_files,
+                target_num_chunking_airflow_tasks=num_batches,
+                max_chunks_per_airflow_task=100,
             )
         self.assertEqual(batches, expected_batches)
 
 
 class TestCreateChunkBatches(unittest.TestCase):
-    """Tests for create_chunk_batches function"""
+    """Tests for divide_file_chunks_into_batches function"""
 
     def test_even_distribution(self) -> None:
-        chunks = [
+        files = [
             RequiresPreImportNormalizationFile(
                 path=GcsfsFilePath.from_absolute_path(f"test/path_{i}.csv"),
                 chunk_boundaries=self._generate_chunk_boundaries(count=4),
@@ -169,14 +189,18 @@ class TestCreateChunkBatches(unittest.TestCase):
             )
             for i in range(5)
         ]
-        batches = create_chunk_batches(chunks, 5)
+        batches = divide_file_chunks_into_batches(
+            all_pre_import_files=files,
+            target_num_normalization_airflow_tasks=5,
+            max_file_chunks_per_airflow_task=500,
+        )
 
         self.assertEqual(len(batches), 5)
         for batch in batches:
             self.assertEqual(len(batch), 4)
 
     def test_split_chunk_between_batches(self) -> None:
-        chunks = [
+        files = [
             RequiresPreImportNormalizationFile(
                 path=GcsfsFilePath.from_absolute_path(f"test/path_{i}.csv"),
                 chunk_boundaries=self._generate_chunk_boundaries(count=3),
@@ -184,7 +208,11 @@ class TestCreateChunkBatches(unittest.TestCase):
             )
             for i in range(5)
         ]
-        batches = create_chunk_batches(chunks, 2)
+        batches = divide_file_chunks_into_batches(
+            all_pre_import_files=files,
+            target_num_normalization_airflow_tasks=2,
+            max_file_chunks_per_airflow_task=500,
+        )
 
         self.assertEqual(len(batches), 2)
         # The first batch should have one more chunk than the second batch
@@ -192,7 +220,7 @@ class TestCreateChunkBatches(unittest.TestCase):
         self.assertEqual(len(batches[0]), len(batches[1]) + 1)
 
     def test_more_batches_than_chunks(self) -> None:
-        chunks = [
+        files = [
             RequiresPreImportNormalizationFile(
                 path=GcsfsFilePath.from_absolute_path(f"test/path_{i}.csv"),
                 chunk_boundaries=self._generate_chunk_boundaries(count=3),
@@ -200,7 +228,11 @@ class TestCreateChunkBatches(unittest.TestCase):
             )
             for i in range(2)
         ]
-        batches = create_chunk_batches(chunks, 10)
+        batches = divide_file_chunks_into_batches(
+            all_pre_import_files=files,
+            target_num_normalization_airflow_tasks=10,
+            max_file_chunks_per_airflow_task=500,
+        )
 
         # Should reduce batch size to the number of chunks
         self.assertEqual(len(batches), 6)

@@ -993,9 +993,14 @@ class RawDataImportDagPreImportNormalizationIntegrationTest(AirflowIntegrationTe
         # small wrapper to pass self.input_requires_normalization as the
         # serialized_requires_pre_import_normalization_file_paths parameter of
         # generate_file_chunking_pod_arguments
-        def _inner(region_code: str, _irrelevant: Any, **kwargs: Any) -> Any:
+        def _inner(region_code: str, **kwargs: Any) -> Any:
             return func(
-                region_code, self.input_requires_normalization, kwargs["num_batches"]
+                region_code=region_code,
+                serialized_requires_pre_import_normalization_file_paths=self.input_requires_normalization,
+                target_num_chunking_airflow_tasks=kwargs[
+                    "target_num_chunking_airflow_tasks"
+                ],
+                max_chunks_per_airflow_task=kwargs["max_chunks_per_airflow_task"],
             )
 
         return _inner

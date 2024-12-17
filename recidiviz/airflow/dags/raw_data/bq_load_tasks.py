@@ -25,6 +25,11 @@ from typing import Dict, List, Tuple
 from airflow.decorators import task
 from airflow.exceptions import AirflowException
 
+from recidiviz.airflow.dags.raw_data.concurrency_utils import (
+    MAX_BQ_APPEND_AIRFLOW_TASKS,
+    MAX_BQ_APPEND_CLIENT_THREADS_PER_TASK,
+    MAX_BQ_LOAD_CLIENT_THREADS_PER_TASK,
+)
 from recidiviz.airflow.dags.raw_data.metadata import (
     APPEND_READY_FILE_BATCHES,
     SKIPPED_FILE_ERRORS,
@@ -68,9 +73,6 @@ from recidiviz.utils.airflow_types import (
     MappedBatchedTaskOutput,
 )
 
-MAX_BQ_LOAD_THREADS = 8  # TODO(#29946) determine reasonable default
-MAX_BQ_APPEND_TASKS = 8  # TODO(#29946) determine reasonable default
-
 
 @task
 def load_and_prep_paths_for_batch(
@@ -110,7 +112,7 @@ def load_and_prep_paths_for_batch(
     )
 
     with concurrent.futures.ThreadPoolExecutor(
-        max_workers=MAX_BQ_LOAD_THREADS
+        max_workers=MAX_BQ_LOAD_CLIENT_THREADS_PER_TASK
     ) as executor:
         future_to_metadata = {
             executor.submit(
@@ -223,7 +225,7 @@ def generate_append_batches(
             ((file_tag, append_ready_files_for_tag), len(append_ready_files_for_tag))
             for file_tag, append_ready_files_for_tag in append_ready_files_by_file_tag.items()
         ],
-        MAX_BQ_APPEND_TASKS,
+        MAX_BQ_APPEND_AIRFLOW_TASKS,
     )
 
     append_ready_files_by_file_tag_batches: List[Dict[str, List[AppendReadyFile]]] = [
@@ -341,7 +343,7 @@ def append_to_raw_data_table_for_batch(
     )
 
     with concurrent.futures.ThreadPoolExecutor(
-        max_workers=MAX_BQ_LOAD_THREADS
+        max_workers=MAX_BQ_APPEND_CLIENT_THREADS_PER_TASK
     ) as executor:
         append_futures = [
             executor.submit(

@@ -20,7 +20,7 @@ import logging
 from types import ModuleType
 from typing import Callable, Iterable, List, Optional, Tuple, TypeVar
 
-from more_itertools import partition
+from more_itertools import distribute, partition
 
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
@@ -78,3 +78,57 @@ def n_evenly_weighted_buckets(
         heapq.heappush(heap, (bucket_size + weight, bucket_index))
 
     return buckets
+
+
+def evenly_weighted_buckets_with_max(
+    items_and_weight: List[Tuple[T, int]],
+    *,
+    target_n: int,
+    max_weight_per_bucket: int,
+) -> List[List[T]]:
+    """Tries to construct |target_n| buckets from |items_and_weight|. If there is more
+    than |max_weight_per_bucket| weight per bucket, will construct an arbitrarily large
+    number of buckets with max |max_weight_per_bucket| or max weight from items_and_weight.
+    """
+    if target_n <= 0:
+        raise ValueError(
+            f"Expected target_n to be greater than or equal to 0; got {target_n}"
+        )
+
+    total_weight = sum(item_and_weight[1] for item_and_weight in items_and_weight)
+    num_buckets = (
+        min(len(items_and_weight), target_n)
+        if target_n * max_weight_per_bucket > total_weight
+        else min(len(items_and_weight), (total_weight // max_weight_per_bucket) + 1)
+    )
+
+    sorted_items = list(sorted(items_and_weight, key=lambda x: x[1], reverse=True))
+    buckets: List[List[T]] = [[] for _ in range(num_buckets)]
+    heap = [(0, bucket_index) for bucket_index in range(num_buckets)]
+    heapq.heapify(heap)
+
+    for item, weight in sorted_items:
+        bucket_size, bucket_index = heapq.heappop(heap)
+        buckets[bucket_index].append(item)
+        heapq.heappush(heap, (bucket_size + weight, bucket_index))
+
+    return buckets
+
+
+def max_number_of_buckets_with_target(
+    items: List[T], max_per_bucket: int, target_number_of_buckets: int
+) -> List[List[T]]:
+    """Tries to construct |target_number_of_buckets| buckets from |items|. If there are
+    more than |max_per_bucket| items per bucket, will construct an arbitrarily large
+    number of buckets with |max_per_bucket| items.
+    """
+    if len(items) == 0:
+        return []
+
+    num_buckets = (
+        min(len(items), target_number_of_buckets)
+        if target_number_of_buckets * max_per_bucket > len(items)
+        else (len(items) // max_per_bucket) + 1
+    )
+
+    return [list(batch) for batch in distribute(num_buckets, items)]

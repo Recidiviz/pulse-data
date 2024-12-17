@@ -23,6 +23,10 @@ from airflow.exceptions import AirflowException
 from airflow.utils.trigger_rule import TriggerRule
 from more_itertools import distribute
 
+from recidiviz.airflow.dags.raw_data.concurrency_utils import (
+    MAX_BQ_LOAD_AIRFLOW_TASKS,
+    MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS,
+)
 from recidiviz.airflow.dags.raw_data.metadata import (
     APPEND_READY_FILE_BATCHES,
     BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS,
@@ -68,9 +72,6 @@ from recidiviz.utils.airflow_types import (
     MappedBatchedTaskOutput,
 )
 from recidiviz.utils.types import assert_type
-
-MAX_BQ_LOAD_JOBS = 8  # TODO(#29946) determine reasonable default
-MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS = 1500
 
 
 @task
@@ -234,7 +235,7 @@ def coalesce_import_ready_files(
     if not all_import_ready_files:
         return []
 
-    num_batches = min(len(all_import_ready_files), MAX_BQ_LOAD_JOBS)
+    num_batches = min(len(all_import_ready_files), MAX_BQ_LOAD_AIRFLOW_TASKS)
 
     return [list(batch) for batch in distribute(num_batches, all_import_ready_files)]
 

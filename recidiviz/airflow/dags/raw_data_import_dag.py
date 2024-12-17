@@ -43,6 +43,14 @@ from recidiviz.airflow.dags.raw_data.bq_load_tasks import (
 from recidiviz.airflow.dags.raw_data.clean_up_tasks import (
     move_successfully_imported_paths_to_storage,
 )
+from recidiviz.airflow.dags.raw_data.concurrency_utils import (
+    CHUNKING_MAX_CONCURRENT_TASKS,
+    DEFAULT_CHUNKING_NUM_TASKS,
+    DEFAULT_NORMALIZATION_NUM_TASKS,
+    MAX_CHUNKS_PER_CHUNKING_TASK,
+    MAX_FILE_CHUNKS_PER_NORMALIZATION_TASK,
+    NORMALIZATION_MAX_CONCURRENT_TASKS,
+)
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
     coalesce_import_ready_files,
     coalesce_results_and_errors,
@@ -131,8 +139,6 @@ from recidiviz.persistence.database.schema_type import SchemaType
 
 # Need a "disable expression-not-assigned" because the chaining ('>>') doesn't need expressions to be assigned
 # pylint: disable=W0106 expression-not-assigned
-
-NUM_BATCHES = 10  # TODO(#29946) determine reasonable default
 
 
 def create_single_state_code_ingest_instance_raw_data_import_branch(
@@ -302,10 +308,14 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             chunking_output = kubernetes_pod_operator_mapped_task_with_output(
                 task_id="raw_data_file_chunking",
                 expand_arguments=generate_file_chunking_pod_arguments(
-                    state_code.value,
-                    files_to_process[REQUIRES_PRE_IMPORT_NORMALIZATION_FILES],
-                    num_batches=NUM_BATCHES,
+                    region_code=state_code.value,
+                    serialized_requires_pre_import_normalization_file_paths=files_to_process[
+                        REQUIRES_PRE_IMPORT_NORMALIZATION_FILES
+                    ],
+                    target_num_chunking_airflow_tasks=DEFAULT_CHUNKING_NUM_TASKS,
+                    max_chunks_per_airflow_task=MAX_CHUNKS_PER_CHUNKING_TASK,
                 ),
+                max_active_tis_per_dag=CHUNKING_MAX_CONCURRENT_TASKS,
             )
 
             filtered_chunks = filter_chunking_results_by_errors(chunking_output)
@@ -315,10 +325,12 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             normalization_output = kubernetes_pod_operator_mapped_task_with_output(
                 task_id="raw_data_chunk_normalization",
                 expand_arguments=generate_chunk_processing_pod_arguments(
-                    state_code.value,
-                    file_chunks=filtered_chunks[CHUNKING_RESULTS],
-                    num_batches=NUM_BATCHES,
+                    region_code=state_code.value,
+                    serialized_pre_import_files=filtered_chunks[CHUNKING_RESULTS],
+                    target_num_normalization_airflow_tasks=DEFAULT_NORMALIZATION_NUM_TASKS,
+                    max_file_chunks_per_airflow_task=MAX_FILE_CHUNKS_PER_NORMALIZATION_TASK,
                 ),
+                max_active_tis_per_dag=NORMALIZATION_MAX_CONCURRENT_TASKS,
             )
 
             pre_import_normalization_result = regroup_and_verify_file_chunks(

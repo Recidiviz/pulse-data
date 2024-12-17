@@ -73,6 +73,7 @@ def kubernetes_pod_operator_mapped_task_with_output(
     trigger_rule: Optional[TriggerRule] = TriggerRule.ALL_SUCCESS,
     retries: int = 0,
     cloud_sql_connections: Optional[List[SchemaType]] = None,
+    max_active_tis_per_dag: int | None = None,
 ) -> List[str]:
     """Task group that wraps a mapped KubernetesPodOperator task, where the KPO task output is pushed to GCS, then
     read from GCS and pushed to XCom by an Airflow native task so downstream tasks can access the output as normal.
@@ -87,6 +88,7 @@ def kubernetes_pod_operator_mapped_task_with_output(
         trigger_rule: Optional[TriggerRule] = TriggerRule.ALL_SUCCESS,
         retries: int = 0,
         cloud_sql_connections: Optional[List[SchemaType]] = None,
+        max_active_tis_per_dag: int | None = None,
     ) -> List[str]:
         kpo_task = build_mapped_kubernetes_pod_task(
             task_id=task_id,
@@ -95,6 +97,7 @@ def kubernetes_pod_operator_mapped_task_with_output(
             trigger_rule=trigger_rule,
             retries=retries,
             cloud_sql_connections=cloud_sql_connections,
+            max_active_tis_per_dag=max_active_tis_per_dag,
         )
         task_output = push_kpo_mapped_task_output_from_gcs_to_xcom(
             task_id=kpo_task.task_id
@@ -110,6 +113,7 @@ def kubernetes_pod_operator_mapped_task_with_output(
         trigger_rule=trigger_rule,
         retries=retries,
         cloud_sql_connections=cloud_sql_connections,
+        max_active_tis_per_dag=max_active_tis_per_dag,
     )
 
 
