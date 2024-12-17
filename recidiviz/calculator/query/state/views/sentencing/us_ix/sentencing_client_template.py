@@ -38,6 +38,7 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
         GROUP BY OffenderId
     )
     SELECT DISTINCT
+        "US_IX" AS state_code,
         psi.OffenderId AS external_id,
         COALESCE(
             person.full_name,
@@ -50,7 +51,6 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
         person.birthdate AS birth_date,
         person.gender,
         UPPER(loc.LocationName) AS county,
-        "US_IX" AS state_code,
         CONCAT('[', case_ids,']') AS case_ids,
         JSON_VALUE(lmm.location_metadata, '$.supervision_district_id') AS district
     FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi

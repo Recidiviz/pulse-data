@@ -23,6 +23,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_staff_template import (
     US_IX_SENTENCING_STAFF_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.sentencing.us_nd.sentencing_staff_template import (
+    US_ND_SENTENCING_STAFF_TEMPLATE,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -39,13 +42,14 @@ SENTENCING_STAFF_RECORD_DESCRIPTION = """
 SENTENCING_STAFF_RECORD_QUERY_TEMPLATE = f"""
    WITH 
         ix_staff AS ({US_IX_SENTENCING_STAFF_TEMPLATE}), 
-
+        nd_staff AS ({US_ND_SENTENCING_STAFF_TEMPLATE}), 
         -- full_query serves as a template for when PSI expands to other states and we union other views
         full_query AS 
         (
-            SELECT 
-                ix.*
-            FROM ix_staff ix
+            SELECT * FROM ix_staff
+            -- TODO(#35882): Add back in ND staff once external ids have been fixed
+            -- UNION ALL
+            -- SELECT * FROM nd_staff
         ),
         -- add pseudonymized Ids to all staff records
         full_query_with_pseudo AS
@@ -71,6 +75,9 @@ SENTENCING_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
     columns=[

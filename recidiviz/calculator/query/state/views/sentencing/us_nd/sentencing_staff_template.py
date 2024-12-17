@@ -21,27 +21,38 @@ ND's PSI data:
 - External ID
 - Full name
 - Email
-- Case IDs (as court case numbers)
+- Case IDs
 """
 
 US_ND_SENTENCING_STAFF_TEMPLATE = """
-SELECT
-    DISTINCT AGENT as external_id,
-    s.full_name,
-    s.email,
-    COURT1,
-    COURT2,
-    COURT3
-FROM
+WITH
+  psi AS (
+  SELECT
+    -- TODO(#35882): Use real external ids once available
+    UPPER(NAME) AS external_id,
+    STRING_AGG(CONCAT('"',REPLACE(RecId, ',', ''),'"'), ','
+    ORDER BY
+      LAST_UPDATE) AS case_ids
+  FROM
     `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_psi_latest`
+  WHERE NAME IS NOT NULL
+  GROUP BY
+    UPPER(NAME))
+SELECT
+  "US_ND" AS state_code,
+  psi.external_id,
+  s.full_name,
+  s.email,
+  CONCAT('[', case_ids,']') AS case_ids,
+FROM
+  psi
 LEFT JOIN
-    `{project_id}.{normalized_state_dataset}.state_staff_external_id` sei
+  `{project_id}.{normalized_state_dataset}.state_staff_external_id` sei
 ON
-    (AGENT = sei.external_id
+  (psi.external_id = sei.external_id
     AND id_type = 'US_ND_DOCSTARS_OFFICER')
 LEFT JOIN
   `{project_id}.{normalized_state_dataset}.state_staff` s
 USING
-    (staff_id)
-
+  (staff_id)
 """

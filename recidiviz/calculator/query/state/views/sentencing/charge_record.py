@@ -22,6 +22,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_charge_template import (
     US_IX_SENTENCING_CHARGE_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.sentencing.us_nd.sentencing_charge_template import (
+    US_ND_SENTENCING_CHARGE_TEMPLATE,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -35,10 +38,14 @@ SENTENCING_CHARGE_RECORD_QUERY_TEMPLATE = f"""
 WITH 
     ix_charges AS 
         ({US_IX_SENTENCING_CHARGE_TEMPLATE}), 
+    nd_charges AS 
+        ({US_ND_SENTENCING_CHARGE_TEMPLATE}),
     -- full_query serves as a template for when Sentencing expands to other states and we union other views
     full_query AS 
     (
         SELECT * FROM ix_charges
+        UNION ALL
+        SELECT * FROM nd_charges
     ) 
     SELECT
         {{columns}}

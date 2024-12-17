@@ -16,7 +16,7 @@
 # =============================================================================
 """View logic to prepare US_ND Sentencing charge data for PSI tools
 
-This view is identical to that used in IX. It runs, but I have not validated its results."""
+This view is identical to that used in IX."""
 
 US_ND_SENTENCING_CHARGE_TEMPLATE = """
     SELECT
@@ -41,9 +41,9 @@ US_ND_SENTENCING_CHARGE_TEMPLATE = """
         TRUE,
         FALSE) AS is_sex_offense
     FROM
-      `{project_id}.normalized_state.state_charge`
+      `{project_id}.normalized_state.state_charge_v2`
     WHERE
-    state_code = "US_ND"
+    state_code = "US_ND" AND description is NOT NULL
     GROUP BY
     description
 """

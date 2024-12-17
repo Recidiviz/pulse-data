@@ -41,7 +41,7 @@ US_IX_SENTENCING_CHARGE_TEMPLATE = """
     FROM
       `{project_id}.normalized_state.state_charge`
     WHERE
-    state_code = "US_IX"
+    state_code = "US_IX" AND description is NOT NULL
     GROUP BY
     description
 """

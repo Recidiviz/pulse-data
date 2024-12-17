@@ -160,6 +160,8 @@ products:
     states:
       - state_code: US_IX
         environment: production
+      - state_code: US_ND
+        environment: staging
   - name: Vertex Search Case Notes
     description: Case notes that back Vertex AI Search - this export is needed because case notes need to be in text files in order for search snippets to be supported
     exports:

@@ -26,7 +26,6 @@ WITH
         AssignedToUserId AS staff_id,
         DueDate AS due_date,
         CompletedDate AS completion_date,
-        SentenceDate AS sentence_date,
         AssignedDate AS assigned_date,
         countyLoc.LocationName AS county,
         PSIReportId AS external_id,
@@ -127,6 +126,15 @@ WITH
     LEFT JOIN most_recent_score_cte mrs
         ON mrs.person_id = cirt.person_id)
     SELECT
-        *
+        state_code,
+        external_id,
+        client_id,
+        staff_id,
+        due_date,
+        lsir_score,
+        lsir_level,
+        report_type,
+        county,
+        district
     FROM case_info_with_report_type_and_assessment
 """

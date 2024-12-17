@@ -16,45 +16,45 @@
 # =============================================================================
 """View logic to prepare US_ND Sentencing case data for PSI tools.
 
-See notes in the client record template about connecting LSIR scores to cases.
-
-There are two main sources for translating CST (Common Statute Table, ND-specific statues)
-and NCIC (National Crime Information Center) codes into their descriptions. 
-
-We receive a raw data file directly from ND that maps NCIC codes to their descriptions. 
-ND believes this file translates CST codes, but none of the codes included are CST codes. 
-I joined that reference file to one offense code in this query for an example.
-
-We have also done a good bit of work to map between NCIC / UCCS / NIBRS uniform crime codes
-so that we can standardize labels for them. See recidiviz/common/ncic.py for details. 
-The accuracy of the ncic_to_nibrs_to_uccs source table for that query is unknown.
+It's possible an investigation has multiple court cases associated with it, and therefore multiple counties of sentencing. In reality, this rarely happens, so we just pick the first non-null county.
 """
 
 US_ND_SENTENCING_CASE_TEMPLATE = """
+WITH
+ offense AS
+ (SELECT
+    COURT_NUMBER,
+    COUNTY
+  FROM
+    `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offensestable_latest`
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY COURT_NUMBER ORDER BY IF(COUNTY IS NULL, 1, 0), RecDate DESC) = 1)
 SELECT
-    COURT1,
-    COURT2,
-    COURT3, 
-    AGENT AS staff_id,
-    REPLACE(SID,',','') AS client_id,
-    DATE_DUE as due_date,
-    DATE_ORD AS assigned_date,
-    DATE_COM AS completion_date,
-    docstars_psi.CST_1, 
-    docstars_psi.CST_2,
-    docstars_psi.CST_3,
-    docstars_psi.CST_4,
-    docstars_psi.CST_5,
-    docstars_psi.OFF_1 AS NCIC_1, 
-    ncic.DESCRIPTION AS NCIC_1_DESCRIPTION,
-    docstars_psi.OFF_2 AS NCIC_2,
-    docstars_psi.OFF_3 AS NCIC_3,
-    docstars_psi.OFF_4 AS NCIC_4,
-    docstars_psi.OFF_5 AS NCIC_5,
+  "US_ND" AS state_code,
+  REPLACE(psi.RecID,',','') AS external_id,
+  REPLACE(psi.SID,',','') AS client_id,
+  -- TODO(#35882): Use real external ids once available
+  UPPER(NAME) AS staff_id,
+  DATE_DUE AS due_date,
+  null as lsir_score,
+  CAST(null AS STRING) as lsir_level,
+  CAST(null AS STRING) as report_type,
+  COALESCE(offense1.COUNTY, offense2.COUNTY, offense3.COUNTY) AS county,
+  CAST(null AS STRING) as district,
 FROM
-    `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_psi_latest`
-LEFT JOIN 
-    `{project_id}.{us_nd_raw_data_up_to_date_dataset}.recidiviz_docstars_cst_ncic_code_latest` ncic
-ON 
-    (OFF_1 = CODE)
+  `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_psi_latest` psi
+LEFT JOIN
+  offense as offense1
+ON
+  (COURT1 = offense1.COURT_NUMBER)
+LEFT JOIN
+  offense as offense2
+ON
+  (COURT2 = offense2.COURT_NUMBER)
+LEFT JOIN
+  offense as offense3
+ON
+  (COURT3 = offense3.COURT_NUMBER)
+WHERE
+  -- Make sure that case is either not completed or completed within the last three months, and it has psi staff assigned to it (this should be true for reports ordered in the past ~7 years)
+  (DATE(psi.DATE_COM) > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH) OR psi.DATE_COM IS NULL) AND NAME IS NOT NULL
 """

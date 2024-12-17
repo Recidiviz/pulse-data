@@ -27,10 +27,10 @@ WITH
         GROUP BY AssignedToUserId
     )
     SELECT DISTINCT
+        "US_IX" AS state_code,
         psi.AssignedToUserId as external_id,
         staff.full_name,
         staff.email,
-        "US_IX" AS state_code,
         CONCAT('[', case_ids,']') AS case_ids
     FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_staff_external_id` id 

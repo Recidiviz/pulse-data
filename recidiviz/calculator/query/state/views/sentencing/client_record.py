@@ -23,6 +23,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_client_template import (
     US_IX_SENTENCING_CLIENT_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.sentencing.us_nd.sentencing_client_template import (
+    US_ND_SENTENCING_CLIENT_TEMPLATE,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -39,13 +42,13 @@ SENTENCING_CLIENT_RECORD_DESCRIPTION = """
 SENTENCING_CLIENT_RECORD_QUERY_TEMPLATE = f"""
     WITH 
         ix_clients AS ({US_IX_SENTENCING_CLIENT_TEMPLATE}), 
-
+        nd_clients AS ({US_ND_SENTENCING_CLIENT_TEMPLATE}), 
         -- full_query serves as a template for when PSI expands to other states and we union other views
         full_query AS 
         (
-            SELECT 
-                ix.*
-            FROM ix_clients ix
+            SELECT * FROM ix_clients
+            UNION ALL
+            SELECT * FROM nd_clients
         ),
         -- add pseudonymized Ids to all client records
         full_query_with_pseudo AS
@@ -57,7 +60,6 @@ SENTENCING_CLIENT_RECORD_QUERY_TEMPLATE = f"""
                 {get_pseudonymized_id_query_str("IF(state_code = 'US_IX', 'US_ID', state_code) || external_id")} AS pseudonymized_id,
             FROM full_query
         )
-         
     SELECT
         {{columns}}
     FROM full_query_with_pseudo
@@ -71,6 +73,9 @@ SENTENCING_CLIENT_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
     columns=[

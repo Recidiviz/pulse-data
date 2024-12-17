@@ -22,6 +22,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_case_template import (
     US_IX_SENTENCING_CASE_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.sentencing.us_nd.sentencing_case_template import (
+    US_ND_SENTENCING_CASE_TEMPLATE,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -39,10 +42,14 @@ SENTENCING_CASE_RECORD_QUERY_TEMPLATE = f"""
 WITH 
     ix_cases AS 
         ({US_IX_SENTENCING_CASE_TEMPLATE}), 
+    nd_cases AS 
+        ({US_ND_SENTENCING_CASE_TEMPLATE}), 
     -- full_query serves as a template for when Sentencing expands to other states and we union other views
     full_query AS 
     (
         SELECT * FROM ix_cases
+        UNION ALL
+        SELECT * FROM nd_cases
     ) 
     SELECT
         {{columns}}
@@ -58,15 +65,15 @@ SENTENCING_CASE_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
     ),
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    ),
     should_materialize=True,
     columns=[
         "state_code",
         "staff_id",
         "client_id",
         "due_date",
-        "completion_date",
-        "sentence_date",
-        "assigned_date",
         "county",
         "lsir_score",
         "lsir_level",
