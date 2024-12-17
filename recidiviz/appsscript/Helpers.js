@@ -138,11 +138,11 @@ function createColumnChart(
     .setTitleTextStyle(Charts.newTextStyle().setFontSize(28).build())
     .setXAxisTitleTextStyle(Charts.newTextStyle().setFontSize(20))
     .setYAxisTitleTextStyle(Charts.newTextStyle().setFontSize(20))
-    .setXAxisTextStyle(Charts.newTextStyle().setFontSize(10))
+    .setXAxisTextStyle(Charts.newTextStyle().setFontSize(12))
     .setYAxisTextStyle(Charts.newTextStyle().setFontSize(20))
     .setLegendTextStyle(Charts.newTextStyle().setFontSize(20))
     .setOption("chartArea.top", 50)
-    .setOption("chartArea.width", "80%")
+    .setOption("chartArea.width", "65%")
     .setColors(setColors);
 
   if (title) {
