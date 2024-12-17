@@ -97,6 +97,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
     ),
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_AZ,
+        opportunity_type="usAzTransferToAdministrativeSupervision",
+        experiment_id="US_AZ_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_WORKFLOWS",
+        opportunity_record_view_name="us_az_transfer_to_administrative_supervision_record_materialized",
+        task_completion_event=TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
+        source_filename="us_az_transfer_to_administrative_supervision_record.json",
+        export_collection_name="US_AZ-TransferToAdminSupervision",
+        opportunity_type_path_str="AdminSupervision",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_AZ,
         opportunity_type="usAzReleaseToDTP",
         experiment_id="US_AZ_RELEASE_TO_DTP_WORKFLOWS",
         opportunity_record_view_name="us_az_approaching_acis_or_recidiviz_dtp_request_record_materialized",
