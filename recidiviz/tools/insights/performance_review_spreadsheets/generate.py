@@ -26,7 +26,7 @@ This will generate spreadsheets in the root directory of pulse-data.
 import logging
 import os
 from datetime import date
-from enum import Enum
+from enum import Enum, auto
 from random import random
 
 from dateutil.relativedelta import relativedelta
@@ -48,15 +48,30 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 class RowHeadingEnum(Enum):
-    AVG_DAILY_CASELOAD = "# Average Daily Caseload"
-    TIMELY_RISK_ASSESSMENTS = "Timely Risk Assessments"
-    TIMELY_F2F_CONTACTS = "Timely F2F Contacts"
-    SUPERVISION_LEVEL_MISMATCH = "Supervision & Risk Level Mismatch"
+    AVG_DAILY_CASELOAD = auto()
+    TIMELY_RISK_ASSESSMENTS = auto()
+    TIMELY_F2F_CONTACTS = auto()
+    SUPERVISION_LEVEL_MISMATCH = auto()
+    EARLY_DISCHARGE_GRANTS = auto()
+    LSU_GRANTS = auto()
+    SLD_GRANTS = auto()
+    FT_DISCHARGE_GRANTS = auto()
 
 
 class ColumnHeadingEnum(Enum):
     YEARLY = "All of 2024"
 
+
+_ROW_HEADING_LABELS = {
+    RowHeadingEnum.AVG_DAILY_CASELOAD: "# Average Daily Caseload",
+    RowHeadingEnum.TIMELY_RISK_ASSESSMENTS: "Timely Risk Assessments",
+    RowHeadingEnum.TIMELY_F2F_CONTACTS: "Timely F2F Contacts",
+    RowHeadingEnum.SUPERVISION_LEVEL_MISMATCH: "Supervision & Risk Level Mismatch",
+    RowHeadingEnum.EARLY_DISCHARGE_GRANTS: "Grants during time period",
+    RowHeadingEnum.LSU_GRANTS: "Grants during time period",
+    RowHeadingEnum.SLD_GRANTS: "Grants during time period",
+    RowHeadingEnum.FT_DISCHARGE_GRANTS: "Grants during time period",
+}
 
 _ROW_HEADINGS = [
     "Usage",
@@ -65,7 +80,7 @@ _ROW_HEADINGS = [
     "Caseload Type",
     None,
     "Outcomes Metrics",
-    RowHeadingEnum.AVG_DAILY_CASELOAD.value,
+    RowHeadingEnum.AVG_DAILY_CASELOAD,
     "# Absconsions",
     "Months flagged as having a high absconsion rate",
     "# Incarcerations",
@@ -75,7 +90,7 @@ _ROW_HEADINGS = [
     "Eligible & Viewed as of end of time period",
     "Eligible & Not Viewed as of end of time period",
     "Overridden (Marked Ineligible) as of end of time period",
-    "Grants during time period",
+    RowHeadingEnum.EARLY_DISCHARGE_GRANTS,
     "Monthly grant rate",
     'Most often used "Ineligible Reason"',
     None,
@@ -83,7 +98,7 @@ _ROW_HEADINGS = [
     "Eligible & Viewed as of end of time period",
     "Eligible & Not Viewed as of end of time period",
     "Overridden (Marked Ineligible) as of end of time period",
-    "Grants during time period",
+    RowHeadingEnum.LSU_GRANTS,
     "2024 average of monthly grant rate",
     'Most often used "Ineligible Reason"',
     None,
@@ -91,7 +106,7 @@ _ROW_HEADINGS = [
     "Eligible & Viewed as of end of time period",
     "Eligible & Not Viewed as of end of time period",
     "Overridden (Marked Ineligible) as of end of time period",
-    "Grants during time period",
+    RowHeadingEnum.SLD_GRANTS,
     "2024 average of monthly grant rate",
     'Most often used "Ineligible Reason"',
     None,
@@ -99,14 +114,14 @@ _ROW_HEADINGS = [
     "Eligible & Viewed as of end of time period",
     "Eligible & Not Viewed as of end of time period",
     "Overridden (Marked Ineligible) as of end of time period",
-    "Grants during time period",
+    RowHeadingEnum.FT_DISCHARGE_GRANTS,
     "Monthly grant rate",
     'Most often used "Ineligible Reason"',
     None,
     "Operations Metrics",
-    RowHeadingEnum.TIMELY_RISK_ASSESSMENTS.value,
-    RowHeadingEnum.TIMELY_F2F_CONTACTS.value,
-    RowHeadingEnum.SUPERVISION_LEVEL_MISMATCH.value,
+    RowHeadingEnum.TIMELY_RISK_ASSESSMENTS,
+    RowHeadingEnum.TIMELY_F2F_CONTACTS,
+    RowHeadingEnum.SUPERVISION_LEVEL_MISMATCH,
 ]
 
 _COLUMN_DATE_FORMAT = "%b %Y"
@@ -141,7 +156,10 @@ def create_headers(sheet: Worksheet) -> None:
     the spreadsheet, because it just appends full rows."""
     data = [
         _COLUMN_HEADINGS,
-        *[[row] for row in _ROW_HEADINGS],
+        *[
+            [_ROW_HEADING_LABELS[row] if isinstance(row, RowHeadingEnum) else row]
+            for row in _ROW_HEADINGS
+        ],
     ]
     for row in data:
         sheet.append(row)
@@ -155,8 +173,7 @@ def create_headers(sheet: Worksheet) -> None:
 
 def get_row_index(heading: RowHeadingEnum) -> int:
     return (
-        _ROW_HEADINGS.index(heading.value)
-        + 2  # 1-indexed + additional 1 for empty first row
+        _ROW_HEADINGS.index(heading) + 2  # 1-indexed + additional 1 for empty first row
     )
 
 
@@ -189,30 +206,83 @@ def write_random_data(sheet: Worksheet) -> None:
             sheet[f"{chr(col)}{row}"] = random()
 
 
+def try_set_metric_cell(
+    sheet: Worksheet, metric_value: int | float | None, col_idx: str, row_idx: int
+) -> None:
+    if metric_value is not None:
+        cell = sheet[f"{col_idx}{row_idx}"]
+        cell.value = metric_value
+        cell.number_format = FORMAT_NUMBER
+
+
 def write_metrics(
     sheet: Worksheet,
     officer_id: str,
     officer_aggregated_metrics: OfficerAggregatedMetrics,
 ) -> None:
+    """Write aggregated metrics to the appropriate cells in the sheet"""
     avg_daily_caseload_row = get_row_index(RowHeadingEnum.AVG_DAILY_CASELOAD)
+    early_discharge_row = get_row_index(RowHeadingEnum.EARLY_DISCHARGE_GRANTS)
+    lsu_row = get_row_index(RowHeadingEnum.LSU_GRANTS)
+    sld_row = get_row_index(RowHeadingEnum.SLD_GRANTS)
+    ft_discharge_row = get_row_index(RowHeadingEnum.FT_DISCHARGE_GRANTS)
+
     for metric in officer_aggregated_metrics.monthly_data[officer_id]:
         parsed_date = (metric.end_date_exclusive - relativedelta(days=1)).strftime(
             _COLUMN_DATE_FORMAT
         )
         col_idx = get_column_index(parsed_date)
-        if metric.avg_daily_population:
-            cell = sheet[f"{col_idx}{avg_daily_caseload_row}"]
-            cell.value = metric.avg_daily_population
-            cell.number_format = FORMAT_NUMBER
+        try_set_metric_cell(
+            sheet, metric.avg_daily_population, col_idx, avg_daily_caseload_row
+        )
+        try_set_metric_cell(
+            sheet, metric.task_completions_early_discharge, col_idx, early_discharge_row
+        )
+        try_set_metric_cell(
+            sheet,
+            metric.task_completions_transfer_to_limited_supervision,
+            col_idx,
+            lsu_row,
+        )
+        try_set_metric_cell(
+            sheet, metric.task_completions_supervision_level_downgrade, col_idx, sld_row
+        )
+        try_set_metric_cell(
+            sheet,
+            metric.task_completions_full_term_discharge,
+            col_idx,
+            ft_discharge_row,
+        )
 
-    yearly_avg_daily_population = officer_aggregated_metrics.yearly_data[
-        officer_id
-    ].avg_daily_population
-    if yearly_avg_daily_population:
-        col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
-        cell = sheet[f"{col_idx}{avg_daily_caseload_row}"]
-        cell.value = yearly_avg_daily_population
-        cell.number_format = FORMAT_NUMBER
+    yearly_col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
+    yearly_data = officer_aggregated_metrics.yearly_data[officer_id]
+    try_set_metric_cell(
+        sheet, yearly_data.avg_daily_population, yearly_col_idx, avg_daily_caseload_row
+    )
+    try_set_metric_cell(
+        sheet,
+        yearly_data.task_completions_early_discharge,
+        yearly_col_idx,
+        early_discharge_row,
+    )
+    try_set_metric_cell(
+        sheet,
+        yearly_data.task_completions_transfer_to_limited_supervision,
+        yearly_col_idx,
+        lsu_row,
+    )
+    try_set_metric_cell(
+        sheet,
+        yearly_data.task_completions_supervision_level_downgrade,
+        yearly_col_idx,
+        sld_row,
+    )
+    try_set_metric_cell(
+        sheet,
+        yearly_data.task_completions_full_term_discharge,
+        yearly_col_idx,
+        ft_discharge_row,
+    )
 
 
 def generate_sheets() -> None:
