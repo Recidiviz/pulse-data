@@ -13,6 +13,72 @@ from snapshottest import GenericRepr, Snapshot
 snapshots = Snapshot()
 
 snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier get_first_of_month_date_officer_vitals_metric"
+] = [
+    GenericRepr(
+        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash8', metric_value=99.9, metric_30d_delta=3.0)])"
+    ),
+    GenericRepr("VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[])"),
+]
+
+snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier get_missing_latest_date_and_value_vitals_metric"
+] = [
+    GenericRepr("VitalsMetric(metric_id='timely_contact', vitals_metrics=[])"),
+    GenericRepr("VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[])"),
+]
+
+snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier get_missing_latest_metric_value_vitals_metrics"
+] = [
+    GenericRepr("VitalsMetric(metric_id='timely_contact', vitals_metrics=[])"),
+    GenericRepr("VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[])"),
+]
+
+snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier get_missing_previous_date_vitals_metric"
+] = [
+    GenericRepr(
+        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash5', metric_value=90.0, metric_30d_delta=0.0)])"
+    ),
+    GenericRepr("VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[])"),
+]
+
+snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier get_missing_previous_metric_value_vitals_metrics"
+] = [
+    GenericRepr(
+        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash4', metric_value=76.0, metric_30d_delta=0.0)])"
+    ),
+    GenericRepr("VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[])"),
+]
+
+snapshots["TestOutliersQuerier.TestOutliersQuerier get_officer_vitals_metrics"] = [
+    GenericRepr(
+        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=80.0, metric_30d_delta=-17.0)])"
+    ),
+    GenericRepr(
+        "VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=94.0, metric_30d_delta=0.0)])"
+    ),
+]
+
+snapshots["TestOutliersQuerier.TestOutliersQuerier get_supervisor_vitals_metrics"] = [
+    GenericRepr(
+        "VitalsMetric(metric_id='timely_contact', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash1', metric_value=95.0, metric_30d_delta=-3.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=80.0, metric_30d_delta=-17.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash5', metric_value=90.0, metric_30d_delta=0.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash8', metric_value=99.9, metric_30d_delta=3.0)])"
+    ),
+    GenericRepr(
+        "VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash1', metric_value=100.0, metric_30d_delta=0.0), SupervisionOfficerVitalsEntity(officer_pseudonymized_id='officerhash2', metric_value=94.0, metric_30d_delta=0.0)])"
+    ),
+]
+
+snapshots[
+    "TestOutliersQuerier.TestOutliersQuerier get_supervisor_with_no_officers_vitals_metrics"
+] = [
+    GenericRepr("VitalsMetric(metric_id='timely_contact', vitals_metrics=[])"),
+    GenericRepr("VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[])"),
+]
+
+snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_action_strategy_surfaced_events_for_supervisor"
 ] = [
     GenericRepr(
@@ -174,6 +240,11 @@ snapshots[
 ] = GenericRepr(
     "ActionStrategySurfacedEvent(state_code='US_PA', user_pseudonymized_id='hash1', officer_pseudonymized_id=None, action_strategy='ACTION_STRATEGY_60_PERC_OUTLIERS', timestamp=datetime.date(2024, 6, 1))"
 )
+
+snapshots["TestOutliersQuerier.TestOutliersQuerier test_get_no_vitals_metrics"] = [
+    GenericRepr("VitalsMetric(metric_id='timely_contact', vitals_metrics=[])"),
+    GenericRepr("VitalsMetric(metric_id='timely_risk_assessment', vitals_metrics=[])"),
+]
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_officer_level_report_data_by_supervisor"

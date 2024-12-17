@@ -18,6 +18,7 @@
 from datetime import date, datetime
 from unittest.mock import MagicMock, call, patch
 
+import freezegun
 import pytest
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.exc import IntegrityError, NoResultFound
@@ -34,6 +35,8 @@ from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
     INCARCERATION_STARTS_AND_INFERRED,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+    TIMELY_CONTACT,
+    TIMELY_RISK_ASSESSMENT,
     VIOLATIONS,
 )
 from recidiviz.outliers.querier.querier import OutliersQuerier
@@ -46,6 +49,7 @@ from recidiviz.outliers.types import (
     OutliersClientEventConfig,
     OutliersMetricConfig,
     UserInfo,
+    VitalsMetric,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
     ActionStrategySurfacedEvents,
@@ -1183,3 +1187,200 @@ class TestOutliersQuerier(InsightsDbTestCase):
             StateCode.US_PA
         ).get_supervision_officer_from_pseudonymized_id(pseudonymized_id="doesnotexist")
         self.assertIsNone(actual)
+
+    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_officer_vitals_metrics(self, mock_config: MagicMock) -> None:
+        pseudo_id = "officerhash2"
+        state_code = StateCode.US_PA
+        querier = OutliersQuerier(state_code)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result = querier.get_vitals_metrics_for_supervision_officer(pseudo_id)
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_officer_vitals_metrics"
+        )
+
+    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_supervisor_vitals_metrics(self, mock_config: MagicMock) -> None:
+        supervisor_pseudonymized_id = "hash1"
+        state_code = StateCode.US_PA
+        querier = OutliersQuerier(state_code)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result: list[
+            VitalsMetric
+        ] = querier.get_vitals_metrics_for_supervision_officer_supervisor(
+            supervisor_pseudonymized_id=supervisor_pseudonymized_id
+        )
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_supervisor_vitals_metrics"
+        )
+
+    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_supervisor_with_no_officers_vitals_metrics(
+        self, mock_config: MagicMock
+    ) -> None:
+        supervisor_pseudonymized_id = "hash5"
+        state_code = StateCode.US_PA
+        querier = OutliersQuerier(state_code)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result: list[
+            VitalsMetric
+        ] = querier.get_vitals_metrics_for_supervision_officer_supervisor(
+            supervisor_pseudonymized_id=supervisor_pseudonymized_id
+        )
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_supervisor_with_no_officers_vitals_metrics"
+        )
+
+    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_missing_latest_metric_value_vitals_metrics(
+        self, mock_config: MagicMock
+    ) -> None:
+        pseudo_id = "officerhash3"
+        state_code = StateCode.US_PA
+        querier = OutliersQuerier(state_code)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result = querier.get_vitals_metrics_for_supervision_officer(pseudo_id)
+
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_missing_latest_metric_value_vitals_metrics"
+        )
+
+    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_missing_previous_metric_value_vitals_metrics(
+        self, mock_config: MagicMock
+    ) -> None:
+        pseudo_id = "officerhash4"
+        state_code = StateCode.US_PA
+        querier = OutliersQuerier(state_code)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result = querier.get_vitals_metrics_for_supervision_officer(pseudo_id)
+
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_missing_previous_metric_value_vitals_metrics"
+        )
+
+    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_missing_previous_date_vitals_metric(
+        self, mock_config: MagicMock
+    ) -> None:
+        pseudo_id = "officerhash5"
+        state_code = StateCode.US_PA
+        querier = OutliersQuerier(state_code)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result = querier.get_vitals_metrics_for_supervision_officer(pseudo_id)
+
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_missing_previous_date_vitals_metric"
+        )
+
+    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_no_vitals_metrics(self, mock_config: MagicMock) -> None:
+        pseudo_id = "officerhash6"
+        state_code = StateCode.US_PA
+        querier = OutliersQuerier(state_code)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result = querier.get_vitals_metrics_for_supervision_officer(pseudo_id)
+
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="test_get_no_vitals_metrics"
+        )
+
+    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_missing_latest_date_and_value_vitals_metric(
+        self, mock_config: MagicMock
+    ) -> None:
+        pseudo_id = "officerhash7"
+        state_code = StateCode.US_PA
+        querier = OutliersQuerier(state_code)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result = querier.get_vitals_metrics_for_supervision_officer(pseudo_id)
+
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_missing_latest_date_and_value_vitals_metric"
+        )
+
+    @freezegun.freeze_time(datetime(2024, 12, 1, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_first_of_month_date_officer_vitals_metric(
+        self, mock_config: MagicMock
+    ) -> None:
+        pseudo_id = "officerhash8"
+        state_code = StateCode.US_PA
+        querier = OutliersQuerier(state_code)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result = querier.get_vitals_metrics_for_supervision_officer(pseudo_id)
+
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_first_of_month_date_officer_vitals_metric"
+        )

@@ -508,6 +508,48 @@ class SupervisionOfficerOutcomes:
         return cattrs.unstructure(self)
 
 
+@attr.s(auto_attribs=True, frozen=True, order=True)
+class SupervisionOfficerVitalsEntity:
+    """
+    Represents the vitals metrics for an officer for a single metric_id
+    """
+
+    officer_pseudonymized_id: str
+    metric_value: float
+    metric_30d_delta: float
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.s(auto_attribs=True, frozen=True, order=True)
+class VitalsMetric:
+    """Contains the vitals metrics for a metric_id for one or more officers."""
+
+    metric_id: str
+    vitals_metrics: List[SupervisionOfficerVitalsEntity] = attr.ib(factory=list)
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+    def add_officer_vitals_entity(
+        self,
+        officer_pseudonymized_id: str,
+        metric_value: float,
+        metric_30d_delta: int,
+    ) -> None:
+        """Adds a SupervisionOfficerVitalsEntity to the vitals_metrics list using provided parameters."""
+        # Create a new SupervisionOfficerVitalsEntity instance
+        officer_vitals = SupervisionOfficerVitalsEntity(
+            officer_pseudonymized_id=officer_pseudonymized_id,
+            metric_value=metric_value,
+            metric_30d_delta=metric_30d_delta,
+        )
+
+        # Directly append to the existing list
+        self.vitals_metrics.append(officer_vitals)
+
+
 @attr.s
 class SupervisionOfficerSupervisorEntity:
     # The full name of the supervisor

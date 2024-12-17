@@ -59,6 +59,7 @@ from recidiviz.outliers.types import (
     TargetStatus,
     TargetStatusStrategy,
     UserInfo,
+    VitalsMetric,
 )
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
     StateSegmentedDatabaseManager,
@@ -1068,6 +1069,150 @@ class OutliersQuerier:
             )
 
             return supervisor
+
+    def _init_vitals_metrics_dict_for_query(self) -> Dict[str, VitalsMetric]:
+        return {
+            metric.metric_id: VitalsMetric(metric_id=metric.metric_id)
+            for metric in self.get_outliers_backend_config().vitals_metrics
+        }
+
+    def _get_vitals_metrics_from_officer_pseudonymized_ids(
+        self, supervision_officer_pseudonymized_ids: List[str]
+    ) -> List[VitalsMetric]:
+        """
+        Retrieve vitals metrics for officers by officer or supervisor ID.
+
+        :param officer_id: List[str] pseudonymized ids for the officers vitals metrics will be retrieved for.
+        :return: List of vitals metrics entities
+        """
+
+        # FETCHING METRIC IDS
+
+        # Extract metric IDs from configuration
+
+        vitals_metrics_by_metric_id = self._init_vitals_metrics_dict_for_query()
+
+        with self.insights_database_session() as session:
+
+            TODAY = datetime.today().date()
+            CURRENT_PERIOD_START_DATE = TODAY - relativedelta(days=30)
+            PREVIOUS_PERIOD_START_DATE = CURRENT_PERIOD_START_DATE - relativedelta(
+                days=30
+            )
+
+            # Subquery: Get the metric value, end date, and previous metric value
+            # for each officer, filtering by the provided pseudonymized IDs, metric_ids, and last two periods.
+            #
+            # NOTE: We assume that there will be only two calculated periods ~30 days
+            # apart between the current date, today (inclusive), and the previous period
+            # start date, 60 days ago (exclusive).
+            #
+            # https://github.com/Recidiviz/pulse-data/pull/35760#discussion_r1882412306
+            # https://github.com/Recidiviz/pulse-data/blob/ken/insights-routes/recidiviz/calculator/query/state/views/outliers/supervision_officer_metrics.py#L116-L139
+            filtered_officers_and_metrics = (
+                session.query(
+                    SupervisionOfficerMetric.metric_id,
+                    SupervisionOfficerMetric.metric_value,
+                    SupervisionOfficerMetric.end_date,
+                    SupervisionOfficer.pseudonymized_id,
+                    func.lag(SupervisionOfficerMetric.metric_value)
+                    .over(
+                        partition_by=[
+                            SupervisionOfficerMetric.metric_id,
+                            SupervisionOfficerMetric.officer_id,
+                        ],
+                        order_by=SupervisionOfficerMetric.end_date,
+                    )
+                    .label("previous_metric_value"),
+                )
+                .join(
+                    SupervisionOfficer,
+                    SupervisionOfficerMetric.officer_id
+                    == SupervisionOfficer.external_id,
+                )
+                .filter(
+                    SupervisionOfficer.pseudonymized_id.in_(
+                        supervision_officer_pseudonymized_ids
+                    ),
+                    SupervisionOfficerMetric.metric_id.in_(vitals_metrics_by_metric_id),
+                    SupervisionOfficerMetric.end_date >= PREVIOUS_PERIOD_START_DATE,
+                )
+                .subquery()
+            )
+
+            # Query: Get the pseudo ID, metric ID, current period metric value,
+            # and the delta between the current and previous period metric values as
+            # metric_30d_delta.
+            #
+            # NOTE: This will only show vitals metrics for the provided
+            # pseudonymized IDs that have a metric value for the current period.
+            vitals_metrics_for_officers_query = session.query(
+                filtered_officers_and_metrics.c.pseudonymized_id,
+                filtered_officers_and_metrics.c.metric_id,
+                filtered_officers_and_metrics.c.metric_value,
+                func.round(
+                    func.coalesce(
+                        filtered_officers_and_metrics.c.metric_value
+                        - filtered_officers_and_metrics.c.previous_metric_value,
+                        0,
+                    ).label("metric_30d_delta")
+                ),
+            ).filter(
+                filtered_officers_and_metrics.c.end_date > CURRENT_PERIOD_START_DATE,
+                filtered_officers_and_metrics.c.metric_value.isnot(None),
+            )
+
+            for (
+                pseudonymized_id,
+                metric_id,
+                metric_value,
+                metric_30d_delta,
+            ) in vitals_metrics_for_officers_query:
+                vitals_metrics_by_metric_id[metric_id].add_officer_vitals_entity(
+                    pseudonymized_id, metric_value, metric_30d_delta
+                )
+
+        return sorted(vitals_metrics_by_metric_id.values())
+
+    def get_vitals_metrics_for_supervision_officer(
+        self, officer_pseudonymized_id: str
+    ) -> List[VitalsMetric]:
+
+        return self._get_vitals_metrics_from_officer_pseudonymized_ids(
+            supervision_officer_pseudonymized_ids=[officer_pseudonymized_id]
+        )
+
+    def get_vitals_metrics_for_supervision_officer_supervisor(
+        self, supervisor_pseudonymized_id: str
+    ) -> List[VitalsMetric]:
+
+        supervisor: SupervisionOfficerSupervisorEntity | None = (
+            self.get_supervisor_entity_from_pseudonymized_id(
+                supervisor_pseudonymized_id
+            )
+        )
+
+        if supervisor is None:
+            raise ValueError("Supervisor with given pseudonymized id not found.")
+
+        with self.insights_database_session() as session:
+            officer_pseudonymized_ids = [
+                row[0]
+                for row in session.query(SupervisionOfficer.pseudonymized_id)
+                .filter(
+                    SupervisionOfficer.supervisor_external_ids.any(
+                        supervisor.external_id
+                    )
+                )
+                .all()
+            ]
+
+            if not officer_pseudonymized_ids:
+                return sorted(self._init_vitals_metrics_dict_for_query().values())
+
+            return self._get_vitals_metrics_from_officer_pseudonymized_ids(
+                supervision_officer_pseudonymized_ids=officer_pseudonymized_ids
+            )
 
     def get_id_to_supervision_officer_entities(
         self,
