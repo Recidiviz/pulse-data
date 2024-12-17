@@ -27,6 +27,9 @@ PRODUCTION_PRIMARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_AR,
     StateCode.US_CO,
     StateCode.US_ID,
+    StateCode.US_MO,
+    StateCode.US_CA,
+    StateCode.US_IX,
     # states we "rolled" out to prod that aren't enabled in prod but we un-gate them
     # so if/when they are they will use the new raw data infra
     StateCode.US_OZ,
@@ -45,11 +48,8 @@ PRODUCTION_SECONDARY_ENABLED_STATES: Set[StateCode] = {
 # all states in any version of prod must able be enabled in staging primary, plus
 STAGING_PRIMARY_ENABLED_STATES: Set[StateCode] = {
     # prepped for next prod release, but need more time to bake to resolve ongoing errors
-    StateCode.US_CA,
-    StateCode.US_IX,
-    StateCode.US_MO,
-    StateCode.US_ND,
-    StateCode.US_PA,
+    StateCode.US_ND,  # only 1 real import
+    StateCode.US_PA,  # only 1 successful run, waiting until next week
     *PRODUCTION_SECONDARY_ENABLED_STATES,
 }
 # all states enabled in staging primary must be enabled in staging secondary, plus the
