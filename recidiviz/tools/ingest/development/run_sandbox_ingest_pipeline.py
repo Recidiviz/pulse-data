@@ -48,6 +48,8 @@ import logging
 from datetime import datetime
 from typing import List, Tuple
 
+from tabulate import tabulate
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
@@ -238,9 +240,15 @@ def run_sandbox_ingest_pipeline(
     if not output_sandbox_prefix:
         raise ValueError("Must specify an --output_sandbox_prefix")
 
-    logging.info(
-        "Using raw data watermarks from latest run: %s",
+    upper_bounds = json.loads(
         params.raw_data_upper_bound_dates_json,
+    )
+    logging.info(
+        "Using raw data watermarks from latest run:\n%s",
+        tabulate(
+            [(tbl, upper_bounds[tbl]) for tbl in sorted(upper_bounds)],
+            headers=["Table", "Raw Data Watermark"],
+        ),
     )
 
     if params.ingest_views_to_run and not params.pre_normalization_only:
@@ -255,12 +263,26 @@ def run_sandbox_ingest_pipeline(
             f"sure you want to proceed?"
         )
 
+    output_datasets = [
+        params.ingest_view_results_output,
+        params.pre_normalization_output,
+    ]
+    if not params.pre_normalization_only:
+        output_datasets.append(params.normalized_output)
+
     prompt_for_confirmation(
-        f"Starting ingest pipeline [{params.job_name}] for [{params.state_code}] in "
-        f"[{params.project}] which will output to datasets "
-        f"[{params.ingest_view_results_output}], "
-        f"[{params.pre_normalization_output}] and [{params.normalized_output}] - "
-        f"continue?"
+        "\n\nCreating Sandbox Pipeline With Parameters:\n"
+        + tabulate(
+            [
+                ("Job Name", params.job_name),
+                ("State Code", params.state_code),
+                ("Project", params.project),
+                ("Output Datasets", output_datasets),
+            ],
+            headers=["Parameter", "Value"],
+            tablefmt="rounded_grid",
+        )
+        + "\nWould you like to continue?"
     )
 
     create_or_update_dataflow_sandbox(
