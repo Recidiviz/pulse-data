@@ -730,33 +730,12 @@ class DirectIngestRawFileConfig:
         """Filters to only documented columns."""
         return [column for column in self.columns if column.description]
 
-    # TODO(#35651) Remove unused properties previously used by normalized_columns_for_config
-    @property
-    def documented_datetime_cols(
-        self,
-    ) -> List[Tuple[str, Optional[List[str]]]]:
-        return [
-            (column.name, column.datetime_sql_parsers)
-            for column in self.documented_columns
-            if column.is_datetime
-        ]
-
     @property
     def datetime_cols(self) -> List[Tuple[str, Optional[List[str]]]]:
         return [
             (column.name, column.datetime_sql_parsers)
             for column in self.columns
             if column.is_datetime
-        ]
-
-    @property
-    def non_datetime_cols(self) -> List[str]:
-        return [column.name for column in self.columns if not column.is_datetime]
-
-    @property
-    def documented_non_datetime_cols(self) -> List[str]:
-        return [
-            column.name for column in self.documented_columns if not column.is_datetime
         ]
 
     @property

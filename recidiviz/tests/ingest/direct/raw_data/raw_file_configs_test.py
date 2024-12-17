@@ -595,10 +595,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         self.assertEqual("", config.primary_key_str)
         self.assertEqual(["UTF-8", "ISO-8859-1"], config.encodings_to_try())
         self.assertEqual([], config.documented_columns)
-        self.assertEqual([], config.documented_datetime_cols)
-        self.assertEqual([], config.documented_non_datetime_cols)
         self.assertEqual([], config.datetime_cols)
-        self.assertEqual([], config.non_datetime_cols)
         self.assertFalse(config.has_enums)
         self.assertTrue(config.is_undocumented)
         self.assertEqual(None, config.caps_normalized_col("some_random_column_name"))
@@ -640,12 +637,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         self.assertEqual("Col1", config.primary_key_str)
         self.assertEqual(["UTF-8", "ISO-8859-1"], config.encodings_to_try())
         self.assertEqual(["Col1", "Col3"], [c.name for c in config.documented_columns])
-        self.assertEqual(
-            ["Col3"], [name for name, _ in config.documented_datetime_cols]
-        )
-        self.assertEqual(["Col1"], config.documented_non_datetime_cols)
         self.assertEqual(["Col3", "Col4"], [name for name, _ in config.datetime_cols])
-        self.assertEqual(["Col1", "Col2"], config.non_datetime_cols)
         self.assertFalse(config.has_enums)
         self.assertFalse(config.is_undocumented)
         self.assertEqual("Col1", config.caps_normalized_col("col1"))
@@ -674,12 +666,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         self.assertEqual(
             ["Col1", "Col3", "Col5"], [c.name for c in config.documented_columns]
         )
-        self.assertEqual(
-            ["Col3"], [name for name, _ in config.documented_datetime_cols]
-        )
-        self.assertEqual(["Col1", "Col5"], config.documented_non_datetime_cols)
         self.assertEqual(["Col3", "Col4"], [name for name, _ in config.datetime_cols])
-        self.assertEqual(["Col1", "Col2", "Col5"], config.non_datetime_cols)
         self.assertTrue(config.has_enums)
 
     def test_encodings_to_try(self) -> None:
