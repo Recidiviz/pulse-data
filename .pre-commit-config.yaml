@@ -50,9 +50,8 @@ repos:
         entry: pipenv run python -m
           recidiviz.tools.docs.entity_documentation_generator
         language: system
-        # TODO(#32863): Add state/normalized_entities.py once we generate documentation for that schema
         files: >
-          (?x)(^recidiviz/persistence/database/schema/state/schema.py|^recidiviz/persistence/entity/state/entities.py|^recidiviz/common/constants/state/)$
+          (?x)(^recidiviz/persistence/database/schema/state/schema.py|^recidiviz/persistence/entity/state/normalized_entities.py|^recidiviz/persistence/entity/state/entities.py|^recidiviz/common/constants/state/)$
         require_serial: true
       - id: generate_calc_documentation
         name: generate_calc_documentation

@@ -462,9 +462,10 @@ class NormalizedStateAssessment(
 
 @attr.s(eq=False, kw_only=True)
 class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
-    """A formal allegation of an offense with information about the context for how that allegation was brought forth.
-    `date_charged` can be null for charges that have statuses like “DROPPED”
-    `offense_date` can be null because of erroneous data from states
+    """
+    A formal allegation of an offense with information about the context for how that allegation was brought forth.
+      - `date_charged` can be null for charges that have statuses like `DROPPED`.
+      - `offense_date` can be null because of erroneous data from states
 
     TODO(#26240): Replace NormalizedStateCharge with this entity
     """
@@ -867,8 +868,7 @@ class NormalizedStateSentenceGroup(NormalizedStateEntity, HasExternalIdEntity):
     Represents a logical grouping of sentences that encompass an
     individual's interactions with a department of corrections.
     It begins with an individual's first sentence imposition and ends at liberty.
-    This is a state agnostic term used by Recidiviz for a state
-    specific administrative phenomena.
+    This is a state agnostic term used by Recidiviz for a state specific administrative phenomena.
 
     StateSentenceGroup entities must be associated with a sentence (StateSentence.sentence_external_id)
     to be hydrated.

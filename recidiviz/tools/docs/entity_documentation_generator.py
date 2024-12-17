@@ -21,7 +21,6 @@
 Can be run on-demand via:
     $ pipenv run python -m recidiviz.tools.docs.entity_documentation_generator
 
-# TODO(#32863) Generate docs for normalized state tables.
 """
 
 import logging
@@ -33,7 +32,6 @@ from types import ModuleType
 
 import pandas as pd
 from google.cloud.bigquery import SchemaField
-from jinja2 import BaseLoader, Environment
 
 from recidiviz.common.attr_mixins import (
     CachedAttributeInfo,
@@ -53,7 +51,7 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_enum_classes_in_module,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.repo.issue_references import TO_DO_REGEX
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import (
     DOCS_ROOT_PATH,
@@ -66,6 +64,10 @@ from recidiviz.utils.types import assert_type
 SCHEMA_DOCS_ROOT = os.path.join(DOCS_ROOT_PATH, "schema")
 ENTITIES_PACKAGE_NAME = "entities"
 ENTITY_DOCS_ROOT = os.path.join(SCHEMA_DOCS_ROOT, ENTITIES_PACKAGE_NAME)
+NORMALIZED_ENTITIES_PACKAGE_NAME = "normalized_entities"
+NORMALIZED_ENTITY_DOCS_ROOT = os.path.join(
+    SCHEMA_DOCS_ROOT, NORMALIZED_ENTITIES_PACKAGE_NAME
+)
 ENUMS_PACKAGE_NAME = "enums"
 ENUM_DOCS_ROOT = os.path.join(SCHEMA_DOCS_ROOT, ENUMS_PACKAGE_NAME)
 
@@ -169,7 +171,9 @@ def remove_extra_files(doc_path: str, generated_file_names: set[str]) -> bool:
     return anything_modified
 
 
-def generate_entity_documentation(module_schema_info: ModuleSchemaInformation) -> bool:
+def generate_entity_documentation(
+    module_schema_info: ModuleSchemaInformation, root_path_str: str
+) -> bool:
     generated_file_names = set()
     anything_modified = False
     for table_name, table_schema in module_schema_info.bq_schema.items():
@@ -177,10 +181,10 @@ def generate_entity_documentation(module_schema_info: ModuleSchemaInformation) -
             table_name, table_schema, module_schema_info.table_to_entity_info
         )
         anything_modified |= persist_file_contents(
-            documentation, os.path.join(ENTITY_DOCS_ROOT, f"{table_name}.md")
+            documentation, os.path.join(root_path_str, f"{table_name}.md")
         )
         generated_file_names.add(f"{table_name}.md")
-    anything_modified |= remove_extra_files(ENTITY_DOCS_ROOT, generated_file_names)
+    anything_modified |= remove_extra_files(root_path_str, generated_file_names)
     return anything_modified
 
 
@@ -285,14 +289,24 @@ def generate_enum_documentation(module_schema_info: ModuleSchemaInformation) -> 
     return anything_modified
 
 
-def _update_schema_catalog_page(module_schema_info: ModuleSchemaInformation) -> None:
-    list_of_tables: str = "\n".join(
+def _update_schema_catalog_page(
+    entities_tables: list[str], normalized_entities_tables: list[str]
+) -> None:
+    entities_list: str = "\n".join(
         sorted(
             f"\t - [{entity_table}](schema/{ENTITIES_PACKAGE_NAME}/{entity_table}.md)"
-            for entity_table in module_schema_info.bq_schema
+            for entity_table in entities_tables
         )
     )
-    list_of_tables += "\n"
+    entities_list += "\n"
+
+    normalized_list: str = "\n".join(
+        sorted(
+            f"\t - [{entity_table}](schema/{NORMALIZED_ENTITIES_PACKAGE_NAME}/{entity_table}.md)"
+            for entity_table in normalized_entities_tables
+        )
+    )
+    normalized_list += "\n"
 
     list_of_enums: str = "\n".join(
         sorted(
@@ -307,7 +321,9 @@ def _update_schema_catalog_page(module_schema_info: ModuleSchemaInformation) -> 
         [
             "## Schema Catalog\n\n",
             f"- {ENTITIES_PACKAGE_NAME}\n",
-            *list_of_tables,
+            *entities_list,
+            f"- {NORMALIZED_ENTITIES_PACKAGE_NAME}\n",
+            *normalized_list,
             f"- {ENUMS_PACKAGE_NAME}\n",
             *list_of_enums,
         ],
@@ -316,20 +332,27 @@ def _update_schema_catalog_page(module_schema_info: ModuleSchemaInformation) -> 
 
 
 def _make_schema_doc_directories() -> None:
-    for path in [ENTITY_DOCS_ROOT, ENTITY_DOCS_ROOT]:
+    for path in [ENTITY_DOCS_ROOT, ENTITY_DOCS_ROOT, NORMALIZED_ENTITY_DOCS_ROOT]:
         if not os.path.isdir(path):
             os.mkdir(path)
 
 
 def main() -> int:
     """Generates entity documentation, cleaning up any obsolete docs files."""
-    # TODO(#32863) Generate docs for normalized state tables.
-    module_schema_info = ModuleSchemaInformation(state_entities)
     _make_schema_doc_directories()
-    modified = generate_entity_documentation(module_schema_info)
-    modified |= generate_enum_documentation(module_schema_info)
+    state_schema_info = ModuleSchemaInformation(state_entities)
+    normalized_state_schema_info = ModuleSchemaInformation(normalized_entities)
+
+    modified = generate_entity_documentation(state_schema_info, ENTITY_DOCS_ROOT)
+    modified |= generate_enum_documentation(state_schema_info)
+    modified |= generate_entity_documentation(
+        normalized_state_schema_info, NORMALIZED_ENTITY_DOCS_ROOT
+    )
     if modified:
-        _update_schema_catalog_page(module_schema_info)
+        _update_schema_catalog_page(
+            list(state_schema_info.bq_schema.keys()),
+            list(normalized_state_schema_info.bq_schema.keys()),
+        )
         return 1
     return 0
 
