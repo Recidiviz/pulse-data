@@ -30,7 +30,7 @@ These errors can be fixed with one of the following changes:
 
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
@@ -56,6 +56,7 @@ INSIGHTS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER = SimpleBigQueryViewBuild
     view_id=INSIGHTS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_NAME,
     view_query_template=INSIGHTS_PRIMARY_USERS_NOT_IN_STATE_STAFF_QUERY_TEMPLATE,
     description=__doc__,
+    projects_to_deploy={GCP_PROJECT_PRODUCTION},
     should_materialize=True,
 )
 

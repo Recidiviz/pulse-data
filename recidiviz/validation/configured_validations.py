@@ -22,6 +22,7 @@ from typing import Dict, List, Tuple
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.utils import metadata
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 from recidiviz.validation import config
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import (
@@ -539,10 +540,12 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=INSIGHTS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         ExistenceDataValidationCheck(
             view_builder=WORKFLOWS_PRIMARY_USERS_NOT_IN_STATE_STAFF_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+            projects_to_deploy={GCP_PROJECT_PRODUCTION},
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER,
