@@ -390,7 +390,7 @@ class SupervisionRevocationsIncludesExcludes(Enum):
 
 
 class SupervisionRevocationsDataIncludesExcludes(Enum):
-    REFLECTS = "Data reflects the most recent violation type"
-    DOES_NOT_REFLECT = (
+    MOST_RECENT_VIOLATION = "Data reflects the most recent violation type"
+    MOST_SERIOUS_VIOLATION = (
         "Data reflects the most serious violation type in a person’s supervision term"
     )

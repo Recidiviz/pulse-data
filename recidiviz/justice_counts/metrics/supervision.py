@@ -701,8 +701,8 @@ revocations = MetricDefinition(
             multiselect=False,
             description="If reporting breakdowns for the Revocations metric, please select what your data represents.",
             excluded_set={
-                SupervisionRevocationsDataIncludesExcludes.DOES_NOT_REFLECT,
-                SupervisionRevocationsDataIncludesExcludes.REFLECTS,
+                SupervisionRevocationsDataIncludesExcludes.MOST_RECENT_VIOLATION,
+                SupervisionRevocationsDataIncludesExcludes.MOST_SERIOUS_VIOLATION,
             },
         ),
         IncludesExcludesSet(
