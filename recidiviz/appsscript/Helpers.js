@@ -119,6 +119,7 @@ function createColumnChart(
     ) {
       return;
     }
+    newRow[0] = toTitleCase(newRow[0])
     chartData.addRow(newRow);
     buildChart = true;
   });
@@ -237,4 +238,15 @@ function calculateActiveUsersPercent(activeUsers, registeredUsers) {
     return 0;
   }
   return ((activeUsers / registeredUsers) * 100).toFixed(1);
+}
+
+/**
+ * Converts a given string, str, to title case.
+ * src: https://stackoverflow.com/questions/196972/convert-string-to-title-case-with-javascript
+ */
+function toTitleCase(str) {
+  return str.replace(
+    /\w\S*/g,
+    text => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase()
+  );
 }
