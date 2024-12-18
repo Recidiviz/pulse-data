@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_OPOFFEXT
+file_description: |-
+  This table contains funded and unfunded sentence flags.
+data_classification: source
+no_valid_primary_keys: True
+primary_key_cols: []
+columns:
+  - name: RECORD_KEY
+    description: |-
+      Randomized unique ID for each individual.
+    is_pii: True
+  - name: CUSTODY_NUMBER
+    description: |-
+      Custody cycle number
+  - name: ADMISSION_NUMBER
+    description: |-
+      Admission cycle number
+  - name: OFFENSE_NUMBER
+    description: |-
+      Offense number
+  - name: COURT_CASE_NUMBER
+    description: |-
+      Court case number
+    is_pii: True
+  - name: ORS_NUMBER
+    description: |-
+      Crime ORS Statute
+  - name: ORS_PARAGRAPH
+    description: |-
+      Crime ORS sub statute
+  - name: FMISD_FLAG
+    description: |-
+      Funded misdemeanor flag
+  - name: REVIEW_FLAG
+    description: |-
+      Review flag
+  - name: REVIEW_LOCATION
+    description: |-
+      Location reviews
+  - name: REVIEW_USERID
+    description: |-
+      Reviewed by
+    is_pii: True
+  - name: REVIEW_UPDATE_PROGRAM
+    description: |-
+      Program used for review or update
+  - name: DATE_OF_REVIEW
+    description: |-
+      Date reviewed
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+    null_values:
+      - "0"
+  - name: RECORD_ADD_LOCATION
+    description: |-
+      Record added at location
+  - name: RECORD_ADD_USERID
+    description: |-
+      Record added by
+    is_pii: True
+  - name: RECORD_ADD_PROGRAM
+    description: |-
+      Program used to add record
+  - name: RECORD_ADD_DATE
+    description: |-
+      Date record was added
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+    null_values:
+      - "0"
+  - name: LAST_UPDATE_LOCATION
+    description: |-
+      Last update location
+  - name: LAST_UPDATE_USERID
+    description: |-
+      Record last update by
+    is_pii: True
+  - name: LAST_UPDATE_PROGRAM
+    description: |-
+      Program used to last update
+  - name: DATE_LAST_UPDATED
+    description: |-
+      Record last updated when
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+    null_values:
+      - "0"

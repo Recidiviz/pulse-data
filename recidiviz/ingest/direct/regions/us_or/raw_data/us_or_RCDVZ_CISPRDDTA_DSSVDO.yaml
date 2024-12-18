@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_DSSVDO
+file_description: |-
+  Information on sex offense supervision sentences
+data_classification: source
+no_valid_primary_keys: True
+primary_key_cols: []
+columns:
+  - name: RECORD_KEY
+    description: |-
+      Randomized unique value for each individual.
+    field_type: person_external_id
+    external_id_type: US_OR_RECORD_KEY
+    is_pii: True
+  - name: DESIGNATOR_CODE
+    description: |-
+      Sex offense designator code
+  - name: NEXT_NUMBER
+    description: |-
+      Next number
+  - name: EFFECTIVE_DATE
+    description: |-
+      Date effective
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+    null_values:
+      - "0"
+  - name: SVDO_LOCATION
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: DESIGNATOR_AUTH
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: DISCONTINUED_DATE
+    description: |-
+      Designation discontinued date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+    null_values:
+      - "0"
+  - name: DISCONTINUED_REASON
+    description: |-
+      Reason discontinued
+  - name: DOCKET_NUMBER_1
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: DOCKET_NUMBER_2
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: DOCKET_NUMBER_3
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: RECORD_ADD_LOCATION
+    description: |-
+      Record added at location
+  - name: RECORD_ADD_USERID
+    description: |-
+      Record added by user
+    is_pii: True
+  - name: RECORD_ADD_PROGRAM
+    description: |-
+      Record added by program
+  - name: RECORD_ADD_DATE
+    description: |-
+      Date record was added
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+    null_values:
+      - "0"
+  - name: LAST_UPDATE_LOCATION
+    description: |-
+      Location record was added from
+  - name: LAST_UPDATE_USERID
+    description: |-
+      Last update user id
+    is_pii: True
+  - name: LAST_UPDATE_PROGRAM
+    description: |-
+      Last update by program
+  - name: LAST_UPDATED_WHEN
+    description: |-
+      Date last updated
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+    null_values:
+      - "0"
