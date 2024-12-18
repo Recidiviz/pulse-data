@@ -56,8 +56,6 @@ STAGING_PRIMARY_ENABLED_STATES: Set[StateCode] = {
 # states we just want to be enabled in staging secondary
 STAGING_SECONDARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_AZ,
-    StateCode.US_ME,
-    StateCode.US_MI,
     StateCode.US_OR,
     StateCode.US_TN,
     StateCode.US_TX,
