@@ -197,6 +197,24 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         has_status=False,
         should_get_context_page=True,
     ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_opportunity_marked_submitted",
+        officer_event_name=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
+        workflows_event_type="OPPORTUNITY_MARKED_SUBMITTED",
+        has_person_external_id=True,
+        has_opportunity_type=True,
+        has_status=False,
+        should_get_context_page=False,
+    ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_opportunity_unsubmitted",
+        officer_event_name=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
+        workflows_event_type="OPPORTUNITY_UNSUBMITTED",
+        has_person_external_id=True,
+        has_opportunity_type=True,
+        has_status=False,
+        should_get_context_page=False,
+    ),
 ]
 
 

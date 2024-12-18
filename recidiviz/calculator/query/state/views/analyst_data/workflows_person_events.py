@@ -71,6 +71,12 @@ USAGE_EVENTS_DICT: Dict[str, EventSelector] = {
             "event_type": ["FORM_SUBMITTED"],
         },
     ),
+    "IN_PROGRESS": EventSelector(
+        event_type=EventType.WORKFLOWS_USER_ACTION,
+        event_conditions_dict={
+            "event_type": ["OPPORTUNITY_MARKED_SUBMITTED"],
+        },
+    ),
 }
 
 
