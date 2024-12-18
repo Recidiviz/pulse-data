@@ -30,7 +30,7 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
 
     def setUp(self) -> None:
         self.get_existing_states_patcher = patch(
-            "recidiviz.airflow.dags.utils.dag_orchestration_utils.get_direct_ingest_states_existing_in_env",
+            "recidiviz.airflow.dags.utils.dag_orchestration_utils.get_direct_ingest_states_launched_in_env",
             return_value={
                 # Has views, environment=production, has env variables in mappings
                 StateCode.US_DD,
