@@ -136,8 +136,8 @@ def aggregate_adjacent_spans(
     table_name: str,
     index_columns: Optional[List[str]] = None,
     attribute: Optional[Union[str, List[str]]] = None,
+    struct_attribute_subset: Optional[Union[str, List[str]]] = None,
     session_id_output_name: Optional[str] = "session_id",
-    is_struct: Optional[bool] = False,
     end_date_field_name: str = "end_date",
 ) -> str:
     """
@@ -177,46 +177,63 @@ def aggregate_adjacent_spans(
 
         If this value is not specified, adjacent spans will be aggregated solely based on date adjacency.
 
+    struct_attribute_subset : Optional[Union[str, List[str]]], default None
+        The subset of the column(s) in "attribute" that represent data that is struct. This allows combination of struct and non-struct
+        columns to be sessionization attributes.
+
+        If this value is not specified, it is assumed that all of the columns listed in "attribute" are non-struct representations of data
+
     session_id_output_name : Optional[str], default "session_id"
         Desired name of the output field that contains ids for each session. If not specified, the output
         will be `session_id`
 
-    is_struct : Optional[bool], default False
-        Boolean indicating whether or not the string specified in the `attribute` parameter represents a
-        struct in the view. If this flag is True, there can only be one value specified in the `attribute`
-        parameter.
     """
     # Default index columns are `person_id` and `state_code`.
     if index_columns is None:
         index_columns = ["person_id", "state_code"]
     index_col_str = list_to_query_string(index_columns)
 
-    # If no attribute is specified, the attribute column string and the attribute aggregation strings are left blank.
-    attribute_col_str = ""
-    attribute_grouping_str = ""
+    # Convert both the `attribute` and `struct_attribute_subset` parameters to a list if they are not already.
+    # If values are not provided, create empty lists.
+    attribute_list = (
+        []
+        if not attribute
+        else [attribute]
+        if not isinstance(attribute, List)
+        else attribute
+    )
 
-    if attribute:
-        # If only one attribute is specified, turn it into a single-element list. This is done to reduce
-        # repeated logic below to handle both situations separately.
-        attribute_list = [attribute] if not isinstance(attribute, List) else attribute
+    struct_attribute_list = (
+        []
+        if not struct_attribute_subset
+        else [struct_attribute_subset]
+        if not isinstance(struct_attribute_subset, List)
+        else struct_attribute_subset
+    )
 
-        if len(attribute_list) > 1 and is_struct:
-            raise ValueError("Sessionization on struct only allows one attribute value")
+    # Raise error if struct_attribute_subset is not a subset
+    if not set(struct_attribute_list).issubset(attribute_list):
+        raise ValueError("struct_attribute_subset must be subset of attribute")
 
-        # Create a string from the column names in the list to be used in the query.
-        attribute_col_str = list_to_query_string(attribute_list)
+    # Create a string from the column names in the list to be used in the query.
+    attribute_col_str = list_to_query_string(attribute_list)
 
-        # Casts all attribute columns to string before creating list, so that attributes can be used in partitions
-        attribute_col_string_cast_str = list_to_query_string(
-            [f"CAST({attribute} AS STRING)" for attribute in attribute_list]
-        )
+    # Separate the attributes into struct and non-struct lists so that we can generate the strings that cast these
+    # to data types that can be compared when looking for changes in values.
+    non_struct_attribute_list = [
+        x for x in attribute_list if x not in struct_attribute_list
+    ]
 
-        # If a struct is specified, use a string representation of the struct.
-        attribute_grouping_str = (
-            f", TO_JSON_STRING({attribute_col_str})"
-            if is_struct
-            else f", {attribute_col_string_cast_str}"
-        )
+    non_struct_attribute_string_cast_str = " ".join(
+        [f",CAST({attribute} AS STRING)" for attribute in non_struct_attribute_list]
+    )
+    struct_attribute_json_cast_str = " ".join(
+        [f",TO_JSON_STRING({attribute})" for attribute in struct_attribute_list]
+    )
+
+    attribute_grouping_str = (
+        f"{non_struct_attribute_string_cast_str} {struct_attribute_json_cast_str}"
+    )
 
     # Query string used for partitioning session boundaries based on both index columns and attributes
     partition_with_attributes_str = (

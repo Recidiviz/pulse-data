@@ -20,7 +20,10 @@ These views are used as inputs to a task eligibility spans view.
 from typing import List, Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.sessions_query_fragments import convert_cols_to_json
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    convert_cols_to_json,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 
@@ -39,6 +42,9 @@ def get_template_with_reasons_as_json(
 WITH criteria_query_base AS (
 {query_template.rstrip().rstrip(";")}
 )
+,
+_pre_sessionized AS
+(
 SELECT
     state_code,
     person_id,
@@ -49,6 +55,27 @@ SELECT
     {reasons_query_fragment} AS reason_v2,
 FROM
     criteria_query_base
+)
+,
+_aggregated AS
+(
+{aggregate_adjacent_spans(
+    table_name="_pre_sessionized",
+    index_columns=['person_id','state_code'],
+    end_date_field_name="end_date",
+    attribute=['meets_criteria','reason','reason_v2'],
+    struct_attribute_subset=['reason','reason_v2']
+)}
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    reason_v2
+FROM _aggregated
 """
 
 

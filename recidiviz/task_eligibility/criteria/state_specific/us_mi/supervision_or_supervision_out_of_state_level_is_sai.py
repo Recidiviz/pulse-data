@@ -21,7 +21,6 @@ from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import (
@@ -106,8 +105,7 @@ deduped_sub_sessions AS (
         is_sai AS meets_criteria,
     TO_JSON(STRUCT(is_sai AS supervision_level_is_sai)) AS reason,
     is_sai AS supervision_level_is_sai,
-    FROM ({aggregate_adjacent_spans(table_name='deduped_sub_sessions',
-                              attribute=['is_sai'])})
+    FROM deduped_sub_sessions
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(

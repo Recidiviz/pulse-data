@@ -19,7 +19,6 @@
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
@@ -78,7 +77,7 @@ deduped_sub_sessions AS (
         FALSE AS meets_criteria,
     TO_JSON(STRUCT(TRUE AS supervision_specialty_is_rposn)) AS reason,
     TRUE AS supervision_specialty_is_rposn,
-    FROM ({aggregate_adjacent_spans(table_name='deduped_sub_sessions', attribute=['is_rposn'])})
+    FROM deduped_sub_sessions
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

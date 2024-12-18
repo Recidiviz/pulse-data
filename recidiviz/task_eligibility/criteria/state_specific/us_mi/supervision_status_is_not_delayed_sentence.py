@@ -20,7 +20,6 @@ from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
@@ -77,7 +76,7 @@ deduped_sub_sessions AS (
         FALSE AS meets_criteria,
     TO_JSON(STRUCT(TRUE AS supervision_status_is_delayed_sentence)) AS reason,
     TRUE AS supervision_status_is_delayed_sentence,
-    FROM ({aggregate_adjacent_spans(table_name='deduped_sub_sessions', attribute=['is_delayed_sent'])})
+    FROM deduped_sub_sessions
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

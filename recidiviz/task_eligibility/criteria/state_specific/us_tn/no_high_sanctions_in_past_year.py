@@ -20,7 +20,6 @@
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
@@ -85,19 +84,6 @@ _REASON_QUERY = f"""
     QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date 
         ORDER BY latest_high_sanction_date DESC) = 1
     )
-    ,
-    sessionized_cte AS 
-    /*
-    Sessionize so that we have continuous periods of time during which a person is not
-    eligible due to a high sanction. A new session starts either when a person becomes
-    eligible or when a person has an additional sanction within a 12-month period, which
-    changes the `latest_high_sanction_date` value.
-    */
-    (
-    {aggregate_adjacent_spans(table_name='dedup_cte',
-                       attribute=['latest_high_sanction_date','meets_criteria'],
-                       end_date_field_name='end_date')}
-    )
     SELECT
         state_code,
         person_id,
@@ -106,7 +92,7 @@ _REASON_QUERY = f"""
         meets_criteria,
         TO_JSON(STRUCT(latest_high_sanction_date AS latest_high_sanction_date)) AS reason,
         latest_high_sanction_date,
-    FROM sessionized_cte
+    FROM dedup_cte
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

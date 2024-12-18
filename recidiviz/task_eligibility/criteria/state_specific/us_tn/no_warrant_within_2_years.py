@@ -19,7 +19,6 @@
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
@@ -70,13 +69,6 @@ _QUERY_TEMPLATE = f"""
             MAX(warrant_date) AS latest_warrant_date,
         FROM sub_sessions_with_attributes
         GROUP BY 1, 2, 3, 4
-    ),
-    ineligibility_spans_aggregated_combined AS (
-        -- combine adjacent spans to reduce number of rows
-        {aggregate_adjacent_spans(
-            "ineligibility_spans_aggregated",
-            attribute=['meets_criteria', 'latest_warrant_date']
-        )}
     )
     SELECT
         state_code,
@@ -88,7 +80,7 @@ _QUERY_TEMPLATE = f"""
             latest_warrant_date AS latest_warrant_date
         )) AS reason,
         latest_warrant_date,
-    FROM ineligibility_spans_aggregated_combined
+    FROM ineligibility_spans_aggregated
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(

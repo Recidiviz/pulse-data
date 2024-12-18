@@ -18,7 +18,6 @@
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
@@ -36,7 +35,7 @@ _CRITERIA_NAME = "US_MI_SUPERVISION_LEVEL_IS_NOT_MINIMUM_LOW"
 _DESCRIPTION = """This criteria view builder defines spans of time that a client is on Minimum Low Supervision
 """
 
-_QUERY_TEMPLATE = f"""
+_QUERY_TEMPLATE = """
 #TODO(#22511) refactor to build off of a general criteria view builder
 WITH minimum_low_spans AS (
     SELECT
@@ -45,14 +44,14 @@ WITH minimum_low_spans AS (
         start_date,
         end_date_exclusive AS end_date,
     #TODO(#20035) replace with supervision level raw text sessions once views agree
-    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` sls
+    FROM `{project_id}.{sessions_dataset}.compartment_sub_sessions_materialized` sls
     /* Using regex to match digits in sls.correctional_level_raw_text
    so imputed values with the form d*##IMPUTED are correctly joined */
-    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` omni_map
+    LEFT JOIN `{project_id}.{analyst_data_dataset}.us_mi_supervision_level_raw_text_mappings` omni_map
         ON REGEXP_EXTRACT(sls.correctional_level_raw_text, r'(\\d+)') \
          = omni_map.supervision_level_raw_text \
         AND omni_map.source = "OMNI"
-    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` coms_map
+    LEFT JOIN `{project_id}.{analyst_data_dataset}.us_mi_supervision_level_raw_text_mappings` coms_map
         ON REPLACE(sls.correctional_level_raw_text, "##IMPUTED", "") \
         = coms_map.supervision_level_raw_text \
         AND coms_map.source = 'COMS'
@@ -68,7 +67,7 @@ WITH minimum_low_spans AS (
         FALSE AS meets_criteria,
     TO_JSON(STRUCT(TRUE AS supervision_level_is_minimum_low)) AS reason,
     TRUE AS supervision_level_is_minimum_low,
-    FROM ({aggregate_adjacent_spans(table_name='minimum_low_spans')})
+    FROM minimum_low_spans
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

@@ -19,7 +19,6 @@ rejection from compliant reporting."""
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
@@ -77,14 +76,6 @@ _QUERY_TEMPLATE = f"""
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4
     )
-    ,
-    sessionized_cte AS 
-    (
-    {aggregate_adjacent_spans(table_name='dedup_cte',
-                       attribute='reason',
-                       is_struct=True,
-                       end_date_field_name='end_date')}
-    )
     SELECT 
         state_code,
         person_id,
@@ -94,7 +85,7 @@ _QUERY_TEMPLATE = f"""
         reason,
         JSON_EXTRACT(reason, "$.contact_date") AS contact_date_array,
         JSON_EXTRACT(reason, "$.contact_code") AS contact_code_array,
-    FROM sessionized_cte
+    FROM dedup_cte
     """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

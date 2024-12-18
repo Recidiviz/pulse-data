@@ -22,7 +22,6 @@ criterion.
 
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -33,7 +32,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "LATEST_DRUG_TEST_IS_NEGATIVE"
 
-_QUERY_TEMPLATE = f"""
+_QUERY_TEMPLATE = """
     WITH screens AS (
         SELECT
             state_code,
@@ -46,20 +45,13 @@ _QUERY_TEMPLATE = f"""
         FROM
             (
                 SELECT *
-                FROM `{{project_id}}.{{sessions_dataset}}.drug_screens_preprocessed_materialized`
+                FROM `{project_id}.{sessions_dataset}.drug_screens_preprocessed_materialized`
                 -- The preprocessed view can have multiple tests per person-day if there are different sample types.
                 -- For the purposes of this criteria we just want to keep 1 test per person-day and prioritize positive
                 -- results
                 QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, drug_screen_date ORDER BY is_positive_result DESC,
                                                                                             sample_type) = 1
             )
-    ),
-    sessionized_cte AS (
-        {aggregate_adjacent_spans(
-            table_name='screens',
-            attribute=['latest_drug_screen_result', 'latest_drug_screen_date', 'meets_criteria'],
-            end_date_field_name='end_date',
-        )}
     )
     SELECT 
         state_code,
@@ -73,7 +65,7 @@ _QUERY_TEMPLATE = f"""
         )) AS reason,
         latest_drug_screen_result,
         latest_drug_screen_date,
-    FROM sessionized_cte
+    FROM screens
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (

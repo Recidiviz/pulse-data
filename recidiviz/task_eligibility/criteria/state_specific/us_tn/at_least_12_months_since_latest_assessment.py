@@ -19,7 +19,6 @@
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
@@ -78,18 +77,6 @@ _QUERY_TEMPLATE = f"""
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date 
             ORDER BY assessment_date DESC) = 1
     )
-    ,
-    sessionized_cte AS 
-    /*
-    Sessionize so that we have continuous periods of time for which a person is eligible. A
-    new session exists either when a person becomes eligible, or if a person has an additional assessment in the 
-    specified date interval, which changes the "assessment_date" value.
-    */
-    (
-    {aggregate_adjacent_spans(table_name='dedup_cte',
-                       attribute=['assessment_date','assessment_due_date','meets_criteria'],
-                       end_date_field_name='end_date')}
-    )
     SELECT 
         state_code,
         person_id,
@@ -102,7 +89,7 @@ _QUERY_TEMPLATE = f"""
                 ) AS reason,
         assessment_date AS most_recent_assessment_date,
         assessment_due_date AS assessment_due_date,
-    FROM sessionized_cte
+    FROM dedup_cte
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

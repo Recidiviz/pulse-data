@@ -20,7 +20,6 @@ serving a special supervision case"""
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
@@ -74,7 +73,7 @@ SELECT
                    CASE WHEN meets_criteria THEN 'medium or high' ELSE 'high' END AS sanction_type)) AS reason,
     CASE WHEN meets_criteria THEN 'special' ELSE 'non-special' END AS case_type,
     CASE WHEN meets_criteria THEN 'medium or high' ELSE 'high' END AS sanction_type,
-FROM({aggregate_adjacent_spans(table_name='deduped_supervision_spans', attribute = 'meets_criteria')})
+FROM deduped_supervision_spans
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(

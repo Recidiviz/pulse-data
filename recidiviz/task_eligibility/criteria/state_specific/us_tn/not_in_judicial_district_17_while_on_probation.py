@@ -17,7 +17,6 @@
 """Describes the spans of time when a TN client is serving sentences in counties that do not allow compliant reporting"""
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -33,7 +32,7 @@ _DESCRIPTION = """Describes the spans of time when a TN client is serving senten
 compliant reporting. These means not being on probation in Judicial District 17.
 """
 
-_QUERY_TEMPLATE = f"""
+_QUERY_TEMPLATE = """
     WITH cte AS 
     (
     /*
@@ -46,20 +45,13 @@ _QUERY_TEMPLATE = f"""
         span.end_date_exclusive AS end_date,
         sent.judicial_district,
         sent.sentence_sub_type,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
+    FROM `{project_id}.{sessions_dataset}.sentence_spans_materialized` span,
     UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-    JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+    JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sent
         USING (state_code, person_id, sentences_preprocessed_id)
       WHERE span.state_code = 'US_TN'
         AND sent.judicial_district = '17'
         AND sent.sentence_sub_type IN ('PROBATION','DIVERSION')
-    )
-    ,
-    sessionized_cte AS 
-    (
-    {aggregate_adjacent_spans(table_name='cte',
-                       attribute=['judicial_district','sentence_sub_type'],
-                       end_date_field_name='end_date')}
     )
     SELECT 
         state_code,
@@ -73,7 +65,7 @@ _QUERY_TEMPLATE = f"""
         )) AS reason,
         judicial_district,
         sentence_sub_type AS sentence_type,
-    FROM sessionized_cte
+    FROM cte
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

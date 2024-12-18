@@ -19,7 +19,6 @@
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
@@ -68,11 +67,6 @@ _QUERY_TEMPLATE = f"""
             sub_sessions_with_attributes
         GROUP BY 1,2,3,4
     )
-    ,
-    county_jail_backup_sessions AS ({aggregate_adjacent_spans(
-        table_name='dedup_cte',
-        attribute='is_county_jail_backup',
-    )})
     SELECT
         state_code,
         person_id,
@@ -81,7 +75,7 @@ _QUERY_TEMPLATE = f"""
         is_county_jail_backup AS meets_criteria,
         is_county_jail_backup,
         TO_JSON(STRUCT(is_county_jail_backup)) AS reason
-    FROM county_jail_backup_sessions
+    FROM dedup_cte
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

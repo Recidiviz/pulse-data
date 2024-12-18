@@ -19,7 +19,6 @@ supervision level as tracked by our `sessions` dataset.
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -33,7 +32,7 @@ _CRITERIA_NAME = "SUPERVISION_LEVEL_IS_NOT_DIVERSION"
 _DESCRIPTION = """This criteria view builder defines spans of time where clients are not on DIVERSION
 supervision level as tracked by our `sessions` dataset."""
 
-_QUERY_TEMPLATE = f"""
+_QUERY_TEMPLATE = """
 #TODO(#22511) refactor to build off of a general criteria view builder
 WITH diversion_spans AS (
 SELECT
@@ -42,7 +41,7 @@ SELECT
         start_date,
         end_date_exclusive AS end_date,
     #TODO(#20035) replace with supervision level raw text sessions once views agree
-    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
+    FROM `{project_id}.{sessions_dataset}.compartment_sub_sessions_materialized`
     WHERE compartment_level_1 = 'SUPERVISION' 
     AND correctional_level = "DIVERSION" 
 )
@@ -54,7 +53,7 @@ SELECT
         FALSE AS meets_criteria,
     TO_JSON(STRUCT(TRUE AS supervision_level_is_diversion)) AS reason,
     TRUE AS supervision_level_is_diversion,
-    FROM ({aggregate_adjacent_spans(table_name='diversion_spans')})
+    FROM diversion_spans
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = StateAgnosticTaskCriteriaBigQueryViewBuilder(

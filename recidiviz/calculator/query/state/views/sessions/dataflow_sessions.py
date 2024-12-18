@@ -293,8 +293,8 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     {aggregate_adjacent_spans(
                         table_name='sub_sessions_with_attributes_dedup',
                         attribute='session_attributes',
+                        struct_attribute_subset='session_attributes',
                         session_id_output_name='dataflow_session_id',
-                        is_struct=True,
                         end_date_field_name='end_date_exclusive'
                     )}
     )

@@ -25,6 +25,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_sandbox_context import (
     BigQueryViewSandboxContext,
 )
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -68,10 +69,13 @@ class TestStateSpecificTaskCriteriaBigQueryViewBuilder(unittest.TestCase):
             ),
         )
 
-        expected_query_template = """
+        expected_query_template = f"""
 WITH criteria_query_base AS (
 SELECT * FROM `recidiviz-456.raw_data.foo`
 )
+,
+_pre_sessionized AS
+(
 SELECT
     state_code,
     person_id,
@@ -82,6 +86,27 @@ SELECT
     CAST(NULL AS JSON) AS reason_v2,
 FROM
     criteria_query_base
+)
+,
+_aggregated AS
+(
+{aggregate_adjacent_spans(
+    table_name="_pre_sessionized",
+    index_columns=['person_id','state_code'],
+    end_date_field_name="end_date",
+    attribute=['meets_criteria','reason','reason_v2'],
+    struct_attribute_subset=['reason','reason_v2']
+)}
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    reason_v2
+FROM _aggregated
 """
 
         self.assertEqual(view.view_query, expected_query_template)
@@ -125,10 +150,13 @@ FROM
             ),
         )
 
-        expected_query_template = """
+        expected_query_template = f"""
 WITH criteria_query_base AS (
 SELECT * FROM `recidiviz-456.my_prefix_raw_data.foo`
 )
+,
+_pre_sessionized AS
+(
 SELECT
     state_code,
     person_id,
@@ -139,6 +167,27 @@ SELECT
     CAST(NULL AS JSON) AS reason_v2,
 FROM
     criteria_query_base
+)
+,
+_aggregated AS
+(
+{aggregate_adjacent_spans(
+    table_name="_pre_sessionized",
+    index_columns=['person_id','state_code'],
+    end_date_field_name="end_date",
+    attribute=['meets_criteria','reason','reason_v2'],
+    struct_attribute_subset=['reason','reason_v2']
+)}
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    reason_v2
+FROM _aggregated
 """
 
         self.assertEqual(view.view_query, expected_query_template)
@@ -220,10 +269,13 @@ class TestStateAgnosticTaskCriteriaBigQueryViewBuilder(unittest.TestCase):
                 table_id="simple_criteria_materialized",
             ),
         )
-        expected_query_template = """
+        expected_query_template = f"""
 WITH criteria_query_base AS (
 SELECT * FROM `recidiviz-456.ingested_data.foo`
 )
+,
+_pre_sessionized AS
+(
 SELECT
     state_code,
     person_id,
@@ -234,6 +286,27 @@ SELECT
     CAST(NULL AS JSON) AS reason_v2,
 FROM
     criteria_query_base
+)
+,
+_aggregated AS
+(
+{aggregate_adjacent_spans(
+    table_name="_pre_sessionized",
+    index_columns=['person_id','state_code'],
+    end_date_field_name="end_date",
+    attribute=['meets_criteria','reason','reason_v2'],
+    struct_attribute_subset=['reason','reason_v2']
+)}
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    reason_v2
+FROM _aggregated
 """
 
         self.assertEqual(view.view_query, expected_query_template)
@@ -275,10 +348,13 @@ FROM
             ),
         )
 
-        expected_query_template = """
+        expected_query_template = f"""
 WITH criteria_query_base AS (
 SELECT * FROM `recidiviz-456.my_prefix_ingested_data.foo`
 )
+,
+_pre_sessionized AS
+(
 SELECT
     state_code,
     person_id,
@@ -289,6 +365,27 @@ SELECT
     CAST(NULL AS JSON) AS reason_v2,
 FROM
     criteria_query_base
+)
+,
+_aggregated AS
+(
+{aggregate_adjacent_spans(
+    table_name="_pre_sessionized",
+    index_columns=['person_id','state_code'],
+    end_date_field_name="end_date",
+    attribute=['meets_criteria','reason','reason_v2'],
+    struct_attribute_subset=['reason','reason_v2']
+)}
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    reason_v2
+FROM _aggregated
 """
 
         self.assertEqual(view.view_query, expected_query_template)
@@ -308,10 +405,13 @@ FROM
 
     def test_get_template_with_reasons_as_json_empty(self) -> None:
         query_template = "SELECT * FROM my_table"
-        expected_query = """
+        expected_query = f"""
 WITH criteria_query_base AS (
 SELECT * FROM my_table
 )
+,
+_pre_sessionized AS
+(
 SELECT
     state_code,
     person_id,
@@ -322,6 +422,27 @@ SELECT
     CAST(NULL AS JSON) AS reason_v2,
 FROM
     criteria_query_base
+)
+,
+_aggregated AS
+(
+{aggregate_adjacent_spans(
+    table_name="_pre_sessionized",
+    index_columns=['person_id','state_code'],
+    end_date_field_name="end_date",
+    attribute=['meets_criteria','reason','reason_v2'],
+    struct_attribute_subset=['reason','reason_v2']
+)}
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    reason_v2
+FROM _aggregated
 """
         actual_query = get_template_with_reasons_as_json(
             query_template, reasons_fields=[]
@@ -342,10 +463,13 @@ FROM
                 description="Offense type that person is serving",
             ),
         ]
-        expected_query = """
+        expected_query = f"""
 WITH criteria_query_base AS (
 SELECT * FROM another_table
 )
+,
+_pre_sessionized AS
+(
 SELECT
     state_code,
     person_id,
@@ -359,6 +483,27 @@ SELECT
     )) AS reason_v2,
 FROM
     criteria_query_base
+)
+,
+_aggregated AS
+(
+{aggregate_adjacent_spans(
+    table_name="_pre_sessionized",
+    index_columns=['person_id','state_code'],
+    end_date_field_name="end_date",
+    attribute=['meets_criteria','reason','reason_v2'],
+    struct_attribute_subset=['reason','reason_v2']
+)}
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    reason_v2
+FROM _aggregated
 """
         actual_query = get_template_with_reasons_as_json(query_template, reasons_fields)
         self.assertEqual(expected_query, actual_query)

@@ -19,7 +19,6 @@ supervision level as tracked by our `sessions` dataset.
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -33,7 +32,7 @@ _CRITERIA_NAME = "SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_LEVEL_IS_NOT_HIGH"
 _DESCRIPTION = """This criteria view builder defines spans of time where clients are not on HIGH
 supervision level as tracked by our `sessions` dataset."""
 
-_QUERY_TEMPLATE = f"""
+_QUERY_TEMPLATE = """
 WITH high_spans AS (
 SELECT
         state_code,
@@ -41,7 +40,7 @@ SELECT
         start_date,
         end_date_exclusive AS end_date,
     #TODO(#20035) replace with supervision level raw text sessions once views agree
-    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
+    FROM `{project_id}.{sessions_dataset}.compartment_sub_sessions_materialized`
     WHERE compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
     AND correctional_level = "HIGH" 
 )
@@ -53,7 +52,7 @@ SELECT
         FALSE AS meets_criteria,
     TO_JSON(STRUCT(TRUE AS supervision_level_is_high)) AS reason,
     TRUE AS supervision_level_is_high,
-    FROM ({aggregate_adjacent_spans(table_name='high_spans')})
+    FROM high_spans
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (

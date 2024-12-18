@@ -24,7 +24,6 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
     num_events_within_time_interval_spans,
 )
@@ -118,11 +117,6 @@ _QUERY_TEMPLATE = f"""
             sub_sessions_with_attributes
         GROUP BY 1,2,3,4
     )
-    ,
-    ineligible_offense_spans_aggregated AS ({aggregate_adjacent_spans(
-        table_name='dedup_cte',
-        attribute=['ineligible_offense_occurred', 'ineligible_offense_types'],
-    )})
     SELECT
         state_code,
         person_id,
@@ -131,7 +125,7 @@ _QUERY_TEMPLATE = f"""
         NOT ineligible_offense_occurred AS meets_criteria,
         ineligible_offense_types,
         TO_JSON(STRUCT(ineligible_offense_types)) AS reason
-    FROM ineligible_offense_spans_aggregated
+    FROM dedup_cte
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(

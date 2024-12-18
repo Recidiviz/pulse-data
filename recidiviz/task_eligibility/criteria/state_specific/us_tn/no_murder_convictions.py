@@ -18,7 +18,6 @@
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import (
@@ -83,16 +82,6 @@ _QUERY_TEMPLATE = f"""
     QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date 
         ORDER BY latest_homicide_offense_date DESC) = 1
     )
-    ,
-    sessionized_cte AS 
-    /*
-    Sessionize so that we have continuous periods of time for which a person is not eligible due to a homicide offense. 
-    */
-    (
-    {aggregate_adjacent_spans(table_name='dedup_cte',
-                              attribute=['latest_homicide_offense_date', 'meets_criteria'],
-                              end_date_field_name='end_date')}
-    )
     SELECT 
         state_code,
         person_id,
@@ -101,7 +90,7 @@ _QUERY_TEMPLATE = f"""
         meets_criteria,
         TO_JSON(STRUCT(latest_homicide_offense_date AS latest_homicide_offense)) AS reason,
         latest_homicide_offense_date,
-    FROM sessionized_cte
+    FROM dedup_cte
 
 """
 
