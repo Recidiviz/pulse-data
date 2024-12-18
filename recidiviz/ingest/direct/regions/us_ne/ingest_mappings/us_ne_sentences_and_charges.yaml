@@ -5,26 +5,26 @@
 #   $env: is_local
 manifest_language: 1.0.0
 input_columns:
-  - pkOffenseId
-  - inmateNumber
-  - fkOffenseTypeCode
-  - offenseCount
-  - fkFelonyMisdemeanorCode
-  - fkOffenseAttemptCode
-  - arrest_code
-  - county_name
-  - convictedSexualOffense
-  - convictedDescription
-  - controlling
-  - offenseCommittedDate
-  - statute
-  - pkAggregateSentenceId
-  - beginDate
-  - jailTimeDays
-  - parole_possible
-  - sentence_admission
-  - degree
-  - minimumTerm
+  pkOffenseId: STRING
+  inmateNumber: STRING
+  fkOffenseTypeCode: STRING
+  offenseCount: STRING
+  fkFelonyMisdemeanorCode: STRING
+  fkOffenseAttemptCode: STRING
+  arrest_code: STRING
+  county_name: STRING
+  convictedSexualOffense: STRING
+  convictedDescription: STRING
+  degree: STRING
+  controlling: STRING
+  offenseCommittedDate: STRING
+  statute: STRING
+  pkAggregateSentenceId: STRING
+  sentence_admission: STRING
+  beginDate: STRING
+  minimumTerm: STRING
+  jailTimeDays: STRING
+  parole_possible: STRING
 unused_columns: []
 variables:
   - sentence_external_id:

@@ -1,7 +1,7 @@
 manifest_language: 1.0.0
 input_columns:
-  - PERSONNAME
-  - DOB
+  PERSONNAME: STRING
+  DOB: STRING
 unused_columns: []
 variables:
   - some_boolean_value:

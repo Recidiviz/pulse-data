@@ -1,22 +1,22 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - control_number
-  - misconduct_number
-  - misconduct_date
-  - institution
-  - report_date
-  - hearing_after_date
-  - place_hvl_code
-  - place_extended
-  - ctgory_of_chrgs_1
-  - ctgory_of_chrgs_2
-  - ctgory_of_chrgs_3
-  - ctgory_of_chrgs_4
-  - ctgory_of_chrgs_5
-  - confinement
-  - confinement_date
-  - drug_related
+  control_number: STRING
+  misconduct_number: STRING
+  misconduct_date: STRING
+  institution: STRING
+  report_date: STRING
+  hearing_after_date: STRING
+  place_hvl_code: STRING
+  place_extended: STRING
+  ctgory_of_chrgs_1: STRING
+  ctgory_of_chrgs_2: STRING
+  ctgory_of_chrgs_3: STRING
+  ctgory_of_chrgs_4: STRING
+  ctgory_of_chrgs_5: STRING
+  confinement: STRING
+  confinement_date: STRING
+  drug_related: STRING
 unused_columns: []
 output:
   StatePerson:

@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - ParoleNumber
-  - ParoleCountId
-  - Sent16DGroupNumber
-  - SentenceId
-  - RelMaxDate
-  - update_datetime
+  ParoleNumber: STRING
+  ParoleCountId: STRING
+  RelMaxDate: DATE
+  update_datetime: DATETIME
+  Sent16DGroupNumber: STRING
+  SentenceId: STRING
 unused_columns: []
 output:
   StatePerson:

@@ -3,18 +3,18 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - Control_Number
-  - Test_Desc
-  - Test_Dt
-  - Test_Score
-  - RSTRvsd_Flg
-  - Inmate_number
-  - Test_Id
-  - AsmtVer_Num
-  - Fac_Cd
-  - ModBy_EmpNum
-  - LstMod_Dt
-  - Fab_ind
+  Test_Id: STRING
+  Control_Number: STRING
+  Test_Desc: STRING
+  Inmate_number: STRING
+  Test_Dt: STRING
+  Fac_Cd: STRING
+  Test_Score: STRING
+  ModBy_EmpNum: STRING
+  LstMod_Dt: STRING
+  AsmtVer_Num: STRING
+  Fab_ind: STRING
+  RSTRvsd_Flg: STRING
 unused_columns:
   - Fac_Cd
   - ModBy_EmpNum

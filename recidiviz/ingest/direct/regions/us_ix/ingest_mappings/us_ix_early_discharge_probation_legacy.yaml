@@ -3,13 +3,13 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - ofndr_num
-  - early_discharge_id
-  - authority
-  - decision_official_dt
-  - early_discharge_form_typ_desc
-  - jurisdiction_decision_description
-  - created_by_dt
+  ofndr_num: STRING
+  early_discharge_id: STRING
+  authority: STRING
+  decision_official_dt: DATE
+  early_discharge_form_typ_desc: STRING
+  jurisdiction_decision_description: STRING
+  created_by_dt: DATE
 unused_columns: []
 output:
   StatePerson:

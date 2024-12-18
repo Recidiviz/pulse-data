@@ -3,20 +3,20 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - source
-  - RecId
-  - OffenderNumber
-  - FkCoSyScale
-  - corfscaleset_name
-  - cosyscale_name
-  - dateofscreening
-  - RawScore
-  - ScoreText
-  - FkShUserScreener
-  - FirstName
-  - MiddleInitial
-  - LastName
-  - FKCoSyRecSupervisionLevel
+  source: STRING
+  RecId: STRING
+  OffenderNumber: STRING
+  FkCoSyScale: STRING
+  corfscaleset_name: STRING
+  cosyscale_name: STRING
+  dateofscreening: DATE
+  RawScore: STRING
+  ScoreText: STRING
+  FkShUserScreener: STRING
+  FirstName: STRING
+  MiddleInitial: STRING
+  LastName: STRING
+  FKCoSyRecSupervisionLevel: STRING
 unused_columns:
   - FirstName
   - MiddleInitial

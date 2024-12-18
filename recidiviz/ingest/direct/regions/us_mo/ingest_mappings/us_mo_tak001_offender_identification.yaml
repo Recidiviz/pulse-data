@@ -3,20 +3,20 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - EK_ALN
-  - EK_AFN
-  - EK_AMI
-  - EK_AGS
-  - EK_SEX
-  - DOB
-  - EK_RAC
-  - EK_ETH
-  - EK_DOC
-  - EK_CYC
-  - EK_SID
-  - EK_FBI
-  - EK_OLN
-  - DOC_ID_DOB
+  EK_DOC: STRING
+  EK_CYC: STRING
+  EK_ALN: STRING
+  EK_AFN: STRING
+  EK_AMI: STRING
+  EK_AGS: STRING
+  EK_SID: STRING
+  EK_FBI: STRING
+  EK_OLN: STRING
+  EK_RAC: STRING
+  EK_ETH: STRING
+  EK_SEX: STRING
+  DOC_ID_DOB: STRING
+  DOB: STRING
 unused_columns:
   - EK_CYC # Unused - Cycle number
   - EK_SID # Unused - SID Number - See #4632 for more context why we don't ingest this

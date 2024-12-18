@@ -3,27 +3,27 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderID
-  - CAFDate
-  - ClassificationDate
-  - ClassificationDecisionDate
-  - CAFScore
-  - OverrideReason
-  - ClassificationDecision
-  - ScheduleAScore
-  - ScheduleBScore
-  - CAFCustodyLevel
-  - Question1
-  - Question2
-  - Question3
-  - Question4
-  - Question5
-  - Question6
-  - Question7
-  - Question8
-  - Question9
-  - CAFSiteID
-  - CAF_ID
+  OffenderID: STRING
+  CAFDate: STRING
+  ClassificationDate: DATE
+  ClassificationDecisionDate: DATE
+  CAFScore: STRING
+  OverrideReason: STRING
+  ClassificationDecision: STRING
+  ScheduleAScore: STRING
+  ScheduleBScore: STRING
+  CAFCustodyLevel: STRING
+  Question1: STRING
+  Question2: STRING
+  Question3: STRING
+  Question4: STRING
+  Question5: STRING
+  Question6: STRING
+  Question7: STRING
+  Question8: STRING
+  Question9: STRING
+  CAFSiteID: STRING
+  CAF_ID: INTEGER
 unused_columns: []
 output:
   StatePerson:

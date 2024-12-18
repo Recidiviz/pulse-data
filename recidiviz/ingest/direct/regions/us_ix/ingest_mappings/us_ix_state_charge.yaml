@@ -3,20 +3,20 @@
 # to the corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderId
-  - OffenseId
-  - Count
-  - OffenseTypeDesc
-  - Offense_statute
-  - VIOLENT_OFFENSE_IND
-  - JudgeLegistId
-  - FirstName
-  - MiddleName
-  - LastName
-  - CountyId
-  - OffenseDate
-  - SentenceId
-  - ChargeOutcomeTypeDesc
+  OffenderId: STRING
+  OffenseId: STRING
+  OffenseDate: DATE
+  Count: STRING
+  OffenseTypeDesc: STRING
+  Offense_statute: STRING
+  VIOLENT_OFFENSE_IND: STRING
+  JudgeLegistId: STRING
+  FirstName: STRING
+  MiddleName: STRING
+  LastName: STRING
+  CountyId: STRING
+  SentenceId: STRING
+  ChargeOutcomeTypeDesc: STRING
 unused_columns:
   # TODO(#17184): Consider include this for hydrating ChargeV2Status
   - ChargeOutcomeTypeDesc

@@ -3,10 +3,10 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - offender_booking_id
-  - report_id
-  - start_date
-  - closing_date
+  offender_booking_id: STRING
+  report_id: STRING
+  start_date: DATE
+  closing_date: DATE
 unused_columns:
   - closing_date # not sure if this could be used for decision response date? We should ask MI
 output:

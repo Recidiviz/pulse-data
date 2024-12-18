@@ -3,16 +3,16 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - AssessmentId
-  - OffenderId
-  - AssessmentTypeDesc
-  - AssessmentToolDesc
-  - CompletionDate
-  - OverallScore
-  - ResultNote
-  - legacy_assessment_degree_level
-  - AssessmentDegreeId
-  - AssessmentDegreeDesc
+  AssessmentId: STRING
+  OffenderId: STRING
+  AssessmentTypeDesc: STRING
+  AssessmentToolDesc: STRING
+  CompletionDate: STRING
+  OverallScore: STRING
+  ResultNote: STRING
+  legacy_assessment_degree_level: STRING
+  AssessmentDegreeId: STRING
+  AssessmentDegreeDesc: STRING
 unused_columns: []
 output:
   StatePerson:

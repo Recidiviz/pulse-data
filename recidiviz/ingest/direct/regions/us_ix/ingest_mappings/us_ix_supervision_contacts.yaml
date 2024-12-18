@@ -3,20 +3,20 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderId #external_id
-  - OffenderNoteInfoId #external_id
-  - NoteDate
-  - contact_type
-  - contact_method
-  - contact_title #reason_raw_text
-  - contact_location #location_raw_text and concat for method
-  - contact_result
-  - verified_employment
-  - resulted_in_arrest
-  - EmployeeId
-  - FirstName
-  - MiddleName
-  - LastName
+  OffenderId: STRING
+  OffenderNoteInfoId: STRING
+  NoteDate: STRING
+  contact_type: STRING
+  contact_method: STRING
+  contact_title: STRING
+  contact_location: STRING
+  contact_result: STRING
+  verified_employment: BOOLEAN
+  resulted_in_arrest: BOOLEAN
+  EmployeeId: STRING
+  FirstName: STRING
+  MiddleName: STRING
+  LastName: STRING
 unused_columns:
   - FirstName
   - MiddleName

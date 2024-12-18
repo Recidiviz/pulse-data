@@ -3,12 +3,12 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - ParoleNumber
-  - LsirID
-  - ParoleCountID
-  - LSIRScore
-  - ReleaseStatus
-  - InterviewDate
+  ParoleNumber: STRING
+  LsirID: STRING
+  ParoleCountID: STRING
+  LSIRScore: STRING
+  ReleaseStatus: STRING
+  InterviewDate: DATE
 unused_columns: []
 output:
   StatePerson:

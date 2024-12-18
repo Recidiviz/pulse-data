@@ -1,14 +1,14 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - employee_id
-  - Email
-  - FirstName
-  - LastName
-  - Role
-  - start_date
-  - end_date
-  - period_seq_num
+  employee_id: STRING
+  LastName: STRING
+  FirstName: STRING
+  Role: STRING
+  Email: STRING
+  start_date: STRING
+  end_date: STRING
+  period_seq_num: STRING
 unused_columns:
   - FirstName
   - LastName

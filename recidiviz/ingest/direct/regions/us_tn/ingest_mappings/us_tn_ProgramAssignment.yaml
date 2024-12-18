@@ -1,13 +1,13 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - OffenderID #external_id
-  - AssessmentID #program_assignment_id
-  - StartDate #start date
-  - EndDate #discharge date
-  - Recommendation #referral metadata
-  - RecommendationDate # referral date
-  - TreatmentTerminatedReason # used in participation status
+  OffenderID: STRING
+  AssessmentID: STRING
+  StartDate: DATETIME
+  EndDate: DATETIME
+  Recommendation: STRING
+  RecommendationDate: STRING
+  TreatmentTerminatedReason: STRING
 unused_columns: []
 output:
   StatePerson:

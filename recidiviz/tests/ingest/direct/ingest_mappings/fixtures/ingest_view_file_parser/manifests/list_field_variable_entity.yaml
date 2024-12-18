@@ -1,9 +1,9 @@
 manifest_language: 1.0.0
 input_columns:
-  - ID_1
-  - TYPE_1
-  - ID_2
-  - TYPE_2
+  ID_1: STRING
+  TYPE_1: STRING
+  ID_2: STRING
+  TYPE_2: STRING
 unused_columns: []
 variables:
   - first_external_id:

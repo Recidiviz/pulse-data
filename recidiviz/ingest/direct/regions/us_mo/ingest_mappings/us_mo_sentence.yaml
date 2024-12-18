@@ -3,25 +3,25 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - BS_DOC # unique for each person
-  - BS_CYC # unique for each sentence group
-  - BS_SEO # unique for each sentence
-  - BS_CNS # sentence county_code
-  - BS_NCI # charge ncic_code
-  - BS_ASO # charge statute
-  - BS_CLT # charge classification_type
-  - BS_CNT # charge county_code
-  - BS_CLA # charge classification_subtype
-  - BS_DO # charge offense_date
-  - BS_COD # charge description
-  - BS_CRC # charge judicial_district_code
-  - BT_SD # sentence imposed_date incarceration
-  - BT_CRR # sentence is_life
-  - BT_SDI # sentence is_capital_punishment
-  - BU_SF # sentence imposed_date supervision
-  - initial_status_desc
-  - initial_status_code
-  - parent_sentence_external_id_array
+  BS_DOC: STRING
+  BS_CYC: STRING
+  BS_SEO: STRING
+  BS_CNS: STRING
+  BS_NCI: STRING
+  BS_ASO: STRING
+  BS_CLT: STRING
+  BS_CNT: STRING
+  BS_CLA: STRING
+  BS_DO: STRING
+  BS_COD: STRING
+  BS_CRC: STRING
+  parent_sentence_external_id_array: STRING
+  BT_SD: STRING
+  BT_CRR: STRING
+  BT_SDI: STRING
+  BU_SF: STRING
+  initial_status_desc: STRING
+  initial_status_code: STRING
 unused_columns: []
 variables:
   - sentence_group_external_id:

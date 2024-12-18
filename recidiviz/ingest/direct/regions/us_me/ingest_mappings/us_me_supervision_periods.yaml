@@ -3,26 +3,26 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - client_id
-  - start_date
-  - end_date
-  - previous_status
-  - current_status
-  - next_status
-  - supervision_location
-  - previous_jurisdiction_location
-  - previous_jurisdiction_location_type
-  - current_jurisdiction_location_type
-  - next_jurisdiction_location_type
-  - next_jurisdiction_location
-  - transfer_type
-  - transfer_reason
-  - officer_external_id
-  - officer_status
-  - officer_first_name
-  - officer_middle_name
-  - officer_last_name
-  - supervision_period_id
+  client_id: STRING
+  start_date: DATE
+  end_date: DATE
+  previous_status: STRING
+  current_status: STRING
+  next_status: STRING
+  supervision_location: STRING
+  previous_jurisdiction_location: STRING
+  previous_jurisdiction_location_type: STRING
+  current_jurisdiction_location_type: STRING
+  next_jurisdiction_location_type: STRING
+  next_jurisdiction_location: STRING
+  transfer_type: STRING
+  transfer_reason: STRING
+  officer_external_id: STRING
+  officer_status: STRING
+  officer_first_name: STRING
+  officer_middle_name: STRING
+  officer_last_name: STRING
+  supervision_period_id: STRING
 unused_columns:
   - officer_first_name
   - officer_middle_name

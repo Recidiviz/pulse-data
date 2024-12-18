@@ -1,14 +1,14 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - transition_release_eligibility_date
-  - update_datetime_elig
-  - PERSON_ID
-  - DOC_ID
-  - FINAL_OFFENSE_ID
-  - SC_EPISODE_ID
-  - task_subtype
-  - approval_status
+  transition_release_eligibility_date: DATETIME
+  PERSON_ID: STRING
+  DOC_ID: STRING
+  update_datetime_elig: DATETIME
+  FINAL_OFFENSE_ID: STRING
+  SC_EPISODE_ID: STRING
+  task_subtype: STRING
+  approval_status: STRING
 unused_columns: []
 output:
   StatePerson:

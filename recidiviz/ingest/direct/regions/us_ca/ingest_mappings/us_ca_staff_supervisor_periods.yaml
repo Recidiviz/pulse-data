@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - supervisee_BadgeNumber
-  - supervisor_BadgeNumber
-  - start_date
-  - end_date
-  - ParoleUnit
+  supervisee_BadgeNumber: STRING
+  ParoleUnit: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  supervisor_BadgeNumber: STRING
 unused_columns:
   - ParoleUnit
 output:

@@ -3,11 +3,11 @@
 # `view_hunger_games_people` to corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - id
-  - first_name
-  - last_name
-  - district
-  - skill
+  id: STRING
+  first_name: STRING
+  last_name: STRING
+  district: STRING
+  skill: STRING
 unused_columns: []
 output:
   StatePerson:

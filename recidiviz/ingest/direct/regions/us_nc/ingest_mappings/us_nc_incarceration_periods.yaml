@@ -5,14 +5,14 @@ manifest_language: 1.0.0
 launch_env:
   $env: is_local
 input_columns:
-  - doc_id
-  - start_date
-  - end_date
-  - start_reason
-  - end_reason
-  - facility
-  - custody_level
-  - sentence_order
+  doc_id: STRING
+  start_date: STRING
+  end_date: STRING
+  start_reason: STRING
+  end_reason: STRING
+  facility: STRING
+  custody_level: STRING
+  sentence_order: INTEGER
 unused_columns: []
 output:
   StatePerson:

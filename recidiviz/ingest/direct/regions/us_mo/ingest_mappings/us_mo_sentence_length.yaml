@@ -3,11 +3,11 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - person_external_id
-  - sentence_external_id
-  - critical_date
-  - BS_PD # projected completion max
-  - BT_PC # projected completion min
+  person_external_id: STRING
+  sentence_external_id: STRING
+  critical_date: DATE
+  BS_PD: DATE
+  BT_PC: DATE
 unused_columns: []
 output:
   StatePerson:

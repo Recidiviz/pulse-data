@@ -3,18 +3,18 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderID
-  - StartDateTime
-  - EndDateTime
-  - Site
-  - SiteType
-  - StartMovementType
-  - StartMovementReason
-  - EndMovementType
-  - EndMovementReason
-  - IncarcerationPeriodSequenceNumber
-  - CustodyLevel
-  - HousingUnit
+  OffenderID: STRING
+  StartDateTime: DATETIME
+  EndDateTime: DATETIME
+  Site: STRING
+  SiteType: STRING
+  StartMovementType: STRING
+  StartMovementReason: STRING
+  EndMovementType: STRING
+  EndMovementReason: STRING
+  CustodyLevel: STRING
+  HousingUnit: STRING
+  IncarcerationPeriodSequenceNumber: INTEGER
 unused_columns: []
 variables:
   - is_kcsc_ncsc_mcrc_mtrc_bmsp_open_period:

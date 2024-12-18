@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - person_external_id
-  - sentence_external_id
-  - eligible_date
-  - update_datetime
-  - description
-  - sentence_type
+  person_external_id: STRING
+  sentence_external_id: STRING
+  eligible_date: STRING
+  update_datetime: STRING
+  description: STRING
+  sentence_type: STRING
 unused_columns: []
 output:
   StatePerson:

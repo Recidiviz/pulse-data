@@ -1,10 +1,10 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - Employee_Ids
-  - First_Name_sorted
-  - Last_Name_sorted
-  - Email_Tx
+  Email_Tx: STRING
+  Employee_Ids: STRING
+  First_Name_sorted: STRING
+  Last_Name_sorted: STRING
 unused_columns: []
 output:
   StateStaff:

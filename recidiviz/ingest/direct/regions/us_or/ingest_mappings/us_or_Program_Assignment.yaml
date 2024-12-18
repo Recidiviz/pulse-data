@@ -3,14 +3,14 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - RECORD_KEY
-  - TREAT_ID
-  - SUBFILE_KEY
-  - LOCATION
-  - EXIT_CODE
-  - REFER_DATE
-  - ENTRY_DATE
-  - EXIT_DATE
+  RECORD_KEY: STRING
+  TREAT_ID: STRING
+  SUBFILE_KEY: STRING
+  LOCATION: STRING
+  EXIT_CODE: STRING
+  REFER_DATE: STRING
+  ENTRY_DATE: STRING
+  EXIT_DATE: STRING
 unused_columns: []
 output:
   StatePerson:

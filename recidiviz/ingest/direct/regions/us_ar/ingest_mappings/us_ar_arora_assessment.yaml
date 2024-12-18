@@ -3,11 +3,11 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OFFENDERID
-  - RCDATETIME
-  - RISKASSESSMENTTYPE
-  - RISK2SCORE
-  - STAFFIDPERFASSESS
+  OFFENDERID: STRING
+  RCDATETIME: DATETIME
+  RISKASSESSMENTTYPE: STRING
+  RISK2SCORE: STRING
+  STAFFIDPERFASSESS: STRING
 unused_columns: []
 output:
   StatePerson:

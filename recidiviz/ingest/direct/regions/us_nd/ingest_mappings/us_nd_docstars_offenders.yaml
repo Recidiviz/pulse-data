@@ -1,66 +1,66 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - SID
-  - ITAGROOT_ID
-  - FIRST
-  - MIDDLE
-  - LAST_NAME
-  - ADDRESS
-  - CITY
-  - STATE
-  - ZIP
-  - DOB
-  - SEX
-  - RACE
-  - AGENT
-  - SEXOFF
-  - SUP_LVL # Unused, for now.
-  - SUPER_OVERRIDE # Unused, for now.
-  - PREVIOUS_AGENT
-  - RECORD_STATUS # No apparent use for these at the moment
-  - ALIASFLAG # More detailed alias data in the Alias file
-  - ADDRESS2 # Not storing multiple addresses in our schema
-  - CITY2 # Not storing multiple addresses in our schema
-  - STATE2 # Not storing multiple addresses in our schema
-  - ZIP2 # Not storing multiple addresses in our schema
-  - MAILING_ADDRESS2 # Not storing multiple addresses in our schema
-  - PHYSICAL_ADDRESS2 # Not storing multiple addresses in our schema
-  - SITEID # Unused, we pull this from the officer instead
-  - ABSCONDER
-  - GOODTIMEDATE
-  - C_MARITAL
-  - D_DEP
-  - E_LIV_ARR
-  - F_VETERAN
-  - G_INCOME
-  - H_EMPLOY
-  - I_JOB_CL
-  - J_LAST_GR
-  - K_PUB_ASST
-  - INACTIVEDATE # No longer in use within source
-  - LSITOTAL # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT1 # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT2 # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT3 # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT4 # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT5 # We receive detailed LSIR info from LSI Chronology
-  - BIGSIXT6 # We receive detailed LSIR info from LSI Chronology
-  - ACTIVEREVOCATION_IND
-  - CCCFLAG
-  - RecDate # No apparent use for these at the moment
-  - CREATED_BY # No apparent use for these at the moment
-  - RECORDCRDATE # No apparent use for these at the moment
-  - LAST_HOME_VISIT
-  - LAST_FACE_TO_FACE
+  SID: STRING
+  ITAGROOT_ID: STRING
+  LAST_NAME: STRING
+  FIRST: STRING
+  MIDDLE: STRING
+  ADDRESS: STRING
+  CITY: STRING
+  STATE: STRING
+  ZIP: STRING
+  DOB: STRING
+  AGENT: STRING
+  SUP_LVL: STRING
+  SUPER_OVERRIDE: STRING
+  PREVIOUS_AGENT: STRING
+  RECORD_STATUS: STRING
+  COMPLETION_IND: STRING
+  ALIASFLAG: STRING
+  ADDRESS2: STRING
+  CITY2: STRING
+  STATE2: STRING
+  ZIP2: STRING
+  SITEID: STRING
+  ABSCONDER: STRING
+  SEXOFF: STRING
+  GOODTIMEDATE: STRING
+  RACE: STRING
+  SEX: STRING
+  C_MARITAL: STRING
+  D_DEP: STRING
+  E_LIV_ARR: STRING
+  F_VETERAN: STRING
+  G_INCOME: STRING
+  H_EMPLOY: STRING
+  I_JOB_CL: STRING
+  J_LAST_GR: STRING
+  K_PUB_ASST: STRING
+  INACTIVEDATE: STRING
+  BIGSIXT1: STRING
+  BIGSIXT2: STRING
+  BIGSIXT3: STRING
+  BIGSIXT4: STRING
+  BIGSIXT5: STRING
+  BIGSIXT6: STRING
+  ACTIVEREVOCATION_IND: STRING
+  LSITOTAL: STRING
+  CCCFLAG: STRING
+  RecDate: STRING
+  SORAC_SCORE: STRING
+  HOMELESS: STRING
+  CREATED_BY: STRING
+  RECORDCRDATE: STRING
+  LAST_HOME_VISIT: STRING
+  LAST_FACE_TO_FACE: STRING
+  MAILING_ADDRESS2: STRING
+  PHYSICAL_ADDRESS2: STRING
+  COUNTY_RESIDENCE: STRING
+  EARLY_TERMINATION_DATE: STRING
+  EARLY_TERMINATION_ACKNOWLEDGED: STRING
+  EMAIL: STRING
   # TODO(#2227) Either append to address string or create dedicated field on state_person
-  - COUNTY_RESIDENCE
-  - COMPLETION_IND
-  - EARLY_TERMINATION_DATE
-  - EARLY_TERMINATION_ACKNOWLEDGED
-  - HOMELESS
-  - SORAC_SCORE
-  - EMAIL
 unused_columns:
   - SEXOFF
   - SUP_LVL # Unused, for now.

@@ -1,7 +1,7 @@
 manifest_language: 1.0.0
 input_columns:
-  - PERSONID
-  - GENDER
+  PERSONID: STRING
+  GENDER: STRING
 unused_columns: []
 variables:
   - shared_gender_mapping:

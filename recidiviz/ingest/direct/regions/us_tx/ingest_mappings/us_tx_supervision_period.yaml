@@ -3,15 +3,15 @@
 # to corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - SID_Number
-  - Period_ID_Number
-  - Start_Date
-  - Max_Termination_Date
-  - Custodial_Authority
-  - Supervision_Officer
-  - Supervision_Level
-  - Case_Type
-  - Special_Conditions
+  SID_Number: STRING
+  Period_ID_Number: STRING
+  Supervision_Officer: STRING
+  Supervision_Level: STRING
+  Special_Conditions: STRING
+  Custodial_Authority: STRING
+  Case_Type: STRING
+  Start_Date: DATETIME
+  Max_Termination_Date: STRING
 unused_columns: []
 output:
   StatePerson:

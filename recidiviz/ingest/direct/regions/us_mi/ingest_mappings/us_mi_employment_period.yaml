@@ -3,15 +3,15 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - offender_booking_id
-  - sequence_number
-  - employment_date
-  - termination_date
-  - employer_name
-  - position
-  - employment_status_id
-  - termination_reason_code
-  - occupation
+  offender_booking_id: STRING
+  sequence_number: STRING
+  employment_date: DATE
+  termination_date: DATE
+  employer_name: STRING
+  position: STRING
+  employment_status_id: STRING
+  termination_reason_code: STRING
+  occupation: STRING
 unused_columns: []
 output:
   StatePerson:

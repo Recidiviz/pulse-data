@@ -3,30 +3,30 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - offender_booking_id
-  - offender_sentence_id
-  - sentence_status_id
-  - sentence_closing_reason_code
-  - legal_closing_reason_code
-  - sentence_type_id
-  - sentenced_date
-  - effective_date
-  - closing_date
-  - expiration_date
-  - county
-  - min_length_days
-  - min_length_months
-  - min_length_years
-  - max_length_days
-  - max_length_months
-  - max_length_years
-  - original_offender_sentence_id
-  - special_condition_id_list
-  - jail_credit_days
-  - min_life_flag
-  - max_life_flag
-  - attempted_id
-  - offense_code
+  offender_booking_id: STRING
+  offender_sentence_id: STRING
+  sentence_status_id: STRING
+  sentence_closing_reason_code: STRING
+  legal_closing_reason_code: STRING
+  sentence_type_id: STRING
+  sentenced_date: DATE
+  effective_date: DATE
+  closing_date: DATE
+  expiration_date: DATE
+  county: STRING
+  min_length_days: STRING
+  min_length_months: STRING
+  min_length_years: STRING
+  max_length_days: STRING
+  max_length_months: STRING
+  max_length_years: STRING
+  original_offender_sentence_id: STRING
+  special_condition_id_list: STRING
+  jail_credit_days: STRING
+  attempted_id: STRING
+  offense_code: STRING
+  min_life_flag: STRING
+  max_life_flag: STRING
 unused_columns: []
 variables:
   # we'll use parole eligibility date for projected_min_release_date as well

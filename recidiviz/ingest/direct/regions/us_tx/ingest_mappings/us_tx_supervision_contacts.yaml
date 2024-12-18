@@ -3,15 +3,15 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - SID_Number
-  - Verified_Employment
-  - Contact_Date
-  - Contact_ID
-  - Face_to_Face_Flag
-  - Unsuccessful_Contact_Flag
-  - Reason_Description
-  - Location_Description
-  - Type_Description
+  SID_Number: STRING
+  Contact_ID: STRING
+  Contact_Date: STRING
+  Verified_Employment: STRING
+  Face_to_Face_Flag: STRING
+  Unsuccessful_Contact_Flag: STRING
+  Reason_Description: STRING
+  Location_Description: STRING
+  Type_Description: STRING
 unused_columns: [Face_to_Face_Flag]
 output:
   StatePerson:

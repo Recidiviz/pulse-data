@@ -3,19 +3,19 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - RECORD_KEY
-  - PERIOD_ID
-  - LOCATION_TYPE # incarceration_type
-  - MOVE_IN_DATE # admission_date
-  - MOVE_OUT_DATE # release_date
-  - COUNTY
-  - LOCATION_NAME
-  - FACILITY
-  - UNIT_NUMBER # housing_unit
-  - INSTITUTION_RISK # custody_level
-  - ADMISSION_REASON
-  - RELEASE_REASON
-  - RESPONSIBLE_DIVISION # custodial_authority
+  RECORD_KEY: STRING
+  PERIOD_ID: INTEGER
+  LOCATION_TYPE: STRING
+  MOVE_IN_DATE: STRING
+  MOVE_OUT_DATE: STRING
+  COUNTY: STRING
+  LOCATION_NAME: STRING
+  FACILITY: STRING
+  UNIT_NUMBER: STRING
+  INSTITUTION_RISK: STRING
+  ADMISSION_REASON: STRING
+  RELEASE_REASON: STRING
+  RESPONSIBLE_DIVISION: STRING
 unused_columns:
   - LOCATION_NAME
   - COUNTY

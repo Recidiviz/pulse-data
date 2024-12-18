@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - ROOT_OFFENDER_ID
-  - IDENTIFIER
-  - IDENTIFIER_TYPE
-  - CREATE_DATETIME
-  - MODIFY_DATETIME
+  ROOT_OFFENDER_ID: STRING
+  IDENTIFIER_TYPE: STRING
+  IDENTIFIER: STRING
+  CREATE_DATETIME: STRING
+  MODIFY_DATETIME: STRING
 unused_columns:
   - IDENTIFIER_TYPE
   - CREATE_DATETIME

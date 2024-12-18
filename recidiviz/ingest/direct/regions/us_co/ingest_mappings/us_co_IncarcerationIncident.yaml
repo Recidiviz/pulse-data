@@ -3,21 +3,21 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - docno
-  - incident_num
-  - inc_type_desc
-  - incident_date
-  - fac_cd
-  - location_desc
-  - summary
-  - sanct_ldesc
-  - sanc_strt_dtd
-  - disp_hrg_dtd
-  - date_created
-  - disp_note
-  - days_lost
-  - copd_flag
-  - inc_id
+  docno: STRING
+  incident_num: STRING
+  inc_type_desc: STRING
+  incident_date: STRING
+  fac_cd: STRING
+  location_desc: STRING
+  summary: STRING
+  sanct_ldesc: STRING
+  sanc_strt_dtd: STRING
+  disp_hrg_dtd: STRING
+  date_created: STRING
+  disp_note: STRING
+  days_lost: STRING
+  copd_flag: STRING
+  inc_id: INTEGER
 unused_columns: []
 output:
   StatePerson:

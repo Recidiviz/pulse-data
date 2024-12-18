@@ -1,19 +1,19 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - RecID
-  - CONTACT_DATE
-  - CATEGORY
-  - SID
-  - OFFICER
-  - FNAME
-  - LNAME
-  - CONTACT_CODE_1
-  - CONTACT_CODE_2
-  - CONTACT_CODE_3
-  - CONTACT_CODE_4
-  - CONTACT_CODE_5
-  - CONTACT_CODE_6
+  RecID: STRING
+  SID: STRING
+  CONTACT_DATE: STRING
+  CONTACT_CODE_1: STRING
+  CONTACT_CODE_2: STRING
+  CONTACT_CODE_3: STRING
+  CONTACT_CODE_4: STRING
+  CONTACT_CODE_5: STRING
+  CONTACT_CODE_6: STRING
+  CATEGORY: STRING
+  LNAME: STRING
+  FNAME: STRING
+  OFFICER: INTEGER
 unused_columns:
   - FNAME
   - LNAME

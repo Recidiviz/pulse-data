@@ -3,11 +3,11 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - DOC_ID
-  - ASSESSMENT_TYPE
-  - RISK_LEVEL
-  - SCORE
-  - CREATED_DATE
+  DOC_ID: STRING
+  ASSESSMENT_TYPE: STRING
+  RISK_LEVEL: STRING
+  SCORE: STRING
+  CREATED_DATE: DATE
 unused_columns: []
 output:
   StatePerson:

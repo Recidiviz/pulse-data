@@ -1,9 +1,9 @@
 manifest_language: 1.0.0
 input_columns:
-  - FULL
-  - FIRST
-  - MIDDLE
-  - LAST
+  FULL: STRING
+  FIRST: STRING
+  MIDDLE: STRING
+  LAST: STRING
 unused_columns: []
 output:
   FakePerson:

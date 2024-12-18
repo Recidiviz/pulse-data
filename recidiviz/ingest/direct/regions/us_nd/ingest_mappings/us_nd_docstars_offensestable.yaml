@@ -1,25 +1,25 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - LEVEL
-  - COUNTS
-  - OFFENSEDATE
-  - COUNTY
-  - SID
-  - CASE_NUMBER
-  - RecID
-  - COUNT
-  - COURT_NUMBER
-  - INACTIVEDATE
-  - RecDate
-  - YEAR
-  - LAST_UPDATE
-  - CREATED_BY
-  - MASTER_OFFENSE_IND
-  - REQUIRES_REGISTRATION
-  - Common_Statute_Number
-  - JUDGE
-  - ncic_code
+  SID: STRING
+  CASE_NUMBER: STRING
+  RecID: STRING
+  LEVEL: STRING
+  COUNTS: STRING
+  OFFENSEDATE: STRING
+  COUNTY: STRING
+  COUNT: STRING
+  COURT_NUMBER: STRING
+  INACTIVEDATE: STRING
+  RecDate: STRING
+  YEAR: STRING
+  LAST_UPDATE: STRING
+  CREATED_BY: STRING
+  MASTER_OFFENSE_IND: STRING
+  REQUIRES_REGISTRATION: STRING
+  Common_Statute_Number: STRING
+  ncic_code: STRING
+  JUDGE: STRING
 unused_columns:
   - COUNT # No apparent use for this
   - COURT_NUMBER # TODO(#2311) Use this to do better entity matching between incarceration and supervision

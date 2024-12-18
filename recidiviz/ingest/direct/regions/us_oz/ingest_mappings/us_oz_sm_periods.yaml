@@ -3,12 +3,12 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - ID
-  - Favorite_Shop
-  - First_Visit
-  - Last_visit
-  - Rank
-  - ROWNUM
+  ID: STRING
+  Favorite_Shop: STRING
+  Rank: STRING
+  First_Visit: STRING
+  Last_visit: STRING
+  ROWNUM: INTEGER
 unused_columns: []
 output:
   StatePerson:

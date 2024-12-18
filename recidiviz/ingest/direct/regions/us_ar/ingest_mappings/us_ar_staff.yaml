@@ -3,12 +3,12 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - staff_id_array
-  - PERSONLASTNAME
-  - PERSONFIRSTNAME
-  - PERSONMIDDLENAME
-  - PERSONSUFFIX
-  - PARTYEMAILADDR
+  PERSONLASTNAME: STRING
+  PERSONFIRSTNAME: STRING
+  PERSONMIDDLENAME: STRING
+  PERSONSUFFIX: STRING
+  PARTYEMAILADDR: STRING
+  staff_id_array: STRING
 unused_columns: []
 output:
   StateStaff:

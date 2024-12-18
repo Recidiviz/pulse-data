@@ -11,12 +11,8 @@
       "type": "string"
     },
     "input_columns": {
-      "description": "The columns that appear in the input file.",
-      "type": "array",
-      "items": {
-        "type": "string",
-        "uniqueItems": true
-      }
+      "description": "The columns (attribute and type) that appear in the input file.",
+      "type": "object"
     },
     "unused_columns": {
       "description": "The columns that appear in the input file but are not used to populate the entity tree. This should be a subset of `input_columns`. This field exists only for backwards compatibility with old ingest views that select more columns than we actually need. It should generally be empty for new ingest view mappings files.",
@@ -65,13 +61,13 @@
   "examples": [
     {
       "manifest_language": "1.0.0",
-      "input_columns": [
-        "DOC_NUM",
-        "FIRST",
-        "LAST",
-        "DOB",
-        "SSN"
-      ],
+      "input_columns": {
+        "DOC_NUM": "INTEGER",
+        "FIRST": "STRING",
+        "LAST": "STRING",
+        "DOB": "STRING",
+        "SSN": "STRING"
+      },
       "unused_columns": [
         "SSN"
       ],

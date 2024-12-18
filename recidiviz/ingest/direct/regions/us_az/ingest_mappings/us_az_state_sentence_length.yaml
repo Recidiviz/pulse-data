@@ -4,14 +4,14 @@ manifest_language: 1.0.0
 launch_env:
   $env: is_local
 input_columns:
-  - OFFENSE_ID
-  - PERSON_ID
-  - UPDT_DTM
-  - CommunitySupervisionBeginDate
-  - EarnedReleaseCreditDate
-  - SentenceExpirationDate
-  - TransitionToAbsoluteDischargeDate
-  - AbsoluteDischargeDate
+  OFFENSE_ID: STRING
+  PERSON_ID: STRING
+  UPDT_DTM: DATETIME
+  CommunitySupervisionBeginDate: STRING
+  EarnedReleaseCreditDate: STRING
+  SentenceExpirationDate: STRING
+  TransitionToAbsoluteDischargeDate: STRING
+  AbsoluteDischargeDate: STRING
 unused_columns: []
 output:
   StatePerson:

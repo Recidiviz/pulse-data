@@ -3,33 +3,33 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - offender_id
-  - period_id
-  - period_start
-  - period_end
-  - movement_reason_id
-  - next_movement_reason_id
-  - offender_external_movement_id
-  - next_offender_external_movement_id
-  - prev_offender_external_movement_id
-  - dest_name
-  - dest_location_type_id
-  - supervision_level_id
-  - order_type_id_list
-  - special_condition_ids
-  - employee_id
-  - first_name
-  - middle_name
-  - last_name
-  - name_suffix
-  - employee_county
-  - prev_order_type_id_list
-  - next_order_type_id_list
-  - position
-  - prev_movement_reason_id
-  - most_recent_supervision_level_id
-  - modifier
-  - specialties
+  offender_id: STRING
+  period_id: INTEGER
+  period_start: DATE
+  period_end: DATE
+  offender_external_movement_id: STRING
+  movement_reason_id: STRING
+  next_movement_reason_id: STRING
+  dest_name: STRING
+  dest_location_type_id: STRING
+  prev_movement_reason_id: STRING
+  next_offender_external_movement_id: STRING
+  prev_offender_external_movement_id: STRING
+  supervision_level_id: STRING
+  order_type_id_list: STRING
+  prev_order_type_id_list: STRING
+  next_order_type_id_list: STRING
+  special_condition_ids: STRING
+  employee_id: STRING
+  first_name: STRING
+  middle_name: STRING
+  last_name: STRING
+  name_suffix: STRING
+  employee_county: STRING
+  position: STRING
+  most_recent_supervision_level_id: STRING
+  modifier: STRING
+  specialties: STRING
 unused_columns:
   - next_order_type_id_list
   - first_name

@@ -3,15 +3,15 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - offender_booking_id
-  - supervision_violation_id
-  - supv_violation_incident_id
-  - violation_date
-  - incident_summary_notes
-  - violation_type
-  - violation_invest_begin_date
-  - decision_info
-  - violated_conditions
+  offender_booking_id: STRING
+  supervision_violation_id: STRING
+  supv_violation_incident_id: STRING
+  violation_date: DATE
+  incident_summary_notes: STRING
+  violation_invest_begin_date: DATE
+  decision_info: STRING
+  violated_conditions: STRING
+  violation_type: STRING
 unused_columns:
   - incident_summary_notes
   # BL NOTE: should we use this for is_drug and is_sex_offense? We could try searching for key terms to

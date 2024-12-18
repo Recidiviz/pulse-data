@@ -1,8 +1,8 @@
 manifest_language: 1.0.0
 input_columns:
-  - PERSONNAME
-  - DOB
-  - SSN
+  PERSONNAME: STRING
+  DOB: STRING
+  SSN: STRING
 unused_columns:
   - SSN
 launch_env:

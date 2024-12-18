@@ -3,20 +3,20 @@
 # to the corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - violation_external_id
-  - person_external_id
-  - reporting_staff
-  - violation_date
-  - response_date
-  - violation_type_description
-  - violation_type_misdemeanor
-  - violation_type_felony
-  - response_is_completed
-  - violation_result
-  - violation_result_status
-  - sanction_type
-  - intervention_type
-  - source
+  violation_external_id: STRING
+  person_external_id: STRING
+  reporting_staff: STRING
+  violation_date: STRING
+  response_date: STRING
+  violation_type_description: STRING
+  violation_type_misdemeanor: STRING
+  violation_type_felony: STRING
+  response_is_completed: STRING
+  violation_result: STRING
+  violation_result_status: STRING
+  sanction_type: STRING
+  intervention_type: STRING
+  source: STRING
 unused_columns: []
 output:
   StatePerson:

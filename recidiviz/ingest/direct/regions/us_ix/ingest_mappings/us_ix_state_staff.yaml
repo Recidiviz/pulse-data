@@ -3,15 +3,15 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - FirstName
-  - MiddleName
-  - LastName
-  - Suffix
-  - Email
-  - StaffId
-  - StaffIds
-  - employeeIds
-  - employeeCodes
+  FirstName: STRING
+  MiddleName: STRING
+  LastName: STRING
+  Suffix: STRING
+  Email: STRING
+  StaffId: STRING
+  StaffIds: STRING
+  employeeIds: STRING
+  employeeCodes: STRING
 unused_columns: []
 output:
   StateStaff:

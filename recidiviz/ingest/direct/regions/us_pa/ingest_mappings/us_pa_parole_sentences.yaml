@@ -1,18 +1,18 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - ParoleNumber
-  - ParoleCountId
-  - Sent16DGroupNumber
-  - SentenceId
-  - SentTerm
-  - SentDate
-  - SentCounty
-  - release_date
-  - max_date
-  - HReDelDate
-  - HReDelCode
-  - list_of_offense_descriptions
+  ParoleNumber: STRING
+  HReDelDate: DATE
+  HReDelCode: STRING
+  list_of_offense_descriptions: STRING
+  ParoleCountId: STRING
+  Sent16DGroupNumber: STRING
+  SentenceId: STRING
+  SentTerm: STRING
+  SentDate: DATE
+  SentCounty: STRING
+  release_date: DATE
+  max_date: DATE
 unused_columns:
   - SentTerm # TODO(#32874) waiting on PA's response to deduping sentences
 output:

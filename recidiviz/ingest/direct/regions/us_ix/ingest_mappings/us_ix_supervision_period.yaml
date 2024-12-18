@@ -3,25 +3,25 @@
 # to corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderId
-  - start_date
-  - end_date
-  - Start_TransferReasonDesc
-  - End_TransferReasonDesc
-  - DOCLocationToName
-  - DOCLocationToTypeName
-  - LegalStatusDesc
-  - EmployeeId
-  - StaffId
-  - EmployeeTypeName
-  - FirstName
-  - MiddleName
-  - LastName
-  - RequestedSupervisionAssignmentLevel
-  - PhysicalLocationTypeDesc
-  - LocationName
-  - period_id
-  - bw_status
+  OffenderId: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  Start_TransferReasonDesc: STRING
+  End_TransferReasonDesc: STRING
+  DOCLocationToName: STRING
+  DOCLocationToTypeName: STRING
+  LegalStatusDesc: STRING
+  StaffId: STRING
+  EmployeeId: STRING
+  EmployeeTypeName: STRING
+  FirstName: STRING
+  MiddleName: STRING
+  LastName: STRING
+  RequestedSupervisionAssignmentLevel: STRING
+  PhysicalLocationTypeDesc: STRING
+  LocationName: STRING
+  bw_status: STRING
+  period_id: INTEGER
 unused_columns:
   - EmployeeTypeName
   - LocationName

@@ -6,13 +6,13 @@ manifest_language: 1.0.0
 launch_env:
   $env: is_local
 input_columns:
-  - ID
-  - incarceration_type
-  - admission_date
-  - release_date
-  - facility
-  - admission_reason
-  - release_reason
+  ID: STRING
+  incarceration_type: STRING
+  admission_date: STRING
+  release_date: STRING
+  facility: STRING
+  admission_reason: STRING
+  release_reason: STRING
 unused_columns: []
 output:
   StatePerson:

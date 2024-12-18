@@ -3,13 +3,13 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - pkORASClientRiskLevelAndNeedsId
-  - inmateNumber
-  - overallScore
-  - riskLevel
-  - assessmentDate
-  - overrideReasonCode
-  - supervisionLevelOverrideCode
+  pkORASClientRiskLevelAndNeedsId: STRING
+  inmateNumber: STRING
+  overrideReasonCode: STRING
+  supervisionLevelOverrideCode: STRING
+  overallScore: STRING
+  riskLevel: STRING
+  assessmentDate: STRING
 unused_columns: []
 output:
   StatePerson:

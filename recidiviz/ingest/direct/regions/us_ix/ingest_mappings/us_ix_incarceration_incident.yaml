@@ -3,17 +3,17 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderId
-  - InfractionDate
-  - DiscOffenseRptId
-  - LocationName
-  - DAProcedureStatusDesc
-  - outcome_list
-  - TermId
-  - DorOffenseTypeDesc
-  - DorOffenseCode
-  - SeverityDesc
-  - DorOffenseCategoryId
+  DiscOffenseRptId: STRING
+  TermId: STRING
+  OffenderId: STRING
+  InfractionDate: STRING
+  DorOffenseTypeDesc: STRING
+  DorOffenseCode: STRING
+  DorOffenseCategoryId: STRING
+  LocationName: STRING
+  SeverityDesc: STRING
+  DAProcedureStatusDesc: STRING
+  outcome_list: STRING
 unused_columns: []
 output:
   StatePerson:

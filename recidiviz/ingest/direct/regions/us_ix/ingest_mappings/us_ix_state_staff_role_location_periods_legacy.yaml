@@ -3,12 +3,12 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - empl_cd
-  - empl_title
-  - fac_cd
-  - start_date
-  - end_date
-  - period_id
+  empl_cd: STRING
+  empl_title: STRING
+  fac_cd: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  period_id: INTEGER
 unused_columns: []
 output:
   StateStaff:

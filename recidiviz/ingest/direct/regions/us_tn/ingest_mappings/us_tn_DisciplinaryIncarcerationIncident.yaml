@@ -3,25 +3,25 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderID
-  - IncidentId
-  - SiteId
-  - Location
-  - IncidentType
-  - IncidentDate
-  - DisciplinaryClass #put in incident_metadata
-  - OffenderAccount
-  - Disposition
-  - DispositionDate
-  - SentenceType
-  - SentenceDays
-  - SentenceHours
-  - SentenceWeeks
-  - SentenceMonths
-  - SentenceDate
-  - InjuryLevel
-  - SentId
-  - InfractionType
+  OffenderID: STRING
+  IncidentId: STRING
+  SiteId: STRING
+  Location: STRING
+  IncidentType: STRING
+  IncidentDate: DATE
+  DisciplinaryClass: STRING
+  OffenderAccount: STRING
+  Disposition: STRING
+  DispositionDate: STRING
+  SentenceType: STRING
+  SentenceDays: STRING
+  SentenceMonths: STRING
+  SentenceWeeks: STRING
+  SentenceHours: STRING
+  SentenceDate: STRING
+  InjuryLevel: STRING
+  SentId: INTEGER
+  InfractionType: STRING
 unused_columns: []
 output:
   StatePerson:

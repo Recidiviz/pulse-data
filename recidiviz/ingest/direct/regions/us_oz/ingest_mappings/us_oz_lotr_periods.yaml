@@ -2,11 +2,11 @@
 # This file associates the columns output from the query in `view_lotr_periods`
 manifest_language: 1.0.0
 input_columns:
-  - PeriodId
-  - PersonId
-  - StartDate
-  - EndDate
-  - Facility
+  PeriodId: STRING
+  PersonId: STRING
+  StartDate: DATE
+  EndDate: DATE
+  Facility: STRING
 unused_columns: []
 output:
   StatePerson:

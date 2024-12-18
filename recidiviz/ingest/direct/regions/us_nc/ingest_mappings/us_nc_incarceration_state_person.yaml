@@ -1,14 +1,14 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - doc_id
-  - last_name
-  - first_name
-  - middle_initial
-  - birthdate
-  - gender
-  - ethnicity
-  - race
+  doc_id: STRING
+  last_name: STRING
+  first_name: STRING
+  middle_initial: STRING
+  birthdate: STRING
+  gender: STRING
+  ethnicity: STRING
+  race: STRING
 unused_columns: []
 output:
   StatePerson:

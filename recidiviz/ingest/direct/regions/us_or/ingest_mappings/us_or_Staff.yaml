@@ -3,7 +3,7 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - CASELOAD
+  CASELOAD: STRING
 unused_columns: []
 output:
   StateStaff:

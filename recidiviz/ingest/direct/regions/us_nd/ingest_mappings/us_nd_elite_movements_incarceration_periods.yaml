@@ -4,16 +4,16 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - period_sequence
-  - offender_book_id
-  - admission_reason_code
-  - start_date
-  - facility
-  - custody_level
-  - release_reason_code
-  - end_date
-  - override_reason
-  - bed_assignment
+  period_sequence: INTEGER
+  offender_book_id: STRING
+  admission_reason_code: STRING
+  start_date: DATETIME
+  facility: STRING
+  end_date: DATETIME
+  release_reason_code: STRING
+  custody_level: STRING
+  override_reason: STRING
+  bed_assignment: STRING
 unused_columns: []
 output:
   StatePerson:

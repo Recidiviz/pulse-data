@@ -1,28 +1,28 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - SentenceId
-  - OffenderId
-  - CountyId
-  - SentenceDate
-  - EffectiveDate
-  - SentenceOrderTypeCode
-  - EndDate
-  - SentenceOrderEventTypeName
-  - Sequence
-  - ChargeId
-  - relationships
-  - SegmentMaxYears
-  - SegmentMaxMonths
-  - SegmentMaxDays
-  - SegmentSatisfactionDate
-  - SegmentStartDate
-  - SegmentYears
-  - SegmentMonths
-  - SegmentDays
-  - OffenseSentenceTypeId
-  - SentenceStatusId
-  - OffenseSortingOrder
+  SentenceId: STRING
+  OffenderId: STRING
+  CountyId: STRING
+  SentenceDate: DATE
+  EffectiveDate: DATE
+  SentenceOrderTypeCode: STRING
+  EndDate: DATE
+  SentenceOrderEventTypeName: STRING
+  Sequence: STRING
+  ChargeId: STRING
+  relationships: STRING
+  SegmentMaxYears: STRING
+  SegmentMaxMonths: STRING
+  SegmentMaxDays: STRING
+  SegmentSatisfactionDate: DATE
+  SegmentStartDate: DATE
+  SegmentYears: STRING
+  SegmentMonths: STRING
+  SegmentDays: STRING
+  OffenseSentenceTypeId: STRING
+  SentenceStatusId: STRING
+  OffenseSortingOrder: STRING
 unused_columns: []
 output:
   StatePerson:

@@ -1,8 +1,8 @@
 manifest_language: 1.0.0
 input_columns:
-  - PERSONNAME
-  - AGENTID
-  - DOB
+  PERSONNAME: STRING
+  AGENTID: STRING
+  DOB: STRING
 unused_columns:
   - DOB
 output:

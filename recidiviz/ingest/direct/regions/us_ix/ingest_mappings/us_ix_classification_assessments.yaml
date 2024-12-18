@@ -3,16 +3,16 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - ClassificationId
-  - OffenderId
-  - AdministrativeDutyOfficerId
-  - ClassificationTypeDesc
-  - ScoreSheetTypeId
-  - AssessmentDate
-  - score
-  - section_one_score
-  - section_two_score
-  - section_three_score
+  ClassificationId: STRING
+  OffenderId: STRING
+  AdministrativeDutyOfficerId: STRING
+  ClassificationTypeDesc: STRING
+  ScoreSheetTypeId: STRING
+  AssessmentDate: STRING
+  score: STRING
+  section_one_score: STRING
+  section_two_score: STRING
+  section_three_score: STRING
 unused_columns:
   - ScoreSheetTypeId
 output:

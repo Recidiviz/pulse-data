@@ -1,8 +1,8 @@
 manifest_language: 1.0.0
 input_columns:
-  - PERSONID
-  - RACE
-  - RACE_SUFFIX
+  PERSONID: STRING
+  RACE: STRING
+  RACE_SUFFIX: STRING
 unused_columns: []
 output:
   FakePerson:

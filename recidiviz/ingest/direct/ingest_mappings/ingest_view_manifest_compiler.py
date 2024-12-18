@@ -21,6 +21,7 @@ import os
 from typing import Callable, Dict, Iterable, List, Optional, Set, Type, Union
 
 import attr
+from google.cloud.bigquery.enums import SqlTypeNames
 from more_itertools import one
 
 from recidiviz.common.common_utils import bidirectional_set_difference
@@ -55,10 +56,40 @@ class IngestViewManifest:
 
     ingest_view_name: str
     manifest_language_version: str
-    input_columns: List[str]
     unused_columns: List[str]
     should_launch_manifest: ManifestNode[bool]
     output: EntityTreeManifest
+
+    # Dictionary containing column to type
+    input_column_to_type: Dict[str, str]
+
+    def __attrs_post_init__(self) -> None:
+        """Validate BigQuery types in input_columns after initialization."""
+        valid_bigquery_types = set(SqlTypeNames)
+
+        # TODO(#30495): Enforce somewhere that ingest views do not produce REPEATED mode
+        #  columns (i.e. array type columns) because we don't have a way to represent
+        #  that in YAMLs. We can enforce this when we validate the column types in the next PR.
+        invalid_types = [
+            (column, type_spec)
+            for column, type_spec in self.input_column_to_type.items()
+            if type_spec not in valid_bigquery_types
+        ]
+
+        if invalid_types:
+            invalid_types_str = "\n".join(
+                f"Column '{col}' has invalid type '{type_}'"
+                for col, type_ in invalid_types
+            )
+            raise ValueError(
+                f"Invalid BigQuery type(s) for ingest view [{self.ingest_view_name}] "
+                f"found in input_columns:\n{invalid_types_str}\n"
+                f"Valid types are: {', '.join(sorted(valid_bigquery_types))}"
+            )
+
+    @property
+    def input_columns(self) -> list[str]:
+        return sorted(self.input_column_to_type.keys())
 
     def should_launch(self, context: IngestViewContentsContext) -> bool:
         should_launch_value = self.should_launch_manifest.build_from_row({}, context)
@@ -90,8 +121,13 @@ class IngestViewManifest:
                 f"because should_launch is false."
             )
 
+        input_column_names = set(self.input_column_to_type.keys())
+
         for i, row in enumerate(contents_iterator):
-            self._validate_row_columns(i, row, set(self.input_columns))
+
+            self._validate_row_columns(
+                row_number=i, row=row, expected_columns=input_column_names
+            )
 
             try:
                 output_tree = self.output.build_from_row(row, context)
@@ -125,11 +161,11 @@ class IngestViewManifest:
         if missing_from_manifest:
             raise ValueError(
                 f"Found columns in input results row [{row_number}] not present in "
-                f"manifest |input_columns| list: {missing_from_manifest}"
+                f"manifest |input_columns|: {missing_from_manifest}"
             )
         if missing_from_results:
             raise ValueError(
-                f"Found columns in manifest |input_columns| list that are missing from "
+                f"Found columns in manifest |input_columns| that are missing from "
                 f"results row [{row_number}]: {missing_from_results}"
             )
 
@@ -161,7 +197,7 @@ class IngestViewManifestCompiler:
 
         # TODO(#8981): Add logic to enforce that version changes are accompanied with
         #  proper migrations / reruns.
-        input_columns = manifest_dict.pop("input_columns", list)
+        input_columns = manifest_dict.pop("input_columns", dict)
         unused_columns = manifest_dict.pop("unused_columns", list)
 
         raw_variable_manifests = manifest_dict.pop_dicts_optional("variables")
@@ -209,7 +245,7 @@ class IngestViewManifestCompiler:
             )
 
         self._validate_input_columns_lists(
-            input_columns_list=input_columns,
+            input_columns=input_columns,
             unused_columns_list=unused_columns,
             referenced_columns=output_manifest.columns_referenced(),
         )
@@ -222,7 +258,7 @@ class IngestViewManifestCompiler:
         return IngestViewManifest(
             ingest_view_name=ingest_view_name,
             manifest_language_version=version,
-            input_columns=input_columns,
+            input_column_to_type=input_columns,
             unused_columns=unused_columns,
             should_launch_manifest=should_launch_manifest,
             output=output_manifest,
@@ -230,7 +266,7 @@ class IngestViewManifestCompiler:
 
     @staticmethod
     def _validate_input_columns_lists(
-        input_columns_list: List[str],
+        input_columns: Dict[str, str],
         unused_columns_list: List[str],
         referenced_columns: Set[str],
     ) -> None:
@@ -238,13 +274,18 @@ class IngestViewManifestCompiler:
         conform to expected structure and contain exactly the set of columns that are
         referenced in the |output| section of the manifest.
         """
-        input_columns = set()
-        for input_col in input_columns_list:
-            if input_col in input_columns:
+
+        # TODO(#30495): Still does not enforce types until we address the TODO in update_big_query_table_schemas.py
+        # Script to update schema (schema-updater.py) need to be re-run to update any non-sync'd YAMLs.
+        input_column_names = set(input_columns.keys())
+        # Validate column names
+        for column in input_column_names:
+            if column.startswith("$"):
                 raise ValueError(
-                    f"Found item listed multiple times in |input_columns|: [{input_col}]"
+                    f"Found column [{column}] that starts with protected "
+                    f"character '$'. Adjust ingest view output column "
+                    f"naming to remove the '$'."
                 )
-            input_columns.add(input_col)
 
         unused_columns = set()
         for unused_col in unused_columns_list:
@@ -254,18 +295,10 @@ class IngestViewManifestCompiler:
                 )
             unused_columns.add(unused_col)
 
-        for column in input_columns:
-            if column.startswith("$"):
-                raise ValueError(
-                    f"Found column [{column}] that starts with protected "
-                    f"character '$'. Adjust ingest view output column "
-                    f"naming to remove the '$'."
-                )
-
         (
             expected_referenced_columns,
             unexpected_unused_columns,
-        ) = bidirectional_set_difference(input_columns, unused_columns)
+        ) = bidirectional_set_difference(input_column_names, unused_columns)
 
         if unexpected_unused_columns:
             raise ValueError(

@@ -3,16 +3,16 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - start_date
-  - end_date
-  - location
-  - program_id
-  - start_movement_id
-  - control_number
-  - start_status_code
-  - end_status_code
-  - start_is_new_act_122_admission
-  - inmate_number
+  control_number: STRING
+  inmate_number: STRING
+  start_movement_id: STRING
+  start_status_code: STRING
+  start_date: STRING
+  location: STRING
+  program_id: STRING
+  end_status_code: STRING
+  end_date: STRING
+  start_is_new_act_122_admission: BOOLEAN
 unused_columns: []
 variables:
   - adm_reason_raw:

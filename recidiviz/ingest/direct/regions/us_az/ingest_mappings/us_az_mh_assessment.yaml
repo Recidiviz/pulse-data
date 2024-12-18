@@ -3,13 +3,13 @@
 # to the corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - MENTAL_HEALTH_ACTION_ID
-  - PERSON_ID
-  - RECORD_DATE
-  - RECORD_USERID
-  - mh_score_description
-  - mh_code_simplified
-  - mh_code
+  MENTAL_HEALTH_ACTION_ID: STRING
+  PERSON_ID: STRING
+  RECORD_DATE: STRING
+  mh_score_description: STRING
+  mh_code: STRING
+  mh_code_simplified: STRING
+  RECORD_USERID: STRING
 unused_columns: []
 output:
   StatePerson:

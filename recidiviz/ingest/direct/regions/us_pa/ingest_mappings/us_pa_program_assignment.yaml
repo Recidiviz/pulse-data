@@ -1,22 +1,22 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - ParoleNumber
-  - ParoleCountID
-  - TreatmentID
-  - TrtStatusCode
-  - TrtClassCode
-  - classification_description
-  - TrtProgramDescription
-  - TrtProgramCode
-  - TrtDo
-  - TrtCounty
-  - TrtStartDateYear
-  - TrtStartDateMonth
-  - TrtStartDateDay
-  - TrtEndDateYear
-  - TrtEndDateMonth
-  - TrtEndDateDay
+  ParoleNumber: STRING
+  ParoleCountID: STRING
+  TreatmentID: STRING
+  TrtStatusCode: STRING
+  TrtClassCode: STRING
+  classification_description: STRING
+  TrtProgramDescription: STRING
+  TrtProgramCode: STRING
+  TrtDo: STRING
+  TrtCounty: STRING
+  TrtStartDateYear: STRING
+  TrtStartDateMonth: STRING
+  TrtStartDateDay: STRING
+  TrtEndDateYear: STRING
+  TrtEndDateMonth: STRING
+  TrtEndDateDay: STRING
 unused_columns: []
 output:
   StatePerson:

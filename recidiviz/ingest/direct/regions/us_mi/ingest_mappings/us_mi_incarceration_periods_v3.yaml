@@ -3,21 +3,21 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - offender_id
-  - start_date
-  - cell_lock
-  - reporting_station_name
-  - location_code
-  - location_type_id
-  - county
-  - movement_reason_id
-  - end_date
-  - next_movement_reason_id
-  - security_level_id
-  - cell_type_id
-  - wing_name
-  - period_id
-  - offender_designation_code_id
+  offender_id: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  movement_reason_id: STRING
+  next_movement_reason_id: STRING
+  reporting_station_name: STRING
+  location_code: STRING
+  location_type_id: STRING
+  county: STRING
+  cell_type_id: STRING
+  security_level_id: STRING
+  wing_name: STRING
+  period_id: INTEGER
+  offender_designation_code_id: STRING
+  cell_lock: STRING
 unused_columns: []
 output:
   StatePerson:

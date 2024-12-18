@@ -3,28 +3,28 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - offender_booking_id
-  - offender_charge_id
-  - closing_reason_code
-  - offense_date
-  - ncic_code
-  - offense_code
-  - description
-  - attempted_id
-  - offense_type_ids
-  - offense_type_description
-  - counts
-  - controlling_sent_code_id
-  - county
-  - judge_id
-  - first_name
-  - last_name
-  - middle_name
-  - name_suffix
-  - circuit_description
-  - StatRpt_term
-  - offender_sentence_id
-  - sentence_type_id
+  offender_booking_id: STRING
+  offender_charge_id: STRING
+  closing_reason_code: STRING
+  offense_date: DATE
+  ncic_code: STRING
+  offense_code: STRING
+  description: STRING
+  attempted_id: STRING
+  offense_type_ids: STRING
+  offense_type_description: STRING
+  counts: STRING
+  controlling_sent_code_id: STRING
+  county: STRING
+  judge_id: STRING
+  first_name: STRING
+  last_name: STRING
+  middle_name: STRING
+  name_suffix: STRING
+  circuit_description: STRING
+  StatRpt_term: STRING
+  offender_sentence_id: STRING
+  sentence_type_id: STRING
 unused_columns: []
 variables:
   - charge:

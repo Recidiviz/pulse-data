@@ -3,18 +3,18 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - DOC
-  - CYC
-  - PFI
-  - END_STATUS_CODE # TODO(#2898): Delete this column when we can use solely TAK026 statuses to populate release reason
-  - END_STATUS_SUBTYPE # TODO(#2898): Delete this column when we can use solely TAK026 statuses to populate release reason
-  - START_DATE
-  - END_DATE
-  - FACILITY
-  - HOUSING_TYPE
-  - SQN
-  - START_SCD_CODES
-  - END_SCD_CODES
+  DOC: STRING
+  CYC: STRING
+  PFI: STRING
+  END_STATUS_CODE: STRING
+  END_STATUS_SUBTYPE: STRING
+  START_DATE: STRING
+  END_DATE: STRING
+  FACILITY: STRING
+  HOUSING_TYPE: STRING
+  SQN: INTEGER
+  START_SCD_CODES: STRING
+  END_SCD_CODES: STRING
 unused_columns: []
 variables:
   - incarceration_period_external_id:

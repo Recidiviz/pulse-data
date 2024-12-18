@@ -3,12 +3,12 @@
 # to the corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - ACCAT_ID
-  - DATE_ASSESSMENT
-  - PERSON_ID
-  - TOTAL_SCORE
-  - FINAL_LEVEL
-  - CONDUCTING_STAFF_EXTERNAL_ID
+  ACCAT_ID: STRING
+  DATE_ASSESSMENT: STRING
+  PERSON_ID: STRING
+  TOTAL_SCORE: STRING
+  FINAL_LEVEL: STRING
+  CONDUCTING_STAFF_EXTERNAL_ID: STRING
 unused_columns: []
 output:
   StatePerson:

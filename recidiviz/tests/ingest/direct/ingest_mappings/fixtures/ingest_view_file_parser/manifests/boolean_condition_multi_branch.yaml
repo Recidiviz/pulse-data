@@ -1,9 +1,9 @@
 manifest_language: 1.0.0
 input_columns:
-  - PERSONNAME
-  - NICKNAME
-  - NICKNAME2
-  - DOB
+  PERSONNAME: STRING
+  NICKNAME: STRING
+  NICKNAME2: STRING
+  DOB: STRING
 unused_columns: []
 output:
   FakePerson:

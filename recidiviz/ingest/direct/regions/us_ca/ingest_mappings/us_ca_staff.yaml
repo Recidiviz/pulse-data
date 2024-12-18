@@ -3,10 +3,10 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - BadgeNumber
-  - LastName
-  - FirstName
-  - EMAILADDRESS
+  BadgeNumber: STRING
+  LastName: STRING
+  FirstName: STRING
+  EMAILADDRESS: STRING
 unused_columns: []
 output:
   StateStaff:

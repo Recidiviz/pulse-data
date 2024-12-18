@@ -1,13 +1,13 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - AGENT_ID
-  - ROLE_TYPE
-  - LOCATION
-  - SUPERVISOR_ID
-  - START_DATE
-  - END_DATE
-  - SEQ_NUM
+  AGENT_ID: STRING
+  ROLE_TYPE: STRING
+  LOCATION: STRING
+  SUPERVISOR_ID: STRING
+  START_DATE: STRING
+  END_DATE: STRING
+  SEQ_NUM: INTEGER
 unused_columns: []
 output:
   StateStaff:

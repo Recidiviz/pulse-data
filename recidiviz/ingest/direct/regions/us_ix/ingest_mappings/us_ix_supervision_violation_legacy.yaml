@@ -3,18 +3,18 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - ofndr_num
-  - body_loc_cd
-  - ofndr_tst_id
-  - assess_tst_id
-  - tst_dt
-  - score_by_name
-  - violation_types
-  - new_crime_types
-  - pv_initiated_by_prosecutor
-  - parolee_placement_recommendation
-  - probationer_placement_recommendation
-  - legal_status
+  ofndr_num: STRING
+  body_loc_cd: STRING
+  ofndr_tst_id: STRING
+  assess_tst_id: STRING
+  tst_dt: STRING
+  score_by_name: STRING
+  violation_types: STRING
+  new_crime_types: STRING
+  pv_initiated_by_prosecutor: STRING
+  parolee_placement_recommendation: STRING
+  probationer_placement_recommendation: STRING
+  legal_status: STRING
 unused_columns:
   # in the US_ID ingest view so keeping for now
   - body_loc_cd

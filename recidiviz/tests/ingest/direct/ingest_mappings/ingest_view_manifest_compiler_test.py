@@ -2441,15 +2441,6 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
                 ingest_view_name="unlisted_referenced_column"
             )
 
-    def test_duplicate_input_col(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found item listed multiple times in |input_columns|: \[PERSONNAME\]",
-        ):
-            _ = self.compiler.compile_manifest(
-                ingest_view_name="duplicate_input_column"
-            )
-
     def test_duplicate_unused_col(self) -> None:
         with self.assertRaisesRegex(
             ValueError,

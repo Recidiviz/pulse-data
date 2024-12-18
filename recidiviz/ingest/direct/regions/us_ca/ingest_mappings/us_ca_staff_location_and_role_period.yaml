@@ -3,11 +3,11 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - BadgeNumber
-  - start_date
-  - end_date
-  - ParoleUnit
-  - AgentClassification
+  BadgeNumber: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  ParoleUnit: STRING
+  AgentClassification: STRING
 unused_columns: []
 output:
   StateStaff:

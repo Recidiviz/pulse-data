@@ -3,13 +3,13 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderId
-  - sequence_number
-  - EMPSTARTDATE
-  - EMPLENDDATE
-  - EMPLOYMENTTYPE
-  - EmployerName
-  - address
+  OffenderId: STRING
+  sequence_number: INTEGER
+  EMPSTARTDATE: STRING
+  EMPLENDDATE: STRING
+  EMPLOYMENTTYPE: STRING
+  EmployerName: STRING
+  address: STRING
 unused_columns: []
 variables:
   - is_employed:

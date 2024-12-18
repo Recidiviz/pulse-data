@@ -1,11 +1,11 @@
 manifest_language: 1.0.0
 input_columns:
-  - PERSONNAME
-  - SSN_UPPER
-  - SSN_MID
-  - SSN_LOWER
-  - ADDRESS
-  - IS_VALID_ADDR
+  PERSONNAME: STRING
+  SSN_UPPER: STRING
+  SSN_MID: STRING
+  SSN_LOWER: STRING
+  ADDRESS: STRING
+  IS_VALID_ADDR: STRING
 unused_columns: []
 output:
   FakePerson:

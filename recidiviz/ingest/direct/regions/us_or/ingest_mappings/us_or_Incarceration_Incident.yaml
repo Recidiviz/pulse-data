@@ -3,21 +3,21 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - RECORD_KEY
-  - MISCONDUCT_CHARGE_ID # incident_id
-  - LOCATION_CODE # facility
-  - MISCONDUCT_LOCATION # location_within_facility
-  - LONG_DESCRIPTION # incident_type
-  - MISCONDUCT_SANCTION_ID # outcome_id
-  - EFFECTIVE_DATE # incident_date
-  - MAPPED_VIOLATION_SEVERITY_LEVEL # incident_metadata mtrlms
-  - RULE_FINDING # incident_metadata mtrule
-  - DECISION_DATE # hearing_date mtofdr
-  - SUBMITTED_DATE # report_date mtofdr
-  - DISCIPLINARY_SANCTION # outcome_type mtsanc
-  - START_DATE # date_effective (outcome) mtsanc
-  - STOP_DATE # projected_end_date mtsanc
-  - ACTUAL_DAYS # punishment_length_days mtsanc
+  RECORD_KEY: STRING
+  MISCONDUCT_CHARGE_ID: STRING
+  LONG_DESCRIPTION: STRING
+  RULE_FINDING: STRING
+  EFFECTIVE_DATE: STRING
+  LOCATION_CODE: STRING
+  MISCONDUCT_LOCATION: STRING
+  DISCIPLINARY_SANCTION: STRING
+  MISCONDUCT_SANCTION_ID: STRING
+  DECISION_DATE: STRING
+  SUBMITTED_DATE: STRING
+  START_DATE: STRING
+  STOP_DATE: STRING
+  ACTUAL_DAYS: STRING
+  MAPPED_VIOLATION_SEVERITY_LEVEL: STRING
 unused_columns: []
 output:
   StatePerson:

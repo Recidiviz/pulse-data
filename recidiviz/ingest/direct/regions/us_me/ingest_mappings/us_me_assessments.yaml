@@ -3,18 +3,18 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - Assessment_Id
-  - Client_Id
-  - Conductor_Id
-  - Assessment_Type
-  - Assessment_Date
-  - Assessment_Score_Num
-  - Lsi_Rating_Approved
-  - Lsi_Rating_Override
-  - Lsi_Rating
-  - Conductor_First_Name
-  - Conductor_Last_Name
-  - Conductor_Middle_Name
+  Assessment_Id: STRING
+  Client_Id: STRING
+  Conductor_Id: STRING
+  Assessment_Type: STRING
+  Assessment_Date: STRING
+  Assessment_Score_Num: STRING
+  Lsi_Rating_Approved: STRING
+  Lsi_Rating_Override: STRING
+  Lsi_Rating: STRING
+  Conductor_First_Name: STRING
+  Conductor_Last_Name: STRING
+  Conductor_Middle_Name: STRING
 unused_columns:
   - Conductor_First_Name
   - Conductor_Last_Name

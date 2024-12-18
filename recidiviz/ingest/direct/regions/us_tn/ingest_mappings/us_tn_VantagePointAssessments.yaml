@@ -3,20 +3,20 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderID
-  - AssessmentID
-  - ConductingStaffID
-  - AssessmentDate
-  - RiskLevel
-  - FriendsNeedLevel
-  - AttitudeBehaviorNeedLevel
-  - AggressionNeedLevel
-  - MentalHealthNeedLevel
-  - AlcoholDrugNeedLevel
-  - ResidentNeedLevel
-  - FamilyNeedLevel
-  - EmploymentNeedLevel
-  - EducationNeedLevel
+  OffenderID: STRING
+  AssessmentID: STRING
+  ConductingStaffID: STRING
+  AssessmentDate: STRING
+  RiskLevel: STRING
+  FriendsNeedLevel: STRING
+  AttitudeBehaviorNeedLevel: STRING
+  AggressionNeedLevel: STRING
+  MentalHealthNeedLevel: STRING
+  AlcoholDrugNeedLevel: STRING
+  ResidentNeedLevel: STRING
+  FamilyNeedLevel: STRING
+  EmploymentNeedLevel: STRING
+  EducationNeedLevel: STRING
 unused_columns: []
 output:
   StatePerson:

@@ -3,14 +3,14 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - ID_NUMBER
-  - RECORD_KEY
-  - FIRST_NAME
-  - MIDDLE_NAME
-  - LAST_NAME
-  - BIRTHDATE
-  - SEX
-  - RACE
+  RECORD_KEY: STRING
+  ID_NUMBER: STRING
+  FIRST_NAME: STRING
+  MIDDLE_NAME: STRING
+  LAST_NAME: STRING
+  BIRTHDATE: DATE
+  SEX: STRING
+  RACE: STRING
 unused_columns: []
 output:
   StatePerson:

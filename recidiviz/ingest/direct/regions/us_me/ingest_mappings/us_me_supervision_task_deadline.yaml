@@ -3,12 +3,12 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - Client_Id
-  - Term_Id
-  - Court_Order_Id
-  - update_datetime
-  - Comm_Rel_Date
-  - PREV_Comm_Rel_Date
+  Client_Id: STRING
+  Term_Id: STRING
+  Court_Order_Id: STRING
+  update_datetime: DATETIME
+  Comm_Rel_Date: STRING
+  PREV_Comm_Rel_Date: STRING
 unused_columns:
   - PREV_Comm_Rel_Date
 output:

@@ -1,11 +1,11 @@
 manifest_language: 1.0.0
 input_columns:
-  - PERSONNAME
-  - ADDR_1
-  - ADDR_2
-  - CITY
-  - STATE
-  - ZIP
+  PERSONNAME: STRING
+  ADDR_1: STRING
+  ADDR_2: STRING
+  CITY: STRING
+  STATE: STRING
+  ZIP: STRING
 unused_columns: []
 output:
   FakePerson:

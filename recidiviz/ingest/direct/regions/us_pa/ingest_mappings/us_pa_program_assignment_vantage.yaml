@@ -1,15 +1,15 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - Parole_No
-  - Inmate_No
-  - ProgramName
-  - most_recent_LocationId
-  - most_recent_Status
-  - referral_date
-  - start_date
-  - discharge_date
-  - treatment_seq_no
+  Parole_No: STRING
+  Inmate_No: STRING
+  ProgramName: STRING
+  most_recent_LocationId: STRING
+  most_recent_Status: STRING
+  referral_date: DATETIME
+  start_date: DATETIME
+  discharge_date: DATETIME
+  treatment_seq_no: INTEGER
 unused_columns: []
 output:
   StatePerson:

@@ -3,11 +3,11 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - CG_DOC # unique for each person
-  - CG_CYC # unique for each sentence group
-  - group_update_datetime
-  - CG_MD # parole eligibility
-  - CG_MM # parole release
+  CG_DOC: STRING
+  CG_CYC: STRING
+  group_update_datetime: DATETIME
+  CG_MD: DATE
+  CG_MM: DATE
 unused_columns: []
 variables:
   - sentence_group_external_id:

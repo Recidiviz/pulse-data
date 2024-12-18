@@ -3,11 +3,11 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - SID_Number
-  - Assessment_Type
-  - Assessment_Level
-  - Assessment_Class
-  - Assessment_Approved_Date
+  SID_Number: STRING
+  Assessment_Type: STRING
+  Assessment_Level: STRING
+  Assessment_Class: STRING
+  Assessment_Approved_Date: STRING
 unused_columns: []
 output:
   StatePerson:

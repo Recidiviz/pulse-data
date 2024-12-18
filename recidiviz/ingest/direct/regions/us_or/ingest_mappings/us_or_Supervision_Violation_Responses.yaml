@@ -3,10 +3,10 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - RECORD_KEY
-  - SANC_NUMBER
-  - SANCTION_DATA
-  - SANC_DATE
+  RECORD_KEY: STRING
+  SANC_NUMBER: STRING
+  SANCTION_DATA: STRING
+  SANC_DATE: DATE
 unused_columns: []
 output:
   StatePerson:

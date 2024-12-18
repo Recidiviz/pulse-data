@@ -3,11 +3,11 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - EmploymentHistoryId
-  - OffenderId
-  - UpdateUserId
-  - UpdateDate
-  - contact_num
+  EmploymentHistoryId: STRING
+  OffenderId: STRING
+  UpdateUserId: STRING
+  UpdateDate: DATE
+  contact_num: INTEGER
 unused_columns: []
 output:
   StatePerson:

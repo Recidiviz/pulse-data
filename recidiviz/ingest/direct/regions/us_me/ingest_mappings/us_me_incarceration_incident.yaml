@@ -3,19 +3,19 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - Cis_100_Client_Id
-  - Incident_Id
-  - Year_Num
-  - Incident_Date
-  - Location_name
-  - Location_Tx
-  - E_Violation_Disposition_Type_Desc
-  - Summary_Tx
-  - CREATED_ON_DATE
-  - E_Violation_Disposition_Class_Desc
-  - HEARING_ACTUALLY_HELD_DATE
-  - DISCIPLINARY_ACTION_FORMAL_IND
-  - Cis_1813_Disposition_Outcome_Type_Cd
+  Cis_100_Client_Id: STRING
+  Incident_Id: STRING
+  Year_Num: STRING
+  Incident_Date: STRING
+  Location_name: STRING
+  Location_Tx: STRING
+  E_Violation_Disposition_Type_Desc: STRING
+  E_Violation_Disposition_Class_Desc: STRING
+  Summary_Tx: STRING
+  HEARING_ACTUALLY_HELD_DATE: STRING
+  CREATED_ON_DATE: STRING
+  DISCIPLINARY_ACTION_FORMAL_IND: STRING
+  Cis_1813_Disposition_Outcome_Type_Cd: STRING
 unused_columns: []
 output:
   StatePerson:

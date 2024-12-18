@@ -3,24 +3,24 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - ParoleNumber
-  - start_date
-  - end_date
-  - admission_reason
-  - termination_reason
-  - status_code
-  - supervision_type
-  - county_of_residence
-  - supervision_level
-  - district_office
-  - supervising_officer_id
-  - supervising_officer_id_type
-  - district_sub_office_id
-  - supervision_location_org_code
-  - condition_codes
-  - next_status_code
-  - prev_status_code
-  - period_seq_num
+  ParoleNumber: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  admission_reason: STRING
+  termination_reason: STRING
+  status_code: STRING
+  next_status_code: STRING
+  supervision_type: STRING
+  county_of_residence: STRING
+  supervision_level: STRING
+  condition_codes: STRING
+  supervising_officer_id: STRING
+  district_office: STRING
+  district_sub_office_id: STRING
+  supervision_location_org_code: STRING
+  period_seq_num: INTEGER
+  prev_status_code: STRING
+  supervising_officer_id_type: STRING
 unused_columns: []
 output:
   StatePerson:

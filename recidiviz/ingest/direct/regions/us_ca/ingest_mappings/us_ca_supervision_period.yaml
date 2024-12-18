@@ -3,14 +3,14 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderId
-  - start_date
-  - end_date
-  - OffenderGroup
-  - SupervisionLevel
-  - period_sequence_number
-  - BadgeNumber
-  - upper_ParoleUnit
+  OffenderId: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  OffenderGroup: STRING
+  SupervisionLevel: STRING
+  period_sequence_number: INTEGER
+  upper_ParoleUnit: STRING
+  BadgeNumber: STRING
 unused_columns: []
 output:
   StatePerson:

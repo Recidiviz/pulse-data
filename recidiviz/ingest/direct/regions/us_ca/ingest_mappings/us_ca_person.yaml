@@ -3,16 +3,16 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderId
-  - FirstName
-  - MiddleName
-  - LastName
-  - NameSuffix
-  - Birthday
-  - Sex
-  - Ethnic
-  - Race
-  - AddressType
+  OffenderId: STRING
+  FirstName: STRING
+  MiddleName: STRING
+  LastName: STRING
+  NameSuffix: STRING
+  Birthday: STRING
+  Sex: STRING
+  Race: STRING
+  Ethnic: STRING
+  AddressType: STRING
 unused_columns: []
 output:
   StatePerson:

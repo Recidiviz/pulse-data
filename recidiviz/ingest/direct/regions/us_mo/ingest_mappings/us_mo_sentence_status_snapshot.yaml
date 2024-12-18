@@ -3,13 +3,13 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - BS_DOC # Unique for each person
-  - BS_CYC # Unique for each sentence group
-  - BS_SEO # Unique for each sentence
-  - BW_SSO # sequence_num
-  - BW_SCD # Status Code
-  - BW_SY # Status Code Change Date
-  - FH_SDE # Status Code Description
+  BW_SSO: STRING
+  BW_SY: STRING
+  BW_SCD: STRING
+  FH_SDE: STRING
+  BS_DOC: STRING
+  BS_CYC: STRING
+  BS_SEO: STRING
 unused_columns: []
 output:
   StatePerson:

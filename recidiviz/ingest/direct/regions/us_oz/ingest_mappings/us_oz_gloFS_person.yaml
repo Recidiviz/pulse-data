@@ -3,10 +3,10 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - ID
-  - FirstName
-  - LastName
-  - StartDate
+  ID: STRING
+  FirstName: STRING
+  LastName: STRING
+  StartDate: DATE
 unused_columns: []
 output:
   StatePerson:

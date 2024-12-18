@@ -1,31 +1,31 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - SentenceId
-  - OffenderId
-  - CountyId
-  - SentenceDate
-  - EffectiveDate
-  - DpedApprovedDate
-  - SentenceOrderEventTypeName
-  - Sequence
-  - ChargeId
-  - relationships
-  - SegmentMaxYears
-  - SegmentMaxMonths
-  - SegmentMaxDays
-  - SegmentPED
-  - SegmentSatisfactionDate
-  - SegmentStartDate
-  - SegmentEndDate
-  - SegmentYears
-  - SegmentMonths
-  - SegmentDays
-  - OffenseSentenceTypeId
-  - SentenceStatusId
-  - FtrdApprovedDate
-  - CorrectionsCompactEndDate
-  - OffenseSortingOrder
+  SentenceId: STRING
+  OffenderId: STRING
+  CountyId: STRING
+  SentenceDate: DATE
+  EffectiveDate: DATE
+  DpedApprovedDate: DATE
+  SentenceOrderEventTypeName: STRING
+  Sequence: STRING
+  ChargeId: STRING
+  FtrdApprovedDate: DATE
+  CorrectionsCompactEndDate: DATE
+  relationships: STRING
+  SegmentMaxYears: STRING
+  SegmentMaxMonths: STRING
+  SegmentMaxDays: STRING
+  SegmentPED: DATE
+  SegmentSatisfactionDate: DATE
+  SegmentStartDate: DATE
+  SegmentEndDate: DATE
+  SegmentYears: STRING
+  SegmentMonths: STRING
+  SegmentDays: STRING
+  OffenseSentenceTypeId: STRING
+  SentenceStatusId: STRING
+  OffenseSortingOrder: STRING
 unused_columns: []
 variables:
   # FtrdApprovedDate is sometimes empty in the case of interstate compact sentences so we'll proxy it using CorrectionsCompactEndDate

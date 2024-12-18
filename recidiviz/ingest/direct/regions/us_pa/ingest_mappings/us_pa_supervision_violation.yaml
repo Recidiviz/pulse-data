@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - parole_number
-  - parole_count_id
-  - set_id
-  - violation_date
-  - violation_types
+  parole_number: STRING
+  parole_count_id: STRING
+  set_id: STRING
+  violation_date: DATE
+  violation_types: STRING
 unused_columns: []
 output:
   # Each set of violations and responses begets a single `state_supervision_violation`

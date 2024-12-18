@@ -3,20 +3,20 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderID
-  - SupervisionType
-  - StartDate
-  - EndDate
-  - AdmissionReason
-  - TerminationReason
-  - SupervisionOfficerID
-  - SupervisionOfficerFirstName
-  - SupervisionOfficerLastName
-  - SupervisionOfficerSuffix
-  - AssignmentType
-  - Site
-  - SupervisionPeriodSequenceNumber
-  - SupervisionLevel
+  OffenderID: STRING
+  SupervisionType: STRING
+  SupervisionOfficerID: STRING
+  AssignmentType: STRING
+  Site: STRING
+  SupervisionOfficerFirstName: STRING
+  SupervisionOfficerLastName: STRING
+  SupervisionOfficerSuffix: STRING
+  SupervisionLevel: STRING
+  StartDate: DATE
+  EndDate: DATE
+  AdmissionReason: STRING
+  TerminationReason: STRING
+  SupervisionPeriodSequenceNumber: INTEGER
 unused_columns:
   - SupervisionOfficerFirstName
   - SupervisionOfficerLastName

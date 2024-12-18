@@ -1,7 +1,7 @@
 manifest_language: 1.0.0
 input_columns:
-  - PART_1
-  - PART_2
+  PART_1: STRING
+  PART_2: STRING
 unused_columns: []
 output:
   FakePerson:

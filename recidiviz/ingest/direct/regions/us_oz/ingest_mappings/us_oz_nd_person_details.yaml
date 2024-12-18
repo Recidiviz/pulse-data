@@ -6,7 +6,7 @@ manifest_language: 1.0.0
 launch_env:
   $env: is_local
 input_columns:
-  - person_id
+  person_id: STRING
 unused_columns: []
 output:
   StatePerson:

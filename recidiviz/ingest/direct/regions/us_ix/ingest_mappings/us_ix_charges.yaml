@@ -3,23 +3,23 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OffenderId
-  - OffenseId
-  - OffenseTypeId
-  - Count
-  - OffenseTypeDesc
-  - OffenseCategoryId
-  - Offense_statute
-  - VIOLENT_OFFENSE_IND
-  - JudgeLegistId
-  - FirstName
-  - MiddleName
-  - LastName
-  - NameSuffix
-  - CountyId
-  - OffenseDate
-  - SentenceOrderCategoryId
-  - _sentence_external_id
+  OffenderId: STRING
+  OffenseId: STRING
+  OffenseDate: DATE
+  OffenseTypeId: STRING
+  Count: STRING
+  OffenseTypeDesc: STRING
+  OffenseCategoryId: STRING
+  Offense_statute: STRING
+  VIOLENT_OFFENSE_IND: STRING
+  JudgeLegistId: STRING
+  FirstName: STRING
+  MiddleName: STRING
+  LastName: STRING
+  NameSuffix: STRING
+  CountyId: STRING
+  SentenceOrderCategoryId: STRING
+  _sentence_external_id: STRING
 unused_columns: []
 variables:
   - charge:

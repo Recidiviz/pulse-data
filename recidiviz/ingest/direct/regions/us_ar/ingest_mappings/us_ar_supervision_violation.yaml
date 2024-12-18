@@ -3,13 +3,13 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OFFENDERID
-  - INTERVENTIONDATE
-  - INTERVENTIONTIME
-  - OFFENSESEQ
-  - OFFENSEDATE
-  - OFFENSECODE
-  - sanction_list
+  OFFENDERID: STRING
+  INTERVENTIONDATE: STRING
+  INTERVENTIONTIME: STRING
+  OFFENSESEQ: STRING
+  OFFENSEDATE: STRING
+  OFFENSECODE: STRING
+  sanction_list: STRING
 unused_columns: []
 output:
   StatePerson:

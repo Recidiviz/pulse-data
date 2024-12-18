@@ -3,14 +3,14 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - DOC_ID
-  - CYC
-  - assessment_id
-  - assessment_date
-  - assessment_score
-  - assessment_type
-  - score_type_value
-  - override_score_value
+  DOC_ID: STRING
+  CYC: STRING
+  assessment_id: STRING
+  assessment_date: DATE
+  assessment_type: STRING
+  assessment_score: INTEGER
+  score_type_value: INTEGER
+  override_score_value: INTEGER
 unused_columns: []
 output:
   StatePerson:

@@ -3,14 +3,14 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - RECORD_KEY
-  - CASELOAD
-  - NEXT_NUMBER
-  - CHRONO_DATE
-  - CHRONO_WHO
-  - CHRONO_WHAT
-  - CHRONO_TYPE
-  - MEASURABLE
+  RECORD_KEY: STRING
+  CASELOAD: STRING
+  NEXT_NUMBER: STRING
+  CHRONO_WHO: STRING
+  CHRONO_TYPE: STRING
+  CHRONO_WHAT: STRING
+  CHRONO_DATE: DATE
+  MEASURABLE: STRING
 unused_columns:
   - CHRONO_WHO # Filtered to always be "O" (Adult on Supervision)
 output:

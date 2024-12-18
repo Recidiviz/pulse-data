@@ -1,13 +1,13 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - StaffID
-  - Status
-  - Start_Date
-  - StaffTitle
-  - End_Date
-  - StatusChangeOrder
-  - SiteID
+  StaffID: STRING
+  Status: STRING
+  SiteID: STRING
+  Start_Date: DATETIME
+  StaffTitle: STRING
+  End_Date: DATETIME
+  StatusChangeOrder: INTEGER
 unused_columns:
   - Status
 output:

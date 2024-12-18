@@ -1,21 +1,21 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - recidiviz_primary_person_id
-  - control_number
-  - Frst_Nm
-  - Mid_Nm
-  - Lst_Nm
-  - Nm_Suff
-  - race
-  - sex
-  - date_of_birth
-  - legal_address_1
-  - legal_address_2
-  - legal_city
-  - legal_state
-  - legal_zip_code
-  - inmate_numbers
+  recidiviz_primary_person_id: STRING
+  control_number: STRING
+  Frst_Nm: STRING
+  Mid_Nm: STRING
+  Lst_Nm: STRING
+  Nm_Suff: STRING
+  race: STRING
+  sex: STRING
+  date_of_birth: STRING
+  legal_address_1: STRING
+  legal_address_2: STRING
+  legal_city: STRING
+  legal_state: STRING
+  legal_zip_code: STRING
+  inmate_numbers: STRING
 unused_columns:
   - recidiviz_primary_person_id # Internal Recidiviz person ID
   - inmate_numbers # Already ingested in the `person_external_ids` ingest view.

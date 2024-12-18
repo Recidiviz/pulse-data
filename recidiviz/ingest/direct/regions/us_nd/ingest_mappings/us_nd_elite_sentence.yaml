@@ -1,32 +1,32 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - OFFENDER_BOOK_ID
-  - SENTENCE_SEQ
-  - CHARGE_SEQ
-  - COUNTY_CODE
-  - OFFENCE_TYPE
-  - OFFENCE_CODE
-  - OFFENSE_DATE
-  - severity_ranking
-  - description
-  - INITIAL_COUNTS
-  - COMMENT_TEXT
-  - CHARGE_STATUS
-  - JUDGE_NAME
-  - ISSUING_AGY_LOC_ID
-  - COURT_INFO_ID
-  - PROBABLE_RELEASE_DATE
-  - SENTENCE_EXPIRY_DATE
-  - SENTENCE_CALC_TYPE
-  - IMPOSED_DATE
-  - sentence_type
-  - parent_sentence_external_id_array
-  - SENTENCE_UPDT_DTM
-  - MONTHS
-  - YEARS
-  - DAYS
-  - has_sentence_group
+  OFFENDER_BOOK_ID: STRING
+  SENTENCE_SEQ: STRING
+  CHARGE_SEQ: STRING
+  COUNTY_CODE: STRING
+  OFFENCE_TYPE: STRING
+  OFFENCE_CODE: STRING
+  OFFENSE_DATE: STRING
+  severity_ranking: STRING
+  description: STRING
+  INITIAL_COUNTS: STRING
+  COMMENT_TEXT: STRING
+  CHARGE_STATUS: STRING
+  JUDGE_NAME: STRING
+  ISSUING_AGY_LOC_ID: STRING
+  COURT_INFO_ID: STRING
+  PROBABLE_RELEASE_DATE: STRING
+  SENTENCE_EXPIRY_DATE: STRING
+  SENTENCE_CALC_TYPE: STRING
+  IMPOSED_DATE: STRING
+  sentence_type: STRING
+  SENTENCE_UPDT_DTM: STRING
+  YEARS: STRING
+  MONTHS: STRING
+  DAYS: STRING
+  parent_sentence_external_id_array: STRING
+  has_sentence_group: BOOLEAN
 unused_columns: []
 variables:
   - has_sentence_group:

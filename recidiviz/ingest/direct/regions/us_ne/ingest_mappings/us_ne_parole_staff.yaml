@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - paroleOfficerId
-  - firstName
-  - lastName
-  - email
-  - argusId
+  paroleOfficerId: STRING
+  argusId: STRING
+  firstName: STRING
+  lastName: STRING
+  email: STRING
 unused_columns:
   - argusId #TODO(#35505): Remove or encorporate in view once we get facility staff information
 output:

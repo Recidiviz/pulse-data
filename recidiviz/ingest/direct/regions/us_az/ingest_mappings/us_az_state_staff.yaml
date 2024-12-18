@@ -3,9 +3,9 @@
 # to the corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - FIRST_NAME
-  - SURNAME
-  - PERSON_IDS
+  FIRST_NAME: STRING
+  SURNAME: STRING
+  PERSON_IDS: STRING
 unused_columns: []
 output:
   StateStaff:

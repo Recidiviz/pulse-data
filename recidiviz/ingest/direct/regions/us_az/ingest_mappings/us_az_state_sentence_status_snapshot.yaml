@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - PERSON_ID
-  - OFFENSE_ID
-  - status_update_datetime
-  - status_raw_text
-  - sequence_num
+  PERSON_ID: STRING
+  OFFENSE_ID: STRING
+  status_update_datetime: STRING
+  status_raw_text: STRING
+  sequence_num: INTEGER
 unused_columns: []
 output:
   StatePerson:

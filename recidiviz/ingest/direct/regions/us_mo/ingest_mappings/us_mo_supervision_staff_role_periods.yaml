@@ -3,11 +3,11 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - BDGNO
-  - start_date
-  - CLSTTL
-  - end_date
-  - SEQ
+  BDGNO: STRING
+  CLSTTL: STRING
+  start_date: STRING
+  end_date: STRING
+  SEQ: INTEGER
 unused_columns: []
 variables:
   - end_date:

@@ -3,16 +3,16 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - JT_DOC
-  - JT_CYC
-  - JT_CSQ
-  - VIOLATED_CONDITIONS
-  - MAX_DATE
-  - JS_DOC
-  - JS_CYC
-  - JS_SEO
-  - JS_FSO
-  - FINAL_FORMED_CREATE_DATE
+  JT_DOC: STRING
+  JT_CYC: STRING
+  JT_CSQ: STRING
+  VIOLATED_CONDITIONS: STRING
+  MAX_DATE: STRING
+  JS_DOC: STRING
+  JS_CYC: STRING
+  JS_SEO: STRING
+  JS_FSO: STRING
+  FINAL_FORMED_CREATE_DATE: STRING
 unused_columns:
   # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
   - JS_DOC # Duplicate of JT_DOC

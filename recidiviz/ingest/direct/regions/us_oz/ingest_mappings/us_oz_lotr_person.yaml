@@ -2,13 +2,13 @@
 # This file associates the columns output from the query in `view_lotr_person` to
 manifest_language: 1.0.0
 input_columns:
-  - ID
-  - FirstName
-  - LastName
-  - StartDate
-  - Race
-  - Alias
-  - Role
+  ID: STRING
+  FirstName: STRING
+  LastName: STRING
+  StartDate: DATE
+  Race: STRING
+  Alias: STRING
+  Role: STRING
 unused_columns:
   - StartDate
 output:

@@ -3,19 +3,19 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - external_id
-  - parole_number
-  - contact_start_date
-  - contact_end_date
-  - contact_type
-  - method
-  - contact_attempt
-  - collateral_type
-  - assisted
-  - agent_number
-  - agent_first_name
-  - agent_last_name
-  - parole_org
+  external_id: STRING
+  parole_number: STRING
+  contact_start_date: DATE
+  contact_end_date: DATE
+  contact_type: STRING
+  method: STRING
+  contact_attempt: STRING
+  collateral_type: STRING
+  assisted: STRING
+  agent_number: STRING
+  agent_first_name: STRING
+  agent_last_name: STRING
+  parole_org: STRING
 unused_columns:
   - contact_end_date
   - assisted

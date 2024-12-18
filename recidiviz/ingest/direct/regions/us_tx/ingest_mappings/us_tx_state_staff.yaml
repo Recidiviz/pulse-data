@@ -3,11 +3,11 @@
 # to the corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - email_list
-  - staff_id_list
-  - FirstName
-  - MiddleName
-  - LastName
+  FirstName: STRING
+  MiddleName: STRING
+  LastName: STRING
+  email_list: STRING
+  staff_id_list: STRING
 
 unused_columns: []
 output:

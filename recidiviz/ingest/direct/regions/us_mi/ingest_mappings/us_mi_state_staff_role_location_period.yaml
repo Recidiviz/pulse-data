@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - employee_id_omni
-  - position
-  - default_location_id
-  - start_date
-  - end_date
-  - period_id
+  employee_id_omni: STRING
+  position: STRING
+  default_location_id: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  period_id: INTEGER
 unused_columns: []
 output:
   StateStaff:

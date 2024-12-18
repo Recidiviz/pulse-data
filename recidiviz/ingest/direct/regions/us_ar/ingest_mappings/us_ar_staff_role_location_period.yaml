@@ -3,14 +3,14 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - PARTYID
-  - PARTYRELSTART
-  - PARTYRELEND
-  - WORKASSIGNMENT
-  - PRIMARYSITEIND
-  - RELATEDPARTYID
-  - loc_seq
-  - role_seq
+  PARTYID: STRING
+  PARTYRELSTART: STRING
+  PARTYRELEND: STRING
+  WORKASSIGNMENT: STRING
+  PRIMARYSITEIND: STRING
+  loc_seq: INTEGER
+  role_seq: INTEGER
+  RELATEDPARTYID: STRING
 unused_columns: []
 output:
   StateStaff:

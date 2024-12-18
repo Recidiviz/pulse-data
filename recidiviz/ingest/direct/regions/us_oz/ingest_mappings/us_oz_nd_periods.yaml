@@ -6,12 +6,12 @@ manifest_language: 1.0.0
 launch_env:
   $env: is_local
 input_columns:
-  - entry_id
-  - person_id
-  - start_date
-  - end_date
-  - person_location
-  - country
+  entry_id: STRING
+  person_id: STRING
+  person_location: STRING
+  country: STRING
+  start_date: DATE
+  end_date: DATE
 unused_columns: []
 output:
   StatePerson:

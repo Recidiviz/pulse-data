@@ -5,11 +5,11 @@ manifest_language: 1.0.0
 launch_env:
   $env: is_local
 input_columns:
-  - ID
-  - FirstName
-  - LastName
-  - StartDate
-  - EndDate
+  ID: STRING
+  FirstName: STRING
+  LastName: STRING
+  StartDate: DATE
+  EndDate: DATE
 unused_columns:
   - EndDate
 output:

@@ -3,21 +3,21 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OFFENDERID
-  - start_date
-  - end_date
-  - custody_grade
-  - HOUSINGAREANAME
-  - bed_type
-  - special_admission_type
-  - entry_code
-  - entry_reason
-  - exit_code
-  - exit_reason
-  - location_id
-  - ORGANIZATIONTYPE
-  - ORGCOUNTYCODE
-  - SEQ
+  OFFENDERID: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  custody_grade: STRING
+  HOUSINGAREANAME: STRING
+  bed_type: STRING
+  entry_code: STRING
+  entry_reason: STRING
+  exit_code: STRING
+  exit_reason: STRING
+  ORGANIZATIONTYPE: STRING
+  ORGCOUNTYCODE: STRING
+  SEQ: INTEGER
+  special_admission_type: STRING
+  location_id: STRING
 unused_columns: []
 variables:
   - has_bed_info:

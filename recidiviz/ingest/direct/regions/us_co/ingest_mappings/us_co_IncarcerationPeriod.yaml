@@ -3,23 +3,23 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - OFFENDERID
-  - period_id
-  - start_datetime
-  - start_code
-  - start_reason
-  - end_datetime
-  - end_code
-  - end_reason
-  - JURISDICTIONALAGENCY
-  - OTHERLOCATIONCODE
-  - p_facility_id
-  - p_facility_name
-  - p_facility_type
-  - p_unit_id
-  - p_unit_name
-  - p_unit_type
-  - LOCATIONREPORTMOVEMENT
+  period_id: INTEGER
+  OFFENDERID: STRING
+  start_datetime: STRING
+  start_code: STRING
+  start_reason: STRING
+  end_datetime: STRING
+  end_code: STRING
+  end_reason: STRING
+  JURISDICTIONALAGENCY: STRING
+  OTHERLOCATIONCODE: STRING
+  LOCATIONREPORTMOVEMENT: STRING
+  p_facility_id: STRING
+  p_facility_name: STRING
+  p_facility_type: STRING
+  p_unit_id: STRING
+  p_unit_name: STRING
+  p_unit_type: STRING
 unused_columns:
   - JURISDICTIONALAGENCY
   - OTHERLOCATIONCODE

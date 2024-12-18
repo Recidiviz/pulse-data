@@ -3,11 +3,11 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - StaffID
-  - CaseloadType
-  - StartDate
-  - EndDate
-  - CaseloadChangeOrder
+  StaffID: STRING
+  CaseloadType: STRING
+  StartDate: DATETIME
+  EndDate: DATETIME
+  CaseloadChangeOrder: INTEGER
 unused_columns: []
 output:
   StateStaff:

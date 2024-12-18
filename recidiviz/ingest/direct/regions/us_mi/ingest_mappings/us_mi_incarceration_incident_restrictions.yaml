@@ -3,12 +3,12 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - offender_restriction_id
-  - offender_id
-  - location_name
-  - restriction_description
-  - begin_date
-  - end_date
+  offender_restriction_id: STRING
+  offender_id: STRING
+  location_name: STRING
+  restriction_description: STRING
+  begin_date: DATE
+  end_date: DATE
 unused_columns: []
 output:
   StatePerson:

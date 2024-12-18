@@ -1,30 +1,30 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - PERSON_ID
-  - SC_EPISODE_ID # Unique for each StateSentenceGroup
-  - OFFENSE_ID # Unique for each StateSentence
-  - SENTENCED_DTM # imposed_date
-  - NUM_JAIL_CREDIT_DAYS # initial_time_served_days
-  - ICC_COMMITMENT_FLAG # for sentencing_authority
-  - county
-  - is_life
-  - is_capital_punishment
-  - parole_possible
-  - parent_sentence_external_id_array
-  - JUDGE_ID # judge external ID
-  - OFFENSE_NUMBER # charge count
-  - OFFENSE_DTM
-  - NCIC_CODE
-  - ARS_CODE # used for statute
-  - SUBSECTION_CODE # used for statute
-  - DESCRIPTION
-  - MURDER_DEGREE # classification_subtype
-  - VIOLENCE_FLAG
-  - SEX_OFFENSE_FLAG
-  - TPR_ELIGIBILITY_NOTE
-  - is_controlling
-  - FLAT_SENT_FLAG
+  PERSON_ID: STRING
+  SC_EPISODE_ID: STRING
+  OFFENSE_ID: STRING
+  SENTENCED_DTM: DATE
+  NUM_JAIL_CREDIT_DAYS: INTEGER
+  ICC_COMMITMENT_FLAG: STRING
+  county: STRING
+  is_life: BOOLEAN
+  is_capital_punishment: BOOLEAN
+  parole_possible: BOOLEAN
+  parent_sentence_external_id_array: STRING
+  JUDGE_ID: STRING
+  OFFENSE_NUMBER: STRING
+  OFFENSE_DTM: DATETIME
+  NCIC_CODE: STRING
+  ARS_CODE: STRING
+  SUBSECTION_CODE: STRING
+  DESCRIPTION: STRING
+  MURDER_DEGREE: STRING
+  VIOLENCE_FLAG: STRING
+  SEX_OFFENSE_FLAG: STRING
+  TPR_ELIGIBILITY_NOTE: STRING
+  is_controlling: BOOLEAN
+  FLAT_SENT_FLAG: STRING
 unused_columns:
   - parole_possible
 output:
