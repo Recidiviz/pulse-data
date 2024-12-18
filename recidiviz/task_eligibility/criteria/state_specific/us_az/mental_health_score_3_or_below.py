@@ -65,7 +65,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         reasons_fields=_REASONS_FIELDS,
         state_code=StateCode.US_AZ,
-        meets_criteria_default=True,
+        meets_criteria_default=False,
     )
 )
 

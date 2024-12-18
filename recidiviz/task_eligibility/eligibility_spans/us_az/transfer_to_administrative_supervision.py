@@ -33,6 +33,10 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    AndTaskCriteriaGroup,
+    OrTaskCriteriaGroup,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -42,10 +46,24 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        no_supervision_violation_within_15_months.VIEW_BUILDER,
-        on_supervision_at_least_15_months.VIEW_BUILDER,
+        # 1.6 Mental Health Score of 3 or below.
         mental_health_score_3_or_below.VIEW_BUILDER,
-        not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
+        # 1.8 Offenders with ineligible offenses are only eligible if they've been 15 months violation free
+        OrTaskCriteriaGroup(
+            criteria_name="US_AZ_INELIGIBLE_OFFENSES_BUT_15_MONTHS_VIOLATION_FREE",
+            sub_criteria_list=[
+                not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
+                AndTaskCriteriaGroup(
+                    criteria_name="US_AZ_15_MONTHS_ON_SUPERVISION_VIOLATION_FREE",
+                    sub_criteria_list=[
+                        no_supervision_violation_within_15_months.VIEW_BUILDER,
+                        on_supervision_at_least_15_months.VIEW_BUILDER,
+                    ],
+                    allowed_duplicate_reasons_keys=[],
+                ),
+            ],
+            allowed_duplicate_reasons_keys=[],
+        ),
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )
