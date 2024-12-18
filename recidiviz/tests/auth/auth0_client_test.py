@@ -60,10 +60,10 @@ class Auth0ClientTest(TestCase):
         self.assertEqual(self.auth0_client.fetch_new_access_token(), "API access token")
 
     def test_get_all_users_by_email_addresses(self) -> None:
-        email_addresses = ["one@test.gov", "two@test.gov"]
+        email_addresses = ["one@testdomain.com", "two@testdomain.com"]
         expected_users = [
-            {"user_id": "1", "email": "one@test.gov"},
-            {"user_id": "2", "email": "two@test.gov"},
+            {"user_id": "1", "email": "one@testdomain.com"},
+            {"user_id": "2", "email": "two@testdomain.com"},
         ]
         list_response = {"total": "1", "start": "0", "users": expected_users}
 
@@ -76,7 +76,7 @@ class Auth0ClientTest(TestCase):
         self.mock_client.users.list.assert_called_with(
             per_page=25,
             fields=["user_id", "email", "app_metadata", "last_login"],
-            q='email: "one@test.gov" or email: "two@test.gov"',
+            q='email: "one@testdomain.com" or email: "two@testdomain.com"',
         )
         self.assertEqual(returned_users, expected_users)
 

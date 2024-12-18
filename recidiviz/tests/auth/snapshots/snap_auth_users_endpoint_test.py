@@ -18,7 +18,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user"] =
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "District",
-        "emailAddress": "add_user@domain.org",
+        "emailAddress": "add_user@testdomain.com",
         "externalId": "ABC",
         "featureVariants": {},
         "firstName": None,
@@ -27,14 +27,14 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user"] =
         "roles": ["leadership_role"],
         "routes": {},
         "stateCode": "US_CO",
-        "userHash": "0D1WiekUDUBhjVnqyNbbwGJP2xll0CS9vfsnPrxnmSE=",
+        "userHash": "yRfBcQIOiTFhlzX/Erh5NLDygGJxoGUlTm7iVPyC5CY=",
     },
     {
         "allowedSupervisionLocationIds": "1, 2",
         "allowedSupervisionLocationLevel": "level_1_supervision_location",
         "blocked": False,
         "district": "1, 2",
-        "emailAddress": "parameter@domain.org",
+        "emailAddress": "parameter@testdomain.com",
         "externalId": None,
         "featureVariants": {"D": {}},
         "firstName": None,
@@ -43,7 +43,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user"] =
         "roles": ["leadership_role"],
         "routes": {"A": True, "B": False},
         "stateCode": "US_MO",
-        "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
+        "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
     },
 ]
 
@@ -55,7 +55,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "District",
-        "emailAddress": "add_user@domain.org",
+        "emailAddress": "add_user@testdomain.com",
         "externalId": "ABC",
         "featureVariants": {},
         "firstName": None,
@@ -64,14 +64,14 @@ snapshots[
         "roles": ["leadership_role"],
         "routes": {},
         "stateCode": "US_CO",
-        "userHash": "0D1WiekUDUBhjVnqyNbbwGJP2xll0CS9vfsnPrxnmSE=",
+        "userHash": "yRfBcQIOiTFhlzX/Erh5NLDygGJxoGUlTm7iVPyC5CY=",
     },
     {
         "allowedSupervisionLocationIds": "1, 2",
         "allowedSupervisionLocationLevel": "level_1_supervision_location",
         "blocked": False,
         "district": "1, 2",
-        "emailAddress": "parameter@domain.org",
+        "emailAddress": "parameter@testdomain.com",
         "externalId": None,
         "featureVariants": {"feature1": {}},
         "firstName": None,
@@ -80,7 +80,7 @@ snapshots[
         "roles": ["leadership_role", "supervision_staff"],
         "routes": {"A": True, "B": True},
         "stateCode": "US_MO",
-        "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
+        "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
     },
 ]
 
@@ -89,14 +89,14 @@ snapshots[
 ] = {
     "blocked": False,
     "district": "D1",
-    "emailAddress": "parameter@domain.org",
+    "emailAddress": "parameter@testdomain.com",
     "externalId": "XYZ",
     "firstName": "Test",
     "lastName": "User",
     "pseudonymizedId": "pseudo-XYZ",
     "roles": ["leadership_role"],
     "stateCode": "US_ID",
-    "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
+    "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
 }
 
 snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_user"] = {
@@ -104,7 +104,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_user"] =
     "allowedSupervisionLocationLevel": "",
     "blocked": False,
     "district": "District",
-    "emailAddress": "parameter@domain.org",
+    "emailAddress": "parameter@testdomain.com",
     "externalId": "ABC",
     "featureVariants": {"D": {}},
     "firstName": None,
@@ -113,7 +113,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_user"] =
     "roles": ["leadership_role"],
     "routes": {"A": True, "B": False},
     "stateCode": "US_CO",
-    "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
+    "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
 }
 
 snapshots[
@@ -124,7 +124,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "District 4",
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": "12345",
         "featureVariants": {},
         "firstName": "Test A.",
@@ -133,7 +133,7 @@ snapshots[
         "roles": ["leadership_role"],
         "routes": {},
         "stateCode": "US_CO",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     }
 ]
 
@@ -145,7 +145,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": True,
         "district": "D1",
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": "user_1_override.external_id",
         "featureVariants": {"C": {}, "new variant": False},
         "firstName": "Fake",
@@ -154,14 +154,14 @@ snapshots[
         "roles": ["user_1_override.role"],
         "routes": {"overridden route": True},
         "stateCode": "US_ND",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     },
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "D3",
-        "emailAddress": "supervision_staff@domain.org",
+        "emailAddress": "supervision_staff@testdomain.com",
         "externalId": "abc",
         "featureVariants": {},
         "firstName": "John",
@@ -170,7 +170,7 @@ snapshots[
         "roles": ["supervision_staff"],
         "routes": {},
         "stateCode": "US_ID",
-        "userHash": "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI=",
+        "userHash": "_uYmjI0oMriD8yRXsTt1quVrTkZZuRHJ35X+szGMHJQ=",
     },
 ]
 
@@ -182,7 +182,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "level_1_supervision_location",
         "blocked": False,
         "district": "4, 10A",
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": "12345",
         "featureVariants": {},
         "firstName": "Test A.",
@@ -191,7 +191,7 @@ snapshots[
         "roles": ["leadership_role"],
         "routes": {"A": True},
         "stateCode": "US_MO",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     }
 ]
 
@@ -203,7 +203,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": None,
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": None,
         "featureVariants": {"feature1": {}},
         "firstName": None,
@@ -212,7 +212,7 @@ snapshots[
         "roles": ["leadership_role", "supervision_staff"],
         "routes": {"A": True, "B": True},
         "stateCode": "US_CO",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     }
 ]
 
@@ -224,7 +224,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": None,
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": None,
         "featureVariants": {
             "feature1": {"activeDate": "2024-04-30T14:45:09.865Z"},
@@ -237,7 +237,7 @@ snapshots[
         "roles": ["leadership_role", "supervision_staff"],
         "routes": {"A": True, "B": True},
         "stateCode": "US_CO",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     }
 ]
 
@@ -249,7 +249,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": True,
         "district": None,
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": "A1B2",
         "featureVariants": {"C": {}},
         "firstName": None,
@@ -258,7 +258,7 @@ snapshots[
         "roles": ["leadership_role"],
         "routes": {"A": True, "B": True, "C": False},
         "stateCode": "US_ME",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     }
 ]
 
@@ -269,7 +269,7 @@ snapshots[
     "allowedSupervisionLocationLevel": "",
     "blocked": False,
     "district": None,
-    "emailAddress": "parameter@domain.org",
+    "emailAddress": "parameter@testdomain.com",
     "externalId": None,
     "featureVariants": {"feature1": {}, "feature2": {}},
     "firstName": None,
@@ -278,7 +278,7 @@ snapshots[
     "roles": ["supervision_staff", "leadership_role"],
     "routes": {"A": True, "B": True},
     "stateCode": "US_CO",
-    "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
+    "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
 }
 
 snapshots[
@@ -289,7 +289,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "D1",
-        "emailAddress": "parameter@domain.org",
+        "emailAddress": "parameter@testdomain.com",
         "externalId": "123",
         "featureVariants": {},
         "firstName": "Test",
@@ -298,7 +298,7 @@ snapshots[
         "roles": ["leadership_role"],
         "routes": {},
         "stateCode": "US_CO",
-        "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
+        "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
     }
 ]
 
@@ -310,7 +310,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": None,
-        "emailAddress": "parameter@domain.org",
+        "emailAddress": "parameter@testdomain.com",
         "externalId": "UPDATED ID",
         "featureVariants": {},
         "firstName": "Updated",
@@ -319,7 +319,7 @@ snapshots[
         "roles": ["leadership_role"],
         "routes": {},
         "stateCode": "US_TN",
-        "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
+        "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
     }
 ]
 
@@ -330,7 +330,7 @@ snapshots[
     "allowedSupervisionLocationLevel": "",
     "blocked": False,
     "district": None,
-    "emailAddress": "parameter@domain.org",
+    "emailAddress": "parameter@testdomain.com",
     "externalId": "UPDATED ID",
     "featureVariants": {},
     "firstName": "Updated",
@@ -339,7 +339,7 @@ snapshots[
     "roles": ["leadership_role"],
     "routes": {},
     "stateCode": "US_TN",
-    "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
+    "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
 }
 
 snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_users"] = [
@@ -348,7 +348,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_users
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "D1",
-        "emailAddress": "parameter@domain.org",
+        "emailAddress": "parameter@testdomain.com",
         "externalId": "123",
         "featureVariants": {},
         "firstName": "Test",
@@ -357,14 +357,14 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_users
         "roles": ["supervision_staff"],
         "routes": {},
         "stateCode": "US_CO",
-        "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
+        "userHash": "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU=",
     },
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": None,
-        "emailAddress": "user@domain.org",
+        "emailAddress": "user@testdomain.com",
         "externalId": "456",
         "featureVariants": {},
         "firstName": "Original",
@@ -373,7 +373,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_users
         "roles": ["supervision_staff"],
         "routes": {},
         "stateCode": "US_TN",
-        "userHash": "j8+pC9rc353XWt4x1fg+3Km9TQtr5XMZMT8Frl37H/o=",
+        "userHash": "U9/nAUB/dvfqwBERoVETtCxT66GclnELpsw9OPrE9Vk=",
     },
 ]
 
@@ -383,7 +383,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roste
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "ABC",
-        "emailAddress": "facilities_staff@domain.org",
+        "emailAddress": "facilities_staff@testdomain.com",
         "externalId": "2834",
         "featureVariants": {},
         "firstName": "facilities",
@@ -392,14 +392,14 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roste
         "roles": ["facilities_staff"],
         "routes": {"C": True},
         "stateCode": "US_XX",
-        "userHash": "qV9HFu2yhYFzM885nGWvJN1LqsJBuxINllOXOT9fzs8=",
+        "userHash": "hAYT6YqEQZ2nuvlMgfr523mO4YE05n3wPcTCh9I6QBo=",
     },
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": None,
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": "3975",
         "featureVariants": {},
         "firstName": "leadership",
@@ -408,14 +408,14 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roste
         "roles": ["leadership_role"],
         "routes": {"A": True},
         "stateCode": "US_XX",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     },
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": None,
-        "emailAddress": "supervision_staff@domain.org",
+        "emailAddress": "supervision_staff@testdomain.com",
         "externalId": "3706",
         "featureVariants": {},
         "firstName": "supervision",
@@ -424,7 +424,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roste
         "roles": ["supervision_staff"],
         "routes": {"B": True},
         "stateCode": "US_XX",
-        "userHash": "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI=",
+        "userHash": "_uYmjI0oMriD8yRXsTt1quVrTkZZuRHJ35X+szGMHJQ=",
     },
 ]
 
@@ -436,7 +436,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "NEW DISTRICT",
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": "1234",
         "featureVariants": {},
         "firstName": "leadership",
@@ -445,7 +445,7 @@ snapshots[
         "roles": ["leadership_role"],
         "routes": {"A": True},
         "stateCode": "US_XX",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     }
 ]
 
@@ -457,7 +457,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "ABC",
-        "emailAddress": "facilities_staff@domain.org",
+        "emailAddress": "facilities_staff@testdomain.com",
         "externalId": "2834",
         "featureVariants": {},
         "firstName": "facilities",
@@ -466,14 +466,14 @@ snapshots[
         "roles": ["facilities_staff", "supervision_staff", "experiment-foo"],
         "routes": {"B": True, "C": True},
         "stateCode": "US_XX",
-        "userHash": "qV9HFu2yhYFzM885nGWvJN1LqsJBuxINllOXOT9fzs8=",
+        "userHash": "hAYT6YqEQZ2nuvlMgfr523mO4YE05n3wPcTCh9I6QBo=",
     },
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": None,
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": "3975",
         "featureVariants": {},
         "firstName": "leadership",
@@ -482,14 +482,14 @@ snapshots[
         "roles": ["leadership_role", "supervision_staff"],
         "routes": {"A": True, "B": True},
         "stateCode": "US_XX",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     },
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": None,
-        "emailAddress": "supervision_staff@domain.org",
+        "emailAddress": "supervision_staff@testdomain.com",
         "externalId": "3706",
         "featureVariants": {},
         "firstName": "supervision",
@@ -498,7 +498,7 @@ snapshots[
         "roles": ["supervision_staff"],
         "routes": {"B": True},
         "stateCode": "US_XX",
-        "userHash": "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI=",
+        "userHash": "_uYmjI0oMriD8yRXsTt1quVrTkZZuRHJ35X+szGMHJQ=",
     },
 ]
 
@@ -510,7 +510,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "ABC",
-        "emailAddress": "facilities_staff@domain.org",
+        "emailAddress": "facilities_staff@testdomain.com",
         "externalId": "2834",
         "featureVariants": {},
         "firstName": "facilities",
@@ -519,14 +519,14 @@ snapshots[
         "roles": ["facilities_staff"],
         "routes": {"C": True},
         "stateCode": "US_XX",
-        "userHash": "qV9HFu2yhYFzM885nGWvJN1LqsJBuxINllOXOT9fzs8=",
+        "userHash": "hAYT6YqEQZ2nuvlMgfr523mO4YE05n3wPcTCh9I6QBo=",
     },
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": None,
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": "3975",
         "featureVariants": {},
         "firstName": "leadership",
@@ -535,14 +535,14 @@ snapshots[
         "roles": ["leadership_role"],
         "routes": {"A": True},
         "stateCode": "US_XX",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     },
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "D1",
-        "emailAddress": "supervision_staff@domain.org",
+        "emailAddress": "supervision_staff@testdomain.com",
         "externalId": "3706",
         "featureVariants": {},
         "firstName": "supervision",
@@ -551,14 +551,14 @@ snapshots[
         "roles": ["supervision_staff"],
         "routes": {"B": True},
         "stateCode": "US_XX",
-        "userHash": "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI=",
+        "userHash": "_uYmjI0oMriD8yRXsTt1quVrTkZZuRHJ35X+szGMHJQ=",
     },
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "D2",
-        "emailAddress": "user@domain.org",
+        "emailAddress": "user@testdomain.com",
         "externalId": "98725",
         "featureVariants": {},
         "firstName": "supervision2",
@@ -567,7 +567,7 @@ snapshots[
         "roles": ["supervision_staff"],
         "routes": {"B": True},
         "stateCode": "US_XX",
-        "userHash": "j8+pC9rc353XWt4x1fg+3Km9TQtr5XMZMT8Frl37H/o=",
+        "userHash": "U9/nAUB/dvfqwBERoVETtCxT66GclnELpsw9OPrE9Vk=",
     },
 ]
 
@@ -579,7 +579,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "",
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": "3975",
         "featureVariants": {},
         "firstName": "leadership",
@@ -588,14 +588,14 @@ snapshots[
         "roles": ["leadership_role", "supervision_staff"],
         "routes": {"A": True, "B": True},
         "stateCode": "US_XX",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     },
     {
         "allowedSupervisionLocationIds": "",
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "",
-        "emailAddress": "supervision_staff@domain.org",
+        "emailAddress": "supervision_staff@testdomain.com",
         "externalId": None,
         "featureVariants": {},
         "firstName": None,
@@ -604,7 +604,7 @@ snapshots[
         "roles": ["supervision_staff"],
         "routes": {"B": True},
         "stateCode": "US_XX",
-        "userHash": "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI=",
+        "userHash": "_uYmjI0oMriD8yRXsTt1quVrTkZZuRHJ35X+szGMHJQ=",
     },
 ]
 
@@ -616,7 +616,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "",
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": "0000",
         "featureVariants": {},
         "firstName": None,
@@ -625,7 +625,7 @@ snapshots[
         "roles": ["leadership_role"],
         "routes": {},
         "stateCode": "US_XX",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     }
 ]
 
@@ -637,7 +637,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "",
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": "0000",
         "featureVariants": {},
         "firstName": None,
@@ -646,7 +646,7 @@ snapshots[
         "roles": ["leadership_role"],
         "routes": {},
         "stateCode": "US_XX",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     }
 ]
 
@@ -658,7 +658,7 @@ snapshots[
         "allowedSupervisionLocationLevel": "",
         "blocked": False,
         "district": "",
-        "emailAddress": "leadership@domain.org",
+        "emailAddress": "leadership@testdomain.com",
         "externalId": "0000",
         "featureVariants": {},
         "firstName": None,
@@ -667,6 +667,6 @@ snapshots[
         "roles": ["leadership_role"],
         "routes": {},
         "stateCode": "US_XX",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+        "userHash": "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM=",
     }
 ]

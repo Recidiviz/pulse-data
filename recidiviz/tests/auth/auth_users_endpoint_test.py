@@ -49,12 +49,12 @@ from recidiviz.tests.auth.helpers import (
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
-_PARAMETER_USER_HASH = "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0="
-_USER_HASH = "j8+pC9rc353XWt4x1fg+3Km9TQtr5XMZMT8Frl37H/o="
+_PARAMETER_USER_HASH = "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU="
+_USER_HASH = "U9/nAUB/dvfqwBERoVETtCxT66GclnELpsw9OPrE9Vk="
 # Hash values that might show up in snapshots, for verification
-# add_user@domain.org => "0D1WiekUDUBhjVnqyNbbwGJP2xll0CS9vfsnPrxnmSE="
-# leadership@domain.org => "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk="
-# supervision_staff@domain.org => "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI="
+# add_user@testdomain.com => "yRfBcQIOiTFhlzX/Erh5NLDygGJxoGUlTm7iVPyC5CY="
+# leadership@testdomain.com => "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM="
+# supervision_staff@testdomain.com => "_uYmjI0oMriD8yRXsTt1quVrTkZZuRHJ35X+szGMHJQ="
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -177,7 +177,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_get_users_some_overrides(self) -> None:
         user_1 = generate_fake_rosters(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_ND",
             roles=["leadership_role"],
             district="D1",
@@ -185,7 +185,7 @@ class AuthUsersEndpointTestCase(TestCase):
             last_name="User",
         )
         user_2 = generate_fake_rosters(
-            email="supervision_staff@domain.org",
+            email="supervision_staff@testdomain.com",
             region_code="US_ID",
             external_id="abc",
             roles=["supervision_staff"],
@@ -195,7 +195,7 @@ class AuthUsersEndpointTestCase(TestCase):
             pseudonymized_id="pseudo-abc",
         )
         user_1_override = generate_fake_user_overrides(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_ND",
             external_id="user_1_override.external_id",
             roles=["user_1_override.role"],
@@ -218,7 +218,7 @@ class AuthUsersEndpointTestCase(TestCase):
             role="supervision_staff",
         )
         new_permissions = generate_fake_permissions_overrides(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             routes={"overridden route": True},
             feature_variants={"C": {}, "new variant": False},
         )
@@ -243,7 +243,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_get_users_with_empty_overrides(self) -> None:
         user_1 = generate_fake_rosters(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_MO",
             external_id="12345",
             roles=["leadership_role"],
@@ -266,12 +266,12 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_get_users_with_null_values(self) -> None:
         user_1 = generate_fake_rosters(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_ME",
             roles=["leadership_role"],
         )
         applicable_override = generate_fake_user_overrides(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_ME",
             external_id="A1B2",
             blocked=True,
@@ -282,7 +282,7 @@ class AuthUsersEndpointTestCase(TestCase):
             routes={"B": True},
         )
         new_permissions = generate_fake_permissions_overrides(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             routes={"A": True, "C": False},
             feature_variants={"C": {}},
         )
@@ -307,7 +307,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_get_users_no_permissions(self) -> None:
         user_1 = generate_fake_rosters(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_CO",
             external_id="12345",
             roles=["leadership_role"],
@@ -325,7 +325,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_get_users_with_multiple_roles_no_conflicts(self) -> None:
         user_1 = generate_fake_rosters(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_CO",
             roles=["leadership_role", "supervision_staff"],
         )
@@ -353,7 +353,7 @@ class AuthUsersEndpointTestCase(TestCase):
     def test_get_users_with_multiple_roles_with_conflicts(self) -> None:
 
         user_1 = generate_fake_rosters(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_CO",
             roles=["leadership_role", "supervision_staff"],
         )
@@ -392,7 +392,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_get_user(self) -> None:
         user_1 = generate_fake_rosters(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_CO",
             external_id="ABC",
             roles=["leadership_role"],
@@ -400,7 +400,7 @@ class AuthUsersEndpointTestCase(TestCase):
             pseudonymized_id="pseudo-ABC",
         )
         user_2 = generate_fake_rosters(
-            email="user@domain.org",
+            email="user@testdomain.com",
             region_code="US_CO",
             external_id="XXXX",
             roles=["supervision_staff"],
@@ -422,7 +422,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_get_user_not_found(self) -> None:
         user = generate_fake_rosters(
-            email="user@domain.org",
+            email="user@testdomain.com",
             region_code="US_CO",
             external_id="XXXX",
             roles=["supervision_staff"],
@@ -445,7 +445,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_update_user_in_roster(self) -> None:
         user = generate_fake_rosters(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_CO",
             external_id="123",
             roles=["supervision_staff"],
@@ -461,7 +461,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_CO",
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "roles": ["leadership_role"],
                     "reason": "test",
                 },
@@ -473,12 +473,12 @@ class AuthUsersEndpointTestCase(TestCase):
             self.assertEqual(HTTPStatus.OK, new_role.status_code)
             self.snapshot.assert_match(json.loads(response.data), name="test_update_user_in_roster")  # type: ignore[attr-defined]
             self.assertReasonLog(
-                log.output, "updating user parameter@domain.org with reason: test"
+                log.output, "updating user parameter@testdomain.com with reason: test"
             )
 
     def test_update_user_in_user_override(self) -> None:
         user = generate_fake_user_overrides(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_TN",
             external_id="Original",
             roles=["leadership_role"],
@@ -493,7 +493,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_TN",
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "externalId": "Updated ID",
                     "firstName": "Updated",
                     "reason": "test",
@@ -506,12 +506,12 @@ class AuthUsersEndpointTestCase(TestCase):
             self.assertEqual(HTTPStatus.OK, new_name_id.status_code)
             self.snapshot.assert_match(json.loads(response.data), name="test_update_user_in_user_override")  # type: ignore[attr-defined]
             self.assertReasonLog(
-                log.output, "updating user parameter@domain.org with reason: test"
+                log.output, "updating user parameter@testdomain.com with reason: test"
             )
 
     def test_update_user_missing_state_code(self) -> None:
         user = generate_fake_user_overrides(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_TN",
             external_id="Original",
             roles=["leadership_role"],
@@ -525,7 +525,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
                 json={
                     "externalId": "Updated ID",
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "firstName": "Updated",
                     "reason": "test",
                 },
@@ -534,12 +534,12 @@ class AuthUsersEndpointTestCase(TestCase):
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.snapshot.assert_match(json.loads(response.data), name="test_update_user_missing_state_code")  # type: ignore[attr-defined]
             self.assertReasonLog(
-                log.output, "updating user parameter@domain.org with reason: test"
+                log.output, "updating user parameter@testdomain.com with reason: test"
             )
 
     def test_update_user_add_role(self) -> None:
         user_1 = generate_fake_rosters(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_CO",
             roles=["supervision_staff"],
         )
@@ -563,7 +563,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 self.user,
                 headers=self.headers,
                 json={
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "roles": ["supervision_staff", "leadership_role"],
                     "reason": "test",
                 },
@@ -571,7 +571,7 @@ class AuthUsersEndpointTestCase(TestCase):
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.snapshot.assert_match(json.loads(response.data), name="test_update_user_add_role")  # type: ignore[attr-defined]
             self.assertReasonLog(
-                log.output, "updating user parameter@domain.org with reason: test"
+                log.output, "updating user parameter@testdomain.com with reason: test"
             )
 
     ########
@@ -580,7 +580,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_add_user(self) -> None:
         user_1 = generate_fake_rosters(
-            email="add_user@domain.org",
+            email="add_user@testdomain.com",
             region_code="US_CO",
             external_id="ABC",
             roles=["leadership_role"],
@@ -599,7 +599,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_MO",
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "externalId": None,
                     "roles": ["leadership_role"],
                     "district": "1, 2",
@@ -609,9 +609,8 @@ class AuthUsersEndpointTestCase(TestCase):
                 },
             )
             self.assertReasonLog(
-                log.output, "adding user parameter@domain.org with reason: test"
+                log.output, "adding user parameter@testdomain.com with reason: test"
             )
-
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
@@ -625,7 +624,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": None,
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "externalId": "XYZ",
                     "roles": ["leadership_role"],
                     "district": "D1",
@@ -640,7 +639,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_ID",
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "externalId": "XYZ",
                     "roles": [{"A": "B"}],
                     "district": "D1",
@@ -658,7 +657,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_ID",
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "externalId": "XYZ",
                     "roles": ["leadership_role"],
                     "district": "D1",
@@ -672,14 +671,14 @@ class AuthUsersEndpointTestCase(TestCase):
             )
             self.snapshot.assert_match(json.loads(user_override_user.data), name="test_add_user_repeat_email")  # type: ignore[attr-defined]
             self.assertReasonLog(
-                log.output, "adding user parameter@domain.org with reason: Test"
+                log.output, "adding user parameter@testdomain.com with reason: Test"
             )
             repeat_user_override_user = self.client.post(
                 self.users(),
                 headers=self.headers,
                 json={
                     "stateCode": "US_ND",
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "externalId": None,
                     "roles": ["leadership_role"],
                     "district": None,
@@ -696,7 +695,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_add_user_repeat_roster_email(self) -> None:
         roster_user = generate_fake_rosters(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_TN",
             roles=["leadership_role"],
             district="40",
@@ -708,7 +707,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_TN",
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "externalId": None,
                     "roles": ["leadership_role"],
                     "district": "40",
@@ -724,7 +723,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_add_user_multiple_roles(self) -> None:
         user_1 = generate_fake_rosters(
-            email="add_user@domain.org",
+            email="add_user@testdomain.com",
             region_code="US_CO",
             external_id="ABC",
             roles=["leadership_role"],
@@ -750,7 +749,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_MO",
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "externalId": None,
                     "roles": ["leadership_role", "supervision_staff"],
                     "district": "1, 2",
@@ -760,7 +759,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 },
             )
             self.assertReasonLog(
-                log.output, "adding user parameter@domain.org with reason: test"
+                log.output, "adding user parameter@testdomain.com with reason: test"
             )
 
             response = self.client.get(
@@ -844,7 +843,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_upload_roster_with_missing_email_address(self) -> None:
         roster_leadership_user = generate_fake_rosters(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_XX",
             roles=["leadership_role"],
             external_id="0000",
@@ -879,7 +878,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_upload_roster_with_malformed_email_address(self) -> None:
         roster_leadership_user = generate_fake_rosters(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_XX",
             roles=["leadership_role"],
             external_id="0000",
@@ -900,7 +899,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 content_type="multipart/form-data",
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
-            error_message = "Invalid email address format: [email.gov]"
+            error_message = "Invalid email address format: [testdomain.com]"
             self.assertEqual(error_message, json.loads(response.data)["message"])
 
             # Existing rows should not have been deleted
@@ -912,7 +911,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_upload_roster_with_missing_associated_role(self) -> None:
         roster_leadership_user = generate_fake_rosters(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_XX",
             roles=["leadership_role"],
             external_id="0000",  # This should not change because user is not updated
@@ -934,7 +933,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 content_type="multipart/form-data",
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
-            error_message = "Roster contains a row that with a role that does not exist in the default state role permissions. Offending row has email supervision_staff@domain.org"
+            error_message = "Roster contains a row that with a role that does not exist in the default state role permissions. Offending row has email supervision_staff@testdomain.com"
             self.assertEqual(error_message, json.loads(response.data)["message"])
 
             # Existing rows should not have been deleted
@@ -946,7 +945,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_upload_roster_update_user(self) -> None:
         roster_leadership_user = generate_fake_rosters(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_XX",
             roles=["leadership_role"],  # This should change with the new upload
             external_id="0000",  # This should change with the new upload
@@ -954,7 +953,7 @@ class AuthUsersEndpointTestCase(TestCase):
         )
         # This user will not change
         roster_supervision_staff = generate_fake_rosters(
-            email="supervision_staff@domain.org",
+            email="supervision_staff@testdomain.com",
             region_code="US_XX",
             roles=["supervision_staff"],
             district="",
@@ -1079,7 +1078,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_upload_roster_missing_external_id(self) -> None:
         roster_leadership_user = generate_fake_rosters(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_XX",
             roles=["leadership_role"],
             external_id="1234",  # This should NOT change with the new upload
@@ -1176,7 +1175,7 @@ class AuthUsersEndpointTestCase(TestCase):
 
     def test_update_users(self) -> None:
         roster_user = generate_fake_rosters(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_CO",
             external_id="123",
             roles=["line_staff_user"],
@@ -1186,7 +1185,7 @@ class AuthUsersEndpointTestCase(TestCase):
             pseudonymized_id="pseudo-123",
         )
         override_user = generate_fake_user_overrides(
-            email="user@domain.org",
+            email="user@testdomain.com",
             region_code="US_TN",
             external_id="456",
             roles=["leadership_role"],
@@ -1222,8 +1221,8 @@ class AuthUsersEndpointTestCase(TestCase):
             )
             self.snapshot.assert_match(json.loads(response.data), name="test_update_users")  # type: ignore[attr-defined]
             self.assertReasonLog(
-                log.output, "updating user parameter@domain.org with reason: test"
+                log.output, "updating user parameter@testdomain.com with reason: test"
             )
             self.assertReasonLog(
-                log.output, "updating user user@domain.org with reason: test"
+                log.output, "updating user user@testdomain.com with reason: test"
             )

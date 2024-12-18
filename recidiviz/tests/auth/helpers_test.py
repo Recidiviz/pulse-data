@@ -56,7 +56,7 @@ class BQHelpersTest(BigQueryEmulatorTestCase):
 
     permissions_single_role_test_data = [
         {
-            "email_address": "leadership@domain.org",
+            "email_address": "leadership@testdomain.com",
             "routes": [{"A": True, "B": False}],
             "feature_variants": [
                 {"feature1": {}, "feature2": {"activeDate": f"{active_date1}"}}
@@ -66,7 +66,7 @@ class BQHelpersTest(BigQueryEmulatorTestCase):
 
     permissions_multiple_roles_no_conflict_test_data = [
         {
-            "email_address": "leadership@domain.org",
+            "email_address": "leadership@testdomain.com",
             "routes": [{"A": True, "B": False}, {"C": True}],
             "feature_variants": [{"feature1": False}, {"feature2": {}}],
         }
@@ -74,7 +74,7 @@ class BQHelpersTest(BigQueryEmulatorTestCase):
 
     permissions_multiple_roles_with_conflicts_test_data = [
         {
-            "email_address": "leadership@domain.org",
+            "email_address": "leadership@testdomain.com",
             "routes": [{"A": True, "B": False}, {"A": False, "C": True}],
             "feature_variants": [
                 {

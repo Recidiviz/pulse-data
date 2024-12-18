@@ -54,10 +54,10 @@ _FIXTURE_PATH = os.path.abspath(
         "./fixtures/",
     )
 )
-_PARAMETER_USER_HASH = "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0="
-_LEADERSHIP_USER_HASH = "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk="
-_SUPERVISION_STAFF_HASH = "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI="
-_USER_HASH = "j8+pC9rc353XWt4x1fg+3Km9TQtr5XMZMT8Frl37H/o="
+_PARAMETER_USER_HASH = "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU="
+_LEADERSHIP_USER_HASH = "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM="
+_SUPERVISION_STAFF_HASH = "_uYmjI0oMriD8yRXsTt1quVrTkZZuRHJ35X+szGMHJQ="
+_USER_HASH = "U9/nAUB/dvfqwBERoVETtCxT66GclnELpsw9OPrE9Vk="
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -191,7 +191,7 @@ class AuthEndpointTests(TestCase):
 
     def test_update_user_permissions_roster(self) -> None:
         user = generate_fake_rosters(
-            email="user@domain.org",
+            email="user@testdomain.com",
             region_code="US_CO",
             roles=["supervision_staff"],
         )
@@ -219,7 +219,7 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(HTTPStatus.OK, update_routes.status_code)
             self.assertReasonLog(
                 log.output,
-                "updating permissions for user user@domain.org with reason: test",
+                "updating permissions for user user@testdomain.com with reason: test",
             )
             wrong_type = self.client.put(
                 self.update_user_permissions,
@@ -236,7 +236,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
                     "district": None,
-                    "emailAddress": "user@domain.org",
+                    "emailAddress": "user@testdomain.com",
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
@@ -262,7 +262,7 @@ class AuthEndpointTests(TestCase):
 
     def test_update_user_permissions_user_override(self) -> None:
         added_user = generate_fake_rosters(
-            email="user@domain.org",
+            email="user@testdomain.com",
             region_code="US_TN",
             roles=["leadership_role"],
         )
@@ -287,7 +287,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertReasonLog(
                 log.output,
-                "updating permissions for user user@domain.org with reason: test",
+                "updating permissions for user user@testdomain.com with reason: test",
             )
             wrong_type = self.client.put(
                 self.update_user_permissions,
@@ -306,7 +306,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
                     "district": None,
-                    "emailAddress": "user@domain.org",
+                    "emailAddress": "user@testdomain.com",
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
@@ -326,12 +326,12 @@ class AuthEndpointTests(TestCase):
 
     def test_update_user_permissions_override(self) -> None:
         added_user = generate_fake_rosters(
-            email="user@domain.org",
+            email="user@testdomain.com",
             region_code="US_CO",
             roles=["leadership_role"],
         )
         override_permissions = generate_fake_permissions_overrides(
-            email="user@domain.org",
+            email="user@testdomain.com",
             routes={"A": True},
             feature_variants={"C": "D"},
         )
@@ -350,10 +350,10 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertReasonLog(
                 log.output,
-                "updating permissions for user user@domain.org with reason: test",
+                "updating permissions for user user@testdomain.com with reason: test",
             )
             expected = {
-                "emailAddress": "user@domain.org",
+                "emailAddress": "user@testdomain.com",
                 "routes": {"E": False},
                 "featureVariants": {"C": "D"},
             }
@@ -361,7 +361,7 @@ class AuthEndpointTests(TestCase):
 
     def test_delete_user_permissions(self) -> None:
         roster_user = generate_fake_rosters(
-            email="user@domain.org",
+            email="user@testdomain.com",
             region_code="US_MO",
             roles=["leadership_role"],
             district="D1",
@@ -373,7 +373,7 @@ class AuthEndpointTests(TestCase):
             feature_variants={"E": "F"},
         )
         roster_user_override_permissions = generate_fake_permissions_overrides(
-            email="user@domain.org",
+            email="user@testdomain.com",
             routes={"A": False},
             feature_variants={"C": "D"},
         )
@@ -391,7 +391,7 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(HTTPStatus.OK, delete_roster_user.status_code)
             self.assertReasonLog(
                 log.output,
-                "removing custom permissions for user user@domain.org with reason: test",
+                "removing custom permissions for user user@testdomain.com with reason: test",
             )
             expected_response = [
                 {
@@ -399,7 +399,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationLevel": "level_1_supervision_location",
                     "blocked": False,
                     "district": "D1",
-                    "emailAddress": "user@domain.org",
+                    "emailAddress": "user@testdomain.com",
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
@@ -419,7 +419,7 @@ class AuthEndpointTests(TestCase):
 
     def test_delete_added_user_permissions(self) -> None:
         user = generate_fake_user_overrides(
-            email="user@domain.org",
+            email="user@testdomain.com",
             region_code="US_CO",
             roles=["leadership_role"],
         )
@@ -450,7 +450,7 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(HTTPStatus.OK, delete_roster_user.status_code)
             self.assertReasonLog(
                 log.output,
-                "removing custom permissions for user user@domain.org with reason: test",
+                "removing custom permissions for user user@testdomain.com with reason: test",
             )
             expected_response = [
                 {
@@ -458,7 +458,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
                     "district": None,
-                    "emailAddress": "user@domain.org",
+                    "emailAddress": "user@testdomain.com",
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
@@ -478,7 +478,7 @@ class AuthEndpointTests(TestCase):
 
     def test_delete_nonexistent_user_permissions_error(self) -> None:
         user = generate_fake_user_overrides(
-            email="user@domain.org",
+            email="user@testdomain.com",
             region_code="US_CO",
             roles=["leadership_role"],
         )
@@ -492,7 +492,7 @@ class AuthEndpointTests(TestCase):
 
     def test_delete_user_roster(self) -> None:
         user = generate_fake_rosters(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_ID",
             roles=["leadership_role"],
         )
@@ -507,7 +507,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, delete.status_code)
             self.assertReasonLog(
-                log.output, "blocking user parameter@domain.org with reason: test"
+                log.output, "blocking user parameter@testdomain.com with reason: test"
             )
             response = self.client.get(
                 self.users,
@@ -519,7 +519,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationLevel": "",
                     "blocked": True,
                     "district": None,
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
@@ -540,7 +540,7 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_TN",
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "roles": ["supervision_staff"],
                     "reason": "test",
                 },
@@ -554,7 +554,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, delete.status_code)
             self.assertReasonLog(
-                log.output, "blocking user parameter@domain.org with reason: test"
+                log.output, "blocking user parameter@testdomain.com with reason: test"
             )
             response = self.client.get(
                 self.users,
@@ -566,7 +566,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationLevel": "",
                     "blocked": True,
                     "district": None,
-                    "emailAddress": "parameter@domain.org",
+                    "emailAddress": "parameter@testdomain.com",
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
@@ -846,7 +846,7 @@ class AuthEndpointTests(TestCase):
             feature_variants={"D": True},
         )
         user = generate_fake_rosters(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_MO",
             roles=["leadership_role", "supervision_staff_role"],
         )
@@ -867,7 +867,7 @@ class AuthEndpointTests(TestCase):
             routes={"A": True, "B": True, "C": False},
         )
         user = generate_fake_user_overrides(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_MO",
             roles=["leadership_role"],
         )
@@ -892,28 +892,28 @@ class AuthEndpointTests(TestCase):
             feature_variants={"D": True},
         )
         user_delete = generate_fake_rosters(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_MO",
             roles=["leadership_role"],
         )
         user_keep = generate_fake_rosters(
-            email="supervision_staff@domain.org",
+            email="supervision_staff@testdomain.com",
             region_code="US_MO",
             roles=["supervision_staff_role"],
         )
         override_user_delete = generate_fake_user_overrides(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_MO",
             blocked=True,
         )
         override_only_delete = generate_fake_user_overrides(
-            email="user@domain.org",
+            email="user@testdomain.com",
             region_code="US_MO",
             roles=["leadership_role"],
             blocked=True,
         )
         override_keep = generate_fake_user_overrides(
-            email="supervision_staff_2@domain.org",
+            email="supervision_staff_2@testdomain.com",
             region_code="US_MO",
             roles=["supervision_staff_role"],
         )
@@ -963,11 +963,11 @@ class AuthEndpointTests(TestCase):
             )
             expected_users = [
                 {
-                    "emailAddress": "supervision_staff@domain.org",
+                    "emailAddress": "supervision_staff@testdomain.com",
                     "roles": ["supervision_staff_role"],
                 },
                 {
-                    "emailAddress": "supervision_staff_2@domain.org",
+                    "emailAddress": "supervision_staff_2@testdomain.com",
                     "roles": ["supervision_staff_role"],
                 },
             ]
@@ -1079,20 +1079,20 @@ class AuthEndpointTests(TestCase):
             content_type="text/csv",
         )
         roster_leadership_user = generate_fake_rosters(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_XX",
             roles=["leadership_role"],
             external_id="0000",  # This should change with the new upload
             district="",
         )
         roster_leadership_user_override = generate_fake_user_overrides(
-            email="leadership@domain.org",
+            email="leadership@testdomain.com",
             region_code="US_XX",
             first_name="override",  # This should not change with the new upload
         )
         # This user will be deleted
         roster_supervision_staff = generate_fake_rosters(
-            email="parameter@domain.org",
+            email="parameter@testdomain.com",
             region_code="US_XX",
             roles=["supervision_staff"],
             district="",
@@ -1137,7 +1137,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
                     "district": None,
-                    "emailAddress": "leadership@domain.org",
+                    "emailAddress": "leadership@testdomain.com",
                     "externalId": None,
                     "firstName": "override",
                     "lastName": "user",
@@ -1153,7 +1153,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
                     "district": "D1",
-                    "emailAddress": "supervision_staff@domain.org",
+                    "emailAddress": "supervision_staff@testdomain.com",
                     "externalId": "3706",
                     "firstName": "supervision",
                     "lastName": "user",
@@ -1169,7 +1169,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
                     "district": "D2",
-                    "emailAddress": "user@domain.org",
+                    "emailAddress": "user@testdomain.com",
                     "externalId": "98725",
                     "firstName": "supervision2",
                     "lastName": "user2",
