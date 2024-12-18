@@ -67,6 +67,9 @@ JusticeCountsBase: DeclarativeMeta = declarative_base(
     cls=DatabaseEntity, name="JusticeCountsBase"
 )
 
+# URL where users will be able to read about Justice Counts' methodology
+METHODOLOGY_NOTES_URL = "https://justicecounts.csgjusticecenter.org/methodology"
+
 
 class UserAccountInvitationStatus(enum.Enum):
     NOT_SENT = "NOT_SENT"
@@ -475,6 +478,7 @@ class Agency(Source):
             state = state_code.get_state()
             response["state_name"] = state.name
             response["state_abbreviation"] = state.abbr
+            response["methodology"] = METHODOLOGY_NOTES_URL
 
             if (
                 fips_code_to_geoid is not None
