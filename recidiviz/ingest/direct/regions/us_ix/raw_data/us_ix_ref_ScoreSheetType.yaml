@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ref_ScoreSheetType
+file_description: |-
+  A code table describing classification score sheet type.
+data_classification: source
+primary_key_cols:
+  - ScoreSheetTypeId
+columns:
+  - name: ScoreSheetTypeId
+    description: |-
+      Score sheet type Id.
+  - name: ScoreSheetTypeName
+    description: |-
+      Name of score sheet.
+  - name: ScoreSheetTypeDesc
+    description: |-
+      Description of score sheet.
+  - name: ClsfActionTypeId
+    description: |-
+      CLassification action type id.
+  - name: Locking
+    description: Locking number for record
+  - name: InsertDate
+    description: Record insert date
+    field_type: datetime
+  - name: InsertUserId
+    description: User ID of employee who entered record
+    is_pii: True
+  - name: UpdateDate
+    description: Record update date
+    field_type: datetime
+  - name: UpdateUserId
+    description: User ID of employee who updated record
+    is_pii: True
+  - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Inactive
+    description: Inactive flag.
+is_code_file: True

@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: clsf_ClsfAction
+file_description: |-
+  Classification action table.
+data_classification: source
+primary_key_cols:
+  - ClsfActionId
+columns:
+  - name: ClsfActionId
+    description: |-
+      Classification action unique identifier.
+  - name: ClassificationId
+    description: |-
+      Classification action Id.
+  - name: ActionTypeId
+    description: |-
+      Action type Id.
+  - name: Locking
+    description: Locking number for record
+  - name: InsertDate
+    description: Record insert date
+    field_type: datetime
+  - name: InsertUserId
+    description: User ID of employee who entered record
+    is_pii: True
+  - name: UpdateDate
+    description: Record update date
+    field_type: datetime
+  - name: UpdateUserId
+    description: User ID of employee who updated record
+    is_pii: True

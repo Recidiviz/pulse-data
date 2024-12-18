@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: clsf_ClsfActionHistory
+file_description: |-
+  Classification action table history.
+data_classification: source
+primary_key_cols:
+  - ClsfActionHistoryId
+columns:
+  - name: ClsfActionHistoryId
+    description: |-
+      Classification action history Id.
+  - name: ClsfActionId
+    description: |-
+      Classification action Id.
+  - name: ActionStatusId
+    description: |-
+      Action status Id.
+  - name: ApprovedDate
+    description: |-
+      Date classification action was approved.
+    field_type: datetime
+  - name: DecisionId
+    description: |-
+      Classification decision Id.
+  - name: ApprovedById
+    description: |-
+      Id of officer who approved classification.
+    is_pii: True
+  - name: ApprovalComment
+    description: |-
+      Approval comment.
+  - name: NextStep
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: NextApproverId
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: Submitted
+    description: |-
+      Submitted flag.
+  - name: Locking
+    description: Locking number for record
+  - name: InsertDate
+    description: Record insert date
+    field_type: datetime
+  - name: InsertUserId
+    description: User ID of employee who entered record
+    is_pii: True
+  - name: UpdateDate
+    description: Record update date
+    field_type: datetime
+  - name: UpdateUserId
+    description: User ID of employee who updated record
+    is_pii: True
