@@ -17,16 +17,57 @@
 /* File containing functions that construct SQL Queries used in CreateReport.gs. */
 
 /**
- * Get WAU and MAU By Week Data
+ * Get MAU By Week Data
  * Given parameters provided by the user, constructs a query string and calls runQuery
- * to query the BiqQuery database.
+ * to query the BigQuery database.
+ * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
+ * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
+ * @param {string} previousMonthString A string representing the start_date of the report minus 1 month plus 1 week (ex: '2023-01-08')
+ * @param {string} endDatePlusWeekString A string representing the end_date of the report plus 1 week (ex: '2023-03-08')
+ * @returns {object} mauByWeekData An array or arrays containing data for each week. Also returns the monthlyActiveUsers string
+ */
+function getMauByWeekData(
+  stateCode,
+  completionEventType,
+  previousMonthString,
+  endDatePlusWeekString
+) {
+  const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
+  const monthlyActiveUsers = "monthly_active_users";
+
+  const mauTable =
+    "justice_involved_state_month_rolling_weekly_aggregated_metrics_materialized";
+
+  const queryString = `
+    SELECT
+      CONCAT(FORMAT_DATE('%m/%d/%y', start_date), " - ", FORMAT_DATE('%m/%d/%y', DATE_SUB(end_date, INTERVAL 1 DAY))) AS formatted_date,
+      ${distinctActiveUsers}
+    FROM \`impact_reports.${mauTable}\`
+    WHERE state_code = '${stateCode}'
+    AND start_date >= '${previousMonthString}'
+    AND end_date < '${endDatePlusWeekString}'
+    AND ${distinctActiveUsers} IS NOT NULL
+    ORDER BY end_date ASC
+  `;
+  const mauByWeekData = runQuery(queryString);
+
+  return {
+    mauByWeekData,
+    monthlyActiveUsers,
+  };
+}
+
+/**
+ * Get WAU By Week Data
+ * Given parameters provided by the user, constructs a query string and calls runQuery
+ * to query the BigQuery database.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} startDateString The start date of the report (ex: '2023-02-01')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
  * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
  * @returns {object} wauByWeekData An array or arrays containing data for each week. Also returns the weeklyActiveUsers string
  */
-function getWauAndMauByWeekData(
+function getWauByWeekData(
   stateCode,
   startDateString,
   endDateString,
@@ -34,41 +75,33 @@ function getWauAndMauByWeekData(
 ) {
   const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
   const weeklyActiveUsers = "weekly_active_users";
-  const monthlyActiveUsers = "monthly_active_users";
 
   const wauTable =
     "justice_involved_state_week_rolling_weekly_aggregated_metrics_materialized";
-  const mauTable =
-    "justice_involved_state_month_rolling_weekly_aggregated_metrics_materialized";
 
   const queryString = `
     SELECT
-      FORMAT_DATE('%m/%d/%y', DATE_SUB(w.end_date, INTERVAL 1 DAY)) AS formatted_date,
-      w.${distinctActiveUsers} AS ${weeklyActiveUsers},
-      m.${distinctActiveUsers} AS ${monthlyActiveUsers}
-    FROM \`impact_reports.${mauTable}\` m 
-    INNER JOIN \`impact_reports.${wauTable}\` w
-    USING (state_code, end_date)
+      CONCAT(FORMAT_DATE('%m/%d/%y', start_date), " - ", FORMAT_DATE('%m/%d/%y', DATE_SUB(end_date, INTERVAL 1 DAY))) AS formatted_date,
+      ${distinctActiveUsers}
+    FROM \`impact_reports.${wauTable}\`
     WHERE state_code = '${stateCode}'
-    AND w.start_date >= '${startDateString}'
-    AND w.start_date < '${endDateString}'
-    AND NOT (w.${distinctActiveUsers} IS NULL OR m.${distinctActiveUsers} IS NULL)
-    ORDER BY w.start_date ASC
+    AND start_date >= '${startDateString}'
+    AND start_date < '${endDateString}'
+    AND ${distinctActiveUsers} IS NOT NULL
+    ORDER BY end_date ASC
   `;
-
-  const wauAndMauByWeekData = runQuery(queryString);
+  const wauByWeekData = runQuery(queryString);
 
   return {
-    wauAndMauByWeekData,
+    wauByWeekData,
     weeklyActiveUsers,
-    monthlyActiveUsers,
   };
 }
 
 /**
  * Get MAU WAU By Location
  * Given parameters provided by the user, constructs a query string and calls runQuery
- * to query the BiqQuery database.
+ * to query the BigQuery database.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
  * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
@@ -128,7 +161,7 @@ function getMauWauByLocation(
 /**
  * Get usage and impact district data
  * Given parameters provided by the user, constructs a query string and calls runQuery
- * to query the BiqQuery database.
+ * to query the BigQuery database.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
  * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
@@ -186,16 +219,16 @@ function getUsageAndImpactDistrictData(
 /**
  * Construct Statewide MAU and WAU Text
  * Given parameters provided by the user, constructs a query string and call RunQuery
- * to query the BiqQuery database. Fetches and returns the total number of statewide distinct monthly active users, statewide distinct monthly registered users, statewide distinct weekly active users, statewide distinct weekly registered users for each system
+ * to query the BigQuery database. Fetches and returns the total number of statewide distinct monthly active users, statewide distinct monthly registered users, statewide distinct weekly active users, statewide distinct weekly registered users for each system
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
  * @returns {map} an object that contains the number of distinctMonthlyActiveUsersSupervisionTotal, distinctMonthlyRegisteredUsersSupervisionTotal, distinctMonthlyActiveUsersFacilitiesTotal, distinctMonthlyRegisteredUsersFacilitiesTotal, distinctWeeklyActiveUsersSupervisionTotal, distinctWeeklyRegisteredUsersSupervisionTotal, distinctWeeklyActiveUsersFacilitiesTotal, and distinctWeeklyRegisteredUsersFacilitiesTotal
  **/
 function constructStatewideMauAndWauText(stateCode, endDateString) {
   const distinctActiveUsersSupervisionTotal = `distinct_active_users_supervision`;
-  const distinctRegisteredUsersSupervisionTotal = `distinct_registered_users_supervision`
+  const distinctRegisteredUsersSupervisionTotal = `distinct_registered_users_supervision`;
   const distinctActiveUsersFacilitiesTotal = `distinct_active_users_incarceration`;
-  const distinctRegisteredUsersFacilitiesTotal = `distinct_registered_users_incarceration`
+  const distinctRegisteredUsersFacilitiesTotal = `distinct_registered_users_incarceration`;
   const mauTable = `justice_involved_state_month_aggregated_metrics_materialized`;
   const wauTable = `justice_involved_state_week_aggregated_metrics_materialized`;
 
@@ -273,7 +306,7 @@ function constructStatewideMauAndWauText(stateCode, endDateString) {
   const distinctWeeklyActiveUsersFacilitiesTotal = parseInt(
     queryOutputWeekly[2]
   );
-    const distinctWeeklyRegisteredUsersFacilitiesTotal = parseInt(
+  const distinctWeeklyRegisteredUsersFacilitiesTotal = parseInt(
     queryOutputWeekly[3]
   );
   Logger.log(
@@ -308,7 +341,7 @@ function constructStatewideMauAndWauText(stateCode, endDateString) {
 /**
  * Construct MAU and WAU By Workflow Text
  * Given parameters provided by the user, constructs a query string and call RunQuery
- * to query the BiqQuery database. Fetches and returns the total number of distinct monthly active users, distinct monthly registered users, distinct weekly active users, and distinct weekly registered users for the given workflow
+ * to query the BigQuery database. Fetches and returns the total number of distinct monthly active users, distinct monthly registered users, distinct weekly active users, and distinct weekly registered users for the given workflow
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
  * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
@@ -422,7 +455,7 @@ function getStartDate(stateCode, timePeriod, endDateString) {
 /**
  * Construct usage and impact text
  * Given parameters provided by the user, constructs a query string and call RunQuery
- * to query the BiqQuery database. After fetching the total number of individuals surfaced, eligible, reviewed, and ineligible, adds them and returns the integer as a formatted
+ * to query the BigQuery database. After fetching the total number of individuals surfaced, eligible, reviewed, and ineligible, adds them and returns the integer as a formatted
  * string.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
@@ -485,7 +518,7 @@ function constructUsageAndImpactText(
 /**
  * Construct opportunities granted text
  * Given parameters provided by the user, constructs a query string and call RunQuery
- * to query the BiqQuery database. After fetching the total number of supervision and
+ * to query the BigQuery database. After fetching the total number of supervision and
  * facilities opportunities granted, adds them and returns the integer as a formatted
  * string.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
@@ -553,7 +586,7 @@ function getMaxLocations(locationData) {
 /**
  * Get supervision district data
  * Given parameters provided by the user, constructs a query string and calls runQuery
- * to query the BiqQuery database.
+ * to query the BigQuery database.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} timePeriod The time period passed in from the Google Form (ex: 'MONTH', 'QUARTER', or 'YEAR')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
@@ -734,38 +767,38 @@ function constructMauWauByLocationColumnChart(
 }
 
 /**
- * Construct WAU and MAU by week column chart
- * Populates a new wau by week column chart.
- * @param {string} weeklyActiveUsers The name of the weeklyActiveUsers column
- * @param {string} monthlyActiveUsers The name of the monthlyActiveUsers column
+ * Construct active users by week column chart
+ * Populates a new wau or mau by week column chart.
+ * @param {string} activeUsersLabel The name of the column to be charts (ex: weekly_active_users or monthly_active_users)
  * @param {array} wauAndMauByWeekData An array of arrays containing data for each week
+ * @param {string} titleString A string that will become the title of the chart
+ * @param {array} customColor An array containing a string with the custom color of the column chart
  * @returns {Chart} The built/populated column chart
  */
-function constructWauAndMauByWeekColumnChart(
-  monthlyActiveUsers,
-  weeklyActiveUsers,
-  wauAndMauByWeekData
+function constructActiveUsersByWeekColumnChart(
+  activeUsersLabel,
+  wauAndMauByWeekData,
+  titleString,
+  customColor = ["#3697FA"],
 ) {
-  const xAxisClean = "End Date";
-  const wauClean = cleanString(weeklyActiveUsers);
-  const mauClean = cleanString(monthlyActiveUsers);
+  const xAxisClean = "Start Date - End Date";
+  const activeUsersLabelClean = cleanString(activeUsersLabel);
 
   const chartData = Charts.newDataTable()
     .addColumn(Charts.ColumnType.STRING, xAxisClean)
-    .addColumn(Charts.ColumnType.NUMBER, wauClean)
-    .addColumn(Charts.ColumnType.NUMBER, mauClean);
+    .addColumn(Charts.ColumnType.NUMBER, activeUsersLabelClean);
 
   wauAndMauByWeekColumnChart = createColumnChart(
     wauAndMauByWeekData,
     chartData,
-    "Weekly and Monthly Active Users",
+    titleString,
     xAxisClean,
     "# of Users",
-    ["#CA2E17", "#3697FA"], // this chart will have red and blue columns
+    customColor, // MAU chart is blue, WAU chart is red
     false, // we do not want to stack columns
     1278, // chart width
     910, // chart height
-    Charts.Position.BOTTOM, // this chart has a legend
+    undefined, // this chart does not have a legend
     false // for this chart, we do not want to filter out zero values
   );
 

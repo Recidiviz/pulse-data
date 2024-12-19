@@ -58,6 +58,7 @@ function main(e) {
   const workflowToMaxMarkedIneligibleLocation = {};
   const workflowToMauWauByRegionChart = {};
   const workflowToMaxMauWauLocation = {};
+  const workflowToMauByWeekChart = {};
   const workflowToWauByWeekChart = {};
 
   const stateCodeToRows = getSheetValues();
@@ -189,22 +190,42 @@ function main(e) {
         supervisionDistrictData
       );
 
-    const { wauAndMauByWeekData, weeklyActiveUsers, monthlyActiveUsers } =
-      getWauAndMauByWeekData(
+    const { previousMonthString, endDatePlusWeekString } = getBoundsDateStrings(
+      startDateString,
+      endDateString
+    )
+
+    // MAU by Week Chart
+    const { mauByWeekData, monthlyActiveUsers } =
+      getMauByWeekData(
+        stateCode,
+        completionEventType,
+        previousMonthString,
+        endDatePlusWeekString
+      );
+    const mauByWeekColumnChart = mauByWeekData ? constructActiveUsersByWeekColumnChart(
+        monthlyActiveUsers,
+        mauByWeekData,
+        "Monthly Active Users",
+      ) : null;
+    workflowToMauByWeekChart[workflow] = mauByWeekColumnChart;
+
+    // WAU by Week Chart
+    const { wauByWeekData, weeklyActiveUsers } =
+      getWauByWeekData(
         stateCode,
         startDateString,
         endDateString,
-        completionEventType
+        completionEventType,
+        previousMonthString,
+        endDatePlusWeekString
       );
-
-    let wauByWeekColumnChart = null;
-    if (wauAndMauByWeekData) {
-      wauByWeekColumnChart = constructWauAndMauByWeekColumnChart(
-        monthlyActiveUsers,
+    const wauByWeekColumnChart = wauByWeekData ? wauByWeekColumnChart = constructActiveUsersByWeekColumnChart(
         weeklyActiveUsers,
-        wauAndMauByWeekData
-      );
-    }
+        wauByWeekData,
+        "Weekly Active Users",
+        ["#CA2E17"],
+      ) : null;
     workflowToWauByWeekChart[workflow] = wauByWeekColumnChart;
 
     const {
@@ -280,6 +301,7 @@ function main(e) {
     workflowToMaxMarkedIneligibleLocation,
     workflowToMauWauByRegionChart,
     workflowToMaxMauWauLocation,
+    workflowToMauByWeekChart,
     workflowToWauByWeekChart,
     isTestReport,
     statewideMauWauBySystem
@@ -305,6 +327,7 @@ function main(e) {
  * @param {map} workflowToMaxMarkedIneligibleLocation An object that maps the workflow name to an object containing maxLocation (the location associated with the max number of people marked ineligible) and maxValue (the max number of people marked ineligible)
  * @param {map} workflowToMauWauByRegionChart An object that maps the workflow name to its mauWauByLocationChart
  * @param {map} workflowToMaxMauWauLocation An object that maps the worfklow name to highestMAULocations and highestWAULocations
+ * @param {map} workflowToMauByWeekChart An object that maps the workflow name to its mauByWeekColumnChart
  * @param {map} workflowToWauByWeekChart An object that maps the workflow name to its wauByWeekColumnChart
  * @param {map} statewideMauWauBySystem An object that contains distinctMonthlyActiveUsersSupervisionTotal distinctMonthlyRegisteredUsersSupervisionTotal, distinctMonthlyActiveUsersFacilitiesTotal, distinctMonthlyRegisteredUsersFacilitiesTotal, distinctWeeklyActiveUsersSupervisionTotal, distinctWeeklyRegisteredUsersSupervisionTotal, distinctWeeklyActiveUsersFacilitiesTotal, and distinctWeeklyRegisteredUsersFacilitiesTotal
  */
@@ -323,6 +346,7 @@ function copyAndPopulateTemplateDoc(
   workflowToMaxMarkedIneligibleLocation,
   workflowToMauWauByRegionChart,
   workflowToMaxMauWauLocation,
+  workflowToMauByWeekChart,
   workflowToWauByWeekChart,
   isTestReport,
   statewideMauWauBySystem
@@ -389,6 +413,7 @@ function copyAndPopulateTemplateDoc(
     workflowToMaxMarkedIneligibleLocation,
     workflowToMauWauByRegionChart,
     workflowToMaxMauWauLocation,
+    workflowToMauByWeekChart,
     workflowToWauByWeekChart
   );
 
@@ -657,6 +682,7 @@ function copyAndPopulateOpportunityGrants(
  * @param {map} workflowToMaxMarkedIneligibleLocation An object that maps the workflow name to an object containing maxLocation (the location associated with the max number of people marked ineligible) and maxValue (the max number of people marked ineligible)
  * @param {map} workflowToMauWauByRegionChart An object that maps the workflow name to its mauWauByLocationChart
  * @param {map} workflowToMaxMauWauLocation An object that maps the worfklow name to highestMAULocations and highestWAULocations
+ * @param {map} workflowToMauByWeekChart An object that maps the workflow name to its mauByWeekColumnChart
  * @param {map} workflowToWauByWeekChart An object that maps the workflow name to its wauByWeekColumnChart
  */
 function copyAndPopulateWorkflowSection(
@@ -674,6 +700,7 @@ function copyAndPopulateWorkflowSection(
   workflowToMaxMarkedIneligibleLocation,
   workflowToMauWauByRegionChart,
   workflowToMaxMauWauLocation,
+  workflowToMauByWeekChart,
   workflowToWauByWeekChart
 ) {
   const childIdx = getIndexOfElementToReplace(
@@ -738,6 +765,12 @@ function copyAndPopulateWorkflowSection(
           // Replace with generated chartk
           if (workflowToUsageAndImpactChart[workflow]) {
             let img = body.appendImage(workflowToUsageAndImpactChart[workflow]);
+            img.setWidth(639).setHeight(455);
+          }
+        } else if (altTitle === "MAU Chart by Week") {
+          // Replace with generated chart
+          if (workflowToMauByWeekChart[workflow]) {
+            let img = body.appendImage(workflowToMauByWeekChart[workflow]);
             img.setWidth(639).setHeight(455);
           }
         } else if (altTitle === "WAU Chart by Week") {
