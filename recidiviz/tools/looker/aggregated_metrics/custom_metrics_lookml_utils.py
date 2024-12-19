@@ -172,9 +172,7 @@ def generate_period_span_metric_view(
         for metric in metrics
     ]
     unit_of_observation_query_fragment = list_to_query_string(
-        sorted(
-            {x for x in unit_of_observation.primary_key_columns if x != "state_code"}
-        ),
+        sorted(unit_of_observation.primary_key_columns),
         table_prefix="assignments",
     )
     assignments_with_attributes_view = (
@@ -220,7 +218,6 @@ def generate_period_span_metric_view(
         derived_table_query = f"""
     WITH eligible_spans AS (
         SELECT
-            assignments.state_code,
             assignments.unit_of_analysis,
             {all_attributes_field},
             {unit_of_observation_query_fragment},
@@ -247,7 +244,6 @@ def generate_period_span_metric_view(
     )
     SELECT
         -- assignments
-        ses.state_code,
         ses.unit_of_analysis,
         ses.all_attributes,
 
@@ -268,7 +264,7 @@ def generate_period_span_metric_view(
         AND time_period.span_start_date < {nonnull_current_date_clause("ses.end_date")}
         AND {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="ses", table2="time_period")}
     GROUP BY
-        1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
+        1, 2, 3, 4, 5{field_filters_group_by_query_fragment}
     """
     else:
         field_filters_dummy_query_fragment = "\n".join(
@@ -284,7 +280,6 @@ def generate_period_span_metric_view(
         derived_table_query = f"""
     -- Dummy table because this observation type does not exist yet
     SELECT
-        CAST(NULL AS STRING) AS state_code,
         CAST(NULL AS STRING) AS unit_of_analysis,
         CAST(NULL AS STRING) AS all_attributes,
         CAST(NULL AS STRING) AS period,
@@ -361,7 +356,6 @@ def generate_period_event_metric_view(
         derived_table_query = f"""
     SELECT
         -- assignments
-        assignments.state_code,
         assignments.unit_of_analysis,
         assignments.all_attributes,
 
@@ -388,7 +382,7 @@ def generate_period_event_metric_view(
     )
 
     GROUP BY
-        1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
+        1, 2, 3, 4, 5{field_filters_group_by_query_fragment}
     """
     else:
         field_filters_dummy_query_fragment = "\n".join(
@@ -404,7 +398,6 @@ def generate_period_event_metric_view(
         derived_table_query = f"""
     -- Dummy table because this observation type does not exist yet
     SELECT
-        CAST(NULL AS STRING) AS state_code,
         CAST(NULL AS STRING) AS unit_of_analysis,
         CAST(NULL AS STRING) AS all_attributes,
         CAST(NULL AS STRING) AS period,
@@ -429,9 +422,7 @@ def generate_assignment_span_metric_view(
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of AssignmentSpanAggregatedMetric objects"""
     unit_of_observation_query_fragment = list_to_query_string(
-        sorted(
-            {x for x in unit_of_observation.primary_key_columns if x != "state_code"}
-        ),
+        sorted(unit_of_observation.primary_key_columns),
         table_prefix="assignments",
     )
     metric_aggregation_fragment = "\n".join(
@@ -490,7 +481,6 @@ def generate_assignment_span_metric_view(
         derived_table_query = f"""
     SELECT
         -- assignments
-        assignments.state_code,
         assignments.unit_of_analysis,
         assignments.all_attributes,
 
@@ -516,7 +506,7 @@ def generate_assignment_span_metric_view(
                 AND {nonnull_end_date_exclusive_clause("spans.end_date")}
         )
     GROUP BY
-        1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
+        1, 2, 3, 4, 5{field_filters_group_by_query_fragment}
     """
     else:
         field_filters_dummy_query_fragment = "\n".join(
@@ -532,7 +522,6 @@ def generate_assignment_span_metric_view(
         derived_table_query = f"""
     -- Dummy table because this observation type does not exist yet
     SELECT
-        CAST(NULL AS STRING) AS state_code,
         CAST(NULL AS STRING) AS unit_of_analysis,
         CAST(NULL AS STRING) AS all_attributes,
         CAST(NULL AS STRING) AS period,
@@ -588,9 +577,7 @@ def generate_assignment_event_metric_view(
     ]
 
     unit_of_observation_query_fragment = list_to_query_string(
-        sorted(
-            {x for x in unit_of_observation.primary_key_columns if x != "state_code"}
-        ),
+        sorted(unit_of_observation.primary_key_columns),
         table_prefix="assignments",
     )
     field_filters_query_fragment_json = "\n".join(
@@ -639,7 +626,6 @@ def generate_assignment_event_metric_view(
         derived_table_query = f"""
     SELECT
         -- assignments
-        state_code,
         unit_of_analysis,
         all_attributes,
 
@@ -654,7 +640,6 @@ def generate_assignment_event_metric_view(
         {metric_aggregation_fragment_outer}
     FROM (
         SELECT
-            assignments.state_code,
             unit_of_analysis,
             assignments.start_date,
             assignments.end_date,
@@ -672,7 +657,6 @@ def generate_assignment_event_metric_view(
             {join_on_columns_fragment(columns=unit_of_observation.primary_key_columns_ordered, table1="assignments", table2="events")}
             AND events.event_date >= assignments.assignment_date
         GROUP BY
-            assignments.state_code,
             unit_of_analysis,
             assignments.start_date,
             assignments.end_date,
@@ -682,7 +666,7 @@ def generate_assignment_event_metric_view(
             assignments.all_attributes{field_filters_group_by_query_fragment_json}
     )
     GROUP BY
-        1, 2, 3, 4, 5, 6{field_filters_group_by_query_fragment}
+        1, 2, 3, 4, 5{field_filters_group_by_query_fragment}
     """
     else:
         field_filters_dummy_query_fragment = "\n".join(
@@ -698,7 +682,6 @@ def generate_assignment_event_metric_view(
         derived_table_query = f"""
     -- Dummy table because this observation type does not exist yet
     SELECT
-        CAST(NULL AS STRING) AS state_code,
         CAST(NULL AS STRING) AS unit_of_analysis,
         CAST(NULL AS STRING) AS all_attributes,
         CAST(NULL AS STRING) AS period,
@@ -1256,7 +1239,7 @@ def generate_assignments_with_attributes_and_time_periods_view(
             )"""
     )
     unit_of_observation_query_fragment = list_to_query_string(
-        sorted({*unit_of_observation.primary_key_columns, "state_code"}),
+        sorted({*unit_of_observation.primary_key_columns}),
         table_prefix="assignments",
     )
     derived_table_query = f"""
@@ -1644,7 +1627,7 @@ def custom_metrics_view_query_template(
     INNER JOIN
         period_span_metrics
     USING
-        (state_code, unit_of_analysis, all_attributes)"""
+        (unit_of_analysis, all_attributes)"""
 
     derived_table_query = f"""
     WITH time_period_cte AS (
@@ -1725,15 +1708,15 @@ def custom_metrics_view_query_template(
     LEFT JOIN
         period_event_metrics
     USING
-        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date{field_filters_query_fragment})
+        (unit_of_analysis, all_attributes, period, start_date, end_date{field_filters_query_fragment})
     LEFT JOIN
         assignment_span_metrics
     USING
-        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date{field_filters_query_fragment})
+        (unit_of_analysis, all_attributes, period, start_date, end_date{field_filters_query_fragment})
     LEFT JOIN
         assignment_event_metrics
     USING
-        (state_code, unit_of_analysis, all_attributes, period, start_date, end_date{field_filters_query_fragment})
+        (unit_of_analysis, all_attributes, period, start_date, end_date{field_filters_query_fragment})
 """
     return derived_table_query
 
@@ -1786,7 +1769,7 @@ FROM ({derived_table_subqueries[0]})
             [
                 f"""FULL OUTER JOIN
 ({subquery})
-USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_date, days_in_period{field_filters_query_fragment})
+USING (unit_of_analysis, all_attributes, period, start_date, end_date, days_in_period{field_filters_query_fragment})
 """
                 for subquery in derived_table_subqueries[1:]
             ]
