@@ -23,16 +23,24 @@ columns:
     field_type: datetime
     description: |-
       Supervision Status start date
+    null_values:
+      - "NULL"
   - name: SupervisionStatusEndDt
     field_type: datetime
     description: |-
       Supervision status end date
+    null_values:
+      - "NULL"
   - name: SupervisionStatusReasonForChangeId
     description: |-
       Supervision status reason for change id
+    null_values:
+      - "NULL"
   - name: SupervisionStatusReasonForChange
     description: |-
       Supervision status reason for change
+    null_values:
+      - "NULL"
   - name: PrimarySupervisionStatus
     description: |-
       Primary supervision status

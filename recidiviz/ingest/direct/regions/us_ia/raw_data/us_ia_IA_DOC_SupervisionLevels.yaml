@@ -23,10 +23,14 @@ columns:
     field_type: datetime
     description: |-
       Supervision Level start date
+    null_values:
+      - "NULL"
   - name: SupervisionLevelEndDt
     field_type: datetime
     description: |-
       Supervision level end date
+    null_values:
+      - "NULL"
   - name: ManualEntry
     description: |-
       Manual entry

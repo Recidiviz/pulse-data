@@ -26,10 +26,14 @@ columns:
     field_type: datetime
     description: |-
       Supervision modifier start date
+    null_values:
+      - "NULL"
   - name: SupervisionModifierEndDt
     field_type: datetime
     description: |-
       Supervision modifier end date
+    null_values:
+      - "NULL"
   - name: ConfinementCountyId
     description: |-
       Confinement county id

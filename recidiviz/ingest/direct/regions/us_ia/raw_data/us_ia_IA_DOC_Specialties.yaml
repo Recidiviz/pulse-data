@@ -36,16 +36,24 @@ columns:
     field_type: datetime
     description: |-
       Specialty start date
+    null_values:
+      - "NULL"
   - name: SpecialtyEndDt
     field_type: datetime
     description: |-
       Speciality end date
+    null_values:
+      - "NULL"
   - name: SpecialtyReasonForChangeId
     description: |-
       Speciality reason for change id
+    null_values:
+      - "NULL"
   - name: SpecialtyReasonForChange
     description: |-
       Specialty reason for change
+    null_values:
+      - "NULL"
   - name: EnteredDt
     field_type: datetime
     description: |-

@@ -3,8 +3,9 @@ file_tag: IA_DOC_CaseManagers
 file_description: |-
   This table contains status of supervision information
 data_classification: source
-primary_key_cols:
-  - SupervisionStatusInformationId
+always_historical_export: True
+no_valid_primary_keys: True
+primary_key_cols: []
 columns:
   - name: SupervisionStatusInformationId
     description: |-
@@ -29,6 +30,8 @@ columns:
     field_type: datetime
     description: |-
       Case manager start date
+    null_values:
+      - "NULL"
   - name: InitialCaseManager
     description: |-
       Initial case manager
@@ -41,6 +44,8 @@ columns:
     field_type: datetime
     description: |-
       Case manager end date
+    null_values:
+      - "NULL"
   - name: EnteredDt
     field_type: datetime
     description: |-
