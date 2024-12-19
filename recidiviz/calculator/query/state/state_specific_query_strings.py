@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -810,6 +810,45 @@ def workflows_state_specific_supervision_level() -> str:
                 END)
             ELSE most_recent_active_supervision_level
         END
+    """
+
+
+def workflows_state_specific_supervision_type() -> str:
+    return """
+    SELECT
+        state_code,
+        person_id,
+        /* OR prefers we display raw-text supervision types in Workflows. We aggregate
+        all distinct raw-text supervision types for open supervision periods into a
+        single string to display to the user. (This accounts for the [uncommon] cases in
+        which a person has multiple open supervision periods with different raw-text
+        supervision types.) */
+        STRING_AGG(DISTINCT supervision_type_raw_text, ", " ORDER BY supervision_type_raw_text) AS supervision_type,
+    FROM `{project_id}.{normalized_state_dataset}.state_supervision_period`
+    WHERE state_code='US_OR'
+        AND termination_date IS NULL
+    GROUP BY 1, 2
+
+    UNION ALL
+
+    SELECT
+        state_code,
+        person_id,
+        -- See CaseType for these mappings: https://app.gitbook.com/o/-MS0FZPVqDyJ1aem018G/s/-MRvK9sMirb5JcYHAkjo-887967055/state-ingest-catalog/us_tn/raw_data/assignedstaff
+        CASE SPLIT(supervision_type_raw_text, '-')[SAFE_OFFSET(2)]
+            WHEN "PPO" THEN "PROBATION"
+            WHEN "TNP" THEN "PAROLE"
+            WHEN "DIV" THEN "DIVERSION"
+            WHEN "ISC" THEN "ISC FROM OTHER JURISDICTION"
+            WHEN "DET" THEN "DETERMINATE RLSE PROBATIONER"
+            WHEN "MIS" THEN "MISDEMEANOR PROBATIONER"
+            WHEN "SAI" THEN "SPECIAL ALT INCARCERATION UNIT"
+            ELSE NULL
+            END
+            AS supervision_type,
+    FROM `{project_id}.{normalized_state_dataset}.state_supervision_period`
+    WHERE state_code='US_TN'
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY start_date DESC) = 1
     """
 
 

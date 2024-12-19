@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,13 +23,13 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     workflows_state_specific_supervision_level,
+    workflows_state_specific_supervision_type,
 )
 from recidiviz.calculator.query.state.views.workflows.us_ca.shared_ctes import (
     US_CA_MOST_RECENT_CLIENT_DATA,
 )
 from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
     us_tn_fines_fees_info,
-    us_tn_supervision_type,
 )
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     compartment_level_1_super_sessions_without_me_sccp,
@@ -67,7 +67,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
           sessions.person_id,
           sessions.state_code,
           pei.person_external_id,
-          COALESCE(tn_supervision_type.supervision_type, sessions.compartment_level_2) AS supervision_type,
+          COALESCE(state_specific_supervision_type.supervision_type, sessions.compartment_level_2) AS supervision_type,
             -- Pull the officer ID from compartment_sessions instead of supervision_officer_sessions
             -- to make sure we choose the officer that aligns with other compartment session attributes.
           #   There are officers with more than one legitimate external id. We are merging these ids and
@@ -117,9 +117,10 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             ON sessions.state_code = "US_OR"
             AND sessions.person_id = us_or_caseloads.person_id
         LEFT JOIN (
-            {us_tn_supervision_type()}
-        ) tn_supervision_type
-            ON sessions.person_id = tn_supervision_type.person_id
+            {workflows_state_specific_supervision_type()}
+        ) state_specific_supervision_type
+            ON sessions.state_code = state_specific_supervision_type.state_code
+            AND sessions.person_id = state_specific_supervision_type.person_id
         WHERE sessions.state_code IN ({{workflows_supervision_states}})
           AND sessions.compartment_level_1 = "SUPERVISION"
           AND sessions.end_date IS NULL

@@ -1,5 +1,5 @@
 #  Recidiviz - a data platform for criminal justice reform
-#  Copyright (C) 2023 Recidiviz, Inc.
+#  Copyright (C) 2024 Recidiviz, Inc.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -72,24 +72,3 @@ def us_tn_get_offense_information(in_projected_completion_array: bool = True) ->
       ON off.conviction_county = codes.Code
       GROUP BY 1
       """
-
-
-def us_tn_supervision_type() -> str:
-    return """
-    # See Case Type for these mappings https://app.gitbook.com/o/-MS0FZPVqDyJ1aem018G/s/-MRvK9sMirb5JcYHAkjo-887967055/state-ingest-catalog/us_tn/raw_data/assignedstaff
-    SELECT person_id,
-           CASE SPLIT(supervision_type_raw_text,'-')[SAFE_OFFSET(2)]
-                WHEN "PPO" THEN "PROBATION"
-                WHEN "TNP" THEN "PAROLE"
-                WHEN "DIV" THEN "DIVERSION"
-                WHEN "ISC" THEN "ISC FROM OTHER JURISDICTION"
-                WHEN "DET" THEN "DETERMINATE RLSE PROBATIONER"
-                WHEN "MIS" THEN "MISDEMEANOR PROBATIONER"
-                WHEN "SAI" THEN "SPECIAL ALT INCARCERATION UNIT"
-            ELSE NULL END AS supervision_type,                   
-    FROM 
-        `{project_id}.{normalized_state_dataset}.state_supervision_period`
-    WHERE
-        state_code = "US_TN"
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY start_date DESC) = 1
-    """
