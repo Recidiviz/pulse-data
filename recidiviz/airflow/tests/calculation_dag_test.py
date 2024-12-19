@@ -40,12 +40,14 @@ from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_operator_with_return_value,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
+from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.metrics.export import fixtures as metric_export_fixtures
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -506,22 +508,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         )
 
 
-def _fake_pod_operator(*args: Any, **kwargs: Any) -> BaseOperator:
-    if "--entrypoint=IngestPipelineShouldRunInDagEntrypoint" in kwargs["arguments"]:
-        return fake_operator_with_return_value(True)(*args, **kwargs)
-
-    return fake_operator_constructor(*args, **kwargs)
-
-
-def _fake_pod_operator_ingest_pipeline_should_run_in_dag_false(
-    *args: Any, **kwargs: Any
-) -> BaseOperator:
-    if "--entrypoint=IngestPipelineShouldRunInDagEntrypoint" in kwargs["arguments"]:
-        return fake_operator_with_return_value(False)(*args, **kwargs)
-
-    return fake_operator_constructor(*args, **kwargs)
-
-
 @patch.dict(
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
     values={StateCode.US_XX: "us-east1", StateCode.US_YY: "us-east2"},
@@ -588,7 +574,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
 
         self.kubernetes_pod_operator_patcher = patch(
             "recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task",
-            side_effect=_fake_pod_operator,
+            side_effect=fake_operator_constructor,
         )
         self.mock_kubernetes_pod_operator_constructor = (
             self.kubernetes_pod_operator_patcher.start()
@@ -596,7 +582,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
 
         self.kubernetes_pod_operator_patcher_2 = patch(
             "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.build_kubernetes_pod_task",
-            side_effect=_fake_pod_operator,
+            side_effect=fake_operator_constructor,
         )
         self.mock_kubernetes_pod_operator_ = (
             self.kubernetes_pod_operator_patcher_2.start()
@@ -615,6 +601,29 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.mock_dataflow_operator_constructor = (
             self.recidiviz_dataflow_operator_patcher.start()
         )
+        self.direct_ingest_regions_patcher = patch(
+            "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.direct_ingest_regions",
+            autospec=True,
+        )
+        self.mock_direct_ingest_regions = self.direct_ingest_regions_patcher.start()
+        self.mock_direct_ingest_regions.get_direct_ingest_region.side_effect = (
+            lambda region_code: get_direct_ingest_region(
+                region_code, region_module_override=fake_regions_module
+            )
+        )
+        self.metadata_patcher = patch(
+            "recidiviz.utils.metadata.project_id",
+            return_value=_PROJECT_ID,
+        )
+        self.metadata_patcher.start()
+        self.manifest_collector_patcher = patch(
+            "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.IngestViewManifestCollector",
+            autospec=True,
+        )
+        self.mock_manifest_collector = self.manifest_collector_patcher.start()
+        self.mock_manifest_collector.return_value.launchable_ingest_views.return_value = [
+            MagicMock()
+        ]
 
         self.found_pipelines_to_fail: list[tuple[StateCode, str]] = []
 
@@ -631,6 +640,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.cloud_sql_query_operator_patcher.stop()
         self.recidiviz_dataflow_operator_patcher.stop()
         self.product_configs_patcher.stop()
+        self.direct_ingest_regions_patcher.stop()
+        self.metadata_patcher.stop()
+        self.manifest_collector_patcher.stop()
 
     def _mock_fail_dataflow_pipeline(
         self, state_code: StateCode, pipeline_name: str
