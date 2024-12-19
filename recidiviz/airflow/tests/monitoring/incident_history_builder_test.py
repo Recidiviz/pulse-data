@@ -164,6 +164,8 @@ TEST_START_DATE_LOOKBACK = datetime.timedelta(days=20 * 365)
 class IncidentHistoryBuilderTest(AirflowIntegrationTest):
     """Tests for IncidentHistoryBuilder"""
 
+    maxDiff = None
+
     def setUp(self) -> None:
         self.delegate_patcher = patch(
             "recidiviz.airflow.dags.monitoring.incident_history_builder.JobRunHistoryDelegateFactory",
@@ -344,10 +346,10 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
                 incidents[incident_key].failed_execution_dates,
                 [
                     july_ninth.execution_date,
-                    july_eleventh.execution_date,
+                    july_ninth.execution_date,
                     july_ninth.execution_date,
                     july_eleventh.execution_date,
-                    july_ninth.execution_date,
+                    july_eleventh.execution_date,
                     july_eleventh.execution_date,
                 ],
             )
@@ -784,11 +786,17 @@ class IncidentHistoryBuilderTest(AirflowIntegrationTest):
             ],
         )
         summaries = [
+            # are out of order, will be ordered in .build()
+            # if we didn't sort properly, we would see 3 incidents as it history would
+            # look like: FAILURE SUCCESS FAILURE instead of FAILURE FAILURE SUCCESS
             primary_2024_01_01,
-            primary_2024_01_02,
             primary_2024_01_03,
-            secondary_2024_01_01,
+            primary_2024_01_02,
+            # are out of order, will be ordered in .build()
+            # if we didn't sort properly, we would see the incident_start_date be
+            # the more recent incident (2024-01-03)
             secondary_2024_01_03,
+            secondary_2024_01_01,
         ]
 
         ti = MagicMock()

@@ -35,6 +35,7 @@ class AirflowAlertingIncident:
     dag_id: str = attr.ib(validator=attr_validators.is_str)
     dag_run_config: str = attr.ib(validator=attr_validators.is_str)
     job_id: str = attr.ib(validator=attr_validators.is_str)
+    # sorted list of failed execution dates [ earliest date, ... , latest date ]
     failed_execution_dates: List[datetime] = attr.ib(
         validator=attr_validators.is_list_of(datetime)
     )
@@ -90,7 +91,7 @@ class AirflowAlertingIncident:
             dag_id=dag_id,
             dag_run_config=conf,
             job_id=job_id,
-            failed_execution_dates=failed_execution_dates,
+            failed_execution_dates=sorted(failed_execution_dates),
             previous_success_date=(
                 previous_success.to_pydatetime()
                 if not pd.isna(previous_success)

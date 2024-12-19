@@ -56,7 +56,12 @@ class IncidentHistoryBuilder:
             return {}
 
         df = pd.DataFrame(data=[attr.asdict(job_run) for job_run in job_history])
-        df = df.set_index(JobRun.unique_keys()).sort_index()
+
+        # partition by JobRun's unique keys (dag_id, dag_run_conf, job_id)
+        df = df.set_index(JobRun.unique_keys())
+        # ensure that we sort by unique keys, and that the rows within each unique key
+        # are in ascending order by sorted by JobRun's date_key
+        df = df.sort_values(by=JobRun.date_key()).sort_index()
 
         # Filter down to job runs in a failed or success state.
         df = df[(df.state == JobRunState.FAILED) | (df.state == JobRunState.SUCCESS)]

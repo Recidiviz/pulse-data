@@ -74,6 +74,10 @@ class JobRun:
         return ["dag_id", "dag_run_config", "job_id"]
 
     @classmethod
+    def date_key(cls) -> list[str]:
+        return ["execution_date"]
+
+    @classmethod
     def from_airflow_task_instance_run(
         cls,
         dag_id: str,
