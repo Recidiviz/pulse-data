@@ -17,16 +17,17 @@
 """
 A script to run the raw data import DAG for a specific state and instance.
 Run:
-    python -m recidiviz.tools.airflow.trigger_state_specific_raw_data_import_dag \
+    python -m recidiviz.tools.airflow.trigger_raw_data_import_dag \
        --project-id [project_id] \
-       --state-code [state_code] \
-       --raw-data-instance [raw_data_instance]
+       --raw-data-instance [raw_data_instance] \
+       [--state-code [state_code]]
 """
 import argparse
 import logging
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.trigger_dag_helpers import trigger_raw_data_import_dag_pubsub
@@ -46,7 +47,7 @@ def create_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--state-code-filter",
-        required=True,
+        required=False,
         type=StateCode,
         choices=list(StateCode),
         help="The raw data import DAG will only run for this region",
@@ -64,9 +65,13 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def trigger_state_specific_raw_data_import_dag(
-    state_code_filter: StateCode,
+    project_id: str,
+    state_code_filter: StateCode | None,
     raw_data_instance: DirectIngestInstance,
 ) -> None:
+    prompt_for_confirmation(
+        f"Trigger dag in [{project_id}] for [{raw_data_instance.value}] for [{state_code_filter.value if state_code_filter else 'all states'}]"
+    )
     trigger_raw_data_import_dag_pubsub(
         raw_data_instance=raw_data_instance, state_code_filter=state_code_filter
     )
@@ -78,5 +83,5 @@ if __name__ == "__main__":
     args = create_parser().parse_args()
     with local_project_id_override(args.project_id):
         trigger_state_specific_raw_data_import_dag(
-            args.state_code_filter, args.raw_data_instance
+            args.project_id, args.state_code_filter, args.raw_data_instance
         )

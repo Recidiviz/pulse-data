@@ -77,6 +77,12 @@ def trigger_raw_data_import_dag_pubsub(
         raw_data_instance.value,
         state_code_filter.value if state_code_filter else None,
     )
+
+    if raw_data_instance == DirectIngestInstance.SECONDARY and not state_code_filter:
+        raise ValueError(
+            "Cannot trigger a state-agnostic SECONDARY dag run; please provide a state_code_filter if you want to trigger a raw data import DAG run in SECONDARY"
+        )
+
     pubsub_helper.publish_message_to_topic(
         topic="v1.ingest.trigger_raw_data_import_dag",
         message=json.dumps(
