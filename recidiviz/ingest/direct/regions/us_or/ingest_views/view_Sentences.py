@@ -59,13 +59,22 @@ sentence AS (
     FLAG_137635
   FROM {RCDVZ_PRDDTA_OP054P}
 ),
+-- table used to additionally clarify whether some statutes are funded or not
+funded_flag AS (
+  SELECT 
+    RECORD_KEY, 
+    CUSTODY_NUMBER,
+    OFFENSE_NUMBER,
+    FMISD_FLAG
+  FROM {RCDVZ_CISPRDDTA_OPOFFEXT}
+),
 -- getting all relevant charge information.  
 charge AS ( 
   SELECT DISTINCT
-    RECORD_KEY, 
-    CUSTODY_NUMBER,
+    c.RECORD_KEY, 
+    c.CUSTODY_NUMBER,
     ADMISSION_NUMBER, 
-    OFFENSE_NUMBER, 
+    c.OFFENSE_NUMBER, 
     ARREST_DATE, 
     DATE(CONVICTED_DATE) AS CONVICTED_DATE,
     COUNTY, 
@@ -83,8 +92,13 @@ charge AS (
     CRIME_CATEGORY,
     OFF_SEVERITY, 
     COURT_CASE_COUNT, 
-    JUDGE
-  FROM {RCDVZ_PRDDTA_OP053P}
+    JUDGE,
+    FMISD_FLAG
+  FROM {RCDVZ_PRDDTA_OP053P} c
+  LEFT JOIN funded_flag f
+  ON c.RECORD_KEY = f.RECORD_KEY
+  AND c.CUSTODY_NUMBER = f.CUSTODY_NUMBER
+  AND c.OFFENSE_NUMBER = f.OFFENSE_NUMBER
 ), 
 -- getting additional charge and offense information
 offense AS ( 
@@ -239,7 +253,8 @@ final AS (
     PPS_SENTENCE_YEARS,
     PPS_SENTENCE_MONTHS,
     PPS_SENTENCE_DAYS,
-    FLAG_137635
+    FLAG_137635,
+    FMISD_FLAG
   FROM sentence
   LEFT JOIN charge 
   USING (RECORD_KEY, CUSTODY_NUMBER, ADMISSION_NUMBER, OFFENSE_NUMBER)

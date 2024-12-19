@@ -44,6 +44,7 @@ input_columns:
   PPS_SENTENCE_MONTHS: STRING
   PPS_SENTENCE_DAYS: STRING
   FLAG_137635: STRING
+  FMISD_FLAG: STRING
 unused_columns:
   - CURRENT_STATUS
 output:
@@ -121,6 +122,7 @@ output:
                     MERGED_SENT: MERGE_SENTENCE
                     COURT_CASE_NUMBER: COURT_CASE_NUMBER
                     FLAG_137635: FLAG_137635
+                    FMISD_FLAG: FMISD_FLAG
                     CHARGE_ID:
                       $concat:
                         $values:
@@ -265,6 +267,7 @@ output:
                     MERGED_SENT: MERGE_SENTENCE
                     COURT_CASE_NUMBER: COURT_CASE_NUMBER
                     FLAG_137635: FLAG_137635
+                    FMISD_FLAG: FMISD_FLAG
                     CHARGE_ID:
                       $concat:
                         $values:
