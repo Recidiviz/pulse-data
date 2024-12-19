@@ -19,10 +19,12 @@ from typing import Optional
 
 import apache_beam
 from mock import patch
+from mock.mock import _patch
 from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
 )
@@ -33,16 +35,16 @@ from recidiviz.pipelines.ingest.dataset_config import (
     state_dataset_for_state_code,
 )
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
+from recidiviz.source_tables import ingest_pipeline_output_table_collector
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_raw_data_source_table_collections_for_state_and_instance,
 )
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
-    build_ingest_view_source_table_configs,
+    build_ingest_view_results_source_table_collection,
     build_normalized_state_output_source_table_collection,
     build_state_output_source_table_collection,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
-from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -62,16 +64,25 @@ from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     run_test_pipeline,
 )
 from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 
 class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixin):
     """Base TestCase class for tests that run ingest pipelines."""
 
     wipe_emulator_data_on_teardown = False
+    direct_ingest_regions_patcher: _patch | None
 
     @classmethod
-    def _expected_output_collections(cls) -> list[SourceTableCollection]:
+    def expected_output_collections(cls) -> list[SourceTableCollection]:
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            ingest_view_results_collection = (
+                build_ingest_view_results_source_table_collection(cls.state_code())
+            )
+
         collections = [
+            ingest_view_results_collection,
             build_state_output_source_table_collection(cls.state_code()),
             build_normalized_state_output_source_table_collection(cls.state_code()),
         ]
@@ -79,15 +90,6 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
         return [
             c.as_sandbox_collection(DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX)
             for c in collections
-        ]
-
-    # TODO(#30495): We should be able to include the ingest view source tables in the
-    #  _expected_output_collections() class method once we can derive the schemas from
-    #  the ingest mappings files.
-    def expected_output_collections(self) -> list[SourceTableCollection]:
-        return [
-            *self._expected_output_collections(),
-            self.ingest_views_source_table_collection,
         ]
 
     @classmethod
@@ -111,9 +113,25 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
             c for c in raw_data_collections if c.dataset_id == raw_tables_dataset
         )
         return [
-            *cls._expected_output_collections(),
+            *cls.expected_output_collections(),
             us_xx_raw_data_collection,
         ]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.direct_ingest_regions_patcher = None
+        if cls.region_module_override():
+            cls.direct_ingest_regions_patcher = patch(
+                f"{ingest_pipeline_output_table_collector.__name__}.direct_ingest_regions",
+                autospec=True,
+            )
+            mock_direct_ingest_regions = cls.direct_ingest_regions_patcher.start()
+            mock_direct_ingest_regions.get_direct_ingest_region.side_effect = (
+                lambda region_code: get_direct_ingest_region(
+                    region_code, region_module_override=cls.region_module_override()
+                )
+            )
+        super().setUpClass()
 
     def setUp(self) -> None:
         super().setUp()
@@ -127,25 +145,16 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
             region_module=self.region_module_override(),
         )
 
-        self.ingest_views_source_table_collection = one(
-            build_ingest_view_source_table_configs(
-                self.bq_client, state_codes=[self.state_code()]
-            )
-        ).as_sandbox_collection(DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX)
-
-        self._load_ingest_view_source_tables()
-
-    # TODO(#30495): We should be able to include the ingest view source tables in
-    #  get_source_tables() once we can derive the schemas from the ingest mappings
-    #  files.
-    def _load_ingest_view_source_tables(self) -> None:
-        update_manager = SourceTableUpdateManager()
-        update_manager.update(self.ingest_views_source_table_collection)
-
     def tearDown(self) -> None:
         self.region_patcher.stop()
         self._clear_emulator_table_data()
         super().tearDown()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super().tearDownClass()
+        if cls.direct_ingest_regions_patcher:
+            cls.direct_ingest_regions_patcher.stop()
 
     @classmethod
     def expected_ingest_view_dataset(cls) -> str:

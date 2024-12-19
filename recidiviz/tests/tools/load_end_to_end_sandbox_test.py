@@ -280,8 +280,7 @@ class TestGetViewUpdateInputDatasetOverridesDict(unittest.TestCase):
 
         self.assertEqual(
             {
-                # us_ca_ingest_view_results excluded because it's not a valid source
-                # table dataset that views can read from.
+                "us_ca_ingest_view_results": "my_prefix_us_ca_ingest_view_results",
                 "us_ca_normalized_state": "my_prefix_us_ca_normalized_state",
                 "us_ca_state": "my_prefix_us_ca_state",
             },
@@ -342,8 +341,7 @@ class TestGetViewUpdateInputDatasetOverridesDict(unittest.TestCase):
 
         self.assertEqual(
             {
-                # us_ca_ingest_view_results excluded because it's not a valid source
-                # table dataset that views can read from.
+                "us_ca_ingest_view_results": "my_prefix_us_ca_ingest_view_results",
                 "us_ca_normalized_state": "my_prefix_us_ca_normalized_state",
                 "us_ca_state": "my_prefix_us_ca_state",
                 "dataflow_metrics": "my_prefix_dataflow_metrics",

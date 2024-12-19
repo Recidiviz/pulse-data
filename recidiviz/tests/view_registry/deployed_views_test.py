@@ -88,6 +88,9 @@ from recidiviz.observations.views.events.person.task_completed import (
 from recidiviz.observations.views.spans.person.task_eligibility_session import (
     VIEW_BUILDER as TASK_ELIGIBILITY_SESSION_OBSERVATIONS_VIEW_BUILDER,
 )
+from recidiviz.pipelines.ingest.dataset_config import (
+    ingest_view_materialization_results_dataset,
+)
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
     get_all_source_table_addresses,
@@ -669,6 +672,12 @@ The following views have less restrictive projects_to_deploy than their parents:
     def test_views_only_query_from_allowed_datasets(self) -> None:
         """Test that ensures that views in our view graph only reference valid datasets."""
         disallowed_view_parent_datasets = {
+            # Ingest view results are data pipeline intermediate outputs and should
+            # be used for debugging purposes.
+            *{
+                ingest_view_materialization_results_dataset(state_code)
+                for state_code in StateCode
+            },
             # The `state` dataset is a data pipeline intermediate output and should only
             # be used for debugging purposes. Views should use the `normalized_state`
             # dataset instead.

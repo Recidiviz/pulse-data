@@ -48,9 +48,6 @@ from recidiviz.pipelines.pipeline_names import (
 from recidiviz.source_tables.dataflow_output_table_collector import (
     get_dataflow_output_source_table_collections,
 )
-from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
-    build_ingest_view_source_table_configs,
-)
 from recidiviz.source_tables.source_table_config import (
     DataflowPipelineSourceTableLabel,
     SourceTableCollection,
@@ -129,16 +126,6 @@ def create_or_update_dataflow_sandbox(
         )
 
         if pipeline == INGEST_PIPELINE_NAME:
-            # TODO(#30495): These will not need to be added separately once ingest views
-            #  define their schemas in the YAML mappings definitions and we can collect
-            #  these ingest view tables with all the other source tables.
-            collections_to_create.extend(
-                build_ingest_view_source_table_configs(
-                    bq_client=BigQueryClientImpl(),
-                    state_codes=state_codes,
-                )
-            )
-
             # Filter down to relevant collections based on filters
             pipeline_collections = [
                 c

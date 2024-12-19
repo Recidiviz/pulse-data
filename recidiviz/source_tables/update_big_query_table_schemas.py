@@ -35,14 +35,8 @@ import os
 from pprint import pprint
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_existing_in_env,
-)
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
-)
-from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
-    build_ingest_view_source_table_configs,
 )
 from recidiviz.source_tables.source_table_config import SourceTableCollection
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
@@ -136,19 +130,6 @@ def perform_bigquery_table_schema_update(dry_run: bool, log_output: bool) -> Non
     update_all_source_table_schemas(
         source_table_collections=collect_managed_source_table_collections(
             source_table_repository=repository
-        ),
-        dry_run=dry_run,
-        log_output=log_output,
-    )
-
-    # TODO(#30495): These will not need to be added separately once ingest views define
-    #  their schemas in the YAML mappings definitions and we can collect these ingest
-    #  view tables with all the other source tables.
-    logging.info("Building source table configs for ingest views...")
-    update_all_source_table_schemas(
-        source_table_collections=build_ingest_view_source_table_configs(
-            bq_client=BigQueryClientImpl(),
-            state_codes=get_direct_ingest_states_existing_in_env(),
         ),
         dry_run=dry_run,
         log_output=log_output,

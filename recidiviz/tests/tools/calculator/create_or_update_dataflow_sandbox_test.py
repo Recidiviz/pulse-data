@@ -20,13 +20,17 @@ from unittest.mock import patch
 import pytest
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.pipelines.pipeline_names import (
+    INGEST_PIPELINE_NAME,
     METRICS_PIPELINE_NAME,
     SUPPLEMENTAL_PIPELINE_NAME,
 )
+from recidiviz.source_tables import ingest_pipeline_output_table_collector
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
+from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tools.calculator import (
     create_or_update_dataflow_sandbox as create_or_update_dataflow_sandbox_module,
 )
@@ -47,12 +51,28 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
                 f"{create_or_update_dataflow_sandbox_module.__name__}.get_direct_ingest_states_existing_in_env",
                 return_value=self.existing_states,
             ),
+            patch(
+                f"{ingest_pipeline_output_table_collector.__name__}.get_direct_ingest_states_existing_in_env",
+                return_value=self.existing_states,
+            ),
         ]
         for patcher in self.existing_states_patchers:
             patcher.start()
 
+        self.direct_ingest_regions_patcher = patch(
+            f"{ingest_pipeline_output_table_collector.__name__}.direct_ingest_regions",
+            autospec=True,
+        )
+        self.mock_direct_ingest_regions = self.direct_ingest_regions_patcher.start()
+        self.mock_direct_ingest_regions.get_direct_ingest_region.side_effect = (
+            lambda region_code: get_direct_ingest_region(
+                region_code, region_module_override=fake_regions_module
+            )
+        )
+
     def tearDown(self) -> None:
         super().tearDown()
+        self.direct_ingest_regions_patcher.stop()
         for patcher in self.existing_states_patchers:
             patcher.stop()
 
@@ -98,5 +118,30 @@ class CreateOrUpdateDataflowSandboxTest(BigQueryEmulatorTestCase):
                 allow_overwrite=False,
             )
 
-    # TODO(#30495): Write a test for creating an ingest sandbox once we don't have to
-    #  load all raw data tables in order to do so.
+    def test_create_ingest(self) -> None:
+        create_or_update_dataflow_sandbox(
+            sandbox_dataset_prefix="sandboxed",
+            pipelines=[INGEST_PIPELINE_NAME],
+            allow_overwrite=False,
+        )
+
+        self.assertListEqual(
+            sorted(dataset.dataset_id for dataset in self.bq_client.list_datasets()),
+            [
+                "sandboxed_us_xx_ingest_view_results",
+                "sandboxed_us_xx_normalized_state",
+                "sandboxed_us_xx_state",
+                "sandboxed_us_yy_ingest_view_results",
+                "sandboxed_us_yy_normalized_state",
+                "sandboxed_us_yy_state",
+            ],
+        )
+
+        with self.assertRaisesRegex(
+            ValueError, r"^Dataset sandboxed_.* already exists.*"
+        ):
+            create_or_update_dataflow_sandbox(
+                sandbox_dataset_prefix="sandboxed",
+                pipelines=[INGEST_PIPELINE_NAME],
+                allow_overwrite=False,
+            )

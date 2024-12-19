@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for Dataflow BigQuery source tables"""
 import unittest
+from unittest.mock import patch
 
 from recidiviz.pipelines.pipeline_names import (
     METRICS_PIPELINE_NAME,
@@ -36,9 +37,17 @@ class TestDataflowOutputTableCollector(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
+
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = "recidiviz-456"
+
         self.source_table_repository = SourceTableRepository(
             source_table_collections=get_dataflow_output_source_table_collections()
         )
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
 
     def test_supplemental(self) -> None:
         """Tests the expected output schema of supplemental pipelines."""

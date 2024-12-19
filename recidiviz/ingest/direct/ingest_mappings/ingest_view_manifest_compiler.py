@@ -67,9 +67,6 @@ class IngestViewManifest:
         """Validate BigQuery types in input_columns after initialization."""
         valid_bigquery_types = set(SqlTypeNames)
 
-        # TODO(#30495): Enforce somewhere that ingest views do not produce REPEATED mode
-        #  columns (i.e. array type columns) because we don't have a way to represent
-        #  that in YAMLs. We can enforce this when we validate the column types in the next PR.
         invalid_types = [
             (column, type_spec)
             for column, type_spec in self.input_column_to_type.items()
@@ -275,8 +272,6 @@ class IngestViewManifestCompiler:
         referenced in the |output| section of the manifest.
         """
 
-        # TODO(#30495): Still does not enforce types until we address the TODO in update_big_query_table_schemas.py
-        # Script to update schema (schema-updater.py) need to be re-run to update any non-sync'd YAMLs.
         input_column_names = set(input_columns.keys())
         # Validate column names
         for column in input_column_names:

@@ -19,6 +19,7 @@ ingest view queries.
 """
 import abc
 import datetime
+import logging
 import os.path
 from functools import cache
 from types import ModuleType
@@ -240,7 +241,24 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
                 raw_data_datetime_upper_bound=query_run_dt,
             )
         )
-        return self.query_view(ingest_view.ingest_view_name, view_query)
+        query_job = self.bq_client.run_query_async(
+            query_str=view_query, use_query_cache=True
+        )
+
+        query_job.result()
+
+        # TODO(#33979), TODO(#26259): Once the emulator properly returns the schemas
+        #  for views and query results, verify that the query schema matches the schema
+        #  defined in the manifest input_columns. Also enforce that ingest views do not
+        #  produce REPEATED mode columns (i.e. array type columns) because we don't have
+        #  a way to represent that in YAMLs.
+
+        results = query_job.to_dataframe()
+        # Log results to debug log level, to see them pass --log-level DEBUG to pytest
+        logging.debug(
+            "Results for `%s`:\n%s", ingest_view.ingest_view_name, results.to_string()
+        )
+        return results
 
     def check_ingest_view_ctes_are_documented(
         self,

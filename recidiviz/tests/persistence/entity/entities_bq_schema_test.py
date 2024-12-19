@@ -29,12 +29,9 @@ from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import (
     normalized_entities as normalized_state_entities,
 )
-from recidiviz.pipelines.ingest.dataset_config import (
-    normalized_state_dataset_for_state_code,
-    state_dataset_for_state_code,
-)
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
-    build_ingest_pipeline_output_source_table_collections,
+    build_normalized_state_output_source_table_collection,
+    build_state_output_source_table_collection,
 )
 from recidiviz.tests.persistence.entity import fake_entities
 
@@ -164,12 +161,7 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
         matches the current schemas defined for our `us_xx_state` ingest pipeline output
         datasets.
         """
-        state_collection = one(
-            c
-            for c in build_ingest_pipeline_output_source_table_collections()
-            # Pick an arbitrary state's ingest pipeline output schema to test
-            if c.dataset_id == state_dataset_for_state_code(StateCode.US_OZ)
-        )
+        state_collection = build_state_output_source_table_collection(StateCode.US_OZ)
         expected_table_to_schema = {
             t.address.table_id: t.schema_fields for t in state_collection.source_tables
         }
@@ -184,13 +176,8 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
         matches the current schemas defined for our `us_xx_normalized_state*` ingest
         pipeline output datasets.
         """
-        state_collection = one(
-            c
-            for c in build_ingest_pipeline_output_source_table_collections()
-            # Pick an arbitrary state's ingest pipeline output schema to test
-            if (
-                c.dataset_id == normalized_state_dataset_for_state_code(StateCode.US_OZ)
-            )
+        state_collection = build_normalized_state_output_source_table_collection(
+            StateCode.US_OZ
         )
         expected_table_to_schema = {
             t.address.table_id: t.schema_fields for t in state_collection.source_tables

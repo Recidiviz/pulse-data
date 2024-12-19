@@ -18,7 +18,6 @@
 emulator.
 """
 import datetime
-import logging
 import os
 import tempfile
 import unittest
@@ -163,13 +162,6 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         return self.bq_client.run_query_async(
             query_str=query, use_query_cache=True
         ).to_dataframe()
-
-    def query_view(self, view_name: str, view_query: str) -> pd.DataFrame:
-        """Returns results from view based on the given query"""
-        results = self.query(view_query)
-        # Log results to debug log level, to see them pass --log-level DEBUG to pytest
-        logging.debug("Results for `%s`:\n%s", view_name, results.to_string())
-        return results
 
     def _clear_emulator_table_data(self) -> None:
         """Clears the data out of emulator tables but does not delete any tables."""
