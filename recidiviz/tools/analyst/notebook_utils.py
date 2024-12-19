@@ -124,7 +124,9 @@ def inspect_df(df: pd.DataFrame) -> None:
 
 
 # function for converting df types when imported via read_gbq
-def convert_df_types(df: pd.DataFrame) -> pd.DataFrame:
+def convert_df_types(
+    df: pd.DataFrame, columns_to_ignore: Optional[List[str]] = None
+) -> pd.DataFrame:
     """
     Converts types of columns in df. This is useful when using read_gbq since the
     returned dataframe will include types that are challenging to work with in pandas.
@@ -132,8 +134,17 @@ def convert_df_types(df: pd.DataFrame) -> pd.DataFrame:
     Note that all int columns must have zero missing values, or this function will
     throw an error. Before running this function, convert those columns to float
     if you want to keep the missing values.
+
+    Parameters:
+    df (pd.DataFrame): The dataframe to convert.
+    columns_to_ignore (Optional[List[str]]): List of columns to ignore during conversion.
     """
+    if columns_to_ignore is None:
+        columns_to_ignore = []
+
     for c in df.columns:
+        if c in columns_to_ignore:
+            continue
         if df[c].dtype == "Int64":
             if sum(df[c].isnull()) > 0:
                 raise ValueError(
