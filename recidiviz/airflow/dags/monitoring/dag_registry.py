@@ -90,5 +90,5 @@ def get_discrete_configuration_parameters(project_id: str, dag_id: str) -> List[
     if dag_id == get_sftp_dag_id(project_id):
         return []
     if dag_id == get_raw_data_import_dag_id(project_id):
-        return ["ingest_instance", "state_code_filter"]
+        return ["ingest_instance"]
     raise ValueError(f"Unexpected dag_id [{dag_id}]")
