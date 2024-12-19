@@ -354,7 +354,17 @@ def parse_admission_reason(
             for mr in move_reason_list
         ):
             return StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION
-
+        if "04" in move_reason_list:  # County/City Jail Backup
+            # If someone is returned from supervision with REASONFORMOVEMENT "04" (County/City Jail Backup),
+            # then the admission is considered a revocation no matter what (since backup
+            # facilities aren't used for sanction admissions or board holds). Admissions
+            # with this REASONFORMOVEMENT can either be full revocations or 90-day revocations;
+            # if the board hearing data indicates that it's a 90-day revocation, we still
+            # treat it as a revocation admission, but set PFI to SHOCK_INCARCERATION.
+            # (AR considers these to be revocations rather than sanctions, even though
+            # people on 90-day revocations may be able to resume their supervision after
+            # 90 days of good behavior).
+            return StateIncarcerationPeriodAdmissionReason.REVOCATION
         return StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
     if any(
         mt
