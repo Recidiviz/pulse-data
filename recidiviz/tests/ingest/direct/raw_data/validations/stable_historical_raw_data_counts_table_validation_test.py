@@ -68,6 +68,9 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
                 config_path=config_path
             )
         )
+        self.update_datetime = datetime.datetime(
+            2024, 12, 8, 0, 0, 0, tzinfo=datetime.timezone.utc
+        )
         self.validation = StableHistoricalRawDataCountsTableValidation(
             file_tag=self.file_tag,
             project_id=self.project_id,
@@ -75,6 +78,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             state_code=self.state_code,
             raw_data_instance=self.ingest_instance,
             validation_config=self.validation_config,
+            file_update_datetime=self.update_datetime,
         )
 
         self.expected_median = 10
@@ -87,7 +91,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             },
             {"file_id": 3, "raw_rows": 13, "import_status": "SUCCEEDED"},
         ]
-        self.update_datetime = datetime.datetime.now(datetime.timezone.utc)
+
         self.default_bq_metadata_data = [
             {
                 "file_id": 1,
@@ -442,6 +446,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             state_code=self.state_code,
             raw_data_instance=self.ingest_instance,
             validation_config=self.validation_config,
+            file_update_datetime=self.update_datetime,
         )
 
         results = self.query(validation.query)
@@ -492,6 +497,7 @@ class TestStableHistoricalRawDataCountsTableValidation(BigQueryEmulatorTestCase)
             state_code=self.state_code,
             raw_data_instance=self.ingest_instance,
             validation_config=self.validation_config,
+            file_update_datetime=self.update_datetime,
         )
 
         results = self.query(validation.query)

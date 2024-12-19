@@ -16,7 +16,7 @@
 # =============================================================================
 """Classes for raw table validations."""
 import abc
-from datetime import datetime
+import datetime
 from typing import Any, Dict, List, Optional
 
 import attr
@@ -91,7 +91,7 @@ class RawDataColumnImportBlockingValidation(RawDataImportBlockingValidation):
         file_tag: str,
         project_id: str,
         temp_table_address: BigQueryAddress,
-        file_upload_datetime: datetime,
+        file_upload_datetime: datetime.datetime,
         column: RawTableColumnInfo,
     ) -> "RawDataColumnImportBlockingValidation":
         """Factory method to create a column validation."""
@@ -135,6 +135,7 @@ class RawDataTableImportBlockingValidation(RawDataImportBlockingValidation):
 
     state_code: StateCode
     raw_data_instance: DirectIngestInstance
+    file_update_datetime: datetime.datetime
 
     @classmethod
     def create_table_validation(
@@ -144,6 +145,7 @@ class RawDataTableImportBlockingValidation(RawDataImportBlockingValidation):
         temp_table_address: BigQueryAddress,
         state_code: StateCode,
         raw_data_instance: DirectIngestInstance,
+        file_update_datetime: datetime.datetime,
     ) -> "RawDataTableImportBlockingValidation":
         """Factory method to create a table validation."""
         return cls(
@@ -152,6 +154,7 @@ class RawDataTableImportBlockingValidation(RawDataImportBlockingValidation):
             file_tag=file_tag,
             state_code=state_code,
             raw_data_instance=raw_data_instance,
+            file_update_datetime=file_update_datetime,
         )
 
     @staticmethod

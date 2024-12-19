@@ -110,6 +110,7 @@ class DirectIngestRawTablePreImportValidator:
                     temp_table_address,
                     state_code,
                     self.raw_data_instance,
+                    file_update_datetime,
                 )
             )
 

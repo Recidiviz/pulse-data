@@ -70,7 +70,7 @@ SELECT
 FROM 
     median_data;
 """
-_TIME_WINDOW_TEMPLATE = " AND update_datetime > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {time_window_lookback_days} DAY)"
+_TIME_WINDOW_TEMPLATE = " AND update_datetime > TIMESTAMP_SUB(CAST('{file_update_timestamp}' AS TIMESTAMP), INTERVAL {time_window_lookback_days} DAY)"
 _DATE_EXCLUSION_TEMPLATE = " AND update_datetime NOT BETWEEN PARSE_TIMESTAMP('%FT%T', '{datetime_start_inclusive}') AND PARSE_TIMESTAMP('%FT%T', '{datetime_end_exclusive}')"
 
 
@@ -138,6 +138,7 @@ class StableHistoricalRawDataCountsTableValidation(
             [
                 StrictStringFormatter().format(
                     _TIME_WINDOW_TEMPLATE,
+                    file_update_timestamp=self.file_update_datetime.isoformat(),
                     time_window_lookback_days=self.time_window_lookback_days,
                 )
             ]
