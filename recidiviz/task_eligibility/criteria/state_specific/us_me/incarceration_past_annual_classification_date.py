@@ -82,7 +82,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     state_code=StateCode.US_ME,
     criteria_spans_query_template=_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
-    meets_criteria_default=True,
+    meets_criteria_default=False,
     completion_event_us_me_dataset=completion_event_state_specific_dataset(
         StateCode.US_ME
     ),

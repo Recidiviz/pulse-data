@@ -83,7 +83,7 @@ SELECT
     end_date,
     meets_criteria,
     reason,
-    CAST(NULL AS JSON) AS reason_v2,
+    TO_JSON(STRUCT()) AS reason_v2,
 FROM
     criteria_query_base
 )
@@ -164,7 +164,7 @@ SELECT
     end_date,
     meets_criteria,
     reason,
-    CAST(NULL AS JSON) AS reason_v2,
+    TO_JSON(STRUCT()) AS reason_v2,
 FROM
     criteria_query_base
 )
@@ -283,7 +283,7 @@ SELECT
     end_date,
     meets_criteria,
     reason,
-    CAST(NULL AS JSON) AS reason_v2,
+    TO_JSON(STRUCT()) AS reason_v2,
 FROM
     criteria_query_base
 )
@@ -362,7 +362,7 @@ SELECT
     end_date,
     meets_criteria,
     reason,
-    CAST(NULL AS JSON) AS reason_v2,
+    TO_JSON(STRUCT()) AS reason_v2,
 FROM
     criteria_query_base
 )
@@ -419,7 +419,7 @@ SELECT
     end_date,
     meets_criteria,
     reason,
-    CAST(NULL AS JSON) AS reason_v2,
+    TO_JSON(STRUCT()) AS reason_v2,
 FROM
     criteria_query_base
 )

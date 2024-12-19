@@ -32,7 +32,7 @@ def get_template_with_reasons_as_json(
     query_template: str, reasons_fields: List[ReasonsField]
 ) -> str:
     # If no reason fields are provided, default to NULL
-    reasons_query_fragment = "CAST(NULL AS JSON)"
+    reasons_query_fragment = "TO_JSON(STRUCT())"
     # Package reason fields into a json, maintaining original typing of fields
     if reasons_fields:
         reasons_query_fragment = convert_cols_to_json(

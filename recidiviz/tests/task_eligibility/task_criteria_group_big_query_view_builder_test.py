@@ -15,11 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for TaskCriteriaGroupBigQueryViewBuilder classes."""
-import unittest
+from datetime import date
+from typing import Any, Dict, List, Union
 
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -28,11 +30,16 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
     StateSpecificTaskCriteriaBigQueryViewBuilder,
+    TaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     AndTaskCriteriaGroup,
     InvertedTaskCriteriaBigQueryViewBuilder,
     OrTaskCriteriaGroup,
+    TaskCriteriaGroupBigQueryViewBuilder,
+)
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
 )
 
 CRITERIA_1_STATE_AGNOSTIC = StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -110,8 +117,44 @@ CRITERIA_5_STATE_SPECIFIC = StateSpecificTaskCriteriaBigQueryViewBuilder(
 )
 
 
-class TestTaskCriteriaGroupBigQueryViewBuilder(unittest.TestCase):
+class TestTaskCriteriaGroupBigQueryViewBuilder(BigQueryEmulatorTestCase):
     """Tests for the TaskCriteriaGroupBigQueryViewBuilder."""
+
+    maxDiff = None
+
+    def _load_data_for_criteria_view(
+        self,
+        criteria_view_builder: Union[
+            TaskCriteriaBigQueryViewBuilder,
+            TaskCriteriaGroupBigQueryViewBuilder,
+            InvertedTaskCriteriaBigQueryViewBuilder,
+        ],
+        criteria_data: List[Dict[str, Any]],
+    ) -> None:
+        self.create_mock_table(
+            address=criteria_view_builder.table_for_query,
+            schema=[
+                schema_field_for_type("state_code", str),
+                schema_field_for_type("person_id", int),
+                schema_field_for_type("start_date", date),
+                schema_field_for_type("end_date", date),
+                schema_field_for_type("meets_criteria", bool),
+                bigquery.SchemaField(
+                    "reason",
+                    field_type=bigquery.enums.StandardSqlTypeNames.JSON.value,
+                    mode="NULLABLE",
+                ),
+                bigquery.SchemaField(
+                    "reason_v2",
+                    field_type=bigquery.enums.StandardSqlTypeNames.JSON.value,
+                    mode="NULLABLE",
+                ),
+            ],
+        )
+        self.load_rows_into_table(
+            address=criteria_view_builder.table_for_query,
+            data=criteria_data,
+        )
 
     def test_and_criteria_group_state_agnostic(self) -> None:
         """Checks a standard AND group between two state-agnostic criteria"""
@@ -149,36 +192,66 @@ Combines the following criteria queries using AND logic:
         ]
         self.assertEqual(actual_reasons_field_names, expected_reasons_field_names)
 
-        # Check that query template is correct
-        expected_query_template = f"""
-WITH unioned_criteria AS (
-    SELECT *, True AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_general.my_state_agnostic_criteria_materialized`
-    UNION ALL
-    SELECT *, False AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_general.another_state_agnostic_criteria_materialized`
-)
-,
-{create_sub_sessions_with_attributes("unioned_criteria")}
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    LOGICAL_AND(
-        COALESCE(meets_criteria, meets_criteria_default)
-    ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed)) AS reason,
-    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed,
-FROM
-    sub_sessions_with_attributes
-GROUP BY 1, 2, 3, 4
-"""
-        self.assertEqual(expected_query_template, criteria_group.get_query_template())
+        self._load_data_for_criteria_view(
+            criteria_view_builder=CRITERIA_1_STATE_AGNOSTIC,
+            criteria_data=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": True,
+                    "reason": {},
+                    "reason_v2": {},
+                },
+            ],
+        )
+
+        self._load_data_for_criteria_view(
+            criteria_view_builder=CRITERIA_2_STATE_AGNOSTIC,
+            criteria_data=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 7),
+                    "end_date": date(2024, 1, 31),
+                    "meets_criteria": True,
+                    "reason": {"fees_owed": 45},
+                    "reason_v2": {"fees_owed": 45},
+                },
+            ],
+        )
+        self.run_query_test(
+            query_str=criteria_group.as_criteria_view_builder.build().view_query,
+            expected_result=[
+                # Criteria 1 is True, Criteria 2 is missing (default False), Group is False
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 7),
+                    "meets_criteria": False,
+                    "reason": {"fees_owed": None},
+                    "reason_v2": {"fees_owed": None},
+                },
+                # Collapsed True span:
+                # 1/7-1/20: Criteria 1 is True, Criteria 2 is True, Group is True
+                # 1/20-1/31: Criteria 1 is missing (default True), Criteria 2 is True, Group is True
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 7),
+                    "end_date": date(2024, 1, 31),
+                    "meets_criteria": True,
+                    "reason": {"fees_owed": 45},
+                    "reason_v2": {"fees_owed": 45},
+                },
+            ],
+        )
 
     def test_criteria_group_state_specific_same_state(self) -> None:
-        """Checks a standard AND group between two state-specific criteria from the same state"""
-        criteria_group = AndTaskCriteriaGroup(
+        """Checks a standard OR group between two state-specific criteria from the same state"""
+        criteria_group = OrTaskCriteriaGroup(
             criteria_name="US_KY_CRITERIA_4_AND_CRITERIA_5",
             sub_criteria_list=[CRITERIA_4_STATE_SPECIFIC, CRITERIA_5_STATE_SPECIFIC],
             allowed_duplicate_reasons_keys=[],
@@ -195,12 +268,12 @@ GROUP BY 1, 2, 3, 4
             ),
         )
 
-        # Check that meets_criteria_default is True if and only if all sub-criteria are True
-        self.assertEqual(criteria_group.meets_criteria_default, False)
+        # Check that meets_criteria_default is True if any sub-criteria are True
+        self.assertEqual(criteria_group.meets_criteria_default, True)
 
         # Check that description field is aligned
         expected_description = """
-Combines the following criteria queries using AND logic:
+Combines the following criteria queries using OR logic:
  - US_KY_CRITERIA_4: A criteria for KY residents
  - US_KY_CRITERIA_5: Another criteria for KY residents"""
         self.assertEqual(criteria_group.description, expected_description)
@@ -217,32 +290,100 @@ Combines the following criteria queries using AND logic:
         ]
         self.assertEqual(actual_reasons_field_names, expected_reasons_field_names)
 
-        # Check that query template is correct
-        expected_query_template = f"""
-WITH unioned_criteria AS (
-    SELECT *, False AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_us_ky.criteria_4_materialized`
-    UNION ALL
-    SELECT *, True AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_us_ky.criteria_5_materialized`
-)
-,
-{create_sub_sessions_with_attributes("unioned_criteria")}
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    LOGICAL_AND(
-        COALESCE(meets_criteria, meets_criteria_default)
-    ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE)) AS latest_violation_date, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT64)) AS violations)) AS reason,
-    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE)) AS latest_violation_date, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT64)) AS violations,
-FROM
-    sub_sessions_with_attributes
-GROUP BY 1, 2, 3, 4
-"""
-        self.assertEqual(expected_query_template, criteria_group.get_query_template())
+        self._load_data_for_criteria_view(
+            criteria_view_builder=CRITERIA_4_STATE_SPECIFIC,
+            criteria_data=[
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": False,
+                    "reason": {"violations": 1.0, "latest_violation_date": None},
+                    "reason_v2": {"violations": 1.0, "latest_violation_date": None},
+                },
+            ],
+        )
+
+        self._load_data_for_criteria_view(
+            criteria_view_builder=CRITERIA_5_STATE_SPECIFIC,
+            criteria_data=[
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 7),
+                    "end_date": date(2024, 1, 31),
+                    "meets_criteria": False,
+                    "reason": {"fees_owed": 45, "offense_types": ["A", "B"]},
+                    "reason_v2": {"fees_owed": 45, "offense_types": ["A", "B"]},
+                },
+            ],
+        )
+        self.run_query_test(
+            query_str=criteria_group.as_criteria_view_builder.build().view_query,
+            expected_result=[
+                # Criteria 1 is False, Criteria 2 is missing (default True), Group is True
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 7),
+                    "meets_criteria": True,
+                    "reason": {
+                        "fees_owed": None,
+                        "latest_violation_date": None,
+                        "offense_types": None,
+                        "violations": 1,
+                    },
+                    "reason_v2": {
+                        "fees_owed": None,
+                        "latest_violation_date": None,
+                        "offense_types": None,
+                        "violations": 1,
+                    },
+                },
+                # Criteria 1 is False, Criteria 2 is False, Group is False
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 7),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": False,
+                    "reason": {
+                        "fees_owed": 45,
+                        "latest_violation_date": None,
+                        "offense_types": ["A", "B"],
+                        "violations": 1,
+                    },
+                    "reason_v2": {
+                        "fees_owed": 45,
+                        "latest_violation_date": None,
+                        "offense_types": ["A", "B"],
+                        "violations": 1,
+                    },
+                },
+                # Criteria 1 is missing (default False), Criteria 2 is False, Group is False
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 20),
+                    "end_date": date(2024, 1, 31),
+                    "meets_criteria": False,
+                    "reason": {
+                        "fees_owed": 45,
+                        "latest_violation_date": None,
+                        "offense_types": ["A", "B"],
+                        "violations": None,
+                    },
+                    "reason_v2": {
+                        "fees_owed": 45,
+                        "latest_violation_date": None,
+                        "offense_types": ["A", "B"],
+                        "violations": None,
+                    },
+                },
+            ],
+        )
 
     def test_criteria_group_state_specific_and_state_agnostic_no_reasons(self) -> None:
         """Checks AND group between a state-specific and a state-agnostic criteria"""
@@ -279,33 +420,59 @@ Combines the following criteria queries using AND logic:
         ]
         self.assertEqual(actual_reasons_field_names, [])
 
-        # Check that query template is correct
-        expected_query_template = f"""
-WITH unioned_criteria AS (
-    SELECT *, True AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_general.my_state_agnostic_criteria_materialized`
-    WHERE state_code = "US_HI"
-    UNION ALL
-    SELECT *, True AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_us_hi.criteria_3_materialized`
-)
-,
-{create_sub_sessions_with_attributes("unioned_criteria")}
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    LOGICAL_AND(
-        COALESCE(meets_criteria, meets_criteria_default)
-    ) AS meets_criteria,
-    TO_JSON(STRUCT()) AS reason,
+        self._load_data_for_criteria_view(
+            criteria_view_builder=CRITERIA_1_STATE_AGNOSTIC,
+            criteria_data=[
+                {
+                    "state_code": "US_XX",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": False,
+                    "reason": {},
+                    "reason_v2": {},
+                },
+                {
+                    "state_code": "US_HI",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": True,
+                    "reason": {},
+                    "reason_v2": {},
+                },
+            ],
+        )
 
-FROM
-    sub_sessions_with_attributes
-GROUP BY 1, 2, 3, 4
-"""
-        self.assertEqual(expected_query_template, criteria_group.get_query_template())
+        self._load_data_for_criteria_view(
+            criteria_view_builder=CRITERIA_3_STATE_SPECIFIC,
+            criteria_data=[
+                {
+                    "state_code": "US_HI",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": True,
+                    "reason": {},
+                    "reason_v2": {},
+                },
+            ],
+        )
+        self.run_query_test(
+            query_str=criteria_group.as_criteria_view_builder.build().view_query,
+            expected_result=[
+                # All rows for other states are dropped
+                {
+                    "state_code": "US_HI",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": True,
+                    "reason": {},
+                    "reason_v2": {},
+                },
+            ],
+        )
 
     def test_criteria_group_state_specific_and_state_agnostic_with_duplicate_reasons(
         self,
@@ -345,33 +512,50 @@ Combines the following criteria queries using AND logic:
         ]
         self.assertEqual(actual_reasons_field_names, expected_reasons_field_names)
 
-        # Check that query template is correct
-        expected_query_template = f"""
-WITH unioned_criteria AS (
-    SELECT *, False AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_general.another_state_agnostic_criteria_materialized`
-    WHERE state_code = "US_KY"
-    UNION ALL
-    SELECT *, True AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_us_ky.criteria_5_materialized`
-)
-,
-{create_sub_sessions_with_attributes("unioned_criteria")}
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    LOGICAL_AND(
-        COALESCE(meets_criteria, meets_criteria_default)
-    ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types)) AS reason,
-    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types,
-FROM
-    sub_sessions_with_attributes
-GROUP BY 1, 2, 3, 4
-"""
-        self.assertEqual(expected_query_template, criteria_group.get_query_template())
+        self._load_data_for_criteria_view(
+            criteria_view_builder=CRITERIA_2_STATE_AGNOSTIC,
+            criteria_data=[
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": False,
+                    "reason": {"fees_owed": 45},
+                    "reason_v2": {"fees_owed": 45},
+                },
+            ],
+        )
+
+        self._load_data_for_criteria_view(
+            criteria_view_builder=CRITERIA_5_STATE_SPECIFIC,
+            criteria_data=[
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": True,
+                    "reason": {"fees_owed": 25, "offense_types": ["A", "B"]},
+                    "reason_v2": {"fees_owed": 25, "offense_types": ["A", "B"]},
+                },
+            ],
+        )
+        self.run_query_test(
+            query_str=criteria_group.as_criteria_view_builder.build().view_query,
+            expected_result=[
+                # The MAX value is picked across criteria for the "fees_owed" reason
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": False,
+                    "reason": {"fees_owed": 45, "offense_types": ["A", "B"]},
+                    "reason_v2": {"fees_owed": 45, "offense_types": ["A", "B"]},
+                },
+            ],
+        )
 
     def test_criteria_group_state_specific_and_state_agnostic_duplicate_reasons_missing_state(
         self,
@@ -426,7 +610,7 @@ GROUP BY 1, 2, 3, 4
         criteria_query = OrTaskCriteriaGroup(
             criteria_name="CRITERIA_WITH_DUPLICATE_ARRAY_REASONS",
             sub_criteria_list=[
-                CRITERIA_5_STATE_SPECIFIC,
+                InvertedTaskCriteriaBigQueryViewBuilder(CRITERIA_5_STATE_SPECIFIC),
                 StateAgnosticTaskCriteriaBigQueryViewBuilder(
                     criteria_name="CRITERIA_WITH_ARRAY_2",
                     description="Another state-agnostic criteria with array reasons",
@@ -446,27 +630,51 @@ GROUP BY 1, 2, 3, 4
         )
         expected_query_template = f"""
 WITH unioned_criteria AS (
-    SELECT *, True AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_us_ky.criteria_5_materialized`
+    SELECT *, "US_KY_NOT_CRITERIA_5" AS criteria_name,
+    FROM `{{project_id}}.task_eligibility_criteria_us_ky.not_criteria_5_materialized`
     UNION ALL
-    SELECT *, False AS meets_criteria_default
+    SELECT *, "CRITERIA_WITH_ARRAY_2" AS criteria_name,
     FROM `{{project_id}}.task_eligibility_criteria_general.criteria_with_array_2_materialized`
     WHERE state_code = "US_KY"
 )
 ,
-{create_sub_sessions_with_attributes("unioned_criteria")}
+{create_sub_sessions_with_attributes("unioned_criteria", use_magic_date_end_dates=True)}
 SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
+    spans.state_code,
+    spans.person_id,
+    spans.start_date,
+    IF(spans.end_date = "9999-12-31", NULL, spans.end_date) AS end_date,
     LOGICAL_OR(
-        COALESCE(meets_criteria, meets_criteria_default)
+        -- Use the `meets_criteria_default` if the sub-criteria doesn't overlap this sub-session
+        COALESCE(criteria.meets_criteria, all_criteria.meets_criteria_default)
     ) AS meets_criteria,
     TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ARRAY_CONCAT_AGG(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types)) AS reason,
     MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ARRAY_CONCAT_AGG(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types,
-FROM
-    sub_sessions_with_attributes
+-- Start with the DISTINCT sub-sessions where at least 1 sub-criteria is non-null
+FROM (
+    SELECT DISTINCT
+        state_code, person_id, start_date, end_date
+    FROM sub_sessions_with_attributes
+) AS spans,
+-- Unnest every sub-criteria in the group so there is 1 row for each sub-criteria
+-- per sub-session, along with the associated sub-criteria `meets_criteria_default` value
+UNNEST
+    ([
+        STRUCT(
+            "US_KY_NOT_CRITERIA_5" AS criteria_name,
+            False AS meets_criteria_default
+        ),
+        STRUCT(
+            "CRITERIA_WITH_ARRAY_2" AS criteria_name,
+            False AS meets_criteria_default
+        )
+    ]) all_criteria
+-- Left join all the sub-criteria sub-sessions back in to hydrate the `meets_criteria` column
+-- and the reasons fields for cases where the sub-criteria overlaps each sub-session
+LEFT JOIN
+    sub_sessions_with_attributes AS criteria
+USING
+    (state_code, person_id, start_date, end_date, criteria_name)
 GROUP BY 1, 2, 3, 4
 """
         self.assertEqual(expected_query_template, criteria_query.get_query_template())
@@ -525,26 +733,50 @@ GROUP BY 1, 2, 3, 4
         )
         expected_query_template = f"""
 WITH unioned_criteria AS (
-    SELECT *, False AS meets_criteria_default
+    SELECT *, "CRITERIA_WITH_ARRAY_1" AS criteria_name,
     FROM `{{project_id}}.task_eligibility_criteria_general.criteria_with_array_1_materialized`
     UNION ALL
-    SELECT *, False AS meets_criteria_default
+    SELECT *, "CRITERIA_WITH_ARRAY_2" AS criteria_name,
     FROM `{{project_id}}.task_eligibility_criteria_general.criteria_with_array_2_materialized`
 )
 ,
-{create_sub_sessions_with_attributes("unioned_criteria")}
+{create_sub_sessions_with_attributes("unioned_criteria", use_magic_date_end_dates=True)}
 SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
+    spans.state_code,
+    spans.person_id,
+    spans.start_date,
+    IF(spans.end_date = "9999-12-31", NULL, spans.end_date) AS end_date,
     LOGICAL_OR(
-        COALESCE(meets_criteria, meets_criteria_default)
+        -- Use the `meets_criteria_default` if the sub-criteria doesn't overlap this sub-session
+        COALESCE(criteria.meets_criteria, all_criteria.meets_criteria_default)
     ) AS meets_criteria,
     TO_JSON(STRUCT(ARRAY_CONCAT_AGG(JSON_VALUE_ARRAY(reason_v2, '$.array_field_one') ORDER BY ARRAY_TO_STRING(JSON_VALUE_ARRAY(reason_v2, '$.array_field_one'), ',')) AS array_field_one, SOME_AGG_FUNC(JSON_VALUE_ARRAY(reason_v2, '$.array_field_two')) AS array_field_two)) AS reason,
     ARRAY_CONCAT_AGG(JSON_VALUE_ARRAY(reason_v2, '$.array_field_one') ORDER BY ARRAY_TO_STRING(JSON_VALUE_ARRAY(reason_v2, '$.array_field_one'), ',')) AS array_field_one, SOME_AGG_FUNC(JSON_VALUE_ARRAY(reason_v2, '$.array_field_two')) AS array_field_two,
-FROM
-    sub_sessions_with_attributes
+-- Start with the DISTINCT sub-sessions where at least 1 sub-criteria is non-null
+FROM (
+    SELECT DISTINCT
+        state_code, person_id, start_date, end_date
+    FROM sub_sessions_with_attributes
+) AS spans,
+-- Unnest every sub-criteria in the group so there is 1 row for each sub-criteria
+-- per sub-session, along with the associated sub-criteria `meets_criteria_default` value
+UNNEST
+    ([
+        STRUCT(
+            "CRITERIA_WITH_ARRAY_1" AS criteria_name,
+            False AS meets_criteria_default
+        ),
+        STRUCT(
+            "CRITERIA_WITH_ARRAY_2" AS criteria_name,
+            False AS meets_criteria_default
+        )
+    ]) all_criteria
+-- Left join all the sub-criteria sub-sessions back in to hydrate the `meets_criteria` column
+-- and the reasons fields for cases where the sub-criteria overlaps each sub-session
+LEFT JOIN
+    sub_sessions_with_attributes AS criteria
+USING
+    (state_code, person_id, start_date, end_date, criteria_name)
 GROUP BY 1, 2, 3, 4
 """
         self.assertEqual(expected_query_template, criteria_query.get_query_template())
@@ -740,52 +972,87 @@ Combines the following criteria queries using OR logic:
         ]
         self.assertEqual(actual_reasons_field_names, expected_reasons_field_names)
 
-        # Check that query template is correct
-        expected_query_template = f"""
-WITH unioned_criteria AS (
-    SELECT *, False AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_general.another_state_agnostic_criteria_materialized`
-    WHERE state_code = "US_KY"
-    UNION ALL
-    SELECT *, False AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_us_ky.not_criteria_5_materialized`
-)
-,
-{create_sub_sessions_with_attributes("unioned_criteria")}
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    LOGICAL_OR(
-        COALESCE(meets_criteria, meets_criteria_default)
-    ) AS meets_criteria,
-    TO_JSON(STRUCT(MIN(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types)) AS reason,
-    MIN(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types,
-FROM
-    sub_sessions_with_attributes
-GROUP BY 1, 2, 3, 4
-"""
-        self.assertEqual(expected_query_template, criteria_group.get_query_template())
+        self._load_data_for_criteria_view(
+            criteria_view_builder=CRITERIA_2_STATE_AGNOSTIC,
+            criteria_data=[
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": False,
+                    "reason": {"fees_owed": 45},
+                    "reason_v2": {"fees_owed": 45},
+                },
+            ],
+        )
+
+        self._load_data_for_criteria_view(
+            criteria_view_builder=InvertedTaskCriteriaBigQueryViewBuilder(
+                CRITERIA_5_STATE_SPECIFIC
+            ),
+            criteria_data=[
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": True,
+                    "reason": {"fees_owed": 25, "offense_types": ["A", "B"]},
+                    "reason_v2": {"fees_owed": 25, "offense_types": ["A", "B"]},
+                },
+            ],
+        )
+        self.run_query_test(
+            query_str=criteria_group.as_criteria_view_builder.build().view_query,
+            expected_result=[
+                # The MIN value is picked across criteria for the "fees_owed" reason
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": True,
+                    "reason": {"fees_owed": 25, "offense_types": ["A", "B"]},
+                    "reason_v2": {"fees_owed": 25, "offense_types": ["A", "B"]},
+                },
+            ],
+        )
 
     def test_multiple_nested_criteria(self) -> None:
         """Checks nested AND + OR + NOT criteria group"""
-        criteria_group = AndTaskCriteriaGroup(
-            criteria_name="US_KY_CRITERIA_1_AND_CRITERIA_2_OR_NOT_5",
+        nested_criteria = OrTaskCriteriaGroup(
+            criteria_name="US_KY_CRITERIA_2_OR_NOT_5",
             sub_criteria_list=[
-                CRITERIA_1_STATE_AGNOSTIC,
-                OrTaskCriteriaGroup(
-                    criteria_name="US_KY_CRITERIA_2_OR_NOT_5",
-                    sub_criteria_list=[
-                        CRITERIA_2_STATE_AGNOSTIC,
-                        InvertedTaskCriteriaBigQueryViewBuilder(
-                            CRITERIA_5_STATE_SPECIFIC
-                        ),
-                    ],
-                    allowed_duplicate_reasons_keys=["fees_owed"],
+                CRITERIA_2_STATE_AGNOSTIC,
+                InvertedTaskCriteriaBigQueryViewBuilder(CRITERIA_5_STATE_SPECIFIC),
+            ],
+            allowed_duplicate_reasons_keys=["fees_owed"],
+        )
+        other_array_criteria = StateAgnosticTaskCriteriaBigQueryViewBuilder(
+            criteria_name="CRITERIA_WITH_ARRAY_2",
+            description="Another state-agnostic criteria with array reasons",
+            criteria_spans_query_template="SELECT * FROM `{project_id}.sessions.super_sessions_materialized`",
+            meets_criteria_default=False,
+            reasons_fields=[
+                ReasonsField(
+                    name="offense_types",
+                    type=bigquery.enums.StandardSqlTypeNames.ARRAY,
+                    description="Some array",
                 ),
             ],
-            allowed_duplicate_reasons_keys=[],
+        )
+        criteria_group = AndTaskCriteriaGroup(
+            criteria_name="US_KY_CRITERIA_2_OR_NOT_5_AND_CRITERIA_WITH_ARRAY_2",
+            sub_criteria_list=[
+                nested_criteria,
+                other_array_criteria,
+            ],
+            allowed_duplicate_reasons_keys=["offense_types"],
+            reasons_aggregate_function_override={
+                "offense_types": "ARRAY_CONCAT_AGG",
+            },
+            reasons_aggregate_function_use_ordering_clause={"offense_types"},
         )
         # Check that a group with one state-specific and two state-agnostic criteria returns a state_code
         self.assertEqual(criteria_group.state_code, StateCode.US_KY)
@@ -794,18 +1061,18 @@ GROUP BY 1, 2, 3, 4
             criteria_group.table_for_query,
             BigQueryAddress(
                 dataset_id="task_eligibility_criteria_us_ky",
-                table_id="criteria_1_and_criteria_2_or_not_5_materialized",
+                table_id="criteria_2_or_not_5_and_criteria_with_array_2_materialized",
             ),
         )
 
         # Check that description field is aligned
         expected_description = """
 Combines the following criteria queries using AND logic:
- - MY_STATE_AGNOSTIC_CRITERIA: A state-agnostic criteria
  - US_KY_CRITERIA_2_OR_NOT_5: 
     Combines the following criteria queries using OR logic:
      - ANOTHER_STATE_AGNOSTIC_CRITERIA: Another state-agnostic criteria
-     - US_KY_NOT_CRITERIA_5: A criteria that is met for every period of time when the US_KY_CRITERIA_5 criteria is not met, and vice versa."""
+     - US_KY_NOT_CRITERIA_5: A criteria that is met for every period of time when the US_KY_CRITERIA_5 criteria is not met, and vice versa.
+ - CRITERIA_WITH_ARRAY_2: Another state-agnostic criteria with array reasons"""
         self.assertEqual(criteria_group.description, expected_description)
 
         # Check that reasons fields are properly handled and combined
@@ -815,30 +1082,49 @@ Combines the following criteria queries using AND logic:
         ]
         self.assertEqual(actual_reasons_field_names, expected_reasons_field_names)
 
-        # Check that query template is correct
-        expected_query_template = f"""
-WITH unioned_criteria AS (
-    SELECT *, True AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_general.my_state_agnostic_criteria_materialized`
-    WHERE state_code = "US_KY"
-    UNION ALL
-    SELECT *, False AS meets_criteria_default
-    FROM `{{project_id}}.task_eligibility_criteria_us_ky.criteria_2_or_not_5_materialized`
-)
-,
-{create_sub_sessions_with_attributes("unioned_criteria")}
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    LOGICAL_AND(
-        COALESCE(meets_criteria, meets_criteria_default)
-    ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types)) AS reason,
-    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, ANY_VALUE(JSON_VALUE_ARRAY(reason_v2, '$.offense_types')) AS offense_types,
-FROM
-    sub_sessions_with_attributes
-GROUP BY 1, 2, 3, 4
-"""
-        self.assertEqual(expected_query_template, criteria_group.get_query_template())
+        self._load_data_for_criteria_view(
+            criteria_view_builder=nested_criteria,
+            criteria_data=[
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": False,
+                    "reason": {"fees_owed": 45, "offense_types": ["C", "D"]},
+                    "reason_v2": {"fees_owed": 45, "offense_types": ["C", "D"]},
+                },
+            ],
+        )
+
+        self._load_data_for_criteria_view(
+            criteria_view_builder=other_array_criteria,
+            criteria_data=[
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": True,
+                    "reason": {"fees_owed": 25, "offense_types": ["A", "B"]},
+                    "reason_v2": {"fees_owed": 25, "offense_types": ["A", "B"]},
+                },
+            ],
+        )
+        self.run_query_test(
+            query_str=criteria_group.as_criteria_view_builder.build().view_query,
+            expected_result=[
+                {
+                    "state_code": "US_KY",
+                    "person_id": 12345,
+                    "start_date": date(2024, 1, 1),
+                    "end_date": date(2024, 1, 20),
+                    "meets_criteria": False,
+                    "reason": {"fees_owed": 45, "offense_types": ["A", "B", "C", "D"]},
+                    "reason_v2": {
+                        "fees_owed": 45,
+                        "offense_types": ["A", "B", "C", "D"],
+                    },
+                },
+            ],
+        )

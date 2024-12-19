@@ -29,6 +29,7 @@ from google.cloud import bigquery
 from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -225,31 +226,64 @@ class TaskCriteriaGroupBigQueryViewBuilder:
         """Returns a query template that performs the appropriate aggregation
         over component criteria.
         """
+        # Use the static list of criteria in this group to unnest
+        # 1 row per sub-session & criteria in order to coalesce the
+        # criteria default value
+        criteria_info_structs_str = (",\n" + " " * 8).join(
+            [
+                f"""STRUCT(
+            "{sub_criteria.criteria_name}" AS criteria_name,
+            {sub_criteria.meets_criteria_default} AS meets_criteria_default
+        )"""
+                for sub_criteria in self.sub_criteria_list
+            ]
+        )
+
         # Filter all general/state-agnostic criteria to one state for state-specific criteria groups
         criteria_queries = [
             f"""
-SELECT *, {sub_criteria.meets_criteria_default} AS meets_criteria_default
+SELECT *, "{sub_criteria.criteria_name}" AS criteria_name,
 FROM `{{project_id}}.{sub_criteria.table_for_query.to_str()}`{self.general_criteria_state_code_filter(sub_criteria)}
 """
             for sub_criteria in self.sub_criteria_list
         ]
         criteria_query_union_fragment = "UNION ALL".join(criteria_queries)
+
+        # Mimic the query logic in the SingleTaskEligibilityViewBuilder to combine multiple
+        # criteria that may not be perfectly overlapping
         return f"""
 WITH unioned_criteria AS ({indent(criteria_query_union_fragment, FOUR_SPACES_INDENT)})
 ,
-{create_sub_sessions_with_attributes("unioned_criteria")}
+{create_sub_sessions_with_attributes("unioned_criteria", use_magic_date_end_dates=True)}
 SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
+    spans.state_code,
+    spans.person_id,
+    spans.start_date,
+    {revert_nonnull_end_date_clause("spans.end_date")} AS end_date,
     {self.meets_criteria_aggregator_clause}(
-        COALESCE(meets_criteria, meets_criteria_default)
+        -- Use the `meets_criteria_default` if the sub-criteria doesn't overlap this sub-session
+        COALESCE(criteria.meets_criteria, all_criteria.meets_criteria_default)
     ) AS meets_criteria,
     TO_JSON(STRUCT({self.flatten_reasons_blob_clause()})) AS reason,
 {f"    {self.flatten_reasons_blob_clause()}," if len(self.reasons_fields) > 0 else ""}
-FROM
-    sub_sessions_with_attributes
+-- Start with the DISTINCT sub-sessions where at least 1 sub-criteria is non-null
+FROM (
+    SELECT DISTINCT
+        state_code, person_id, start_date, end_date
+    FROM sub_sessions_with_attributes
+) AS spans,
+-- Unnest every sub-criteria in the group so there is 1 row for each sub-criteria
+-- per sub-session, along with the associated sub-criteria `meets_criteria_default` value
+UNNEST
+    ([
+        {criteria_info_structs_str}
+    ]) all_criteria
+-- Left join all the sub-criteria sub-sessions back in to hydrate the `meets_criteria` column
+-- and the reasons fields for cases where the sub-criteria overlaps each sub-session
+LEFT JOIN
+    sub_sessions_with_attributes AS criteria
+USING
+    (state_code, person_id, start_date, end_date, criteria_name)
 GROUP BY 1, 2, 3, 4
 """
 
