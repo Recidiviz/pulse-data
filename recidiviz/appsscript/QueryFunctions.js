@@ -44,7 +44,7 @@ function getMauByWeekData(
       ${distinctActiveUsers}
     FROM \`impact_reports.${mauTable}\`
     WHERE state_code = '${stateCode}'
-    AND start_date >= '${previousMonthString}'
+    AND end_date >= '${previousMonthString}'
     AND end_date < '${endDatePlusWeekString}'
     AND ${distinctActiveUsers} IS NOT NULL
     ORDER BY end_date ASC

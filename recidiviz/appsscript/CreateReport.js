@@ -193,39 +193,41 @@ function main(e) {
     const { previousMonthString, endDatePlusWeekString } = getBoundsDateStrings(
       startDateString,
       endDateString
-    )
+    );
 
     // MAU by Week Chart
-    const { mauByWeekData, monthlyActiveUsers } =
-      getMauByWeekData(
-        stateCode,
-        completionEventType,
-        previousMonthString,
-        endDatePlusWeekString
-      );
-    const mauByWeekColumnChart = mauByWeekData ? constructActiveUsersByWeekColumnChart(
-        monthlyActiveUsers,
-        mauByWeekData,
-        "Monthly Active Users",
-      ) : null;
+    const { mauByWeekData, monthlyActiveUsers } = getMauByWeekData(
+      stateCode,
+      completionEventType,
+      previousMonthString,
+      endDatePlusWeekString
+    );
+    const mauByWeekColumnChart = mauByWeekData
+      ? constructActiveUsersByWeekColumnChart(
+          monthlyActiveUsers,
+          mauByWeekData,
+          "Monthly Active Users"
+        )
+      : null;
     workflowToMauByWeekChart[workflow] = mauByWeekColumnChart;
 
     // WAU by Week Chart
-    const { wauByWeekData, weeklyActiveUsers } =
-      getWauByWeekData(
-        stateCode,
-        startDateString,
-        endDateString,
-        completionEventType,
-        previousMonthString,
-        endDatePlusWeekString
-      );
-    const wauByWeekColumnChart = wauByWeekData ? wauByWeekColumnChart = constructActiveUsersByWeekColumnChart(
-        weeklyActiveUsers,
-        wauByWeekData,
-        "Weekly Active Users",
-        ["#CA2E17"],
-      ) : null;
+    const { wauByWeekData, weeklyActiveUsers } = getWauByWeekData(
+      stateCode,
+      startDateString,
+      endDateString,
+      completionEventType,
+      previousMonthString,
+      endDatePlusWeekString
+    );
+    const wauByWeekColumnChart = wauByWeekData
+      ? constructActiveUsersByWeekColumnChart(
+          weeklyActiveUsers,
+          wauByWeekData,
+          "Weekly Active Users",
+          ["#CA2E17"]
+        )
+      : null;
     workflowToWauByWeekChart[workflow] = wauByWeekColumnChart;
 
     const {
