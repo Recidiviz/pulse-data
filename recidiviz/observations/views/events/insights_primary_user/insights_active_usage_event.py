@@ -32,6 +32,10 @@ SELECT
     event_ts,
 FROM
     `{project_id}.analyst_data.insights_segment_events_materialized`
+WHERE
+    -- This event is the equivalent of the first page that a user sees
+    -- after logging in, so we exclude from the definiton of active usage.
+    event NOT IN ("VIEWED_SUPERVISOR_PAGE")
 """
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(

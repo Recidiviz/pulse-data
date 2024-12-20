@@ -53,7 +53,7 @@ DISCRETE_USAGE_EVENTS_DICT = {
     if event != "MARKED_INELIGIBLE"
 }
 
-
+# TODO(#35954): Replace this with a generalized funnel status sessions function
 def generate_workflows_person_impact_funnel_status_sessions(
     usage_event_names: List[str],
 ) -> str:

@@ -46,6 +46,10 @@ class InsightsSegmentEventQueryConfig:
 
 INSIGHTS_SEGMENT_EVENT_QUERY_CONFIGS = [
     InsightsSegmentEventQueryConfig(
+        table_name="frontend_outliers_supervisor_page_viewed",
+        insights_event_type="VIEWED_SUPERVISOR_PAGE",
+    ),
+    InsightsSegmentEventQueryConfig(
         table_name="frontend_outliers_staff_page_viewed",
         insights_event_type="VIEWED_STAFF_PAGE",
     ),
