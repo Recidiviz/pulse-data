@@ -237,7 +237,7 @@ metric_pipelines:
     staging_only: True
   - pipeline: supervision_metrics
     state_code: US_TX
-    metric_types: SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE
+    metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-central1
     staging_only: True
 
