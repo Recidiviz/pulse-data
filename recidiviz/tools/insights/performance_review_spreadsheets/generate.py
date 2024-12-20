@@ -27,7 +27,6 @@ import logging
 import os
 from datetime import date
 from enum import Enum, auto
-from random import random
 
 from dateutil.relativedelta import relativedelta
 from openpyxl import Workbook
@@ -37,6 +36,9 @@ from openpyxl.styles.numbers import FORMAT_NUMBER
 from openpyxl.worksheet.worksheet import Worksheet
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.tools.insights.performance_review_spreadsheets.impact_funnel_metrics import (
+    ImpactFunnelMetrics,
+)
 from recidiviz.tools.insights.performance_review_spreadsheets.officer_aggregated_metrics import (
     OfficerAggregatedMetrics,
 )
@@ -48,14 +50,25 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 class RowHeadingEnum(Enum):
+    USAGE = auto()
+    OUTCOMES_METRICS = auto()
     AVG_DAILY_CASELOAD = auto()
     TIMELY_RISK_ASSESSMENTS = auto()
     TIMELY_F2F_CONTACTS = auto()
     SUPERVISION_LEVEL_MISMATCH = auto()
+    EARLY_DISCHARGE = auto()
     EARLY_DISCHARGE_GRANTS = auto()
+    EARLY_DISCHARGE_ELIGIBLE = auto()
+    LSU = auto()
     LSU_GRANTS = auto()
+    LSU_ELIGIBLE = auto()
+    SLD = auto()
     SLD_GRANTS = auto()
+    SLD_ELIGIBLE = auto()
+    FT_DISCHARGE = auto()
     FT_DISCHARGE_GRANTS = auto()
+    FT_DISCHARGE_ELIGIBLE = auto()
+    OPERATIONS_METRICS = auto()
 
 
 class ColumnHeadingEnum(Enum):
@@ -63,62 +76,69 @@ class ColumnHeadingEnum(Enum):
 
 
 _ROW_HEADING_LABELS = {
+    RowHeadingEnum.USAGE: "Usage",
+    RowHeadingEnum.OUTCOMES_METRICS: "Outcomes Metrics",
     RowHeadingEnum.AVG_DAILY_CASELOAD: "# Average Daily Caseload",
+    RowHeadingEnum.EARLY_DISCHARGE: "Early Discharge",
+    RowHeadingEnum.EARLY_DISCHARGE_GRANTS: "Grants during time period",
+    RowHeadingEnum.EARLY_DISCHARGE_ELIGIBLE: "Eligible as of end of time period",
+    RowHeadingEnum.LSU: "LSU",
+    RowHeadingEnum.LSU_GRANTS: "Grants during time period",
+    RowHeadingEnum.LSU_ELIGIBLE: "Eligible as of end of time period",
+    RowHeadingEnum.SLD: "Supervision Level Downgrade",
+    RowHeadingEnum.SLD_GRANTS: "Grants during time period",
+    RowHeadingEnum.SLD_ELIGIBLE: "Eligible as of end of time period",
+    RowHeadingEnum.FT_DISCHARGE: "Past FTRD",
+    RowHeadingEnum.FT_DISCHARGE_GRANTS: "Grants during time period",
+    RowHeadingEnum.FT_DISCHARGE_ELIGIBLE: "Eligible as of end of time period",
+    RowHeadingEnum.OPERATIONS_METRICS: "Operations Metrics",
     RowHeadingEnum.TIMELY_RISK_ASSESSMENTS: "Timely Risk Assessments",
     RowHeadingEnum.TIMELY_F2F_CONTACTS: "Timely F2F Contacts",
     RowHeadingEnum.SUPERVISION_LEVEL_MISMATCH: "Supervision & Risk Level Mismatch",
-    RowHeadingEnum.EARLY_DISCHARGE_GRANTS: "Grants during time period",
-    RowHeadingEnum.LSU_GRANTS: "Grants during time period",
-    RowHeadingEnum.SLD_GRANTS: "Grants during time period",
-    RowHeadingEnum.FT_DISCHARGE_GRANTS: "Grants during time period",
 }
 
-_ROW_HEADINGS = [
-    "Usage",
+_ROW_HEADINGS: list[RowHeadingEnum | str | None] = [
+    RowHeadingEnum.USAGE,
     "# Total Logins each month",
     "# of Months in 2024 where they logged in at least once",
     "Caseload Type",
     None,
-    "Outcomes Metrics",
+    RowHeadingEnum.OUTCOMES_METRICS,
     RowHeadingEnum.AVG_DAILY_CASELOAD,
     "# Absconsions",
     "Months flagged as having a high absconsion rate",
     "# Incarcerations",
     "Months flagged as having a high incarceration rate",
     None,
-    "Early Discharge",
-    "Eligible & Viewed as of end of time period",
-    "Eligible & Not Viewed as of end of time period",
+    RowHeadingEnum.EARLY_DISCHARGE,
+    RowHeadingEnum.EARLY_DISCHARGE_ELIGIBLE,
     "Overridden (Marked Ineligible) as of end of time period",
     RowHeadingEnum.EARLY_DISCHARGE_GRANTS,
     "Monthly grant rate",
     'Most often used "Ineligible Reason"',
     None,
-    "LSU",
-    "Eligible & Viewed as of end of time period",
-    "Eligible & Not Viewed as of end of time period",
+    RowHeadingEnum.LSU,
+    RowHeadingEnum.LSU_ELIGIBLE,
     "Overridden (Marked Ineligible) as of end of time period",
     RowHeadingEnum.LSU_GRANTS,
     "2024 average of monthly grant rate",
     'Most often used "Ineligible Reason"',
     None,
-    "Supervision Level Downgrade",
-    "Eligible & Viewed as of end of time period",
-    "Eligible & Not Viewed as of end of time period",
+    RowHeadingEnum.SLD,
+    RowHeadingEnum.SLD_ELIGIBLE,
     "Overridden (Marked Ineligible) as of end of time period",
     RowHeadingEnum.SLD_GRANTS,
     "2024 average of monthly grant rate",
     'Most often used "Ineligible Reason"',
     None,
-    "Past FTRD",
-    "Eligible & Viewed as of end of time period",
-    "Eligible & Not Viewed as of end of time period",
+    RowHeadingEnum.FT_DISCHARGE,
+    RowHeadingEnum.FT_DISCHARGE_ELIGIBLE,
     "Overridden (Marked Ineligible) as of end of time period",
     RowHeadingEnum.FT_DISCHARGE_GRANTS,
     "Monthly grant rate",
     'Most often used "Ineligible Reason"',
     None,
-    "Operations Metrics",
+    RowHeadingEnum.OPERATIONS_METRICS,
     RowHeadingEnum.TIMELY_RISK_ASSESSMENTS,
     RowHeadingEnum.TIMELY_F2F_CONTACTS,
     RowHeadingEnum.SUPERVISION_LEVEL_MISMATCH,
@@ -132,8 +152,16 @@ _COLUMN_HEADINGS = [
     *[date(2024, month, 1).strftime(_COLUMN_DATE_FORMAT) for month in range(1, 13)],
 ]
 
-# Row numbers (1-indexed) that represent a section header
-_ROW_SECTION_HEADER_INDICES = [2, 7, 14, 22, 30, 38, 46]
+# Rows that represent a section header and need different formatting
+_ROW_SECTION_HEADERS = [
+    RowHeadingEnum.USAGE,
+    RowHeadingEnum.OUTCOMES_METRICS,
+    RowHeadingEnum.EARLY_DISCHARGE,
+    RowHeadingEnum.LSU,
+    RowHeadingEnum.SLD,
+    RowHeadingEnum.FT_DISCHARGE,
+    RowHeadingEnum.OPERATIONS_METRICS,
+]
 
 _GRAY_BACKGROUND = PatternFill(
     start_color="d9d9d9", end_color="d9d9d9", fill_type="solid"
@@ -165,7 +193,8 @@ def create_headers(sheet: Worksheet) -> None:
         sheet.append(row)
 
     sheet.column_dimensions["A"].width = 48
-    for index in _ROW_SECTION_HEADER_INDICES:
+    for header in _ROW_SECTION_HEADERS:
+        index = get_row_index(header)
         sheet[f"A{index}"].font = _BOLD_FONT
         sheet[f"A{index}"].fill = _GRAY_BACKGROUND
     sheet["B1"].font = _BOLD_FONT
@@ -195,15 +224,6 @@ def apply_conditional_formatting(sheet: Worksheet) -> None:
                 fill=_RED_BACKGROUND,
             ),
         )
-
-
-def write_random_data(sheet: Worksheet) -> None:
-    for row in range(2, 50):
-        # We don't need to put data in the section header rows or the rows before them
-        if row in _ROW_SECTION_HEADER_INDICES or row + 1 in _ROW_SECTION_HEADER_INDICES:
-            continue
-        for col in range(ord("B"), ord("O")):
-            sheet[f"{chr(col)}{row}"] = random()
 
 
 def try_set_metric_cell(
@@ -255,34 +275,66 @@ def write_metrics(
         )
 
     yearly_col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
-    yearly_data = officer_aggregated_metrics.yearly_data[officer_id]
-    try_set_metric_cell(
-        sheet, yearly_data.avg_daily_population, yearly_col_idx, avg_daily_caseload_row
-    )
-    try_set_metric_cell(
-        sheet,
-        yearly_data.task_completions_early_discharge,
-        yearly_col_idx,
-        early_discharge_row,
-    )
-    try_set_metric_cell(
-        sheet,
-        yearly_data.task_completions_transfer_to_limited_supervision,
-        yearly_col_idx,
-        lsu_row,
-    )
-    try_set_metric_cell(
-        sheet,
-        yearly_data.task_completions_supervision_level_downgrade,
-        yearly_col_idx,
-        sld_row,
-    )
-    try_set_metric_cell(
-        sheet,
-        yearly_data.task_completions_full_term_discharge,
-        yearly_col_idx,
-        ft_discharge_row,
-    )
+    if officer_id in officer_aggregated_metrics.yearly_data:
+        yearly_data = officer_aggregated_metrics.yearly_data[officer_id]
+        try_set_metric_cell(
+            sheet,
+            yearly_data.avg_daily_population,
+            yearly_col_idx,
+            avg_daily_caseload_row,
+        )
+        try_set_metric_cell(
+            sheet,
+            yearly_data.task_completions_early_discharge,
+            yearly_col_idx,
+            early_discharge_row,
+        )
+        try_set_metric_cell(
+            sheet,
+            yearly_data.task_completions_transfer_to_limited_supervision,
+            yearly_col_idx,
+            lsu_row,
+        )
+        try_set_metric_cell(
+            sheet,
+            yearly_data.task_completions_supervision_level_downgrade,
+            yearly_col_idx,
+            sld_row,
+        )
+        try_set_metric_cell(
+            sheet,
+            yearly_data.task_completions_full_term_discharge,
+            yearly_col_idx,
+            ft_discharge_row,
+        )
+
+
+def write_impact_funnel_metrics(
+    sheet: Worksheet, officer_id: str, impact_funnel_metrics: ImpactFunnelMetrics
+) -> None:
+    task_type_to_row_heading = {
+        "EARLY_DISCHARGE": RowHeadingEnum.EARLY_DISCHARGE_ELIGIBLE,
+        "TRANSFER_TO_LIMITED_SUPERVISION": RowHeadingEnum.LSU_ELIGIBLE,
+        "SUPERVISION_LEVEL_DOWNGRADE": RowHeadingEnum.SLD_ELIGIBLE,
+        "FULL_TERM_DISCHARGE": RowHeadingEnum.FT_DISCHARGE_ELIGIBLE,
+    }
+
+    for metric in impact_funnel_metrics.data[officer_id]:
+        parsed_date = (metric.date - relativedelta(days=1)).strftime(
+            _COLUMN_DATE_FORMAT
+        )
+        col_idx = get_column_index(parsed_date)
+        eligible_row = task_type_to_row_heading[metric.task_type]
+        try_set_metric_cell(
+            sheet, metric.eligible, col_idx, get_row_index(eligible_row)
+        )
+        if metric.date == date(2025, 1, 1):
+            try_set_metric_cell(
+                sheet,
+                metric.eligible,
+                get_column_index(ColumnHeadingEnum.YEARLY.value),
+                get_row_index(eligible_row),
+            )
 
 
 def generate_sheets() -> None:
@@ -293,6 +345,7 @@ def generate_sheets() -> None:
     bq_client = BigQueryClientImpl()
     supervisors_to_officers = SupervisorsAndOfficers.from_bigquery(bq_client).data
     officer_aggregated_metrics = OfficerAggregatedMetrics.from_bigquery(bq_client)
+    impact_funnel_metrics = ImpactFunnelMetrics.from_bigquery(bq_client)
     for supervisor, officers in supervisors_to_officers.items():
         wb = Workbook()
         for officer in officers:
@@ -300,6 +353,9 @@ def generate_sheets() -> None:
             create_headers(sheet)
             apply_conditional_formatting(sheet)
             write_metrics(sheet, officer.officer_id, officer_aggregated_metrics)
+            write_impact_funnel_metrics(
+                sheet, officer.officer_id, impact_funnel_metrics
+            )
 
         # Remove the default sheet, since we created new sheets for our data.
         wb.remove(wb.worksheets[0])
