@@ -68,7 +68,7 @@ columns:
     is_pii: True
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATE('%m/%d/%y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%y', {col_name})"
     description: |-
       The primary date of birth of an incarcerated individual.
   - name: ASSIGNED_SEX

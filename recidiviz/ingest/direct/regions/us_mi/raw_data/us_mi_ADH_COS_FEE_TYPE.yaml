@@ -125,13 +125,13 @@ columns:
     description: Date fee type is effective
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
+      - "SAFE.PARSE_DATETIME('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
         r'\\:\\d\\d\\d', ''))"
   - name: expiration_date
     description: Date fee type expires
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
+      - "SAFE.PARSE_DATETIME('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
         r'\\:\\d\\d\\d', ''))"
   - name: multiple_accts_allowed_flag
     description: Flag for whether multiple accounts are allowed
@@ -151,8 +151,8 @@ columns:
     description: Last update date of record
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
+      - "SAFE.PARSE_DATETIME('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
         r'\\:\\d\\d\\d', ''))"
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M%p', REGEXP_REPLACE({col_name},
+      - "SAFE.PARSE_DATETIME('%b %e %Y %I:%M%p', REGEXP_REPLACE({col_name},
         r'\\:\\d\\d\\d', ''))"
   - name: last_update_node

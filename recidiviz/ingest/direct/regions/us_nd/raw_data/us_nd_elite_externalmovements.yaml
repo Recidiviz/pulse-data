@@ -144,7 +144,7 @@ columns:
   - name: MOVEMENT_DATE
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S %p', {col_name})"
     description: |-
       When the movement occurred.
   - name: TO_AGY_LOC_ID
@@ -251,12 +251,12 @@ columns:
   - name: CREATE_DATETIME
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
     description: |-
       When this record was first created in the source system.
   - name: MODIFY_DATETIME
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
     description: |-
       When this record was most recently modified in the source system.

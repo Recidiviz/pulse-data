@@ -38,7 +38,7 @@ columns:
       The date this record was created.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: CREATE_USER_ID
     description: |-
       The user who created this record.
@@ -52,14 +52,14 @@ columns:
       The date the program ends.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: EXPIRY_DATE
     description: |-
       The date the program ends, or potentially the date the person's referral to the program expires? 
       TODO(#18645): Fill in with answer from ND
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: FUNCTION_TYPE
     description: |-
       Unclear, always blank.
@@ -71,7 +71,7 @@ columns:
       The date the record was last modified.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: MODIFY_USER_ID
     description: |-
       The user who last modified the record.
@@ -146,7 +146,7 @@ columns:
       The date the program is expected to start.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: START_FLAG
     description: |-
       Y/N flag denoting whether the program has started.

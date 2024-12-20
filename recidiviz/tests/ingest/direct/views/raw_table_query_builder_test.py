@@ -74,7 +74,7 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
                     is_pii=False,
                     description="col3 description",
                     datetime_sql_parsers=[
-                        "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\:\d\d\d.*', ''))"
+                        "SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\:\d\d\d.*', ''))"
                     ],
                 ),
                 RawTableColumnInfo(
@@ -157,14 +157,14 @@ WITH filtered_rows AS (
 SELECT col1, 
         COALESCE(
             CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%y', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S', col2) AS STRING),
             col2
         ) AS col2, 
         COALESCE(
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS STRING),
             col3
         ) AS col3
 FROM filtered_rows
@@ -195,14 +195,14 @@ WITH filtered_rows AS (
 SELECT col1, 
         COALESCE(
             CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%y', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S', col2) AS STRING),
             col2
         ) AS col2, 
         COALESCE(
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS STRING),
             col3
         ) AS col3, update_datetime
 FROM filtered_rows
@@ -253,14 +253,14 @@ filtered_rows AS (
 SELECT col1, 
         COALESCE(
             CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%y', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S', col2) AS STRING),
             col2
         ) AS col2, 
         COALESCE(
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS STRING),
             col3
         ) AS col3
 FROM filtered_rows
@@ -331,14 +331,14 @@ WITH filtered_rows AS (
 SELECT col1, 
         COALESCE(
             CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%y', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S', col2) AS STRING),
             col2
         ) AS col2, 
         COALESCE(
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS STRING),
             col3
         ) AS col3
 FROM filtered_rows
@@ -471,14 +471,14 @@ WITH filtered_rows AS (
 SELECT col1, 
         COALESCE(
             CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%y', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S', col2) AS STRING),
             col2
         ) AS col2, 
         COALESCE(
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS STRING),
             col3
         ) AS col3
 FROM filtered_rows
@@ -529,22 +529,22 @@ WITH filtered_rows AS (
 SELECT col1, 
         COALESCE(
             CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%y', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M', col2) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S', col2) AS STRING),
             col2
         ) AS col2, 
         COALESCE(
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\\:\\d\\d\\d.*', '')) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS STRING),
             col3
         ) AS col3, 
         COALESCE(
             CAST(SAFE_CAST(undocumented_column AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', undocumented_column) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', undocumented_column) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', undocumented_column) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', undocumented_column) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%y', undocumented_column) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y', undocumented_column) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M', undocumented_column) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S', undocumented_column) AS STRING),
             undocumented_column
         ) AS undocumented_column, undocumented_column_2
 FROM filtered_rows
@@ -563,7 +563,7 @@ FROM filtered_rows
                     is_pii=False,
                     description="col3 description",
                     datetime_sql_parsers=[
-                        "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\:\d\d\d.*', ''))"
+                        "SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\:\d\d\d.*', ''))"
                     ],
                 ),
                 RawTableColumnInfo(
@@ -612,7 +612,7 @@ WITH filtered_rows AS (
 )
 SELECT 
         COALESCE(
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(datetime_col, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE(datetime_col, r'\:\d\d\d.*', '')) AS STRING),
             datetime_col
         ) AS datetime_col
 FROM filtered_rows
@@ -631,7 +631,7 @@ FROM filtered_rows
                     is_pii=False,
                     description="description",
                     datetime_sql_parsers=[
-                        "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\:\d\d\d.*', ''))"
+                        "SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\:\d\d\d.*', ''))"
                     ],
                     null_values=["0000"],
                 ),
@@ -686,7 +686,7 @@ SELECT
         WHEN datetime_col IN ('0000') THEN NULL
         ELSE 
         COALESCE(
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(datetime_col, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE(datetime_col, r'\:\d\d\d.*', '')) AS STRING),
             datetime_col
         )
     END AS datetime_col, 

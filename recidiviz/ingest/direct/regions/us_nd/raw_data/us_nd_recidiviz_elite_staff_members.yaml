@@ -9,7 +9,7 @@ columns:
     description: Unknown
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: ASSIGNED_CASELOAD_ID
     description: ID of staff's assigned caseload. Unclear what this links to.
   - name: BIRTHDATE
@@ -19,7 +19,7 @@ columns:
     description: Date record was created
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: FIRST_LOGON_FLAG
     description: Y/N has the officer ever logged on
   - name: FIRST_NAME
@@ -35,7 +35,7 @@ columns:
     description: Date the row was last modified
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: PERSONNEL_TYPE
     description: Unknown
   - name: POSITION
@@ -57,7 +57,7 @@ columns:
     description: Date the staff member became inactive
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: UPDATE_ALLOWED_FLAG
     description: Can this record be updated Y/N
   - name: USER_ID

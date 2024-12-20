@@ -11,7 +11,7 @@ columns:
       The date adjustment was given
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: ADJUST_DAYS
     description: |-
       The adjustment in days
@@ -27,7 +27,7 @@ columns:
       Datetime created
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: CREATE_USER_ID
     description: |-
       ID of user who created row
@@ -40,7 +40,7 @@ columns:
       Datetime row was modified
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: MODIFY_USER_ID
     description: |-
       User who modified row

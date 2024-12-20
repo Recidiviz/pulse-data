@@ -38,11 +38,11 @@ columns:
       The date this assessment took place.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', {col_name})"
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S %p', {col_name})"
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S', {col_name})"
   - name: ASSESSMENT_SEQ
     description: |-
       TODO(#18645): Fill in with answer from ND
@@ -65,7 +65,7 @@ columns:
       The date and time this record was created.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: CREATE_USER_ID
     description: |-
       ID of the user who created the assessment record.
@@ -75,7 +75,7 @@ columns:
       The date this record was created.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: CREATION_USER
     description: |-
       The username of the user who created the assessment record.
@@ -85,7 +85,7 @@ columns:
       The date the assessment was carried out.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: EVALUATION_RESULT_CODE
     description: Code for the result of the assessment.
     known_values:
@@ -108,7 +108,7 @@ columns:
       The date and time this record was last modified.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: MODIFY_USER_ID
     description: |-
       The last user to modify this record.
@@ -118,7 +118,7 @@ columns:
       For annual or otherwise regular assessments, the date the assessment should next be performed.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: OFFENDER_BOOK_ID
     description: |-
       External ID of a booking for a particular person, i.e. a new series of interactions 

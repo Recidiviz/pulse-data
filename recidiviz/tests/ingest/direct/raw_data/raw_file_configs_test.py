@@ -128,7 +128,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
             description=None,
             known_values=None,
             datetime_sql_parsers=[
-                "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
+                "SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
             ],
         )
 
@@ -136,7 +136,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         self.assertTrue(datetime_column_info.is_datetime)
         self.assertEqual(
             [
-                "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
+                "SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
             ],
             datetime_column_info.datetime_sql_parsers,
         )
@@ -166,6 +166,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         )
 
     def test_bad_datetime_sql_parsers(self) -> None:
+        # egt
         with self.assertRaisesRegex(
             ValueError,
             r"Expected datetime_sql_parsers to be null if is_datetime is False.*",
@@ -177,13 +178,13 @@ class TestRawTableColumnInfo(unittest.TestCase):
                 description=None,
                 known_values=None,
                 datetime_sql_parsers=[
-                    "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
+                    "SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
                 ],
             )
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Expected datetime_sql_parser to have the string literal {col_name}.*",
+            r"Expected datetime_sql_parser must match expected datetime parsing format.*",
         ):
             _ = RawTableColumnInfo(
                 name="COL2",
@@ -192,13 +193,13 @@ class TestRawTableColumnInfo(unittest.TestCase):
                 description=None,
                 known_values=None,
                 datetime_sql_parsers=[
-                    "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(column, r'\\:\\d\\d\\d.*', ''))"
+                    "SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE(column, r'\\:\\d\\d\\d.*', ''))"
                 ],
             )
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Expected datetime_sql_parser must match expected timestamp parsing formats.*",
+            r"Expected datetime_sql_parser must match expected datetime parsing format.*",
         ):
             _ = RawTableColumnInfo(
                 name="COL2",
@@ -207,23 +208,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
                 description=None,
                 known_values=None,
                 datetime_sql_parsers=[
-                    "SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', '')) AS DATETIME),"
-                ],
-            )
-
-        with self.assertRaisesRegex(
-            ValueError,
-            "Expected all datetime_sql_parsers to parse the same type",
-        ):
-            _ = RawTableColumnInfo(
-                name="COL2",
-                field_type=RawTableColumnFieldType.DATETIME,
-                is_pii=False,
-                description=None,
-                known_values=None,
-                datetime_sql_parsers=[
-                    "SAFE.PARSE_DATETIME('%m/%D/%Y', {col_name})",
-                    "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})",
+                    "SAFE_CAST(SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', '')) AS DATETIME),"
                 ],
             )
 
@@ -1819,8 +1804,8 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
 
     def test_get_datetime_parsers(self) -> None:
         parsers = [
-            "SAFE.PARSE_DATE('%m/%d/%y', {col_name})",
-            "SAFE.PARSE_DATE('%m/%d/%Y', {col_name})",
+            "SAFE.PARSE_DATETIME('%m/%d/%y', {col_name})",
+            "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})",
         ]
         config1 = attr.evolve(
             self.sparse_config,

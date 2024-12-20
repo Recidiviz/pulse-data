@@ -38,7 +38,7 @@ view: us_ll_customDatetimeSql {
       year
     ]
     datatype: datetime
-    sql: COALESCE(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(${TABLE}.COL2, r'\:\d\d\d.*', ''))) ;;
+    sql: COALESCE(SAFE.PARSE_DATETIME('%b %e %Y %H:%M:%S', REGEXP_REPLACE(${TABLE}.COL2, r'\:\d\d\d.*', ''))) ;;
   }
 
   dimension: COL2__raw {

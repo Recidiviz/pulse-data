@@ -37,7 +37,7 @@ columns:
   - name: INCIDENT_DATE
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
     description: |-
       The date on which the incident took place.
   - name: INCIDENT_TYPE
@@ -61,7 +61,7 @@ columns:
   - name: REPORT_DATE
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
     description: |-
       Date of the incident report.
   - name: OIC_HEARING_ID
@@ -102,7 +102,7 @@ columns:
   - name: HEARING_DATE
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
     description: |-
       Date of the hearing.
   - name: HEARING_STAFF_NAME
@@ -201,7 +201,7 @@ columns:
   - name: EFFECTIVE_DATE
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
     description: |-
       Date on which the sanction became effective.
   - name: OIC_SANCTION_CODE

@@ -83,7 +83,7 @@ columns:
     description: |-
       Max expiration date, redundant of max_cort_sent fields.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%Y%m%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
     import_blocking_column_validation_exemptions:
       - validation_type: DATETIME_PARSERS
         exemption_reason: |-
@@ -266,7 +266,7 @@ columns:
     description: |-
       Date this record was first entered.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%Y%m%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
     import_blocking_column_validation_exemptions:
       - validation_type: DATETIME_PARSERS
         exemption_reason: |-

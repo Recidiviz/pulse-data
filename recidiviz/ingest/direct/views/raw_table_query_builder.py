@@ -95,14 +95,14 @@ FROM filtered_rows
 DEFAULT_DATETIME_COL_NORMALIZATION_TEMPLATE = """
         COALESCE(
             CAST(SAFE_CAST({col_name} AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', {col_name}) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', {col_name}) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', {col_name}) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name}) AS DATETIME) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%y', {col_name}) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name}) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M', {col_name}) AS STRING),
+            CAST(SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S', {col_name}) AS STRING),
             {col_name}
         )"""
 DATETIME_SQL_CAST_TEMPLATE = """
-            CAST(SAFE_CAST({col_sql} AS DATETIME) AS STRING)"""
+            CAST({col_sql} AS STRING)"""
 DATETIME_COL_NORMALIZATION_TEMPLATE = """
         COALESCE({datetime_casts},
             {col_name}

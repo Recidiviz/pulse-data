@@ -20,7 +20,7 @@ columns:
     description: The date the record was created
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: CREATE_USER_ID
     description: ID of the staff member who created the record
     is_pii: True
@@ -28,12 +28,12 @@ columns:
     description: Date of dental exam. Always null.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: MEDICAL_DATE
     description: Date of parole board hearing.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: MEDICAL_DISPOSITION_CODE
     description: Code for medical response needed.
   - name: MEDICAL_QUESTIONAIRE_CODE
@@ -46,12 +46,12 @@ columns:
       same datetime in this field.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: MODIFY_DATETIME
     description: Date the record was last modified
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: MODIFY_USER_ID
     description: ID of staff member who modified the record
     is_pii: True
@@ -64,7 +64,7 @@ columns:
     description: Always null.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: PULSE
     description: Always null.
   - name: RESPIRATION_TEXT

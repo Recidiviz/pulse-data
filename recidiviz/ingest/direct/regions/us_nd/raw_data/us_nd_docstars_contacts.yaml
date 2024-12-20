@@ -178,14 +178,14 @@ columns:
       When this contact occurred.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: RecDate
     description: |-
       When this record was first created in the source system.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: LASTUPDATE
     update_history:
       # TODO(#34922) Ensure this column is not being used anywhere and was intentionally deleted

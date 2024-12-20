@@ -75,7 +75,7 @@ columns:
       Timestamp for record creation.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%E3S', {col_name})"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%E3S', {col_name})"
   - name: UpdateUserId
     description: |-
       ID of the user who most recently modified this record.
@@ -85,7 +85,7 @@ columns:
       Timestamp for record modification.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%E3S', {col_name})"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%E3S', {col_name})"
   - name: ReviewerId
     description: |-
       TODO(#15329): Fill in column description
@@ -142,4 +142,4 @@ columns:
     is_pii: True
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%E3S', {col_name})"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%E3S', {col_name})"

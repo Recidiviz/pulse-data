@@ -44,9 +44,7 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 _DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 250000
 
-DATETIME_SQL_REGEX = re.compile(
-    r"SAFE.PARSE_(TIMESTAMP|DATE|DATETIME)\(.*{col_name}.*\)"
-)
+DATETIME_SQL_REGEX = re.compile(r"^SAFE.PARSE_DATETIME(.*{col_name}.*)$")
 
 
 class RawDataClassification(Enum):
@@ -342,7 +340,7 @@ class RawTableColumnInfo:
     def _validate_datetime_sql_parsers(self) -> None:
         """Validates the datetime_sql field by ensuring that is_datetime is set to True,
         the correct string literals are contained within the string, and all parsers have
-        the same type (TIMESTAMP, DATE, or DATETIME)."""
+        type DATETIME."""
         if not self.is_datetime and self.datetime_sql_parsers:
             raise ValueError(
                 f"Expected datetime_sql_parsers to be null if is_datetime is False for {self.name}"
@@ -351,32 +349,16 @@ class RawTableColumnInfo:
         if not self.datetime_sql_parsers:
             return
 
-        extracted_types = set()
         for parser in self.datetime_sql_parsers:
-            if "{col_name}" not in parser:
-                raise ValueError(
-                    "Expected datetime_sql_parser to have the string literal {col_name}"
-                    f"for {self.name}: {parser}"
-                )
             if not (
-                match := re.match(
+                re.match(
                     DATETIME_SQL_REGEX,
                     parser.strip(),
                 )
             ):
                 raise ValueError(
-                    f"Expected datetime_sql_parser must match expected timestamp parsing formats for {self.name}. Current parser: {parser}"
-                    "See recidiviz.ingest.direct.views.raw_table_query_builder.DATETIME_COL_NORMALIZATION_TEMPLATE"
+                    f"Expected datetime_sql_parser must match expected datetime parsing format {DATETIME_SQL_REGEX} for [{self.name}]. Current parser: {parser}"
                 )
-
-            # Extract the type (e.g., TIMESTAMP, DATE, DATETIME) and add it to the set
-            extracted_types.add(match.group(1))
-
-        if len(extracted_types) > 1:
-            raise ValueError(
-                f"Expected all datetime_sql_parsers to parse the same type (all DATE, all DATETIME, or all TIMESTAMP) "
-                f"for {self.name}. Found types: {extracted_types}"
-            )
 
     @property
     def is_enum(self) -> bool:

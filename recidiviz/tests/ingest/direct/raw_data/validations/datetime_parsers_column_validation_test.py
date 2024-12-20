@@ -46,8 +46,8 @@ class TestDatetimeParsersColumnValidation(ColumnValidationTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.datetime_sql_parsers = [
-            "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})",
-            "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})",
+            "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})",
+            "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})",
         ]
         self.happy_col = attr.evolve(
             self.happy_col,

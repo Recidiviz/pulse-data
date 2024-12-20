@@ -18,13 +18,13 @@ columns:
       When the person began their stay at this location.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: ASSIGNMENT_END_DATE
     description: |-
       When the person ended their stay at this location.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: BED_ASSIGN_SEQ
     description: |-
       The ordered index of bed assignments among the full set of assignments within a booking.
@@ -33,10 +33,10 @@ columns:
     description: |-
       When this record was first created in the source system.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y   %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y   %I:%M:%S%p', {col_name})"
   - name: MODIFY_DATETIME
     field_type: datetime
     description: |-
       When this record was most recently modified in the source system.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y   %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y   %I:%M:%S%p', {col_name})"

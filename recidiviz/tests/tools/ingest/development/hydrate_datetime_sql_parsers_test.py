@@ -62,8 +62,8 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
         )
         # Some datetime parsers
         self.parsers_list = [
-            "SAFE.PARSE_DATE('%m/%d/%y', {col_name})",
-            "SAFE.PARSE_DATE('%m/%d/%Y', {col_name})",
+            "SAFE.PARSE_DATETIME('%m/%d/%y', {col_name})",
+            "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})",
         ]
         # Input config to be updated
         self.input_config = attr.evolve(

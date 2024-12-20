@@ -22,7 +22,7 @@ columns:
       The date and time this record was created.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: CREATE_USER_ID
     description: |-
       The user ID of the user who created this record.
@@ -32,7 +32,7 @@ columns:
       The date this assessment result expires.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: LIST_SEQ
     description: |-
       Unclear. Likely the sequence order in which this assessment was performed relative to other assessments for the same individual.
@@ -41,7 +41,7 @@ columns:
       The last time this record was modified.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: MODIFY_USER_ID
     description: |-
       The last user to modify this record.

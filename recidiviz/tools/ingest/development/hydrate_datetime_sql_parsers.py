@@ -56,18 +56,18 @@ from recidiviz.utils.string import StrictStringFormatter
 
 DEFAULT_PARSERS_TO_TRY = [
     # m/d/y format parsers
-    "SAFE.PARSE_DATE('%m/%d/%y', {col_name})",
-    "SAFE.PARSE_DATE('%m/%d/%Y', {col_name})",
-    "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})",
+    "SAFE.PARSE_DATETIME('%m/%d/%y', {col_name})",
+    "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})",
+    "SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S', {col_name})",
     # https://docs.python.org/3/library/time.html#time.strftime
     # When used with the strptime() function, the %p directive only affects the output
     # hour field if the %I directive is used to parse the hour.
-    "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', {col_name})",
+    "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S%p', {col_name})",
     # y-m-d format parsers
-    "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', {col_name})",
-    "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H', {col_name})",
-    "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', {col_name})",
-    "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %I:%M:%S%p', {col_name})",
+    "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M', {col_name})",
+    "SAFE.PARSE_DATETIME('%Y-%m-%d %H', {col_name})",
+    "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', {col_name})",
+    "SAFE.PARSE_DATETIME('%Y-%m-%d %I:%M:%S%p', {col_name})",
 ]
 
 
@@ -247,9 +247,8 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
 
     parser.add_argument(
         "--parser",
-        help="Parser to try. Should be in a format using SAFE.PARSE_DATE,"
-        "SAFE.PARSE_DATETIME, or SAFE.PARSE_TIMESTAMP with an expression involving"
-        "the string literal {col_name}.",
+        help="Parser to try. Should be in a format using SAFE.PARSE_DATETIME"
+        "with an expression involving the string literal {col_name}.",
         type=str,
         default=None,
         required=False,

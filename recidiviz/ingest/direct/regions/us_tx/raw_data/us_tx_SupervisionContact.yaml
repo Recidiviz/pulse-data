@@ -20,7 +20,7 @@ columns:
       Staff type.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\.\\d+$', ''))"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\.\\d+$', ''))"
   - name: Contact_Type
     description: |-
       Type of contact.

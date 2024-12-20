@@ -35,7 +35,7 @@ columns:
       When the transaction was entered into the trust.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: OFFENDER_WORK_ID
     description: |-
       ID of the kind of work being done by the person which led to the financial transaction.
@@ -47,13 +47,13 @@ columns:
       When the payment occurred, or first started if durational.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PAY_END_DATE
     description: |-
       When the payments ended, if durational.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PAY_RANGE_CODE
     description: |-
       Code describing the range of pay.
@@ -92,4 +92,4 @@ columns:
       When this record was most recently modified in the source system.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"

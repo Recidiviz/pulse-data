@@ -34,7 +34,7 @@ columns:
     description: Status Change Date
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', SUBSTR({col_name}, 1, 19))"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR({col_name}, 1, 19))"
   - name: ResponsibleUserID
     description: User ID of responsible user
     is_pii: True

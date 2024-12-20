@@ -18,7 +18,7 @@ columns:
     description: Date released to parole (YYYYMMDD)
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%Y%m%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
   - name: DOBYear
     description: Year of birth
   - name: DOBMonth

@@ -29,13 +29,13 @@ columns:
       When the person first started this program/activity.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: END_DATE
     description: |-
       When the person finished this program/activity.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: OFFENDER_END_REASON
     description: |-
       The reason the person finished this program/activity.
@@ -47,7 +47,7 @@ columns:
       When the person was referred to this program/activity.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PROGRAM_ID
     description: |-
       ID of the program/activity being undertaken.
@@ -56,13 +56,13 @@ columns:
       When this record was first created in the source system.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: MODIFY_DATETIME
     description: |-
       When this record was most recently modified in the source system.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: OFFENDER_PROGRAM_STATUS
     description: |-
       The current status of the person within this program/activity.
@@ -77,7 +77,7 @@ columns:
       When the person was rejected from being admitted to this program/activity, if rejected.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: REJECT_REASON_CODE
     description: |-
       When the person was rejected from being admitted to this program/activity, if rejected.

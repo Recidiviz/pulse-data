@@ -19,14 +19,14 @@ columns:
     description: Early release date (ERD)
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
+      - "SAFE.PARSE_DATETIME('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
         r'\\:\\d\\d\\d', ''))"
   - name: last_update_user
     is_pii: True
   - name: last_update_date
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
+      - "SAFE.PARSE_DATETIME('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name},
         r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
 

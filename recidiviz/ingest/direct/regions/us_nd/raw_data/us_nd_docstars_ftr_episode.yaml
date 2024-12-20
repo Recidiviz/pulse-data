@@ -29,7 +29,6 @@ columns:
     description: |-
       Code describing whether this episode is pending.
     update_history:
-      # TODO(#34922) Ensure this column is not being used anywhere and was intentionally deleted
       - update_type: DELETION
         update_datetime: 2021-10-14T12:46:08.731983Z
   - name: LOCATION_ID
@@ -63,7 +62,7 @@ columns:
       When the current status became true for this FTR episode, i.e. when the status most recently changed.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: STRENGTHS
     description: |-
       Assessed strengths of this person, written as free text notes.
@@ -75,13 +74,13 @@ columns:
       When this record was most recently updated.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: SUBMITTED
     description: |-
       When the record of this FTR episode was submitted to Docstars.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: SUBMITTED_BY
     description: |-
       ID of the person who submitted the record of this FTR episode to Docstars.
@@ -93,7 +92,7 @@ columns:
       When the person was admitted to this episode.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: ALLOW_VIEWING
     description: |-
       Whether this record can be viewed by users with read access. Always yes.

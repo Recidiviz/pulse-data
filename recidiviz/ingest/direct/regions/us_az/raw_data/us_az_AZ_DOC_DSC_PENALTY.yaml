@@ -28,7 +28,7 @@ columns:
       Date/time when the penalty was submitted and thus imposed (when the penalty actually starts)
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: PENALTY_STATUS_ID
     description: |-
       ID of the status/state of the penalty.  FK to LOOKUPS, category DISCIPLINE_PENALTY_STATUS
@@ -37,7 +37,7 @@ columns:
       Date/time when the penalty was saved
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: NUMBER_OF_PENALTY_DAYS
     description: |-
       Number of days the penalty is to run
@@ -55,7 +55,7 @@ columns:
       Date/time the restitution amount was extracted from Discipline and placed in the AZ_DOC_MS_KEEFE_TRIG table
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: EXTRA_DUTY_HOURS
     description: |-
       Extra Duty hours
@@ -67,7 +67,7 @@ columns:
       Date/Time when the Extra Duty hours were completed
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: ACTIVE_FLAG
     description: |-
       Is the row logically active? Y/N
@@ -80,7 +80,7 @@ columns:
       Date/time the record was created
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: UPDT_USERID
     description: |-
       ID of the user who updated the record most-recently.  FK to MEA_USERS
@@ -90,7 +90,7 @@ columns:
       Date/time the record was updated most-recently
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: CHANGE_ID
     description: |-
       ID of the CHANGE HISTORY record.
@@ -102,7 +102,7 @@ columns:
       Date the penalty ends
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: IS_ERC_SUSPENSION_IMPOSED
     description: |-
       Flag to state if the suspended ERC has been imposed within other discipline ticket

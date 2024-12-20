@@ -18,7 +18,7 @@ columns:
     is_pii: True
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATE('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: Address
     description: The person's residential address.
     is_pii: True
