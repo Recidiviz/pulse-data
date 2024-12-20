@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identifies individuals' supervision sentences in OR that are eligible for
-consideration for earned discharge due to their being "funded" sentences, as outlined in
-ORS 423.478."""
+"""Identify individuals' supervision sentences in OR that are eligible for consideration
+for earned discharge due to their being "funded" sentences, as outlined in ORS 423.478.
+"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import list_to_query_string
@@ -34,16 +34,13 @@ from recidiviz.task_eligibility.utils.us_or_query_fragments import (
     OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2023_07_27,
     OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2024_09_01,
     OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2025_01_01,
-    OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01,
+    OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_ALWAYS_FUNDED,
+    OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_SOMETIMES_FUNDED,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 US_OR_FUNDED_SENTENCE_VIEW_NAME = "us_or_funded_sentence"
-
-US_OR_FUNDED_SENTENCE_VIEW_DESCRIPTION = """Identifies individuals' supervision
-sentences in OR that are eligible for consideration for earned discharge due to their
-being "funded" sentences, as outlined in ORS 423.478."""
 
 # TODO(#35095): Account for conviction status (i.e., conditional discharge or diversion)
 # and supervision/sentence type (i.e., probation vs. local-control post-prison vs.
@@ -77,6 +74,9 @@ US_OR_FUNDED_SENTENCE_QUERY_TEMPLATE = f"""
                 start_date,
                 offense_date
             ) AS offense_date,
+            /* The statement below will return FALSE if the funded-misdemeanor flag is
+            empty or NULL. */
+            COALESCE(JSON_VALUE(sentence_metadata, '$.FMISD_FLAG'), 'UNKNOWN')='Y' AS funded_misdemeanor,
         FROM ({sentence_attributes()})
         WHERE state_code='US_OR'
             AND sentence_type='SUPERVISION'
@@ -98,7 +98,7 @@ US_OR_FUNDED_SENTENCE_QUERY_TEMPLATE = f"""
                 (classification_type='MISDEMEANOR')
                 AND (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2017_08_15, quoted=True)}))
                 AND (offense_date BETWEEN '2017-08-15' AND '2021-01-31')
-                ) THEN TRUE
+            ) THEN TRUE
             /* Identify designated drug-related misdemeanors as defined by Ballot
             Measure 110 (2020), from which relevant changes became effective on
             2021-02-01. */
@@ -106,14 +106,14 @@ US_OR_FUNDED_SENTENCE_QUERY_TEMPLATE = f"""
                 (classification_type='MISDEMEANOR')
                 AND (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2021_02_01, quoted=True)}))
                 AND (offense_date BETWEEN '2021-02-01' AND '2021-07-18')
-                ) THEN TRUE
+            ) THEN TRUE
             /* Identify designated drug-related misdemeanors as defined by Senate Bill
             755 (2021), which was effective on 2021-07-19. */
             WHEN (
                 (classification_type='MISDEMEANOR')
                 AND (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2021_07_19, quoted=True)}))
                 AND (offense_date BETWEEN '2021-07-19' AND '2023-07-26')
-                ) THEN TRUE
+            ) THEN TRUE
             /* Identify designated drug-related misdemeanors as defined by House Bill
             2645 (2023), which was effective on 2023-07-27.
             NB: Oregon's EDIS eligibility code checks that the conviction date (not the
@@ -130,31 +130,39 @@ US_OR_FUNDED_SENTENCE_QUERY_TEMPLATE = f"""
                 (classification_type='MISDEMEANOR')
                 AND (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2023_07_27, quoted=True)}))
                 AND (offense_date BETWEEN '2023-07-27' AND '2024-08-31')
-                ) THEN TRUE
+            ) THEN TRUE
             /* Identify designated drug-related misdemeanors as defined by House Bill
             4002 (2024), from which relevant changes became effective on 2024-09-01. */
             WHEN (
                 (classification_type='MISDEMEANOR')
                 AND (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2024_09_01, quoted=True)}))
                 AND (offense_date BETWEEN '2024-09-01' AND '2024-12-31')
-                ) THEN TRUE
+            ) THEN TRUE
             /* Identify designated drug-related misdemeanors as defined by Senate Bill
             1553 (2024), which will take effect on 2025-01-01. */
             WHEN (
                 (classification_type='MISDEMEANOR')
                 AND (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2025_01_01, quoted=True)}))
                 AND (offense_date>='2025-01-01')
-                ) THEN TRUE
+            ) THEN TRUE
             /* Identify designated person misdemeanors as defined by Senate Bill 497
             (2021), which was effective on 2022-01-01. */
             WHEN (
                 (classification_type='MISDEMEANOR')
-                AND (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01, quoted=True)}))
+                AND (
+                    -- funded misdemeanors from always-funded statutes
+                    (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_ALWAYS_FUNDED, quoted=True)}))
+                    OR (
+                        -- funded misdemeanors from sometimes-funded statutes
+                        (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_SOMETIMES_FUNDED, quoted=True)}))
+                        AND funded_misdemeanor
+                    )
+                )
                 /* NB: we're using the sentence start date here to identify funded
                 sentences for designated person misdemeanors, which is what OR has been
                 doing in their EDIS eligibility code. */
                 AND (start_date>='2022-01-01')
-                ) THEN TRUE
+            ) THEN TRUE
             /* Any other sentences (which would be those sentences that are not for
             felonies or designated drug-related or person misdemeanors) have never been
             eligible. */
@@ -166,7 +174,7 @@ US_OR_FUNDED_SENTENCE_QUERY_TEMPLATE = f"""
 US_OR_FUNDED_SENTENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     view_id=US_OR_FUNDED_SENTENCE_VIEW_NAME,
-    description=US_OR_FUNDED_SENTENCE_VIEW_DESCRIPTION,
+    description=__doc__,
     view_query_template=US_OR_FUNDED_SENTENCE_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,

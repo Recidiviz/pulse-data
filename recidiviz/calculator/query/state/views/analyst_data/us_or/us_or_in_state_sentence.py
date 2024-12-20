@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identifies individuals' supervision sentences in OR that are not from convictions in
-other states."""
+"""Identify individuals' supervision sentences in OR that are not from convictions in
+other states.
+"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
@@ -29,9 +30,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 US_OR_IN_STATE_SENTENCE_VIEW_NAME = "us_or_in_state_sentence"
-
-US_OR_IN_STATE_SENTENCE_VIEW_DESCRIPTION = """Identifies individuals' supervision
-sentences in OR that are not from convictions in other states."""
 
 US_OR_IN_STATE_SENTENCE_QUERY_TEMPLATE = f"""
     WITH sentences AS (
@@ -70,7 +68,7 @@ US_OR_IN_STATE_SENTENCE_QUERY_TEMPLATE = f"""
 US_OR_IN_STATE_SENTENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     view_id=US_OR_IN_STATE_SENTENCE_VIEW_NAME,
-    description=US_OR_IN_STATE_SENTENCE_VIEW_DESCRIPTION,
+    description=__doc__,
     view_query_template=US_OR_IN_STATE_SENTENCE_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,

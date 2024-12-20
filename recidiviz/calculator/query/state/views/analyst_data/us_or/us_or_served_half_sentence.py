@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identifies individuals' supervision sentences in OR for which at least half the
+"""Identify individuals' supervision sentences in OR for which at least half the
 sentence has been served.
 """
 
@@ -135,8 +135,9 @@ US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
             ourselves. We can instead just use the sentence length and sentence end date
             to find the point in time at which someone has half their sentence
             remaining. */
-            DATE_SUB(end_date,
-                     INTERVAL CAST(FLOOR(corrected_sentence_length_days_calculated / 2) AS INT64) DAY
+            DATE_SUB(
+                end_date,
+                INTERVAL CAST(FLOOR(corrected_sentence_length_days_calculated / 2) AS INT64) DAY
             ) AS critical_date,
         FROM sentences_with_corrected_lengths
     ),

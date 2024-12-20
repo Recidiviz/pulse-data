@@ -204,16 +204,21 @@ OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2025_01_01 = (
     OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2024_09_01
 )
 
-# This is the list of "designated person misdemeanors" (per ORS 423.478), as originally
-# created by Senate Bill 497 (2021), which was effective 2022-01-01. The list below
-# contains the correct ORS subclasses to reference the specific offenses that this bill
-# deemed eligible.
-OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01 = [
-    # TODO(#35127): Once we can identify which sentences under 163.160 and 163.190 are
-    # funded and which are not, start surfacing just the funded sentences.
-    # "163.160",  # only if constituting domestic violence
-    # "163.190",  # only if constituting domestic violence
+# This is the list of "designated person misdemeanors" (per ORS 423.478) that are ALWAYS
+# funded, as originally created by Senate Bill 497 (2021), which was effective
+# 2022-01-01. The list below contains the correct ORS subclasses to reference the
+# specific offenses that this bill deemed eligible.
+OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_ALWAYS_FUNDED = [
     "163.415(NEW)",
+]
+
+# This is the list of "designated person misdemeanors" (per ORS 423.478) that are only
+# SOMETIMES funded, as originally created by Senate Bill 497 (2021), which was effective
+# 2022-01-01. The list below contains the correct ORS subclasses to reference the
+# specific offenses that this bill deemed eligible.
+OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_SOMETIMES_FUNDED = [
+    "163.160",  # only funded if constituting domestic violence
+    "163.190",  # only funded if constituting domestic violence
 ]
 
 # supervision types ineligible for EDIS (see OR ingest mappings to see all types)

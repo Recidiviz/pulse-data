@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identifies individuals' supervision sentences in OR for which they have served at
-least 6 months of the sentence."""
+"""Identify individuals' supervision sentences in OR for which they have served at least
+six months of the sentence."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -37,10 +37,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_NAME = "us_or_served_6_months_supervision"
-
-US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_DESCRIPTION = """Identifies individuals'
-supervision sentences in OR for which they have served at least 6 months of the
-sentence."""
 
 US_OR_SERVED_6_MONTHS_SUPERVISION_QUERY_TEMPLATE = f"""
     WITH sentences AS (
@@ -102,7 +98,10 @@ US_OR_SERVED_6_MONTHS_SUPERVISION_QUERY_TEMPLATE = f"""
             DATE_DIFF(end_date_exclusive, start_date, DAY) AS days_absconded,
         FROM absconsions_during_sentence
     ),
-    {create_sub_sessions_with_attributes("sentence_and_absconsion_spans", index_columns=["state_code", "person_id", "sentence_id"])},
+    {create_sub_sessions_with_attributes(
+        "sentence_and_absconsion_spans",
+        index_columns=["state_code", "person_id", "sentence_id"],
+    )},
     sub_sessions_with_attributes_condensed AS (
         /* Aggregate across sub-sessions to get attributes for each span of time for
         each person-sentence. */
@@ -152,7 +151,7 @@ US_OR_SERVED_6_MONTHS_SUPERVISION_QUERY_TEMPLATE = f"""
         {aggregate_adjacent_spans(
             "critical_date_has_passed_spans",
             index_columns=['state_code', 'person_id', 'sentence_id'],
-            attribute=['critical_date_has_passed', 'critical_date']
+            attribute=['critical_date_has_passed', 'critical_date'],
         )}
     )
     SELECT
@@ -169,7 +168,7 @@ US_OR_SERVED_6_MONTHS_SUPERVISION_QUERY_TEMPLATE = f"""
 US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     view_id=US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_NAME,
-    description=US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_DESCRIPTION,
+    description=__doc__,
     view_query_template=US_OR_SERVED_6_MONTHS_SUPERVISION_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,

@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Determines eligibility spans at the person-sentence level for earned discharge in
-OR."""
+"""Create eligibility spans at the person-sentence level for earned discharge in OR."""
 
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -33,9 +32,6 @@ from recidiviz.utils.metadata import local_project_id_override
 US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_NAME = (
     "us_or_earned_discharge_sentence_eligibility_spans"
 )
-
-US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_DESCRIPTION = """Determines
-eligibility spans at the person-sentence level for earned discharge in OR."""
 
 US_OR_EARNED_DISCHARGE_SENTENCE_ALMOST_ELIGIBLE_INTERVAL_LENGTH = 60
 US_OR_EARNED_DISCHARGE_SENTENCE_ALMOST_ELIGIBLE_INTERVAL_DATE_PART = (
@@ -121,7 +117,10 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             CAST(NULL AS DATE) AS sentence_critical_date,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_funded_sentence`
     ),
-    {create_sub_sessions_with_attributes("sentence_subcriteria_eligibility_spans", index_columns=["state_code", "person_id", "sentence_id"])},
+    {create_sub_sessions_with_attributes(
+        "sentence_subcriteria_eligibility_spans",
+        index_columns=["state_code", "person_id", "sentence_id"],
+    )},
     sub_sessions_with_attributes_condensed AS (
         SELECT
             state_code,
@@ -198,7 +197,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
                 'meets_criteria_served_half_of_sentence', 'meets_criteria_statute',
                 'meets_criteria_no_convictions_since_sentence_start_date',
                 'meets_criteria_in_state_sentence', 'meets_criteria_funded_sentence'
-            ]
+            ],
         )}
     )
     SELECT
@@ -211,7 +210,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
 US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     view_id=US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_NAME,
-    description=US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_DESCRIPTION,
+    description=__doc__,
     view_query_template=US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     should_materialize=True,

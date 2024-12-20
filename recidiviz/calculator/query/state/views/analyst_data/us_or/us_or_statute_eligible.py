@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identifies individuals' supervision sentences in OR that fall under statutes eligible
-for earned discharge."""
+"""Identify individuals' supervision sentences in OR that fall under statutes eligible
+for earned discharge.
+"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import list_to_query_string
@@ -39,9 +40,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 US_OR_STATUTE_ELIGIBLE_VIEW_NAME = "us_or_statute_eligible"
 
-US_OR_STATUTE_ELIGIBLE_VIEW_DESCRIPTION = """Identifies individuals' supervision
-sentences in OR that fall under statutes eligible for earned discharge."""
-
 US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
     WITH sentences AS (
         /* NB: this query pulls from `sentences_preprocessed` (not `sentence_spans`,
@@ -53,7 +51,11 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
         each sentence separately when evaluating eligibility for OR earned discharge. If
         we decide to change this in the future, we can refactor this subcriterion query
         to rely upon `sentence_spans`. */
-        SELECT *
+        SELECT
+            *,
+            /* The statement below will return FALSE if the 137.635 flag is empty or
+            NULL. */
+            COALESCE(JSON_VALUE(sentence_metadata, '$.FLAG_137635'), 'UNKNOWN')='Y' AS sentenced_under_137635,
         FROM ({sentence_attributes()})
         WHERE state_code='US_OR'
             AND sentence_type='SUPERVISION'
@@ -67,17 +69,6 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
         FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_sentence`
         WHERE state_code='US_OR'
     ),
-    sentence_enhancements AS (
-        SELECT
-            state_code,
-            person_id,
-            sentence_id,
-            -- the statement below will return FALSE if the 137.635 flag is missing
-            JSON_VALUE(sentence_metadata, '$.FLAG_137635')='Y' AS sentenced_under_137635,
-        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
-        WHERE state_code='US_OR'
-            AND sentence_type='SUPERVISION'
-    ),
     sentence_statute_eligibility AS (
         /* Here, we determine whether sentences fall under eligible statutes (according
         to the policy outlined in ORS 137.633, as of early 2024). We explicitly handle
@@ -90,15 +81,13 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
             (
             -- check that statute isn't universally ineligible
             IFNULL((statute NOT IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES, quoted=True)})), TRUE)
-            -- exclude sentences imposed under ORS 137.635, which is a sentencing enhancement
+            -- exclude sentences imposed under ORS 137.635 (a sentencing enhancement)
             AND (NOT sentenced_under_137635)
             -- check that if post-prison, statute isn't ineligible for post-prison cases
             AND NOT ((supervision_type_raw_text='O') AND IFNULL(statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES_POST_PRISON, quoted=True)}), FALSE))
             ) AS sentenced_under_eligible_statute,
         FROM sentences
         LEFT JOIN sentence_supervision_types
-            USING (state_code, person_id, sentence_id)
-        LEFT JOIN sentence_enhancements
             USING (state_code, person_id, sentence_id)
     ),
     critical_date_spans AS (
@@ -158,7 +147,7 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
 US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     view_id=US_OR_STATUTE_ELIGIBLE_VIEW_NAME,
-    description=US_OR_STATUTE_ELIGIBLE_VIEW_DESCRIPTION,
+    description=__doc__,
     view_query_template=US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
