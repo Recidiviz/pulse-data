@@ -177,6 +177,7 @@ output:
                   - Wellness Hold
                 StateIncarcerationPeriodReleaseReason.PARDONED:
                   - Release Clemency/Pardon
+                  - Commuted
                 StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
                   - Out On Bond
                   - Reinstate Parole
