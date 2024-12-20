@@ -1190,6 +1190,9 @@ US_ND:
   RECIDIVIZ_REFERENCE_alert_types:
     workflows_views.us_nd_transfer_to_atp_form_record: |-
       We surface alerts on the side panel of workflows.
+  RECIDIVIZ_REFERENCE_community_opportunities:
+    sentencing_views.sentencing_community_opportunity_record: |-
+      Used to grab PSI information on community opportunities. 12/02/24
   RECIDIVIZ_REFERENCE_state_attorney:
     workflows_views.us_nd_complete_discharge_early_from_supervision_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

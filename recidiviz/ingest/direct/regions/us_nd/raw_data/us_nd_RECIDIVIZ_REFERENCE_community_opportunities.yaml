@@ -7,6 +7,7 @@ always_historical_export: True
 data_classification: source
 separator: "†"
 custom_line_terminator: "‡"
+ignore_quotes: True
 primary_key_cols:
   - OpportunityName
   - ProviderPhoneNumber

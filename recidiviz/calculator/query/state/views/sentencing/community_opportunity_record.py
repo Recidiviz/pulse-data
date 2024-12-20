@@ -22,6 +22,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.sentencing.us_ix.sentencing_community_opportunity_template import (
     US_IX_SENTENCING_COMMUNITY_OPPORTUNITY_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.sentencing.us_nd.sentencing_community_opportunity_template import (
+    US_ND_SENTENCING_COMMUNITY_OPPORTUNITY_TEMPLATE,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -38,10 +41,14 @@ SENTENCING_COMMUNITY_OPPORTUNITY_QUERY_TEMPLATE = f"""
 WITH 
     ix_opportunities AS 
         ({US_IX_SENTENCING_COMMUNITY_OPPORTUNITY_TEMPLATE}), 
+    nd_opportunities AS 
+        ({US_ND_SENTENCING_COMMUNITY_OPPORTUNITY_TEMPLATE}), 
     -- full_query serves as a template for when Sentencing expands to other states and we union other views
     full_query AS 
     (
         SELECT * FROM ix_opportunities
+        UNION ALL
+        SELECT * FROM nd_opportunities
     ) 
     SELECT
         {{columns}}
@@ -56,6 +63,9 @@ SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER = (
         description=SENTENCING_COMMUNITY_OPPORTUNITY_DESCRIPTION,
         us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
+        ),
+        us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
         ),
         should_materialize=True,
         columns=[
@@ -86,8 +96,10 @@ SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER = (
             "district",
             "additionalNotes",
             "lastUpdatedDate",
-            "genders",
+            "gender",
             "genericDescription",
+            "countiesServed",
+            "status",
         ],
     )
 )
