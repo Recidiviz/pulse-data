@@ -50,6 +50,8 @@ STAGING_PRIMARY_ENABLED_STATES: Set[StateCode] = {
     # prepped for next prod release, but need more time to bake to resolve ongoing errors
     StateCode.US_ND,  # only 1 real import
     StateCode.US_PA,  # only 1 successful run, waiting until next week
+    StateCode.US_ME,
+    StateCode.US_MI,
     *PRODUCTION_SECONDARY_ENABLED_STATES,
 }
 # all states enabled in staging primary must be enabled in staging secondary, plus the
