@@ -39,7 +39,7 @@ from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
 
 
-def _relevant_units_of_analysis_for_population_type(
+def relevant_units_of_analysis_for_population_type(
     population_type: MetricPopulationType,
 ) -> list[MetricUnitOfAnalysisType]:
     """For the given population type, returns the units of analysis that can be used
@@ -76,6 +76,7 @@ def _relevant_units_of_analysis_for_population_type(
                 MetricUnitOfAnalysisType.FACILITY,
                 MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
                 MetricUnitOfAnalysisType.ALL_STATES,
+                MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
             ]
 
 
@@ -195,7 +196,10 @@ def _get_supervision_officer_population_selector(
                 span_conditions_dict={},
             )
         case MetricPopulationType.JUSTICE_INVOLVED:
-            return None
+            return SpanSelector(
+                span_type=SpanType.SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION,
+                span_conditions_dict={},
+            )
 
 
 def _get_workflows_surfaceable_caseload_population_selector(
@@ -356,7 +360,7 @@ def collect_assignment_sessions_view_builders() -> list[SimpleBigQueryViewBuilde
                 # observation / population type combo - continue.
                 continue
 
-            units_of_analysis = _relevant_units_of_analysis_for_population_type(
+            units_of_analysis = relevant_units_of_analysis_for_population_type(
                 population_type
             )
 

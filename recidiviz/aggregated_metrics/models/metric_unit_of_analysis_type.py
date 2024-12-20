@@ -43,6 +43,7 @@ class MetricUnitOfAnalysisType(Enum):
     LOCATION_DETAIL = "LOCATION_DETAIL"
     PERSON_ID = "PERSON"
     ALL_STATES = "ALL_STATES"
+    EXPERIMENT_VARIANT = "EXPERIMENT_VARIANT"
 
     @property
     def short_name(self) -> str:
@@ -182,6 +183,18 @@ class MetricUnitOfAnalysis:
                 return MetricUnitOfAnalysis(
                     type=MetricUnitOfAnalysisType.ALL_STATES,
                     primary_key_columns=["in_signed_state"],
+                    static_attribute_columns=[],
+                )
+            case MetricUnitOfAnalysisType.EXPERIMENT_VARIANT:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
+                    primary_key_columns=[
+                        "state_code",
+                        "experiment_id",
+                        "variant_id",
+                        "variant_date",
+                        "is_treated",
+                    ],
                     static_attribute_columns=[],
                 )
 

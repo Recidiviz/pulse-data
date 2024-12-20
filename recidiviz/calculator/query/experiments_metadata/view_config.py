@@ -18,6 +18,9 @@
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.experiments_metadata.views.experiment_assignment_sessions_utils import (
+    EXPERIMENT_ASSIGNMENT_SESSIONS_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.experiments_metadata.views.experiment_assignments import (
     EXPERIMENT_ASSIGNMENTS_VIEW_BUILDER,
 )
@@ -36,4 +39,5 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     OFFICER_ASSIGNMENTS_VIEW_BUILDER,
     PERSON_ASSIGNMENTS_VIEW_BUILDER,
     STATE_ASSIGNMENTS_VIEW_BUILDER,
+    *EXPERIMENT_ASSIGNMENT_SESSIONS_VIEW_BUILDERS,
 ]

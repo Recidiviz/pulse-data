@@ -409,6 +409,34 @@ FROM
     FROM
         `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
 """,
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
+    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.PERSON_ID.short_name}_materialized`",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
+        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
+    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER.short_name}_materialized`",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
+    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER.short_name}_materialized`",
+    (
+        MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER,
+        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
+    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER.short_name}_materialized`",
+    (
+        MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
+    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER.short_name}_materialized`",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD,
+        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
+    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.WORKFLOWS_SURFACEABLE_CASELOAD.short_name}_materialized`",
+    (
+        MetricUnitOfObservationType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
+    ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.SUPERVISION_OFFICER.short_name}_materialized`",
 }
 
 

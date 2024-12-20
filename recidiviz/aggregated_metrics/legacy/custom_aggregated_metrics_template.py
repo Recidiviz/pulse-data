@@ -20,6 +20,9 @@ population, and time periods using legacy (expensive) query structure.
 from datetime import datetime
 from typing import List, Optional
 
+from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
+    relevant_units_of_analysis_for_population_type,
+)
 from recidiviz.aggregated_metrics.legacy.assignment_event_aggregated_metrics import (
     get_assignment_event_time_specific_cte,
 )
@@ -53,9 +56,6 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
     get_static_attributes_query_for_unit_of_analysis,
-)
-from recidiviz.aggregated_metrics.standard_deployed_unit_of_analysis_types_by_population_type import (
-    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
 )
 from recidiviz.utils.string_formatting import fix_indent
 
@@ -124,9 +124,8 @@ def get_legacy_custom_aggregated_metrics_query_template(
     """
     if not metrics:
         raise ValueError("Must provide at least one metric - none provided.")
-    if (
-        unit_of_analysis_type
-        not in UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE[population_type]
+    if unit_of_analysis_type not in relevant_units_of_analysis_for_population_type(
+        population_type
     ):
         raise ValueError(
             f"Unsupported population and unit of analysis pair: {unit_of_analysis_type.value}, {population_type.value}"
