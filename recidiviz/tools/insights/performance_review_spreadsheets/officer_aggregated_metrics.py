@@ -28,10 +28,6 @@ SELECT
     officer_id,
     end_date,
     avg_daily_population,
-    task_completions_early_discharge,
-    task_completions_transfer_to_limited_supervision,
-    task_completions_supervision_level_downgrade,
-    task_completions_full_term_discharge
 FROM `recidiviz-123.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
 WHERE
     state_code = "US_IX"
@@ -45,10 +41,6 @@ SELECT
     officer_id,
     end_date,
     avg_daily_population,
-    task_completions_early_discharge,
-    task_completions_transfer_to_limited_supervision,
-    task_completions_supervision_level_downgrade,
-    task_completions_full_term_discharge
 FROM `recidiviz-123.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
 WHERE
     state_code = "US_IX"
@@ -58,21 +50,17 @@ WHERE
 
 
 @attr.define(frozen=True)
-class Metrics:
+class AggregatedMetrics:
     end_date_exclusive: date
     avg_daily_population: float | None
-    task_completions_early_discharge: int | None
-    task_completions_transfer_to_limited_supervision: int | None
-    task_completions_supervision_level_downgrade: int | None
-    task_completions_full_term_discharge: int | None
 
 
 @attr.define(frozen=True)
 class OfficerAggregatedMetrics:
     """Holds mappings of monthly+yearly aggregated metrics by officer"""
 
-    monthly_data: dict[str, list[Metrics]]
-    yearly_data: dict[str, Metrics]
+    monthly_data: dict[str, list[AggregatedMetrics]]
+    yearly_data: dict[str, AggregatedMetrics]
 
     @classmethod
     def from_bigquery(cls, bq_client: BigQueryClient) -> "OfficerAggregatedMetrics":
@@ -83,21 +71,9 @@ class OfficerAggregatedMetrics:
 
         monthly_data = defaultdict(list)
         for row in monthly_results:
-            metrics = Metrics(
+            metrics = AggregatedMetrics(
                 end_date_exclusive=row["end_date"],
                 avg_daily_population=row["avg_daily_population"],
-                task_completions_early_discharge=row[
-                    "task_completions_early_discharge"
-                ],
-                task_completions_transfer_to_limited_supervision=row[
-                    "task_completions_transfer_to_limited_supervision"
-                ],
-                task_completions_supervision_level_downgrade=row[
-                    "task_completions_supervision_level_downgrade"
-                ],
-                task_completions_full_term_discharge=row[
-                    "task_completions_full_term_discharge"
-                ],
             )
             monthly_data[row["officer_id"]].append(metrics)
 
@@ -107,21 +83,9 @@ class OfficerAggregatedMetrics:
 
         yearly_data = {}
         for row in yearly_results:
-            metrics = Metrics(
+            metrics = AggregatedMetrics(
                 end_date_exclusive=row["end_date"],
                 avg_daily_population=row["avg_daily_population"],
-                task_completions_early_discharge=row[
-                    "task_completions_early_discharge"
-                ],
-                task_completions_transfer_to_limited_supervision=row[
-                    "task_completions_transfer_to_limited_supervision"
-                ],
-                task_completions_supervision_level_downgrade=row[
-                    "task_completions_supervision_level_downgrade"
-                ],
-                task_completions_full_term_discharge=row[
-                    "task_completions_full_term_discharge"
-                ],
             )
             yearly_data[row["officer_id"]] = metrics
 

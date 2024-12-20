@@ -23,10 +23,13 @@ Usage: python -m recidiviz.tools.insights.performance_review_spreadsheets.genera
 This will generate spreadsheets in the root directory of pulse-data.
 """
 
+import argparse
 import logging
 import os
+import sys
 from datetime import date
 from enum import Enum, auto
+from typing import List, Tuple
 
 from dateutil.relativedelta import relativedelta
 from openpyxl import Workbook
@@ -41,6 +44,9 @@ from recidiviz.tools.insights.performance_review_spreadsheets.impact_funnel_metr
 )
 from recidiviz.tools.insights.performance_review_spreadsheets.officer_aggregated_metrics import (
     OfficerAggregatedMetrics,
+)
+from recidiviz.tools.insights.performance_review_spreadsheets.officer_aggregated_metrics_from_sandbox import (
+    OfficerAggregatedMetricsFromSandbox,
 )
 from recidiviz.tools.insights.performance_review_spreadsheets.supervisors_and_officers import (
     SupervisorsAndOfficers,
@@ -242,6 +248,31 @@ def write_metrics(
 ) -> None:
     """Write aggregated metrics to the appropriate cells in the sheet"""
     avg_daily_caseload_row = get_row_index(RowHeadingEnum.AVG_DAILY_CASELOAD)
+    for metric in officer_aggregated_metrics.monthly_data[officer_id]:
+        parsed_date = (metric.end_date_exclusive - relativedelta(days=1)).strftime(
+            _COLUMN_DATE_FORMAT
+        )
+        col_idx = get_column_index(parsed_date)
+        try_set_metric_cell(
+            sheet, metric.avg_daily_population, col_idx, avg_daily_caseload_row
+        )
+    yearly_col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
+    if officer_id in officer_aggregated_metrics.yearly_data:
+        yearly_data = officer_aggregated_metrics.yearly_data[officer_id]
+        try_set_metric_cell(
+            sheet,
+            yearly_data.avg_daily_population,
+            yearly_col_idx,
+            avg_daily_caseload_row,
+        )
+
+
+def write_metrics_from_sandbox(
+    sheet: Worksheet,
+    officer_id: str,
+    officer_aggregated_metrics: OfficerAggregatedMetricsFromSandbox,
+) -> None:
+    """Write aggregated metrics to the appropriate cells in the sheet"""
     early_discharge_row = get_row_index(RowHeadingEnum.EARLY_DISCHARGE_GRANTS)
     lsu_row = get_row_index(RowHeadingEnum.LSU_GRANTS)
     sld_row = get_row_index(RowHeadingEnum.SLD_GRANTS)
@@ -252,9 +283,6 @@ def write_metrics(
             _COLUMN_DATE_FORMAT
         )
         col_idx = get_column_index(parsed_date)
-        try_set_metric_cell(
-            sheet, metric.avg_daily_population, col_idx, avg_daily_caseload_row
-        )
         try_set_metric_cell(
             sheet, metric.task_completions_early_discharge, col_idx, early_discharge_row
         )
@@ -277,12 +305,6 @@ def write_metrics(
     yearly_col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
     if officer_id in officer_aggregated_metrics.yearly_data:
         yearly_data = officer_aggregated_metrics.yearly_data[officer_id]
-        try_set_metric_cell(
-            sheet,
-            yearly_data.avg_daily_population,
-            yearly_col_idx,
-            avg_daily_caseload_row,
-        )
         try_set_metric_cell(
             sheet,
             yearly_data.task_completions_early_discharge,
@@ -337,7 +359,7 @@ def write_impact_funnel_metrics(
             )
 
 
-def generate_sheets() -> None:
+def generate_sheets(sandbox_prefix: str) -> None:
     output_dir = os.path.join(os.path.dirname(__file__), "output")
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -345,6 +367,9 @@ def generate_sheets() -> None:
     bq_client = BigQueryClientImpl()
     supervisors_to_officers = SupervisorsAndOfficers.from_bigquery(bq_client).data
     officer_aggregated_metrics = OfficerAggregatedMetrics.from_bigquery(bq_client)
+    officer_aggregated_metrics_from_sandbox = (
+        OfficerAggregatedMetricsFromSandbox.from_bigquery(bq_client, sandbox_prefix)
+    )
     impact_funnel_metrics = ImpactFunnelMetrics.from_bigquery(bq_client)
     for supervisor, officers in supervisors_to_officers.items():
         wb = Workbook()
@@ -353,6 +378,9 @@ def generate_sheets() -> None:
             create_headers(sheet)
             apply_conditional_formatting(sheet)
             write_metrics(sheet, officer.officer_id, officer_aggregated_metrics)
+            write_metrics_from_sandbox(
+                sheet, officer.officer_id, officer_aggregated_metrics_from_sandbox
+            )
             write_impact_funnel_metrics(
                 sheet, officer.officer_id, impact_funnel_metrics
             )
@@ -362,7 +390,22 @@ def generate_sheets() -> None:
         wb.save(f"{output_dir}/{supervisor.formatted()}.xlsx")
 
 
+def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
+    """Parses the required arguments."""
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--sandbox_prefix",
+        help="""Prefix of data loaded to a sandbox, for use in metric calculations not provided by our standard materialized views.
+        See branch danawillow/id-perf-sandbox for the changes required to be loaded.""",
+        type=str,
+        required=True,
+    )
+    return parser.parse_known_args(argv)
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    args, _ = parse_arguments(sys.argv)
     with local_project_id_override(GCP_PROJECT_PRODUCTION):
-        generate_sheets()
+        generate_sheets(args.sandbox_prefix)
