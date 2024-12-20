@@ -27,8 +27,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.build_views_to_update import build_views_to_update
 from recidiviz.source_tables.collect_all_source_table_configs import (
-    get_all_source_table_datasets,
+    get_source_table_addresses,
 )
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
@@ -39,17 +40,16 @@ def print_dfs_tree(
     dataset_id: str, view_id: str, print_downstream_tree: bool = False
 ) -> None:
 
-    all_source_datasets = get_all_source_table_datasets()
+    all_source_datasets = {
+        a.dataset_id for a in get_source_table_addresses(metadata.project_id())
+    }
     all_view_builders = all_deployed_view_builders()
 
-    # It doesn't matter what the project_id is - we're just building the graph to
-    # understand view relationships
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        views = build_views_to_update(
-            view_source_table_datasets=all_source_datasets,
-            candidate_view_builders=all_view_builders,
-            sandbox_context=None,
-        )
+    views = build_views_to_update(
+        view_source_table_datasets=all_source_datasets,
+        candidate_view_builders=all_view_builders,
+        sandbox_context=None,
+    )
 
     dag_walker = BigQueryViewDagWalker(views)
 

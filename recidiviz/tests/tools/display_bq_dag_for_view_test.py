@@ -18,6 +18,8 @@
 import unittest
 
 from recidiviz.tools.display_bq_dag_for_view import print_dfs_tree
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 
 class TestDisplayBQDAGForView(unittest.TestCase):
@@ -25,12 +27,15 @@ class TestDisplayBQDAGForView(unittest.TestCase):
 
     def test_print_dfs_tree_downstream(self) -> None:
         # Should run without crashing
-        print_dfs_tree("sessions", "dataflow_sessions", print_downstream_tree=True)
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            print_dfs_tree("sessions", "dataflow_sessions", print_downstream_tree=True)
 
     def test_print_dfs_tree_upstream(self) -> None:
         # Should run without crashing
-        print_dfs_tree("sessions", "dataflow_sessions", print_downstream_tree=False)
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            print_dfs_tree("sessions", "dataflow_sessions", print_downstream_tree=False)
 
     def test_print_dfs_tree_invalid_view(self) -> None:
-        with self.assertRaisesRegex(ValueError, r"invalid view foo\.bar"):
-            print_dfs_tree("foo", "bar", print_downstream_tree=False)
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            with self.assertRaisesRegex(ValueError, r"invalid view foo\.bar"):
+                print_dfs_tree("foo", "bar", print_downstream_tree=False)
