@@ -111,104 +111,31 @@ WITH community_opp_info AS (
             WHEN ASAMLevelCriteria LIKE "%Any%" THEN 'Any'
             WHEN ASAMLevelCriteria IS NULL THEN NULL
         END as asamLevelOfCareRecommendationCriterion,
-        CASE 
-            WHEN genders LIKE "%Men%" THEN 'Men'
-            WHEN genders LIKE "%Women%" THEN 'Women'
-            WHEN genders IS NULL THEN NULL
-        END AS gender,
+        CONCAT(
+            CASE WHEN genders LIKE "%Men%" THEN 'Men,' ELSE '' END,
+            CASE WHEN genders LIKE "%Women%" THEN 'Women,' ELSE '' END,
+            CASE WHEN genders IS NULL THEN NULL ELSE NULL END
+        ) AS gendersConcat,
         substanceUseDisorderCriteria AS diagnosedSubstanceUseDisorderCriterion,
         CAST(minLSIRScore AS INT64) AS minLSIRScoreCriterion,
         CAST(maxLSIRScore AS INT64) AS maxLsirScoreCriterion,
         AdditionalNotes AS additionalNotes,
         DATE(lastUpdatedDate) AS lastUpdatedDate,
-        genericDescription,
-        CONCAT(
-            CASE WHEN countiesServed LIKE "%Ada%" THEN 'Ada,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Adams%" THEN 'Adams,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Bannock%" THEN 'Bannock,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Bear Lake%" THEN 'Bear Lake,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Benewah%" THEN 'Benewah,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Bingham%" THEN 'Bingham,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Blaine%" THEN 'Blaine,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Boise%" THEN 'Boise,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Bonner%" THEN 'Bonner,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Bonneville%" THEN 'Bonneville,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Boundary%" THEN 'Boundary,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Butte%" THEN 'Butte,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Camas%" THEN 'Camas,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Canyon%" THEN 'Canyon,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Caribou%" THEN 'Caribou,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Cassia%" THEN 'Cassia,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Clark%" THEN 'Clark,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Clearwater%" THEN 'Clearwater,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Custer%" THEN 'Custer,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Elmore%" THEN 'Elmore,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Franklin%" THEN 'Franklin,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Fremont%" THEN 'Fremont,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Gem%" THEN 'Gem,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Gooding%" THEN 'Gooding,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Idaho%" THEN 'Idaho,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Jefferson%" THEN 'Jefferson,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Jerome%" THEN 'Jerome,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Kootenai%" THEN 'Kootenai,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Latah%" THEN 'Latah,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Lemhi%" THEN 'Lemhi,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Lewis%" THEN 'Lewis,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Lincoln%" THEN 'Lincoln,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Madison%" THEN 'Madison,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Minidoka%" THEN 'Minidoka,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Nez Perce%" THEN 'Nez Perce,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Oneida%" THEN 'Oneida,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Owyhee%" THEN 'Owyhee,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Payette%" THEN 'Payette,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Power%" THEN 'Power,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Shoshone%" THEN 'Shoshone,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Teton%" THEN 'Teton,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Twin Falls%" THEN 'Twin Falls,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Valley%" THEN 'Valley,' ELSE '' END,
-            CASE WHEN countiesServed LIKE "%Washington%" THEN 'Washington,' ELSE '' END
-        ) AS countiesServedConcat,
-        status
+        genericDescription
    FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_community_opportunities_latest`)
 
    SELECT 
+        *,
         "US_IX" AS state_code,
-        OpportunityName,
-        Description,
-        ProviderName,
-        ProviderWebsite,
-        ProviderAddress,
-        CapacityTotal,
-        CapacityAvailable,
-        minAge,
-        maxAge,
-        district,
         CASE
             WHEN needsAddressedConcat = ''
             THEN NULL
             ELSE  SPLIT(LEFT(needsAddressedConcat, LENGTH(needsAddressedConcat)-1))
         END AS NeedsAddressed,
-        CleanedProviderPhoneNumber,
-        developmentalDisabilityDiagnosisCriterion,
-        noCurrentOrPriorSexOffenseCriterion,
-        noCurrentOrPriorViolentOffenseCriterion,
-        noPendingFelonyChargesInAnotherCountyOrStateCriterion,
-        entryOfGuiltyPleaCriterion,
-        veteranStatusCriterion,
-        priorCriminalHistoryCriterion,
         CASE 
             WHEN mentalHealthConcat LIKE "%Any%" THEN SPLIT("Any")
             WHEN mentalHealthConcat IS NOT NULL THEN SPLIT(LEFT(mentalHealthConcat, LENGTH(mentalHealthConcat)-1))
         END AS diagnosedMentalHealthDiagnosisCriterion,
-        asamLevelOfCareRecommendationCriterion,
-        gender,
-        diagnosedSubstanceUseDisorderCriterion,
-        minLSIRScoreCriterion,
-        maxLsirScoreCriterion,
-        additionalNotes,
-        lastUpdatedDate,
-        genericDescription,
-        SPLIT(LEFT(countiesServedConcat, LENGTH(countiesServedConcat)-1)) as countiesServed,
-        status
+        SPLIT(LEFT(gendersConcat, LENGTH(gendersConcat)-1)) as genders
     FROM community_opp_info
 """
