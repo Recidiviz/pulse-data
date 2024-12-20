@@ -56,7 +56,7 @@ class AirflowTaskRunHistoryDelegate(JobRunHistoryDelegate):
                                 JobRunState.FAILED.value,
                             ),
                             (
-                                TaskInstance.state.in_(State.success_states),
+                                TaskInstance.state.in_([State.SUCCESS]),
                                 JobRunState.SUCCESS.value,
                             ),
                         ],

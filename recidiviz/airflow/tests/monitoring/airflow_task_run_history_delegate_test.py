@@ -323,6 +323,49 @@ class AirflowTaskRunHistoryDelegateTest(AirflowIntegrationTest):
                 read_csv_fixture_for_delegate("test_graph_task_upstream_failed.csv"),
             )
 
+    def test_graph_task_skipped(self) -> None:
+        """
+        Given a task has consecutively failed, but its upstream task failed in between
+
+                    2023-07-09 2023-07-10 2023-07-11
+        parent_task 🟥         🟪         🟥
+
+        Assert that an incident is only reported once
+        """
+        with self._get_session() as session:
+            july_ninth = dummy_dag_run(test_dag, "2023-07-09 12:00")
+            july_ninth_ti = dummy_ti(parent_task, july_ninth, "failed")
+
+            july_tenth = dummy_dag_run(test_dag, "2023-07-10 12:00")
+            july_tenth_ti = dummy_ti(parent_task, july_tenth, "skipped")
+
+            july_eleventh = dummy_dag_run(test_dag, "2023-07-11 12:00")
+            july_eleventh_ti = dummy_ti(parent_task, july_eleventh, "failed")
+
+            session.add_all(
+                [
+                    july_ninth,
+                    july_ninth_ti,
+                    july_tenth,
+                    july_tenth_ti,
+                    july_eleventh,
+                    july_eleventh_ti,
+                ]
+            )
+            session.commit()
+
+            # validate job run history
+            job_run_history = AirflowTaskRunHistoryDelegate(
+                dag_id=test_dag.dag_id
+            ).fetch_job_runs(
+                lookback=TEST_START_DATE_LOOKBACK,
+            )
+
+            self.assertSetEqual(
+                set(job_run_history),
+                read_csv_fixture_for_delegate("test_graph_task_skipped.csv"),
+            )
+
     @patch(
         "recidiviz.airflow.dags.monitoring.utils.get_discrete_configuration_parameters"
     )
