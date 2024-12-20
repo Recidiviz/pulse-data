@@ -25,7 +25,11 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
     StaffType,
 )
 from recidiviz.justice_counts.dimensions.offense import OffenseType
-from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
+from recidiviz.justice_counts.dimensions.person import (
+    BiologicalSex,
+    CensusRace,
+    RaceAndEthnicity,
+)
 from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     CallsForServiceEmergencyCallsIncludesExcludes,
     CallsForServiceIncludesExcludes,
@@ -333,13 +337,22 @@ staff = MetricDefinition(
                 StaffType.VACANT: "The number of full-time equivalent positions of any type budgeted to the law enforcement agency but not currently filled.",
             },
         ),
-        # TODO(#17579)
         # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
         AggregatedDimension(
             dimension=RaceAndEthnicity,
             required=False,
+            dimension_to_description={
+                CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "The number of staff in filled positions whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
+                CensusRace.ASIAN: "The number of staff in filled positions whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
+                CensusRace.BLACK: "The number of staff in filled positions whose race is listed as Black or African-American. This includes people with origins in Kenya, Nigeria, Ghana, Ethiopia, or other countries in Sub-Saharan Africa.",
+                CensusRace.MORE_THAN_ONE_RACE: "The number of staff in filled positions whose race is listed as more than one race, such as White and Black.",
+                CensusRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "The number of staff in filled positions whose race is listed as Native Hawaiian, Pacific Islander, or similar. This includes people with origins in the original populations of Pacific islands such as Hawaii, Samoa, Fiji, Tahiti, or Papua New Guinea.",
+                CensusRace.OTHER: "The number of staff in filled positions whose race is listed as some other race, not included above.",
+                CensusRace.WHITE: "The number of staff in filled positions whose race is listed as White, Caucasian, or Anglo. This includes people with origins in France, Italy, or other countries in Europe, as well as Israel, Palestine, Egypt, or other countries in the Middle East and North Africa.",
+                CensusRace.UNKNOWN: "The number of staff in filled positions whose race is not known.",
+                CensusRace.HISPANIC_OR_LATINO: "The number of staff in filled positions whose race and ethnicity are listed as Hispanic or Latino. This includes people with origins in Mexico, Cuba, Puerto Rico, the Dominican Republic, and other Spanish-speaking countries in Central or South America, as well as people with origins in Brazil or other non-Spanish-speaking countries in Central or South America.",
+            },
         ),
-        # TODO(#17579)
         # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
         AggregatedDimension(
             dimension=BiologicalSex,
@@ -500,10 +513,22 @@ arrests = MetricDefinition(
                 ],
             },
         ),
-        # TODO(#17579)
         # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
-        # TODO(#17579)
+        AggregatedDimension(
+            dimension=RaceAndEthnicity,
+            required=True,
+            dimension_to_description={
+                CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
+                CensusRace.ASIAN: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
+                CensusRace.BLACK: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Black or African-American. This includes people with origins in Kenya, Nigeria, Ghana, Ethiopia, or other countries in Sub-Saharan Africa.",
+                CensusRace.MORE_THAN_ONE_RACE: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as more than one race, such as White and Black.",
+                CensusRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Native Hawaiian, Pacific Islander, or similar. This includes people with origins in the original populations of Pacific islands such as Hawaii, Samoa, Fiji, Tahiti, or Papua New Guinea.",
+                CensusRace.OTHER: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as some other race, not included above.",
+                CensusRace.WHITE: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as White, Caucasian, or Anglo. This includes people with origins in France, Italy, or other countries in Europe, as well as Israel, Palestine, Egypt, or other countries in the Middle East and North Africa.",
+                CensusRace.UNKNOWN: "The number of arrests, citations, and summonses made by the agency of people whose race is not known.",
+                CensusRace.HISPANIC_OR_LATINO: "The number of arrests, citations, and summonses made by the agency of people whose race and ethnicity are listed as Hispanic or Latino. This includes people with origins in Mexico, Cuba, Puerto Rico, the Dominican Republic, and other Spanish-speaking countries in Central or South America, as well as people with origins in Brazil or other non-Spanish-speaking countries in Central or South America.",
+            },
+        ),
         # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
         AggregatedDimension(
             dimension=BiologicalSex,

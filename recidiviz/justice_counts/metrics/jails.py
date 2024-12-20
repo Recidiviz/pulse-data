@@ -24,7 +24,11 @@ from recidiviz.justice_counts.dimensions.jails import (
     StaffType,
 )
 from recidiviz.justice_counts.dimensions.offense import OffenseType
-from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
+from recidiviz.justice_counts.dimensions.person import (
+    BiologicalSex,
+    CensusRace,
+    RaceAndEthnicity,
+)
 from recidiviz.justice_counts.includes_excludes.common import (
     CountyOrMunicipalAppropriationIncludesExcludes,
     GrantsIncludesExcludes,
@@ -563,7 +567,21 @@ total_daily_population = MetricDefinition(
                 OffenseType.UNKNOWN: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious offense charge type is not known.",
             },
         ),
-        AggregatedDimension(dimension=RaceAndEthnicity, required=False),
+        AggregatedDimension(
+            dimension=RaceAndEthnicity,
+            required=False,
+            dimension_to_description={
+                CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "A single-day count of the number of people incarcerated in the agency's jurisdiction whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
+                CensusRace.ASIAN: "A single-day count of the number of people incarcerated in the agency's jurisdiction whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
+                CensusRace.BLACK: "A single-day count of the number of people incarcerated in the agency's jurisdiction whose race is listed as Black or African-American. This includes people with origins in Kenya, Nigeria, Ghana, Ethiopia, or other countries in Sub-Saharan Africa.",
+                CensusRace.HISPANIC_OR_LATINO: "A single-day count of the number of people incarcerated in the agency's jurisdiction whose race and ethnicity are listed as Hispanic or Latino. This includes people with origins in Mexico, Cuba, Puerto Rico, the Dominican Republic, and other Spanish-speaking countries in Central or South America, as well as people with origins in Brazil or other non-Spanish-speaking countries in Central or South America.",
+                CensusRace.MORE_THAN_ONE_RACE: "A single-day count of the number of people incarcerated in the agency's jurisdiction whose race is listed as more than one race, such as White and Black.",
+                CensusRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "A single-day count of the number of people incarcerated in the agency's jurisdiction whose race is listed as Native Hawaiian, Pacific Islander, or similar. This includes people with origins in the original populations of Pacific islands such as Hawaii, Samoa, Fiji, Tahiti, or Papua New Guinea.",
+                CensusRace.OTHER: "A single-day count of the number of people incarcerated in the agency's jurisdiction whose race is listed as some other race, not included above.",
+                CensusRace.UNKNOWN: "A single-day count of the number of people incarcerated in the agency's jurisdiction whose race is not known.",
+                CensusRace.WHITE: "A single-day count of the number of people incarcerated in the agency's jurisdiction whose race is listed as White, Caucasian, or Anglo. This includes people with origins in France, Italy, or other countries in Europe, as well as Israel, Palestine, Egypt, or other countries in the Middle East and North Africa.",
+            },
+        ),
         AggregatedDimension(
             dimension=BiologicalSex,
             required=False,
@@ -646,8 +664,21 @@ pre_adjudication_daily_population = MetricDefinition(
             },
         ),
         # TODO(#18071) Implement reused global includes/excludes
-        # TODO(#17579) Implement Y/N Tables
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        AggregatedDimension(
+            dimension=RaceAndEthnicity,
+            required=True,
+            dimension_to_description={
+                CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have not yet been adjudicated whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
+                CensusRace.ASIAN: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have not yet been adjudicated whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
+                CensusRace.BLACK: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have not yet been adjudicated whose race is listed as Black or African-American. This includes people with origins in Kenya, Nigeria, Ghana, Ethiopia, or other countries in Sub-Saharan Africa.",
+                CensusRace.HISPANIC_OR_LATINO: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have not yet been adjudicated whose race and ethnicity are listed as Hispanic or Latino. This includes people with origins in Mexico, Cuba, Puerto Rico, the Dominican Republic, and other Spanish-speaking countries in Central or South America, as well as people with origins in Brazil or other non-Spanish-speaking countries in Central or South America.",
+                CensusRace.MORE_THAN_ONE_RACE: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have not yet been adjudicated whose race is listed as more than one race, such as White and Black.",
+                CensusRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have not yet been adjudicated whose race is listed as Native Hawaiian, Pacific Islander, or similar. This includes people with origins in the original populations of Pacific islands such as Hawaii, Samoa, Fiji, Tahiti, or Papua New Guinea.",
+                CensusRace.OTHER: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have not yet been adjudicated whose race is listed as some other race, not included above.",
+                CensusRace.UNKNOWN: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have not yet been adjudicated whose race is not known.",
+                CensusRace.WHITE: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have not yet been adjudicated whose race is listed as White, Caucasian, or Anglo. This includes people with origins in France, Italy, or other countries in Europe, as well as Israel, Palestine, Egypt, or other countries in the Middle East and North Africa.",
+            },
+        ),
         # TODO(#18071) Implement reused global includes/excludes
         AggregatedDimension(
             dimension=BiologicalSex,
@@ -758,8 +789,21 @@ post_adjudication_daily_population = MetricDefinition(
             },
         ),
         # TODO(#18071) Implement reused global includes/excludes
-        # TODO(#17579) Implement Y/N Tables
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        AggregatedDimension(
+            dimension=RaceAndEthnicity,
+            required=True,
+            dimension_to_description={
+                CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have been adjudicated and convicted whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
+                CensusRace.ASIAN: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have been adjudicated and convicted whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
+                CensusRace.BLACK: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have been adjudicated and convicted whose race is listed as Black or African-American. This includes people with origins in Kenya, Nigeria, Ghana, Ethiopia, or other countries in Sub-Saharan Africa.",
+                CensusRace.HISPANIC_OR_LATINO: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have been adjudicated and convicted whose race and ethnicity are listed as Hispanic or Latino. This includes people with origins in Mexico, Cuba, Puerto Rico, the Dominican Republic, and other Spanish-speaking countries in Central or South America, as well as people with origins in Brazil or other non-Spanish-speaking countries in Central or South America.",
+                CensusRace.MORE_THAN_ONE_RACE: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have been adjudicated and convicted whose race is listed as more than one race, such as White and Black.",
+                CensusRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have been adjudicated and convicted whose race is listed as Native Hawaiian, Pacific Islander, or similar. This includes people with origins in the original populations of Pacific islands such as Hawaii, Samoa, Fiji, Tahiti, or Papua New Guinea.",
+                CensusRace.OTHER: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have been adjudicated and convicted whose race is listed as some other race, not included above.",
+                CensusRace.UNKNOWN: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have been adjudicated and convicted whose race is not known.",
+                CensusRace.WHITE: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have been adjudicated and convicted whose race is listed as White, Caucasian, or Anglo. This includes people with origins in France, Italy, or other countries in Europe, as well as Israel, Palestine, Egypt, or other countries in the Middle East and North Africa.",
+            },
+        ),
         # TODO(#18071) Implement reused global includes/excludes
         AggregatedDimension(
             dimension=BiologicalSex,

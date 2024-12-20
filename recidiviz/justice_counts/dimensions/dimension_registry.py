@@ -39,6 +39,7 @@ DIMENSIONS = [
     common.DispositionType,
     offense.OffenseType,
     person.BiologicalSex,
+    person.CensusRace,
     person.Race,
     person.RaceAndEthnicity,
     person.Gender,

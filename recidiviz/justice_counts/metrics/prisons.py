@@ -16,7 +16,11 @@
 # =============================================================================
 """Defines all Justice Counts metrics for the Prison system."""
 from recidiviz.justice_counts.dimensions.offense import OffenseType
-from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
+from recidiviz.justice_counts.dimensions.person import (
+    BiologicalSex,
+    CensusRace,
+    RaceAndEthnicity,
+)
 from recidiviz.justice_counts.dimensions.prisons import (
     ExpenseType,
     FundingType,
@@ -475,7 +479,6 @@ daily_population = MetricDefinition(
     ],
     aggregated_dimensions=[
         # TODO(#18071) Implement repeated/reused global includes/excludes
-        # TODO(#17579) Implement Y/N tables
         AggregatedDimension(
             dimension=BiologicalSex,
             required=True,
@@ -500,8 +503,21 @@ daily_population = MetricDefinition(
             },
         ),
         # TODO(#18071) Implement repeated/reused global includes/excludes
-        # TODO(#17579) Implement Y/N tables
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        AggregatedDimension(
+            dimension=RaceAndEthnicity,
+            required=True,
+            dimension_to_description={
+                CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "A single-day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
+                CensusRace.ASIAN: "A single-day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
+                CensusRace.BLACK: "A single-day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose race is listed as Black or African-American. This includes people with origins in Kenya, Nigeria, Ghana, Ethiopia, or other countries in Sub-Saharan Africa.",
+                CensusRace.HISPANIC_OR_LATINO: "A single-day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose race and ethnicity are listed as Hispanic or Latino. This includes people with origins in Mexico, Cuba, Puerto Rico, the Dominican Republic, and other Spanish-speaking countries in Central or South America, as well as people with origins in Brazil or other non-Spanish-speaking countries in Central or South America.",
+                CensusRace.MORE_THAN_ONE_RACE: "A single-day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose race is listed as more than one race, such as White and Black.",
+                CensusRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "A single-day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose race is listed as Native Hawaiian, Pacific Islander, or similar. This includes people with origins in the original populations of Pacific islands such as Hawaii, Samoa, Fiji, Tahiti, or Papua New Guinea.",
+                CensusRace.OTHER: "A single-day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose race is listed as some other race, not included above.",
+                CensusRace.UNKNOWN: "A single-day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose race is not known.",
+                CensusRace.WHITE: "A single-day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose race is listed as White, Caucasian, or Anglo. This includes people with origins in France, Italy, or other countries in Europe, as well as Israel, Palestine, Egypt, or other countries in the Middle East and North Africa.",
+            },
+        ),
         # TODO(#18071) Implement repeated/reused global includes/excludes
         AggregatedDimension(
             dimension=OffenseType,

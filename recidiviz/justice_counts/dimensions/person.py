@@ -40,21 +40,6 @@ class Race(DimensionBase):
         return self.value
 
 
-# TODO(#35386): Add descriptions for Consolidated Race and Ethnicity categories to the API response.
-# Populate CONSOLIDATED_RACE_AND_ETHNICITY_DEFINITIONS with meaningful descriptions for each category.
-CONSOLIDATED_RACE_AND_ETHNICITY_DEFINITIONS = {
-    "American Indian or Alaska Native": None,
-    "Asian": None,
-    "Black": None,
-    "More than one race": None,
-    "Native Hawaiian or Pacific Islander": None,
-    "Other": None,
-    "White": None,
-    "Unknown": None,
-    "Hispanic or Latino": None,
-}
-
-
 class RaceAndEthnicity(DimensionBase, enum.Enum):
     """Class for Justice Counts Race and Ethnicity breakdowns"""
 
@@ -140,6 +125,26 @@ class RaceAndEthnicity(DimensionBase, enum.Enum):
         if "HISPANIC" in self.name:
             return "Hispanic or Latino"
         return "Unknown Ethnicity"
+
+
+class CensusRace(DimensionBase, enum.Enum):
+    AMERICAN_INDIAN_ALASKAN_NATIVE = "American Indian or Alaska Native"
+    ASIAN = "Asian"
+    BLACK = "Black"
+    MORE_THAN_ONE_RACE = "More than one race"
+    NATIVE_HAWAIIAN_PACIFIC_ISLANDER = "Native Hawaiian or Pacific Islander"
+    OTHER = "Other"
+    WHITE = "White"
+    UNKNOWN = "Unknown"
+    HISPANIC_OR_LATINO = "Hispanic or Latino"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "global/race/census"
+
+    @property
+    def dimension_value(self) -> str:
+        return self.value
 
 
 class BiologicalSex(DimensionBase, enum.Enum):

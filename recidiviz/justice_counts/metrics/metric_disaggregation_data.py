@@ -27,10 +27,7 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
-from recidiviz.justice_counts.dimensions.person import (
-    CONSOLIDATED_RACE_AND_ETHNICITY_DEFINITIONS,
-    RaceAndEthnicity,
-)
+from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics.metric_context_data import MetricContextData
 from recidiviz.justice_counts.metrics.metric_definition import (
@@ -303,13 +300,15 @@ class MetricAggregatedDimensionData:
             response[
                 "consolidated_race_ethnicity"
             ] = self._get_consolidated_race_ethnicity_dict(  # type: ignore[assignment]
-                dimension_member_to_datapoints_json=dimension_member_to_datapoints_json
+                dimension_definition=dimension_definition,
+                dimension_member_to_datapoints_json=dimension_member_to_datapoints_json,
             )
 
         return response
 
     def _get_consolidated_race_ethnicity_dict(
         self,
+        dimension_definition: AggregatedDimension,
         dimension_member_to_datapoints_json: Optional[
             DefaultDict[str, List[DatapointJson]]
         ] = None,
@@ -356,6 +355,14 @@ class MetricAggregatedDimensionData:
                 }
         """
         consolidated_race_ethnicity_json: Dict[str, Dict[str, Any]] = {}
+        consolidated_race_ethnicity_json["descriptions"] = (
+            {
+                key.dimension_value: description
+                for key, description in dimension_definition.dimension_to_description.items()
+            }
+            if dimension_definition.dimension_to_description is not None
+            else {}
+        )
 
         if dimension_member_to_datapoints_json is None:
             return consolidated_race_ethnicity_json
@@ -410,9 +417,6 @@ class MetricAggregatedDimensionData:
                 ] = aggregate_total
 
         consolidated_race_ethnicity_json["data"] = consolidated_race_ethnicity_data_json
-        consolidated_race_ethnicity_json[
-            "descriptions"
-        ] = CONSOLIDATED_RACE_AND_ETHNICITY_DEFINITIONS
 
         return consolidated_race_ethnicity_json
 
@@ -674,7 +678,11 @@ class MetricAggregatedDimensionData:
                         code="no_dimension_values",
                         description=f"Metric {dimension.to_enum().value} has no dimension values",
                     )
-                if dimension_to_description is not None:
+                if (
+                    dimension_to_description is not None
+                    and dimension.dimension_identifier()
+                    != RaceAndEthnicity.dimension_identifier()
+                ):
                     json["description"] = dimension_to_description.get(dimension)
                 else:
                     json["description"] = None

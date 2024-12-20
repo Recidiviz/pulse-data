@@ -28,7 +28,7 @@ from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
-    CONSOLIDATED_RACE_AND_ETHNICITY_DEFINITIONS,
+    CensusRace,
     GenderRestricted,
     RaceAndEthnicity,
 )
@@ -3575,7 +3575,17 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 for dim in RaceAndEthnicity
             ],
             "consolidated_race_ethnicity": {
-                "descriptions": CONSOLIDATED_RACE_AND_ETHNICITY_DEFINITIONS,
+                "descriptions": {
+                    "American Indian or Alaska Native": "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
+                    "Asian": "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
+                    "Black": "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Black or African-American. This includes people with origins in Kenya, Nigeria, Ghana, Ethiopia, or other countries in Sub-Saharan Africa.",
+                    "More than one race": "The number of arrests, citations, and summonses made by the agency of people whose race is listed as more than one race, such as White and Black.",
+                    "Native Hawaiian or Pacific Islander": "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Native Hawaiian, Pacific Islander, or similar. This includes people with origins in the original populations of Pacific islands such as Hawaii, Samoa, Fiji, Tahiti, or Papua New Guinea.",
+                    "Other": "The number of arrests, citations, and summonses made by the agency of people whose race is listed as some other race, not included above.",
+                    "White": "The number of arrests, citations, and summonses made by the agency of people whose race is listed as White, Caucasian, or Anglo. This includes people with origins in France, Italy, or other countries in Europe, as well as Israel, Palestine, Egypt, or other countries in the Middle East and North Africa.",
+                    "Unknown": "The number of arrests, citations, and summonses made by the agency of people whose race is not known.",
+                    "Hispanic or Latino": "The number of arrests, citations, and summonses made by the agency of people whose race and ethnicity are listed as Hispanic or Latino. This includes people with origins in Mexico, Cuba, Puerto Rico, the Dominican Republic, and other Spanish-speaking countries in Central or South America, as well as people with origins in Brazil or other non-Spanish-speaking countries in Central or South America.",
+                },
                 "data": {
                     "Hispanic or Latino": {
                         "Sat, 01 Oct 2022 00:00:00 GMT - Tue, 01 Nov 2022 00:00:00 GMT": 80
@@ -3612,7 +3622,19 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
             aggregated_dimension.to_json(
                 entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
                 dimension_definition=AggregatedDimension(
-                    dimension=RaceAndEthnicity, required=True
+                    dimension=RaceAndEthnicity,
+                    required=True,
+                    dimension_to_description={
+                        CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
+                        CensusRace.ASIAN: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
+                        CensusRace.BLACK: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Black or African-American. This includes people with origins in Kenya, Nigeria, Ghana, Ethiopia, or other countries in Sub-Saharan Africa.",
+                        CensusRace.MORE_THAN_ONE_RACE: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as more than one race, such as White and Black.",
+                        CensusRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Native Hawaiian, Pacific Islander, or similar. This includes people with origins in the original populations of Pacific islands such as Hawaii, Samoa, Fiji, Tahiti, or Papua New Guinea.",
+                        CensusRace.OTHER: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as some other race, not included above.",
+                        CensusRace.WHITE: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as White, Caucasian, or Anglo. This includes people with origins in France, Italy, or other countries in Europe, as well as Israel, Palestine, Egypt, or other countries in the Middle East and North Africa.",
+                        CensusRace.UNKNOWN: "The number of arrests, citations, and summonses made by the agency of people whose race is not known.",
+                        CensusRace.HISPANIC_OR_LATINO: "The number of arrests, citations, and summonses made by the agency of people whose race and ethnicity are listed as Hispanic or Latino. This includes people with origins in Mexico, Cuba, Puerto Rico, the Dominican Republic, and other Spanish-speaking countries in Central or South America, as well as people with origins in Brazil or other non-Spanish-speaking countries in Central or South America.",
+                    },
                 ),
                 dimension_member_to_datapoints_json=dimension_member_to_datapoints_json,
                 is_v2=True,

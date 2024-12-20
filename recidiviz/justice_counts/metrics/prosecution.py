@@ -21,7 +21,11 @@ from recidiviz.justice_counts.dimensions.common import (
     DispositionType,
     ExpenseType,
 )
-from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
+from recidiviz.justice_counts.dimensions.person import (
+    BiologicalSex,
+    CensusRace,
+    RaceAndEthnicity,
+)
 from recidiviz.justice_counts.dimensions.prosecution import (
     CaseDeclinedSeverityType,
     DivertedCaseSeverityType,
@@ -344,7 +348,21 @@ cases_declined = MetricDefinition(
             },
         ),
         # TODO(#18071)
-        AggregatedDimension(dimension=RaceAndEthnicity, required=False),
+        AggregatedDimension(
+            dimension=RaceAndEthnicity,
+            required=False,
+            dimension_to_description={
+                CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "The number of criminal cases referred to the office of people whose race is listed as Native American, American Indian, Native Alaskan, or similar that were reviewed and declined for prosecution. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
+                CensusRace.ASIAN: "The number of criminal cases referred to the office of people whose race is listed as Asian that were reviewed and declined for prosecution. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
+                CensusRace.BLACK: "The number of criminal cases referred to the office of people whose race is listed as Black or African-American that were reviewed and declined for prosecution. This includes people with origins in Kenya, Nigeria, Ghana, Ethiopia, or other countries in Sub-Saharan Africa.",
+                CensusRace.MORE_THAN_ONE_RACE: "The number of criminal cases referred to the office of people whose race and ethnicity are listed as Hispanic or Latino that were reviewed and declined for prosecution. This includes people with origins in Mexico, Cuba, Puerto Rico, the Dominican Republic, and other Spanish-speaking countries in Central or South America, as well as people with origins in Brazil or other non-Spanish-speaking countries in Central or South America.",
+                CensusRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "The number of criminal cases referred to the office of people whose race is listed as Native Hawaiian, Pacific Islander, or similar that were reviewed and declined for prosecution. This includes people with origins in the original populations of Pacific islands such as Hawaii, Samoa, Fiji, Tahiti, or Papua New Guinea.",
+                CensusRace.OTHER: "The number of criminal cases referred to the office of people whose race is listed as some other race, not included above that were reviewed and declined for prosecution.",
+                CensusRace.WHITE: "The number of criminal cases referred to the office of people whose race is listed as White, Caucasian, or Anglo that were reviewed and declined for prosecution. This includes people with origins in France, Italy, or other countries in Europe, as well as Israel, Palestine, Egypt, or other countries in the Middle East and North Africa.",
+                CensusRace.UNKNOWN: "The number of criminal cases referred to the office of people whose race is not known that were reviewed and declined for prosecution.",
+                CensusRace.HISPANIC_OR_LATINO: "The number of criminal cases referred to the office of people whose race and ethnicity are listed as Hispanic or Latino that were reviewed and declined for prosecution. This includes people with origins in Mexico, Cuba, Puerto Rico, the Dominican Republic, and other Spanish-speaking countries in Central or South America, as well as people with origins in Brazil or other non-Spanish-speaking countries in Central or South America.",
+            },
+        ),
     ],
 )
 
@@ -468,7 +486,21 @@ cases_prosecuted = MetricDefinition(
             },
         ),
         # TODO(#18071)
-        AggregatedDimension(dimension=RaceAndEthnicity, required=False),
+        AggregatedDimension(
+            dimension=RaceAndEthnicity,
+            required=False,
+            dimension_to_description={
+                CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "The number of criminal cases assigned for prosecution to an attorney and prosecuted by the office of people whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
+                CensusRace.ASIAN: "The number of criminal cases assigned for prosecution to an attorney and prosecuted by the office of people whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
+                CensusRace.BLACK: "The number of criminal cases assigned for prosecution to an attorney and prosecuted by the office of people whose race is listed as Black or African-American. This includes people with origins in Kenya, Nigeria, Ghana, Ethiopia, or other countries in Sub-Saharan Africa.",
+                CensusRace.HISPANIC_OR_LATINO: "The number of criminal cases assigned for prosecution to an attorney and prosecuted by the office of people whose race and ethnicity are listed as Hispanic or Latino. This includes people with origins in Mexico, Cuba, Puerto Rico, the Dominican Republic, and other Spanish-speaking countries in Central or South America, as well as people with origins in Brazil or other non-Spanish-speaking countries in Central or South America.",
+                CensusRace.MORE_THAN_ONE_RACE: "The number of criminal cases assigned for prosecution to an attorney and prosecuted by the office of people whose race is listed as more than one race, such as White and Black.",
+                CensusRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "The number of criminal cases assigned for prosecution to an attorney and prosecuted by the office of people whose race is listed as Native Hawaiian, Pacific Islander, or similar. This includes people with origins in the original populations of Pacific islands such as Hawaii, Samoa, Fiji, Tahiti, or Papua New Guinea.",
+                CensusRace.OTHER: "The number of criminal cases assigned for prosecution to an attorney and prosecuted by the office of people whose race is listed as some other race, not included above.",
+                CensusRace.UNKNOWN: "The number of criminal cases assigned for prosecution to an attorney and prosecuted by the office of people whose race is not known.",
+                CensusRace.WHITE: "The number of criminal cases assigned for prosecution to an attorney and prosecuted by the office of people whose race is listed as White, Caucasian, or Anglo. This includes people with origins in France, Italy, or other countries in Europe, as well as Israel, Palestine, Egypt, or other countries in the Middle East and North Africa. ",
+            },
+        ),
     ],
 )
 
@@ -648,7 +680,21 @@ cases_diverted_or_deferred = MetricDefinition(
             },
         ),
         # TODO(#18071)
-        AggregatedDimension(dimension=RaceAndEthnicity, required=False),
+        AggregatedDimension(
+            dimension=RaceAndEthnicity,
+            required=False,
+            dimension_to_description={
+                CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "The number of criminal cases diverted from traditional case processing of people whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
+                CensusRace.ASIAN: "The number of criminal cases diverted from traditional case processing of people whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
+                CensusRace.BLACK: "The number of criminal cases diverted from traditional case processing of people whose race is listed as Black or African-American. This includes people with origins in Kenya, Nigeria, Ghana, Ethiopia, or other countries in Sub-Saharan Africa.",
+                CensusRace.HISPANIC_OR_LATINO: "The number of criminal cases diverted from traditional case processing of people whose race and ethnicity are listed as Hispanic or Latino. This includes people with origins in Mexico, Cuba, Puerto Rico, the Dominican Republic, and other Spanish-speaking countries in Central or South America, as well as people with origins in Brazil or other non-Spanish-speaking countries in Central or South America.",
+                CensusRace.MORE_THAN_ONE_RACE: "The number of criminal cases diverted from traditional case processing of people whose race is listed as more than one race, such as White and Black.",
+                CensusRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "The number of criminal cases diverted from traditional case processing of people whose race is listed as Native Hawaiian, Pacific Islander, or similar. This includes people with origins in the original populations of Pacific islands such as Hawaii, Samoa, Fiji, Tahiti, or Papua New Guinea.",
+                CensusRace.OTHER: "The number of criminal cases diverted from traditional case processing of people whose race is listed as some other race, not included above.",
+                CensusRace.UNKNOWN: "The number of criminal cases diverted from traditional case processing of people whose race is not known.",
+                CensusRace.WHITE: "The number of criminal cases diverted from traditional case processing of people whose race is listed as White, Caucasian, or Anglo. This includes people with origins in France, Italy, or other countries in Europe, as well as Israel, Palestine, Egypt, or other countries in the Middle East and North Africa.",
+            },
+        ),
     ],
 )
 cases_disposed = MetricDefinition(
