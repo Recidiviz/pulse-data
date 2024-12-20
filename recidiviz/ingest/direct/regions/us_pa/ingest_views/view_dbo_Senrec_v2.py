@@ -41,16 +41,14 @@ WITH senrec_combined AS (
         sentences.min_cort_sent_mths,    
         sentences.min_cort_sent_days,  
         sentences.min_expir_date,
-        CASE 
-            WHEN sentences.max_expir_date = '00000000'
-            THEN NULL
-            ELSE sentences.max_expir_date
-        END AS max_expir_date,
+        sentences.max_expir_date,
+        -- sig_date is only NULL when type_number is '02', denoting serving two concurrent sentences.
+        -- In this case, we'll use the sig_date from the sentence with type_number '01'.
+        -- There are a few cases where sig_date is '00000000' and is automatically cast to NULL for type_number '01'.
+        -- In that case, there is no other date to use, so we'll just keep the NULL value.
         CASE 
             WHEN sentences.sig_date IS NULL THEN 
                 LAG(sentences.sig_date) OVER (PARTITION BY sentences.curr_inmate_num ORDER BY sentences.type_number ASC)
-            WHEN sentences.sig_date = '00000000' THEN 
-                NULL
             ELSE 
                 sentences.sig_date
         END AS sig_date,

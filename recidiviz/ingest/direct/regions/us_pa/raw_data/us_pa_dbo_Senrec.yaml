@@ -84,10 +84,8 @@ columns:
       Max expiration date, redundant of max_cort_sent fields.
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
-    import_blocking_column_validation_exemptions:
-      - validation_type: DATETIME_PARSERS
-        exemption_reason: |-
-          TODO(#35651) Column uses '00000000' as a placeholder for null dates, which is not a valid date format.
+    null_values:
+      - "00000000"
   - name: min_expir_date
     description: |-
       Min expiration date, redundant of min_cort_sent fields.
@@ -267,10 +265,8 @@ columns:
       Date this record was first entered.
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
-    import_blocking_column_validation_exemptions:
-      - validation_type: DATETIME_PARSERS
-        exemption_reason: |-
-          TODO(#35651) Column uses '00000000' as a placeholder for null dates, which is not a valid date format.
+    null_values:
+      - "00000000"
   - name: sig_time
     description: |-
       Time this record was first entered.
