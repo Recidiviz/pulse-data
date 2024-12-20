@@ -295,6 +295,19 @@ class TestPathNormalization(TestCase):
             ),
         )
 
+    def test_to_normalized_unprocessed_file_name_no_extension(self) -> None:
+        original_file_name = "test_file_tag"
+        expected_file_name = (
+            "unprocessed_2019-08-12T00:00:00:000000_raw_test_file_tag.csv"
+        )
+        self.assertEqual(
+            expected_file_name,
+            to_normalized_unprocessed_raw_file_name(
+                original_file_name,
+                datetime.datetime(2019, 8, 12, 0, 0, 0),
+            ),
+        )
+
     def test_to_normalized_unprocessed_file_path_from_normalized_path_with_suffix(
         self,
     ) -> None:

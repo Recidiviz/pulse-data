@@ -95,7 +95,9 @@ def _to_normalized_raw_file_name(
         dt = datetime.datetime.now(tz=pytz.UTC)
 
     utc_iso_timestamp_str = dt.strftime("%Y-%m-%dT%H:%M:%S:%f")
-    file_name, extension = file_name.rsplit(".", 1)
+    file_name, extension = (
+        file_name.rsplit(".", 1) if "." in file_name else (file_name, "csv")
+    )
 
     return build_function(
         utc_iso_timestamp_str=utc_iso_timestamp_str,
