@@ -34,8 +34,14 @@ from google.cloud import exceptions
 from tabulate import tabulate
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
+    DirectIngestRawDataLockActor,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_data_resource_lock_manager import (
+    DirectIngestRawDataResourceLockManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
     DirectIngestRawFileMetadataManagerV2,
 )
@@ -52,6 +58,9 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.entity.operations.entities import (
+    DirectIngestRawDataResourceLock,
+)
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -66,6 +75,12 @@ RAW_FILE_QUERY_TEMPLATE = (
 )
 
 POSTGRES_FILE_ID_IN_BQ = """SELECT DISTINCT file_id FROM `{table}` WHERE file_id in ({min_file_id}, {max_file_id})"""
+
+
+ADMIN_PANEL_PREFIX_FOR_PROJECT = {
+    GCP_PROJECT_STAGING: "admin-panel-staging",
+    GCP_PROJECT_PRODUCTION: "admin-panel-prod",
+}
 
 
 class PruningStatus(Enum):
@@ -215,17 +230,20 @@ def get_raw_file_configs_for_state(
     return raw_file_configs
 
 
-# TODO(#14127): delete this script once raw data pruning is live.
-def main(
-    dry_run: bool, state_code: StateCode, project_id: str
+def prune_raw_data_for_state_and_project(
+    *, dry_run: bool, state_code: StateCode, project_id: str
 ) -> Dict[PruningStatus, List[str]]:
-    """Executes the main flow of the script.
-
-    Iterates through each raw data table in the project and state specific raw data dataset
-    (ex: recidiviz-staging.us_tn_raw_data.*), and using `direct_ingest_raw_file_metadata` table, identifies which file
-     IDs have rows in BQ that should be deleted. If not in dry-run, it then deletes the rows associated with these
-     file ids on BQ as well as marks the associated metadata as invalidated in `direct_ingest_raw_file_metadata` in
-     Postgres."""
+    """Iterates through each raw data table in the project and state specific raw data
+    dataset (ex: recidiviz-staging.us_tn_raw_data.*), identifies which file IDs have rows
+    in BQ that should be deleted. If not in |dry_run|, it then deletes the rows associated
+    with these file ids on BQ as well as marks the associated metadata as invalidated
+    in the operations db.
+    """
+    new_raw_data_infra_active = is_raw_data_import_dag_enabled(
+        state_code=state_code,
+        raw_data_instance=DirectIngestInstance.PRIMARY,
+        project_id=project_id,
+    )
     raw_file_configs: Dict[
         str, DirectIngestRawFileConfig
     ] = get_raw_file_configs_for_state(state_code)
@@ -239,11 +257,7 @@ def main(
         LegacyDirectIngestRawFileMetadataManager(
             state_code.value, DirectIngestInstance.PRIMARY
         )
-        if not is_raw_data_import_dag_enabled(
-            state_code=state_code,
-            raw_data_instance=DirectIngestInstance.PRIMARY,
-            project_id=project_id,
-        )
+        if not new_raw_data_infra_active
         else DirectIngestRawFileMetadataManagerV2(
             state_code.value, DirectIngestInstance.PRIMARY
         )
@@ -251,21 +265,19 @@ def main(
 
     metadata_table: str = (
         schema.DirectIngestRawFileMetadata.__tablename__
-        if not is_raw_data_import_dag_enabled(
-            state_code=state_code,
-            raw_data_instance=DirectIngestInstance.PRIMARY,
-            project_id=project_id,
-        )
+        if not new_raw_data_infra_active
         else schema.DirectIngestRawBigQueryFileMetadata.__tablename__
     )
 
     results: Dict[PruningStatus, List[str]] = defaultdict(list)
-
     with SessionFactory.for_proxy(database_key) as session:
+
         file_tag_to_min_and_max_update_datetimes: Dict[
             str, Tuple[str, str]
         ] = get_postgres_min_and_max_update_datetime_by_file_tag(
-            session=session, state_code=state_code, metadata_table=metadata_table
+            session=session,
+            state_code=state_code,
+            metadata_table=metadata_table,
         )
         for file_tag, (
             min_update_datetime,
@@ -384,7 +396,9 @@ def main(
                 # the max this function *should* hang for is ~10 minutes as defined by
                 # the ``retry`` parameter of the underling .query call
                 query_job = bq_client.run_query_async(
-                    query_str=deletion_query, use_query_cache=True, http_timeout=60.0
+                    query_str=deletion_query,
+                    use_query_cache=True,
+                    http_timeout=60.0,
                 )
                 query_job.result(timeout=60.0 * 10)
                 logging.info(
@@ -398,7 +412,102 @@ def main(
                     )
                 session.commit()
             results[PruningStatus.PRUNED].append(file_tag)
-        return results
+    return results
+
+
+# TODO(#14127): delete this script once raw data pruning is live.
+def main(
+    dry_run: bool, state_code: StateCode, project_id: str
+) -> Dict[PruningStatus, List[str]]:
+    """Executes the main flow of the script.
+
+    Iterates through each raw data table in the project and state specific raw data
+    dataset (ex: recidiviz-staging.us_tn_raw_data.*), identifies which file IDs have rows
+    in BQ that should be deleted. If not in |dry_run|, it then deletes the rows associated
+    with these file ids on BQ as well as marks the associated metadata as invalidated
+    in the operations db.
+    """
+    new_raw_data_infra_active = is_raw_data_import_dag_enabled(
+        state_code=state_code,
+        raw_data_instance=DirectIngestInstance.PRIMARY,
+        project_id=project_id,
+    )
+    acquired_locks: list[DirectIngestRawDataResourceLock]
+    lock_manager: DirectIngestRawDataResourceLockManager
+
+    if not dry_run:
+        if not new_raw_data_infra_active:
+
+            prompt_for_confirmation(
+                f"Have you confirmed that there are NO tasks running for this state in {project_id}: "
+                f" https://console.cloud.google.com/cloudtasks?referrer=search&project={project_id}?"
+            )
+            prompt_for_confirmation(
+                "Pause queues: "
+                f"https://{ADMIN_PANEL_PREFIX_FOR_PROJECT[project_id]}.recidiviz.org/admin/ingest_operations/ingest_pipeline_summary/{state_code.value}/raw_data_queues?"
+            )
+        else:
+
+            lock_manager = DirectIngestRawDataResourceLockManager(
+                region_code=state_code.value,
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                with_proxy=True,
+            )
+
+            most_recent_locks = lock_manager.get_most_recent_locks_for_all_resources()
+            locks_url = f"https://{ADMIN_PANEL_PREFIX_FOR_PROJECT[project_id]}.recidiviz.org/admin/ingest_operations/ingest_pipeline_summary/{state_code.value}/raw_data_resource_locks"
+
+            if any(not lock.released for lock in most_recent_locks):
+                if any(
+                    lock.lock_actor != DirectIngestRawDataLockActor.ADHOC
+                    for lock in most_recent_locks
+                ):
+                    # if any the locks are held by process, we have to wait
+                    prompt_for_confirmation(
+                        f"[!!!!!!!!!] ERROR: Cannot acquire locks for {state_code.value} in {project_id}!"
+                        f"\nPlease visit {locks_url} for more info."
+                        f"\n(Any key will skip to next state/project pair)",
+                    )
+                    sys.exit(0)
+                else:
+                    prompt_for_confirmation(
+                        f"[!!!!!!!!!] Locks are already manually held, see {locks_url} for more info. "
+                        "\nHave you confirmed with the person who manually acquired the locks that it is safe to prune?"
+                        "\n([n] will skip to next state/project pair)",
+                        exit_code=0,
+                    )
+            else:
+                acquired_locks = lock_manager.acquire_all_locks(
+                    actor=DirectIngestRawDataLockActor.ADHOC,
+                    description="Acquiring locks for manual raw data pruning",
+                )
+
+    try:
+        results = prune_raw_data_for_state_and_project(
+            dry_run=dry_run, state_code=state_code, project_id=project_id
+        )
+    finally:
+        if not dry_run:
+
+            if not new_raw_data_infra_active:
+                prompt_for_confirmation(
+                    f"Unpause queues: "
+                    f"https://{ADMIN_PANEL_PREFIX_FOR_PROJECT[project_id]}.recidiviz.org/admin/ingest_operations/ingest_pipeline_summary/{state_code.value}/raw_data_queues?"
+                )
+            else:
+                if acquired_locks:
+                    logging.info("Releasing raw data resource locks...")
+                    lock_manager = DirectIngestRawDataResourceLockManager(
+                        region_code=state_code.value,
+                        raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                        with_proxy=True,
+                    )
+                    for lock in acquired_locks:
+                        lock_manager.release_lock_by_id(lock.lock_id)
+                else:
+                    logging.info("Skipping lock release as they were never acquired")
+
+    return results
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -428,23 +537,12 @@ def create_parser() -> argparse.ArgumentParser:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
     args = create_parser().parse_args()
-    admin_prefix = {
-        GCP_PROJECT_STAGING: "admin-panel-staging",
-        GCP_PROJECT_PRODUCTION: "admin-panel-prod",
-    }
+
     if not args.dry_run:
+
         prompt_for_confirmation(
             f"[{args.state_code.value}][{args.project_id}] Execute raw data pruning? [n] will skip this state/project pair",
             exit_code=0,
-        )
-
-        prompt_for_confirmation(
-            f"Have you confirmed that there are NO tasks running for this state in {args.project_id}: "
-            f" https://console.cloud.google.com/cloudtasks?referrer=search&project={args.project_id}?"
-        )
-        prompt_for_confirmation(
-            "Pause queues: "
-            f"https://{admin_prefix[args.project_id]}.recidiviz.org/admin/ingest_operations/ingest_pipeline_summary/{args.state_code.value}/raw_data_queues?"
         )
         prompt_for_confirmation(
             f"Are you sure this state receives frequent historical uploads {args.state_code.value}?"
@@ -502,10 +600,4 @@ if __name__ == "__main__":
             "require manual intervention before they are able to be pruned. Please "
             "either post in the relevant state channel, the raw data pruning thread or "
             "attempt to resolve it yourself :-)"
-        )
-
-    if not args.dry_run:
-        prompt_for_confirmation(
-            f"Unpause queues: "
-            f"https://{admin_prefix[args.project_id]}.recidiviz.org/admin/ingest_operations/ingest_pipeline_summary/{args.state_code.value}/raw_data_queues?"
         )
