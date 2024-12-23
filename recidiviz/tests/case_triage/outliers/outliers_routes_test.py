@@ -36,7 +36,11 @@ from recidiviz.case_triage.outliers.outliers_authorization import (
 )
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
 from recidiviz.common.constants.states import StateCode
-from recidiviz.outliers.constants import VIOLATION_RESPONSES
+from recidiviz.outliers.constants import (
+    TIMELY_CONTACT,
+    TIMELY_RISK_ASSESSMENT,
+    VIOLATION_RESPONSES,
+)
 from recidiviz.outliers.types import (
     ActionStrategySurfacedEvent,
     ActionStrategyType,
@@ -50,6 +54,8 @@ from recidiviz.outliers.types import (
     SupervisionOfficerEntity,
     SupervisionOfficerOutcomes,
     SupervisionOfficerSupervisorEntity,
+    SupervisionOfficerVitalsEntity,
+    VitalsMetric,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
     ACTION_STRATEGIES_DEFAULT_COPY,
@@ -4314,3 +4320,391 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.snapshot.assert_match(response.json, name="test_get_client_success_for_csg_user")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_vitals_metrics_for_supervision_officer_supervisor",
+    )
+    def test_get_vitals_metrics_for_supervisor(
+        self, mock_get_vitals: MagicMock, mock_enabled_states: MagicMock
+    ) -> None:
+        # Mock the officer retrieval
+        pseudo_id = "officerhash1"
+        external_id = "1"
+
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id=external_id,
+            pseudonymized_id=pseudo_id,
+            allowed_states=["US_PA"],
+        )
+
+        mock_enabled_states.return_value = ["US_PA"]
+
+        mock_vitals = [
+            VitalsMetric(
+                metric_id=TIMELY_CONTACT.metric_id,
+                vitals_metrics=[
+                    SupervisionOfficerVitalsEntity(
+                        officer_pseudonymized_id="officerhash1",
+                        metric_value=95.0,
+                        metric_30d_delta=-3.0,
+                    ),
+                    SupervisionOfficerVitalsEntity(
+                        officer_pseudonymized_id="officerhash2",
+                        metric_value=80.0,
+                        metric_30d_delta=-17.0,
+                    ),
+                ],
+            ),
+            VitalsMetric(
+                metric_id=TIMELY_RISK_ASSESSMENT.metric_id,
+                vitals_metrics=[
+                    SupervisionOfficerVitalsEntity(
+                        officer_pseudonymized_id="officerhash1",
+                        metric_value=100.0,
+                        metric_30d_delta=0.0,
+                    ),
+                    SupervisionOfficerVitalsEntity(
+                        officer_pseudonymized_id="officerhash2",
+                        metric_value=94.0,
+                        metric_30d_delta=0.0,
+                    ),
+                ],
+            ),
+        ]
+
+        mock_get_vitals.return_value = mock_vitals
+
+        response = self.test_client.get(
+            f"outliers/us_pa/supervisor/{pseudo_id}/vitals",
+            headers={"Origin": "http://localhost:3000"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.snapshot.assert_match(response.json, name="test_vitals_metrics_for_supervisor")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_vitals_metrics_for_supervision_officer_supervisor",
+    )
+    def test_get_vitals_metrics_for_supervisor_when_can_access_all_supervisors(
+        self, mock_get_vitals: MagicMock, mock_enabled_states: MagicMock
+    ) -> None:
+        # Mock the officer retrieval
+        user_pseudo_id = "userhash1"
+        external_id = "1"
+
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id=external_id,
+            pseudonymized_id=user_pseudo_id,
+            allowed_states=["US_PA"],
+            can_access_all_supervisors=True,
+        )
+
+        mock_enabled_states.return_value = ["US_PA"]
+
+        mock_vitals = [
+            VitalsMetric(
+                metric_id=TIMELY_CONTACT.metric_id,
+                vitals_metrics=[
+                    SupervisionOfficerVitalsEntity(
+                        officer_pseudonymized_id="officerhash1",
+                        metric_value=95.0,
+                        metric_30d_delta=-3.0,
+                    ),
+                    SupervisionOfficerVitalsEntity(
+                        officer_pseudonymized_id="officerhash2",
+                        metric_value=80.0,
+                        metric_30d_delta=-17.0,
+                    ),
+                ],
+            ),
+            VitalsMetric(
+                metric_id=TIMELY_RISK_ASSESSMENT.metric_id,
+                vitals_metrics=[
+                    SupervisionOfficerVitalsEntity(
+                        officer_pseudonymized_id="officerhash1",
+                        metric_value=100.0,
+                        metric_30d_delta=0.0,
+                    ),
+                    SupervisionOfficerVitalsEntity(
+                        officer_pseudonymized_id="officerhash2",
+                        metric_value=94.0,
+                        metric_30d_delta=0.0,
+                    ),
+                ],
+            ),
+        ]
+
+        mock_get_vitals.return_value = mock_vitals
+
+        response = self.test_client.get(
+            "outliers/us_pa/supervisor/some_pseudo_id/vitals",
+            headers={"Origin": "http://localhost:3000"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.snapshot.assert_match(response.json, name="get_vitals_metrics_for_supervisor_when_can_access_all_supervisors")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_vitals_metrics_for_supervisor_unauthorized(
+        self, mock_enabled_states: MagicMock
+    ) -> None:
+        # Mock the officer retrieval
+        pseudo_id = "officerhash1"
+        external_id = "1"
+
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id=external_id,
+            pseudonymized_id=pseudo_id,
+            allowed_states=["US_PA"],
+        )
+
+        mock_enabled_states.return_value = ["US_PA"]
+
+        response = self.test_client.get(
+            "outliers/us_pa/supervisor/unauthorized_pseudo_id/vitals",
+            headers={"Origin": "http://localhost:3000"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_vitals_metrics_for_supervision_officer",
+    )
+    def test_get_vitals_metrics_for_officer(
+        self,
+        mock_get_vitals: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_officer: MagicMock,
+    ) -> None:
+        # Mock the officer retrieval
+        supervisor_pseudo_id = "supervisorhash1"
+        supervisor_external_id = "1"
+        officer_pseudo_id = "officerhash2"
+        officer_external_id = "2"
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id=supervisor_external_id,
+            pseudonymized_id=supervisor_pseudo_id,
+            allowed_states=["US_PA"],
+        )
+
+        mock_enabled_states.return_value = ["US_PA"]
+
+        mock_get_officer.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(
+                given_names="John", surname="Doe"
+            ),  # Provide a valid PersonName
+            pseudonymized_id=officer_pseudo_id,
+            external_id=officer_external_id,
+            supervisor_external_id=supervisor_external_id,
+            supervisor_external_ids=[supervisor_external_id],
+            district="Some District",
+            outlier_metrics=[],
+            top_x_pct_metrics=[],
+            avg_daily_population=5,
+            caseload_category="ALL",
+            include_in_outcomes=True,
+        )
+
+        mock_vitals = [
+            VitalsMetric(
+                metric_id=TIMELY_CONTACT.metric_id,
+                vitals_metrics=[
+                    SupervisionOfficerVitalsEntity(
+                        officer_pseudonymized_id="officerhash2",
+                        metric_value=80.0,
+                        metric_30d_delta=-17.0,
+                    ),
+                ],
+            ),
+            VitalsMetric(
+                metric_id=TIMELY_RISK_ASSESSMENT.metric_id,
+                vitals_metrics=[
+                    SupervisionOfficerVitalsEntity(
+                        officer_pseudonymized_id="officerhash2",
+                        metric_value=94.0,
+                        metric_30d_delta=0.0,
+                    ),
+                ],
+            ),
+        ]
+
+        mock_get_vitals.return_value = mock_vitals
+
+        response = self.test_client.get(
+            f"outliers/us_pa/officer/{officer_pseudo_id}/vitals",
+            headers={"Origin": "http://localhost:3000"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.snapshot.assert_match(response.json, name="test_get_vitals_metrics_for_officer")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_vitals_metrics_for_supervision_officer",
+    )
+    def test_get_vitals_metrics_for_officer_when_can_access_all_supervisors(
+        self,
+        mock_get_vitals: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_officer: MagicMock,
+    ) -> None:
+        # Mock the officer retrieval
+        supervisor_pseudo_id = "supervisorhash3"
+        supervisor_external_id = "3"
+        officer_pseudo_id = "officerhash2"
+        officer_external_id = "2"
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id="some_id",
+            pseudonymized_id=supervisor_pseudo_id + "some_pseudo",
+            allowed_states=["US_PA"],
+            can_access_all_supervisors=True,
+        )
+
+        mock_enabled_states.return_value = ["US_PA"]
+
+        mock_get_officer.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(
+                given_names="John", surname="Doe"
+            ),  # Provide a valid PersonName
+            pseudonymized_id=officer_pseudo_id,
+            external_id=officer_external_id,
+            supervisor_external_id=supervisor_external_id,
+            supervisor_external_ids=[supervisor_external_id],
+            district="Some District",
+            outlier_metrics=[],
+            top_x_pct_metrics=[],
+            avg_daily_population=5,
+            caseload_category="ALL",
+            include_in_outcomes=True,
+        )
+
+        mock_vitals = [
+            VitalsMetric(
+                metric_id=TIMELY_CONTACT.metric_id,
+                vitals_metrics=[
+                    SupervisionOfficerVitalsEntity(
+                        officer_pseudonymized_id="officerhash2",
+                        metric_value=80.0,
+                        metric_30d_delta=-17.0,
+                    ),
+                ],
+            ),
+            VitalsMetric(
+                metric_id=TIMELY_RISK_ASSESSMENT.metric_id,
+                vitals_metrics=[
+                    SupervisionOfficerVitalsEntity(
+                        officer_pseudonymized_id="officerhash2",
+                        metric_value=94.0,
+                        metric_30d_delta=0.0,
+                    ),
+                ],
+            ),
+        ]
+
+        mock_get_vitals.return_value = mock_vitals
+
+        response = self.test_client.get(
+            f"outliers/us_pa/officer/{officer_pseudo_id}/vitals",
+            headers={"Origin": "http://localhost:3000"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.snapshot.assert_match(response.json, name="get_vitals_metrics_for_officer_when_can_access_all_supervisors")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_vitals_metrics_for_officer_unauthorized(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_officer: MagicMock,
+    ) -> None:
+        # Mock the officer retrieval
+        supervisor_pseudo_id = "supervisorhash1"
+        supervisor_external_id = "1"
+        officer_pseudo_id = "officerhash2"
+        officer_external_id = "2"
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id=supervisor_external_id,
+            pseudonymized_id=supervisor_pseudo_id,
+            allowed_states=["US_PA"],
+        )
+
+        mock_enabled_states.return_value = ["US_PA"]
+
+        mock_get_officer.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(
+                given_names="John", surname="Doe"
+            ),  # Provide a valid PersonName
+            pseudonymized_id=officer_pseudo_id,
+            external_id=officer_external_id,
+            supervisor_external_id=supervisor_external_id,
+            supervisor_external_ids=["authorized_id"],
+            district="Some District",
+            outlier_metrics=[],
+            top_x_pct_metrics=[],
+            avg_daily_population=5,
+            caseload_category="ALL",
+            include_in_outcomes=True,
+        )
+
+        response = self.test_client.get(
+            f"outliers/us_pa/officer/{officer_pseudo_id}/vitals",
+            headers={"Origin": "http://localhost:3000"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_vitals_metrics_for_officer_not_found(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_officer: MagicMock,
+    ) -> None:
+        # Mock the officer retrieval
+        supervisor_pseudo_id = "supervisorhash1"
+        supervisor_external_id = "1"
+        officer_pseudo_id = "officerhash2"
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id=supervisor_external_id,
+            pseudonymized_id=supervisor_pseudo_id,
+            allowed_states=["US_PA"],
+        )
+
+        mock_enabled_states.return_value = ["US_PA"]
+
+        mock_get_officer.return_value = None
+
+        response = self.test_client.get(
+            f"outliers/us_pa/officer/{officer_pseudo_id}/vitals",
+            headers={"Origin": "http://localhost:3000"},
+        )
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)

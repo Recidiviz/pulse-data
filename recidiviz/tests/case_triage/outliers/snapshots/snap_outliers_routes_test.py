@@ -13,6 +13,66 @@ from snapshottest import Snapshot
 snapshots = Snapshot()
 
 snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes get_vitals_metrics_for_officer_when_can_access_all_supervisors"
+] = [
+    {
+        "metric_id": "timely_contact",
+        "vitals_metrics": [
+            {
+                "metric_30d_delta": -17.0,
+                "metric_value": 80.0,
+                "officer_pseudonymized_id": "officerhash2",
+            }
+        ],
+    },
+    {
+        "metric_id": "timely_risk_assessment",
+        "vitals_metrics": [
+            {
+                "metric_30d_delta": 0.0,
+                "metric_value": 94.0,
+                "officer_pseudonymized_id": "officerhash2",
+            }
+        ],
+    },
+]
+
+snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes get_vitals_metrics_for_supervisor_when_can_access_all_supervisors"
+] = [
+    {
+        "metric_id": "timely_contact",
+        "vitals_metrics": [
+            {
+                "metric_30d_delta": -3.0,
+                "metric_value": 95.0,
+                "officer_pseudonymized_id": "officerhash1",
+            },
+            {
+                "metric_30d_delta": -17.0,
+                "metric_value": 80.0,
+                "officer_pseudonymized_id": "officerhash2",
+            },
+        ],
+    },
+    {
+        "metric_id": "timely_risk_assessment",
+        "vitals_metrics": [
+            {
+                "metric_30d_delta": 0.0,
+                "metric_value": 100.0,
+                "officer_pseudonymized_id": "officerhash1",
+            },
+            {
+                "metric_30d_delta": 0.0,
+                "metric_value": 94.0,
+                "officer_pseudonymized_id": "officerhash2",
+            },
+        ],
+    },
+]
+
+snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_get_action_strategies_3_months_as_outlier_already_surfaced"
 ] = {"hash2": None, "hash4": None, "hash6": None}
 
@@ -657,6 +717,31 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_supervisors"] = {
 }
 
 snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_get_vitals_metrics_for_officer"
+] = [
+    {
+        "metric_id": "timely_contact",
+        "vitals_metrics": [
+            {
+                "metric_30d_delta": -17.0,
+                "metric_value": 80.0,
+                "officer_pseudonymized_id": "officerhash2",
+            }
+        ],
+    },
+    {
+        "metric_id": "timely_risk_assessment",
+        "vitals_metrics": [
+            {
+                "metric_30d_delta": 0.0,
+                "metric_value": 94.0,
+                "officer_pseudonymized_id": "officerhash2",
+            }
+        ],
+    },
+]
+
+snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_patch_action_strategy_success"
 ] = {
     "actionStrategy": "ACTION_STRATEGY_OUTLIER_ABSCONSION",
@@ -738,3 +823,38 @@ snapshots[
     "hasSeenOnboarding": False,
     "role": "supervision_officer_supervisor",
 }
+
+snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_vitals_metrics_for_supervisor"
+] = [
+    {
+        "metric_id": "timely_contact",
+        "vitals_metrics": [
+            {
+                "metric_30d_delta": -3.0,
+                "metric_value": 95.0,
+                "officer_pseudonymized_id": "officerhash1",
+            },
+            {
+                "metric_30d_delta": -17.0,
+                "metric_value": 80.0,
+                "officer_pseudonymized_id": "officerhash2",
+            },
+        ],
+    },
+    {
+        "metric_id": "timely_risk_assessment",
+        "vitals_metrics": [
+            {
+                "metric_30d_delta": 0.0,
+                "metric_value": 100.0,
+                "officer_pseudonymized_id": "officerhash1",
+            },
+            {
+                "metric_30d_delta": 0.0,
+                "metric_value": 94.0,
+                "officer_pseudonymized_id": "officerhash2",
+            },
+        ],
+    },
+]

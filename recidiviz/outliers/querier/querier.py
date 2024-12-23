@@ -1077,7 +1077,7 @@ class OutliersQuerier:
         }
 
     def _get_vitals_metrics_from_officer_pseudonymized_ids(
-        self, supervision_officer_pseudonymized_ids: List[str]
+        self, supervision_officer_pseudonymized_ids: Optional[List[str]]
     ) -> List[VitalsMetric]:
         """
         Retrieve vitals metrics for officers by officer or supervisor ID.
@@ -1131,11 +1131,15 @@ class OutliersQuerier:
                     == SupervisionOfficer.external_id,
                 )
                 .filter(
-                    SupervisionOfficer.pseudonymized_id.in_(
-                        supervision_officer_pseudonymized_ids
-                    ),
                     SupervisionOfficerMetric.metric_id.in_(vitals_metrics_by_metric_id),
                     SupervisionOfficerMetric.end_date >= PREVIOUS_PERIOD_START_DATE,
+                    (
+                        SupervisionOfficer.pseudonymized_id.in_(
+                            supervision_officer_pseudonymized_ids
+                        )
+                        if supervision_officer_pseudonymized_ids
+                        else True
+                    ),
                 )
                 .subquery()
             )
@@ -1175,16 +1179,28 @@ class OutliersQuerier:
         return sorted(vitals_metrics_by_metric_id.values())
 
     def get_vitals_metrics_for_supervision_officer(
-        self, officer_pseudonymized_id: str
+        self,
+        officer_pseudonymized_id: str,
+        can_access_all_supervisors: Optional[bool] = False,
     ) -> List[VitalsMetric]:
+        """
+        Retrieve vitals metrics for officers by officer pseudo ID.
+        """
 
         return self._get_vitals_metrics_from_officer_pseudonymized_ids(
             supervision_officer_pseudonymized_ids=[officer_pseudonymized_id]
+            if not can_access_all_supervisors
+            else None
         )
 
     def get_vitals_metrics_for_supervision_officer_supervisor(
-        self, supervisor_pseudonymized_id: str
+        self,
+        supervisor_pseudonymized_id: str,
+        can_access_all_supervisors: Optional[bool] = False,
     ) -> List[VitalsMetric]:
+        """
+        Retrieve vitals metrics for officers by supervisor pseudo ID.
+        """
 
         supervisor: SupervisionOfficerSupervisorEntity | None = (
             self.get_supervisor_entity_from_pseudonymized_id(
@@ -1196,22 +1212,25 @@ class OutliersQuerier:
             raise ValueError("Supervisor with given pseudonymized id not found.")
 
         with self.insights_database_session() as session:
-            officer_pseudonymized_ids = [
-                row[0]
-                for row in session.query(SupervisionOfficer.pseudonymized_id)
-                .filter(
-                    SupervisionOfficer.supervisor_external_ids.any(
-                        supervisor.external_id
-                    )
-                )
-                .all()
-            ]
+            officer_pseudonymized_ids_filter = None
 
-            if not officer_pseudonymized_ids:
-                return sorted(self._init_vitals_metrics_dict_for_query().values())
+            if not can_access_all_supervisors:
+                officer_pseudonymized_ids_filter = [
+                    row[0]
+                    for row in session.query(SupervisionOfficer.pseudonymized_id)
+                    .filter(
+                        SupervisionOfficer.supervisor_external_ids.any(
+                            supervisor.external_id
+                        )
+                    )
+                    .all()
+                ]
+
+                if not officer_pseudonymized_ids_filter:
+                    return sorted(self._init_vitals_metrics_dict_for_query().values())
 
             return self._get_vitals_metrics_from_officer_pseudonymized_ids(
-                supervision_officer_pseudonymized_ids=officer_pseudonymized_ids
+                supervision_officer_pseudonymized_ids=officer_pseudonymized_ids_filter
             )
 
     def get_id_to_supervision_officer_entities(

@@ -19,7 +19,7 @@ import logging
 import re
 from datetime import datetime
 from http import HTTPStatus
-from typing import Optional
+from typing import List, Optional
 
 import werkzeug
 from flask import Blueprint, Response, g, jsonify, make_response, request
@@ -39,7 +39,11 @@ from recidiviz.outliers.outliers_action_strategy_qualifier import (
     OutliersActionStrategyQualifier,
 )
 from recidiviz.outliers.querier.querier import OutliersQuerier
-from recidiviz.outliers.types import ActionStrategySurfacedEvent, PersonName
+from recidiviz.outliers.types import (
+    ActionStrategySurfacedEvent,
+    PersonName,
+    VitalsMetric,
+)
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.types import assert_type
 
@@ -1012,5 +1016,76 @@ def create_outliers_api_blueprint() -> Blueprint:
         )
         event_json = convert_nested_dictionary_keys(new_event.to_json(), snake_to_camel)
         return jsonify(event_json)
+
+    @api.get("/<state>/supervisor/<supervisor_pseudonymized_id>/vitals")
+    def vitals_metrics_for_supervisor(
+        state: str, supervisor_pseudonymized_id: str
+    ) -> Response:
+        state_code = StateCode(state.upper())
+        querier = OutliersQuerier(state_code)
+
+        user_context: UserContext = g.user_context
+        user_external_id = user_context.user_external_id
+        user_pseudonymized_id = user_context.pseudonymized_id
+
+        if (
+            supervisor_pseudonymized_id != user_pseudonymized_id
+            and user_external_id != "RECIDIVIZ"
+            and not user_context.can_access_all_supervisors
+        ):
+            # Return an unauthorized error if the requesting user is requesting information about someone else
+            # and the requesting user is not a Recidiviz user
+            return jsonify_response(
+                f"Non-recidiviz user with pseudonymized_id {user_pseudonymized_id} is requesting vitals for a user they do not have access to: {supervisor_pseudonymized_id}",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        vitals_metrics: List[
+            VitalsMetric
+        ] = querier.get_vitals_metrics_for_supervision_officer_supervisor(
+            supervisor_pseudonymized_id, user_context.can_access_all_supervisors
+        )
+        return jsonify([metric.to_json() for metric in vitals_metrics])
+
+    @api.get("/<state>/officer/<pseudonymized_officer_id>/vitals")
+    def vitals_metrics_for_officer(
+        state: str, pseudonymized_officer_id: str
+    ) -> Response:
+        state_code = StateCode(state.upper())
+        querier = OutliersQuerier(state_code)
+
+        user_context: UserContext = g.user_context
+        user_external_id = user_context.user_external_id
+        user_pseudonymized_id = user_context.pseudonymized_id
+
+        officer = querier.get_supervision_officer_from_pseudonymized_id(
+            pseudonymized_officer_id
+        )
+
+        if officer is None:
+            return jsonify_response(
+                f"Officer with pseudonymized id not found: {pseudonymized_officer_id}",
+                HTTPStatus.NOT_FOUND,
+            )
+
+        if (
+            user_external_id not in officer.supervisor_external_ids
+            and user_external_id != "RECIDIVIZ"
+            and not user_context.can_access_all_supervisors
+        ):
+            # Return an unauthorized error if the requesting user is requesting information about someone else
+            # and the requesting user is not a Recidiviz user
+            return jsonify_response(
+                f" User with pseudonymized_id {user_pseudonymized_id} is requesting vitals for officers they do not have access to: {pseudonymized_officer_id}",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        vitals_metrics: List[
+            VitalsMetric
+        ] = querier.get_vitals_metrics_for_supervision_officer(
+            officer.pseudonymized_id, user_context.can_access_all_supervisors
+        )
+
+        return jsonify([metric.to_json() for metric in vitals_metrics])
 
     return api

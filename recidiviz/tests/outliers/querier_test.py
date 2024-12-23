@@ -1211,6 +1211,29 @@ class TestOutliersQuerier(InsightsDbTestCase):
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
     )
+    def test_get_officer_can_access_all_supervisors_vitals_metrics(
+        self, mock_config: MagicMock
+    ) -> None:
+        pseudo_id = "officerhash2"
+        state_code = StateCode.US_PA
+        querier = OutliersQuerier(state_code)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result = querier.get_vitals_metrics_for_supervision_officer(
+            pseudo_id, can_access_all_supervisors=True
+        )
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_officer_can_access_all_supervisors_vitals_metrics"
+        )
+
+    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
     def test_get_supervisor_vitals_metrics(self, mock_config: MagicMock) -> None:
         supervisor_pseudonymized_id = "hash1"
         state_code = StateCode.US_PA
@@ -1228,6 +1251,32 @@ class TestOutliersQuerier(InsightsDbTestCase):
         )
         self.snapshot.assert_match(  # type: ignore[attr-defined]
             result, name="get_supervisor_vitals_metrics"
+        )
+
+    @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_supervisor_can_access_all_supervisors_vitals_metrics(
+        self, mock_config: MagicMock
+    ) -> None:
+        supervisor_pseudonymized_id = "hash1"
+        state_code = StateCode.US_PA
+        querier = OutliersQuerier(state_code)
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[build_test_metric_1(state_code)],
+            vitals_metrics=[TIMELY_CONTACT, TIMELY_RISK_ASSESSMENT],
+        )
+
+        result: list[
+            VitalsMetric
+        ] = querier.get_vitals_metrics_for_supervision_officer_supervisor(
+            supervisor_pseudonymized_id=supervisor_pseudonymized_id,
+            can_access_all_supervisors=True,
+        )
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_supervisor_can_access_all_supervisors_vitals_metrics"
         )
 
     @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
