@@ -19,13 +19,13 @@ import datetime
 import re
 from typing import Dict, List
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import attrs
 from more_itertools import one
 
+from recidiviz.airflow.dags.raw_data.concurrency_utils import MAX_BQ_LOAD_AIRFLOW_TASKS
 from recidiviz.airflow.dags.raw_data.file_metadata_tasks import (
-    MAX_BQ_LOAD_AIRFLOW_TASKS,
-    MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS,
     _build_file_imports_for_errors,
     _build_file_imports_for_results,
     _reconcile_file_imports_and_bq_metadata,
@@ -281,6 +281,19 @@ class SplitByPreImportNormalizationTest(TestCase):
 class GetFilesToImportThisRunTest(TestCase):
     """Tests for get_files_to_import_this_run task"""
 
+    def setUp(self) -> None:
+        fs = MagicMock()
+        fs.get_file_size.side_effect = (
+            lambda x: int(x.abs_path().split("_")[-1]) * 1024 * 1024 * 100
+        )
+        self.fs_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.file_metadata_tasks.GcsfsFactory.build",
+            return_value=fs,
+        ).start()
+
+    def tearDown(self) -> None:
+        self.fs_patcher.stop()
+
     def test_empty(self) -> None:
         assert get_files_to_import_this_run.function(
             raw_data_instance=DirectIngestInstance.PRIMARY, serialized_bq_metadata=[]
@@ -297,7 +310,7 @@ class GetFilesToImportThisRunTest(TestCase):
                 RawGCSFileMetadata(
                     gcs_file_id=1,
                     file_id=1,
-                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
+                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob_1"),
                 )
             ],
             update_datetime=datetime.datetime(2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC),
@@ -310,7 +323,7 @@ class GetFilesToImportThisRunTest(TestCase):
                 RawGCSFileMetadata(
                     gcs_file_id=2,
                     file_id=2,
-                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob1_2.csv"),
+                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob_1"),
                 ),
             ],
             update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
@@ -341,35 +354,37 @@ class GetFilesToImportThisRunTest(TestCase):
         assert set(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == set()
 
     def test_split_sort(self) -> None:
-        oldest = RawBigQueryFileMetadata(
+        file = RawBigQueryFileMetadata(
             file_id=1,
             file_tag="tagBasicData",
             gcs_files=[
                 RawGCSFileMetadata(
                     gcs_file_id=1,
                     file_id=1,
-                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob.csv"),
-                )
-            ],
-            update_datetime=datetime.datetime(2024, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
-        ).serialize()
-
-        newest = RawBigQueryFileMetadata(
-            file_id=3,
-            file_tag="tagCustomLineTerminatorNonUTF8",
-            gcs_files=[
+                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob_50"),
+                ),
                 RawGCSFileMetadata(
-                    gcs_file_id=2,
-                    file_id=2,
-                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob1_2.csv"),
+                    gcs_file_id=1,
+                    file_id=1,
+                    path=GcsfsFilePath(bucket_name="bucket", blob_name="blob_50"),
                 ),
             ],
-            update_datetime=datetime.datetime(2024, 1, 3, 1, 1, 1, tzinfo=datetime.UTC),
-        ).serialize()
+            update_datetime=datetime.datetime(1900, 1, 1, 1, 1, 1, tzinfo=datetime.UTC),
+        )
 
-        bq_metadata = [newest] + [
-            oldest for _ in range(MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS + 1)
-        ]
+        bq_metadata = list(
+            reversed(
+                [
+                    attrs.evolve(
+                        file,
+                        update_datetime=datetime.datetime(
+                            1900 + i, 1, 1, 1, 1, 1, tzinfo=datetime.UTC
+                        ),
+                    ).serialize()
+                    for i in range(500)
+                ]
+            )
+        )
 
         result = get_files_to_import_this_run.function(
             raw_data_instance=DirectIngestInstance.PRIMARY,
@@ -377,26 +392,28 @@ class GetFilesToImportThisRunTest(TestCase):
         )
 
         assert len(result[BQ_METADATA_TO_IMPORT_THIS_RUN]) == len(bq_metadata)
-        assert set(result[BQ_METADATA_TO_IMPORT_THIS_RUN]) == {oldest, newest}
-
         assert len(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == 0
-        assert set(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == set()
 
         result = get_files_to_import_this_run.function(
             raw_data_instance=DirectIngestInstance.SECONDARY,
             serialized_bq_metadata=bq_metadata,
         )
 
-        assert (
-            len(result[BQ_METADATA_TO_IMPORT_THIS_RUN])
-            == MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS
-        )
-        # should be MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS of oldest file
-        assert set(result[BQ_METADATA_TO_IMPORT_THIS_RUN]) == set([oldest])
+        assert len(result[BQ_METADATA_TO_IMPORT_THIS_RUN]) == 300
+
+        result_years = {
+            RawBigQueryFileMetadata.deserialize(bq_str).update_datetime.year
+            for bq_str in result[BQ_METADATA_TO_IMPORT_THIS_RUN]
+        }
+        assert result_years == set(range(1900, 1900 + 300))
 
         # should be 1 of the older file and 1 of the newer file
-        assert len(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == 2
-        assert set(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == {newest, oldest}
+        assert len(result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]) == 200
+        defer_years = {
+            RawBigQueryFileMetadata.deserialize(bq_str).update_datetime.year
+            for bq_str in result[BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS]
+        }
+        assert defer_years == set(range(1900 + 300, 1900 + 500))
 
 
 class CoalesceImportReadyFilesTest(TestCase):

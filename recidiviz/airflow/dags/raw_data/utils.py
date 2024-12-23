@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for the raw data import dag"""
+import concurrent.futures
 import heapq
 import logging
 from types import ModuleType
@@ -22,9 +23,17 @@ from typing import Callable, Iterable, List, Optional, Tuple, TypeVar
 
 from more_itertools import distribute, partition
 
+from recidiviz.airflow.dags.raw_data.concurrency_utils import (
+    MAX_GCS_FILE_SIZE_REQUEST_THREADS,
+)
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    RAW_DATA_EXPECTED_CHUNK_SIZE_IN_BYTES,
 )
 
 logger = logging.getLogger("raw_data")
@@ -132,3 +141,52 @@ def max_number_of_buckets_with_target(
     )
 
     return [list(batch) for batch in distribute(num_buckets, items)]
+
+
+def get_est_number_of_chunks_concurrently(
+    fs: GCSFileSystem,
+    file_paths: List[GcsfsFilePath],
+) -> List[Tuple[GcsfsFilePath, int]]:
+    """Provides an estimate for the approximate number of file chunks we expect to
+    each file in |file_paths| to contain. This is an estimate as we will not know the
+    exact number of chunks until after the chunking step, as we look for up to 2 mb past
+    the "expected" chunk boundary to find a row-safe chunk boundary (so ostensibly a file
+    that is 100 mb + 1 byte would get an estimate of 2 chunks but in reality only be 1
+    chunk).
+    """
+    files_with_sizes: List[Tuple[GcsfsFilePath, int]] = []
+
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=MAX_GCS_FILE_SIZE_REQUEST_THREADS
+    ) as executor:
+        future_to_file_path = {
+            executor.submit(get_est_number_of_chunks_for_path, fs, file_path): file_path
+            for file_path in file_paths
+        }
+
+        for future in concurrent.futures.as_completed(future_to_file_path):
+            requires_normalization_file = future_to_file_path[future]
+            try:
+                size = future.result()
+                files_with_sizes.append((requires_normalization_file, size))
+            except Exception:
+                # If get_file_size returns None, set number of chunks to 1; if the file
+                # doesn't exist we'll return an error downstream
+                files_with_sizes.append((requires_normalization_file, 1))
+
+    return files_with_sizes
+
+
+def get_est_number_of_chunks_for_path(
+    fs: GCSFileSystem, file_path: GcsfsFilePath
+) -> int:
+    return max(
+        (fs.get_file_size(file_path) or 0) // RAW_DATA_EXPECTED_CHUNK_SIZE_IN_BYTES, 1
+    )
+
+
+def get_est_number_of_chunks_for_paths(
+    fs: GCSFileSystem, file_paths: list[GcsfsFilePath]
+) -> int:
+    total_size = sum(fs.get_file_size(file_path) or 0 for file_path in file_paths)
+    return max(total_size // RAW_DATA_EXPECTED_CHUNK_SIZE_IN_BYTES, 1)

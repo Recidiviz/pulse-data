@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Python logic for managing and handling raw file metadata"""
+import concurrent.futures
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from collections import deque
+from typing import Any, Deque, Dict, List, Optional, Tuple
 
 from airflow.decorators import task
 from airflow.exceptions import AirflowException
@@ -25,7 +27,8 @@ from more_itertools import distribute
 
 from recidiviz.airflow.dags.raw_data.concurrency_utils import (
     MAX_BQ_LOAD_AIRFLOW_TASKS,
-    MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS,
+    MAX_GCS_FILE_SIZE_REQUEST_THREADS,
+    MAX_NUMBER_OF_CHUNKS_FOR_SECONDARY_IMPORT,
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
     APPEND_READY_FILE_BATCHES,
@@ -39,8 +42,12 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA,
     SKIPPED_FILE_ERRORS,
 )
-from recidiviz.airflow.dags.raw_data.utils import get_direct_ingest_region_raw_config
+from recidiviz.airflow.dags.raw_data.utils import (
+    get_direct_ingest_region_raw_config,
+    get_est_number_of_chunks_for_paths,
+)
 from recidiviz.airflow.dags.utils.constants import RAISE_OPERATIONS_REGISTRATION_ERRORS
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
     DirectIngestRawFileImportStatus,
@@ -171,35 +178,118 @@ def get_files_to_import_this_run(
     data import DAG, due to the scale of full secondary re-imports.
     """
 
-    metadata_to_run: list[str] = []
-    metadata_to_defer: list[str] = []
+    serialized_metadata_to_run: list[str] = []
+    serialized_metadata_to_defer: list[str] = []
     if raw_data_instance == DirectIngestInstance.PRIMARY:
-        metadata_to_run = serialized_bq_metadata
+        serialized_metadata_to_run = serialized_bq_metadata
     else:
-        # TODO(#35694): make this smarter -- we want to cap at the total number of file
-        # chunks we expect to be able to import as a proxy for both scale and time, so
-        # limit by a combination of the number of file tags, files and file size
-
-        sorted_bq_metadata: list[RawBigQueryFileMetadata] = sorted(
-            (
-                RawBigQueryFileMetadata.deserialize(serialized_bq)
-                for serialized_bq in serialized_bq_metadata
-            ),
-            key=lambda x: (x.update_datetime, x.file_tag),
+        metadata_to_run, metadata_to_defer = _limit_files_by_est_chunks(
+            serialized_bq_metadata=serialized_bq_metadata,
+            est_number_of_chunks=MAX_NUMBER_OF_CHUNKS_FOR_SECONDARY_IMPORT,
         )
-        metadata_to_run = [
-            bq_metadata.serialize()
-            for bq_metadata in sorted_bq_metadata[:MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS]
+
+        serialized_metadata_to_run = [
+            metadata.serialize() for metadata in metadata_to_run
         ]
-        metadata_to_defer = [
-            bq_metadata.serialize()
-            for bq_metadata in sorted_bq_metadata[MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS:]
+        serialized_metadata_to_defer = [
+            metadata.serialize() for metadata in metadata_to_defer
         ]
 
     return {
-        BQ_METADATA_TO_IMPORT_THIS_RUN: metadata_to_run,
-        BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS: metadata_to_defer,
+        BQ_METADATA_TO_IMPORT_THIS_RUN: serialized_metadata_to_run,
+        BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS: serialized_metadata_to_defer,
     }
+
+
+def _limit_files_by_est_chunks(
+    *, serialized_bq_metadata: list[str], est_number_of_chunks: int
+) -> tuple[list[RawBigQueryFileMetadata], list[RawBigQueryFileMetadata]]:
+    """Bifurcates |serialized_bq_metadata| into two buckets: the first has |est_number_of_chunks|
+    chunks of the files with the oldest update_datetime, while the second has all the
+    remaining files. The number of chunks in each bucket is an estimate as we will not
+    know the exact number of chunks until after the chunking step, as we look for up to
+    2 mb past the "expected" chunk boundary to find a row-safe chunk boundary (so
+    ostensibly a file that is 100 mb + 1 byte would get an estimate of 2 chunks but in
+    reality only be 1 chunk).
+    """
+
+    fs = GcsfsFactory.build()
+    candidate_bq_metadata_queue: Deque[RawBigQueryFileMetadata] = deque()
+
+    # we add metadata to FIFO candidate queue in ascending order to ensure that we
+    # always import the oldest files first.
+    for metadata in sorted(
+        (
+            RawBigQueryFileMetadata.deserialize(serialized_bq)
+            for serialized_bq in serialized_bq_metadata
+        ),
+        key=lambda x: (x.update_datetime, x.file_tag),
+    ):
+        candidate_bq_metadata_queue.append(metadata)
+
+    metadata_to_run: list[RawBigQueryFileMetadata] = []
+    metadata_to_run_cumulative_chunks = 0
+    metadata_to_defer: list[RawBigQueryFileMetadata] = []
+
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=MAX_GCS_FILE_SIZE_REQUEST_THREADS
+    ) as executor:
+
+        # while we still have more chunk headroom and there are still files that are
+        # yet to be processed
+        while (
+            candidate_bq_metadata_queue
+            and metadata_to_run_cumulative_chunks < est_number_of_chunks
+        ):
+            file_size_futures: dict[
+                concurrent.futures.Future, RawBigQueryFileMetadata
+            ] = {}
+
+            # queue a limited number of files at a time so we don't send an overwhelming
+            # number of requests if the number of files to process is large (the batch
+            # size is largely arbitrary).
+            batch_size = min(
+                MAX_GCS_FILE_SIZE_REQUEST_THREADS * 6, len(candidate_bq_metadata_queue)
+            )
+            for _ in range(batch_size):
+                next_bq_metadata = candidate_bq_metadata_queue.popleft()
+                file_size_futures[
+                    executor.submit(
+                        get_est_number_of_chunks_for_paths,
+                        fs,
+                        [
+                            gcs_metadata.path
+                            for gcs_metadata in next_bq_metadata.gcs_files
+                        ],
+                    )
+                ] = next_bq_metadata
+
+            # fetches results in the order we QUEUED them, not the order that we finished
+            # since we want to ensure that we are always adding to |metadata_to_run| in
+            # strict update_datetime order
+            for future, bq_metadata in file_size_futures.items():
+                try:
+                    size = future.result()
+                except Exception:
+                    # If get_file_size returns None, set number of chunks to 1; if the file
+                    # doesn't exist we'll return an error downstream
+                    size = 1
+
+                if metadata_to_run_cumulative_chunks >= est_number_of_chunks:
+                    # if we have reached out max number of files for this import, mark
+                    # as deferred
+                    metadata_to_defer.append(bq_metadata)
+                else:
+                    metadata_to_run.append(bq_metadata)
+                    metadata_to_run_cumulative_chunks += size
+
+    if len(candidate_bq_metadata_queue) > 0:
+        metadata_to_defer.extend(candidate_bq_metadata_queue)
+
+    return (
+        metadata_to_run,
+        metadata_to_defer,
+    )
 
 
 @task(trigger_rule=TriggerRule.ALL_DONE)

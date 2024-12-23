@@ -2960,7 +2960,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 assert lock_released[0]
 
     @patch(
-        "recidiviz.airflow.dags.raw_data.file_metadata_tasks.MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS",
+        "recidiviz.airflow.dags.raw_data.file_metadata_tasks.MAX_NUMBER_OF_CHUNKS_FOR_SECONDARY_IMPORT",
         1,
     )
     def test_get_files_to_import_this_run(self) -> None:

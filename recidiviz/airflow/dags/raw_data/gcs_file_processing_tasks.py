@@ -29,6 +29,9 @@ from airflow.exceptions import AirflowException
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     ENTRYPOINT_ARGUMENTS,
 )
+from recidiviz.airflow.dags.raw_data.concurrency_utils import (
+    MAX_GCS_FILE_SIZE_REQUEST_THREADS,
+)
 from recidiviz.airflow.dags.raw_data.filtering_tasks import (
     filter_header_results_by_processing_errors,
 )
@@ -38,6 +41,7 @@ from recidiviz.airflow.dags.raw_data.metadata import (
 )
 from recidiviz.airflow.dags.raw_data.utils import (
     evenly_weighted_buckets_with_max,
+    get_est_number_of_chunks_concurrently,
     max_number_of_buckets_with_target,
 )
 from recidiviz.airflow.dags.utils.constants import (
@@ -59,9 +63,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.raw_data.read_raw_file_column_headers import (
     DirectIngestRawFileHeaderReader,
 )
-from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    RAW_DATA_EXPECTED_CHUNK_SIZE_IN_BYTES,
-)
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     ImportReadyFile,
     PreImportNormalizedCsvChunkResult,
@@ -78,7 +79,6 @@ from recidiviz.utils.airflow_types import (
 from recidiviz.utils.crc32c import digest_ordered_checksum_and_size_pairs
 from recidiviz.utils.types import assert_type
 
-MAX_GCS_FILE_SIZE_REQUEST_THREADS = 16  # TODO(#29946) determine reasonable default
 ENTRYPOINT_ARG_LIST_DELIMITER = "^"
 BYTES_IN_MB = 1024 * 1024
 
@@ -137,48 +137,15 @@ def _batch_files_by_size(
     max_chunks_per_airflow_task: int,
 ) -> List[List[GcsfsFilePath]]:
     """Divide files into batches with approximately equal cumulative size"""
-    files_with_sizes = _get_est_number_of_chunks_concurrently(
+    # TODO(#35694): remove the need for these calls by moving the est number of chunks
+    # onto the RawBigQueryFileMetadata class?
+    files_with_sizes = get_est_number_of_chunks_concurrently(
         fs, requires_pre_import_normalization_file_paths
     )
     return evenly_weighted_buckets_with_max(
         files_with_sizes,
         target_n=target_num_chunking_airflow_tasks,
         max_weight_per_bucket=max_chunks_per_airflow_task,
-    )
-
-
-def _get_est_number_of_chunks_concurrently(
-    fs: GCSFileSystem,
-    requires_normalization_files: List[GcsfsFilePath],
-) -> List[Tuple[GcsfsFilePath, int]]:
-    files_with_sizes: List[Tuple[GcsfsFilePath, int]] = []
-
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=MAX_GCS_FILE_SIZE_REQUEST_THREADS
-    ) as executor:
-        future_to_file_path = {
-            executor.submit(
-                _get_est_number_of_chunks, fs, requires_normalization_file
-            ): requires_normalization_file
-            for requires_normalization_file in requires_normalization_files
-        }
-
-        for future in concurrent.futures.as_completed(future_to_file_path):
-            requires_normalization_file = future_to_file_path[future]
-            try:
-                size = future.result()
-                files_with_sizes.append((requires_normalization_file, size))
-            except Exception:
-                # If get_file_size returns None, set number of chunks to 1; if the file
-                # doesn't exist we'll return an error downstream
-                files_with_sizes.append((requires_normalization_file, 1))
-
-    return files_with_sizes
-
-
-def _get_est_number_of_chunks(fs: GCSFileSystem, file_path: GcsfsFilePath) -> int:
-    return max(
-        (fs.get_file_size(file_path) or 0) // RAW_DATA_EXPECTED_CHUNK_SIZE_IN_BYTES, 1
     )
 
 

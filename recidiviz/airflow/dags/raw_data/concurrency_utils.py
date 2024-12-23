@@ -23,9 +23,11 @@ for the purpose of being able to scale up during a secondary re-import where we 
 a large volume of files.
 """
 
-# NAIVE MAX FILES PER IMPORT
-# TODO(#35694): make this value more dynamic
-MAX_NUMBER_OF_FILES_FOR_TEN_WORKERS = 1500
+# --- SECONDARY REIMPORT LIMITING ---
+# For a given secondary re-import DAG run, we will cap the number of file chunks that are
+# processed in a single import run, to 30k file chunks (~ 2.8 TiB). If there is more
+# data to process, subsequent DAG runs will be responsible for importing that data.
+MAX_NUMBER_OF_CHUNKS_FOR_SECONDARY_IMPORT = 30_000
 
 # --------------------------------------------
 # ------ PRE-IMPORT NORMALIZATION STEP -------
@@ -86,3 +88,7 @@ MAX_BQ_LOAD_CLIENT_THREADS_PER_TASK = 8
 MAX_BQ_APPEND_AIRFLOW_TASKS = 8
 MAX_BQ_APPEND_CLIENT_THREADS_PER_TASK = 8
 # -----------------------------
+
+
+# max number of gcs file size request threads at once
+MAX_GCS_FILE_SIZE_REQUEST_THREADS = 16
