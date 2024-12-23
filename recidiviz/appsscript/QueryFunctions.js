@@ -22,14 +22,14 @@
  * to query the BigQuery database.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
- * @param {string} previousMonthString A string representing the start_date of the report minus 1 month plus 1 week (ex: '2023-01-08')
+ * @param {string} startDatePlusWeekString A string representing the start_date of the report plus 1 week (ex: '2023-02-08')
  * @param {string} endDatePlusWeekString A string representing the end_date of the report plus 1 week (ex: '2023-03-08')
  * @returns {object} mauByWeekData An array or arrays containing data for each week. Also returns the monthlyActiveUsers string
  */
 function getMauByWeekData(
   stateCode,
   completionEventType,
-  previousMonthString,
+  startDatePlusWeekString,
   endDatePlusWeekString
 ) {
   const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
@@ -44,7 +44,7 @@ function getMauByWeekData(
       ${distinctActiveUsers}
     FROM \`impact_reports.${mauTable}\`
     WHERE state_code = '${stateCode}'
-    AND end_date >= '${previousMonthString}'
+    AND end_date >= '${startDatePlusWeekString}'
     AND end_date < '${endDatePlusWeekString}'
     AND ${distinctActiveUsers} IS NOT NULL
     ORDER BY end_date ASC

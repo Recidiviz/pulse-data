@@ -190,8 +190,10 @@ function main(e) {
         supervisionDistrictData
       );
 
-    const { previousMonthString, endDatePlusWeekString } = getBoundsDateStrings(
+    const startDatePlusWeekString = getBoundsDateString(
       startDateString,
+    );
+    const endDatePlusWeekString = getBoundsDateString(
       endDateString
     );
 
@@ -199,7 +201,7 @@ function main(e) {
     const { mauByWeekData, monthlyActiveUsers } = getMauByWeekData(
       stateCode,
       completionEventType,
-      previousMonthString,
+      startDatePlusWeekString,
       endDatePlusWeekString
     );
     const mauByWeekColumnChart = mauByWeekData
@@ -217,8 +219,6 @@ function main(e) {
       startDateString,
       endDateString,
       completionEventType,
-      previousMonthString,
-      endDatePlusWeekString
     );
     const wauByWeekColumnChart = wauByWeekData
       ? constructActiveUsersByWeekColumnChart(

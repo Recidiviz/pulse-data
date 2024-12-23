@@ -253,42 +253,26 @@ function toTitleCase(str) {
 
 /**
  * Get bounds date strings
- * Given a startDateString and endDateString (provided by the user via google form), construct a string representing the startDateString minus 1 month plus 1 week and a string representing the endDateString plus 1 week. These strings will be used in the getMauByWeekData() function to query for the MAU for the appropriate time ranges.
- * @param {string} startDateString A string representing the start date of the report (ex: 2024-10-01)
- * @ param {string} endDateString A string representing the end date of the report (ex: 2024-11-01)
- * @returns {object} previousMonthString, endDatePlusWeekString Two strings representing the start date minus 1 month plus 1 week and the end date plus 1 week (ex: 2024-09-08 and 2024-11-08)
+ * Given a startDateString or endDateString (provided by the user via google form), construct a string representing the startDateString or endDateString plus 1 week. These strings will be used in the getMauByWeekData() function to query for the MAU for the appropriate time ranges.
+ * @param {string} cleanDateString A string representing the start date of the report or end date of the report (ex: 2024-10-01 or 2024-11-01)
+ * @returns {string} datePlusWeekString A string representing the start date plus 1 week or the end date plus 1 week (ex: 2024-10-08 and 2024-11-08)
  */
-function getBoundsDateStrings(
-  startDateString,
-  endDateString
+function getBoundsDateString(
+  cleanDateString
 ) {
-  const startDateStringSplit = startDateString.split("-");
+  const datestringSplit = cleanDateString.split("-");
 
   // since the local timezone is set to Eastern Daylight Time, we need to add 5 hours to be UTC
-  let startDate = new Date(
+  let utcDate = new Date(
     Date.UTC(
-      startDateStringSplit[0], // year
-      startDateStringSplit[1] - 1, // month (indexed 0-11)
-      startDateStringSplit[2], // day
+      datestringSplit[0], // year
+      datestringSplit[1] - 1, // month (indexed 0-11)
+      datestringSplit[2], // day
       5 // hour
     )
   );
-  startDate.setMonth(startDate.getMonth() - 1);
-  startDate.setDate(startDate.getDate() + 7);
-  const previousMonthString = startDate.toLocaleDateString("en-CA");
+  utcDate.setDate(utcDate.getDate() + 7);
+  const datePlusWeekString = utcDate.toLocaleDateString("en-CA");
 
-  const endDateStringSplit = endDateString.split("-");
-  // since the local timezone is set to Eastern Daylight Time, we need to add 5 hours to be UTC
-  let endDate = new Date(
-    Date.UTC(
-      endDateStringSplit[0], // year
-      endDateStringSplit[1] - 1, // month (indexed 0-11)
-      endDateStringSplit[2], // day
-      5 // hour
-    )
-  );
-  endDate.setDate(endDate.getDate() + 7);
-  const endDatePlusWeekString = endDate.toLocaleDateString("en-CA");
-
-  return { previousMonthString, endDatePlusWeekString };
+  return datePlusWeekString;
 }
