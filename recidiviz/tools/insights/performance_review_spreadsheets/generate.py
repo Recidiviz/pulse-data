@@ -42,6 +42,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.tools.insights.performance_review_spreadsheets.impact_funnel_metrics import (
     ImpactFunnelMetrics,
 )
+from recidiviz.tools.insights.performance_review_spreadsheets.logins import Logins
 from recidiviz.tools.insights.performance_review_spreadsheets.officer_aggregated_metrics import (
     OfficerAggregatedMetrics,
 )
@@ -57,6 +58,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 class RowHeadingEnum(Enum):
     USAGE = auto()
+    NUM_LOGINS = auto()
+    NUM_MONTHS_LOGGED_IN = auto()
     OUTCOMES_METRICS = auto()
     AVG_DAILY_CASELOAD = auto()
     TIMELY_RISK_ASSESSMENTS = auto()
@@ -87,6 +90,8 @@ class ColumnHeadingEnum(Enum):
 
 _ROW_HEADING_LABELS = {
     RowHeadingEnum.USAGE: "Usage",
+    RowHeadingEnum.NUM_LOGINS: "# Total Logins each month",
+    RowHeadingEnum.NUM_MONTHS_LOGGED_IN: "# of Months in 2024 where they logged in at least once",
     RowHeadingEnum.OUTCOMES_METRICS: "Outcomes Metrics",
     RowHeadingEnum.AVG_DAILY_CASELOAD: "# Average Daily Caseload",
     RowHeadingEnum.EARLY_DISCHARGE: "Early Discharge",
@@ -113,8 +118,8 @@ _ROW_HEADING_LABELS = {
 
 _ROW_HEADINGS: list[RowHeadingEnum | str | None] = [
     RowHeadingEnum.USAGE,
-    "# Total Logins each month",
-    "# of Months in 2024 where they logged in at least once",
+    RowHeadingEnum.NUM_LOGINS,
+    RowHeadingEnum.NUM_MONTHS_LOGGED_IN,
     "Caseload Type",
     None,
     RowHeadingEnum.OUTCOMES_METRICS,
@@ -415,7 +420,31 @@ def write_grant_rate_formulas(sheet: Worksheet) -> None:
         cell.number_format = FORMAT_PERCENTAGE_00
 
 
+def write_logins(sheet: Worksheet, officer_id: str, logins: Logins) -> None:
+    num_logins_row = get_row_index(RowHeadingEnum.NUM_LOGINS)
+    for month, num_logins in logins.data[officer_id].items():
+        parsed_date = month.strftime(_COLUMN_DATE_FORMAT)
+        col_idx = get_column_index(parsed_date)
+        cell = sheet[f"{col_idx}{num_logins_row}"]
+        cell.value = num_logins
+
+    # Sum the data to get # logins in the year
+    year_col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
+    first_date_col = chr(ord(year_col_idx) + 1)
+    last_date_col = chr(ord(year_col_idx) + 12)
+    sheet[
+        f"{year_col_idx}{num_logins_row}"
+    ] = f"=SUM({first_date_col}{num_logins_row}:{last_date_col}{num_logins_row})"
+
+    # Count number of months where they logged in
+    num_months_logged_in_row = get_row_index(RowHeadingEnum.NUM_MONTHS_LOGGED_IN)
+    sheet[
+        f"{year_col_idx}{num_months_logged_in_row}"
+    ] = f'=COUNTIF({first_date_col}{num_logins_row}:{last_date_col}{num_logins_row}, ">0")'
+
+
 def generate_sheets(sandbox_prefix: str) -> None:
+    """Read data and generate spreadsheets"""
     output_dir = os.path.join(os.path.dirname(__file__), "output")
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -427,6 +456,7 @@ def generate_sheets(sandbox_prefix: str) -> None:
         OfficerAggregatedMetricsFromSandbox.from_bigquery(bq_client, sandbox_prefix)
     )
     impact_funnel_metrics = ImpactFunnelMetrics.from_bigquery(bq_client)
+    logins = Logins.from_bigquery(bq_client)
     for supervisor, officers in supervisors_to_officers.items():
         wb = Workbook()
         for officer in officers:
@@ -441,6 +471,7 @@ def generate_sheets(sandbox_prefix: str) -> None:
                 sheet, officer.officer_id, impact_funnel_metrics
             )
             write_grant_rate_formulas(sheet)
+            write_logins(sheet, officer.officer_id, logins)
 
         # Remove the default sheet, since we created new sheets for our data.
         wb.remove(wb.worksheets[0])
