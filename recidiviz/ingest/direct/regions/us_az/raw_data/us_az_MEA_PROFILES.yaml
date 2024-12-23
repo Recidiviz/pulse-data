@@ -4,6 +4,7 @@ file_description: |-
   MEA Profiles of each person. This file has information on which officers are active and which have left the department.
 data_classification: source
 primary_key_cols: [USERID]
+always_historical_export: True
 columns:
   - name: USERID
     description: UserID
