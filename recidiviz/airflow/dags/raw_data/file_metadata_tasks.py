@@ -35,6 +35,7 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS,
     BQ_METADATA_TO_IMPORT_THIS_RUN,
     FILE_IMPORTS,
+    HAS_FILE_IMPORT_ERRORS,
     IMPORT_READY_FILES,
     PROCESSED_PATHS_TO_RENAME,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
@@ -342,7 +343,7 @@ def coalesce_results_and_errors(
     serialized_load_prep_results: Optional[List[str]],
     serialized_append_batches: Optional[Dict[str, List[str]]],
     serialized_append_result: Optional[List[str]],
-) -> Dict[str, List[str]]:
+) -> Dict[str, List[str] | bool]:
     """Reconciles RawBigQueryFileMetadata objects against the results and errors
     of the pre-import normalization and big query load steps, returning a dictionary
     with four keys:
@@ -395,6 +396,9 @@ def coalesce_results_and_errors(
                 *missing_file_imports,
             ]
         ],
+        HAS_FILE_IMPORT_ERRORS: bool(
+            failed_file_imports_for_file_id or missing_file_imports
+        ),
         PROCESSED_PATHS_TO_RENAME: [
             path.abs_path() for path in successfully_imported_paths
         ],

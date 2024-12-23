@@ -80,10 +80,12 @@ from recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group import (
     initialize_raw_data_dag_group,
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
+    BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS,
     BQ_METADATA_TO_IMPORT_THIS_RUN,
     CHUNKING_ERRORS,
     CHUNKING_RESULTS,
     FILE_IDS_TO_HEADERS,
+    HAS_FILE_IMPORT_ERRORS,
     HEADER_VERIFICATION_ERRORS,
     IMPORT_READY_FILES,
     PROCESSED_PATHS_TO_RENAME,
@@ -106,6 +108,7 @@ from recidiviz.airflow.dags.raw_data.release_resource_lock_sql_query_generator i
 )
 from recidiviz.airflow.dags.raw_data.sequencing_tasks import (
     has_files_to_import,
+    maybe_trigger_dag_rerun,
     successfully_acquired_all_locks,
 )
 from recidiviz.airflow.dags.raw_data.write_file_import_start_sql_query_generator import (
@@ -488,7 +491,16 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         # ------------------------------------------------------------------------------
 
-        # TODO(#35694): trigger another run here? conditionally?
+        maybe_new_dag_rerun = maybe_trigger_dag_rerun(
+            region_code=state_code.value,
+            raw_data_instance=raw_data_instance,
+            deferred_files=files_to_import_this_run[
+                BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS
+            ],
+            has_file_import_errors=clean_and_storage_jobs[HAS_FILE_IMPORT_ERRORS],
+        )
+
+        release_locks >> maybe_new_dag_rerun
 
     return [
         raw_data_branch,

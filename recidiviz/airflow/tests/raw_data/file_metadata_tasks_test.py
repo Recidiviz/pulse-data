@@ -39,6 +39,7 @@ from recidiviz.airflow.dags.raw_data.metadata import (
     BQ_METADATA_TO_IMPORT_IN_FUTURE_RUNS,
     BQ_METADATA_TO_IMPORT_THIS_RUN,
     FILE_IMPORTS,
+    HAS_FILE_IMPORT_ERRORS,
     IMPORT_READY_FILES,
     PROCESSED_PATHS_TO_RENAME,
     REQUIRES_PRE_IMPORT_NORMALIZATION_FILES,
@@ -535,11 +536,13 @@ class CoalesceResultsAndErrorsTest(TestCase):
             serialized_load_prep_results=[],
             serialized_append_batches={
                 SKIPPED_FILE_ERRORS: [],
+                HAS_FILE_IMPORT_ERRORS: False,
                 APPEND_READY_FILE_BATCHES: [],
             },
             serialized_append_result=[],
         ) == {
             FILE_IMPORTS: [],
+            HAS_FILE_IMPORT_ERRORS: False,
             PROCESSED_PATHS_TO_RENAME: [],
         }
         assert coalesce_results_and_errors.function(
@@ -554,6 +557,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             serialized_append_result=None,
         ) == {
             FILE_IMPORTS: [],
+            HAS_FILE_IMPORT_ERRORS: False,
             PROCESSED_PATHS_TO_RENAME: [],
         }
 
@@ -1154,6 +1158,7 @@ class CoalesceResultsAndErrorsTest(TestCase):
             ],
         )
 
+        assert result[HAS_FILE_IMPORT_ERRORS] is True
         assert len(result[FILE_IMPORTS]) == len(bq_metadata)
         summaries = [RawFileImport.deserialize(s) for s in result[FILE_IMPORTS]]
         assert summaries[0].file_id == 3

@@ -197,7 +197,12 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         )
 
         for leaf in branch_end_and_one_before.leaves:
-            assert "release_raw_data_resource_locks" in leaf.task_id
+            assert "maybe_trigger_dag_rerun" in leaf.task_id
+            assert len(leaf.upstream_task_ids) == 3
+            assert any(
+                "release_raw_data_resource_locks" in tid
+                for tid in leaf.upstream_task_ids
+            )
 
     def test_step_2_sequencing(self) -> None:
         dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
@@ -218,6 +223,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 "split_by_pre_import_normalization_type",
                 "read_and_verify_column_headers",
                 "coalesce_results_and_errors",
+                "maybe_trigger_dag_rerun",
                 "write_import_start",
             ],
             [
@@ -347,20 +353,26 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
                 [
                     "branch_end",
                     "move_successfully_imported_paths_to_storage",
+                    "maybe_trigger_dag_rerun",
                     "write_import_completions",
                 ],
                 ["write_file_processed_time"],
                 ["ensure_release_resource_locks_release_if_acquired"],
-                ["release_raw_data_resource_locks", "branch_end"],
+                ["branch_end", "release_raw_data_resource_locks"],
+                ["maybe_trigger_dag_rerun"],
+                ["branch_end"],
             ],
             [
                 [
                     "branch_end",
                     "write_import_completions",
+                    "maybe_trigger_dag_rerun",
                     "move_successfully_imported_paths_to_storage",
                 ],
                 ["ensure_release_resource_locks_release_if_acquired"],
-                ["release_raw_data_resource_locks", "branch_end"],
+                ["branch_end", "release_raw_data_resource_locks"],
+                ["maybe_trigger_dag_rerun"],
+                ["branch_end"],
             ],
         ]
 
@@ -2505,6 +2517,11 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         )
         self.kpo_operator_mock = self.kpo_operator_patcher.start()
 
+        self.dag_kick_off_patcher = patch(
+            "recidiviz.airflow.dags.raw_data.sequencing_tasks.trigger_dag"
+        )
+        self.dag_kick_off_mock = self.dag_kick_off_patcher.start()
+
         # task interaction mocks ---
 
         self.fs = FakeGCSFileSystem()
@@ -2556,6 +2573,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         # operators ---
         self.cloud_sql_db_hook_patcher.stop()
         self.kpo_operator_patcher.stop()
+        self.dag_kick_off_patcher.stop()
         # task interactions
         for patcher in self.gcs_patchers:  # type: ignore
             patcher.stop()
@@ -2728,6 +2746,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.pre_import_normalization\.*",
                     r".*primary_import_branch.coalesce_import_ready_files",
                     r".*_primary_import_branch.cleanup_and_storage.write_file_processed_time",
+                    r".*_primary_import_branch.maybe_trigger_dag_rerun",
                     "raw_data_branching.branch_end",
                 ],
                 expected_skipped_task_id_regexes=[
@@ -2764,6 +2783,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     # clean still runs, we just don't have any metadata to write
                     "raw_data_branching.us_xx_primary_import_branch.cleanup_and_storage.write_import_completions",
                     "raw_data_branching.us_xx_primary_import_branch.cleanup_and_storage.write_file_processed_time",
+                    "raw_data_branching.us_xx_primary_import_branch.maybe_trigger_dag_rerun",
                     # other branches
                     r"raw_data_branching.us_ll_primary_import_branch.*",
                     r".*_secondary_import_branch\..*",
@@ -2775,6 +2795,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 text("SELECT released FROM direct_ingest_raw_data_resource_lock")
             ):
                 assert lock_released[0]
+
+            self.dag_kick_off_mock.assert_not_called()
 
     def test_single_requires_pre_import_norm(self) -> None:
 
@@ -2865,6 +2887,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 text("SELECT released FROM direct_ingest_raw_data_resource_lock")
             ):
                 assert lock_released[0]
+
+            self.dag_kick_off_mock.assert_not_called()
 
     def test_single_skips_pre_import_norm(self) -> None:
 
@@ -2958,6 +2982,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 text("SELECT released FROM direct_ingest_raw_data_resource_lock")
             ):
                 assert lock_released[0]
+
+            self.dag_kick_off_mock.assert_not_called()
 
     @patch(
         "recidiviz.airflow.dags.raw_data.file_metadata_tasks.MAX_NUMBER_OF_CHUNKS_FOR_SECONDARY_IMPORT",
@@ -3058,6 +3084,15 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             ):
                 assert lock_released[0]
 
+            self.dag_kick_off_mock.assert_called_once_with(
+                dag_id=self.dag_id,
+                conf={
+                    "state_code_filter": "US_XX",
+                    "raw_data_instance": "SECONDARY",
+                },
+            )
+            self.dag_kick_off_mock.reset_mock()
+
             # yay! we run again! to import the second file!
 
             result = self.run_dag_test(
@@ -3155,6 +3190,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 text("SELECT released FROM direct_ingest_raw_data_resource_lock")
             ):
                 assert lock_released[0]
+
+            self.dag_kick_off_mock.assert_not_called()
 
     def test_chunked_file_requires_pre_import_norm(self) -> None:
 
@@ -3264,6 +3301,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 text("select released from direct_ingest_raw_data_resource_lock")
             ):
                 assert lock_released[0]
+
+            self.dag_kick_off_mock.assert_not_called()
 
     def test_some_pre_import_some_not_same_state(self) -> None:
 
@@ -3382,6 +3421,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             ):
                 assert lock_released[0]
 
+            self.dag_kick_off_mock.assert_not_called()
+
     def test_single_file_for_one_state_but_all_primary_conf(self) -> None:
 
         self._load_fixture_data(
@@ -3412,6 +3453,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                     "raw_data_branching.us_ll_primary_import_branch.split_by_pre_import_normalization_type",
                     r"raw_data_branching\.us_ll_primary_import_branch\.pre_import_normalization\..*",
                     "raw_data_branching.us_ll_primary_import_branch.coalesce_import_ready_files",
+                    "raw_data_branching.us_ll_primary_import_branch.maybe_trigger_dag_rerun",
                     r"raw_data_branching\.us_ll_primary_import_branch\.big_query_load\..*",
                     r"raw_data_branching\.us_ll_primary_import_branch\.cleanup_and_storage\.write_import_completions",
                     r"raw_data_branching\.us_ll_primary_import_branch\.cleanup_and_storage\.write_file_processed_time",
@@ -3481,6 +3523,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
                 text("select released from direct_ingest_raw_data_resource_lock")
             ):
                 assert lock_released[0]
+
+            self.dag_kick_off_mock.assert_not_called()
 
     def test_single_file_for_all_states(self) -> None:
 
@@ -3599,6 +3643,8 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
             assert len(locks) == 6
             assert all(l[0] for l in locks)
+
+            self.dag_kick_off_mock.assert_not_called()
 
     def test_errors_during_file_chunking(self) -> None:
 
@@ -3742,6 +3788,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
             assert len(locks) == 3
             assert all(l[0] for l in locks)
+            self.dag_kick_off_mock.assert_not_called()
 
             # rerun!! ------------
 
@@ -3846,6 +3893,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
             assert len(locks) == 6
             assert all(l[0] for l in locks)
+            self.dag_kick_off_mock.assert_not_called()
 
             chunking_mock.side_effect = original
 
@@ -3945,6 +3993,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
             assert len(locks) == 9
             assert all(l[0] for l in locks)
+            self.dag_kick_off_mock.assert_not_called()
 
     def test_errors_during_pre_import_norm(self) -> None:
 
@@ -4088,6 +4137,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
             assert len(locks) == 3
             assert all(l[0] for l in locks)
+            self.dag_kick_off_mock.assert_not_called()
 
             # rerun!! ------------
 
@@ -4188,6 +4238,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
             assert len(locks) == 6
             assert all(l[0] for l in locks)
+            self.dag_kick_off_mock.assert_not_called()
 
             chunking_mock.side_effect = original
 
@@ -4287,6 +4338,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
             assert len(locks) == 9
             assert all(l[0] for l in locks)
+            self.dag_kick_off_mock.assert_not_called()
 
     def test_errors_during_load_and_prep(self) -> None:
 
@@ -4435,6 +4487,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
             assert len(locks) == 3
             assert all(l[0] for l in locks)
+            self.dag_kick_off_mock.assert_not_called()
 
             # rerun!! ------------
 
@@ -4639,6 +4692,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
             assert len(locks) == 9
             assert all(l[0] for l in locks)
+            self.dag_kick_off_mock.assert_not_called()
 
     def test_errors_during_append_step(self) -> None:
 
@@ -4774,6 +4828,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
             assert len(locks) == 3
             assert all(l[0] for l in locks)
+            self.dag_kick_off_mock.assert_not_called()
 
             # rerun!! ------------
 
@@ -4876,6 +4931,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
             assert len(locks) == 6
             assert all(l[0] for l in locks)
+            self.dag_kick_off_mock.assert_not_called()
 
             # third time, no failures this time!
             should_fail = False
@@ -4979,3 +5035,4 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             )
             assert len(locks) == 9
             assert all(l[0] for l in locks)
+            self.dag_kick_off_mock.assert_not_called()

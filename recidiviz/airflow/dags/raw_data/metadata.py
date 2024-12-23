@@ -44,6 +44,7 @@ REQUIRES_PRE_IMPORT_NORMALIZATION_FILES_BQ_SCHEMA: str = (
 )
 REQUIRES_PRE_IMPORT_NORMALIZATION_FILES: str = "requires_pre_import_normalization_files"
 FILE_IMPORTS: str = "file_imports"
+HAS_FILE_IMPORT_ERRORS: str = "has_file_import_errors"
 PROCESSED_PATHS_TO_RENAME: str = "processed_paths_to_rename"
 FILE_IDS_TO_HEADERS: str = "file_ids_to_headers"
 HEADER_VERIFICATION_ERRORS: str = "header_verification_errors"
