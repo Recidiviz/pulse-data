@@ -34,8 +34,8 @@ from typing import List, Tuple
 from dateutil.relativedelta import relativedelta
 from openpyxl import Workbook
 from openpyxl.formatting.rule import FormulaRule
-from openpyxl.styles import Font, PatternFill
-from openpyxl.styles.numbers import FORMAT_NUMBER
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.styles.numbers import FORMAT_NUMBER, FORMAT_PERCENTAGE_00
 from openpyxl.worksheet.worksheet import Worksheet
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -64,15 +64,19 @@ class RowHeadingEnum(Enum):
     SUPERVISION_LEVEL_MISMATCH = auto()
     EARLY_DISCHARGE = auto()
     EARLY_DISCHARGE_GRANTS = auto()
+    EARLY_DISCHARGE_MONTHLY_GRANT_RATE = auto()
     EARLY_DISCHARGE_ELIGIBLE = auto()
     LSU = auto()
     LSU_GRANTS = auto()
+    LSU_MONTHLY_GRANT_RATE = auto()
     LSU_ELIGIBLE = auto()
     SLD = auto()
     SLD_GRANTS = auto()
+    SLD_MONTHLY_GRANT_RATE = auto()
     SLD_ELIGIBLE = auto()
     FT_DISCHARGE = auto()
     FT_DISCHARGE_GRANTS = auto()
+    FT_DISCHARGE_MONTHLY_GRANT_RATE = auto()
     FT_DISCHARGE_ELIGIBLE = auto()
     OPERATIONS_METRICS = auto()
 
@@ -87,15 +91,19 @@ _ROW_HEADING_LABELS = {
     RowHeadingEnum.AVG_DAILY_CASELOAD: "# Average Daily Caseload",
     RowHeadingEnum.EARLY_DISCHARGE: "Early Discharge",
     RowHeadingEnum.EARLY_DISCHARGE_GRANTS: "Grants during time period",
+    RowHeadingEnum.EARLY_DISCHARGE_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.EARLY_DISCHARGE_ELIGIBLE: "Eligible as of end of time period",
     RowHeadingEnum.LSU: "LSU",
     RowHeadingEnum.LSU_GRANTS: "Grants during time period",
+    RowHeadingEnum.LSU_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.LSU_ELIGIBLE: "Eligible as of end of time period",
     RowHeadingEnum.SLD: "Supervision Level Downgrade",
     RowHeadingEnum.SLD_GRANTS: "Grants during time period",
+    RowHeadingEnum.SLD_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.SLD_ELIGIBLE: "Eligible as of end of time period",
     RowHeadingEnum.FT_DISCHARGE: "Past FTRD",
     RowHeadingEnum.FT_DISCHARGE_GRANTS: "Grants during time period",
+    RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.FT_DISCHARGE_ELIGIBLE: "Eligible as of end of time period",
     RowHeadingEnum.OPERATIONS_METRICS: "Operations Metrics",
     RowHeadingEnum.TIMELY_RISK_ASSESSMENTS: "Timely Risk Assessments",
@@ -120,28 +128,28 @@ _ROW_HEADINGS: list[RowHeadingEnum | str | None] = [
     RowHeadingEnum.EARLY_DISCHARGE_ELIGIBLE,
     "Overridden (Marked Ineligible) as of end of time period",
     RowHeadingEnum.EARLY_DISCHARGE_GRANTS,
-    "Monthly grant rate",
+    RowHeadingEnum.EARLY_DISCHARGE_MONTHLY_GRANT_RATE,
     'Most often used "Ineligible Reason"',
     None,
     RowHeadingEnum.LSU,
     RowHeadingEnum.LSU_ELIGIBLE,
     "Overridden (Marked Ineligible) as of end of time period",
     RowHeadingEnum.LSU_GRANTS,
-    "2024 average of monthly grant rate",
+    RowHeadingEnum.LSU_MONTHLY_GRANT_RATE,
     'Most often used "Ineligible Reason"',
     None,
     RowHeadingEnum.SLD,
     RowHeadingEnum.SLD_ELIGIBLE,
     "Overridden (Marked Ineligible) as of end of time period",
     RowHeadingEnum.SLD_GRANTS,
-    "2024 average of monthly grant rate",
+    RowHeadingEnum.SLD_MONTHLY_GRANT_RATE,
     'Most often used "Ineligible Reason"',
     None,
     RowHeadingEnum.FT_DISCHARGE,
     RowHeadingEnum.FT_DISCHARGE_ELIGIBLE,
     "Overridden (Marked Ineligible) as of end of time period",
     RowHeadingEnum.FT_DISCHARGE_GRANTS,
-    "Monthly grant rate",
+    RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE,
     'Most often used "Ineligible Reason"',
     None,
     RowHeadingEnum.OPERATIONS_METRICS,
@@ -195,8 +203,9 @@ def create_headers(sheet: Worksheet) -> None:
             for row in _ROW_HEADINGS
         ],
     ]
-    for row in data:
+    for index, row in enumerate(data):
         sheet.append(row)
+        sheet[f"A{index+1}"].alignment = Alignment(wrap_text=True)
 
     sheet.column_dimensions["A"].width = 48
     for header in _ROW_SECTION_HEADERS:
@@ -359,6 +368,53 @@ def write_impact_funnel_metrics(
             )
 
 
+def write_grant_rate_formulas(sheet: Worksheet) -> None:
+    """Write formulas to calculate the monthly grant rate / average monthly grant rate"""
+    avg_caseload_row_idx = get_row_index(RowHeadingEnum.AVG_DAILY_CASELOAD)
+    yearly_col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
+    for month in range(1, 13):
+        col_idx = chr(ord(yearly_col_idx) + month)
+        for grant_rate_row, num_grants_row in [
+            (
+                RowHeadingEnum.EARLY_DISCHARGE_MONTHLY_GRANT_RATE,
+                RowHeadingEnum.EARLY_DISCHARGE_GRANTS,
+            ),
+            (
+                RowHeadingEnum.LSU_MONTHLY_GRANT_RATE,
+                RowHeadingEnum.LSU_GRANTS,
+            ),
+            (
+                RowHeadingEnum.SLD_MONTHLY_GRANT_RATE,
+                RowHeadingEnum.SLD_GRANTS,
+            ),
+            (
+                RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE,
+                RowHeadingEnum.FT_DISCHARGE_GRANTS,
+            ),
+        ]:
+            grant_rate_row_idx = get_row_index(grant_rate_row)
+            num_grants_row_idx = get_row_index(num_grants_row)
+            cell = sheet[f"{col_idx}{grant_rate_row_idx}"]
+            # Grant rate = # grants / avg caseload. If avg caseload is empty, set grant rate to empty.
+            # Excel formula example: =IF(C8, C17/C8, "")
+            cell.value = f'=IF({col_idx}{avg_caseload_row_idx}, {col_idx}{num_grants_row_idx}/{col_idx}{avg_caseload_row_idx}, "")'
+            cell.number_format = FORMAT_PERCENTAGE_00
+
+    first_date_col = chr(ord(yearly_col_idx) + 1)
+    last_date_col = chr(ord(yearly_col_idx) + 12)
+    for grant_rate_row in [
+        RowHeadingEnum.EARLY_DISCHARGE_MONTHLY_GRANT_RATE,
+        RowHeadingEnum.LSU_MONTHLY_GRANT_RATE,
+        RowHeadingEnum.SLD_MONTHLY_GRANT_RATE,
+        RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE,
+    ]:
+        grant_rate_row_idx = get_row_index(grant_rate_row)
+        cell = sheet[f"{yearly_col_idx}{grant_rate_row_idx}"]
+        # Yearly column for grant rate is the average grant rate for each month in the year with data
+        cell.value = f"=AVERAGE({first_date_col}{grant_rate_row_idx}:{last_date_col}{grant_rate_row_idx})"
+        cell.number_format = FORMAT_PERCENTAGE_00
+
+
 def generate_sheets(sandbox_prefix: str) -> None:
     output_dir = os.path.join(os.path.dirname(__file__), "output")
     if not os.path.exists(output_dir):
@@ -384,6 +440,7 @@ def generate_sheets(sandbox_prefix: str) -> None:
             write_impact_funnel_metrics(
                 sheet, officer.officer_id, impact_funnel_metrics
             )
+            write_grant_rate_formulas(sheet)
 
         # Remove the default sheet, since we created new sheets for our data.
         wb.remove(wb.worksheets[0])
