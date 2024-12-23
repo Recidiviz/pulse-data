@@ -268,7 +268,7 @@ function getBoundsDateStrings(
   let startDate = new Date(
     Date.UTC(
       startDateStringSplit[0], // year
-      startDateStringSplit[1], // month
+      startDateStringSplit[1] - 1, // month (indexed 0-11)
       startDateStringSplit[2], // day
       5 // hour
     )
@@ -282,7 +282,7 @@ function getBoundsDateStrings(
   let endDate = new Date(
     Date.UTC(
       endDateStringSplit[0], // year
-      endDateStringSplit[1], // month
+      endDateStringSplit[1] - 1, // month (indexed 0-11)
       endDateStringSplit[2], // day
       5 // hour
     )
