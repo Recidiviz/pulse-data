@@ -22,11 +22,13 @@ exclusions:
   - validation_name: person_caseload_location_sessions_location
     exclusion_type: BROKEN
     exclusion_reason: Failing at 97%, will be addressed in #TODO(#33744)
-max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
-    soft_max_allowed_error_override: 0.03
-    hard_max_allowed_error_override: 0.20
-    override_reason: Investigation needed. TODO(#30582)
+    exclusion_type: BROKEN
+    exclusion_reason: |-
+      Facility name strings appear differently in this external data than in other external 
+      validation data. Needs to be made consistent before this exclusion can be removed 
+      to avoid a 100% error rate. TODO(#36647)
+max_allowed_error_overrides:
   - validation_name: supervision_population_by_type_external_comparison
     hard_max_allowed_error_override: 0.11
     soft_max_allowed_error_override: 0.0502
