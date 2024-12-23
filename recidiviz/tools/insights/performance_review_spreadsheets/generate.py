@@ -49,6 +49,10 @@ from recidiviz.tools.insights.performance_review_spreadsheets.officer_aggregated
 from recidiviz.tools.insights.performance_review_spreadsheets.officer_aggregated_metrics_from_sandbox import (
     OfficerAggregatedMetricsFromSandbox,
 )
+from recidiviz.tools.insights.performance_review_spreadsheets.officer_outlier_status_from_sandbox import (
+    MetricType,
+    OfficerOutlierStatusFromSandbox,
+)
 from recidiviz.tools.insights.performance_review_spreadsheets.supervisors_and_officers import (
     SupervisorsAndOfficers,
 )
@@ -62,6 +66,8 @@ class RowHeadingEnum(Enum):
     NUM_MONTHS_LOGGED_IN = auto()
     OUTCOMES_METRICS = auto()
     AVG_DAILY_CASELOAD = auto()
+    HIGH_ABSCONSION_RATE = auto()
+    HIGH_INCARCERATION_RATE = auto()
     TIMELY_RISK_ASSESSMENTS = auto()
     TIMELY_F2F_CONTACTS = auto()
     SUPERVISION_LEVEL_MISMATCH = auto()
@@ -94,6 +100,8 @@ _ROW_HEADING_LABELS = {
     RowHeadingEnum.NUM_MONTHS_LOGGED_IN: "# of Months in 2024 where they logged in at least once",
     RowHeadingEnum.OUTCOMES_METRICS: "Outcomes Metrics",
     RowHeadingEnum.AVG_DAILY_CASELOAD: "# Average Daily Caseload",
+    RowHeadingEnum.HIGH_ABSCONSION_RATE: "Months flagged as having a high absconsion rate",
+    RowHeadingEnum.HIGH_INCARCERATION_RATE: "Months flagged as having a high incarceration rate",
     RowHeadingEnum.EARLY_DISCHARGE: "Early Discharge",
     RowHeadingEnum.EARLY_DISCHARGE_GRANTS: "Grants during time period",
     RowHeadingEnum.EARLY_DISCHARGE_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
@@ -125,9 +133,9 @@ _ROW_HEADINGS: list[RowHeadingEnum | str | None] = [
     RowHeadingEnum.OUTCOMES_METRICS,
     RowHeadingEnum.AVG_DAILY_CASELOAD,
     "# Absconsions",
-    "Months flagged as having a high absconsion rate",
+    RowHeadingEnum.HIGH_ABSCONSION_RATE,
     "# Incarcerations",
-    "Months flagged as having a high incarceration rate",
+    RowHeadingEnum.HIGH_INCARCERATION_RATE,
     None,
     RowHeadingEnum.EARLY_DISCHARGE,
     RowHeadingEnum.EARLY_DISCHARGE_ELIGIBLE,
@@ -443,7 +451,52 @@ def write_logins(sheet: Worksheet, officer_id: str, logins: Logins) -> None:
     ] = f'=COUNTIF({first_date_col}{num_logins_row}:{last_date_col}{num_logins_row}, ">0")'
 
 
-def generate_sheets(sandbox_prefix: str) -> None:
+def write_outlier_status(
+    sheet: Worksheet,
+    officer_id: str,
+    officer_outlier_status: OfficerOutlierStatusFromSandbox,
+) -> None:
+    """Write outlier status to the appropriate cells in the sheet."""
+    high_absconsion_row = get_row_index(RowHeadingEnum.HIGH_ABSCONSION_RATE)
+    high_incarceration_row = get_row_index(RowHeadingEnum.HIGH_INCARCERATION_RATE)
+    for entry in officer_outlier_status.data[officer_id]:
+        # Even though we use exclusive end dates, we want to use the column for the month of that
+        # date instead of subtracting one. This means that the "Dec 2024" column will show whether
+        # someone was an outlier based on their metrics from Dec 1, 2023 - Dec 1, 2024, which is the
+        # time period shown in the tool during Dec 2024.
+        parsed_date = entry.end_date_exclusive.strftime(_COLUMN_DATE_FORMAT)
+        col_idx = get_column_index(parsed_date)
+        if MetricType.ABSCONSION in entry.metrics:
+            sheet[f"{col_idx}{high_absconsion_row}"].value = "Yes"
+        if MetricType.INCARCERATION in entry.metrics:
+            sheet[f"{col_idx}{high_incarceration_row}"].value = "Yes"
+
+    # Fill in "No" values for non-Yes months. Do it here instead of in the query in case someone has
+    # no data for a month- we still want a "No" in that case.
+    year_col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
+    for month in range(1, 13):
+        col_idx = chr(ord(year_col_idx) + month)
+        absconsion_cell = sheet[f"{col_idx}{high_absconsion_row}"]
+        incarceration_cell = sheet[f"{col_idx}{high_incarceration_row}"]
+        if absconsion_cell.value != "Yes":
+            absconsion_cell.value = "No"
+        if incarceration_cell.value != "Yes":
+            incarceration_cell.value = "No"
+
+    # Add formulae to calculate the # months for the year column
+    first_date_col = chr(ord(year_col_idx) + 1)
+    last_date_col = chr(ord(year_col_idx) + 12)
+    sheet[
+        f"{year_col_idx}{high_absconsion_row}"
+    ] = f'=COUNTIF({first_date_col}{high_absconsion_row}:{last_date_col}{high_absconsion_row}, "Yes")'
+    sheet[
+        f"{year_col_idx}{high_incarceration_row}"
+    ] = f'=COUNTIF({first_date_col}{high_incarceration_row}:{last_date_col}{high_incarceration_row}, "Yes")'
+
+
+def generate_sheets(
+    aggregated_metrics_sandbox_prefix: str, outliers_sandbox_prefix: str
+) -> None:
     """Read data and generate spreadsheets"""
     output_dir = os.path.join(os.path.dirname(__file__), "output")
     if not os.path.exists(output_dir):
@@ -453,10 +506,15 @@ def generate_sheets(sandbox_prefix: str) -> None:
     supervisors_to_officers = SupervisorsAndOfficers.from_bigquery(bq_client).data
     officer_aggregated_metrics = OfficerAggregatedMetrics.from_bigquery(bq_client)
     officer_aggregated_metrics_from_sandbox = (
-        OfficerAggregatedMetricsFromSandbox.from_bigquery(bq_client, sandbox_prefix)
+        OfficerAggregatedMetricsFromSandbox.from_bigquery(
+            bq_client, aggregated_metrics_sandbox_prefix
+        )
     )
     impact_funnel_metrics = ImpactFunnelMetrics.from_bigquery(bq_client)
     logins = Logins.from_bigquery(bq_client)
+    officer_outlier_status = OfficerOutlierStatusFromSandbox.from_bigquery(
+        bq_client, outliers_sandbox_prefix
+    )
     for supervisor, officers in supervisors_to_officers.items():
         wb = Workbook()
         for officer in officers:
@@ -472,6 +530,7 @@ def generate_sheets(sandbox_prefix: str) -> None:
             )
             write_grant_rate_formulas(sheet)
             write_logins(sheet, officer.officer_id, logins)
+            write_outlier_status(sheet, officer.officer_id, officer_outlier_status)
 
         # Remove the default sheet, since we created new sheets for our data.
         wb.remove(wb.worksheets[0])
@@ -483,8 +542,17 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--sandbox_prefix",
-        help="""Prefix of data loaded to a sandbox, for use in metric calculations not provided by our standard materialized views.
+        "--aggregated_metrics_sandbox_prefix",
+        help="""Prefix of aggregated_metrics data loaded to a sandbox, for use in metric
+        calculations not provided by our standard materialized views.
+        See branch danawillow/id-perf-sandbox for the changes required to be loaded.""",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--outliers_sandbox_prefix",
+        help="""Prefix of outliers data loaded to a sandbox, for use in metric
+        calculations not provided by our standard materialized views.
         See branch danawillow/id-perf-sandbox for the changes required to be loaded.""",
         type=str,
         required=True,
@@ -496,4 +564,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args, _ = parse_arguments(sys.argv)
     with local_project_id_override(GCP_PROJECT_PRODUCTION):
-        generate_sheets(args.sandbox_prefix)
+        generate_sheets(
+            args.aggregated_metrics_sandbox_prefix, args.outliers_sandbox_prefix
+        )
