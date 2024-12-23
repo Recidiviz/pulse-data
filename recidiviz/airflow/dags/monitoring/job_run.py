@@ -64,6 +64,8 @@ class JobRun:
     execution_date: datetime.datetime = attr.field(
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
+    # n.b. make sure this is SORTED before you convert it to a string; otherwise, it might
+    # break deduplication logic
     dag_run_config: str = attr.field(validator=attr_validators.is_str)
     job_id: str = attr.field(validator=attr_validators.is_str)
     state: JobRunState = attr.field(validator=attr.validators.in_(JobRunState))
@@ -84,8 +86,13 @@ class JobRun:
         execution_date: datetime.datetime,
         conf: dict[str, Any],
         task_id: str,
-        state: str,
+        state: int,
     ) -> "JobRun":
+        # sort dag run config to make sure that two different parameter orderings
+        # doesn't break incident de-duplication
+        sorted_dag_run_config = dict(
+            sorted(filter_params_to_discrete(conf, dag_id).items())
+        )
         # Airflow uses pendulum as it's timezone library; let's convert it to native UTC
         # so our validators understand it
         if execution_date.tzinfo == utc:
@@ -93,7 +100,7 @@ class JobRun:
         return JobRun(
             dag_id=dag_id,
             execution_date=execution_date,
-            dag_run_config=json.dumps(filter_params_to_discrete(conf, dag_id)),
+            dag_run_config=json.dumps(sorted_dag_run_config),
             job_id=task_id,
             state=JobRunState(state),
             error_message=None,
