@@ -25,11 +25,14 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 # states that are enabled in prod for primary
 PRODUCTION_PRIMARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_AR,
+    StateCode.US_CA,
     StateCode.US_CO,
     StateCode.US_ID,
-    StateCode.US_MO,
-    StateCode.US_CA,
     StateCode.US_IX,
+    StateCode.US_MI,
+    StateCode.US_MO,
+    StateCode.US_ND,
+    StateCode.US_PA,
     # states we "rolled" out to prod that aren't enabled in prod but we un-gate them
     # so if/when they are they will use the new raw data infra
     StateCode.US_OZ,
@@ -47,11 +50,7 @@ PRODUCTION_SECONDARY_ENABLED_STATES: Set[StateCode] = {
 # the states just want to be enabled in staging primary
 # all states in any version of prod must able be enabled in staging primary, plus
 STAGING_PRIMARY_ENABLED_STATES: Set[StateCode] = {
-    # prepped for next prod release, but need more time to bake to resolve ongoing errors
-    StateCode.US_ND,  # only 1 real import
-    StateCode.US_PA,  # only 1 successful run, waiting until next week
     StateCode.US_ME,
-    StateCode.US_MI,
     *PRODUCTION_SECONDARY_ENABLED_STATES,
 }
 # all states enabled in staging primary must be enabled in staging secondary, plus the
