@@ -578,6 +578,83 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
             ).reset_index(drop=True),
         )
 
+    def test_add_all_combinations(self) -> None:
+        disposition_df = pd.DataFrame(
+            {
+                "state_code": ["US_IX", "US_IX", "US_IX", "US_IX"],
+                "gender": [
+                    "FEMALE",
+                    "FEMALE",
+                    "FEMALE",
+                    "MALE",
+                ],
+                "assessment_score_bucket_start": [0, 23, 0, 29],
+                "assessment_score_bucket_end": [22, 30, 22, -1],
+                "most_severe_description": [
+                    "DUI DRIVING",
+                    "DUI DRIVING",
+                    "BURGLARY",
+                    "BURGLARY",
+                ],
+                "disposition_probation_pc": [0.1, 0.2, 0.3, 0.4],
+                "disposition_rider_pc": [0.5, 0.6, 0.7, 0.8],
+                "disposition_term_pc": [0.0, 0.1, 0.2, 0.3],
+                "disposition_num_records": [100, 50, 100, 50],
+            }
+        )
+
+        expected_all_combinations_df = pd.DataFrame(
+            {
+                "state_code": ["US_IX", "US_IX", "US_IX", "US_IX", "US_IX", "US_IX"],
+                "gender": [
+                    "FEMALE",
+                    "FEMALE",
+                    "FEMALE",
+                    "MALE",
+                    "FEMALE",
+                    "MALE",
+                ],
+                "assessment_score_bucket_start": [0, 23, 0, 29, 23, 29],
+                "assessment_score_bucket_end": [22, 30, 22, -1, 30, -1],
+                "most_severe_description": [
+                    "DUI DRIVING",
+                    "DUI DRIVING",
+                    "BURGLARY",
+                    "BURGLARY",
+                    "BURGLARY",
+                    "DUI DRIVING",
+                ],
+                "disposition_probation_pc": pd.Series([0.1, 0.2, 0.3, 0.4, 0, 0]),
+                "disposition_rider_pc": pd.Series([0.5, 0.6, 0.7, 0.8, 0, 0]),
+                "disposition_term_pc": pd.Series([0.0, 0.1, 0.2, 0.3, 0, 0]),
+                "disposition_num_records": pd.Series([100, 50, 100, 50, 0, 0]),
+            }
+        )
+
+        all_combinations_df = write_case_insights_data_to_bq.add_all_combinations(
+            disposition_df
+        )
+        pd.testing.assert_frame_equal(
+            expected_all_combinations_df.sort_values(
+                [
+                    "state_code",
+                    "gender",
+                    "assessment_score_bucket_start",
+                    "assessment_score_bucket_end",
+                    "most_severe_description",
+                ]
+            ).reset_index(drop=True),
+            all_combinations_df.sort_values(
+                [
+                    "state_code",
+                    "gender",
+                    "assessment_score_bucket_start",
+                    "assessment_score_bucket_end",
+                    "most_severe_description",
+                ]
+            ).reset_index(drop=True),
+        )
+
     @patch(
         "recidiviz.entrypoints.sentencing.write_case_insights_data_to_bq.add_attributes_to_index"
     )
@@ -993,15 +1070,6 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                         "FORGERY",
                         "DUI DRIVING",
                     ],
-                    [
-                        "Non-drug, non-violent, non-sex offense",
-                        "Non-drug, non-violent, non-sex offense",
-                        "Non-drug, non-violent, non-sex offense",
-                        "Non-drug, non-violent, non-sex offense",
-                        "Non-drug, non-violent, non-sex offense",
-                        "Non-drug, non-violent, non-sex offense",
-                    ],
-                    [False, False, False, False, False, False],
                 ],
                 names=[
                     "state_code",
@@ -1009,8 +1077,6 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "assessment_score_bucket_start",
                     "assessment_score_bucket_end",
                     "most_severe_description",
-                    "combined_offense_category",
-                    "any_is_violent_uniform",
                 ],
             ),
             data=[5, 6, 7, 8, 9, 10],
@@ -1019,8 +1085,15 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                 names=["metric", "cohort_group", "rollup_level"],
             ),
         )
+        attribute_mapping = {
+            "most_severe_description": [
+                "most_severe_ncic_category_uniform",
+                "combined_offense_category",
+                "any_is_violent_uniform",
+            ]
+        }
         added_attributes_df = write_case_insights_data_to_bq.add_attributes_to_index(
-            target_df, reference_df
+            target_df, reference_df, attribute_mapping
         )
         expected_added_attributes_df = pd.DataFrame(
             index=pd.MultiIndex.from_arrays(
@@ -1038,6 +1111,14 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                         "DUI DRIVING",
                     ],
                     [
+                        "Traffic Offenses",
+                        "Traffic Offenses",
+                        "Fraud",
+                        "Fraud",
+                        "Fraud",
+                        "Traffic Offenses",
+                    ],
+                    [
                         "Non-drug, non-violent, non-sex offense",
                         "Non-drug, non-violent, non-sex offense",
                         "Non-drug, non-violent, non-sex offense",
@@ -1046,14 +1127,6 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                         "Non-drug, non-violent, non-sex offense",
                     ],
                     [False, False, False, False, False, False],
-                    [
-                        "Traffic Offenses",
-                        "Traffic Offenses",
-                        "Fraud",
-                        "Fraud",
-                        "Fraud",
-                        "Traffic Offenses",
-                    ],
                 ],
                 names=[
                     "state_code",
@@ -1061,9 +1134,9 @@ class TestWriteCaseInsightsDataToBQ(unittest.TestCase):
                     "assessment_score_bucket_start",
                     "assessment_score_bucket_end",
                     "most_severe_description",
+                    "most_severe_ncic_category_uniform",
                     "combined_offense_category",
                     "any_is_violent_uniform",
-                    "most_severe_ncic_category_uniform",
                 ],
             ),
             data=[5, 6, 7, 8, 9, 10],

@@ -18,8 +18,9 @@
 to be called only within the Airflow DAG's KubernetesPodOperator."""
 import argparse
 import datetime
+import itertools
 import json
-from typing import Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 import pandas as pd
 
@@ -72,6 +73,13 @@ ROLLUP_ATTRIBUTES = [
     # All offenses
     ["state_code", "cohort_group"],
 ]
+ATTRIBUTE_MAPPING = {
+    "most_severe_description": [
+        "most_severe_ncic_category_uniform",
+        "combined_offense_category",
+        "any_is_violent_uniform",
+    ]
+}
 RECIDIVISM_MONTHS = [0, 3, 6, 9, 12, 18, 24, 30, 36]
 # If the CI size for any disposition is above this threshold, roll up to a higher level
 ROLLUP_CI_THRESHOLD = 0.2
@@ -249,8 +257,9 @@ def get_recidivism_event_df(project_id: str) -> pd.DataFrame:
 
 def get_disposition_df(cohort_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Returns: DataFrame with columns 'gender', 'assessment_score_bucket_start', 'assessment_score_bucket_end',
-        'most_severe_description', 'disposition_probation_pc', 'disposition_rider_pc', 'disposition_term_pc'
+    Returns: DataFrame with columns 'state_code', 'gender', 'assessment_score_bucket_start',
+        'assessment_score_bucket_end', 'most_severe_description', 'disposition_probation_pc', 'disposition_rider_pc',
+        'disposition_term_pc'
     """
     raw_disposition_df = (
         cohort_df.groupby(ROLLUP_ATTRIBUTES[0])
@@ -273,38 +282,120 @@ def get_disposition_df(cohort_df: pd.DataFrame) -> pd.DataFrame:
     return disposition_df.reset_index()
 
 
+def add_all_combinations(disposition_df: pd.DataFrame) -> pd.DataFrame:
+    """Add rows for every possible combination of key columns.
+
+    Key columns are 'state_code', 'gender', 'assessment_score_bucket_start', 'assessment_score_bucket_end',
+    'most_severe_description'.
+    get_disposition_df returns a DataFrame with a row for every combination of key columns observed in the data. This
+    method takes that disposition_df as input and adds a row for every possible combination of values in those key
+    columns, with None in the remaining columns for those rows not present in the input.
+
+    Note that 'gender', 'assessment_score_bucket_start' and 'assessment_score_bucket_end' are considered together for
+    the purposes of determining possible combinations. For example, if the input only has (MALE, 0, 22) and
+    (FEMALE, 21, 30) as values for (gender, assessment_score_bucket_start, assessment_score_bucket_end), then those will
+    be the only values present in the output; this method won't also add combinations such as (MALE, 21, 30),
+    (MALE, 0, 30), (FEMALE, 0, 22), etc.
+
+    TODO(#35492): Perform this enumeration of all combinations separately for each state once we have a 2nd state.
+    """
+
+    def flatten_row(row: Tuple[Any]) -> list[Any]:
+        """Flatten e.g. ('US_IX', 'DUI DRIVING', ('FEMALE', 0, 22)] into ['US_IX', 'DUI DRIVING', 'FEMALE', 0, 22]"""
+        return [
+            item
+            for sublist in row
+            for item in ([sublist] if isinstance(sublist, str) else sublist)
+        ]
+
+    original_cols = disposition_df.columns
+    risk_bucket_cols = [
+        "gender",
+        "assessment_score_bucket_start",
+        "assessment_score_bucket_end",
+    ]
+    disposition_cols = [
+        "disposition_probation_pc",
+        "disposition_rider_pc",
+        "disposition_term_pc",
+        "disposition_num_records",
+    ]
+    other_attribute_cols = list(
+        set(original_cols)
+        .difference(set(risk_bucket_cols))
+        .difference(set(disposition_cols))
+        .difference({"cohort_group"})
+    )
+
+    # Get the unique values for each column
+    unique_vals = [disposition_df[col].unique() for col in other_attribute_cols]
+    # Get the unique combinations of values for the risk bucket columns
+    unique_vals.append(list(disposition_df.groupby(risk_bucket_cols).size().index))
+    # Create a row for each combination of unique values
+    rows = list(itertools.product(*unique_vals))
+
+    # Create a DataFrame with all combinations, with 0's in the disposition columns
+    data = [flatten_row(row) for row in rows]
+    attribute_cols = other_attribute_cols + risk_bucket_cols
+    all_combinations_df = pd.DataFrame(data=data, columns=attribute_cols)
+    all_combinations_df.set_index(attribute_cols, inplace=True)
+    all_combinations_df[disposition_cols] = 0
+
+    # Insert the disposition_df values into the DataFrame with all combinations
+    disposition_df_indexed = disposition_df.set_index(attribute_cols)
+    all_combinations_df.loc[
+        disposition_df_indexed.index, disposition_cols
+    ] = disposition_df_indexed[disposition_cols]
+
+    # Set the index back to columns and make sure the original columns order is restored
+    all_combinations_df.reset_index(inplace=True)
+    all_combinations_df = all_combinations_df[original_cols]
+
+    return all_combinations_df
+
+
 def add_attributes_to_index(
-    target_df: pd.DataFrame, reference_df: pd.DataFrame
+    target_df: pd.DataFrame, reference_df: pd.DataFrame, attribute_mapping: dict
 ) -> pd.DataFrame:
-    """Add the attributes in ROLLUP_ATTRIBUTES to the index of target_df by looking them up in reference_df.
+    """Add attributes to the index of target_df by looking them up in reference_df.
+
+    attribute_mapping is a mapping from attributes present in target_df to attributes present in reference_df that
+    should be added to target_df. For example, the specific offense may be present in a rolled-up DataFrame, but the
+    corresponding NCIC category is only available in the full recidivism Dataframe; that category attribute can be added
+    to the rolled-up DataFrame with this method.
 
     The columns of target_df are assumed to have three levels.
     The columns of reference_df should contain the attributes in both the index of target_df and ROLLUP_ATTRIBUTES.
-
     The new attributes to add should be unique in reference_df based on existing index attributes (e.g.
     most_severe_ncic_category_uniform is unique given most_severe_description).
     """
-    all_attrs = {
-        attr for attrs_for_level in ROLLUP_ATTRIBUTES for attr in attrs_for_level
-    }
-    attrs_to_add = all_attrs.difference(target_df.index.names)
-    attrs_to_add.remove("cohort_group")
-    original_attrs = list(target_df.index.names)
-    original_cols = target_df.columns
-    new_attrs_df = reference_df.groupby(original_attrs)[list(attrs_to_add)].agg(
-        lambda x: x.iloc[0]
-    )
-    new_attrs_df.columns = pd.MultiIndex.from_product(
-        [new_attrs_df.columns, [""], [""]]
-    )
+    for from_attribute in attribute_mapping:
+        for to_attribute in attribute_mapping[from_attribute]:
+            # Find the most frequent value of to_attribute in reference_df for from_attribute
+            attr_to_add_df = (
+                reference_df.groupby(from_attribute)[to_attribute]
+                .agg(
+                    # If there is more than one mode, arbitrarily return the first one
+                    lambda x: pd.Series.mode(x).iloc[0]
+                )
+                .to_frame()
+            )
+            attr_to_add_df.columns = pd.MultiIndex.from_product(
+                [attr_to_add_df.columns, [""], [""]]
+            )
 
-    merged_df = (
-        target_df.merge(new_attrs_df, left_index=True, right_index=True)
-        .reset_index()
-        .set_index(original_attrs + list(attrs_to_add))
-    )
-    merged_df.columns = original_cols
-    return merged_df
+            original_attrs = list(target_df.index.names)
+            original_cols = target_df.columns
+
+            target_df = (
+                target_df.merge(attr_to_add_df, left_index=True, right_index=True)
+                .reset_index()
+                .set_index(original_attrs + [to_attribute])
+            )
+
+            target_df.columns = original_cols
+
+    return target_df
 
 
 # TODO(#31104): Move CI calculation to a centralized util method
@@ -459,7 +550,9 @@ def get_all_rollup_aggregated_df(
                 how="left",
             )
             all_rollup_levels_df = add_attributes_to_index(
-                target_df=all_rollup_levels_df, reference_df=recidivism_df
+                target_df=all_rollup_levels_df,
+                reference_df=recidivism_df,
+                attribute_mapping=ATTRIBUTE_MAPPING,
             )
         else:
             all_rollup_levels_df = all_rollup_levels_df.merge(
@@ -555,6 +648,7 @@ def write_case_insights_data_to_bq(project_id: str) -> None:
 
     event_df = get_recidivism_event_df(project_id)
     disposition_df = get_disposition_df(cohort_df)
+    disposition_df = add_all_combinations(disposition_df)
 
     recidivism_df = gen_cohort_time_to_first_event(
         cohort_df=cohort_df,
