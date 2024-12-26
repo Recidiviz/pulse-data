@@ -35,7 +35,8 @@ WITH impact_funnel_data AS (
         task_type,
         start_date,
         end_date AS end_date_exclusive,
-        is_eligible
+        is_eligible,
+        marked_ineligible
     FROM `recidiviz-123.analyst_data.workflows_person_impact_funnel_status_sessions_materialized`
     WHERE
         state_code="US_IX"
@@ -59,7 +60,7 @@ WITH impact_funnel_data AS (
     table_1_name="impact_funnel_data",
     table_2_name="officer_sessions",
     index_columns=["state_code", "person_id"],
-    table_1_columns=["task_type", "is_eligible"],
+    table_1_columns=["task_type", "is_eligible", "marked_ineligible"],
     table_2_columns=["officer_id"])}
 )
 SELECT
@@ -67,6 +68,7 @@ SELECT
     date_to_check,
     task_type,
     COUNTIF(is_eligible) AS eligible,
+    COUNTIF(marked_ineligible) AS marked_ineligible
 FROM joined_data
 CROSS JOIN UNNEST(generate_date_array("2024-02-01", "2025-01-01", INTERVAL 1 MONTH)) AS date_to_check
 WHERE
@@ -81,6 +83,7 @@ class ImpactFunnelMetric:
     date: date
     task_type: str
     eligible: int
+    marked_ineligible: int
 
 
 @attr.define(frozen=True)
@@ -104,6 +107,7 @@ class ImpactFunnelMetrics:
                     date=result["date_to_check"],
                     task_type=result["task_type"],
                     eligible=result["eligible"],
+                    marked_ineligible=result["marked_ineligible"],
                 )
             )
 

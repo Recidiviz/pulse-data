@@ -61,6 +61,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 class RowHeadingEnum(Enum):
+    """Enum to represent each labeled row in the sheet."""
+
     USAGE = auto()
     NUM_LOGINS = auto()
     NUM_MONTHS_LOGGED_IN = auto()
@@ -77,18 +79,22 @@ class RowHeadingEnum(Enum):
     EARLY_DISCHARGE_GRANTS = auto()
     EARLY_DISCHARGE_MONTHLY_GRANT_RATE = auto()
     EARLY_DISCHARGE_ELIGIBLE = auto()
+    EARLY_DISCHARGE_MARKED_INELIGIBLE = auto()
     LSU = auto()
     LSU_GRANTS = auto()
     LSU_MONTHLY_GRANT_RATE = auto()
     LSU_ELIGIBLE = auto()
+    LSU_MARKED_INELIGIBLE = auto()
     SLD = auto()
     SLD_GRANTS = auto()
     SLD_MONTHLY_GRANT_RATE = auto()
     SLD_ELIGIBLE = auto()
+    SLD_MARKED_INELIGIBLE = auto()
     FT_DISCHARGE = auto()
     FT_DISCHARGE_GRANTS = auto()
     FT_DISCHARGE_MONTHLY_GRANT_RATE = auto()
     FT_DISCHARGE_ELIGIBLE = auto()
+    FT_DISCHARGE_MARKED_INELIGIBLE = auto()
     OPERATIONS_METRICS = auto()
 
 
@@ -110,18 +116,22 @@ _ROW_HEADING_LABELS = {
     RowHeadingEnum.EARLY_DISCHARGE_GRANTS: "Grants during time period",
     RowHeadingEnum.EARLY_DISCHARGE_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.EARLY_DISCHARGE_ELIGIBLE: "Eligible as of end of time period",
+    RowHeadingEnum.EARLY_DISCHARGE_MARKED_INELIGIBLE: "Overridden (Marked Ineligible) as of end of time period",
     RowHeadingEnum.LSU: "LSU",
     RowHeadingEnum.LSU_GRANTS: "Grants during time period",
     RowHeadingEnum.LSU_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.LSU_ELIGIBLE: "Eligible as of end of time period",
+    RowHeadingEnum.LSU_MARKED_INELIGIBLE: "Overridden (Marked Ineligible) as of end of time period",
     RowHeadingEnum.SLD: "Supervision Level Downgrade",
     RowHeadingEnum.SLD_GRANTS: "Grants during time period",
     RowHeadingEnum.SLD_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.SLD_ELIGIBLE: "Eligible as of end of time period",
+    RowHeadingEnum.SLD_MARKED_INELIGIBLE: "Overridden (Marked Ineligible) as of end of time period",
     RowHeadingEnum.FT_DISCHARGE: "Past FTRD",
     RowHeadingEnum.FT_DISCHARGE_GRANTS: "Grants during time period",
     RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.FT_DISCHARGE_ELIGIBLE: "Eligible as of end of time period",
+    RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE: "Overridden (Marked Ineligible) as of end of time period",
     RowHeadingEnum.OPERATIONS_METRICS: "Operations Metrics",
     RowHeadingEnum.TIMELY_RISK_ASSESSMENTS: "Timely Risk Assessments",
     RowHeadingEnum.TIMELY_F2F_CONTACTS: "Timely F2F Contacts",
@@ -143,28 +153,28 @@ _ROW_HEADINGS: list[RowHeadingEnum | str | None] = [
     None,
     RowHeadingEnum.EARLY_DISCHARGE,
     RowHeadingEnum.EARLY_DISCHARGE_ELIGIBLE,
-    "Overridden (Marked Ineligible) as of end of time period",
+    RowHeadingEnum.EARLY_DISCHARGE_MARKED_INELIGIBLE,
     RowHeadingEnum.EARLY_DISCHARGE_GRANTS,
     RowHeadingEnum.EARLY_DISCHARGE_MONTHLY_GRANT_RATE,
     'Most often used "Ineligible Reason"',
     None,
     RowHeadingEnum.LSU,
     RowHeadingEnum.LSU_ELIGIBLE,
-    "Overridden (Marked Ineligible) as of end of time period",
+    RowHeadingEnum.LSU_MARKED_INELIGIBLE,
     RowHeadingEnum.LSU_GRANTS,
     RowHeadingEnum.LSU_MONTHLY_GRANT_RATE,
     'Most often used "Ineligible Reason"',
     None,
     RowHeadingEnum.SLD,
     RowHeadingEnum.SLD_ELIGIBLE,
-    "Overridden (Marked Ineligible) as of end of time period",
+    RowHeadingEnum.SLD_MARKED_INELIGIBLE,
     RowHeadingEnum.SLD_GRANTS,
     RowHeadingEnum.SLD_MONTHLY_GRANT_RATE,
     'Most often used "Ineligible Reason"',
     None,
     RowHeadingEnum.FT_DISCHARGE,
     RowHeadingEnum.FT_DISCHARGE_ELIGIBLE,
-    "Overridden (Marked Ineligible) as of end of time period",
+    RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE,
     RowHeadingEnum.FT_DISCHARGE_GRANTS,
     RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE,
     'Most often used "Ineligible Reason"',
@@ -420,11 +430,24 @@ def write_metrics_from_sandbox(
 def write_impact_funnel_metrics(
     sheet: Worksheet, officer_id: str, impact_funnel_metrics: ImpactFunnelMetrics
 ) -> None:
-    task_type_to_row_heading = {
-        "EARLY_DISCHARGE": RowHeadingEnum.EARLY_DISCHARGE_ELIGIBLE,
-        "TRANSFER_TO_LIMITED_SUPERVISION": RowHeadingEnum.LSU_ELIGIBLE,
-        "SUPERVISION_LEVEL_DOWNGRADE": RowHeadingEnum.SLD_ELIGIBLE,
-        "FULL_TERM_DISCHARGE": RowHeadingEnum.FT_DISCHARGE_ELIGIBLE,
+    """Write impact funnel metrics to the appropriate cells in the sheet"""
+    task_type_to_row_headings = {
+        "EARLY_DISCHARGE": (
+            RowHeadingEnum.EARLY_DISCHARGE_ELIGIBLE,
+            RowHeadingEnum.EARLY_DISCHARGE_MARKED_INELIGIBLE,
+        ),
+        "TRANSFER_TO_LIMITED_SUPERVISION": (
+            RowHeadingEnum.LSU_ELIGIBLE,
+            RowHeadingEnum.LSU_MARKED_INELIGIBLE,
+        ),
+        "SUPERVISION_LEVEL_DOWNGRADE": (
+            RowHeadingEnum.SLD_ELIGIBLE,
+            RowHeadingEnum.SLD_MARKED_INELIGIBLE,
+        ),
+        "FULL_TERM_DISCHARGE": (
+            RowHeadingEnum.FT_DISCHARGE_ELIGIBLE,
+            RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE,
+        ),
     }
 
     for metric in impact_funnel_metrics.data[officer_id]:
@@ -432,9 +455,17 @@ def write_impact_funnel_metrics(
             _COLUMN_DATE_FORMAT
         )
         col_idx = get_column_index(parsed_date)
-        eligible_row = task_type_to_row_heading[metric.task_type]
+        (eligible_row, marked_ineligible_row) = task_type_to_row_headings[
+            metric.task_type
+        ]
         try_set_metric_cell(
             sheet, metric.eligible, col_idx, get_row_index(eligible_row)
+        )
+        try_set_metric_cell(
+            sheet,
+            metric.marked_ineligible,
+            col_idx,
+            get_row_index(marked_ineligible_row),
         )
         if metric.date == date(2025, 1, 1):
             try_set_metric_cell(
@@ -442,6 +473,12 @@ def write_impact_funnel_metrics(
                 metric.eligible,
                 get_column_index(ColumnHeadingEnum.YEARLY.value),
                 get_row_index(eligible_row),
+            )
+            try_set_metric_cell(
+                sheet,
+                metric.marked_ineligible,
+                get_column_index(ColumnHeadingEnum.YEARLY.value),
+                get_row_index(marked_ineligible_row),
             )
 
 
