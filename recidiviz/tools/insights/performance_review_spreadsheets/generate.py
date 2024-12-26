@@ -255,12 +255,16 @@ def apply_conditional_formatting(sheet: Worksheet) -> None:
 
 
 def try_set_metric_cell(
-    sheet: Worksheet, metric_value: int | float | None, col_idx: str, row_idx: int
+    sheet: Worksheet,
+    metric_value: int | float | None,
+    col_idx: str,
+    row_idx: int,
+    number_format: str = FORMAT_NUMBER,
 ) -> None:
     if metric_value is not None:
         cell = sheet[f"{col_idx}{row_idx}"]
         cell.value = metric_value
-        cell.number_format = FORMAT_NUMBER
+        cell.number_format = number_format
 
 
 def write_metrics(
@@ -299,6 +303,9 @@ def write_metrics_from_sandbox(
     lsu_row = get_row_index(RowHeadingEnum.LSU_GRANTS)
     sld_row = get_row_index(RowHeadingEnum.SLD_GRANTS)
     ft_discharge_row = get_row_index(RowHeadingEnum.FT_DISCHARGE_GRANTS)
+    timely_risk_assessment_row = get_row_index(RowHeadingEnum.TIMELY_RISK_ASSESSMENTS)
+    timely_contacts_row = get_row_index(RowHeadingEnum.TIMELY_F2F_CONTACTS)
+    timely_downgrade_row = get_row_index(RowHeadingEnum.SUPERVISION_LEVEL_MISMATCH)
 
     for metric in officer_aggregated_metrics.monthly_data[officer_id]:
         parsed_date = (metric.end_date_exclusive - relativedelta(days=1)).strftime(
@@ -322,6 +329,27 @@ def write_metrics_from_sandbox(
             metric.task_completions_full_term_discharge,
             col_idx,
             ft_discharge_row,
+        )
+        try_set_metric_cell(
+            sheet,
+            metric.timely_risk_assessment,
+            col_idx,
+            timely_risk_assessment_row,
+            FORMAT_PERCENTAGE_00,
+        )
+        try_set_metric_cell(
+            sheet,
+            metric.timely_contact,
+            col_idx,
+            timely_contacts_row,
+            FORMAT_PERCENTAGE_00,
+        )
+        try_set_metric_cell(
+            sheet,
+            metric.timely_downgrade,
+            col_idx,
+            timely_downgrade_row,
+            FORMAT_PERCENTAGE_00,
         )
 
     yearly_col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
@@ -350,6 +378,27 @@ def write_metrics_from_sandbox(
             yearly_data.task_completions_full_term_discharge,
             yearly_col_idx,
             ft_discharge_row,
+        )
+        try_set_metric_cell(
+            sheet,
+            yearly_data.timely_risk_assessment,
+            yearly_col_idx,
+            timely_risk_assessment_row,
+            FORMAT_PERCENTAGE_00,
+        )
+        try_set_metric_cell(
+            sheet,
+            yearly_data.timely_contact,
+            yearly_col_idx,
+            timely_contacts_row,
+            FORMAT_PERCENTAGE_00,
+        )
+        try_set_metric_cell(
+            sheet,
+            yearly_data.timely_downgrade,
+            yearly_col_idx,
+            timely_downgrade_row,
+            FORMAT_PERCENTAGE_00,
         )
 
 
