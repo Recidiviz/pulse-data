@@ -36,7 +36,7 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.ingest.operations.operate_on_storage_raw_files_controller import (
+from recidiviz.tools.ingest.operations.helpers.operate_on_storage_raw_files_controller import (
     IngestFilesOperationType,
     OperateOnStorageRawFilesController,
 )

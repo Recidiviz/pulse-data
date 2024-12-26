@@ -26,7 +26,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tools.ingest.operations.raw_table_file_counts_diff_query_generator import (
+from recidiviz.tools.ingest.operations.helpers.raw_table_file_counts_diff_query_generator import (
     RawTableFileCountsDiffQueryGenerator,
 )
 

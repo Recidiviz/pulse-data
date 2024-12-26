@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional
 
 import attr
 
-from recidiviz.tools.ingest.operations.raw_table_diff_query_generator import (
+from recidiviz.tools.ingest.operations.helpers.raw_table_diff_query_generator import (
     RawTableDiffQueryGenerator,
     RawTableDiffQueryResult,
     RawTableDiffQueryResultRow,

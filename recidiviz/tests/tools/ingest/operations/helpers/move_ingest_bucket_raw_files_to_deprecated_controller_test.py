@@ -21,7 +21,7 @@ from typing import Any
 from unittest.mock import patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsDirectoryPath
-from recidiviz.tools.ingest.operations.move_ingest_bucket_raw_files_to_deprecated_controller import (
+from recidiviz.tools.ingest.operations.helpers.move_ingest_bucket_raw_files_to_deprecated_controller import (
     MoveIngestBucketRawFilesToDeprecatedController,
 )
 
@@ -31,7 +31,7 @@ class MoveIngestBucketRawFilesToDeprecatedControllerTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.gsutil_ls_patcher = patch(
-            "recidiviz.tools.ingest.operations.move_ingest_bucket_raw_files_to_deprecated_controller.gsutil_ls"
+            "recidiviz.tools.ingest.operations.helpers.move_ingest_bucket_raw_files_to_deprecated_controller.gsutil_ls"
         )
         self.gsutil_ls_mock = self.gsutil_ls_patcher.start()
         self.files = [
@@ -44,12 +44,12 @@ class MoveIngestBucketRawFilesToDeprecatedControllerTest(unittest.TestCase):
         ]
         self.gsutil_ls_mock.return_value = self.files
         self.open_patcher = patch(
-            "recidiviz.tools.ingest.operations.move_ingest_bucket_raw_files_to_deprecated_controller.open"
+            "recidiviz.tools.ingest.operations.helpers.move_ingest_bucket_raw_files_to_deprecated_controller.open"
         )
         self.open_patcher.start()
 
         self.prompt_patcher = patch(
-            "recidiviz.tools.ingest.operations.move_ingest_bucket_raw_files_to_deprecated_controller.prompt_for_confirmation"
+            "recidiviz.tools.ingest.operations.helpers.move_ingest_bucket_raw_files_to_deprecated_controller.prompt_for_confirmation"
         )
         self.prompt_patcher.start()
 
@@ -146,7 +146,7 @@ class MoveIngestBucketRawFilesToDeprecatedControllerTest(unittest.TestCase):
                 raise ValueError("Error moving file")
 
         with patch(
-            "recidiviz.tools.ingest.operations.move_ingest_bucket_raw_files_to_deprecated_controller.gsutil_mv",
+            "recidiviz.tools.ingest.operations.helpers.move_ingest_bucket_raw_files_to_deprecated_controller.gsutil_mv",
             side_effect=gsutil_mv,
         ):
             controller = MoveIngestBucketRawFilesToDeprecatedController(

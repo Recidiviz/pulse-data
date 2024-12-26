@@ -24,7 +24,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tools.ingest.operations.delete_bq_raw_table_rows_controller import (
+from recidiviz.tools.ingest.operations.helpers.delete_bq_raw_table_rows_controller import (
     DeleteBQRawTableRowsController,
 )
 

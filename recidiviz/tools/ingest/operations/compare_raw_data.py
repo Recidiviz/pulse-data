@@ -35,18 +35,18 @@ import sys
 from typing import Dict, List, Optional
 
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.ingest.operations.raw_data_region_diff_query_executor import (
+from recidiviz.tools.ingest.operations.helpers.raw_data_region_diff_query_executor import (
     RawDataRegionDiffQueryExecutor,
     RawDataRegionQueryResult,
 )
-from recidiviz.tools.ingest.operations.raw_table_data_diff_query_generator import (
+from recidiviz.tools.ingest.operations.helpers.raw_table_data_diff_query_generator import (
     RawTableDataDiffQueryGenerator,
 )
-from recidiviz.tools.ingest.operations.raw_table_diff_query_generator import (
+from recidiviz.tools.ingest.operations.helpers.raw_table_diff_query_generator import (
     RawTableDiffQueryGenerator,
     RawTableDiffQueryResult,
 )
-from recidiviz.tools.ingest.operations.raw_table_file_counts_diff_query_generator import (
+from recidiviz.tools.ingest.operations.helpers.raw_table_file_counts_diff_query_generator import (
     RawTableFileCountsDiffQueryGenerator,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING

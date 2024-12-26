@@ -29,7 +29,7 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.tools.ingest.operations.raw_table_data_diff_query_generator import (
+from recidiviz.tools.ingest.operations.helpers.raw_table_data_diff_query_generator import (
     RawTableDataDiffQueryGenerator,
 )
 

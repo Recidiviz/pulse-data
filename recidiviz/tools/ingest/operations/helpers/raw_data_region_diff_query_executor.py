@@ -28,7 +28,7 @@ from recidiviz.big_query.big_query_utils import bq_query_job_result_to_list_of_r
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
-from recidiviz.tools.ingest.operations.raw_table_diff_query_generator import (
+from recidiviz.tools.ingest.operations.helpers.raw_table_diff_query_generator import (
     RawTableDiffQueryGenerator,
     RawTableDiffQueryResult,
 )

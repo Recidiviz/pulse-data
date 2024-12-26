@@ -54,13 +54,13 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.persistence.database.schema.operations.schema import (
     DirectIngestRawFileMetadata,
 )
-from recidiviz.tools.ingest.operations.delete_bq_raw_table_rows_controller import (
+from recidiviz.tools.ingest.operations.helpers.delete_bq_raw_table_rows_controller import (
     DeleteBQRawTableRowsController,
 )
-from recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller import (
+from recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller import (
     InvalidateOperationsDBFilesController,
 )
-from recidiviz.tools.ingest.operations.operate_on_storage_raw_files_controller import (
+from recidiviz.tools.ingest.operations.helpers.operate_on_storage_raw_files_controller import (
     IngestFilesOperationType,
     OperateOnStorageRawFilesController,
 )

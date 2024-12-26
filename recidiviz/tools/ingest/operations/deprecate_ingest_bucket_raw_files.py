@@ -38,10 +38,10 @@ import logging
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller import (
+from recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller import (
     InvalidateOperationsDBFilesController,
 )
-from recidiviz.tools.ingest.operations.move_ingest_bucket_raw_files_to_deprecated_controller import (
+from recidiviz.tools.ingest.operations.helpers.move_ingest_bucket_raw_files_to_deprecated_controller import (
     MoveIngestBucketRawFilesToDeprecatedController,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation

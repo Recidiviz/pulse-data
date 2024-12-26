@@ -21,7 +21,7 @@ from unittest.mock import MagicMock, patch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller import (
+from recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller import (
     InvalidateOperationsDBFilesController,
     RawFilesGroupedByTagAndId,
 )
@@ -81,7 +81,7 @@ class TestInvalidateOperationsDBFilesController(unittest.TestCase):
         )
         self.project_id_patcher.start()
         self.dag_enabled_patcher = patch(
-            "recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller.is_raw_data_import_dag_enabled",
+            "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.is_raw_data_import_dag_enabled",
             return_value=True,
         )
         self.dag_enabled_patcher.start()
@@ -103,10 +103,10 @@ class TestInvalidateOperationsDBFilesController(unittest.TestCase):
         self.dag_enabled_patcher.stop()
 
     @patch(
-        "recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller.cloudsql_proxy_control.connection"
+        "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.cloudsql_proxy_control.connection"
     )
     @patch(
-        "recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
+        "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
     )
     def test_run_no_files_to_invalidate(
         self, mock_session_factory: MagicMock, _mock_proxy_control: MagicMock
@@ -116,16 +116,16 @@ class TestInvalidateOperationsDBFilesController(unittest.TestCase):
         mock_session_factory.return_value.__enter__.return_value = mock_session
 
         with patch(
-            "recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller.logging.info"
+            "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.logging.info"
         ) as mock_logging:
             self.controller.run()
             mock_logging.assert_called_with("No files to invalidate.")
 
     @patch(
-        "recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
+        "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
     )
     @patch(
-        "recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller.cloudsql_proxy_control.connection"
+        "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.cloudsql_proxy_control.connection"
     )
     def test_run_execute_invalidation(
         self, _mock_proxy_control: MagicMock, mock_session_factory: MagicMock
@@ -169,10 +169,10 @@ WHERE gcs_file_id in (8, 6, 7)
         ), "GCS query not found in execute calls."
 
     @patch(
-        "recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
+        "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.SessionFactory.for_proxy"
     )
     @patch(
-        "recidiviz.tools.ingest.operations.invalidate_operations_db_files_controller.cloudsql_proxy_control.connection"
+        "recidiviz.tools.ingest.operations.helpers.invalidate_operations_db_files_controller.cloudsql_proxy_control.connection"
     )
     def test_run_execute_invalidation_filename_filter(
         self, _mock_proxy_control: MagicMock, mock_session_factory: MagicMock

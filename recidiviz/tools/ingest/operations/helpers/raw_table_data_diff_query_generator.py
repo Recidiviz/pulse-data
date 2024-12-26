@@ -31,7 +31,7 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.ingest.operations.raw_table_diff_query_generator import (
+from recidiviz.tools.ingest.operations.helpers.raw_table_diff_query_generator import (
     RawTableDiffQueryGenerator,
     RawTableDiffQueryResult,
     RawTableDiffQueryResultRow,
