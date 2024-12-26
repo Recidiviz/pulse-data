@@ -66,7 +66,9 @@ class RowHeadingEnum(Enum):
     NUM_MONTHS_LOGGED_IN = auto()
     OUTCOMES_METRICS = auto()
     AVG_DAILY_CASELOAD = auto()
+    NUM_ABSCONSIONS = auto()
     HIGH_ABSCONSION_RATE = auto()
+    NUM_INCARCERATIONS = auto()
     HIGH_INCARCERATION_RATE = auto()
     TIMELY_RISK_ASSESSMENTS = auto()
     TIMELY_F2F_CONTACTS = auto()
@@ -100,7 +102,9 @@ _ROW_HEADING_LABELS = {
     RowHeadingEnum.NUM_MONTHS_LOGGED_IN: "# of Months in 2024 where they logged in at least once",
     RowHeadingEnum.OUTCOMES_METRICS: "Outcomes Metrics",
     RowHeadingEnum.AVG_DAILY_CASELOAD: "# Average Daily Caseload",
+    RowHeadingEnum.NUM_ABSCONSIONS: "# Absconsions",
     RowHeadingEnum.HIGH_ABSCONSION_RATE: "Months flagged as having a high absconsion rate",
+    RowHeadingEnum.NUM_INCARCERATIONS: "# Incarcerations",
     RowHeadingEnum.HIGH_INCARCERATION_RATE: "Months flagged as having a high incarceration rate",
     RowHeadingEnum.EARLY_DISCHARGE: "Early Discharge",
     RowHeadingEnum.EARLY_DISCHARGE_GRANTS: "Grants during time period",
@@ -132,9 +136,9 @@ _ROW_HEADINGS: list[RowHeadingEnum | str | None] = [
     None,
     RowHeadingEnum.OUTCOMES_METRICS,
     RowHeadingEnum.AVG_DAILY_CASELOAD,
-    "# Absconsions",
+    RowHeadingEnum.NUM_ABSCONSIONS,
     RowHeadingEnum.HIGH_ABSCONSION_RATE,
-    "# Incarcerations",
+    RowHeadingEnum.NUM_INCARCERATIONS,
     RowHeadingEnum.HIGH_INCARCERATION_RATE,
     None,
     RowHeadingEnum.EARLY_DISCHARGE,
@@ -274,6 +278,8 @@ def write_metrics(
 ) -> None:
     """Write aggregated metrics to the appropriate cells in the sheet"""
     avg_daily_caseload_row = get_row_index(RowHeadingEnum.AVG_DAILY_CASELOAD)
+    num_absconsions_row = get_row_index(RowHeadingEnum.NUM_ABSCONSIONS)
+    num_incarcerations_row = get_row_index(RowHeadingEnum.NUM_INCARCERATIONS)
     for metric in officer_aggregated_metrics.monthly_data[officer_id]:
         parsed_date = (metric.end_date_exclusive - relativedelta(days=1)).strftime(
             _COLUMN_DATE_FORMAT
@@ -290,6 +296,15 @@ def write_metrics(
             yearly_data.avg_daily_population,
             yearly_col_idx,
             avg_daily_caseload_row,
+        )
+        try_set_metric_cell(
+            sheet, yearly_data.num_absconsions, yearly_col_idx, num_absconsions_row
+        )
+        try_set_metric_cell(
+            sheet,
+            yearly_data.num_incarcerations,
+            yearly_col_idx,
+            num_incarcerations_row,
         )
 
 

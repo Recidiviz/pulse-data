@@ -41,6 +41,8 @@ SELECT
     officer_id,
     end_date,
     avg_daily_population,
+    violations_absconsion,
+    incarceration_starts_most_severe_violation_type_not_absconsion
 FROM `recidiviz-123.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
 WHERE
     state_code = "US_IX"
@@ -53,6 +55,8 @@ WHERE
 class AggregatedMetrics:
     end_date_exclusive: date
     avg_daily_population: float | None
+    num_absconsions: int | None
+    num_incarcerations: int | None
 
 
 @attr.define(frozen=True)
@@ -74,6 +78,8 @@ class OfficerAggregatedMetrics:
             metrics = AggregatedMetrics(
                 end_date_exclusive=row["end_date"],
                 avg_daily_population=row["avg_daily_population"],
+                num_absconsions=None,
+                num_incarcerations=None,
             )
             monthly_data[row["officer_id"]].append(metrics)
 
@@ -86,6 +92,10 @@ class OfficerAggregatedMetrics:
             metrics = AggregatedMetrics(
                 end_date_exclusive=row["end_date"],
                 avg_daily_population=row["avg_daily_population"],
+                num_absconsions=row["violations_absconsion"],
+                num_incarcerations=row[
+                    "incarceration_starts_most_severe_violation_type_not_absconsion"
+                ],
             )
             yearly_data[row["officer_id"]] = metrics
 
