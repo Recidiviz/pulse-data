@@ -52,6 +52,7 @@ from tabulate import tabulate
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
@@ -60,6 +61,9 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
+    DirectIngestRawFileMetadataManagerV2,
 )
 from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_manager import (
     LegacyDirectIngestRawFileMetadataManager,
@@ -169,14 +173,26 @@ def get_raw_data_upper_bound_dates_json_for_sandbox_pipeline(
         ).raw_table_dependency_configs
     }
 
+    # TODO(#28239) remove once raw data import dag is fully rolled out
+    raw_file_metadata_manager: LegacyDirectIngestRawFileMetadataManager | DirectIngestRawFileMetadataManagerV2 = (
+        LegacyDirectIngestRawFileMetadataManager(
+            state_code.value, raw_data_source_instance
+        )
+        if not is_raw_data_import_dag_enabled(
+            state_code=state_code,
+            raw_data_instance=raw_data_source_instance,
+            project_id=project_id,
+        )
+        else DirectIngestRawFileMetadataManagerV2(
+            state_code.value, raw_data_source_instance
+        )
+    )
+
     with local_project_id_override(project_id), cloudsql_proxy_control.connection(
         schema_type=SchemaType.OPERATIONS
     ), SessionFactory.for_proxy(
         SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
     ) as session:
-        raw_file_metadata_manager = LegacyDirectIngestRawFileMetadataManager(
-            state_code.value, raw_data_source_instance
-        )
         raw_data_max_upper_bounds = raw_file_metadata_manager.get_max_update_datetimes(
             session
         )
