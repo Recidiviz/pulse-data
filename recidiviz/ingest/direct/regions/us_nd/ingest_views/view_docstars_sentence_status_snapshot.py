@@ -62,7 +62,7 @@ docstars_offendercasestable_cleaned AS (
 -- what the status of a sentence is. This CTE stores the previous values of those fields
 -- in each row so we can track when they change.
 all_entries AS (
-  SELECT DISTINCT
+  SELECT
     SID,
     CASE_NUMBER,
     -- Populate NULL COURT_NUMBER values with the string 'NULL' so they are usable in 
@@ -71,16 +71,16 @@ all_entries AS (
     DESCRIPTION,
     TA_TYPE,
     TERM_DATE,
-    LAG(TERM_DATE) OVER (PARTITION BY SID, CASE_NUMBER, IFNULL(COURT_NUMBER, 'NULL') ORDER BY COALESCE(REV_DATE, TERM_DATE, RecDate)) AS PREV_TERM_DATE,
+    LAG(TERM_DATE) OVER (PARTITION BY SID, CASE_NUMBER, IFNULL(COURT_NUMBER, 'NULL') ORDER BY REV_DATE, TERM_DATE, RecDate) AS PREV_TERM_DATE,
     REV_DATE,
-    LAG(REV_DATE) OVER (PARTITION BY SID, CASE_NUMBER, IFNULL(COURT_NUMBER, 'NULL') ORDER BY COALESCE(REV_DATE, TERM_DATE, RecDate)) AS PREV_REV_DATE,
+    LAG(REV_DATE) OVER (PARTITION BY SID, CASE_NUMBER, IFNULL(COURT_NUMBER, 'NULL') ORDER BY REV_DATE, TERM_DATE, RecDate) AS PREV_REV_DATE,
     RecDate,
   FROM docstars_offendercasestable_cleaned
   ),
 -- This CTE collects and infers statuses based on the TA_TYPE field and the REV_DATE and 
 -- TERM_DATE fields in the raw data.  
 dates_and_statuses AS (
-SELECT DISTINCT
+SELECT
   SID,
   CASE_NUMBER, 
   COURT_NUMBER,
@@ -129,7 +129,7 @@ completion_or_revocation_dates AS (
   WHERE STATUS IN ('COMPLETED', 'REVOKED')
   GROUP BY 1,2,3
 )
-SELECT 
+SELECT DISTINCT
   SID,
   CASE_NUMBER,
   -- Set NULL COURT_NUMBER values to actual NULLs instead of placeholders used for sorting.

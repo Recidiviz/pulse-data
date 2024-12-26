@@ -93,7 +93,6 @@ output:
                   - ADM ERROR
                 StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
                   - OTHER
-                  - PREA
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
                   - ADMN
                   - RAB
@@ -133,6 +132,8 @@ output:
                   - BED_ASSIGNMENT_CHANGE
                 StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
                   - OOS
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - PREA
           release_reason:
             $enum_mapping:
               $raw_text: release_reason_code
@@ -192,6 +193,7 @@ output:
                   - TRN
                 StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
                   - FED
+                  - PREA
           housing_unit_category:
             $enum_mapping:
               $raw_text: bed_assignment
