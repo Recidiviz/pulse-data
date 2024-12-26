@@ -1,16 +1,14 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: dbo_EmploymentPeriod
+file_tag: EmploymentPeriod
 encoding: windows-1252
 separator: "‡"
 custom_line_terminator: "†"
 ignore_quotes: True
 file_description: |-
-  Table containing data about employment periods
+  Table containing data about employer periods
 data_classification: source
 always_historical_export: True
 no_valid_primary_keys: True
-# We have since asked PA to restructure the employment data they provide us, so now this table is replaced with EmploymentPeriod and EmploymentAvailability
-update_cadence: IRREGULAR
 primary_key_cols: []
 columns:
   - name: Person_Id
@@ -21,12 +19,8 @@ columns:
     field_type: person_external_id
     external_id_type: US_PA_PBPP
     is_pii: True
-  - name: Offender_Attribute_Value
-    description: Attribute value
-  - name: Offender_Attribute_Code
-    description: Attribute code
   - name: Org_Name
-    description: Organization Name
+    description: Employer Name
   - name: Effective_Start_Date
     description: Effective Start Date
     field_type: datetime
