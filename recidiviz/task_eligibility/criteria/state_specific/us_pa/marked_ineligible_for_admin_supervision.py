@@ -63,6 +63,7 @@ LEFT JOIN `{project_id}.{workflows_views_dataset}.person_id_to_external_id_mater
 WHERE a.state_code = 'US_PA'
     AND opportunity_type = 'usPaAdminSupervision'
     AND 'FINES & FEES' NOT IN UNNEST(denial_reasons) 
+    AND 'SPECIAL CONDITIONS' NOT IN UNNEST(denial_reasons)
 GROUP BY 1, 2, 3
 """
 
