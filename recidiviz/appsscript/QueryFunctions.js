@@ -757,8 +757,8 @@ function constructMauWauByLocationColumnChart(
     "# of Users",
     ["#48742C", "#F2BF40"], // this chart will have green and yellow columns
     false, // we do not want to stack columns
-    1022, // this chart has a custom width
-    618, // this chart has a custom height
+    undefined, // this chart has a default width
+    undefined, // this chart has a default height
     Charts.Position.BOTTOM, // this chart has a legend
     false // for this chart, we do not want to filter out zero values
   );
@@ -779,7 +779,7 @@ function constructActiveUsersByWeekColumnChart(
   activeUsersLabel,
   wauAndMauByWeekData,
   titleString,
-  customColor = ["#3697FA"],
+  customColor = ["#3697FA"]
 ) {
   const xAxisClean = "Start Date - End Date";
   const activeUsersLabelClean = cleanString(activeUsersLabel);

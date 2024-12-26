@@ -728,26 +728,6 @@ function copyAndPopulateWorkflowSection(
     elementsToCopy.forEach((element) => {
       const elementCopy = element.copy();
 
-      // Positioned Images are treated differently than Inline Images in Google Docs
-      // Rather than being a child element, Positioned Images are positioned in reference to a Paragraph element
-      if (
-        elementCopy.getNumChildren() === 0 &&
-        elementCopy.getType() === DocumentApp.ElementType.PARAGRAPH &&
-        elementCopy.getPositionedImages().length !== 0
-      ) {
-        // We found the only PositionedImage in the document
-        const imageToRemoveId = elementCopy.getPositionedImages()[0].getId();
-        // Add the newly generated PositionedImage
-        if (workflowToMauWauByRegionChart[workflow]) {
-          let img = elementCopy.addPositionedImage(
-            workflowToMauWauByRegionChart[workflow]
-          );
-          img.setWidth(511).setHeight(309);
-        }
-        // Remove the placeholder PositionedImage
-        elementCopy.removePositionedImage(imageToRemoveId);
-      }
-
       if (
         elementCopy.getNumChildren() > 0 &&
         elementCopy.getChild(0).getType() ===
@@ -755,7 +735,14 @@ function copyAndPopulateWorkflowSection(
       ) {
         let elementCopyChild = elementCopy.getChild(0).copy();
         const altTitle = elementCopyChild.getAltTitle();
-        if (altTitle === "Impact Column Chart") {
+        
+        if (altTitle === "Region Variation in Usage Chart") {
+          // Replace with generated chart
+          if (workflowToMauWauByRegionChart[workflow]) {
+            let img = body.appendImage(workflowToMauWauByRegionChart[workflow]);
+            img.setWidth(639).setHeight(455);
+          }
+        } else if (altTitle === "Impact Column Chart") {
           // Replace with generated chart
           if (workflowToDistrictOrFacilitiesColumnChart[workflow]) {
             let img = body.appendImage(
