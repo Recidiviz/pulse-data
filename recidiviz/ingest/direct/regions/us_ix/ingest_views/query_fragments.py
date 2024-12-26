@@ -946,7 +946,7 @@ SUPERVISOR_ROSTER_EMPLOYEE_IDS_CTE = """
                 emp_ref_name.EmployeeId as EmployeeId_name_match,
                 ROW_NUMBER() 
                     OVER(PARTITION BY OFFICER_FIRST_NAME, OFFICER_LAST_NAME, DIST
-                         ORDER BY emp_ref_email.EmployeeId NULLS LAST, emp_ref_name.EmployeeId) as row_number
+                         ORDER BY emp_ref_email.EmployeeId NULLS LAST, emp_ref_name.EmployeeId NULLS LAST) as row_number
             FROM {RECIDIVIZ_REFERENCE_supervisor_roster@ALL} roster
             LEFT JOIN current_atlas_employee_info emp_ref_email on UPPER(replace(roster.OFFICER_EMAIL, ',', '.')) = emp_ref_email.Email
             LEFT JOIN current_atlas_employee_info emp_ref_name 
@@ -995,7 +995,7 @@ SUPERVISOR_ROSTER_SUPERVISOR_IDS_CTE = """
                 emp_ref_name.EmployeeId as EmployeeId_name_match,
                 ROW_NUMBER() 
                     OVER(PARTITION BY SUPERVISOR_FIRST_NAME, SUPERVISOR_LAST_NAME
-                         ORDER BY emp_ref_email.EmployeeId NULLS LAST, emp_ref_name.EmployeeId) as row_number
+                         ORDER BY emp_ref_email.EmployeeId NULLS LAST, emp_ref_name.EmployeeId NULLS LAST) as row_number
             FROM {RECIDIVIZ_REFERENCE_supervisor_roster@ALL} roster
             LEFT JOIN current_atlas_employee_info emp_ref_email on UPPER(replace(roster.SUPERVISOR_EMAIL, ',', '.')) = emp_ref_email.Email
             LEFT JOIN current_atlas_employee_info emp_ref_name 
