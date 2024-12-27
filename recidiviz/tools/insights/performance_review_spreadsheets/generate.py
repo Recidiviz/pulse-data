@@ -53,6 +53,9 @@ from recidiviz.tools.insights.performance_review_spreadsheets.officer_outlier_st
     MetricType,
     OfficerOutlierStatusFromSandbox,
 )
+from recidiviz.tools.insights.performance_review_spreadsheets.snooze_metrics import (
+    SnoozeMetrics,
+)
 from recidiviz.tools.insights.performance_review_spreadsheets.supervisors_and_officers import (
     SupervisorsAndOfficers,
 )
@@ -80,21 +83,25 @@ class RowHeadingEnum(Enum):
     EARLY_DISCHARGE_MONTHLY_GRANT_RATE = auto()
     EARLY_DISCHARGE_ELIGIBLE = auto()
     EARLY_DISCHARGE_MARKED_INELIGIBLE = auto()
+    EARLY_DISCHARGE_MARKED_INELIGIBLE_REASON = auto()
     LSU = auto()
     LSU_GRANTS = auto()
     LSU_MONTHLY_GRANT_RATE = auto()
     LSU_ELIGIBLE = auto()
     LSU_MARKED_INELIGIBLE = auto()
+    LSU_MARKED_INELIGIBLE_REASON = auto()
     SLD = auto()
     SLD_GRANTS = auto()
     SLD_MONTHLY_GRANT_RATE = auto()
     SLD_ELIGIBLE = auto()
     SLD_MARKED_INELIGIBLE = auto()
+    SLD_MARKED_INELIGIBLE_REASON = auto()
     FT_DISCHARGE = auto()
     FT_DISCHARGE_GRANTS = auto()
     FT_DISCHARGE_MONTHLY_GRANT_RATE = auto()
     FT_DISCHARGE_ELIGIBLE = auto()
     FT_DISCHARGE_MARKED_INELIGIBLE = auto()
+    FT_DISCHARGE_MARKED_INELIGIBLE_REASON = auto()
     OPERATIONS_METRICS = auto()
 
 
@@ -117,21 +124,25 @@ _ROW_HEADING_LABELS = {
     RowHeadingEnum.EARLY_DISCHARGE_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.EARLY_DISCHARGE_ELIGIBLE: "Eligible as of end of time period",
     RowHeadingEnum.EARLY_DISCHARGE_MARKED_INELIGIBLE: "Overridden (Marked Ineligible) as of end of time period",
+    RowHeadingEnum.EARLY_DISCHARGE_MARKED_INELIGIBLE_REASON: 'Most often used "Ineligible Reason"',
     RowHeadingEnum.LSU: "LSU",
     RowHeadingEnum.LSU_GRANTS: "Grants during time period",
     RowHeadingEnum.LSU_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.LSU_ELIGIBLE: "Eligible as of end of time period",
     RowHeadingEnum.LSU_MARKED_INELIGIBLE: "Overridden (Marked Ineligible) as of end of time period",
+    RowHeadingEnum.LSU_MARKED_INELIGIBLE_REASON: 'Most often used "Ineligible Reason"',
     RowHeadingEnum.SLD: "Supervision Level Downgrade",
     RowHeadingEnum.SLD_GRANTS: "Grants during time period",
     RowHeadingEnum.SLD_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.SLD_ELIGIBLE: "Eligible as of end of time period",
     RowHeadingEnum.SLD_MARKED_INELIGIBLE: "Overridden (Marked Ineligible) as of end of time period",
+    RowHeadingEnum.SLD_MARKED_INELIGIBLE_REASON: 'Most often used "Ineligible Reason"',
     RowHeadingEnum.FT_DISCHARGE: "Past FTRD",
     RowHeadingEnum.FT_DISCHARGE_GRANTS: "Grants during time period",
     RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.FT_DISCHARGE_ELIGIBLE: "Eligible as of end of time period",
     RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE: "Overridden (Marked Ineligible) as of end of time period",
+    RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE_REASON: 'Most often used "Ineligible Reason"',
     RowHeadingEnum.OPERATIONS_METRICS: "Operations Metrics",
     RowHeadingEnum.TIMELY_RISK_ASSESSMENTS: "Timely Risk Assessments",
     RowHeadingEnum.TIMELY_F2F_CONTACTS: "Timely F2F Contacts",
@@ -156,28 +167,28 @@ _ROW_HEADINGS: list[RowHeadingEnum | str | None] = [
     RowHeadingEnum.EARLY_DISCHARGE_MARKED_INELIGIBLE,
     RowHeadingEnum.EARLY_DISCHARGE_GRANTS,
     RowHeadingEnum.EARLY_DISCHARGE_MONTHLY_GRANT_RATE,
-    'Most often used "Ineligible Reason"',
+    RowHeadingEnum.EARLY_DISCHARGE_MARKED_INELIGIBLE_REASON,
     None,
     RowHeadingEnum.LSU,
     RowHeadingEnum.LSU_ELIGIBLE,
     RowHeadingEnum.LSU_MARKED_INELIGIBLE,
     RowHeadingEnum.LSU_GRANTS,
     RowHeadingEnum.LSU_MONTHLY_GRANT_RATE,
-    'Most often used "Ineligible Reason"',
+    RowHeadingEnum.LSU_MARKED_INELIGIBLE_REASON,
     None,
     RowHeadingEnum.SLD,
     RowHeadingEnum.SLD_ELIGIBLE,
     RowHeadingEnum.SLD_MARKED_INELIGIBLE,
     RowHeadingEnum.SLD_GRANTS,
     RowHeadingEnum.SLD_MONTHLY_GRANT_RATE,
-    'Most often used "Ineligible Reason"',
+    RowHeadingEnum.SLD_MARKED_INELIGIBLE_REASON,
     None,
     RowHeadingEnum.FT_DISCHARGE,
     RowHeadingEnum.FT_DISCHARGE_ELIGIBLE,
     RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE,
     RowHeadingEnum.FT_DISCHARGE_GRANTS,
     RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE,
-    'Most often used "Ineligible Reason"',
+    RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE_REASON,
     None,
     RowHeadingEnum.OPERATIONS_METRICS,
     RowHeadingEnum.TIMELY_RISK_ASSESSMENTS,
@@ -595,6 +606,26 @@ def write_outlier_status(
     ] = f'=COUNTIF({first_date_col}{high_incarceration_row}:{last_date_col}{high_incarceration_row}, "Yes")'
 
 
+def write_snooze_metrics(
+    sheet: Worksheet, officer_id: str, snooze_metrics: SnoozeMetrics
+) -> None:
+    opportunity_type_to_row_heading = {
+        "earnedDischarge": RowHeadingEnum.EARLY_DISCHARGE_MARKED_INELIGIBLE_REASON,
+        "LSU": RowHeadingEnum.LSU_MARKED_INELIGIBLE_REASON,
+        "usIdSupervisionLevelDowngrade": RowHeadingEnum.SLD_MARKED_INELIGIBLE_REASON,
+        "pastFTRD": RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE_REASON,
+    }
+
+    yearly_col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
+    metric = snooze_metrics.data[officer_id]
+    for (
+        opportunity_type,
+        ineligible_reason_row,
+    ) in opportunity_type_to_row_heading.items():
+        cell = sheet[f"{yearly_col_idx}{get_row_index(ineligible_reason_row)}"]
+        cell.value = metric.get(opportunity_type, "N/A")
+
+
 def generate_sheets(
     aggregated_metrics_sandbox_prefix: str, outliers_sandbox_prefix: str
 ) -> None:
@@ -616,6 +647,7 @@ def generate_sheets(
     officer_outlier_status = OfficerOutlierStatusFromSandbox.from_bigquery(
         bq_client, outliers_sandbox_prefix
     )
+    snooze_metrics = SnoozeMetrics.from_bigquery(bq_client)
     for supervisor, officers in supervisors_to_officers.items():
         wb = Workbook()
         for officer in officers:
@@ -632,6 +664,7 @@ def generate_sheets(
             write_grant_rate_formulas(sheet)
             write_logins(sheet, officer.officer_id, logins)
             write_outlier_status(sheet, officer.officer_id, officer_outlier_status)
+            write_snooze_metrics(sheet, officer.officer_id, snooze_metrics)
 
         # Remove the default sheet, since we created new sheets for our data.
         wb.remove(wb.worksheets[0])
