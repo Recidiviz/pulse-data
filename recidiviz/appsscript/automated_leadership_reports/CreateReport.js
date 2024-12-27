@@ -190,12 +190,8 @@ function main(e) {
         supervisionDistrictData
       );
 
-    const startDatePlusWeekString = getBoundsDateString(
-      startDateString,
-    );
-    const endDatePlusWeekString = getBoundsDateString(
-      endDateString
-    );
+    const startDatePlusWeekString = getBoundsDateString(startDateString);
+    const endDatePlusWeekString = getBoundsDateString(endDateString);
 
     // MAU by Week Chart
     const { mauByWeekData, monthlyActiveUsers } = getMauByWeekData(
@@ -218,7 +214,7 @@ function main(e) {
       stateCode,
       startDateString,
       endDateString,
-      completionEventType,
+      completionEventType
     );
     const wauByWeekColumnChart = wauByWeekData
       ? constructActiveUsersByWeekColumnChart(
@@ -735,7 +731,7 @@ function copyAndPopulateWorkflowSection(
       ) {
         let elementCopyChild = elementCopy.getChild(0).copy();
         const altTitle = elementCopyChild.getAltTitle();
-        
+
         if (altTitle === "Region Variation in Usage Chart") {
           // Replace with generated chart
           if (workflowToMauWauByRegionChart[workflow]) {
