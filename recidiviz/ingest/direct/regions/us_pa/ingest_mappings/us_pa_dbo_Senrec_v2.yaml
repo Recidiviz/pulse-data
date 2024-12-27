@@ -234,8 +234,21 @@ output:
                               $mappings:
                                 StateChargeClassificationType.FELONY:
                                   - Felony
+                                  - F
+                                  - F1
+                                  - F2
+                                  - F3
+                                  - H
+                                  - H1
+                                  - H2
+                                  - H3
                                 StateChargeClassificationType.MISDEMEANOR:
                                   - Misdemeanor
+                                  - M
+                                  - M1
+                                  - M2
+                                  - M3
+                                  - S
                           classification_subtype:
                             $json_extract:
                               $key: grade

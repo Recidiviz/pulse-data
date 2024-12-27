@@ -29,16 +29,17 @@ names_from_parole_contacts as (
     * EXCEPT (recency_rank)
   FROM (
     SELECT
-      * EXCEPT (created_date),
+      * EXCEPT (created_date, FACT_PAROLEE_CNTC_SUMRY_ID),
       -- Look at the most recent contact that has a name.
-      ROW_NUMBER() OVER (PARTITION BY parole_number ORDER BY created_date DESC) AS recency_rank
+      ROW_NUMBER() OVER (PARTITION BY parole_number ORDER BY created_date DESC, FACT_PAROLEE_CNTC_SUMRY_ID) AS recency_rank
     FROM (
       SELECT
         parole_number,
         first_name,
         last_name,
         suffix,
-        created_date
+        created_date,
+        FACT_PAROLEE_CNTC_SUMRY_ID
       FROM
         {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY}
       WHERE

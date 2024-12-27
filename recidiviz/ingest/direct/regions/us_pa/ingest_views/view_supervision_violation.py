@@ -39,7 +39,8 @@ base_violations AS (
         -- the old row in dbo_SanctionTracking.
         is_history_row DESC,
         -- This should never be different within a partition, but adding this for determinism
-        violation_code
+        violation_code,
+        violation_timestamp
     ) AS row_rank
   FROM (
     SELECT
@@ -77,7 +78,7 @@ SELECT
     )
   ) as violation_date,
   TO_JSON_STRING(
-    ARRAY_AGG(STRUCT(sequence_id, violation_code) ORDER BY sequence_id)
+    ARRAY_AGG(STRUCT(sequence_id, violation_code) ORDER BY sequence_id, violation_code, violation_timestamp)
   ) AS violation_types
 FROM base_violations
 WHERE row_rank = 1

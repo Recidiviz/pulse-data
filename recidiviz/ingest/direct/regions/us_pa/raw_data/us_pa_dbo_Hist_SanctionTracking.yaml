@@ -9,6 +9,7 @@ primary_key_cols:
   - ParoleCountID
   - SetID
   - SequenceID
+  - SanctionCode
 columns:
   - name: ParoleNumber
     is_pii: True

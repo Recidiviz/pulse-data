@@ -71,10 +71,7 @@ all_inc_charges AS (
     SELECT 
         curr_inmate_num, 
         type_number,
-        -- Set Indictment_Sequence_No to be 1 for all charges from this table since
-        -- each sentence record in dbo_Senrec only lists one charge.  We'll be using
-        -- Indictment_Sequence_No only for external id creation purposes later
-        "1" AS Indictment_Sequence_No,
+        CAST(NULL AS STRING) AS Indictment_Sequence_No,
         offense_code,         
         Offense, 
         Category, 
@@ -101,6 +98,27 @@ all_inc_charges AS (
         CAST(NULL AS STRING) AS Grade_Category,
         NULLIF(Grade, "NULL") AS Grade
     FROM {IncarcerationSentence}
+
+    UNION DISTINCT
+
+    SELECT DISTINCT 
+        Inmate_No,
+        -- Set type_number as "01" for all charges from this table since we don't have type_number
+        -- available in this table.  This means that we'll just attach every charge in this table to
+        -- the the sentence in dbo_Senrec with the first type_number for each curr_inmate_num.
+        "01" AS type_number,
+        CAST(NULL AS STRING) AS Indictment_Sequence_No,
+        history.Code AS offense_code,
+        Short_Description AS Offense,
+        Category, 
+        ASCA_Category___Ranked, 
+        SubCategory, 
+        history.Grade AS Grade_Category,
+        history.Grade
+    FROM {Criminal_History} history
+    LEFT JOIN {offense_codes} offense_codes
+        ON REPLACE(REPLACE(history.Code, ".", ""), "*", "") = REPLACE(REPLACE(offense_codes.Code, ".", ""), "*", "")
+    WHERE history.grade IS DISTINCT FROM 'NOGRD' AND history.grade IS DISTINCT FROM 'S'
 )
 
 
@@ -143,7 +161,7 @@ SELECT
 FROM (
     SELECT *,
         -- create a charge sequence number for charge external id purposes
-        ROW_NUMBER() OVER(PARTITION BY curr_inmate_num, type_number ORDER BY Indictment_Sequence_No, all_inc_charges.offense_code) AS charge_sequence_number
+        ROW_NUMBER() OVER(PARTITION BY curr_inmate_num, type_number ORDER BY Indictment_Sequence_No, all_inc_charges.offense_code, all_inc_charges.Offense, Category, ASCA_Category___Ranked, SubCategory, Grade_Category, Grade) AS charge_sequence_number
     FROM (
         SELECT * EXCEPT(offense_code, Offense, Category, ASCA_Category___Ranked, SubCategory, Grade_Category, Grade)
         FROM senrec_combined
