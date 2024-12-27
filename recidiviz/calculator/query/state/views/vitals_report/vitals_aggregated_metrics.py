@@ -81,7 +81,7 @@ def get_view_builders(
             # time_interval_length_in_days is 30, we calculate a 30 day rate. If
             # time_interval_length_in_days is 1, we have a point-in-time count.
             time_interval_length=time_interval_length_in_days,
-            min_end_date=current_datetime - relativedelta(days=30),
+            min_end_date=current_datetime - relativedelta(months=6),
             max_end_date=current_datetime,
             # How often to calculate metrics. Since the rolling period is set to 1 DAY, we
             # calculate values for each day in the time period.
