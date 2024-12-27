@@ -1,0 +1,17 @@
+{
+  "timeZone": "America/Chicago",
+  "dependencies": {
+    "enabledAdvancedServices": [
+      {
+        "userSymbol": "BigQuery",
+        "serviceId": "bigquery",
+        "version": "v2"
+      }
+    ]
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/bigquery.readonly"
+  ],
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8"
+}

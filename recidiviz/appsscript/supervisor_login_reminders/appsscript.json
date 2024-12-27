@@ -1,6 +1,14 @@
 {
   "timeZone": "America/Chicago",
   "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "RecidivizHelpers",
+        "version": "3",
+        "libraryId": "1UssATcjlfLLkltIvPvU2_EpgySyUaJZ6PXxlQZiUyyGDBDUrBFDvc0rL",
+        "developmentMode": false
+      }
+    ]
   },
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8"

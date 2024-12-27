@@ -16,8 +16,6 @@
 // =============================================================================
 /* Apps Script for generating Leadership Impact Usage Reports. */
 
-const projectId = "recidiviz-123";
-
 /**
  * Main
  * This is the entry point of the script. The main function is triggered by the

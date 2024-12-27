@@ -18,7 +18,7 @@
 
 /**
  * Get MAU By Week Data
- * Given parameters provided by the user, constructs a query string and calls runQuery
+ * Given parameters provided by the user, constructs a query string and calls RecidivizHelpers.runQuery
  * to query the BigQuery database.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} completionEventType The completion event type of the workflow (what we call it in the database)
@@ -49,7 +49,7 @@ function getMauByWeekData(
     AND ${distinctActiveUsers} IS NOT NULL
     ORDER BY end_date ASC
   `;
-  const mauByWeekData = runQuery(queryString);
+  const mauByWeekData = RecidivizHelpers.runQuery(queryString);
 
   return {
     mauByWeekData,
@@ -59,7 +59,7 @@ function getMauByWeekData(
 
 /**
  * Get WAU By Week Data
- * Given parameters provided by the user, constructs a query string and calls runQuery
+ * Given parameters provided by the user, constructs a query string and calls RecidivizHelpers.runQuery
  * to query the BigQuery database.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} startDateString The start date of the report (ex: '2023-02-01')
@@ -90,7 +90,7 @@ function getWauByWeekData(
     AND ${distinctActiveUsers} IS NOT NULL
     ORDER BY end_date ASC
   `;
-  const wauByWeekData = runQuery(queryString);
+  const wauByWeekData = RecidivizHelpers.runQuery(queryString);
 
   return {
     wauByWeekData,
@@ -100,7 +100,7 @@ function getWauByWeekData(
 
 /**
  * Get MAU WAU By Location
- * Given parameters provided by the user, constructs a query string and calls runQuery
+ * Given parameters provided by the user, constructs a query string and calls RecidivizHelpers.runQuery
  * to query the BigQuery database.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
@@ -148,7 +148,7 @@ function getMauWauByLocation(
     AND ${mauTable}.end_date = '${endDateString}'
     AND NOT (${mauTable}.${distinctActiveUsers} IS NULL OR ${wauTable}.${distinctActiveUsers} IS NULL)`;
 
-  const mauWauByLocationData = runQuery(queryString);
+  const mauWauByLocationData = RecidivizHelpers.runQuery(queryString);
 
   return {
     mauWauByLocationData,
@@ -160,7 +160,7 @@ function getMauWauByLocation(
 
 /**
  * Get usage and impact district data
- * Given parameters provided by the user, constructs a query string and calls runQuery
+ * Given parameters provided by the user, constructs a query string and calls RecidivizHelpers.runQuery
  * to query the BigQuery database.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
@@ -205,7 +205,7 @@ function getUsageAndImpactDistrictData(
     AND end_date = '${endDateString}';
   `;
 
-  const usageAndImpactDistrictData = runQuery(queryString);
+  const usageAndImpactDistrictData = RecidivizHelpers.runQuery(queryString);
 
   return {
     usageAndImpactDistrictData,
@@ -218,7 +218,7 @@ function getUsageAndImpactDistrictData(
 
 /**
  * Construct Statewide MAU and WAU Text
- * Given parameters provided by the user, constructs a query string and call RunQuery
+ * Given parameters provided by the user, constructs a query string and call RecidivizHelpers.runQuery
  * to query the BigQuery database. Fetches and returns the total number of statewide distinct monthly active users, statewide distinct monthly registered users, statewide distinct weekly active users, statewide distinct weekly registered users for each system
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
@@ -242,7 +242,7 @@ function constructStatewideMauAndWauText(stateCode, endDateString) {
     WHERE state_code = '${stateCode}'
     AND end_date = '${endDateString}'`;
 
-  const queryOutputMonthly = runQuery(queryStringMonthly)[0];
+  const queryOutputMonthly = RecidivizHelpers.runQuery(queryStringMonthly)[0];
   const queryOutputLengthMonthly = queryOutputMonthly.length;
   if (queryOutputLengthMonthly !== 4) {
     throw new Error(
@@ -260,7 +260,7 @@ function constructStatewideMauAndWauText(stateCode, endDateString) {
     WHERE state_code = '${stateCode}'
     AND end_date = '${endDateString}'`;
 
-  const queryOutputWeekly = runQuery(queryStringWeekly)[0];
+  const queryOutputWeekly = RecidivizHelpers.runQuery(queryStringWeekly)[0];
   const queryOutputLengthWeekly = queryOutputWeekly.length;
   if (queryOutputLengthWeekly !== 4) {
     throw new Error(
@@ -340,7 +340,7 @@ function constructStatewideMauAndWauText(stateCode, endDateString) {
 
 /**
  * Construct MAU and WAU By Workflow Text
- * Given parameters provided by the user, constructs a query string and call RunQuery
+ * Given parameters provided by the user, constructs a query string and call RecidivizHelpers.runQuery
  * to query the BigQuery database. Fetches and returns the total number of distinct monthly active users, distinct monthly registered users, distinct weekly active users, and distinct weekly registered users for the given workflow
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
@@ -367,7 +367,7 @@ function constructMauAndWauByWorkflowText(
     WHERE state_code = '${stateCode}'
     AND end_date = '${endDateString}'`;
 
-  const queryOutputMonthly = runQuery(queryStringMonthly)[0];
+  const queryOutputMonthly = RecidivizHelpers.runQuery(queryStringMonthly)[0];
   const queryOutputLengthMonthly = queryOutputMonthly.length;
   if (queryOutputLengthMonthly !== 2) {
     throw new Error(
@@ -383,7 +383,7 @@ function constructMauAndWauByWorkflowText(
     WHERE state_code = '${stateCode}'
     AND end_date = '${endDateString}'`;
 
-  const queryOutputWeekly = runQuery(queryStringWeekly)[0];
+  const queryOutputWeekly = RecidivizHelpers.runQuery(queryStringWeekly)[0];
   const queryOutputLengthWeekly = queryOutputWeekly.length;
   if (queryOutputLengthWeekly !== 2) {
     throw new Error(
@@ -436,7 +436,7 @@ function getStartDate(stateCode, timePeriod, endDateString) {
     AND period = '${timePeriod}'
     AND end_date = '${endDateString}'`;
 
-  const queryOutput = runQuery(queryString)[0];
+  const queryOutput = RecidivizHelpers.runQuery(queryString)[0];
   const queryOutputLength = queryOutput.length;
   if (queryOutputLength !== 1) {
     throw new Error(
@@ -454,7 +454,7 @@ function getStartDate(stateCode, timePeriod, endDateString) {
 
 /**
  * Construct usage and impact text
- * Given parameters provided by the user, constructs a query string and call RunQuery
+ * Given parameters provided by the user, constructs a query string and call RecidivizHelpers.runQuery
  * to query the BigQuery database. After fetching the total number of individuals surfaced, eligible, reviewed, and ineligible, adds them and returns the integer as a formatted
  * string.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
@@ -486,7 +486,7 @@ function constructUsageAndImpactText(
     WHERE state_code = '${stateCode}'
     AND end_date = '${endDateString}'`;
 
-  const queryOutput = runQuery(queryString)[0];
+  const queryOutput = RecidivizHelpers.runQuery(queryString)[0];
   const queryOutputLength = queryOutput.length;
   if (queryOutputLength !== 5) {
     throw new Error(
@@ -517,7 +517,7 @@ function constructUsageAndImpactText(
 
 /**
  * Construct opportunities granted text
- * Given parameters provided by the user, constructs a query string and call RunQuery
+ * Given parameters provided by the user, constructs a query string and call RecidivizHelpers.runQuery
  * to query the BigQuery database. After fetching the total number of supervision and
  * facilities opportunities granted, adds them and returns the integer as a formatted
  * string.
@@ -545,7 +545,7 @@ function constructOpportunitiesGrantedText(
     AND period = '${timePeriod}'
     AND end_date = '${endDateString}'`;
 
-  const queryOutput = runQuery(queryString)[0];
+  const queryOutput = RecidivizHelpers.runQuery(queryString)[0];
   const queryOutputLength = queryOutput.length;
   if (queryOutputLength !== 1) {
     throw new Error(
@@ -585,7 +585,7 @@ function getMaxLocations(locationData) {
 
 /**
  * Get supervision district data
- * Given parameters provided by the user, constructs a query string and calls runQuery
+ * Given parameters provided by the user, constructs a query string and calls RecidivizHelpers.runQuery
  * to query the BigQuery database.
  * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} timePeriod The time period passed in from the Google Form (ex: 'MONTH', 'QUARTER', or 'YEAR')
@@ -630,7 +630,7 @@ function getSupervisionDistrictData(
   `;
 
   return {
-    supervisionDistrictData: runQuery(queryString),
+    supervisionDistrictData: RecidivizHelpers.runQuery(queryString),
     xAxisColumn: xAxisColumn,
     yAxisColumn: yAxisColumn,
   };

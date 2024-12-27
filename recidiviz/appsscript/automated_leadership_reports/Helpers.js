@@ -29,62 +29,6 @@ const REGIONS_AND_FACILITIES_SUBSTRINGS_TO_FILTER_OUT = [
 ];
 
 /**
- * Run Query
- * Given a query string, runs the query against the BigQuery database (synchronously)
- * and returns the query results as an array of arrays.
- * @param {string} queryString The SQL query string to run in BigQuery
- * @returns {array} An array containing arrays (that represent rows) of data
- */
-function runQuery(queryString) {
-  const request = {
-    query: queryString,
-    useLegacySql: false,
-  };
-  let queryResults = BigQuery.Jobs.query(request, projectId);
-
-  // Check on status of the Query Job.
-  let sleepTimeMs = 500;
-  while (!queryResults.jobComplete) {
-    Utilities.sleep(sleepTimeMs);
-    sleepTimeMs *= 2;
-    queryResults = BigQuery.Jobs.getQueryResults(
-      projectId,
-      queryResults.jobReference.jobId
-    );
-  }
-
-  // Get all the rows of results.
-  let rows = queryResults.rows;
-  while (queryResults.pageToken) {
-    queryResults = BigQuery.Jobs.getQueryResults(
-      projectId,
-      queryResults.jobReference.jobId,
-      {
-        pageToken: queryResults.pageToken,
-      }
-    );
-    rows = rows.concat(queryResults.rows);
-  }
-
-  if (!rows) {
-    console.log("No rows returned.");
-    return;
-  }
-
-  // Append the results
-  const data = new Array(rows.length);
-  for (let i = 0; i < rows.length; i++) {
-    const cols = rows[i].f;
-    data[i] = new Array(cols.length);
-    for (let j = 0; j < cols.length; j++) {
-      data[i][j] = cols[j].v;
-    }
-  }
-
-  return data;
-}
-
-/**
  * Create column chart
  * Builds and populates a new column chart.
  * @param {array} data An array containing arrays (that represent rows) of data
@@ -257,9 +201,7 @@ function toTitleCase(str) {
  * @param {string} cleanDateString A string representing the start date of the report or end date of the report (ex: 2024-10-01 or 2024-11-01)
  * @returns {string} datePlusWeekString A string representing the start date plus 1 week or the end date plus 1 week (ex: 2024-10-08 and 2024-11-08)
  */
-function getBoundsDateString(
-  cleanDateString
-) {
+function getBoundsDateString(cleanDateString) {
   const datestringSplit = cleanDateString.split("-");
 
   // since the local timezone is set to Eastern Daylight Time, we need to add 5 hours to be UTC

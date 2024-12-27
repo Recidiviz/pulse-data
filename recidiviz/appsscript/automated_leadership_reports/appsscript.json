@@ -1,21 +1,21 @@
 {
   "timeZone": "America/New_York",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
   "dependencies": {
-    "enabledAdvancedServices": [
+    "libraries": [
       {
-        "userSymbol": "BigQuery",
-        "version": "v2",
-        "serviceId": "bigquery"
+        "userSymbol": "RecidivizHelpers",
+        "libraryId": "1UssATcjlfLLkltIvPvU2_EpgySyUaJZ6PXxlQZiUyyGDBDUrBFDvc0rL",
+        "version": "3"
       }
     ]
   },
-  "exceptionLogging": "STACKDRIVER",
-  "runtimeVersion": "V8",
-    "oauthScopes": [
-      "https://www.googleapis.com/auth/bigquery.readonly",
-      "https://www.googleapis.com/auth/forms",
-      "https://www.googleapis.com/auth/drive",
-      "https://www.googleapis.com/auth/documents",
-      "https://www.googleapis.com/auth/spreadsheets"
-    ]
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/bigquery.readonly",
+    "https://www.googleapis.com/auth/forms",
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/documents",
+    "https://www.googleapis.com/auth/spreadsheets"
+  ]
 }
