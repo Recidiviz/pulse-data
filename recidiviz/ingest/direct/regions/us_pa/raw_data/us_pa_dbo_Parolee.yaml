@@ -128,6 +128,7 @@ columns:
       External ID for a particular stint of a particular person under supervision by PADOC
   - name: Miscellaneous
     is_pii: True
+    description: Miscellaneous notes tab where officer can enter notes, include NAE (not admin eligible)
   - name: BoardParole
     description: Boolean indicator for whether this is a board parole term
   - name: BoardReParole
