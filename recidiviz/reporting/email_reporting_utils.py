@@ -70,7 +70,7 @@ def validate_email_address(email_address: Optional[str] = None) -> None:
     Example of a valid email address pattern: any_number_of_letters.123+-@123.multiple.domain-names.com
     """
     if email_address is not None:
-        valid_email_pattern = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+        valid_email_pattern = r"(^[a-zA-Z0-9_'.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
         if not re.match(valid_email_pattern, email_address):
             raise ValueError(f"Invalid email address format: [{email_address}]")
 

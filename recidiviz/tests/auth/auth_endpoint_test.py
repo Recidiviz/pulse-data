@@ -1194,7 +1194,7 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={},
             )
-            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
             self.assertEqual(
                 b"Missing state_code param",
                 response.data,
@@ -1209,7 +1209,7 @@ class AuthEndpointTests(TestCase):
                     "state_code": "MO",
                 },
             )
-            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
             self.assertEqual(
                 b"Unknown state_code [MO] received, must be a valid state code.",
                 response.data,

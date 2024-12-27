@@ -753,13 +753,17 @@ def get_auth_endpoint_blueprint(
             body = get_cloud_task_json_body()
             state_code = body.get("state_code")
             if not state_code:
-                return "Missing state_code param", HTTPStatus.BAD_REQUEST
+                # Technically this and most of the below error statuses should be BAD_REQUEST, but
+                # since the caller is cloud tasks, it'll just retry the request instead of alerting
+                # a user to the issue. Instead, we use INTERNAL_SERVER_ERROR so it shows up in the
+                # admin panel oncall error page.
+                return "Missing state_code param", HTTPStatus.INTERNAL_SERVER_ERROR
 
             try:
                 _validate_state_code(state_code)
             except ValueError as error:
                 logging.error(error)
-                return str(error), HTTPStatus.BAD_REQUEST
+                return str(error), HTTPStatus.INTERNAL_SERVER_ERROR
 
             csv_path = GcsfsFilePath.from_absolute_path(
                 os.path.join(
@@ -811,14 +815,14 @@ def get_auth_endpoint_blueprint(
                 logging.error(e)
                 return (
                     f"{e}",
-                    HTTPStatus.BAD_REQUEST,
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
                 )
             raise e
         except (ProgrammingError, ValueError) as error:
             logging.error(error)
             return (
                 f"{error}",
-                HTTPStatus.BAD_REQUEST,
+                HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         except Exception as error:
             logging.error(error)
