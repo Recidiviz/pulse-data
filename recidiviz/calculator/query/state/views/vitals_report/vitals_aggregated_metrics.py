@@ -17,6 +17,7 @@
 """Helper function to create view builders for vitals single day aggregated metrics"""
 
 from dateutil.relativedelta import relativedelta
+from more_itertools import one
 
 from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
@@ -24,6 +25,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_POPULATION_ASSESSMENT_REQUIRED,
     AVG_DAILY_POPULATION_CONTACT_OVERDUE,
     AVG_DAILY_POPULATION_CONTACT_REQUIRED,
+    AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
@@ -55,6 +58,11 @@ def get_view_builders(
         MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
         MetricUnitOfAnalysisType.STATE_CODE,
     ]:
+        sld_metric = one(
+            metric
+            for metric in AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION
+            if metric.name == "avg_population_task_eligible_supervision_level_downgrade"
+        )
         # TODO(#35910): Migrate to use an optimized custom metrics template builder
         #  once it exists.
         agg_metrics_query_template = get_legacy_custom_aggregated_metrics_query_template(
@@ -63,6 +71,8 @@ def get_view_builders(
                 AVG_DAILY_POPULATION_ASSESSMENT_OVERDUE,
                 AVG_DAILY_POPULATION_CONTACT_REQUIRED,
                 AVG_DAILY_POPULATION_CONTACT_OVERDUE,
+                AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE,
+                sld_metric,
             ],
             unit_of_analysis_type=unit_of_analysis_type,
             population_type=MetricPopulationType.SUPERVISION,
