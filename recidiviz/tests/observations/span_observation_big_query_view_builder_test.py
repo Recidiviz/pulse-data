@@ -56,8 +56,8 @@ class SpanObservationBigQueryViewBuilderTest(unittest.TestCase):
 SELECT DISTINCT
     person_id,
     state_code,
-    my_start_date_col AS start_date,
-    my_end_date_col AS end_date,
+    DATE(my_start_date_col) AS start_date,
+    DATE(my_end_date_col) AS end_date,
     CAST(attribute_1 AS STRING) AS attribute_1,
     CAST(attribute_2 AS STRING) AS attribute_2
 FROM `test-project.dataset.source_table`
@@ -80,8 +80,8 @@ FROM `test-project.dataset.source_table`
 SELECT DISTINCT
     person_id,
     state_code,
-    my_start_date_col AS start_date,
-    my_end_date_col AS end_date,
+    DATE(my_start_date_col) AS start_date,
+    DATE(my_end_date_col) AS end_date,
     CAST(attribute_1 AS STRING) AS attribute_1,
     CAST(attribute_2 AS STRING) AS attribute_2
 FROM `test-project.input_prefix_dataset.source_table`
@@ -120,8 +120,8 @@ FROM `test-project.input_prefix_dataset.source_table`
 SELECT DISTINCT
     officer_id,
     state_code,
-    my_start_date_col AS start_date,
-    my_end_date_col AS end_date,
+    DATE(my_start_date_col) AS start_date,
+    DATE(my_end_date_col) AS end_date,
     CAST(attribute_1 AS STRING) AS attribute_1,
     CAST(attribute_2 AS STRING) AS attribute_2
 FROM (
@@ -147,8 +147,8 @@ FROM (
 SELECT DISTINCT
     officer_id,
     state_code,
-    my_start_date_col AS start_date,
-    my_end_date_col AS end_date,
+    DATE(my_start_date_col) AS start_date,
+    DATE(my_end_date_col) AS end_date,
     CAST(attribute_1 AS STRING) AS attribute_1,
     CAST(attribute_2 AS STRING) AS attribute_2
 FROM (

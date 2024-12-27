@@ -130,8 +130,8 @@ class SpanObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
 
         column_clauses = [
             *unit_of_observation.primary_key_columns_ordered,
-            f"{span_start_date_col} AS {cls.START_DATE_OUTPUT_COL_NAME}",
-            f"{span_end_date_col} AS {cls.END_DATE_OUTPUT_COL_NAME}",
+            f"DATE({span_start_date_col}) AS {cls.START_DATE_OUTPUT_COL_NAME}",
+            f"DATE({span_end_date_col}) AS {cls.END_DATE_OUTPUT_COL_NAME}",
             *[f"CAST({col} AS STRING) AS {col}" for col in attribute_cols],
         ]
         columns_str = ",\n".join(column_clauses)

@@ -627,9 +627,11 @@ sample AS (
     GROUP BY {child_primary_key_columns_query_string}{unit_of_analysis.get_primary_key_columns_query_string()}, session_id
 )
 SELECT 
-    * EXCEPT(session_id, end_date_exclusive),
-    {revert_nonnull_end_date_clause("end_date_exclusive")} AS end_date,
-    {revert_nonnull_end_date_clause("end_date_exclusive")} AS end_date_exclusive,
+    * EXCEPT(session_id, assignment_date, end_date_exclusive),
+    -- Cast any DATETIME values to DATE
+    DATE(assignment_date) AS assignment_date,
+    DATE({revert_nonnull_end_date_clause("end_date_exclusive")}) AS end_date,
+    DATE({revert_nonnull_end_date_clause("end_date_exclusive")}) AS end_date_exclusive,
 FROM {unit_of_analysis_name}_assignments
 """
     return SimpleBigQueryViewBuilder(

@@ -57,7 +57,7 @@ class EventObservationBigQueryViewBuilderTest(unittest.TestCase):
 SELECT DISTINCT
     person_id,
     state_code,
-    my_date_col AS event_date,
+    DATE(my_date_col) AS event_date,
     CAST(attribute_1 AS STRING) AS attribute_1,
     CAST(attribute_2 AS STRING) AS attribute_2
 FROM `test-project.dataset.source_table`
@@ -80,7 +80,7 @@ FROM `test-project.dataset.source_table`
 SELECT DISTINCT
     person_id,
     state_code,
-    my_date_col AS event_date,
+    DATE(my_date_col) AS event_date,
     CAST(attribute_1 AS STRING) AS attribute_1,
     CAST(attribute_2 AS STRING) AS attribute_2
 FROM `test-project.input_prefix_dataset.source_table`
@@ -118,7 +118,7 @@ FROM `{project_id}.another_dataset.table`;
 SELECT DISTINCT
     email_address,
     state_code,
-    my_date_col AS event_date,
+    DATE(my_date_col) AS event_date,
     CAST(attribute_1 AS STRING) AS attribute_1,
     CAST(attribute_2 AS STRING) AS attribute_2
 FROM (
@@ -144,7 +144,7 @@ FROM (
 SELECT DISTINCT
     email_address,
     state_code,
-    my_date_col AS event_date,
+    DATE(my_date_col) AS event_date,
     CAST(attribute_1 AS STRING) AS attribute_1,
     CAST(attribute_2 AS STRING) AS attribute_2
 FROM (

@@ -126,7 +126,7 @@ class EventObservationBigQueryViewBuilder(SimpleBigQueryViewBuilder):
 
         column_clauses = [
             *unit_of_observation.primary_key_columns_ordered,
-            f"{event_date_col} AS {cls.EVENT_DATE_OUTPUT_COL_NAME}",
+            f"DATE({event_date_col}) AS {cls.EVENT_DATE_OUTPUT_COL_NAME}",
             *[f"CAST({col} AS STRING) AS {col}" for col in attribute_cols],
         ]
         columns_str = ",\n".join(column_clauses)
