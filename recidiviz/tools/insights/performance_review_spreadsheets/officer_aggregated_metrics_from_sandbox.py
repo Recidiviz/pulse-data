@@ -26,9 +26,14 @@ from typing import Any
 import attr
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.common.constants.state.state_staff_caseload_type import (
+    StateStaffCaseloadType,
+)
+from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.utils.string import StrictStringFormatter
 
-_OFFICER_AGGREGATED_METRICS_MONTH_QUERY = """
+_OFFICER_AGGREGATED_METRICS_QUERY = """
 SELECT
     officer_id,
     end_date,
@@ -38,28 +43,24 @@ SELECT
     task_completions_full_term_discharge,
     1 - SAFE_DIVIDE(avg_population_assessment_overdue, avg_population_assessment_required) AS timely_risk_assessment,
     1 - SAFE_DIVIDE(avg_population_contact_overdue, avg_population_contact_required) AS timely_contact,
-    1 - SAFE_DIVIDE(avg_population_task_eligible_supervision_level_downgrade, avg_daily_population) AS timely_downgrade
+    1 - SAFE_DIVIDE(avg_population_task_eligible_supervision_level_downgrade, avg_daily_population) AS timely_downgrade,
+    IF(caseload_category_proportion=0, NULL, STRING_AGG(metric, ", ")) AS caseload_type
 FROM `recidiviz-123.{sandbox_prefix}_aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
+UNPIVOT (caseload_category_proportion FOR metric IN ({caseload_category_metrics}))
 WHERE
+    {where_clause}
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, caseload_category_proportion
+QUALIFY RANK() OVER (PARTITION BY end_date, officer_id ORDER BY caseload_category_proportion DESC) = 1
+
+"""
+
+_OFFICER_AGGREGATED_METRICS_MONTH_WHERE_CLAUSE = """
     state_code = "US_IX"
     AND period = "MONTH"
     AND end_date BETWEEN "2024-02-01" AND "2025-01-01"
-ORDER BY officer_id, end_date
 """
 
-_OFFICER_AGGREGATED_METRICS_YEAR_QUERY = """
-SELECT
-    officer_id,
-    end_date,
-    task_completions_early_discharge,
-    task_completions_transfer_to_limited_supervision,
-    task_completions_supervision_level_downgrade,
-    task_completions_full_term_discharge,
-    1 - SAFE_DIVIDE(avg_population_assessment_overdue, avg_population_assessment_required) AS timely_risk_assessment,
-    1 - SAFE_DIVIDE(avg_population_contact_overdue, avg_population_contact_required) AS timely_contact,
-    1 - SAFE_DIVIDE(avg_population_task_eligible_supervision_level_downgrade, avg_daily_population) AS timely_downgrade
-FROM `recidiviz-123.{sandbox_prefix}_aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
-WHERE
+_OFFICER_AGGREGATED_METRICS_YEAR_WHERE_CLAUSE = """
     state_code = "US_IX"
     AND period = "YEAR"
     AND end_date = "2024-12-01" -- TODO(#35973): Use 2025-01-01 once we're in Jan
@@ -76,9 +77,11 @@ class AggregatedMetricsFromSandbox:
     timely_risk_assessment: float | None
     timely_contact: float | None
     timely_downgrade: float | None
+    caseload_type: str | None
 
     @classmethod
     def from_row(cls, row: dict[str, Any]) -> "AggregatedMetricsFromSandbox":
+        caseload_type = row.get("caseload_type")
         return cls(
             end_date_exclusive=row["end_date"],
             task_completions_early_discharge=row["task_completions_early_discharge"],
@@ -94,6 +97,16 @@ class AggregatedMetricsFromSandbox:
             timely_risk_assessment=row["timely_risk_assessment"],
             timely_contact=row["timely_contact"],
             timely_downgrade=row["timely_downgrade"],
+            caseload_type=(
+                snake_to_title(
+                    caseload_type.replace(
+                        "avg_num_supervision_officers_insights_specialized_caseload_type_category_type_",
+                        "",
+                    )
+                )
+                if caseload_type
+                else None
+            ),
         )
 
 
@@ -110,9 +123,19 @@ class OfficerAggregatedMetricsFromSandbox:
     ) -> "OfficerAggregatedMetricsFromSandbox":
         """Creates an OfficerAggregatedMetricsFromSandbox based on the result of querying BigQuery"""
         string_formatter = StrictStringFormatter()
+        caseload_category_metrics = [
+            f"avg_num_supervision_officers_insights_specialized_caseload_type_category_type_{caseload_type.name.lower()}"
+            for caseload_type in StateStaffCaseloadType
+            if caseload_type != StateStaffCaseloadType.INTERNAL_UNKNOWN
+        ]
         monthly_results = bq_client.run_query_async(
             query_str=string_formatter.format(
-                _OFFICER_AGGREGATED_METRICS_MONTH_QUERY, sandbox_prefix=sandbox_prefix
+                _OFFICER_AGGREGATED_METRICS_QUERY,
+                sandbox_prefix=sandbox_prefix,
+                caseload_category_metrics=list_to_query_string(
+                    caseload_category_metrics
+                ),
+                where_clause=_OFFICER_AGGREGATED_METRICS_MONTH_WHERE_CLAUSE,
             ),
             use_query_cache=True,
         )
@@ -124,7 +147,12 @@ class OfficerAggregatedMetricsFromSandbox:
 
         yearly_results = bq_client.run_query_async(
             query_str=string_formatter.format(
-                _OFFICER_AGGREGATED_METRICS_YEAR_QUERY, sandbox_prefix=sandbox_prefix
+                _OFFICER_AGGREGATED_METRICS_QUERY,
+                sandbox_prefix=sandbox_prefix,
+                caseload_category_metrics=list_to_query_string(
+                    caseload_category_metrics
+                ),
+                where_clause=_OFFICER_AGGREGATED_METRICS_YEAR_WHERE_CLAUSE,
             ),
             use_query_cache=True,
         )

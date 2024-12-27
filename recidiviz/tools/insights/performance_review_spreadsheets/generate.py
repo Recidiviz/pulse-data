@@ -69,6 +69,7 @@ class RowHeadingEnum(Enum):
     USAGE = auto()
     NUM_LOGINS = auto()
     NUM_MONTHS_LOGGED_IN = auto()
+    CASELOAD_TYPE = auto()
     OUTCOMES_METRICS = auto()
     AVG_DAILY_CASELOAD = auto()
     NUM_ABSCONSIONS = auto()
@@ -113,6 +114,7 @@ _ROW_HEADING_LABELS = {
     RowHeadingEnum.USAGE: "Usage",
     RowHeadingEnum.NUM_LOGINS: "# Total Logins each month",
     RowHeadingEnum.NUM_MONTHS_LOGGED_IN: "# of Months in 2024 where they logged in at least once",
+    RowHeadingEnum.CASELOAD_TYPE: "Caseload Type",
     RowHeadingEnum.OUTCOMES_METRICS: "Outcomes Metrics",
     RowHeadingEnum.AVG_DAILY_CASELOAD: "# Average Daily Caseload",
     RowHeadingEnum.NUM_ABSCONSIONS: "# Absconsions",
@@ -153,7 +155,7 @@ _ROW_HEADINGS: list[RowHeadingEnum | str | None] = [
     RowHeadingEnum.USAGE,
     RowHeadingEnum.NUM_LOGINS,
     RowHeadingEnum.NUM_MONTHS_LOGGED_IN,
-    "Caseload Type",
+    RowHeadingEnum.CASELOAD_TYPE,
     None,
     RowHeadingEnum.OUTCOMES_METRICS,
     RowHeadingEnum.AVG_DAILY_CASELOAD,
@@ -342,6 +344,7 @@ def write_metrics_from_sandbox(
     timely_risk_assessment_row = get_row_index(RowHeadingEnum.TIMELY_RISK_ASSESSMENTS)
     timely_contacts_row = get_row_index(RowHeadingEnum.TIMELY_F2F_CONTACTS)
     timely_downgrade_row = get_row_index(RowHeadingEnum.SUPERVISION_LEVEL_MISMATCH)
+    caseload_type_row = get_row_index(RowHeadingEnum.CASELOAD_TYPE)
 
     for metric in officer_aggregated_metrics.monthly_data[officer_id]:
         parsed_date = (metric.end_date_exclusive - relativedelta(days=1)).strftime(
@@ -387,6 +390,9 @@ def write_metrics_from_sandbox(
             timely_downgrade_row,
             FORMAT_PERCENTAGE_00,
         )
+        caseload_type_cell = sheet[f"{col_idx}{caseload_type_row}"]
+        caseload_type_cell.value = metric.caseload_type
+        caseload_type_cell.alignment = Alignment(wrap_text=True)
 
     yearly_col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
     if officer_id in officer_aggregated_metrics.yearly_data:
@@ -436,6 +442,9 @@ def write_metrics_from_sandbox(
             timely_downgrade_row,
             FORMAT_PERCENTAGE_00,
         )
+        caseload_type_cell = sheet[f"{yearly_col_idx}{caseload_type_row}"]
+        caseload_type_cell.value = yearly_data.caseload_type
+        caseload_type_cell.alignment = Alignment(wrap_text=True)
 
 
 def write_impact_funnel_metrics(
