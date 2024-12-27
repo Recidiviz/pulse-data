@@ -351,6 +351,8 @@ columns:
         description: Adoption
       - value: "33"
         description: Public Finance
+      - value: "34"
+        description: Unknown
       - value: "35"
         description: TODO(#34880) Document this field.
       - value: "36"
