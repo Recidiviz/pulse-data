@@ -37,6 +37,7 @@
       "items": {
         "type": "object",
         "required": ["name"],
+        "additionalProperties": false,
         "properties": {
           "name": {
             "description": "The column name in BigQuery-compatible, normalized form (e.g. punctuation stripped)",
@@ -65,6 +66,7 @@
             "items": {
               "type": "object",
               "required": ["value"],
+              "additionalProperties": false,
               "properties": {
                 "value": {
                   "description": "The literal enum value",
@@ -96,6 +98,7 @@
             "items": {
               "type": "object",
               "required": ["validation_type", "exemption_reason"],
+              "additionalProperties": false,
               "properties": {
                 "validation_type": {
                   "description": "Import-blocking validation type to exempt",
@@ -113,6 +116,30 @@
             "description": "A list of strings that should be treated as NULL values for this column.",
             "type": "array",
             "items": { "type": "string" }
+          },
+          "update_history": {
+            "description": "Stores information about an update made to a column, detailing the date and the type of the update",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["update_type", "update_datetime"],
+              "additionalProperties": false,
+              "properties": {
+                "update_type": {
+                  "description": "The type of update made to the column",
+                  "type": "string",
+                  "enum": ["ADDITION", "DELETION", "RENAME"]
+                },
+                "update_datetime": {
+                  "description": "The ISO-formatted datetime the update was made, including timezone. This property is missing a type because python yaml loader automatically converts it to a datetime object, and the schema validator doesn't recognize the datetime object as 'type': 'object'"
+                },
+                "previous_value": {
+                  "description": "The previous name of the column if the update_type is RENAME",
+                  "type": "string"
+                }
+              }
+            }
+
           }
         }
       },
@@ -124,6 +151,7 @@
       "items": {
         "type": "object",
         "required": ["foreign_table", "join_logic"],
+        "additionalProperties": false,
         "properties": {
           "foreign_table": {
             "description": "The name of the related table in this state's raw data",
@@ -147,6 +175,7 @@
             "items": {
               "type": "object",
               "required": ["column", "transform"],
+              "additionalProperties": false,
               "properties": {
                 "column": {
                   "description": "The column under transform, formatted as table_name.column_name.",
@@ -220,6 +249,7 @@
       "items": {
         "type": "object",
         "required": ["validation_type", "exemption_reason"],
+        "additionalProperties": false,
         "properties": {
           "validation_type": {
             "description": "Import-blocking validation type to exempt",
