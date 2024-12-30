@@ -80,32 +80,47 @@ drug_screen_metrics AS (
             `{project_id}.observations__person_event.drug_screen_materialized`
         WHERE
             TRUE
+    ),
+    observations_by_assignments AS (
+        SELECT
+            person_assignments_by_time_period.person_id,
+            person_assignments_by_time_period.state_code,
+            person_assignments_by_time_period.officer_id,
+            person_assignments_by_time_period.metric_period_start_date,
+            person_assignments_by_time_period.metric_period_end_date_exclusive,
+            person_assignments_by_time_period.period,
+            person_assignments_by_time_period.assignment_start_date,
+            person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+            person_assignments_by_time_period.intersection_start_date,
+            person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull,
+            observations.event_date
+        FROM 
+            person_assignments_by_time_period
+        JOIN 
+            observations
+        ON
+            observations.person_id = person_assignments_by_time_period.person_id
+            AND observations.state_code = person_assignments_by_time_period.state_code
+            -- Include events occurring on the last date of an end-date exclusive span,
+            -- but exclude events occurring on the last date of an end-date exclusive 
+            -- analysis period.
+            AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
+            AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
     )
     SELECT
-        person_assignments_by_time_period.state_code,
-        person_assignments_by_time_period.officer_id,
-        person_assignments_by_time_period.metric_period_start_date,
-        person_assignments_by_time_period.metric_period_end_date_exclusive,
-        person_assignments_by_time_period.period,
+        state_code,
+        officer_id,
+        metric_period_start_date,
+        metric_period_end_date_exclusive,
+        period,
         COUNT(DISTINCT IF(
             (TRUE),
             CONCAT(
-                observations.person_id, observations.state_code, 
-                observations.event_date
+                observations_by_assignments.person_id, observations_by_assignments.state_code, 
+                observations_by_assignments.event_date
             ), NULL
         )) AS my_drug_screens
-    FROM 
-        person_assignments_by_time_period
-    JOIN 
-        observations
-    ON
-        observations.person_id = person_assignments_by_time_period.person_id
-        AND observations.state_code = person_assignments_by_time_period.state_code
-        -- Include events occurring on the last date of an end-date exclusive span,
-        -- but exclude events occurring on the last date of an end-date exclusive 
-        -- analysis period.
-        AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
-        AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
+    FROM observations_by_assignments
     GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
 ),
 supervision_contact_metrics AS (
@@ -120,32 +135,48 @@ supervision_contact_metrics AS (
             `{project_id}.observations__person_event.supervision_contact_materialized`
         WHERE
             status IN ("COMPLETED")
+    ),
+    observations_by_assignments AS (
+        SELECT
+            person_assignments_by_time_period.person_id,
+            person_assignments_by_time_period.state_code,
+            person_assignments_by_time_period.officer_id,
+            person_assignments_by_time_period.metric_period_start_date,
+            person_assignments_by_time_period.metric_period_end_date_exclusive,
+            person_assignments_by_time_period.period,
+            person_assignments_by_time_period.assignment_start_date,
+            person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+            person_assignments_by_time_period.intersection_start_date,
+            person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull,
+            observations.event_date,
+            observations.status
+        FROM 
+            person_assignments_by_time_period
+        JOIN 
+            observations
+        ON
+            observations.person_id = person_assignments_by_time_period.person_id
+            AND observations.state_code = person_assignments_by_time_period.state_code
+            -- Include events occurring on the last date of an end-date exclusive span,
+            -- but exclude events occurring on the last date of an end-date exclusive 
+            -- analysis period.
+            AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
+            AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
     )
     SELECT
-        person_assignments_by_time_period.state_code,
-        person_assignments_by_time_period.officer_id,
-        person_assignments_by_time_period.metric_period_start_date,
-        person_assignments_by_time_period.metric_period_end_date_exclusive,
-        person_assignments_by_time_period.period,
+        state_code,
+        officer_id,
+        metric_period_start_date,
+        metric_period_end_date_exclusive,
+        period,
         COUNT(DISTINCT IF(
             (status IN ("COMPLETED")),
             CONCAT(
-                observations.person_id, observations.state_code, 
-                observations.event_date
+                observations_by_assignments.person_id, observations_by_assignments.state_code, 
+                observations_by_assignments.event_date
             ), NULL
         )) AS my_contacts_completed
-    FROM 
-        person_assignments_by_time_period
-    JOIN 
-        observations
-    ON
-        observations.person_id = person_assignments_by_time_period.person_id
-        AND observations.state_code = person_assignments_by_time_period.state_code
-        -- Include events occurring on the last date of an end-date exclusive span,
-        -- but exclude events occurring on the last date of an end-date exclusive 
-        -- analysis period.
-        AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
-        AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
+    FROM observations_by_assignments
     GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
 )
 SELECT
@@ -201,32 +232,47 @@ all_metrics__person_unit_of_observation AS (
                 `{project_id}.observations__person_event.drug_screen_materialized`
             WHERE
                 TRUE
+        ),
+        observations_by_assignments AS (
+            SELECT
+                person_assignments_by_time_period.person_id,
+                person_assignments_by_time_period.state_code,
+                person_assignments_by_time_period.district,
+                person_assignments_by_time_period.metric_period_start_date,
+                person_assignments_by_time_period.metric_period_end_date_exclusive,
+                person_assignments_by_time_period.period,
+                person_assignments_by_time_period.assignment_start_date,
+                person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+                person_assignments_by_time_period.intersection_start_date,
+                person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull,
+                observations.event_date
+            FROM 
+                person_assignments_by_time_period
+            JOIN 
+                observations
+            ON
+                observations.person_id = person_assignments_by_time_period.person_id
+                AND observations.state_code = person_assignments_by_time_period.state_code
+                -- Include events occurring on the last date of an end-date exclusive span,
+                -- but exclude events occurring on the last date of an end-date exclusive 
+                -- analysis period.
+                AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
+                AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
         )
         SELECT
-            person_assignments_by_time_period.state_code,
-            person_assignments_by_time_period.district,
-            person_assignments_by_time_period.metric_period_start_date,
-            person_assignments_by_time_period.metric_period_end_date_exclusive,
-            person_assignments_by_time_period.period,
+            state_code,
+            district,
+            metric_period_start_date,
+            metric_period_end_date_exclusive,
+            period,
             COUNT(DISTINCT IF(
                 (TRUE),
                 CONCAT(
-                    observations.person_id, observations.state_code, 
-                    observations.event_date
+                    observations_by_assignments.person_id, observations_by_assignments.state_code, 
+                    observations_by_assignments.event_date
                 ), NULL
             )) AS my_drug_screens
-        FROM 
-            person_assignments_by_time_period
-        JOIN 
-            observations
-        ON
-            observations.person_id = person_assignments_by_time_period.person_id
-            AND observations.state_code = person_assignments_by_time_period.state_code
-            -- Include events occurring on the last date of an end-date exclusive span,
-            -- but exclude events occurring on the last date of an end-date exclusive 
-            -- analysis period.
-            AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
-            AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
+        FROM observations_by_assignments
         GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
     ),
     supervision_contact_metrics AS (
@@ -241,32 +287,48 @@ all_metrics__person_unit_of_observation AS (
                 `{project_id}.observations__person_event.supervision_contact_materialized`
             WHERE
                 status IN ("COMPLETED")
+        ),
+        observations_by_assignments AS (
+            SELECT
+                person_assignments_by_time_period.person_id,
+                person_assignments_by_time_period.state_code,
+                person_assignments_by_time_period.district,
+                person_assignments_by_time_period.metric_period_start_date,
+                person_assignments_by_time_period.metric_period_end_date_exclusive,
+                person_assignments_by_time_period.period,
+                person_assignments_by_time_period.assignment_start_date,
+                person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+                person_assignments_by_time_period.intersection_start_date,
+                person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull,
+                observations.event_date,
+                observations.status
+            FROM 
+                person_assignments_by_time_period
+            JOIN 
+                observations
+            ON
+                observations.person_id = person_assignments_by_time_period.person_id
+                AND observations.state_code = person_assignments_by_time_period.state_code
+                -- Include events occurring on the last date of an end-date exclusive span,
+                -- but exclude events occurring on the last date of an end-date exclusive 
+                -- analysis period.
+                AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
+                AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
         )
         SELECT
-            person_assignments_by_time_period.state_code,
-            person_assignments_by_time_period.district,
-            person_assignments_by_time_period.metric_period_start_date,
-            person_assignments_by_time_period.metric_period_end_date_exclusive,
-            person_assignments_by_time_period.period,
+            state_code,
+            district,
+            metric_period_start_date,
+            metric_period_end_date_exclusive,
+            period,
             COUNT(DISTINCT IF(
                 (status IN ("COMPLETED")),
                 CONCAT(
-                    observations.person_id, observations.state_code, 
-                    observations.event_date
+                    observations_by_assignments.person_id, observations_by_assignments.state_code, 
+                    observations_by_assignments.event_date
                 ), NULL
             )) AS my_contacts_completed
-        FROM 
-            person_assignments_by_time_period
-        JOIN 
-            observations
-        ON
-            observations.person_id = person_assignments_by_time_period.person_id
-            AND observations.state_code = person_assignments_by_time_period.state_code
-            -- Include events occurring on the last date of an end-date exclusive span,
-            -- but exclude events occurring on the last date of an end-date exclusive 
-            -- analysis period.
-            AND observations.event_date >= person_assignments_by_time_period.intersection_start_date
-            AND observations.event_date <  person_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
+        FROM observations_by_assignments
         GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
     )
     SELECT
@@ -305,32 +367,47 @@ all_metrics__workflows_primary_user_unit_of_observation AS (
                 `{project_id}.observations__workflows_primary_user_event.workflows_user_login_materialized`
             WHERE
                 TRUE
+        ),
+        observations_by_assignments AS (
+            SELECT
+                workflows_primary_user_assignments_by_time_period.email_address,
+                workflows_primary_user_assignments_by_time_period.state_code,
+                workflows_primary_user_assignments_by_time_period.district,
+                workflows_primary_user_assignments_by_time_period.metric_period_start_date,
+                workflows_primary_user_assignments_by_time_period.metric_period_end_date_exclusive,
+                workflows_primary_user_assignments_by_time_period.period,
+                workflows_primary_user_assignments_by_time_period.assignment_start_date,
+                workflows_primary_user_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+                workflows_primary_user_assignments_by_time_period.intersection_start_date,
+                workflows_primary_user_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull,
+                observations.event_date
+            FROM 
+                workflows_primary_user_assignments_by_time_period
+            JOIN 
+                observations
+            ON
+                observations.email_address = workflows_primary_user_assignments_by_time_period.email_address
+                AND observations.state_code = workflows_primary_user_assignments_by_time_period.state_code
+                -- Include events occurring on the last date of an end-date exclusive span,
+                -- but exclude events occurring on the last date of an end-date exclusive 
+                -- analysis period.
+                AND observations.event_date >= workflows_primary_user_assignments_by_time_period.intersection_start_date
+                AND observations.event_date <  workflows_primary_user_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
         )
         SELECT
-            workflows_primary_user_assignments_by_time_period.state_code,
-            workflows_primary_user_assignments_by_time_period.district,
-            workflows_primary_user_assignments_by_time_period.metric_period_start_date,
-            workflows_primary_user_assignments_by_time_period.metric_period_end_date_exclusive,
-            workflows_primary_user_assignments_by_time_period.period,
+            state_code,
+            district,
+            metric_period_start_date,
+            metric_period_end_date_exclusive,
+            period,
             COUNT(DISTINCT IF(
                 (TRUE),
                 CONCAT(
-                    observations.email_address, observations.state_code, 
-                    observations.event_date
+                    observations_by_assignments.email_address, observations_by_assignments.state_code, 
+                    observations_by_assignments.event_date
                 ), NULL
             )) AS my_logins_primary_workflows_user
-        FROM 
-            workflows_primary_user_assignments_by_time_period
-        JOIN 
-            observations
-        ON
-            observations.email_address = workflows_primary_user_assignments_by_time_period.email_address
-            AND observations.state_code = workflows_primary_user_assignments_by_time_period.state_code
-            -- Include events occurring on the last date of an end-date exclusive span,
-            -- but exclude events occurring on the last date of an end-date exclusive 
-            -- analysis period.
-            AND observations.event_date >= workflows_primary_user_assignments_by_time_period.intersection_start_date
-            AND observations.event_date <  workflows_primary_user_assignments_by_time_period.intersection_extended_end_date_exclusive_nonnull
+        FROM observations_by_assignments
         GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
     )
     SELECT
@@ -406,22 +483,51 @@ assessment_score_session_metrics AS (
             `{project_id}.observations__person_span.assessment_score_session_materialized`
         WHERE
             assessment_type IN ("LSIR")
+    ),
+    observations_by_assignments AS (
+        SELECT
+            person_assignments_by_time_period.person_id,
+            person_assignments_by_time_period.state_code,
+            person_assignments_by_time_period.facility,
+            person_assignments_by_time_period.metric_period_start_date,
+            person_assignments_by_time_period.metric_period_end_date_exclusive,
+            person_assignments_by_time_period.period,
+            person_assignments_by_time_period.assignment_start_date,
+            person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+            person_assignments_by_time_period.intersection_start_date,
+            person_assignments_by_time_period.intersection_end_date_exclusive_nonnull,
+            observations.start_date,
+            observations.end_date,
+            observations.assessment_score,
+            observations.assessment_type
+        FROM 
+            person_assignments_by_time_period
+        JOIN 
+            observations
+        ON
+            observations.person_id = person_assignments_by_time_period.person_id
+            AND observations.state_code = person_assignments_by_time_period.state_code
+            AND observations.start_date <= person_assignments_by_time_period.intersection_end_date_exclusive_nonnull
+            AND (
+                observations.end_date IS NULL OR
+                observations.end_date > person_assignments_by_time_period.intersection_start_date
+            )
     )
     SELECT
-        person_assignments_by_time_period.state_code,
-        person_assignments_by_time_period.facility,
-        person_assignments_by_time_period.metric_period_start_date,
-        person_assignments_by_time_period.metric_period_end_date_exclusive,
-        person_assignments_by_time_period.period,
+        state_code,
+        facility,
+        metric_period_start_date,
+        metric_period_end_date_exclusive,
+        period,
         SAFE_DIVIDE(
                 SUM(
                     DATE_DIFF(
                         LEAST(metric_period_end_date_exclusive, COALESCE(LEAST(
-            IFNULL(observations.end_date, "9999-12-31"),
+            IFNULL(observations_by_assignments.end_date, "9999-12-31"),
             assignment_end_date_exclusive_nonnull
         ), DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))),
                         GREATEST(metric_period_start_date, GREATEST(
-            observations.start_date,
+            observations_by_assignments.start_date,
             assignment_start_date
         )),
                         DAY
@@ -434,29 +540,18 @@ assessment_score_session_metrics AS (
                 SUM(
                     DATE_DIFF(
                         LEAST(metric_period_end_date_exclusive, COALESCE(LEAST(
-            IFNULL(observations.end_date, "9999-12-31"),
+            IFNULL(observations_by_assignments.end_date, "9999-12-31"),
             assignment_end_date_exclusive_nonnull
         ), DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))),
                         GREATEST(metric_period_start_date, GREATEST(
-            observations.start_date,
+            observations_by_assignments.start_date,
             assignment_start_date
         )),
                         DAY
                     ) * IF((assessment_type IN ("LSIR")), 1, 0)
                 )
             ) AS my_avg_lsir_score
-    FROM 
-        person_assignments_by_time_period
-    JOIN 
-        observations
-    ON
-        observations.person_id = person_assignments_by_time_period.person_id
-        AND observations.state_code = person_assignments_by_time_period.state_code
-        AND observations.start_date <= person_assignments_by_time_period.intersection_end_date_exclusive_nonnull
-        AND (
-            observations.end_date IS NULL OR
-            observations.end_date > person_assignments_by_time_period.intersection_start_date
-        )
+    FROM observations_by_assignments
     GROUP BY state_code, facility, metric_period_start_date, metric_period_end_date_exclusive, period
 ),
 compartment_session_metrics AS (
@@ -471,39 +566,55 @@ compartment_session_metrics AS (
             `{project_id}.observations__person_span.compartment_session_materialized`
         WHERE
             TRUE
+    ),
+    observations_by_assignments AS (
+        SELECT
+            person_assignments_by_time_period.person_id,
+            person_assignments_by_time_period.state_code,
+            person_assignments_by_time_period.facility,
+            person_assignments_by_time_period.metric_period_start_date,
+            person_assignments_by_time_period.metric_period_end_date_exclusive,
+            person_assignments_by_time_period.period,
+            person_assignments_by_time_period.assignment_start_date,
+            person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+            person_assignments_by_time_period.intersection_start_date,
+            person_assignments_by_time_period.intersection_end_date_exclusive_nonnull,
+            observations.start_date,
+            observations.end_date
+        FROM 
+            person_assignments_by_time_period
+        JOIN 
+            observations
+        ON
+            observations.person_id = person_assignments_by_time_period.person_id
+            AND observations.state_code = person_assignments_by_time_period.state_code
+            AND observations.start_date <= person_assignments_by_time_period.intersection_end_date_exclusive_nonnull
+            AND (
+                observations.end_date IS NULL OR
+                observations.end_date > person_assignments_by_time_period.intersection_start_date
+            )
     )
     SELECT
-        person_assignments_by_time_period.state_code,
-        person_assignments_by_time_period.facility,
-        person_assignments_by_time_period.metric_period_start_date,
-        person_assignments_by_time_period.metric_period_end_date_exclusive,
-        person_assignments_by_time_period.period,
+        state_code,
+        facility,
+        metric_period_start_date,
+        metric_period_end_date_exclusive,
+        period,
         SUM(
             (
                 DATE_DIFF(
                     LEAST(metric_period_end_date_exclusive, COALESCE(LEAST(
-            IFNULL(observations.end_date, "9999-12-31"),
+            IFNULL(observations_by_assignments.end_date, "9999-12-31"),
             assignment_end_date_exclusive_nonnull
         ), DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))),
                     GREATEST(metric_period_start_date, GREATEST(
-            observations.start_date,
+            observations_by_assignments.start_date,
             assignment_start_date
         )),
                     DAY)
                 ) * (IF((TRUE), 1, 0)) / DATE_DIFF(metric_period_end_date_exclusive, metric_period_start_date, DAY)
             ) AS my_avg_daily_population
-    FROM 
-        person_assignments_by_time_period
-    JOIN 
-        observations
-    ON
-        observations.person_id = person_assignments_by_time_period.person_id
-        AND observations.state_code = person_assignments_by_time_period.state_code
-        AND observations.start_date <= person_assignments_by_time_period.intersection_end_date_exclusive_nonnull
-        AND (
-            observations.end_date IS NULL OR
-            observations.end_date > person_assignments_by_time_period.intersection_start_date
-        )
+    FROM observations_by_assignments
     GROUP BY state_code, facility, metric_period_start_date, metric_period_end_date_exclusive, period
 )
 SELECT

@@ -29,6 +29,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodSpanAggregatedMetric,
 )
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
 )
 from recidiviz.aggregated_metrics.query_building.aggregated_metric_query_utils import (
@@ -42,15 +43,28 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
+from recidiviz.observations.event_type import EventType
 from recidiviz.observations.metric_unit_of_observation import MetricUnitOfObservation
 from recidiviz.observations.observation_selector import ObservationSelector
 from recidiviz.observations.observation_type_utils import ObservationTypeT
 from recidiviz.observations.span_observation_big_query_view_builder import (
     SpanObservationBigQueryViewBuilder,
 )
+from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.string_formatting import fix_indent
 
 OBSERVATIONS_CTE_NAME = "observations"
+OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME = "observations_by_assignments"
+
+
+def _get_referenced_attributes(
+    # All of these have selectors that reference the same observation_type
+    single_observation_type_metrics: list[AggregatedMetric[ObservationTypeT]],
+) -> list[str]:
+    referenced_attributes = set()
+    for metric in single_observation_type_metrics:
+        referenced_attributes.update(metric.referenced_observation_attributes())
+    return sorted(referenced_attributes)
 
 
 def _build_observations_query_template_for_metrics(
@@ -75,11 +89,6 @@ def _build_observations_query_template_for_metrics(
                 f"Unexpected metric type [{metric_observation_type}] for metric "
                 f"[{metric.name}]. Expected [{observation_type}]."
             )
-
-    referenced_attributes = set()
-    for metric in single_observation_type_metrics:
-        referenced_attributes.update(metric.referenced_observation_attributes())
-
     selectors = [
         metric.observation_selector for metric in single_observation_type_metrics
     ]
@@ -87,7 +96,9 @@ def _build_observations_query_template_for_metrics(
     return ObservationSelector.build_selected_observations_query_template(
         observation_type=observation_type,
         observation_selectors=selectors,
-        output_attribute_columns=sorted(referenced_attributes),
+        output_attribute_columns=_get_referenced_attributes(
+            single_observation_type_metrics
+        ),
     )
 
 
@@ -100,27 +111,27 @@ def _aggregation_clause_for_metric(metric: AggregatedMetric) -> str:
         return metric.generate_aggregation_query_fragment(
             filter_observations_by_type=False,
             read_observation_attributes_from_json=False,
-            observations_cte_name=OBSERVATIONS_CTE_NAME,
-            event_date_col=f"{OBSERVATIONS_CTE_NAME}.{EventObservationBigQueryViewBuilder.EVENT_DATE_OUTPUT_COL_NAME}",
+            observations_cte_name=OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME,
+            event_date_col=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{EventObservationBigQueryViewBuilder.EVENT_DATE_OUTPUT_COL_NAME}",
         )
 
     if isinstance(metric, PeriodSpanAggregatedMetric):
         span_start_date_col_clause = f"""GREATEST(
-            {OBSERVATIONS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME},
+            {OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME},
             {AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME}
         )"""
 
         span_end_date_col_clause = f"""LEAST(
-            {nonnull_end_date_clause(f"{OBSERVATIONS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.END_DATE_OUTPUT_COL_NAME}")},
+            {nonnull_end_date_clause(f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.END_DATE_OUTPUT_COL_NAME}")},
             {AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_END_DATE_EXCLUSIVE_COLUMN_NAME}
         )"""
         return metric.generate_aggregation_query_fragment(
             filter_observations_by_type=False,
             read_observation_attributes_from_json=False,
-            observations_cte_name=OBSERVATIONS_CTE_NAME,
+            observations_cte_name=OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME,
             period_start_date_col=MetricTimePeriodConfig.METRIC_TIME_PERIOD_START_DATE_COLUMN,
             period_end_date_col=MetricTimePeriodConfig.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN,
-            original_span_start_date=f"{OBSERVATIONS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME}",
+            original_span_start_date=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME}",
             span_start_date_col=span_start_date_col_clause,
             span_end_date_col=span_end_date_col_clause,
         )
@@ -188,6 +199,71 @@ def _observation_to_assignment_periods_join_logic(
     raise ValueError(f"Unexpected metric class type: [{metric_class}]")
 
 
+def _build_observations_by_assignments_query_template(
+    observation_type: ObservationTypeT,
+    unit_of_analysis_type: MetricUnitOfAnalysisType,
+    metric_class: AggregatedMetricClassType,
+    single_observation_type_metrics: list[AggregatedMetric[ObservationTypeT]],
+    assignments_by_time_period_cte_name: str,
+) -> str:
+    """Returns a query template (with a project_id format arg) that will return
+    rows for every observation relevant to ANY of the given metrics, joined with any
+    assignments that those observations should be associated with.
+    """
+    assignments_columns = AssignmentsByTimePeriodViewBuilder.get_output_columns(
+        unit_of_analysis=MetricUnitOfAnalysis.for_type(unit_of_analysis_type),
+        unit_of_observation=MetricUnitOfObservation(
+            type=observation_type.unit_of_observation_type
+        ),
+        metric_time_period_to_assignment_join_type=metric_class.metric_time_period_to_assignment_join_type(),
+    )
+
+    observation_columns: list[str]
+    if isinstance(observation_type, EventType):
+        observation_columns = (
+            EventObservationBigQueryViewBuilder.non_attribute_output_columns(
+                observation_type.unit_of_observation_type
+            )
+        )
+    elif isinstance(observation_type, SpanType):
+        observation_columns = (
+            SpanObservationBigQueryViewBuilder.non_attribute_output_columns(
+                observation_type.unit_of_observation_type
+            )
+        )
+    else:
+        raise ValueError(f"Unexpected observation_type [{observation_type}]")
+
+    observation_columns += _get_referenced_attributes(single_observation_type_metrics)
+
+    column_strs = [
+        f"{assignments_by_time_period_cte_name}.{col}" for col in assignments_columns
+    ] + [
+        f"{OBSERVATIONS_CTE_NAME}.{col}"
+        for col in observation_columns
+        if col not in assignments_columns
+    ]
+    columns_str = ",\n".join(column_strs)
+
+    join_logic = _observation_to_assignment_periods_join_logic(
+        metric_class=metric_class,
+        assignments_by_time_period_cte_name=assignments_by_time_period_cte_name,
+        metric_unit_of_observation=MetricUnitOfObservation(
+            type=observation_type.unit_of_observation_type
+        ),
+    )
+    return f"""
+SELECT
+{fix_indent(columns_str, indent_level=4)}
+FROM 
+    {assignments_by_time_period_cte_name}
+JOIN 
+    {OBSERVATIONS_CTE_NAME}
+ON
+{fix_indent(join_logic, indent_level=4)}
+"""
+
+
 def build_single_observation_type_aggregated_metric_query_template(
     *,
     observation_type: ObservationTypeT,
@@ -231,23 +307,23 @@ def build_single_observation_type_aggregated_metric_query_template(
         observation_type, single_observation_type_metrics
     )
 
+    observations_by_assignments_cte = _build_observations_by_assignments_query_template(
+        observation_type,
+        unit_of_analysis_type,
+        metric_class,
+        single_observation_type_metrics,
+        assignments_by_time_period_cte_name,
+    )
+
     group_by_cols: list[str] = metric_group_by_columns(unit_of_analysis_type)
     output_column_strs = [
-        *[f"{assignments_by_time_period_cte_name}.{col}" for col in group_by_cols],
+        *group_by_cols,
         *[
             fix_indent(_aggregation_clause_for_metric(metric), indent_level=0)
             for metric in single_observation_type_metrics
         ],
     ]
     output_columns_str = ",\n".join(output_column_strs)
-
-    join_logic = _observation_to_assignment_periods_join_logic(
-        metric_class=metric_class,
-        assignments_by_time_period_cte_name=assignments_by_time_period_cte_name,
-        metric_unit_of_observation=MetricUnitOfObservation(
-            type=observation_type.unit_of_observation_type
-        ),
-    )
 
     # NOTE: Changing the JOIN in this query to LEFT OUTER JOIN means that we produce
     # rows for all possible row primary key values, but it also makes the overall
@@ -258,14 +334,12 @@ def build_single_observation_type_aggregated_metric_query_template(
 WITH
 {OBSERVATIONS_CTE_NAME} AS (
 {fix_indent(observations_cte, indent_level=4)}
+),
+{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME} AS (
+{fix_indent(observations_by_assignments_cte, indent_level=4)}
 )
 SELECT
 {fix_indent(output_columns_str, indent_level=4)}
-FROM 
-    {assignments_by_time_period_cte_name}
-JOIN 
-    {OBSERVATIONS_CTE_NAME}
-ON
-{fix_indent(join_logic, indent_level=4)}
+FROM {OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}
 GROUP BY {list_to_query_string(group_by_cols)}
 """

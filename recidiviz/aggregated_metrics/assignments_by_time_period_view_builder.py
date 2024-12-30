@@ -255,7 +255,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             type=self.unit_of_observation_type
         )
 
-        output_columns = self._get_output_columns(
+        output_columns = self.get_output_columns(
             unit_of_analysis,
             unit_of_observation,
             self.metric_time_period_to_assignment_join_type,
@@ -372,7 +372,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         )
 
     @classmethod
-    def _get_output_columns(
+    def get_output_columns(
         cls,
         unit_of_analysis: MetricUnitOfAnalysis,
         unit_of_observation: MetricUnitOfObservation,
@@ -410,7 +410,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         metric_time_period_to_assignment_join_type: MetricTimePeriodToAssignmentJoinType,
     ) -> list[str]:
         """Returns output column clauses for the assignments by time period query."""
-        output_columns = cls._get_output_columns(
+        output_columns = cls.get_output_columns(
             unit_of_analysis=unit_of_analysis,
             unit_of_observation=unit_of_observation,
             metric_time_period_to_assignment_join_type=metric_time_period_to_assignment_join_type,
