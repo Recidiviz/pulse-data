@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_ConsolidatedSupStatuses
+file_description: |-
+  This table contains consolidated supervision status information
+data_classification: source
+no_valid_primary_keys: True
+always_historical_export: True
+primary_key_cols: []
+columns:
+  - name: OffenderCd
+    description: |-
+      Offender code
+    is_pii: True
+  - name: MinOffenseDt
+    description: Earliest offense date
+    field_type: datetime
+    null_values:
+      - "NULL"
+  - name: StartDt
+    description: Supervision start date
+    field_type: datetime
+    null_values:
+      - "NULL"
+  - name: EndDt
+    description: Supervision end date
+    field_type: datetime
+    null_values:
+      - "NULL"
+  - name: MaxPrisonEndDtWithinConsSupStatus
+    description: Most recent prison end date
+    field_type: datetime
+    null_values:
+      - "NULL"
+  - name: MaxOWIContinuumStartDtWithinConsSupStatus
+    description: Most recent OWI continuum with supervision start date
+    field_type: datetime
+    null_values:
+      - "NULL"
