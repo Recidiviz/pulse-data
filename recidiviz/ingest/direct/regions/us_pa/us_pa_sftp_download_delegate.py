@@ -113,3 +113,6 @@ class UsPaSftpDownloadDelegate(BaseSftpDownloadDelegate):
                 ],
             }
         }
+
+    def get_read_kwargs(self) -> Dict[str, Any]:
+        return {}

@@ -107,6 +107,7 @@ class RecidivizSftpToGcsOperator(BaseOperator):
             contents_handle=SftpFileContentsHandle(
                 sftp_file_path=self.remote_file_path,
                 sftp_client=sftp_hook.get_conn(),
+                read_kwargs=self.delegate.get_read_kwargs(),
             ),
             content_type=BYTES_CONTENT_TYPE,
         )

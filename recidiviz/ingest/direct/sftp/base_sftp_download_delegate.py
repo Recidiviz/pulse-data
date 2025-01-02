@@ -50,5 +50,11 @@ class BaseSftpDownloadDelegate(abc.ABC):
     @abc.abstractmethod
     def get_transport_kwargs(self) -> Dict[str, Any]:
         """State-specific kwargs to be passed to paramiko's Transport client to help
-        configure connection setings during initial SFTP connection
+        configure connection settings during initial SFTP connection
+        """
+
+    @abc.abstractmethod
+    def get_read_kwargs(self) -> Dict[str, Any]:
+        """State-specific kwargs to be passed to paramiko's SFTPClient.getfo to help
+        configure file reading settings.
         """

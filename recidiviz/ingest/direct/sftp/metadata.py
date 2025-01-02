@@ -24,3 +24,5 @@ DISABLED_ALGORITHMS_KWARG = "disabled_algorithms"
 # adding algorithms to this list in order to force preference of the algorithms that our
 # hostkey secrets contain by our state partners.
 SFTP_DISABLED_ALGORITHMS_PUB_KEYS = {"pubkeys": ["rsa-sha2-512", "rsa-sha2-256"]}
+
+MAX_CONCURRENT_READ_THREADS = "max_concurrent_prefetch_requests"

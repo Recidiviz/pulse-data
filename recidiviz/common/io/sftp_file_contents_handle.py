@@ -21,7 +21,7 @@ import time
 from contextlib import contextmanager
 from datetime import timedelta
 from tempfile import TemporaryFile
-from typing import IO, Callable, Iterator, Optional, Union
+from typing import IO, Any, Callable, Dict, Iterator, Optional, Union
 
 from paramiko import SFTPClient, SFTPFile
 
@@ -71,12 +71,11 @@ class SftpFileContentsHandle(FileContentsHandle[bytes, Union[SFTPFile, IO]]):
     """A class that can be used to access contents of a file on an SFTP server."""
 
     def __init__(
-        self,
-        sftp_file_path: str,
-        sftp_client: SFTPClient,
+        self, sftp_file_path: str, sftp_client: SFTPClient, read_kwargs: Dict[str, Any]
     ):
         self.sftp_file_path = sftp_file_path
         self.sftp_client = sftp_client
+        self.read_kwargs = read_kwargs
 
     @contextmanager
     def open(self, mode: str = "r") -> Iterator[Union[SFTPFile, IO]]:
@@ -88,6 +87,7 @@ class SftpFileContentsHandle(FileContentsHandle[bytes, Union[SFTPFile, IO]]):
                     fl=f,
                     callback=create_progress_callback(),
                     prefetch=True,
+                    **self.read_kwargs,
                 )
 
                 # Rewind stream for reading

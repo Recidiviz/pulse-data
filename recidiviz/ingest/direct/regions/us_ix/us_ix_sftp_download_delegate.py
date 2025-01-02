@@ -71,3 +71,6 @@ class UsIxSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
     def get_transport_kwargs(self) -> Dict[str, Any]:
         return {DISABLED_ALGORITHMS_KWARG: SFTP_DISABLED_ALGORITHMS_PUB_KEYS}
+
+    def get_read_kwargs(self) -> Dict[str, Any]:
+        return {}

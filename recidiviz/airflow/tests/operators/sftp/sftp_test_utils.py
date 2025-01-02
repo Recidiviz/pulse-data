@@ -61,6 +61,9 @@ class FakeUsXxSftpDownloadDelegate(BaseSftpDownloadDelegate):
     def get_transport_kwargs(self) -> Dict[str, Any]:
         return {}
 
+    def get_read_kwargs(self) -> Dict[str, Any]:
+        return {}
+
 
 class FakeUsLlSftpDownloadDelegate(BaseSftpDownloadDelegate):
     def root_directory(self, candidate_paths: List[str]) -> str:
@@ -80,4 +83,7 @@ class FakeUsLlSftpDownloadDelegate(BaseSftpDownloadDelegate):
         return [downloaded_path.abs_path()]
 
     def get_transport_kwargs(self) -> Dict[str, Any]:
+        return {}
+
+    def get_read_kwargs(self) -> Dict[str, Any]:
         return {}
