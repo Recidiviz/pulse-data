@@ -10,6 +10,7 @@ primary_key_cols:
   - OffenderID
   - ReportFrom
   - SequenceNumber
+always_historical_export: false
 columns:
   - name: AppointmentDate
     description: |-

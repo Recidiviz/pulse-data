@@ -26,9 +26,15 @@ columns:
   - name: start_date
     description: |-
       Relevant start date for location to district mapping.
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2023-01-17T00:00:01Z
   - name: end_date
     description: |-
       Relevant end date for location. Could be used when districts are merged to 
       indicate end of location being attached to that district.
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2023-01-17T00:00:01Z
 separator: ","
 encoding: UTF-8

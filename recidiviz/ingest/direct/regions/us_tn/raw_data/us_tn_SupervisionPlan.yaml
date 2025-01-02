@@ -102,6 +102,8 @@ columns:
         description: "TODO(#7424): Document this value."
       - value: 7M1
         description: "TODO(#7424): Document this value."
+      - value: 7RP
+        description: "TODO(#7424): Document this value."
       - value: 9AB
         description: ADM - ABSCONDED OFFENDER
       - value: 9DP
