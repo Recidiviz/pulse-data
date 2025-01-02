@@ -63,7 +63,7 @@ _OFFICER_AGGREGATED_METRICS_MONTH_WHERE_CLAUSE = """
 _OFFICER_AGGREGATED_METRICS_YEAR_WHERE_CLAUSE = """
     state_code = "US_IX"
     AND period = "YEAR"
-    AND end_date = "2024-12-01" -- TODO(#35973): Use 2025-01-01 once we're in Jan
+    AND end_date = "2025-01-01"
 """
 
 

@@ -47,7 +47,7 @@ FROM `recidiviz-123.aggregated_metrics.supervision_officer_aggregated_metrics_ma
 WHERE
     state_code = "US_IX"
     AND period = "YEAR"
-    AND end_date = "2024-12-01" -- TODO(#35973): Use 2025-01-01 once we're in Jan
+    AND end_date = "2025-01-01"
 """
 
 
