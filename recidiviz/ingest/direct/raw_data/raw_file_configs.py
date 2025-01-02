@@ -183,6 +183,8 @@ class ColumnUpdateInfo:
             raise ValueError(
                 f"ColumnUpdateInfo previous_value must be set if and only if update_type is {ColumnUpdateOperation.RENAME.value}"
             )
+        if self.update_datetime.tzinfo is None:
+            raise ValueError("Must include timezone in update_history update_datetime")
 
 
 @attr.s

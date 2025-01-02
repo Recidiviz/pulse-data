@@ -56,11 +56,13 @@ class TestColumnChangeInfo(unittest.TestCase):
             ColumnUpdateOperation.ADDITION,
             ColumnUpdateOperation.DELETION,
         ]:
-            ColumnUpdateInfo(update_type=update_type, update_datetime=datetime.now())
+            ColumnUpdateInfo(
+                update_type=update_type, update_datetime=datetime.now(tz=timezone.utc)
+            )
 
         ColumnUpdateInfo(
             update_type=ColumnUpdateOperation.RENAME,
-            update_datetime=datetime.now(),
+            update_datetime=datetime.now(tz=timezone.utc),
             previous_value="old_name",
         )
 
@@ -75,7 +77,7 @@ class TestColumnChangeInfo(unittest.TestCase):
             ):
                 ColumnUpdateInfo(
                     update_type=update_type,
-                    update_datetime=datetime.now(),
+                    update_datetime=datetime.now(tz=timezone.utc),
                     previous_value="old_name",
                 )
         with self.assertRaisesRegex(
@@ -84,6 +86,15 @@ class TestColumnChangeInfo(unittest.TestCase):
         ):
             ColumnUpdateInfo(
                 update_type=ColumnUpdateOperation.RENAME,
+                update_datetime=datetime.now(tz=timezone.utc),
+            )
+
+    def test_column_update_no_tz(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, "Must include timezone in update_history update_datetime"
+        ):
+            ColumnUpdateInfo(
+                update_type=ColumnUpdateOperation.DELETION,
                 update_datetime=datetime.now(),
             )
 
@@ -333,27 +344,36 @@ class TestRawTableColumnInfo(unittest.TestCase):
             update_history=[
                 ColumnUpdateInfo(
                     ColumnUpdateOperation.RENAME,
-                    update_datetime=datetime(2022, 1, 15),
+                    update_datetime=datetime(2022, 1, 15, tzinfo=timezone.utc),
                     previous_value="OLD_OLD_COL1",
                 ),
                 ColumnUpdateInfo(
                     update_type=ColumnUpdateOperation.RENAME,
-                    update_datetime=datetime(2022, 2, 1),
+                    update_datetime=datetime(2022, 2, 1, tzinfo=timezone.utc),
                     previous_value="OLD_COL1",
                 ),
             ],
         )
         self.assertEqual(
-            column_info.name_at_datetime(datetime(2022, 1, 1)), "OLD_OLD_COL1"
+            column_info.name_at_datetime(datetime(2022, 1, 1, tzinfo=timezone.utc)),
+            "OLD_OLD_COL1",
         )
         self.assertEqual(
-            column_info.name_at_datetime(datetime(2022, 1, 15)), "OLD_COL1"
+            column_info.name_at_datetime(datetime(2022, 1, 15, tzinfo=timezone.utc)),
+            "OLD_COL1",
         )
         self.assertEqual(
-            column_info.name_at_datetime(datetime(2022, 1, 31)), "OLD_COL1"
+            column_info.name_at_datetime(datetime(2022, 1, 31, tzinfo=timezone.utc)),
+            "OLD_COL1",
         )
-        self.assertEqual(column_info.name_at_datetime(datetime(2022, 2, 1)), "COL1")
-        self.assertEqual(column_info.name_at_datetime(datetime(2022, 3, 1)), "COL1")
+        self.assertEqual(
+            column_info.name_at_datetime(datetime(2022, 2, 1, tzinfo=timezone.utc)),
+            "COL1",
+        )
+        self.assertEqual(
+            column_info.name_at_datetime(datetime(2022, 3, 1, tzinfo=timezone.utc)),
+            "COL1",
+        )
 
     def test_column_exists_at_datetime(self) -> None:
         column_info = RawTableColumnInfo(
@@ -365,28 +385,46 @@ class TestRawTableColumnInfo(unittest.TestCase):
             update_history=[
                 ColumnUpdateInfo(
                     ColumnUpdateOperation.ADDITION,
-                    update_datetime=datetime(2022, 1, 15),
+                    update_datetime=datetime(2022, 1, 15, tzinfo=timezone.utc),
                 ),
                 ColumnUpdateInfo(
                     ColumnUpdateOperation.DELETION,
-                    update_datetime=datetime(2022, 2, 1),
+                    update_datetime=datetime(2022, 2, 1, tzinfo=timezone.utc),
                 ),
                 ColumnUpdateInfo(
                     ColumnUpdateOperation.ADDITION,
-                    update_datetime=datetime(2022, 4, 1),
+                    update_datetime=datetime(2022, 4, 1, tzinfo=timezone.utc),
                 ),
             ],
         )
-        self.assertIsNone(column_info.name_at_datetime(datetime(2022, 1, 1)))
+        self.assertIsNone(
+            column_info.name_at_datetime(datetime(2022, 1, 1, tzinfo=timezone.utc))
+        )
 
-        self.assertEqual(column_info.name_at_datetime(datetime(2022, 1, 15)), "COL1")
-        self.assertEqual(column_info.name_at_datetime(datetime(2022, 1, 31)), "COL1")
+        self.assertEqual(
+            column_info.name_at_datetime(datetime(2022, 1, 15, tzinfo=timezone.utc)),
+            "COL1",
+        )
+        self.assertEqual(
+            column_info.name_at_datetime(datetime(2022, 1, 31, tzinfo=timezone.utc)),
+            "COL1",
+        )
 
-        self.assertIsNone(column_info.name_at_datetime(datetime(2022, 2, 1)))
-        self.assertIsNone(column_info.name_at_datetime(datetime(2022, 3, 1)))
+        self.assertIsNone(
+            column_info.name_at_datetime(datetime(2022, 2, 1, tzinfo=timezone.utc))
+        )
+        self.assertIsNone(
+            column_info.name_at_datetime(datetime(2022, 3, 1, tzinfo=timezone.utc))
+        )
 
-        self.assertEqual(column_info.name_at_datetime(datetime(2022, 4, 1)), "COL1")
-        self.assertEqual(column_info.name_at_datetime(datetime(2022, 5, 1)), "COL1")
+        self.assertEqual(
+            column_info.name_at_datetime(datetime(2022, 4, 1, tzinfo=timezone.utc)),
+            "COL1",
+        )
+        self.assertEqual(
+            column_info.name_at_datetime(datetime(2022, 5, 1, tzinfo=timezone.utc)),
+            "COL1",
+        )
 
     def test_valid_update_history(self) -> None:
         # Should not raise an error
@@ -399,12 +437,12 @@ class TestRawTableColumnInfo(unittest.TestCase):
             update_history=[
                 ColumnUpdateInfo(
                     update_type=ColumnUpdateOperation.ADDITION,
-                    update_datetime=datetime(2022, 1, 15),
+                    update_datetime=datetime(2022, 1, 15, tzinfo=timezone.utc),
                 ),
                 ColumnUpdateInfo(
                     update_type=ColumnUpdateOperation.RENAME,
                     previous_value="old_name",
-                    update_datetime=datetime(2022, 2, 1),
+                    update_datetime=datetime(2022, 2, 1, tzinfo=timezone.utc),
                 ),
             ],
         )
@@ -418,11 +456,11 @@ class TestRawTableColumnInfo(unittest.TestCase):
                 ColumnUpdateInfo(
                     update_type=ColumnUpdateOperation.RENAME,
                     previous_value="old_name",
-                    update_datetime=datetime(2022, 1, 15),
+                    update_datetime=datetime(2022, 1, 15, tzinfo=timezone.utc),
                 ),
                 ColumnUpdateInfo(
                     update_type=ColumnUpdateOperation.DELETION,
-                    update_datetime=datetime(2022, 2, 1),
+                    update_datetime=datetime(2022, 2, 1, tzinfo=timezone.utc),
                 ),
             ],
         )
@@ -438,11 +476,11 @@ class TestRawTableColumnInfo(unittest.TestCase):
                 update_history=[
                     ColumnUpdateInfo(
                         update_type=ColumnUpdateOperation.ADDITION,
-                        update_datetime=datetime(2022, 1, 15),
+                        update_datetime=datetime(2022, 1, 15, tzinfo=timezone.utc),
                     ),
                     ColumnUpdateInfo(
                         update_type=ColumnUpdateOperation.ADDITION,
-                        update_datetime=datetime(2022, 2, 1),
+                        update_datetime=datetime(2022, 2, 1, tzinfo=timezone.utc),
                     ),
                 ],
             )
@@ -461,11 +499,11 @@ class TestRawTableColumnInfo(unittest.TestCase):
                 update_history=[
                     ColumnUpdateInfo(
                         update_type=ColumnUpdateOperation.DELETION,
-                        update_datetime=datetime(2022, 1, 15),
+                        update_datetime=datetime(2022, 1, 15, tzinfo=timezone.utc),
                     ),
                     ColumnUpdateInfo(
                         update_type=ColumnUpdateOperation.DELETION,
-                        update_datetime=datetime(2022, 2, 1),
+                        update_datetime=datetime(2022, 2, 1, tzinfo=timezone.utc),
                     ),
                 ],
             )
@@ -485,12 +523,12 @@ class TestRawTableColumnInfo(unittest.TestCase):
                     ColumnUpdateInfo(
                         update_type=ColumnUpdateOperation.RENAME,
                         previous_value="old_name",
-                        update_datetime=datetime(2022, 1, 15),
+                        update_datetime=datetime(2022, 1, 15, tzinfo=timezone.utc),
                     ),
                     ColumnUpdateInfo(
                         update_type=ColumnUpdateOperation.RENAME,
                         previous_value="old_name",
-                        update_datetime=datetime(2022, 2, 1),
+                        update_datetime=datetime(2022, 2, 1, tzinfo=timezone.utc),
                     ),
                 ],
             )
@@ -510,16 +548,16 @@ class TestRawTableColumnInfo(unittest.TestCase):
                     ColumnUpdateInfo(
                         update_type=ColumnUpdateOperation.RENAME,
                         previous_value="old_name",
-                        update_datetime=datetime(2022, 1, 15),
+                        update_datetime=datetime(2022, 1, 15, tzinfo=timezone.utc),
                     ),
                     ColumnUpdateInfo(
                         update_type=ColumnUpdateOperation.DELETION,
-                        update_datetime=datetime(2022, 1, 15),
+                        update_datetime=datetime(2022, 1, 15, tzinfo=timezone.utc),
                     ),
                 ],
             )
         self.assertEqual(
-            "Invalid update_history sequence for column [COL1]. Found two updates with the same update_datetime [2022-01-15T00:00:00]",
+            "Invalid update_history sequence for column [COL1]. Found two updates with the same update_datetime [2022-01-15T00:00:00+00:00]",
             str(context.exception),
         )
 
@@ -534,11 +572,11 @@ class TestRawTableColumnInfo(unittest.TestCase):
                 update_history=[
                     ColumnUpdateInfo(
                         update_type=ColumnUpdateOperation.ADDITION,
-                        update_datetime=datetime(2022, 2, 1),
+                        update_datetime=datetime(2022, 2, 1, tzinfo=timezone.utc),
                     ),
                     ColumnUpdateInfo(
                         update_type=ColumnUpdateOperation.DELETION,
-                        update_datetime=datetime(2022, 1, 15),
+                        update_datetime=datetime(2022, 1, 15, tzinfo=timezone.utc),
                     ),
                 ],
             )
