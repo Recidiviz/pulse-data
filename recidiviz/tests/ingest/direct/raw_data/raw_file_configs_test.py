@@ -696,15 +696,6 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             no_valid_primary_keys=True,
         )
 
-    # TODO(#19528): remove test once raw data pruning can be done on ContactNoteComment.
-    def test_is_exempt_from_raw_data_pruning_contact_note_comment(
-        self,
-    ) -> None:
-        raw_file_config = DirectIngestRegionRawFileConfig(
-            region_code=StateCode.US_TN.value
-        ).raw_file_configs["ContactNoteComment"]
-        self.assertTrue(raw_file_config.is_exempt_from_raw_data_pruning())
-
     def test_is_exempt_from_raw_data_pruning_no_valid_primary_keys_true(
         self,
     ) -> None:

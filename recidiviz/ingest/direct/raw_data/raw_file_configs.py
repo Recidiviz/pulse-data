@@ -755,10 +755,6 @@ class DirectIngestRawFileConfig:
     def is_exempt_from_raw_data_pruning(self) -> bool:
         # Map tracking file tags to the reasons they are exempt from raw data pruning.
         exempt_files: Dict[StateCode, Dict[str, str]] = {
-            StateCode.US_TN: {
-                # TODO(#19528): remove gating once raw data pruning can be done on ContactNoteComment.
-                "ContactNoteComment": "THis file is split up into chunks and we do not know how to prune chunked files yet"
-            },
             StateCode.US_OR: {
                 "RCDVZ_PRDDTA_OP013P": "We use this in views with @ALL",
                 "RCDVZ_CISPRDDTA_CMCMST": "We use this in views with @ALL",
