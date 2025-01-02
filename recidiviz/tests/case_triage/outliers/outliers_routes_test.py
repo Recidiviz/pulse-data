@@ -2366,6 +2366,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.supervisor_exists_with_external_id",
     )
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_outcomes",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
     )
     @patch(
@@ -2379,6 +2382,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_config: MagicMock,
         mock_enabled_states: MagicMock,
         mock_get_officer_entity: MagicMock,
+        mock_get_officer_outcomes: MagicMock,
         mock_supervisor_exists: MagicMock,
         mock_get_events: MagicMock,
     ) -> None:
@@ -2388,7 +2392,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
-            metrics=[build_test_metric_3(StateCode.US_PA)],
+            metrics=[build_test_metric_1(StateCode.US_PA)],
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -2416,6 +2420,25 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             include_in_outcomes=True,
         )
 
+        mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
+            external_id="123",
+            pseudonymized_id="hashhash",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": build_test_metric_1(StateCode.US_PA).name,
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+            top_x_pct_metrics=[],
+        )
+
         with SessionFactory.using_database(self.insights_database_key) as session:
             # The supervisor exists, but doesn't match the supervisor of the officer
             mock_supervisor_exists.return_value = True
@@ -2424,14 +2447,14 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 session.query(SupervisionClientEvent)
                 .filter(
                     SupervisionClientEvent.metric_id
-                    == build_test_metric_3(StateCode.US_PA).name,
+                    == build_test_metric_1(StateCode.US_PA).name,
                     SupervisionClientEvent.client_id == "222",
                 )
                 .all()
             )
 
             response = self.test_client.get(
-                "/outliers/US_PA/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
+                "/outliers/US_PA/officer/hashhash/events?metric_id=incarceration_starts_and_inferred&period_end_date=2023-05-01",
                 headers={"Origin": "http://localhost:3000"},
             )
 
@@ -2439,6 +2462,85 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.supervisor_exists_with_external_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_outcomes",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
+    )
+    def test_get_events_by_officer_outcomes_not_found(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_officer_entity: MagicMock,
+        mock_get_officer_outcomes: MagicMock,
+        mock_supervisor_exists: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_pa", "101", can_access_all_supervisors=True
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[
+                build_test_metric_3(StateCode.US_PA),
+                build_test_metric_1(StateCode.US_PA),
+            ],
+        )
+
+        mock_get_officer_entity.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(**{"given_names": "OLIVIA", "surname": "RODRIGO"}),
+            external_id="123",
+            pseudonymized_id="hashhash",
+            supervisor_external_id="102",
+            supervisor_external_ids=["102"],
+            district="Guts",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": "absconsions_bench_warrants",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+            top_x_pct_metrics=[],
+            avg_daily_population=10.0,
+            include_in_outcomes=True,
+        )
+        # No outcomes found for officer
+        mock_get_officer_outcomes.return_value = None
+        mock_supervisor_exists.return_value = True
+
+        response = self.test_client.get(
+            "/outliers/US_PA/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "Officer outcomes data for pseudonymized id not found: hashhash",
+            },
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.supervisor_exists_with_external_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_outcomes",
     )
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
@@ -2454,6 +2556,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_config: MagicMock,
         mock_enabled_states: MagicMock,
         mock_get_officer_entity: MagicMock,
+        mock_get_officer_outcomes: MagicMock,
         mock_supervisor_exists: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
@@ -2478,6 +2581,14 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
+
+        mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
+            external_id="123",
+            pseudonymized_id="hashhash",
+            caseload_category="ALL",
+            outlier_metrics=[],
+            top_x_pct_metrics=[],
+        )
         mock_supervisor_exists.return_value = False
 
         response = self.test_client.get(
@@ -2495,6 +2606,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.supervisor_exists_with_external_id",
     )
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_outcomes",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
     )
     @patch(
@@ -2508,6 +2622,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_config: MagicMock,
         mock_enabled_states: MagicMock,
         mock_get_officer_entity: MagicMock,
+        mock_get_officer_outcomes: MagicMock,
         mock_supervisor_exists: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
@@ -2544,6 +2659,25 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             include_in_outcomes=True,
         )
 
+        mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
+            external_id="123",
+            pseudonymized_id="hashhash",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": "other_metric",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+            top_x_pct_metrics=[],
+        )
+
         mock_supervisor_exists.return_value = True
 
         response = self.test_client.get(
@@ -2561,6 +2695,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.supervisor_exists_with_external_id",
     )
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_outcomes",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
     )
     @patch(
@@ -2574,6 +2711,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_config: MagicMock,
         mock_enabled_states: MagicMock,
         mock_get_officer_entity: MagicMock,
+        mock_get_officer_outcomes: MagicMock,
         mock_supervisor_exists: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
@@ -2613,6 +2751,25 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             include_in_outcomes=True,
         )
 
+        mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
+            external_id="123",
+            pseudonymized_id="hashhash",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": build_test_metric_3(StateCode.US_PA).name,
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+            top_x_pct_metrics=[],
+        )
+
         with local_project_id_override("test-project"):
             with patch("logging.Logger.error") as mock_logger:
                 mock_supervisor_exists.return_value = True
@@ -2627,7 +2784,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         call(
                             "Officer %s is not an outlier on the following requested metrics: %s",
                             "hashhash",
-                            ["absconsions_bench_warrants"],
+                            ["incarceration_starts_and_inferred"],
                         )
                     ]
                 )
@@ -2638,6 +2795,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     )
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.supervisor_exists_with_external_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_outcomes",
     )
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
@@ -2653,6 +2813,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_config: MagicMock,
         mock_enabled_states: MagicMock,
         mock_get_officer_entity: MagicMock,
+        mock_get_officer_outcomes: MagicMock,
         mock_supervisor_exists: MagicMock,
         mock_get_events: MagicMock,
     ) -> None:
@@ -2703,6 +2864,35 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             include_in_outcomes=True,
         )
 
+        mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
+            external_id="123",
+            pseudonymized_id="hashhash",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": build_test_metric_1(StateCode.US_PA).name,
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                },
+                {
+                    "metric_id": build_test_metric_3(StateCode.US_PA).name,
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                },
+            ],
+            top_x_pct_metrics=[],
+        )
+
         mock_supervisor_exists.return_value = False
         mock_get_events.return_value = []
         response = self.test_client.get(
@@ -2724,6 +2914,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.supervisor_exists_with_external_id",
     )
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_outcomes",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
     )
     @patch(
@@ -2737,6 +2930,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_config: MagicMock,
         mock_enabled_states: MagicMock,
         mock_get_officer_entity: MagicMock,
+        mock_get_officer_outcomes: MagicMock,
         mock_supervisor_exists: MagicMock,
         mock_get_events: MagicMock,
     ) -> None:
@@ -2777,13 +2971,32 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             include_in_outcomes=True,
         )
 
+        mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
+            external_id="123",
+            pseudonymized_id="hashhash",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": build_test_metric_1(StateCode.US_PA).name,
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+            top_x_pct_metrics=[],
+        )
+
         with SessionFactory.using_database(self.insights_database_key) as session:
             mock_supervisor_exists.return_value = False
             mock_get_events.return_value = (
                 session.query(SupervisionClientEvent)
                 .filter(
                     SupervisionClientEvent.metric_id
-                    == build_test_metric_3(StateCode.US_PA).name,
+                    == build_test_metric_1(StateCode.US_PA).name,
                     SupervisionClientEvent.client_id == "222",
                 )
                 .all()
@@ -2794,16 +3007,10 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 headers={"Origin": "http://localhost:3000"},
             )
 
-            mock_get_events.assert_called_with(
-                "hashhash",
-                ["absconsions_bench_warrants"],
-                datetime.strptime("2023-05-01", "%Y-%m-%d"),
-            )
-
             self.snapshot.assert_match(response.json, name="test_get_events_by_officer_success")  # type: ignore[attr-defined]
             mock_get_events.assert_called_with(
                 "hashhash",
-                [build_test_metric_3(StateCode.US_PA).name],
+                [build_test_metric_1(StateCode.US_PA).name],
                 datetime.strptime("2023-05-01", "%Y-%m-%d"),
             )
 
@@ -2812,6 +3019,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     )
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.supervisor_exists_with_external_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_outcomes",
     )
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
@@ -2827,6 +3037,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_config: MagicMock,
         mock_enabled_states: MagicMock,
         mock_get_officer_entity: MagicMock,
+        mock_get_officer_outcomes: MagicMock,
         mock_supervisor_exists: MagicMock,
         mock_get_events: MagicMock,
     ) -> None:
@@ -2867,13 +3078,32 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             include_in_outcomes=True,
         )
 
+        mock_get_officer_outcomes.return_value = SupervisionOfficerOutcomes(
+            external_id="123",
+            pseudonymized_id="hashhash",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": "absconsions_bench_warrants",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+            top_x_pct_metrics=[],
+        )
+
         with SessionFactory.using_database(self.insights_database_key) as session:
             mock_supervisor_exists.return_value = False
             mock_get_events.return_value = (
                 session.query(SupervisionClientEvent)
                 .filter(
                     SupervisionClientEvent.metric_id
-                    == build_test_metric_1(StateCode.US_PA).name,
+                    == build_test_metric_3(StateCode.US_PA).name,
                     SupervisionClientEvent.client_id
                     == "444",  # this client fixture null supervision/assignment dates
                 )
@@ -2885,16 +3115,10 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 headers={"Origin": "http://localhost:3000"},
             )
 
-            mock_get_events.assert_called_with(
-                "hashhash",
-                ["incarceration_starts_and_inferred"],
-                datetime.strptime("2023-05-01", "%Y-%m-%d"),
-            )
-
             self.snapshot.assert_match(response.json, name="test_get_events_by_officer_success_with_null_dates")  # type: ignore[attr-defined]
             mock_get_events.assert_called_with(
                 "hashhash",
-                [build_test_metric_1(StateCode.US_PA).name],
+                [build_test_metric_3(StateCode.US_PA).name],
                 datetime.strptime("2023-05-01", "%Y-%m-%d"),
             )
 

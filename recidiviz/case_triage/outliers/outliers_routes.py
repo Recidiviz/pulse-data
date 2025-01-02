@@ -482,7 +482,7 @@ def create_outliers_api_blueprint() -> Blueprint:
             user_context
         ).primary_category_type
 
-        # Check that the requested officer exists and has metrics for the period.
+        # Check that the requested officer exists.
         officer_entity = querier.get_supervision_officer_entity(
             category_type_to_compare=category_type_to_compare,
             pseudonymized_officer_id=pseudonymized_officer_id,
@@ -511,13 +511,26 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.UNAUTHORIZED,
             )
 
+        # Check that the officer outcomes exist for the period.
+        officer_outcomes = querier.get_supervision_officer_outcomes(
+            category_type_to_compare=category_type_to_compare,
+            pseudonymized_officer_id=pseudonymized_officer_id,
+            num_lookback_periods=0,
+            period_end_date=period_end_date,
+        )
+        if officer_outcomes is None:
+            return jsonify_response(
+                f"Officer outcomes data for pseudonymized id not found: {pseudonymized_officer_id}",
+                HTTPStatus.NOT_FOUND,
+            )
+
         # Get the metric ids the officer is an Outlier for
         outlier_metric_ids = [
             metric_id
             for metric_id in allowed_metric_ids
             if any(
                 metric["metric_id"] == metric_id
-                for metric in officer_entity.outlier_metrics
+                for metric in officer_outcomes.outlier_metrics
             )
         ]
 
