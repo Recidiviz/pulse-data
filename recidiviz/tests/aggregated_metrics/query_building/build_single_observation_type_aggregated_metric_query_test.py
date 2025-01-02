@@ -19,6 +19,7 @@ import unittest
 
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentEventAggregatedMetric,
+    AssignmentSpanAggregatedMetric,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
@@ -37,8 +38,11 @@ from recidiviz.tests.aggregated_metrics.fixture_aggregated_metrics import (
     MY_AVG_LSIR_SCORE,
     MY_CONTACTS_ATTEMPTED_METRIC,
     MY_CONTACTS_COMPLETED_METRIC,
+    MY_DAYS_AT_LIBERTY_365,
+    MY_DAYS_SUPERVISED_365,
     MY_DAYS_TO_FIRST_INCARCERATION_100,
     MY_DRUG_SCREENS_METRIC,
+    MY_MAX_DAYS_STABLE_EMPLOYMENT_365,
 )
 
 
@@ -570,4 +574,198 @@ GROUP BY state_code, district, office, metric_period_start_date, metric_period_e
 
         self.assertEqual(expected_result, result)
 
-    # TODO(#35898): Add tests for AssignmentSpanAggregatedMetric
+    def test_build_assignment_span_metric__single(self) -> None:
+        result = build_single_observation_type_aggregated_metric_query_template(
+            observation_type=SpanType.EMPLOYMENT_PERIOD,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+            metric_class=AssignmentSpanAggregatedMetric,
+            single_observation_type_metrics=[MY_MAX_DAYS_STABLE_EMPLOYMENT_365],
+            assignments_by_time_period_cte_name="person_assignments_by_time_period",
+        )
+
+        expected_result = """
+WITH
+observations AS (
+    SELECT
+        person_id,
+        state_code,
+        start_date,
+        end_date
+    FROM 
+        `{project_id}.observations__person_span.employment_period_materialized`
+    WHERE
+        TRUE
+),
+observations_by_assignments AS (
+    SELECT
+        person_assignments_by_time_period.person_id,
+        person_assignments_by_time_period.state_code,
+        person_assignments_by_time_period.district,
+        person_assignments_by_time_period.office,
+        person_assignments_by_time_period.metric_period_start_date,
+        person_assignments_by_time_period.metric_period_end_date_exclusive,
+        person_assignments_by_time_period.period,
+        person_assignments_by_time_period.assignment_start_date,
+        person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+        observations.start_date,
+        observations.end_date,
+        ROW_NUMBER() OVER (
+            PARTITION BY 
+                person_assignments_by_time_period.person_id,
+                person_assignments_by_time_period.state_code,
+                person_assignments_by_time_period.district,
+                person_assignments_by_time_period.office,
+                person_assignments_by_time_period.metric_period_start_date,
+                person_assignments_by_time_period.metric_period_end_date_exclusive,
+                person_assignments_by_time_period.period,
+                person_assignments_by_time_period.assignment_start_date,
+                person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+                -- Partition by observations filter so we only order among relevant
+                -- events.
+                (TRUE)
+            ORDER BY
+                GREATEST (
+                    DATE_DIFF(
+                        LEAST(
+                            DATE_ADD(assignment_start_date, INTERVAL 365 DAY),
+                            COALESCE(end_date, DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))
+                        ),
+                        GREATEST(assignment_start_date, start_date),
+                        DAY
+                    ),
+                    0
+                ) DESC
+        ) = 1 AS is_max_days_overlap_in_window__my_max_days_stable_employment_365
+    FROM 
+        person_assignments_by_time_period
+    LEFT OUTER JOIN 
+        observations
+    ON
+        observations.person_id = person_assignments_by_time_period.person_id
+        AND observations.state_code = person_assignments_by_time_period.state_code
+        AND (
+            -- Span observation overlaps with any time period after the assignment start
+            observations.end_date IS NULL OR
+            observations.end_date > person_assignments_by_time_period.assignment_start_date
+        )
+)
+SELECT
+    state_code,
+    district,
+    office,
+    metric_period_start_date,
+    metric_period_end_date_exclusive,
+    period,
+    SUM(
+        IF(
+            (TRUE) AND is_max_days_overlap_in_window__my_max_days_stable_employment_365,
+            GREATEST (
+                DATE_DIFF(
+                    LEAST(
+                        DATE_ADD(assignment_start_date, INTERVAL 365 DAY),
+                        COALESCE(observations_by_assignments.end_date, DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))
+                    ),
+                    GREATEST(assignment_start_date, observations_by_assignments.start_date),
+                    DAY
+                ),
+                0
+            ), 
+            0
+        )
+    ) AS my_max_days_stable_employment_365
+FROM observations_by_assignments
+GROUP BY state_code, district, office, metric_period_start_date, metric_period_end_date_exclusive, period
+"""
+
+        self.assertEqual(expected_result, result)
+
+    def test_build_assignment_span_metric__multiple(self) -> None:
+        result = build_single_observation_type_aggregated_metric_query_template(
+            observation_type=SpanType.COMPARTMENT_SESSION,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            metric_class=AssignmentSpanAggregatedMetric,
+            single_observation_type_metrics=[
+                MY_DAYS_SUPERVISED_365,
+                MY_DAYS_AT_LIBERTY_365,
+            ],
+            assignments_by_time_period_cte_name="person_assignments_by_time_period",
+        )
+
+        expected_result = """
+WITH
+observations AS (
+    SELECT
+        person_id,
+        state_code,
+        start_date,
+        end_date,
+        compartment_level_1
+    FROM 
+        `{project_id}.observations__person_span.compartment_session_materialized`
+    WHERE
+        ( compartment_level_1 IN ("SUPERVISION") )
+        OR ( compartment_level_1 IN ("LIBERTY") )
+),
+observations_by_assignments AS (
+    SELECT
+        person_assignments_by_time_period.person_id,
+        person_assignments_by_time_period.state_code,
+        person_assignments_by_time_period.officer_id,
+        person_assignments_by_time_period.metric_period_start_date,
+        person_assignments_by_time_period.metric_period_end_date_exclusive,
+        person_assignments_by_time_period.period,
+        person_assignments_by_time_period.assignment_start_date,
+        person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+        observations.start_date,
+        observations.end_date,
+        observations.compartment_level_1
+    FROM 
+        person_assignments_by_time_period
+    LEFT OUTER JOIN 
+        observations
+    ON
+        observations.person_id = person_assignments_by_time_period.person_id
+        AND observations.state_code = person_assignments_by_time_period.state_code
+        AND (
+            -- Span observation overlaps with any time period after the assignment start
+            observations.end_date IS NULL OR
+            observations.end_date > person_assignments_by_time_period.assignment_start_date
+        )
+)
+SELECT
+    state_code,
+    officer_id,
+    metric_period_start_date,
+    metric_period_end_date_exclusive,
+    period,
+    SUM(
+        IF((compartment_level_1 IN ("SUPERVISION")), DATE_DIFF(
+            LEAST(
+                DATE_ADD(assignment_start_date, INTERVAL 365 DAY),
+                COALESCE(observations_by_assignments.end_date, DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))
+            ),
+            GREATEST(
+                assignment_start_date,
+                IF(observations_by_assignments.start_date <= DATE_ADD(assignment_start_date, INTERVAL 365 DAY), observations_by_assignments.start_date, NULL)
+            ),
+            DAY
+        ), 0)
+    ) AS my_days_supervised_365,
+    SUM(
+        IF((compartment_level_1 IN ("LIBERTY")), DATE_DIFF(
+            LEAST(
+                DATE_ADD(assignment_start_date, INTERVAL 365 DAY),
+                COALESCE(observations_by_assignments.end_date, DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))
+            ),
+            GREATEST(
+                assignment_start_date,
+                IF(observations_by_assignments.start_date <= DATE_ADD(assignment_start_date, INTERVAL 365 DAY), observations_by_assignments.start_date, NULL)
+            ),
+            DAY
+        ), 0)
+    ) AS my_days_at_liberty_365
+FROM observations_by_assignments
+GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
+"""
+
+        self.assertEqual(expected_result, result)

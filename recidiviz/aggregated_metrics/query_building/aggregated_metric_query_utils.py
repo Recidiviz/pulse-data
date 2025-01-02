@@ -51,11 +51,6 @@ def metric_group_by_columns(
 
 # TODO(#35914): Remove this function once aggregated metrics ship for all metric classes
 def is_metric_class_supported_by_optimized_format(
-    metric_class: AggregatedMetricClassType,
+    metric_class: AggregatedMetricClassType,  # pylint: disable=unused-argument
 ) -> bool:
-    if metric_class in {
-        # TODO(#35898): Add support for AssignmentSpanAggregatedMetric
-        AssignmentSpanAggregatedMetric,
-    }:
-        return False
     return True

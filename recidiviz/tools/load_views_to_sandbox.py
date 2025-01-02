@@ -856,7 +856,7 @@ def _warn_on_expensive_views(
             # TODO(#29291): Don't count UnionAllBigQueryViewBuilder with
             #  aggregated metrics parents as expensive
             isinstance(vb, UnionAllBigQueryViewBuilder)
-            # TODO(#35898): Remove warning about views
+            # TODO(#35913): Remove warning about views
             #  in this dataset once we've optimized them and they aren't so expensive.
             or vb.dataset_id == AGGREGATED_METRICS_DATASET_ID
         )

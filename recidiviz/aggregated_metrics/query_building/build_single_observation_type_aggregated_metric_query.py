@@ -26,6 +26,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentDaysToFirstEventMetric,
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
+    AssignmentSpanMaxDaysMetric,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
@@ -144,8 +145,10 @@ def _aggregation_clause_for_metric(metric: AggregatedMetric) -> str:
             assignment_date_col=AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME,
         )
     if isinstance(metric, AssignmentSpanAggregatedMetric):
-        raise NotImplementedError(
-            "TODO(#35898): Implement aggregation clause for AssignmentSpanAggregatedMetric"
+        return metric.generate_aggregation_query_fragment_v2(
+            span_start_date_col=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME}",
+            span_end_date_col=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{SpanObservationBigQueryViewBuilder.END_DATE_OUTPUT_COL_NAME}",
+            assignment_date_col=AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME,
         )
 
     raise ValueError(f"Unexpected metric class type: [{type(metric)}]")
@@ -197,9 +200,14 @@ def _observation_to_assignment_periods_join_logic(
         AND {OBSERVATIONS_CTE_NAME}.event_date >= {assignments_by_time_period_cte_name}.{AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME}
         """
     if issubclass(metric_class, AssignmentSpanAggregatedMetric):
-        raise NotImplementedError(
-            "TODO(#35898): Implement JOIN logic for AssignmentSpanAggregatedMetric"
+        return f"""
+        {fix_indent(shared_join_clause, indent_level=8)}
+        AND (
+            -- Span observation overlaps with any time period after the assignment start
+            {OBSERVATIONS_CTE_NAME}.end_date IS NULL OR
+            {OBSERVATIONS_CTE_NAME}.end_date > {assignments_by_time_period_cte_name}.{AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME}
         )
+        """
 
     raise ValueError(f"Unexpected metric class type: [{metric_class}]")
 
@@ -264,6 +272,18 @@ def _build_observations_by_assignments_query_template(
             )
             column_strs.append(
                 days_to_first_event_metric.generate_num_matching_events_clause(
+                    qualified_assignment_cols=assignment_column_strs,
+                )
+            )
+
+        if isinstance(metric, AssignmentSpanMaxDaysMetric):
+            column_strs.append(
+                assert_type(
+                    metric, AssignmentSpanMaxDaysMetric
+                ).generate_is_max_days_overlap_in_window_clause(
+                    span_start_date_col=SpanObservationBigQueryViewBuilder.START_DATE_OUTPUT_COL_NAME,
+                    span_end_date_col=SpanObservationBigQueryViewBuilder.END_DATE_OUTPUT_COL_NAME,
+                    assignment_date_col=AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME,
                     qualified_assignment_cols=assignment_column_strs,
                 )
             )

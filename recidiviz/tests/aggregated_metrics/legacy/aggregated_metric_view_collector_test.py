@@ -41,26 +41,6 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
     Tests for the collect_aggregated_metrics_view_builders function
     """
 
-    def test_no_assignments_with_assignment_metric(self) -> None:
-        """
-        This test verifies that an error is thrown if an event/span assignment metric is
-        included without ASSIGNMENTS.
-        """
-        # assignment span metric without ASSIGNMENTS
-        with self.assertRaises(ValueError):
-            collect_legacy_aggregated_metrics_view_builders(
-                metrics_by_population_dict={
-                    MetricPopulationType.JUSTICE_INVOLVED: [
-                        DAYS_AT_LIBERTY_365,
-                    ]
-                },
-                units_of_analysis_by_population_dict={
-                    MetricPopulationType.JUSTICE_INVOLVED: [
-                        MetricUnitOfAnalysisType.STATE_CODE,
-                    ]
-                },
-            )
-
     def test_assignments_with_assignment_metric(self) -> None:
         """
         This test verifies that no error is thrown if an event/span assignment metric is

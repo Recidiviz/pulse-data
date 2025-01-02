@@ -28,6 +28,7 @@ from recidiviz.aggregated_metrics.metric_time_period_config import (
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentEventAggregatedMetric,
+    AssignmentSpanAggregatedMetric,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
@@ -44,10 +45,13 @@ from recidiviz.tests.aggregated_metrics.fixture_aggregated_metrics import (
     MY_AVG_DAILY_POPULATION_GENERAL_INCARCERATION,
     MY_AVG_LSIR_SCORE,
     MY_CONTACTS_COMPLETED_METRIC,
+    MY_DAYS_AT_LIBERTY_365,
+    MY_DAYS_SUPERVISED_365,
     MY_DAYS_TO_FIRST_INCARCERATION_100,
     MY_DRUG_SCREENS_METRIC,
     MY_EMPLOYER_CHANGES_365,
     MY_LOGINS_BY_PRIMARY_WORKFLOWS,
+    MY_MAX_DAYS_STABLE_EMPLOYMENT_365,
 )
 from recidiviz.utils.types import assert_type
 
@@ -153,7 +157,34 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
 """
         self.assertEqual(expected_docstring, docstring)
 
-    # TODO(#35898): Add tests for AssignmentSpanAggregatedMetric
+    def test_aggregated_metric_view_description__assignment_span(self) -> None:
+        docstring = aggregated_metric_view_description(
+            population_type=MetricPopulationType.SUPERVISION,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            metric_class=AssignmentSpanAggregatedMetric,
+            metrics=[
+                MY_DAYS_SUPERVISED_365,
+                MY_DAYS_AT_LIBERTY_365,
+                MY_MAX_DAYS_STABLE_EMPLOYMENT_365,
+            ],
+            time_period=MetricTimePeriodConfig.monthly_year_periods(lookback_months=12),
+        )
+
+        expected_docstring = """
+Metrics for the supervision population calculated using
+spans over some window following assignment, for all assignments
+during an analysis period, disaggregated by officer.
+
+All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
+
+# Metrics
+| Name                                                          | Column                            | Description                                                                                                                      | Span observation type   |
+|---------------------------------------------------------------|-----------------------------------|----------------------------------------------------------------------------------------------------------------------------------|-------------------------|
+| My Days Supervised Within 1 Year Of Assignment                | my_days_supervised_365            | My sum of the number of supervised days within 1 year following assignment, for all assignments during the analysis period       | COMPARTMENT_SESSION     |
+| My Days At Liberty Within 1 Year Of Assignment                | my_days_at_liberty_365            | My sum of the number of days spent at liberty within 1 year following assignment, for all assignments during the analysis period | COMPARTMENT_SESSION     |
+| My Maximum Days Stable Employment Within 1 Year of Assignment | my_max_days_stable_employment_365 | My number of days in the longest stretch of continuous stable employment (same employer and job) within 1 year of assignment     | EMPLOYMENT_PERIOD       |
+"""
+        self.assertEqual(expected_docstring, docstring)
 
 
 class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):

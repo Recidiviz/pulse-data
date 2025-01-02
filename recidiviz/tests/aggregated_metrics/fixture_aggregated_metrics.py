@@ -19,6 +19,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentDaysToFirstEventMetric,
     AssignmentEventBinaryMetric,
     AssignmentEventCountMetric,
+    AssignmentSpanDaysMetric,
+    AssignmentSpanMaxDaysMetric,
     DailyAvgSpanCountMetric,
     DailyAvgSpanValueMetric,
     EventCountMetric,
@@ -138,4 +140,40 @@ MY_EMPLOYER_CHANGES_365 = AssignmentEventCountMetric(
         event_type=EventType.EMPLOYMENT_PERIOD_START,
         event_conditions_dict={},
     ),
+)
+
+MY_DAYS_SUPERVISED_365 = AssignmentSpanDaysMetric(
+    name="my_days_supervised_365",
+    display_name="My Days Supervised Within 1 Year Of Assignment",
+    description="My sum of the number of supervised days within 1 year following "
+    "assignment, for all assignments during the analysis period",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={"compartment_level_1": ["SUPERVISION"]},
+    ),
+    window_length_days=365,
+)
+
+MY_DAYS_AT_LIBERTY_365 = AssignmentSpanDaysMetric(
+    name="my_days_at_liberty_365",
+    display_name="My Days At Liberty Within 1 Year Of Assignment",
+    description="My sum of the number of days spent at liberty within 1 year following "
+    "assignment, for all assignments during the analysis period",
+    span_selector=SpanSelector(
+        span_type=SpanType.COMPARTMENT_SESSION,
+        span_conditions_dict={"compartment_level_1": ["LIBERTY"]},
+    ),
+    window_length_days=365,
+)
+
+MY_MAX_DAYS_STABLE_EMPLOYMENT_365 = AssignmentSpanMaxDaysMetric(
+    name="my_max_days_stable_employment_365",
+    display_name="My Maximum Days Stable Employment Within 1 Year of Assignment",
+    description="My number of days in the longest stretch of continuous stable "
+    "employment (same employer and job) within 1 year of assignment",
+    span_selector=SpanSelector(
+        span_type=SpanType.EMPLOYMENT_PERIOD,
+        span_conditions_dict={},
+    ),
+    window_length_days=365,
 )

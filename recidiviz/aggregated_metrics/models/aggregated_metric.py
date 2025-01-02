@@ -290,6 +290,8 @@ class AssignmentSpanAggregatedMetric(
     def observation_selector(self) -> SpanSelector:
         return self.span_selector
 
+    # TODO(#35914): Delete this function and implementations in subclasses once we've
+    #  migrated all usages to generate_aggregation_query_fragment_v2().
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
         self,
@@ -305,6 +307,19 @@ class AssignmentSpanAggregatedMetric(
         assignment_date_col: str,
     ) -> str:
         """Returns a query fragment that calculates an aggregation corresponding to the AssignmentSpan metric type."""
+
+    # TODO(#35914): Rename this function to drop the _v2 once the original
+    #  generate_aggregation_query_fragment() is no longer used.
+    @abc.abstractmethod
+    def generate_aggregation_query_fragment_v2(
+        self,
+        span_start_date_col: str,
+        span_end_date_col: str,
+        assignment_date_col: str,
+    ) -> str:
+        """Returns a query fragment that calculates an aggregation corresponding to the
+        AssignmentSpan metric type.
+        """
 
     def referenced_observation_attributes(self) -> list[str]:
         return list(self.span_selector.span_conditions_dict.keys())
@@ -736,6 +751,8 @@ class AssignmentSpanDaysMetric(AssignmentSpanAggregatedMetric):
     Example metric: Days incarcerated within 365 days of assignment.
     """
 
+    # TODO(#35914): Delete this function once we've migrated all usages to
+    #  generate_aggregation_query_fragment_v2().
     def generate_aggregation_query_fragment(
         self,
         *,
@@ -769,6 +786,32 @@ class AssignmentSpanDaysMetric(AssignmentSpanAggregatedMetric):
             ) AS {self.name}
         """
 
+    def generate_aggregation_query_fragment_v2(
+        self,
+        span_start_date_col: str,
+        span_end_date_col: str,
+        assignment_date_col: str,
+    ) -> str:
+        observation_conditions = self.get_observation_conditions_string(
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
+        )
+        return f"""
+            SUM(
+                IF({observation_conditions}, DATE_DIFF(
+                    LEAST(
+                        DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
+                        {nonnull_current_date_exclusive_clause(span_end_date_col)}
+                    ),
+                    GREATEST(
+                        {assignment_date_col},
+                        IF({span_start_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY), {span_start_date_col}, NULL)
+                    ),
+                    DAY
+                ), 0)
+            ) AS {self.name}
+        """
+
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"SUM({self.name}) AS {self.name}"
 
@@ -783,6 +826,8 @@ class AssignmentSpanMaxDaysMetric(AssignmentSpanAggregatedMetric):
     Example metric: Maximum days with consistent employer within 365 days of assignment.
     """
 
+    # TODO(#35914): Delete this function once we've migrated all usages to
+    #  generate_aggregation_query_fragment_v2().
     def generate_aggregation_query_fragment(
         self,
         *,
@@ -817,6 +862,102 @@ class AssignmentSpanMaxDaysMetric(AssignmentSpanAggregatedMetric):
             ) AS {self.name}
         """
 
+    def _days_span_overlaps_with_post_assignment_window_clause(
+        self,
+        span_start_date_col: str,
+        span_end_date_col: str,
+        assignment_date_col: str,
+    ) -> str:
+        """Returns a SQL clause that will calculate the number of days that a span
+        observation overlaps with this metric's post-assignment time window (e.g. days
+        overlapping with the 365 days after assignment).
+        """
+        window_end_exclusive_clause = (
+            f"DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY)"
+        )
+        span_observation_end_clause = nonnull_current_date_exclusive_clause(
+            span_end_date_col
+        )
+        return fix_indent(
+            f"""
+            GREATEST (
+                DATE_DIFF(
+                    LEAST(
+                        {window_end_exclusive_clause},
+                        {span_observation_end_clause}
+                    ),
+                    GREATEST({assignment_date_col}, {span_start_date_col}),
+                    DAY
+                ),
+                0
+            )
+            """,
+            indent_level=0,
+        )
+
+    @property
+    def _is_max_days_overlap_in_window_col_name(self) -> str:
+        return f"is_max_days_overlap_in_window__{self.name}"
+
+    def generate_is_max_days_overlap_in_window_clause(
+        self,
+        span_start_date_col: str,
+        span_end_date_col: str,
+        assignment_date_col: str,
+        qualified_assignment_cols: list[str],
+    ) -> str:
+        observation_conditions = self.get_observation_conditions_string(
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
+        )
+        assignment_cols_str = ",\n                    ".join(qualified_assignment_cols)
+        days_overlap_clause = (
+            self._days_span_overlaps_with_post_assignment_window_clause(
+                span_start_date_col=span_start_date_col,
+                span_end_date_col=span_end_date_col,
+                assignment_date_col=assignment_date_col,
+            )
+        )
+        return fix_indent(
+            f"""
+            ROW_NUMBER() OVER (
+                PARTITION BY 
+                    {assignment_cols_str},
+                    -- Partition by observations filter so we only order among relevant
+                    -- events.
+                    {observation_conditions}
+                ORDER BY\n{fix_indent(days_overlap_clause, indent_level=20)} DESC
+            ) = 1 AS {self._is_max_days_overlap_in_window_col_name}
+            """,
+            indent_level=0,
+        )
+
+    def generate_aggregation_query_fragment_v2(
+        self,
+        span_start_date_col: str,
+        span_end_date_col: str,
+        assignment_date_col: str,
+    ) -> str:
+        observation_conditions = self.get_observation_conditions_string(
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
+        )
+        days_overlap_clause = (
+            self._days_span_overlaps_with_post_assignment_window_clause(
+                span_start_date_col=span_start_date_col,
+                span_end_date_col=span_end_date_col,
+                assignment_date_col=assignment_date_col,
+            )
+        )
+        return f"""
+        SUM(
+            IF(
+                {observation_conditions} AND {self._is_max_days_overlap_in_window_col_name},\n{fix_indent(days_overlap_clause, indent_level=16)}, 
+                0
+            )
+        ) AS {self.name}
+        """
+
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"SUM({self.name}) AS {self.name}"
 
@@ -839,6 +980,8 @@ class AssignmentSpanValueAtStartMetric(AssignmentSpanAggregatedMetric):
     def referenced_observation_attributes(self) -> list[str]:
         return super().referenced_observation_attributes() + [self.span_value_numeric]
 
+    # TODO(#35914): Delete this function once we've migrated all usages to
+    #  generate_aggregation_query_fragment_v2().
     def generate_aggregation_query_fragment(
         self,
         *,
@@ -872,6 +1015,32 @@ class AssignmentSpanValueAtStartMetric(AssignmentSpanAggregatedMetric):
             ) AS {self.name}
         """
 
+    def generate_aggregation_query_fragment_v2(
+        self,
+        span_start_date_col: str,
+        span_end_date_col: str,
+        assignment_date_col: str,
+    ) -> str:
+        observation_conditions = self.get_observation_conditions_string(
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
+        )
+        span_value_numeric_clause = observation_attribute_value_clause(
+            observation_type=self.observation_selector.observation_type,
+            attribute=self.span_value_numeric,
+            read_attributes_from_json=False,
+        )
+        return f"""
+            AVG(
+                IF(
+                    {observation_conditions}
+                    AND {assignment_date_col} BETWEEN {span_start_date_col} AND {nonnull_current_date_exclusive_clause(span_end_date_col)},
+                    CAST({span_value_numeric_clause} AS FLOAT64),
+                    NULL
+                )
+            ) AS {self.name}
+        """
+
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"SAFE_DIVIDE(SUM({self.span_count_metric.name} * {self.name}), SUM({self.span_count_metric.name})) AS {self.name}"
 
@@ -884,6 +1053,8 @@ class AssignmentCountMetric(AssignmentSpanAggregatedMetric):
     This is used only for the metric "Assignments".
     """
 
+    # TODO(#35914): Delete this function once we've migrated all usages to
+    #  generate_aggregation_query_fragment_v2().
     def generate_aggregation_query_fragment(
         self,
         *,
@@ -898,6 +1069,14 @@ class AssignmentCountMetric(AssignmentSpanAggregatedMetric):
         assignment_date_col: str,
     ) -> str:
         return f"1 AS {self.name}"
+
+    def generate_aggregation_query_fragment_v2(
+        self,
+        span_start_date_col: str,
+        span_end_date_col: str,
+        assignment_date_col: str,
+    ) -> str:
+        return f"COUNT(*) AS {self.name}"
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"SUM({self.name}) AS {self.name}"

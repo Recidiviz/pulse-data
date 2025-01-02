@@ -387,9 +387,9 @@ class ViewDagInvariantTests(unittest.TestCase):
             *{
                 b.address
                 for b in [
-                    # TODO(#35898), TODO(#35913): We should
-                    #  be able to delete this entirely once all deployed views that use
-                    #  the standard collector have been migrated over.
+                    # TODO(#35913): We should be able to delete this entirely once all
+                    #  deployed views that use the standard collector have been migrated
+                    #  over.
                     *collect_standard_legacy_aggregated_metric_views(),
                     # TODO(#35911): We should be able to delete this entirely once we
                     #  migrate impact reports metrics to the new format.

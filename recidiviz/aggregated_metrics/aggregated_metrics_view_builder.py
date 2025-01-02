@@ -129,9 +129,13 @@ during an analysis period, disaggregated by {unit_of_analysis_type.short_name}.
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 """
     elif issubclass(metric_class, AssignmentSpanAggregatedMetric):
-        raise NotImplementedError(
-            "TODO(#35898): Implement description for AssignmentSpanAggregatedMetric"
-        )
+        base_description = f"""
+Metrics for the {population_type.population_name_short} population calculated using
+spans over some window following assignment, for all assignments
+during an analysis period, disaggregated by {unit_of_analysis_type.short_name}.
+
+All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
+"""
     else:
         raise ValueError(f"Unexpected metric class type: [{metric_class}]")
 
