@@ -31,6 +31,9 @@ def add_on_call_routes(blueprint: Blueprint) -> None:
             JSON representation of the logs
         """
         view = LogsView.DIRECT_INGEST
+        if not request.json:
+            raise ValueError("Must pass request JSON!")
+
         if request.json and "view" in request.json:
             try:
                 view = LogsView(request.json["view"])

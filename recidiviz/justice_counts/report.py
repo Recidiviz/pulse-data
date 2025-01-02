@@ -368,8 +368,8 @@ class ReportInterface:
     ) -> Dict[str, Any]:
         # Editor names will be displayed in reverse chronological order in
         # an agency's reports table.
-        editors_reverse_chron = (
-            reversed(report.modified_by) if report.modified_by is not None else []
+        editors_reverse_chron: list[int] = (
+            list(reversed(report.modified_by)) if report.modified_by is not None else []
         )
         editor_json = [
             editor_id_to_json[id]

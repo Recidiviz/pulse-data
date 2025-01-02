@@ -105,9 +105,9 @@ _DIRECT_INGEST_RAW_FILE_IMPORT_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, s
 class DirectIngestRawFileImportStatusBucket(Enum):
     """Higher-level status buckets for DirectIngestRawFileImportStatus"""
 
-    IN_PROGRESS: str = "IN_PROGRESS"
-    SUCCEEDED: str = "SUCCEEDED"
-    FAILED: str = "FAILED"
+    IN_PROGRESS = "IN_PROGRESS"
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
 
     __IN_PROGRESS_STATUSES: frozenset[DirectIngestRawFileImportStatus] = frozenset(
         [

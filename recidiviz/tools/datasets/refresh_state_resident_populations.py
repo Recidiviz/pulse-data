@@ -97,7 +97,9 @@ def fetch_population_csv(year: str) -> io.StringIO:
     return io.StringIO(response.text)
 
 
-def transform_population_df(csv_contents: io.TextIOWrapper) -> pd.DataFrame:
+def transform_population_df(
+    csv_contents: io.TextIOWrapper | io.StringIO,
+) -> pd.DataFrame:
     """Pull the CSV into pandas to clean it up."""
     df = pd.read_csv(
         csv_contents,

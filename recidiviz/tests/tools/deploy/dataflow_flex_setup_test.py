@@ -44,9 +44,6 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
             "dill",
             "sqlalchemy",
             "google-cloud-tasks",
-            "opentelemetry-api",
-            "opentelemetry-instrumentation-sqlalchemy",
-            "opentelemetry-semantic-conventions",
         ]
 
         for dependency in pinned_dependencies:

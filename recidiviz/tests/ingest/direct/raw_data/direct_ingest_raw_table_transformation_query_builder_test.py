@@ -44,8 +44,8 @@ from recidiviz.tests.ingest.direct.raw_data import transformation_fixtures
 
 
 class TransformationFixtureType(Enum):
-    input: str = "input"
-    output: str = "output"
+    input = "input"
+    output = "output"
 
 
 class TestDirectIngestTempRawTablePreMigrationTransformation(BigQueryEmulatorTestCase):

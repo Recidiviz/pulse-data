@@ -20,7 +20,13 @@ from unittest.mock import patch
 
 from more_itertools import one
 from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import InMemoryMetricReader, Metric
+from opentelemetry.sdk.metrics.export import (
+    DataT,
+    InMemoryMetricReader,
+    MetricsData,
+    ResourceMetrics,
+    ScopeMetrics,
+)
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import (
     SimpleSpanProcessor,
@@ -32,6 +38,7 @@ from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 from recidiviz.monitoring.instruments import reset_instrument_cache
 from recidiviz.monitoring.keys import InstrumentEnum
 from recidiviz.monitoring.views import build_monitoring_views
+from recidiviz.utils.types import assert_type
 
 
 class SpanExportCapture(SpanExporter):
@@ -99,10 +106,13 @@ class OTLMock:
 
     def get_metric_data(
         self, metric_name: InstrumentEnum, metric_scope: Optional[str] = "org.recidiviz"
-    ) -> Metric:
+    ) -> DataT:
         recorded_metrics = self.metric_reader.get_metrics_data()
-        resource_metrics = one(recorded_metrics.resource_metrics)
-        scope_metrics = one(
+        if not recorded_metrics:
+            raise ValueError(f"Could not find any resource metrics for {metric_name}")
+        recorded_metrics = assert_type(recorded_metrics, MetricsData)
+        resource_metrics: ResourceMetrics = one(recorded_metrics.resource_metrics)
+        scope_metrics: ScopeMetrics = one(
             filter(
                 lambda scope_metrics: scope_metrics.scope.name == metric_scope,
                 resource_metrics.scope_metrics,

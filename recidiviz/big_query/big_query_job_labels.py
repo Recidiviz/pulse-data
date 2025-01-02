@@ -83,27 +83,27 @@ class PlatformEnvironmentBQLabel(Enum):
     represent the execution environment where the BQ job launched.
     """
 
-    AIRFLOW: BigQueryJobLabel = BigQueryJobLabel(
+    AIRFLOW = BigQueryJobLabel(
         key=platform_logging_strings.PLATFORM_ENVIRONMENT,
         value=platform_logging_strings.AIRFLOW,
     )
-    DATAFLOW: BigQueryJobLabel = BigQueryJobLabel(
+    DATAFLOW = BigQueryJobLabel(
         key=platform_logging_strings.PLATFORM_ENVIRONMENT,
         value=platform_logging_strings.DATAFLOW,
     )
-    KUBERNETES: BigQueryJobLabel = BigQueryJobLabel(
+    KUBERNETES = BigQueryJobLabel(
         key=platform_logging_strings.PLATFORM_ENVIRONMENT,
         value=platform_logging_strings.KUBERNETES,
     )
-    CLOUD_RUN: BigQueryJobLabel = BigQueryJobLabel(
+    CLOUD_RUN = BigQueryJobLabel(
         key=platform_logging_strings.PLATFORM_ENVIRONMENT,
         value=platform_logging_strings.CLOUD_RUN,
     )
-    APP_ENGINE: BigQueryJobLabel = BigQueryJobLabel(
+    APP_ENGINE = BigQueryJobLabel(
         key=platform_logging_strings.PLATFORM_ENVIRONMENT,
         value=platform_logging_strings.APP_ENGINE,
     )
-    LOCAL_MACHINE: BigQueryJobLabel = BigQueryJobLabel(
+    LOCAL_MACHINE = BigQueryJobLabel(
         key=platform_logging_strings.PLATFORM_ENVIRONMENT,
         value=platform_logging_strings.LOCAL_MACHINE,
     )
@@ -143,15 +143,15 @@ class PlatformOrchestrationBQLabel(Enum):
     that launched the BQ job.
     """
 
-    RAW_DATA_IMPORT_DAG: BigQueryJobLabel = BigQueryJobLabel(
+    RAW_DATA_IMPORT_DAG = BigQueryJobLabel(
         key=platform_logging_strings.PLATFORM_ORCHESTRATION_MECHANISM,
         value=platform_logging_strings.RAW_DATA_IMPORT_DAG,
     )
-    CALCULATION_DAG: BigQueryJobLabel = BigQueryJobLabel(
+    CALCULATION_DAG = BigQueryJobLabel(
         key=platform_logging_strings.PLATFORM_ORCHESTRATION_MECHANISM,
         value=platform_logging_strings.CALCULATION_DAG,
     )
-    LOCAL_SCRIPT: BigQueryJobLabel = BigQueryJobLabel(
+    LOCAL_SCRIPT = BigQueryJobLabel(
         key=platform_logging_strings.PLATFORM_ORCHESTRATION_MECHANISM,
         value=platform_logging_strings.LOCAL_SCRIPT,
     )
@@ -162,27 +162,27 @@ class RawDataImportStepBQLabel(Enum):
     conceptual phases during the raw data import process.
     """
 
-    RAW_DATA_TEMP_LOAD: BigQueryJobLabel = BigQueryJobLabel(
+    RAW_DATA_TEMP_LOAD = BigQueryJobLabel(
         key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
         value=platform_logging_strings.RAW_DATA_PRE_IMPORT_TRANSFORMATIONS,
     )
-    RAW_DATA_PRE_IMPORT_TRANSFORMATIONS: BigQueryJobLabel = BigQueryJobLabel(
+    RAW_DATA_PRE_IMPORT_TRANSFORMATIONS = BigQueryJobLabel(
         key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
         value=platform_logging_strings.RAW_DATA_PRE_IMPORT_TRANSFORMATIONS,
     )
-    RAW_DATA_MIGRATIONS: BigQueryJobLabel = BigQueryJobLabel(
+    RAW_DATA_MIGRATIONS = BigQueryJobLabel(
         key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
         value=platform_logging_strings.RAW_DATA_MIGRATIONS,
     )
-    RAW_DATA_PRE_IMPORT_VALIDATIONS: BigQueryJobLabel = BigQueryJobLabel(
+    RAW_DATA_PRE_IMPORT_VALIDATIONS = BigQueryJobLabel(
         key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
         value=platform_logging_strings.RAW_DATA_PRE_IMPORT_VALIDATIONS,
     )
-    RAW_DATA_PRUNING: BigQueryJobLabel = BigQueryJobLabel(
+    RAW_DATA_PRUNING = BigQueryJobLabel(
         key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
         value=platform_logging_strings.RAW_DATA_PRE_IMPORT_VALIDATIONS,
     )
-    RAW_DATA_TABLE_APPEND: BigQueryJobLabel = BigQueryJobLabel(
+    RAW_DATA_TABLE_APPEND = BigQueryJobLabel(
         key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
         value=platform_logging_strings.RAW_DATA_PRE_IMPORT_VALIDATIONS,
     )
@@ -193,22 +193,22 @@ class AirflowDAGPhaseBQLabel(Enum):
     conceptual phases that are orchestrated by an airflow dag.
     """
 
-    BQ_REFRESH: BigQueryJobLabel = BigQueryJobLabel(
+    BQ_REFRESH = BigQueryJobLabel(
         key=platform_logging_strings.AIRFLOW_DAG_PHASE,
         value=platform_logging_strings.BQ_REFRESH,
         parents=[PlatformOrchestrationBQLabel.CALCULATION_DAG.value],
     )
-    VIEW_UPDATE: BigQueryJobLabel = BigQueryJobLabel(
+    VIEW_UPDATE = BigQueryJobLabel(
         key=platform_logging_strings.AIRFLOW_DAG_PHASE,
         value=platform_logging_strings.VIEW_UPDATE,
         parents=[PlatformOrchestrationBQLabel.CALCULATION_DAG.value],
     )
-    VALIDATIONS: BigQueryJobLabel = BigQueryJobLabel(
+    VALIDATIONS = BigQueryJobLabel(
         key=platform_logging_strings.AIRFLOW_DAG_PHASE,
         value=platform_logging_strings.VALIDATIONS,
         parents=[PlatformOrchestrationBQLabel.CALCULATION_DAG.value],
     )
-    METRIC_EXPORTS: BigQueryJobLabel = BigQueryJobLabel(
+    METRIC_EXPORTS = BigQueryJobLabel(
         key=platform_logging_strings.AIRFLOW_DAG_PHASE,
         value=platform_logging_strings.METRIC_EXPORTS,
         parents=[PlatformOrchestrationBQLabel.CALCULATION_DAG.value],

@@ -175,7 +175,7 @@ def fetch_adult_population_csv() -> io.StringIO:
 
 
 def transform_adult_population_df(
-    filepath_or_contents: Union[str, io.TextIOWrapper]
+    filepath_or_contents: Union[str, io.TextIOWrapper, io.StringIO]
 ) -> pd.DataFrame:
     """Transforms the csv into a dataframe in the population format"""
     df = pd.read_csv(
