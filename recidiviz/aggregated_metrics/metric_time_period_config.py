@@ -74,8 +74,13 @@ class MetricTimePeriodConfig:
     # The value for the period column of the output query.
     period_name_type: MetricTimePeriod = attr.ib(default=MetricTimePeriod.CUSTOM)
 
+    # Used to describe this metric time period in view docstrings. Must be set if this
+    # config is used to generate a deployed view.
+    description: str | None = attr.ib(default=None)
+
     # Unique name for this config which can be used when naming views, etc that produce
-    # metrics use this set of time periods.
+    # metrics use this set of time periods. Must be set if this config is used to
+    # generate a deployed view.
     config_name: str | None = attr.ib(default=None)
 
     def __attrs_post_init__(self) -> None:
@@ -166,6 +171,7 @@ class MetricTimePeriodConfig:
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
             period_name_type=MetricTimePeriod.WEEK,
+            description=f"Weekly metric periods for the last {lookback_weeks} weeks",
             config_name=f"last_{lookback_weeks}_weeks",
         )
 
@@ -194,6 +200,7 @@ class MetricTimePeriodConfig:
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
             period_name_type=MetricTimePeriod.MONTH,
+            description=f"Monthly metric periods for the last {lookback_months} months",
             config_name=f"last_{lookback_months}_months",
         )
 
@@ -222,6 +229,10 @@ class MetricTimePeriodConfig:
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
             period_name_type=MetricTimePeriod.QUARTER,
+            description=(
+                f"Quarter-long (3 month) metric periods, ending (exclusive) on the "
+                f"first of every month, for the last {lookback_months} months"
+            ),
             config_name=f"quarters_rolling_last_{lookback_months}_months",
         )
 
@@ -251,6 +262,10 @@ class MetricTimePeriodConfig:
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
             period_name_type=MetricTimePeriod.YEAR,
+            description=(
+                f"Year-long metric periods, ending (exclusive) on the first of every "
+                f"month, for the last {lookback_months} months"
+            ),
             config_name=f"years_rolling_last_{lookback_months}_months",
         )
 

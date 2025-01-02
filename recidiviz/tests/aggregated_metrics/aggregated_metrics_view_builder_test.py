@@ -17,8 +17,6 @@
 """Tests for aggregated_metrics_view_builder.py"""
 import unittest
 
-from freezegun import freeze_time
-
 from recidiviz.aggregated_metrics.aggregated_metrics_view_builder import (
     AggregatedMetricsBigQueryViewBuilder,
     aggregated_metric_view_description,
@@ -56,7 +54,6 @@ from recidiviz.tests.aggregated_metrics.fixture_aggregated_metrics import (
 from recidiviz.utils.types import assert_type
 
 
-@freeze_time("2024-12-15")
 class TestAggregatedMetricViewDescription(unittest.TestCase):
     """Tests for aggregated_metric_view_description()"""
 
@@ -77,9 +74,7 @@ class TestAggregatedMetricViewDescription(unittest.TestCase):
 Metrics for the supervision population calculated using
 event observations across an entire analysis period, disaggregated by officer.
 
-Contains metrics only for MONTH-length time periods with
-the most recent period ending on 2024-12-01 and the
-least recent period ending on 2024-01-01.
+Contains metrics only for: Monthly metric periods for the last 12 months.
 
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 
@@ -109,9 +104,7 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
 Metrics for the incarceration population calculated using
 span observations across an entire analysis period, disaggregated by facility.
 
-Contains metrics only for MONTH-length time periods with
-the most recent period ending on 2024-12-01 and the
-least recent period ending on 2024-01-01.
+Contains metrics only for: Monthly metric periods for the last 12 months.
 
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 
@@ -142,9 +135,7 @@ Metrics for the supervision population calculated using
 events over some window following assignment, for all assignments
 during an analysis period, disaggregated by officer.
 
-Contains metrics only for YEAR-length time periods with
-the most recent period ending on 2024-12-01 and the
-least recent period ending on 2024-12-01.
+Contains metrics only for: Year-long metric periods, ending (exclusive) on the first of every month, for the last 12 months.
 
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 
@@ -174,6 +165,8 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
 Metrics for the supervision population calculated using
 spans over some window following assignment, for all assignments
 during an analysis period, disaggregated by officer.
+
+Contains metrics only for: Year-long metric periods, ending (exclusive) on the first of every month, for the last 12 months.
 
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 

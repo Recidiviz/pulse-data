@@ -328,11 +328,11 @@ class TestAssignmentsByTimePeriodViewBuilder(BigQueryEmulatorTestCase):
             metric_time_period_to_assignment_join_type=MetricTimePeriodToAssignmentJoinType.INTERSECTION_EXTENDED,
         )
 
-        expected_description = """Joins a collection of [MONTH] metric time periods with assignment periods that associate [FACILITY]
-unit of analysis to [PERSON] unit of observation assignment spans, returning one result row for
-every metric time period where there is some overlap with an assignment span (treating the end date
-of the assignment span as *inclusive*, not *exclusive*). If there are multiple assignments
-associated with a metric period, multiple rows will be returned.
+        expected_description = """Joins a collection of metric time periods with assignment periods that associate [FACILITY] unit of
+analysis to [PERSON] unit of observation assignment spans, returning one result row for every metric
+time period where there is some overlap with an assignment span (treating the end date of the
+assignment span as *inclusive*, not *exclusive*). If there are multiple assignments associated with
+a metric period, multiple rows will be returned.
 
 Key column descriptions:
 | Column                                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -355,10 +355,10 @@ Key column descriptions:
             metric_time_period_to_assignment_join_type=MetricTimePeriodToAssignmentJoinType.INTERSECTION,
         )
 
-        expected_description = """Joins a collection of [MONTH] metric time periods with assignment periods that associate [FACILITY]
-unit of analysis to [PERSON] unit of observation assignment spans, returning one result row for
-every metric time period where there is some overlap with an assignment span. If there are multiple
-assignments associated with a metric period, multiple rows will be returned.
+        expected_description = """Joins a collection of metric time periods with assignment periods that associate [FACILITY] unit of
+analysis to [PERSON] unit of observation assignment spans, returning one result row for every metric
+time period where there is some overlap with an assignment span. If there are multiple assignments
+associated with a metric period, multiple rows will be returned.
 
 Key column descriptions:
 | Column                                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |

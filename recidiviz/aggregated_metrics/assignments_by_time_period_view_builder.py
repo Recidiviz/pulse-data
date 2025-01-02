@@ -298,9 +298,8 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             )
 
         base_description = self._reformat_multi_line_paragraph(
-            f"""Joins a collection of [{self.time_period.period_name_type.value}] metric
-        time periods with assignment periods that associate 
-        [{self.unit_of_analysis_type.value}] unit of analysis to 
+            f"""Joins a collection of metric time periods with assignment periods that 
+        associate [{self.unit_of_analysis_type.value}] unit of analysis to 
         [{self.unit_of_observation_type.value}] unit of observation assignment spans,
         returning one result row for every metric time period {join_description}. If 
         there are multiple assignments associated with a metric period, multiple 

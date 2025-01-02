@@ -93,15 +93,13 @@ def aggregated_metric_view_description(
     """Builds a docstring for an aggregated metrics view with the given parameters."""
 
     if time_period:
-        max_end_date_str = (
-            time_period.max_period_end_date.isoformat()
-            if time_period.max_period_end_date
-            else "<today's date>"
-        )
+        if not time_period.description:
+            raise ValueError(
+                f"Found no description for time period that is being used to generate "
+                f"a view description: {time_period}."
+            )
         time_period_clause = f"""
-Contains metrics only for {time_period.period_name_type.value}-length time periods with
-the most recent period ending on {max_end_date_str} and the
-least recent period ending on {time_period.min_period_end_date.isoformat()}.
+Contains metrics only for: {time_period.description}.
 """
     else:
         time_period_clause = ""
@@ -133,7 +131,7 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
 Metrics for the {population_type.population_name_short} population calculated using
 spans over some window following assignment, for all assignments
 during an analysis period, disaggregated by {unit_of_analysis_type.short_name}.
-
+{time_period_clause}
 All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 """
     else:
