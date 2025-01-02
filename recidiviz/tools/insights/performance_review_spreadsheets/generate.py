@@ -545,7 +545,7 @@ def write_grant_rate_formulas(sheet: Worksheet) -> None:
         grant_rate_row_idx = get_row_index(grant_rate_row)
         cell = sheet[f"{yearly_col_idx}{grant_rate_row_idx}"]
         # Yearly column for grant rate is the average grant rate for each month in the year with data
-        cell.value = f"=AVERAGE({first_date_col}{grant_rate_row_idx}:{last_date_col}{grant_rate_row_idx})"
+        cell.value = f'=IFERROR(AVERAGE({first_date_col}{grant_rate_row_idx}:{last_date_col}{grant_rate_row_idx}), "")'
         cell.number_format = FORMAT_PERCENTAGE_00
 
 
