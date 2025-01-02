@@ -186,6 +186,10 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     BigQueryAddress(
         dataset_id="observations__officer_span", table_id="all_officer_spans"
     ),
+    # TODO(#29291): Remove once Looker queries from observation-specific tables
+    BigQueryAddress(
+        dataset_id="observations__person_event", table_id="all_person_events"
+    ),
 }
 
 # List of views that are not referenced in Looker but should still be kept around,

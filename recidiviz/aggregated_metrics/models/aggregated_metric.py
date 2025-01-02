@@ -47,6 +47,7 @@ from recidiviz.observations.observation_type_utils import (
 )
 from recidiviz.observations.span_selector import SpanSelector
 from recidiviz.observations.span_type import SpanType
+from recidiviz.utils.string_formatting import fix_indent
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -382,6 +383,8 @@ class AssignmentEventAggregatedMetric(
     def observation_selector(self) -> EventSelector:
         return self.event_selector
 
+    # TODO(#35914): Delete this function and implementations in subclasses once we've
+    #  migrated all usages to generate_aggregation_query_fragment_v2().
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
         self,
@@ -399,6 +402,19 @@ class AssignmentEventAggregatedMetric(
         assignment_date_col: str,
     ) -> str:
         """Returns a query fragment that calculates an aggregation corresponding to the AssignmentEvent metric type."""
+
+    # TODO(#35914): Rename this function to drop the _v2 once the original
+    #  generate_aggregation_query_fragment() is no longer used.
+    @abc.abstractmethod
+    def generate_aggregation_query_fragment_v2(
+        self,
+        observations_cte_name: str,
+        event_date_col: str,
+        assignment_date_col: str,
+    ) -> str:
+        """Returns a query fragment that calculates an aggregation corresponding to the
+        AssignmentEvent metric type.
+        """
 
     def referenced_observation_attributes(self) -> list[str]:
         return list(self.event_selector.event_conditions_dict.keys())
@@ -1057,6 +1073,8 @@ class AssignmentDaysToFirstEventMetric(AssignmentEventAggregatedMetric):
     Example metric: Days to first absconsion within 365 days of assignment.
     """
 
+    # TODO(#35914): Delete this function once we've migrated all usages to
+    #  generate_aggregation_query_fragment_v2().
     def generate_aggregation_query_fragment(
         self,
         *,
@@ -1086,6 +1104,98 @@ class AssignmentDaysToFirstEventMetric(AssignmentEventAggregatedMetric):
             )) AS {self.name}
         """
 
+    @property
+    def _event_seq_num_col_name(self) -> str:
+        return f"event_seq_num__{self.name}"
+
+    def generate_event_seq_num_col_clause(
+        self, event_date_col: str, qualified_assignment_cols: list[str]
+    ) -> str:
+        """Returns a column clause that, for each event associated with the metric
+        period x assignment period pair, assigns a sequence number to that event. This
+        will allow us to select the first occurrence of an event after assignment.
+        """
+        observation_conditions = self.get_observation_conditions_string(
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
+        )
+        assignment_cols_str = ",\n                    ".join(qualified_assignment_cols)
+        return fix_indent(
+            f"""
+            ROW_NUMBER() OVER (
+                PARTITION BY 
+                    {assignment_cols_str},
+                    -- Partition by observations filter so we only order among relevant
+                    -- events.
+                    event_date IS NOT NULL AND {observation_conditions}
+                ORDER BY
+                    {event_date_col}
+            ) AS {self._event_seq_num_col_name}
+            """,
+            indent_level=0,
+        )
+
+    @property
+    def _num_matching_events_col_name(self) -> str:
+        return f"num_matching_events__{self.name}"
+
+    def generate_num_matching_events_clause(
+        self, qualified_assignment_cols: list[str]
+    ) -> str:
+        """Returns a column clause that returns the number of events associated with
+        the metric period x assignment period pair that would qualify a valid event
+        for this metric.
+        """
+        observation_conditions = self.get_observation_conditions_string(
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
+        )
+        assignment_cols_str = ",\n                    ".join(qualified_assignment_cols)
+        return fix_indent(
+            f"""
+            COUNTIF(event_date IS NOT NULL AND {observation_conditions}) OVER (
+                PARTITION BY 
+                    {assignment_cols_str}
+            ) AS {self._num_matching_events_col_name}
+            """,
+            indent_level=0,
+        )
+
+    def generate_aggregation_query_fragment_v2(
+        self,
+        observations_cte_name: str,
+        event_date_col: str,
+        assignment_date_col: str,
+    ) -> str:
+        observation_conditions = self.get_observation_conditions_string(
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
+        )
+        return f"""
+        SUM(
+            IF(
+                {observations_cte_name}.{self._num_matching_events_col_name} = 0 AND {observations_cte_name}.{self._event_seq_num_col_name} = 1,
+                -- There were no events associated with this assignment - return full 
+                -- window length.
+                {self.window_length_days},
+                -- Otherwise, if this is a valid first event, get the time since 
+                -- assignment or window length, whichever is less
+                IF(
+                    {observations_cte_name}.{self._event_seq_num_col_name} = 1 AND {observation_conditions},
+                    DATE_DIFF(
+                        LEAST(
+                            {event_date_col}, 
+                            DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY)
+                        ),
+                        {assignment_date_col},
+                        DAY
+                    ),
+                    0
+                )
+            )
+        ) AS {self.name}
+        """
+
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"SUM({self.name}) AS {self.name}"
 
@@ -1100,6 +1210,8 @@ class AssignmentEventCountMetric(AssignmentEventAggregatedMetric):
     Example metric: Number of contacts within 30 days of assignment.
     """
 
+    # TODO(#35914): Delete this function once we've migrated all usages to
+    #  generate_aggregation_query_fragment_v2().
     def generate_aggregation_query_fragment(
         self,
         *,
@@ -1127,6 +1239,25 @@ class AssignmentEventCountMetric(AssignmentEventAggregatedMetric):
                 )
             ) AS {self.name}"""
 
+    def generate_aggregation_query_fragment_v2(
+        self,
+        observations_cte_name: str,
+        event_date_col: str,
+        assignment_date_col: str,
+    ) -> str:
+        observation_conditions = self.get_observation_conditions_string(
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
+        )
+        return f"""
+            COUNT(
+                IF(
+                    {observation_conditions} AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
+                    CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_cte_name)}, "#", {assignment_date_col}),
+                    NULL
+                )
+            ) AS {self.name}"""
+
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"SUM({self.name}) AS {self.name}"
 
@@ -1141,6 +1272,8 @@ class AssignmentEventBinaryMetric(AssignmentEventAggregatedMetric):
     Example metric: Any Incarceration Start Within 1 Year of Assignment
     """
 
+    # TODO(#35914): Delete this function once we've migrated all usages to
+    #  generate_aggregation_query_fragment_v2().
     def generate_aggregation_query_fragment(
         self,
         *,
@@ -1163,6 +1296,25 @@ class AssignmentEventBinaryMetric(AssignmentEventAggregatedMetric):
                 {observation_conditions}
                 AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY)
             ) AS INT64) AS {self.name}"""
+
+    def generate_aggregation_query_fragment_v2(
+        self,
+        observations_cte_name: str,
+        event_date_col: str,
+        assignment_date_col: str,
+    ) -> str:
+        observation_conditions = self.get_observation_conditions_string(
+            filter_by_observation_type=False,
+            read_observation_attributes_from_json=False,
+        )
+        return f"""
+            COUNT(
+                DISTINCT IF(
+                    {observation_conditions} AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
+                    CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix=observations_cte_name)}, "#", {assignment_date_col}),
+                    NULL
+                )
+            ) AS {self.name}"""
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"SUM({self.name}) AS {self.name}"

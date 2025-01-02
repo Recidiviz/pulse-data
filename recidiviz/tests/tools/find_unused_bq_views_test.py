@@ -17,6 +17,7 @@
 """Tests for find_unused_bq_views.py."""
 import unittest
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.tools.find_unused_bq_views import (
     UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON,
     get_unused_across_all_projects_addresses_from_all_views_dag,
@@ -34,7 +35,7 @@ class TestFindUnusedBQViews(unittest.TestCase):
             0,
             len(unused_addresses),
             f"""
-                Found the following views that are not used by any known downstream product: {unused_addresses}.
+                Found the following views that are not used by any known downstream product: \n{BigQueryAddress.addresses_to_str(unused_addresses, indent_level=18)}.
 
                 In order to address this failure, you can do the following:
                 1) If this view is no longer needed, delete it in this PR.
@@ -71,8 +72,7 @@ class TestFindUnusedBQViews(unittest.TestCase):
             0,
             len(delete_from_keep_list_addresses),
             f"""
-             
-             Found the following views that are marked as unused but are actually used: {delete_from_keep_list_addresses}
+             Found the following views that are marked as unused but are actually used: \n{BigQueryAddress.addresses_to_str(delete_from_keep_list_addresses, indent_level=14)}
              
              Please remove the view(s) from UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON.
             """,

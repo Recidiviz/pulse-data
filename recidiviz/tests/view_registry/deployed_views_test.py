@@ -387,7 +387,7 @@ class ViewDagInvariantTests(unittest.TestCase):
             *{
                 b.address
                 for b in [
-                    # TODO(#35897), TODO(#35898), TODO(#35913): We should
+                    # TODO(#35898), TODO(#35913): We should
                     #  be able to delete this entirely once all deployed views that use
                     #  the standard collector have been migrated over.
                     *collect_standard_legacy_aggregated_metric_views(),

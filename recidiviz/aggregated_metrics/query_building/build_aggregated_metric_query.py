@@ -28,6 +28,9 @@ from recidiviz.aggregated_metrics.metric_time_period_config import (
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
+    AssignmentDaysToFirstEventMetric,
+    AssignmentEventBinaryMetric,
+    AssignmentEventCountMetric,
     DailyAvgSpanCountMetric,
     DailyAvgSpanValueMetric,
     DailyAvgTimeSinceSpanStartMetric,
@@ -168,6 +171,8 @@ def _metric_output_column_clause(metric: AggregatedMetric) -> str:
             DailyAvgSpanCountMetric,
             SumSpanDaysMetric,
             SpanDistinctUnitCountMetric,
+            AssignmentEventCountMetric,
+            AssignmentEventBinaryMetric,
         ),
     ):
         #  We normalize NULL values to 0 to account for time periods when we did not
@@ -181,11 +186,11 @@ def _metric_output_column_clause(metric: AggregatedMetric) -> str:
             EventValueMetric,
             DailyAvgSpanValueMetric,
             DailyAvgTimeSinceSpanStartMetric,
+            AssignmentDaysToFirstEventMetric,
         ),
     ):
         return metric.name
 
-    # TODO(#35897): Add support for AssignmentEventAggregatedMetric metric types.
     # TODO(#35898): Add support for AssignmentSpanAggregatedMetric metric types.
 
     raise ValueError(f"Unexpected metric type [{type(metric)}]")

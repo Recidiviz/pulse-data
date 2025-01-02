@@ -331,8 +331,8 @@ class TestAssignmentsByTimePeriodViewBuilder(BigQueryEmulatorTestCase):
         expected_description = """Joins a collection of [MONTH] metric time periods with assignment periods that associate [FACILITY]
 unit of analysis to [PERSON] unit of observation assignment spans, returning one result row for
 every metric time period where there is some overlap with an assignment span (treating the end date
-of the assignment span as *inclusive*, not *exclusive*). If there are multiple assignments that
-overlap with a metric period, multiple rows will be returned.
+of the assignment span as *inclusive*, not *exclusive*). If there are multiple assignments
+associated with a metric period, multiple rows will be returned.
 
 Key column descriptions:
 | Column                                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -358,7 +358,7 @@ Key column descriptions:
         expected_description = """Joins a collection of [MONTH] metric time periods with assignment periods that associate [FACILITY]
 unit of analysis to [PERSON] unit of observation assignment spans, returning one result row for
 every metric time period where there is some overlap with an assignment span. If there are multiple
-assignments that overlap with a metric period, multiple rows will be returned.
+assignments associated with a metric period, multiple rows will be returned.
 
 Key column descriptions:
 | Column                                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -521,4 +521,52 @@ ON
 
         self.assertEqual(expected_query, builder.build(sandbox_context=None).view_query)
 
-    # TODO(#35897), TODO(#35898): Add tests for ASSIGNMENT join type
+    def test_query_building__assignment(self) -> None:
+        builder = AssignmentsByTimePeriodViewBuilder(
+            population_type=MetricPopulationType.INCARCERATION,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.FACILITY,
+            unit_of_observation_type=MetricUnitOfObservationType.PERSON_ID,
+            time_period=self.two_months_time_period_config,
+            metric_time_period_to_assignment_join_type=MetricTimePeriodToAssignmentJoinType.ASSIGNMENT,
+        )
+
+        expected_query = """WITH
+time_periods AS (
+    SELECT
+        DATE_SUB(
+            metric_period_end_date_exclusive, INTERVAL 1 MONTH
+        ) AS metric_period_start_date,
+        metric_period_end_date_exclusive,
+        "MONTH" as period,
+    FROM
+        UNNEST(GENERATE_DATE_ARRAY(
+            "2024-10-01",
+            "2024-11-01",
+            INTERVAL 1 MONTH
+        )) AS metric_period_end_date_exclusive
+),
+assignment_sessions AS (
+    SELECT 
+        * EXCEPT(assignment_date, end_date_exclusive),
+        assignment_date AS assignment_start_date,
+        IFNULL(end_date_exclusive, "9999-12-31") AS assignment_end_date_exclusive_nonnull
+    FROM
+        `recidiviz-bq-emulator-project.aggregated_metrics.incarceration_facility_metrics_person_assignment_sessions_materialized`
+)
+SELECT
+    person_id,
+    state_code,
+    facility,
+    metric_period_start_date,
+    metric_period_end_date_exclusive,
+    period,
+    assignment_start_date,
+    assignment_end_date_exclusive_nonnull
+FROM
+    time_periods
+JOIN
+    assignment_sessions
+ON
+    metric_period_start_date <= assignment_start_date AND metric_period_end_date_exclusive > assignment_start_date"""
+
+        self.assertEqual(expected_query, builder.build(sandbox_context=None).view_query)

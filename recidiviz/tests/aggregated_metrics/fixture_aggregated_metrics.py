@@ -16,6 +16,9 @@
 # =============================================================================
 """Aggregated metric definitions used in tests"""
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
+    AssignmentDaysToFirstEventMetric,
+    AssignmentEventBinaryMetric,
+    AssignmentEventCountMetric,
     DailyAvgSpanCountMetric,
     DailyAvgSpanValueMetric,
     EventCountMetric,
@@ -97,4 +100,42 @@ MY_AVG_LSIR_SCORE = DailyAvgSpanValueMetric(
         span_conditions_dict={"assessment_type": ["LSIR"]},
     ),
     span_value_numeric="assessment_score",
+)
+
+
+MY_ANY_INCARCERATION_365 = AssignmentEventBinaryMetric(
+    name="my_any_incarceration_365",
+    display_name="My Any Incarceration Start Within 1 Year of Assignment",
+    description="My number of client assignments followed by an incarceration start "
+    "within 1 year",
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_START,
+        event_conditions_dict={},
+    ),
+)
+
+MY_DAYS_TO_FIRST_INCARCERATION_100 = AssignmentDaysToFirstEventMetric(
+    name="my_days_to_first_incarceration_100",
+    display_name="My Days To First Incarceration Within 1 Year After Assignment",
+    description="My sum of the number of days prior to first incarceration within 1 "
+    "year following assignment, for all assignments during the analysis period. Only "
+    "counts incarcerations following supervision.",
+    event_selector=EventSelector(
+        event_type=EventType.INCARCERATION_START,
+        event_conditions_dict={
+            "inflow_from_level_1": ["SUPERVISION"],
+        },
+    ),
+    window_length_days=100,
+)
+
+MY_EMPLOYER_CHANGES_365 = AssignmentEventCountMetric(
+    name="my_employer_changes_365",
+    display_name="My Employer Changes Within 1 Year Of Assignment",
+    description="My number of times client starts employment with a new employer "
+    "within 1 year of assignment",
+    event_selector=EventSelector(
+        event_type=EventType.EMPLOYMENT_PERIOD_START,
+        event_conditions_dict={},
+    ),
 )

@@ -23,6 +23,7 @@ from recidiviz.aggregated_metrics.metric_time_period_config import (
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
+    AssignmentDaysToFirstEventMetric,
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
     PeriodEventAggregatedMetric,
@@ -52,6 +53,7 @@ from recidiviz.observations.span_observation_big_query_view_builder import (
 )
 from recidiviz.observations.span_type import SpanType
 from recidiviz.utils.string_formatting import fix_indent
+from recidiviz.utils.types import assert_type
 
 OBSERVATIONS_CTE_NAME = "observations"
 OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME = "observations_by_assignments"
@@ -136,8 +138,10 @@ def _aggregation_clause_for_metric(metric: AggregatedMetric) -> str:
             span_end_date_col=span_end_date_col_clause,
         )
     if isinstance(metric, AssignmentEventAggregatedMetric):
-        raise NotImplementedError(
-            "TODO(#35897): Implement aggregation clause for AssignmentEventAggregatedMetric"
+        return metric.generate_aggregation_query_fragment_v2(
+            observations_cte_name=OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME,
+            event_date_col=f"{OBSERVATIONS_BY_ASSIGNMENTS_CTE_NAME}.{EventObservationBigQueryViewBuilder.EVENT_DATE_OUTPUT_COL_NAME}",
+            assignment_date_col=AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME,
         )
     if isinstance(metric, AssignmentSpanAggregatedMetric):
         raise NotImplementedError(
@@ -188,9 +192,10 @@ def _observation_to_assignment_periods_join_logic(
         )
         """
     if issubclass(metric_class, AssignmentEventAggregatedMetric):
-        raise NotImplementedError(
-            "TODO(#35897): Implement JOIN logic for AssignmentEventAggregatedMetric"
-        )
+        return f"""
+        {fix_indent(shared_join_clause, indent_level=8)}
+        AND {OBSERVATIONS_CTE_NAME}.event_date >= {assignments_by_time_period_cte_name}.{AssignmentsByTimePeriodViewBuilder.ASSIGNMENT_START_DATE_COLUMN_NAME}
+        """
     if issubclass(metric_class, AssignmentSpanAggregatedMetric):
         raise NotImplementedError(
             "TODO(#35898): Implement JOIN logic for AssignmentSpanAggregatedMetric"
@@ -210,13 +215,17 @@ def _build_observations_by_assignments_query_template(
     rows for every observation relevant to ANY of the given metrics, joined with any
     assignments that those observations should be associated with.
     """
+    unit_of_analysis = MetricUnitOfAnalysis.for_type(unit_of_analysis_type)
     assignments_columns = AssignmentsByTimePeriodViewBuilder.get_output_columns(
-        unit_of_analysis=MetricUnitOfAnalysis.for_type(unit_of_analysis_type),
+        unit_of_analysis=unit_of_analysis,
         unit_of_observation=MetricUnitOfObservation(
             type=observation_type.unit_of_observation_type
         ),
         metric_time_period_to_assignment_join_type=metric_class.metric_time_period_to_assignment_join_type(),
     )
+    assignment_column_strs = [
+        f"{assignments_by_time_period_cte_name}.{col}" for col in assignments_columns
+    ]
 
     observation_columns: list[str]
     if isinstance(observation_type, EventType):
@@ -236,13 +245,29 @@ def _build_observations_by_assignments_query_template(
 
     observation_columns += _get_referenced_attributes(single_observation_type_metrics)
 
-    column_strs = [
-        f"{assignments_by_time_period_cte_name}.{col}" for col in assignments_columns
-    ] + [
+    column_strs = assignment_column_strs + [
         f"{OBSERVATIONS_CTE_NAME}.{col}"
         for col in observation_columns
         if col not in assignments_columns
     ]
+
+    for metric in single_observation_type_metrics:
+        if isinstance(metric, AssignmentDaysToFirstEventMetric):
+            days_to_first_event_metric = assert_type(
+                metric, AssignmentDaysToFirstEventMetric
+            )
+            column_strs.append(
+                days_to_first_event_metric.generate_event_seq_num_col_clause(
+                    event_date_col=EventObservationBigQueryViewBuilder.EVENT_DATE_OUTPUT_COL_NAME,
+                    qualified_assignment_cols=assignment_column_strs,
+                )
+            )
+            column_strs.append(
+                days_to_first_event_metric.generate_num_matching_events_clause(
+                    qualified_assignment_cols=assignment_column_strs,
+                )
+            )
+
     columns_str = ",\n".join(column_strs)
 
     join_logic = _observation_to_assignment_periods_join_logic(
@@ -252,12 +277,27 @@ def _build_observations_by_assignments_query_template(
             type=observation_type.unit_of_observation_type
         ),
     )
+    # NOTE: Changing the JOIN in this query to LEFT OUTER JOIN means that we produce
+    # rows for all possible row primary key values, but it also makes the overall
+    # aggregated metrics queries 2+ times slower. Instead, we join the results here
+    # back to possible primary key combos in build_aggregated_metric_query_template()
+    # and coalesce NULL values to zero where appropriate.
+    if metric_class in {
+        AssignmentSpanAggregatedMetric,
+        AssignmentEventAggregatedMetric,
+    }:
+        join_type = "LEFT OUTER JOIN"
+    elif metric_class in {PeriodEventAggregatedMetric, PeriodSpanAggregatedMetric}:
+        join_type = "JOIN"
+    else:
+        raise ValueError(f"Unexpected metric class [{metric_class}]")
+
     return f"""
 SELECT
 {fix_indent(columns_str, indent_level=4)}
 FROM 
     {assignments_by_time_period_cte_name}
-JOIN 
+{join_type} 
     {OBSERVATIONS_CTE_NAME}
 ON
 {fix_indent(join_logic, indent_level=4)}
@@ -324,12 +364,6 @@ def build_single_observation_type_aggregated_metric_query_template(
         ],
     ]
     output_columns_str = ",\n".join(output_column_strs)
-
-    # NOTE: Changing the JOIN in this query to LEFT OUTER JOIN means that we produce
-    # rows for all possible row primary key values, but it also makes the overall
-    # aggregated metrics queries 2+ times slower. Instead, we join the results here
-    # back to possible primary key combos in build_aggregated_metric_query_template()
-    # and coalesce NULL values to zero where appropriate.
     return f"""
 WITH
 {OBSERVATIONS_CTE_NAME} AS (

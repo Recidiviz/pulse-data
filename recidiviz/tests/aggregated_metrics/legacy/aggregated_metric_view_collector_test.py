@@ -61,21 +61,6 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
                 },
             )
 
-        # assignment event metric without ASSIGNMENTS
-        with self.assertRaises(ValueError):
-            collect_legacy_aggregated_metrics_view_builders(
-                metrics_by_population_dict={
-                    MetricPopulationType.JUSTICE_INVOLVED: [
-                        LSIR_ASSESSMENTS_365,
-                    ]
-                },
-                units_of_analysis_by_population_dict={
-                    MetricPopulationType.JUSTICE_INVOLVED: [
-                        MetricUnitOfAnalysisType.STATE_CODE,
-                    ]
-                },
-            )
-
     def test_assignments_with_assignment_metric(self) -> None:
         """
         This test verifies that no error is thrown if an event/span assignment metric is

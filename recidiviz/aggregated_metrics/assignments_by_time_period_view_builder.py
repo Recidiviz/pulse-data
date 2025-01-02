@@ -290,9 +290,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             self.metric_time_period_to_assignment_join_type
             is MetricTimePeriodToAssignmentJoinType.ASSIGNMENT
         ):
-            raise NotImplementedError(
-                "TODO(#35897), TODO(#35898): Add description for ASSIGNMENT join type"
-            )
+            join_description = "where an assignment span starts during that period"
         else:
             raise ValueError(
                 f"Unexpected MetricTimePeriodToAssignmentJoinType "
@@ -305,7 +303,7 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
         [{self.unit_of_analysis_type.value}] unit of analysis to 
         [{self.unit_of_observation_type.value}] unit of observation assignment spans,
         returning one result row for every metric time period {join_description}. If 
-        there are multiple assignments that overlap with a metric period, multiple 
+        there are multiple assignments associated with a metric period, multiple 
         rows will be returned.""",
             new_width=100,
         )
@@ -362,10 +360,8 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             metric_time_period_to_assignment_join_type
             is MetricTimePeriodToAssignmentJoinType.ASSIGNMENT
         ):
-            raise NotImplementedError(
-                "TODO(#35897), TODO(#35898): Add additional time output columns list "
-                "for MetricTimePeriodToAssignmentJoinType.ASSIGNMENT"
-            )
+            return []
+
         raise ValueError(
             f"Unexpected metric_time_period_to_assignment_join_type: "
             f"[{metric_time_period_to_assignment_join_type}]"
@@ -440,9 +436,6 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
                 )
                 continue
             output_column_clauses.append(output_column)
-
-        # TODO(#35897): Add other useful calculated date fields if needed for AssignmentEventAggregatedMetric
-        # TODO(#35898): Add other useful calculated date fields if needed for AssignmentSpanAggregatedMetric
 
         return output_column_clauses
 
@@ -523,9 +516,10 @@ class AssignmentsByTimePeriodViewBuilder(BigQueryViewBuilder[BigQueryView]):
             metric_time_period_to_assignment_join_type
             is MetricTimePeriodToAssignmentJoinType.ASSIGNMENT
         ):
-            raise NotImplementedError(
-                f"TODO(#35897), TODO(#35898): Build assignment periods join logic for Assignment* "
-                f"type metrics ({metric_time_period_to_assignment_join_type})"
+
+            return (
+                f"{MetricTimePeriodConfig.METRIC_TIME_PERIOD_START_DATE_COLUMN} <= {cls.ASSIGNMENT_START_DATE_COLUMN_NAME} "
+                f"AND {MetricTimePeriodConfig.METRIC_TIME_PERIOD_END_DATE_EXCLUSIVE_COLUMN} > {cls.ASSIGNMENT_START_DATE_COLUMN_NAME}"
             )
 
         raise ValueError(

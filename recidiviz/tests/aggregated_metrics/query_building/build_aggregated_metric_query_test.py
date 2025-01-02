@@ -21,6 +21,7 @@ from recidiviz.aggregated_metrics.metric_time_period_config import (
     MetricTimePeriodConfig,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
+    AssignmentEventAggregatedMetric,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
@@ -34,9 +35,11 @@ from recidiviz.aggregated_metrics.query_building.build_aggregated_metric_query i
     build_aggregated_metric_query_template,
 )
 from recidiviz.tests.aggregated_metrics.fixture_aggregated_metrics import (
+    MY_ANY_INCARCERATION_365,
     MY_AVG_DAILY_POPULATION,
     MY_AVG_LSIR_SCORE,
     MY_CONTACTS_COMPLETED_METRIC,
+    MY_DAYS_TO_FIRST_INCARCERATION_100,
     MY_DRUG_SCREENS_METRIC,
     MY_LOGINS_BY_PRIMARY_WORKFLOWS,
 )
@@ -635,5 +638,141 @@ USING (state_code, facility, metric_period_start_date, metric_period_end_date_ex
 """
         self.assertEqual(expected_result, result)
 
-    # TODO(#35897): Add tests for AssignmentEventAggregatedMetric
+    def test_build__assignment_event__single_unit_of_observation(self) -> None:
+        result = build_aggregated_metric_query_template(
+            population_type=MetricPopulationType.SUPERVISION,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+            metric_class=AssignmentEventAggregatedMetric,
+            metrics=[
+                MY_ANY_INCARCERATION_365,
+                MY_DAYS_TO_FIRST_INCARCERATION_100,
+            ],
+            time_period=MetricTimePeriodConfig.monthly_quarter_periods(
+                lookback_months=12
+            ),
+        )
+        expected_result = """
+WITH 
+person_assignments_by_time_period AS (
+    SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_district__by_assignment__quarters_rolling_last_12_months_materialized`
+),
+output_row_keys AS (
+    SELECT DISTINCT state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+    FROM person_assignments_by_time_period
+),
+incarceration_start_metrics AS (
+    WITH
+    observations AS (
+        SELECT
+            person_id,
+            state_code,
+            event_date,
+            inflow_from_level_1
+        FROM 
+            `{project_id}.observations__person_event.incarceration_start_materialized`
+        WHERE
+            ( TRUE )
+            OR ( inflow_from_level_1 IN ("SUPERVISION") )
+    ),
+    observations_by_assignments AS (
+        SELECT
+            person_assignments_by_time_period.person_id,
+            person_assignments_by_time_period.state_code,
+            person_assignments_by_time_period.district,
+            person_assignments_by_time_period.metric_period_start_date,
+            person_assignments_by_time_period.metric_period_end_date_exclusive,
+            person_assignments_by_time_period.period,
+            person_assignments_by_time_period.assignment_start_date,
+            person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+            observations.event_date,
+            observations.inflow_from_level_1,
+            ROW_NUMBER() OVER (
+                PARTITION BY 
+                    person_assignments_by_time_period.person_id,
+                    person_assignments_by_time_period.state_code,
+                    person_assignments_by_time_period.district,
+                    person_assignments_by_time_period.metric_period_start_date,
+                    person_assignments_by_time_period.metric_period_end_date_exclusive,
+                    person_assignments_by_time_period.period,
+                    person_assignments_by_time_period.assignment_start_date,
+                    person_assignments_by_time_period.assignment_end_date_exclusive_nonnull,
+                    -- Partition by observations filter so we only order among relevant
+                    -- events.
+                    event_date IS NOT NULL AND (inflow_from_level_1 IN ("SUPERVISION"))
+                ORDER BY
+                    event_date
+            ) AS event_seq_num__my_days_to_first_incarceration_100,
+            COUNTIF(event_date IS NOT NULL AND (inflow_from_level_1 IN ("SUPERVISION"))) OVER (
+                PARTITION BY 
+                    person_assignments_by_time_period.person_id,
+                    person_assignments_by_time_period.state_code,
+                    person_assignments_by_time_period.district,
+                    person_assignments_by_time_period.metric_period_start_date,
+                    person_assignments_by_time_period.metric_period_end_date_exclusive,
+                    person_assignments_by_time_period.period,
+                    person_assignments_by_time_period.assignment_start_date,
+                    person_assignments_by_time_period.assignment_end_date_exclusive_nonnull
+            ) AS num_matching_events__my_days_to_first_incarceration_100
+        FROM 
+            person_assignments_by_time_period
+        LEFT OUTER JOIN 
+            observations
+        ON
+            observations.person_id = person_assignments_by_time_period.person_id
+            AND observations.state_code = person_assignments_by_time_period.state_code
+            AND observations.event_date >= person_assignments_by_time_period.assignment_start_date
+    )
+    SELECT
+        state_code,
+        district,
+        metric_period_start_date,
+        metric_period_end_date_exclusive,
+        period,
+        COUNT(
+            DISTINCT IF(
+                (TRUE) AND observations_by_assignments.event_date <= DATE_ADD(assignment_start_date, INTERVAL 365 DAY),
+                CONCAT(observations_by_assignments.person_id, observations_by_assignments.state_code, "#", assignment_start_date),
+                NULL
+            )
+        ) AS my_any_incarceration_365,
+        SUM(
+            IF(
+                observations_by_assignments.num_matching_events__my_days_to_first_incarceration_100 = 0 AND observations_by_assignments.event_seq_num__my_days_to_first_incarceration_100 = 1,
+                -- There were no events associated with this assignment - return full 
+                -- window length.
+                100,
+                -- Otherwise, if this is a valid first event, get the time since 
+                -- assignment or window length, whichever is less
+                IF(
+                    observations_by_assignments.event_seq_num__my_days_to_first_incarceration_100 = 1 AND (inflow_from_level_1 IN ("SUPERVISION")),
+                    DATE_DIFF(
+                        LEAST(
+                            observations_by_assignments.event_date, 
+                            DATE_ADD(assignment_start_date, INTERVAL 100 DAY)
+                        ),
+                        assignment_start_date,
+                        DAY
+                    ),
+                    0
+                )
+            )
+        ) AS my_days_to_first_incarceration_100
+    FROM observations_by_assignments
+    GROUP BY state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period
+)
+SELECT
+    state_code,
+    district,
+    metric_period_start_date AS start_date,
+    metric_period_end_date_exclusive AS end_date,
+    period,
+    IFNULL(my_any_incarceration_365, 0) AS my_any_incarceration_365,
+    my_days_to_first_incarceration_100
+FROM output_row_keys
+LEFT OUTER JOIN
+    incarceration_start_metrics
+USING (state_code, district, metric_period_start_date, metric_period_end_date_exclusive, period)
+"""
+        self.assertEqual(expected_result, result)
+
     # TODO(#35898): Add tests for AssignmentSpanAggregatedMetric

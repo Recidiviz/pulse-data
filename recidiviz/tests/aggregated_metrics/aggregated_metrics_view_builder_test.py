@@ -17,6 +17,8 @@
 """Tests for aggregated_metrics_view_builder.py"""
 import unittest
 
+from freezegun import freeze_time
+
 from recidiviz.aggregated_metrics.aggregated_metrics_view_builder import (
     AggregatedMetricsBigQueryViewBuilder,
     aggregated_metric_view_description,
@@ -25,6 +27,7 @@ from recidiviz.aggregated_metrics.metric_time_period_config import (
     MetricTimePeriodConfig,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
+    AssignmentEventAggregatedMetric,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
@@ -36,16 +39,20 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.tests.aggregated_metrics.fixture_aggregated_metrics import (
+    MY_ANY_INCARCERATION_365,
     MY_AVG_DAILY_POPULATION,
     MY_AVG_DAILY_POPULATION_GENERAL_INCARCERATION,
     MY_AVG_LSIR_SCORE,
     MY_CONTACTS_COMPLETED_METRIC,
+    MY_DAYS_TO_FIRST_INCARCERATION_100,
     MY_DRUG_SCREENS_METRIC,
+    MY_EMPLOYER_CHANGES_365,
     MY_LOGINS_BY_PRIMARY_WORKFLOWS,
 )
 from recidiviz.utils.types import assert_type
 
 
+@freeze_time("2024-12-15")
 class TestAggregatedMetricViewDescription(unittest.TestCase):
     """Tests for aggregated_metric_view_description()"""
 
@@ -113,7 +120,39 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
 """
         self.assertEqual(expected_docstring, docstring)
 
-    # TODO(#35897): Add tests for AssignmentEventAggregatedMetric
+    def test_aggregated_metric_view_description__assignment_event(self) -> None:
+        docstring = aggregated_metric_view_description(
+            population_type=MetricPopulationType.SUPERVISION,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            metric_class=AssignmentEventAggregatedMetric,
+            metrics=[
+                MY_ANY_INCARCERATION_365,
+                MY_DAYS_TO_FIRST_INCARCERATION_100,
+                MY_EMPLOYER_CHANGES_365,
+            ],
+            time_period=MetricTimePeriodConfig.monthly_year_periods(lookback_months=12),
+        )
+
+        expected_docstring = """
+Metrics for the supervision population calculated using
+events over some window following assignment, for all assignments
+during an analysis period, disaggregated by officer.
+
+Contains metrics only for YEAR-length time periods with
+the most recent period ending on 2024-12-01 and the
+least recent period ending on 2024-12-01.
+
+All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
+
+# Metrics
+| Name                                                          | Column                             | Description                                                                                                                                                                                     | Event observation type   |
+|---------------------------------------------------------------|------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------|
+| My Any Incarceration Start Within 1 Year of Assignment        | my_any_incarceration_365           | My number of client assignments followed by an incarceration start within 1 year                                                                                                                | INCARCERATION_START      |
+| My Days To First Incarceration Within 1 Year After Assignment | my_days_to_first_incarceration_100 | My sum of the number of days prior to first incarceration within 1 year following assignment, for all assignments during the analysis period. Only counts incarcerations following supervision. | INCARCERATION_START      |
+| My Employer Changes Within 1 Year Of Assignment               | my_employer_changes_365            | My number of times client starts employment with a new employer within 1 year of assignment                                                                                                     | EMPLOYMENT_PERIOD_START  |
+"""
+        self.assertEqual(expected_docstring, docstring)
+
     # TODO(#35898): Add tests for AssignmentSpanAggregatedMetric
 
 

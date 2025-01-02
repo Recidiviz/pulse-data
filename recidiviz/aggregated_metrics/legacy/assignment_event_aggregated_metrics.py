@@ -18,10 +18,8 @@
 from collections import defaultdict
 from typing import Dict, List
 
-from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.aggregated_metrics.legacy.aggregated_metrics_utils import (
     get_joined_metrics_by_observation_type_query,
-    get_unioned_time_granularity_clause,
 )
 from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
@@ -33,7 +31,6 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
 )
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     join_on_columns_fragment,
     list_to_query_string,
@@ -153,49 +150,4 @@ def get_assignment_event_time_specific_cte(
     # Construct query by joining metrics across all units of observation
     return get_joined_metrics_by_observation_type_query(
         unit_of_analysis, metric_subqueries_by_unit_of_observation, metrics
-    )
-
-
-# TODO(#35897): This function should become unused once we've migrated over to optimized
-#  aggregated metrics queries for AssignmentEventAggregatedMetrics.
-def generate_assignment_event_aggregated_metrics_view_builder(
-    unit_of_analysis: MetricUnitOfAnalysis,
-    population_type: MetricPopulationType,
-    metrics: List[AssignmentEventAggregatedMetric],
-) -> SimpleBigQueryViewBuilder:
-    """
-    Returns a SimpleBigQueryViewBuilder that calculates AssignmentEvent metrics aggregated to the provided
-    unit of analysis, for the specified population and set of metrics.
-    """
-    view_id = f"{population_type.population_name_short}_{unit_of_analysis.type.short_name}_assignment_event_aggregated_metrics"
-    view_description = f"""
-    Metrics for the {population_type.population_name_short} population calculated using
-    events over some window following assignment, for all assignments
-    during an analysis period, disaggregated by {unit_of_analysis.type.short_name}.
-
-    All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
-    """
-
-    query_template = f"""
-WITH time_periods AS (
-    SELECT * FROM `{{project_id}}.aggregated_metrics.metric_time_periods_materialized`
-)
-, month_metrics AS ({get_assignment_event_time_specific_cte(
-    unit_of_analysis = unit_of_analysis,
-    population_type = population_type,
-    metrics = metrics,
-    metric_time_period = MetricTimePeriod.MONTH,
-)})
-""" + get_unioned_time_granularity_clause(
-        unit_of_analysis=unit_of_analysis,
-        metrics=metrics,
-    )
-
-    return SimpleBigQueryViewBuilder(
-        dataset_id=AGGREGATED_METRICS_DATASET_ID,
-        view_id=view_id,
-        view_query_template=query_template,
-        description=view_description,
-        should_materialize=True,
-        clustering_fields=unit_of_analysis.primary_key_columns,
     )
