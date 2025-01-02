@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: GSM_EVENT_PARTICIPANT
+file_tag: gsm_Event_Participant
 file_description: Facility program participation info
 data_classification: source
 separator: †

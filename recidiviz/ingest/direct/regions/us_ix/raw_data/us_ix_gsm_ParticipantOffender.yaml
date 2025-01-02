@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: gsm_PARTICIPANTOFFENDER
+file_tag: gsm_ParticipantOffender
 file_description: Maps participant information to offender information
 data_classification: source
 separator: †
