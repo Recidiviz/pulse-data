@@ -41,6 +41,9 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     OUTLIERS_AGGREGATED_METRICS_COLLECTION_CONFIG,
 )
+from recidiviz.calculator.query.state.views.vitals_report.vitals_aggregated_metrics import (
+    VITALS_AGGREGATED_METRICS_COLLECTION_CONFIG,
+)
 
 
 def get_aggregated_metrics_view_builders() -> Sequence[BigQueryViewBuilder]:
@@ -55,7 +58,11 @@ def get_aggregated_metrics_view_builders() -> Sequence[BigQueryViewBuilder]:
         *collect_standard_legacy_aggregated_metric_views(),
         *collect_assignment_sessions_view_builders(),
         *collect_assignments_by_time_period_builders_for_collections(
-            [STANDARD_COLLECTION_CONFIG, OUTLIERS_AGGREGATED_METRICS_COLLECTION_CONFIG]
+            [
+                STANDARD_COLLECTION_CONFIG,
+                OUTLIERS_AGGREGATED_METRICS_COLLECTION_CONFIG,
+                VITALS_AGGREGATED_METRICS_COLLECTION_CONFIG,
+            ]
         ),
         *collect_aggregated_metric_view_builders_for_collection(
             STANDARD_COLLECTION_CONFIG

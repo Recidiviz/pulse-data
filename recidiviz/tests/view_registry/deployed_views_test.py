@@ -64,9 +64,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact
 from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
     SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.vitals_report.vitals_report_views import (
-    VITALS_AGGREGATED_METRIC_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
 )
@@ -394,9 +391,6 @@ class ViewDagInvariantTests(unittest.TestCase):
                     # TODO(#35911): We should be able to delete this entirely once we
                     #  migrate impact reports metrics to the new format.
                     *get_impact_reports_aggregated_metrics_view_builders(),
-                    # TODO(#35910): We should be able to delete this entirely once we migrate vitals report metrics to
-                    #  the new format.
-                    *VITALS_AGGREGATED_METRIC_VIEW_BUILDERS,
                 ]
                 if b.address
                 not in {

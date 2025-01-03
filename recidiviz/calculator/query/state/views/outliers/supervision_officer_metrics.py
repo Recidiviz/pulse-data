@@ -23,6 +23,7 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     InsightsCaseloadCategoryType,
@@ -40,6 +41,7 @@ from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 from recidiviz.outliers.types import OutliersVitalsMetricConfig
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string_formatting import fix_indent
 
 _VIEW_NAME = "supervision_officer_metrics"
 
@@ -93,6 +95,7 @@ def _supervision_vitals_metric_query_template() -> str:
     """
     Gets the vitals metrics
     """
+    vitals_states = []
     state_queries = []
 
     for state in get_outliers_enabled_states_for_bigquery():
@@ -103,6 +106,7 @@ def _supervision_vitals_metric_query_template() -> str:
         if not metrics_config:  # Skip if no metrics
             continue
 
+        vitals_states.append(state)
         VALID_METRICS = {"timely_contact", "timely_risk_assessment"}
         if invalid_metrics := {m.metric_id for m in metrics_config} - VALID_METRICS:
             raise ValueError(
@@ -110,8 +114,6 @@ def _supervision_vitals_metric_query_template() -> str:
             )
 
         metrics_list = ", ".join(f"'{metric.metric_id}'" for metric in metrics_config)
-
-        agg_metrics = "vitals_report_views.supervision_officer_day_aggregated_metrics_materialized"
 
         query = f"""
             SELECT
@@ -128,19 +130,35 @@ def _supervision_vitals_metric_query_template() -> str:
                 "RATE" AS value_type,
                 "ALL" as caseload_category,
                 "ALL" as category_type
-            FROM
-                `{{project_id}}.{agg_metrics}`
+            FROM day_agg_metrics
             CROSS JOIN UNNEST([{metrics_list}]) AS metric_id
             WHERE
                 state_code = '{state}' AND
                 end_date IN (
-                    DATE_SUB((SELECT MAX(end_date) FROM `{{project_id}}.{agg_metrics}`), INTERVAL 1 DAY),
-                    DATE_SUB((SELECT MAX(end_date) FROM `{{project_id}}.{agg_metrics}`), INTERVAL 30 DAY)
+                    DATE_SUB((SELECT MAX(end_date) FROM day_agg_metrics), INTERVAL 1 DAY),
+                    DATE_SUB((SELECT MAX(end_date) FROM day_agg_metrics), INTERVAL 30 DAY)
             )
         """
-        state_queries.append(query.strip())
+        state_queries.append(fix_indent(query, indent_level=4))
 
-    return "\nUNION ALL\n".join(state_queries)
+    unioned_state_queries = "\n    UNION ALL\n".join(state_queries)
+
+    return f"""
+    WITH day_agg_metrics AS (
+        SELECT 
+            state_code,
+            officer_id,
+            start_date,
+            end_date,
+            period,
+            avg_population_contact_overdue,
+            avg_population_contact_required,
+            avg_population_assessment_overdue,
+            avg_population_assessment_required
+        FROM `{{project_id}}.vitals_report_views.supervision_officer_aggregated_metrics_materialized`
+        WHERE state_code IN ({list_to_query_string(vitals_states, quoted=True)}) AND DATE_DIFF(end_date, start_date, DAY) = 1
+    )\n{unioned_state_queries}
+    """
 
 
 _OFFICER_VITALS_METRICS: LiteralString | Literal[

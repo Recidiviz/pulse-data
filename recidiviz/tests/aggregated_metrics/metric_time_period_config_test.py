@@ -33,6 +33,46 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
     """Tests for MetricTimePeriodConfig"""
 
+    def test_day_periods(self) -> None:
+        lookback_days = 3
+
+        # Tuesday, Nov 12, 2024 (US/Eastern time)
+        with freeze_time("2024-11-12 00:00:00-05:00"):
+            self.assertEqual("2024-11-12", current_date_us_eastern().isoformat())
+
+            metric_time_period_config = MetricTimePeriodConfig.day_periods(
+                lookback_days=lookback_days
+            )
+            query_str = metric_time_period_config.build_query()
+
+        expected_results = [
+            {
+                "period": "DAY",
+                "metric_period_start_date": datetime.date(2024, 11, 9),
+                "metric_period_end_date_exclusive": datetime.date(2024, 11, 10),
+            },
+            {
+                "period": "DAY",
+                "metric_period_start_date": datetime.date(2024, 11, 10),
+                "metric_period_end_date_exclusive": datetime.date(2024, 11, 11),
+            },
+            {
+                "period": "DAY",
+                "metric_period_start_date": datetime.date(2024, 11, 11),
+                "metric_period_end_date_exclusive": datetime.date(2024, 11, 12),
+            },
+        ]
+
+        results = self.query(query_str).to_dict(orient="records")
+
+        # Should produce the same number of rows as specified in lookback_weeks
+        self.assertEqual(lookback_days, len(results))
+        self.assertEqual(expected_results, results)
+        self.assertEqual(
+            sorted(MetricTimePeriodConfig.query_output_columns()),
+            sorted(results[0].keys()),
+        )
+
     def test_week_periods(self) -> None:
         lookback_weeks = 2
 
