@@ -1292,6 +1292,29 @@ class OutliersQuerier:
                 .subquery()
             )
 
+            # Pull the include_in_outcomes flag value from the SupervisionOfficerMetric
+            # table (this table is the final source of truth for whether an officer
+            # should be included in outcomes).
+            include_in_outcomes_subquery = (
+                session.query(
+                    SupervisionOfficerMetric.officer_id,
+                    # All rows for a given officer share the same flag value so we
+                    # can just pull the first value one.
+                    func.array_agg(SupervisionOfficerMetric.include_in_outcomes)[
+                        1
+                    ].label("include_in_outcomes"),
+                )
+                .filter(
+                    SupervisionOfficerMetric.end_date == end_date,
+                    SupervisionOfficerMetric.category_type
+                    == category_type_to_compare.value,
+                    # Should exclude vitals metrics rows
+                    SupervisionOfficerMetric.period == MetricTimePeriod.YEAR.value,
+                )
+                .group_by(SupervisionOfficerMetric.officer_id)
+                .subquery()
+            )
+
             # The entities we'll be selecting from our query
             query_entities = [
                 SupervisionOfficer.external_id,
@@ -1333,7 +1356,7 @@ class OutliersQuerier:
                     )
                 ).label("is_top_x_pct_over_time"),
                 avgs_subquery.c.avg_daily_population,
-                SupervisionOfficer.include_in_outcomes,
+                include_in_outcomes_subquery.c.include_in_outcomes,
             ]
 
             officer_status_query = (
@@ -1346,6 +1369,11 @@ class OutliersQuerier:
                     SupervisionOfficerOutlierStatus,
                     SupervisionOfficer.external_id
                     == SupervisionOfficerOutlierStatus.officer_id,
+                )
+                .join(
+                    include_in_outcomes_subquery,
+                    include_in_outcomes_subquery.c.officer_id
+                    == SupervisionOfficer.external_id,
                 )
                 .filter(
                     # Get the statuses for all periods between requested or latest end_date and earliest end date
@@ -1365,7 +1393,7 @@ class OutliersQuerier:
                     SupervisionOfficerOutlierStatus.metric_id,
                     SupervisionOfficer.earliest_person_assignment_date,
                     avgs_subquery.c.avg_daily_population,
-                    SupervisionOfficer.include_in_outcomes,
+                    include_in_outcomes_subquery.c.include_in_outcomes,
                 )
                 .with_entities(*query_entities)
             )

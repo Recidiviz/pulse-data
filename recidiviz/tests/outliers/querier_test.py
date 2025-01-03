@@ -468,6 +468,48 @@ class TestOutliersQuerier(InsightsDbTestCase):
                 num_lookback_periods=1,
             )
 
+    def test_get_supervision_officer_entity_included_in_outcomes(self) -> None:
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
+            # officer fixture where include_in_outcomes=True
+            pseudonymized_officer_id="officerhash4",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
+            num_lookback_periods=0,
+        )
+
+        self.assertIsNotNone(actual)
+        self.assertTrue(actual.include_in_outcomes)  # type: ignore
+
+    def test_get_supervision_officer_entity_not_included_in_outcomes_from_metrics_table(
+        self,
+    ) -> None:
+        # TODO(#33947): Modify test once we don't filter out excluded officers
+        # Returns None, because we filter out excluded officers
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
+            # officer fixture where include_in_outcomes=True in the SupervisionOfficer
+            # table but include_in_outcomes=False in the SupervisionOfficerMetrics
+            # table
+            pseudonymized_officer_id="officerhash13",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
+            num_lookback_periods=0,
+        )
+
+        self.assertIsNone(actual)
+
+    def test_get_supervision_officer_entity_not_included_in_outcomes(self) -> None:
+        # TODO(#33947): Modify test once we don't filter out excluded officers
+        # Returns None, because we filter out excluded officers
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
+            # officer fixture where include_in_outcomes=False
+            pseudonymized_officer_id="officerhash12",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
+            num_lookback_periods=0,
+        )
+
+        self.assertIsNone(actual)
+
     def test_get_supervision_officer_entity_no_match(self) -> None:
         # Return None because none found
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
