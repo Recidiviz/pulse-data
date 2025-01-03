@@ -25,7 +25,7 @@ from psycopg2.errors import (  # pylint: disable=no-name-in-module
     NotNullViolation,
     UniqueViolation,
 )
-from sqlalchemy import cast, func
+from sqlalchemy import and_, cast, func, not_
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.row import Row
 from sqlalchemy.exc import IntegrityError, ProgrammingError
@@ -390,14 +390,20 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
             This endpoint is accessed via the admin panel and our auth0 actions. It queries data from four
             Case Triage CloudSQL instance tables (roster, user_override, state_role_permissions, and
             permissions_overrides) in order to account for overrides to a user's roster data or permissions.
-            Returns: JSON string with accurate information about a state user and their permissions
+            Returns: JSON string with accurate information about a state user and their permissions. Only
+            returns a user if they are not blocked.
             """
             try:
                 user = (
                     get_users_query(current_session)
                     .where(
-                        func.coalesce(UserOverride.user_hash, Roster.user_hash)
-                        == user_hash,
+                        and_(
+                            func.coalesce(UserOverride.user_hash, Roster.user_hash)
+                            == user_hash,
+                            not_(
+                                UserOverride.blocked.is_(True),
+                            ),
+                        )
                     )
                     .one()
                 )

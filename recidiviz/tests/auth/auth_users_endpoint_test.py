@@ -439,6 +439,26 @@ class AuthUsersEndpointTestCase(TestCase):
         error_message = f"User not found for email address hash {_PARAMETER_USER_HASH}, please file a bug"
         self.assertEqual(error_message, json.loads(response.data)["message"])
 
+    def test_get_user_blocked_user(self) -> None:
+        user = generate_fake_user_overrides(
+            email="parameter@testdomain.com",
+            region_code="US_CO",
+            external_id="ABC",
+            roles=["leadership_role"],
+            district="District",
+            blocked=True,
+        )
+
+        add_entity_to_database_session(self.database_key, [user])
+
+        response = self.client.get(
+            self.user,
+            headers=self.headers,
+        )
+        self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+        error_message = f"User not found for email address hash {_PARAMETER_USER_HASH}, please file a bug"
+        self.assertEqual(error_message, json.loads(response.data)["message"])
+
     ########
     # PATCH /user/...
     ########
