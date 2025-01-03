@@ -945,6 +945,10 @@ def create_outliers_api_blueprint() -> Blueprint:
             category_type_to_compare,
             user_context.can_access_supervision_workflows,
         )
+        id_to_outcomes = querier.get_id_to_supervision_officer_outcomes_entities(
+            category_type_to_compare,
+            supervisor_external_id=supervisor.external_id,
+        )
 
         action_strategies_json = {}
 
@@ -957,15 +961,29 @@ def create_outliers_api_blueprint() -> Blueprint:
         qualifier = OutliersActionStrategyQualifier(
             events=supervisor_events, config=product_config
         )
+
+        missing_officer_outcomes = []
         for officer in officer_entities:
-            action_strategies_json[
-                officer.pseudonymized_id
-            ] = qualifier.get_eligible_action_strategy_for_officer(officer=officer)
+            officer_outcomes = id_to_outcomes.get(officer.external_id)
+            if officer_outcomes is None:
+                missing_officer_outcomes.append(officer.pseudonymized_id)
+            else:
+                action_strategies_json[
+                    officer.pseudonymized_id
+                ] = qualifier.get_eligible_action_strategy_for_officer(
+                    officer=officer, officer_outcomes=officer_outcomes
+                )
+
+        if len(missing_officer_outcomes) > 0:
+            return jsonify_response(
+                f"Missing outcomes data for officers with the pseudo ids: {missing_officer_outcomes}",
+                HTTPStatus.NOT_FOUND,
+            )
 
         action_strategies_json[
             supervisor.pseudonymized_id
         ] = qualifier.get_eligible_action_strategy_for_supervisor(
-            officers=officer_entities
+            officers_outcomes=list(id_to_outcomes.values())
         )
         return jsonify(action_strategies_json)
 

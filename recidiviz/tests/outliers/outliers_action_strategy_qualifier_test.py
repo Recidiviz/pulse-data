@@ -36,6 +36,7 @@ from recidiviz.outliers.types import (
     OutliersMetricConfig,
     PersonName,
     SupervisionOfficerEntity,
+    SupervisionOfficerOutcomes,
 )
 
 EVENT_OUTLIER = ActionStrategySurfacedEvent(
@@ -213,13 +214,10 @@ class TestOutliersActionStrategyQualifier(TestCase):
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
     def test_action_strategy_outlier_3_months_eligible_true(self) -> None:
-        officer = SupervisionOfficerEntity(
-            full_name=PersonName(**{"given_names": "DRACO", "surname": "MALFOY"}),
+
+        outcomes = SupervisionOfficerOutcomes(
             external_id="789",
             pseudonymized_id="hash5",
-            supervisor_external_id="102",
-            supervisor_external_ids=["102"],
-            district="Hogwarts",
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -249,8 +247,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     "top_x_pct": 10,
                 }
             ],
-            avg_daily_population=10.0,
-            include_in_outcomes=True,
         )
         pseudo_id = "supervisorHash"
         events = [
@@ -263,19 +259,16 @@ class TestOutliersActionStrategyQualifier(TestCase):
             )
         ]
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
-        self.assertTrue(qualifier.action_strategy_outlier_3_months_eligible(officer))
+        self.assertTrue(qualifier.action_strategy_outlier_3_months_eligible(outcomes))
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
     def test_action_strategy_outlier_3_months_eligible_ineligible_disqualifying_event(
         self,
     ) -> None:
-        officer = SupervisionOfficerEntity(
-            full_name=PersonName(**{"given_names": "DRACO", "surname": "MALFOY"}),
+
+        outcomes = SupervisionOfficerOutcomes(
             external_id="789",
             pseudonymized_id="hash5",
-            supervisor_external_id="102",
-            supervisor_external_ids=["102"],
-            district="Hogwarts",
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -305,8 +298,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     "top_x_pct": 10,
                 }
             ],
-            avg_daily_population=10.0,
-            include_in_outcomes=True,
         )
         pseudo_id = "supervisorHash"
         events = [
@@ -320,19 +311,15 @@ class TestOutliersActionStrategyQualifier(TestCase):
             )
         ]
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
-        self.assertFalse(qualifier.action_strategy_outlier_3_months_eligible(officer))
+        self.assertFalse(qualifier.action_strategy_outlier_3_months_eligible(outcomes))
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
     def test_action_strategy_outlier_3_months_eligible_ineligible_qualifying_event_same_month(
         self,
     ) -> None:
-        officer = SupervisionOfficerEntity(
-            full_name=PersonName(**{"given_names": "DRACO", "surname": "MALFOY"}),
+        outcomes = SupervisionOfficerOutcomes(
             external_id="789",
             pseudonymized_id="hash5",
-            supervisor_external_id="102",
-            supervisor_external_ids=["102"],
-            district="Hogwarts",
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -362,8 +349,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     "top_x_pct": 10,
                 }
             ],
-            avg_daily_population=10.0,
-            include_in_outcomes=True,
         )
         pseudo_id = "supervisorHash"
         events = [
@@ -377,19 +362,15 @@ class TestOutliersActionStrategyQualifier(TestCase):
             )
         ]
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
-        self.assertFalse(qualifier.action_strategy_outlier_3_months_eligible(officer))
+        self.assertFalse(qualifier.action_strategy_outlier_3_months_eligible(outcomes))
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
     def test_action_strategy_outlier_3_months_eligible_ineligible_qualifying_event_same_month_supervisor(
         self,
     ) -> None:
-        officer = SupervisionOfficerEntity(
-            full_name=PersonName(**{"given_names": "DRACO", "surname": "MALFOY"}),
+        outcomes = SupervisionOfficerOutcomes(
             external_id="789",
             pseudonymized_id="hash5",
-            supervisor_external_id="102",
-            supervisor_external_ids=["102"],
-            district="Hogwarts",
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -419,8 +400,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     "top_x_pct": 10,
                 }
             ],
-            avg_daily_population=10.0,
-            include_in_outcomes=True,
         )
         pseudo_id = "supervisorHash"
         events = [
@@ -434,20 +413,16 @@ class TestOutliersActionStrategyQualifier(TestCase):
             )
         ]
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
-        self.assertFalse(qualifier.action_strategy_outlier_3_months_eligible(officer))
+        self.assertFalse(qualifier.action_strategy_outlier_3_months_eligible(outcomes))
 
     def test_action_strategy_60_perc_outliers_eligible_eligible(
         self,
     ) -> None:
         # 3 of the 4 officers are outliers - meets eligibility criteria
-        officers = [
-            SupervisionOfficerEntity(
-                full_name=PersonName(**{"given_names": "DRACO", "surname": "MALFOY"}),
+        outcomes_list = [
+            SupervisionOfficerOutcomes(
                 external_id="1",
                 pseudonymized_id="hash1",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -467,16 +442,10 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
-            SupervisionOfficerEntity(
-                full_name=PersonName(**{"given_names": "HARRY", "surname": "POTTER"}),
+            SupervisionOfficerOutcomes(
                 external_id="2",
                 pseudonymized_id="hash2",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -496,18 +465,10 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
-            SupervisionOfficerEntity(
-                full_name=PersonName(
-                    **{"given_names": "HERMOINE", "surname": "GRANGER"}
-                ),
+            SupervisionOfficerOutcomes(
                 external_id="3",
                 pseudonymized_id="hash3",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -527,18 +488,10 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
-            SupervisionOfficerEntity(
-                full_name=PersonName(
-                    **{"given_names": "RON", "surname": "WHATSHISNAME"}
-                ),
+            SupervisionOfficerOutcomes(
                 external_id="4",
                 pseudonymized_id="hash4",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[],
                 top_x_pct_metrics=[
@@ -547,29 +500,24 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
         ]
         events: list[ActionStrategySurfacedEvent] = []
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
         expected = ActionStrategyType.ACTION_STRATEGY_60_PERC_OUTLIERS.value
         self.assertEqual(
-            expected, qualifier.get_eligible_action_strategy_for_supervisor(officers)
+            expected,
+            qualifier.get_eligible_action_strategy_for_supervisor(outcomes_list),
         )
 
     def test_action_strategy_60_perc_outliers_eligible_ineligible_number(
         self,
     ) -> None:
         # only 2 officers - does not meet eligibility criteria
-        officers = [
-            SupervisionOfficerEntity(
-                full_name=PersonName(**{"given_names": "DRACO", "surname": "MALFOY"}),
+        outcomes_list = [
+            SupervisionOfficerOutcomes(
                 external_id="1",
                 pseudonymized_id="hash1",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -589,16 +537,10 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
-            SupervisionOfficerEntity(
-                full_name=PersonName(**{"given_names": "HARRY", "surname": "POTTER"}),
+            SupervisionOfficerOutcomes(
                 external_id="2",
                 pseudonymized_id="hash2",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[],
                 top_x_pct_metrics=[
@@ -607,28 +549,22 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
         ]
         events: list[ActionStrategySurfacedEvent] = []
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
         self.assertEqual(
-            None, qualifier.get_eligible_action_strategy_for_supervisor(officers)
+            None, qualifier.get_eligible_action_strategy_for_supervisor(outcomes_list)
         )
 
     def test_action_strategy_60_perc_outliers_eligible_ineligible_percentage(
         self,
     ) -> None:
         # 1 of the 4 officers are outliers - does not meet eligibility criteria
-        officers = [
-            SupervisionOfficerEntity(
-                full_name=PersonName(**{"given_names": "DRACO", "surname": "MALFOY"}),
+        outcomes_list = [
+            SupervisionOfficerOutcomes(
                 external_id="1",
                 pseudonymized_id="hash1",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -648,16 +584,10 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
-            SupervisionOfficerEntity(
-                full_name=PersonName(**{"given_names": "HARRY", "surname": "POTTER"}),
+            SupervisionOfficerOutcomes(
                 external_id="2",
                 pseudonymized_id="hash2",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[],
                 top_x_pct_metrics=[
@@ -666,18 +596,10 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
-            SupervisionOfficerEntity(
-                full_name=PersonName(
-                    **{"given_names": "HERMOINE", "surname": "GRANGER"}
-                ),
+            SupervisionOfficerOutcomes(
                 external_id="3",
                 pseudonymized_id="hash3",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[],
                 top_x_pct_metrics=[
@@ -686,18 +608,10 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
-            SupervisionOfficerEntity(
-                full_name=PersonName(
-                    **{"given_names": "RON", "surname": "WHATSHISNAME"}
-                ),
+            SupervisionOfficerOutcomes(
                 external_id="4",
                 pseudonymized_id="hash4",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[],
                 top_x_pct_metrics=[
@@ -706,28 +620,22 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
         ]
         events: list[ActionStrategySurfacedEvent] = []
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
         self.assertEqual(
-            None, qualifier.get_eligible_action_strategy_for_supervisor(officers)
+            None, qualifier.get_eligible_action_strategy_for_supervisor(outcomes_list)
         )
 
     def test_action_strategy_60_perc_outliers_eligible_ineligible_event(
         self,
     ) -> None:
         # 3 of the 4 officers are outliers - meets eligibility criteria
-        officers = [
-            SupervisionOfficerEntity(
-                full_name=PersonName(**{"given_names": "DRACO", "surname": "MALFOY"}),
+        outcomes_list = [
+            SupervisionOfficerOutcomes(
                 external_id="1",
                 pseudonymized_id="hash1",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -747,16 +655,10 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
-            SupervisionOfficerEntity(
-                full_name=PersonName(**{"given_names": "HARRY", "surname": "POTTER"}),
+            SupervisionOfficerOutcomes(
                 external_id="2",
                 pseudonymized_id="hash2",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -776,18 +678,10 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
-            SupervisionOfficerEntity(
-                full_name=PersonName(
-                    **{"given_names": "HERMOINE", "surname": "GRANGER"}
-                ),
+            SupervisionOfficerOutcomes(
                 external_id="3",
                 pseudonymized_id="hash3",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[
                     {
@@ -807,18 +701,10 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
-            SupervisionOfficerEntity(
-                full_name=PersonName(
-                    **{"given_names": "RON", "surname": "WHATSHISNAME"}
-                ),
+            SupervisionOfficerOutcomes(
                 external_id="4",
                 pseudonymized_id="hash4",
-                supervisor_external_id="102",
-                supervisor_external_ids=["102"],
-                district="Hogwarts",
                 caseload_category="ALL",
                 outlier_metrics=[],
                 top_x_pct_metrics=[
@@ -827,10 +713,9 @@ class TestOutliersActionStrategyQualifier(TestCase):
                         "top_x_pct": 10,
                     }
                 ],
-                avg_daily_population=10.0,
-                include_in_outcomes=True,
             ),
         ]
+
         # disqualifying event - does not meet eligiblity criteria
         events = [
             ActionStrategySurfacedEvent(
@@ -843,20 +728,16 @@ class TestOutliersActionStrategyQualifier(TestCase):
         ]
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
         self.assertEqual(
-            None, qualifier.get_eligible_action_strategy_for_supervisor(officers)
+            None, qualifier.get_eligible_action_strategy_for_supervisor(outcomes_list)
         )
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
     def test_action_strategy_outlier_absconsion_eligible_eligible(
         self,
     ) -> None:
-        officer = SupervisionOfficerEntity(
-            full_name=PersonName(**{"given_names": "DRACO", "surname": "MALFOY"}),
+        outcomes = SupervisionOfficerOutcomes(
             external_id="1",
             pseudonymized_id="hash1",
-            supervisor_external_id="102",
-            supervisor_external_ids=["102"],
-            district="Hogwarts",
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -876,8 +757,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     "top_x_pct": 10,
                 }
             ],
-            avg_daily_population=10.0,
-            include_in_outcomes=True,
         )
 
         events = [
@@ -890,19 +769,15 @@ class TestOutliersActionStrategyQualifier(TestCase):
             )
         ]
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
-        self.assertTrue(qualifier.action_strategy_outlier_absconsion_eligible(officer))
+        self.assertTrue(qualifier.action_strategy_outlier_absconsion_eligible(outcomes))
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
     def test_action_strategy_outlier_absconsion_eligible_ineligible_date(
         self,
     ) -> None:
-        officer = SupervisionOfficerEntity(
-            full_name=PersonName(**{"given_names": "DRACO", "surname": "MALFOY"}),
+        outcomes = SupervisionOfficerOutcomes(
             external_id="1",
             pseudonymized_id="hash1",
-            supervisor_external_id="102",
-            supervisor_external_ids=["102"],
-            district="Hogwarts",
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -922,8 +797,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     "top_x_pct": 10,
                 }
             ],
-            avg_daily_population=10.0,
-            include_in_outcomes=True,
         )
 
         events = [
@@ -936,19 +809,18 @@ class TestOutliersActionStrategyQualifier(TestCase):
             )
         ]
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
-        self.assertFalse(qualifier.action_strategy_outlier_absconsion_eligible(officer))
+        self.assertFalse(
+            qualifier.action_strategy_outlier_absconsion_eligible(outcomes)
+        )
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
     def test_action_strategy_outlier_absconsion_eligible_ineligible_metric_type(
         self,
     ) -> None:
-        officer = SupervisionOfficerEntity(
-            full_name=PersonName(**{"given_names": "DRACO", "surname": "MALFOY"}),
+
+        outcomes = SupervisionOfficerOutcomes(
             external_id="1",
             pseudonymized_id="hash1",
-            supervisor_external_id="102",
-            supervisor_external_ids=["102"],
-            district="Hogwarts",
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -968,8 +840,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     "top_x_pct": 10,
                 }
             ],
-            avg_daily_population=10.0,
-            include_in_outcomes=True,
         )
 
         events: list[ActionStrategySurfacedEvent] = []
@@ -989,19 +859,17 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervision_staff_exclusions="",
         )
         qualifier = OutliersActionStrategyQualifier(events=events, config=config)
-        self.assertFalse(qualifier.action_strategy_outlier_absconsion_eligible(officer))
+        self.assertFalse(
+            qualifier.action_strategy_outlier_absconsion_eligible(outcomes)
+        )
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
     def test_action_strategy_outlier_absconsion_eligible_ineligible_no_matching_metric(
         self,
     ) -> None:
-        officer = SupervisionOfficerEntity(
-            full_name=PersonName(**{"given_names": "DRACO", "surname": "MALFOY"}),
+        outcomes = SupervisionOfficerOutcomes(
             external_id="1",
             pseudonymized_id="hash1",
-            supervisor_external_id="102",
-            supervisor_external_ids=["102"],
-            district="Hogwarts",
             caseload_category="ALL",
             outlier_metrics=[
                 {
@@ -1021,13 +889,13 @@ class TestOutliersActionStrategyQualifier(TestCase):
                     "top_x_pct": 10,
                 }
             ],
-            avg_daily_population=10.0,
-            include_in_outcomes=True,
         )
 
         events: list[ActionStrategySurfacedEvent] = []
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
-        self.assertFalse(qualifier.action_strategy_outlier_absconsion_eligible(officer))
+        self.assertFalse(
+            qualifier.action_strategy_outlier_absconsion_eligible(outcomes)
+        )
 
     def test_get_eligible_action_strategy_for_officer_absconsion(self) -> None:
         officer = SupervisionOfficerEntity(
@@ -1060,6 +928,30 @@ class TestOutliersActionStrategyQualifier(TestCase):
             include_in_outcomes=True,
         )
 
+        outcomes = SupervisionOfficerOutcomes(
+            pseudonymized_id="hash1",
+            external_id="1",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": "absconsions_bench_warrants",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+            top_x_pct_metrics=[
+                {
+                    "metric_id": "incarceration_starts_and_inferred",
+                    "top_x_pct": 10,
+                }
+            ],
+        )
+
         events = [
             ActionStrategySurfacedEvent(
                 state_code="us_pa",
@@ -1087,7 +979,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
         self.assertEqual(
             ActionStrategyType.ACTION_STRATEGY_OUTLIER_ABSCONSION.value,
-            qualifier.get_eligible_action_strategy_for_officer(officer),
+            qualifier.get_eligible_action_strategy_for_officer(officer, outcomes),
         )
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
@@ -1120,10 +1012,30 @@ class TestOutliersActionStrategyQualifier(TestCase):
             # Within 15 months of today
             earliest_person_assignment_date=datetime.date(2022, 7, 30),
         )
+        outcomes = SupervisionOfficerOutcomes(
+            external_id="1",
+            pseudonymized_id="hash1",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": "absconsions_bench_warrants",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+            top_x_pct_metrics=[],
+        )
 
         events: list[ActionStrategySurfacedEvent] = []
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
-        self.assertTrue(qualifier.action_strategy_outlier_new_officer_eligible(officer))
+        self.assertTrue(
+            qualifier.action_strategy_outlier_new_officer_eligible(officer, outcomes)
+        )
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
     def test_action_strategy_outlier_new_officer_eligible_ineligible_date(
@@ -1155,11 +1067,29 @@ class TestOutliersActionStrategyQualifier(TestCase):
             # More than 15 months from today
             earliest_person_assignment_date=datetime.date(2022, 5, 23),
         )
+        outcomes = SupervisionOfficerOutcomes(
+            external_id="1",
+            pseudonymized_id="hash1",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": "absconsions_bench_warrants",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+            top_x_pct_metrics=[],
+        )
 
         events: list[ActionStrategySurfacedEvent] = []
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
         self.assertFalse(
-            qualifier.action_strategy_outlier_new_officer_eligible(officer)
+            qualifier.action_strategy_outlier_new_officer_eligible(officer, outcomes)
         )
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
@@ -1190,11 +1120,29 @@ class TestOutliersActionStrategyQualifier(TestCase):
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
+        outcomes = SupervisionOfficerOutcomes(
+            external_id="1",
+            pseudonymized_id="hash1",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": "absconsions_bench_warrants",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+            top_x_pct_metrics=[],
+        )
 
         events: list[ActionStrategySurfacedEvent] = []
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
         self.assertFalse(
-            qualifier.action_strategy_outlier_new_officer_eligible(officer)
+            qualifier.action_strategy_outlier_new_officer_eligible(officer, outcomes)
         )
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
@@ -1226,6 +1174,24 @@ class TestOutliersActionStrategyQualifier(TestCase):
             include_in_outcomes=True,
             earliest_person_assignment_date=datetime.date(2022, 9, 30),
         )
+        outcomes = SupervisionOfficerOutcomes(
+            external_id="1",
+            pseudonymized_id="hash1",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": "absconsions_bench_warrants",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+            top_x_pct_metrics=[],
+        )
 
         events = [
             ActionStrategySurfacedEvent(
@@ -1238,7 +1204,7 @@ class TestOutliersActionStrategyQualifier(TestCase):
         ]
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
         self.assertFalse(
-            qualifier.action_strategy_outlier_new_officer_eligible(officer)
+            qualifier.action_strategy_outlier_new_officer_eligible(officer, outcomes)
         )
 
     @freezegun.freeze_time(datetime.datetime(2023, 8, 24, 0, 0, 0, 0))
@@ -1268,6 +1234,24 @@ class TestOutliersActionStrategyQualifier(TestCase):
             include_in_outcomes=True,
             earliest_person_assignment_date=datetime.date(2022, 9, 30),
         )
+        outcomes = SupervisionOfficerOutcomes(
+            external_id="1",
+            pseudonymized_id="hash1",
+            caseload_category="ALL",
+            outlier_metrics=[
+                {
+                    "metric_id": "absconsions_bench_warrants",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+            top_x_pct_metrics=[],
+        )
 
         events = [
             ActionStrategySurfacedEvent(
@@ -1296,5 +1280,5 @@ class TestOutliersActionStrategyQualifier(TestCase):
         qualifier = OutliersActionStrategyQualifier(events=events, config=METRIC_CONFIG)
         self.assertEqual(
             ActionStrategyType.ACTION_STRATEGY_OUTLIER_NEW_OFFICER.value,
-            qualifier.get_eligible_action_strategy_for_officer(officer),
+            qualifier.get_eligible_action_strategy_for_officer(officer, outcomes),
         )

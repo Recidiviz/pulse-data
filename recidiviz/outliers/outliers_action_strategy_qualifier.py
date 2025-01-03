@@ -26,6 +26,7 @@ from recidiviz.outliers.types import (
     ActionStrategyType,
     OutliersBackendConfig,
     SupervisionOfficerEntity,
+    SupervisionOfficerOutcomes,
 )
 
 
@@ -101,7 +102,7 @@ class OutliersActionStrategyQualifier:
 
     def action_strategy_outlier_3_months_eligible(
         self,
-        officer: SupervisionOfficerEntity,
+        officer_outcomes: SupervisionOfficerOutcomes,
     ) -> bool:
         """
         Officer is eligible for ACTION_STRATEGY_OUTLIER_3_MONTHS if
@@ -110,11 +111,13 @@ class OutliersActionStrategyQualifier:
         (3) ACTION_STRATEGY_OUTLIER has surfaced in a previous month
             OR ACTION_STRATEGY_60_PERC_OUTLIERS has surfaced in a previous month.
         """
-        is_eligible = self.check_for_consecutive_3_months(officer.outlier_metrics)
+        is_eligible = self.check_for_consecutive_3_months(
+            officer_outcomes.outlier_metrics
+        )
         if not is_eligible:
             return False
 
-        officer_pseudo_id = officer.pseudonymized_id
+        officer_pseudo_id = officer_outcomes.pseudonymized_id
         disqualifying_events = [
             e
             for e in self.events
@@ -145,7 +148,7 @@ class OutliersActionStrategyQualifier:
         return outlier_as_surfaced or sixty_perc_outlier_as_surfaced
 
     def action_strategy_outlier_absconsion_eligible(
-        self, officer: SupervisionOfficerEntity
+        self, officer_outcomes: SupervisionOfficerOutcomes
     ) -> bool:
         """
         Officer is eligible for ACTION_STRATEGY_OUTLIER_ABSCONSION if
@@ -153,17 +156,17 @@ class OutliersActionStrategyQualifier:
         (2) There are not any surfaced events with this type in the current or previous calendar months
         """
         # Check that there is only one outlier metric
-        if len(officer.outlier_metrics) != 1:
+        if len(officer_outcomes.outlier_metrics) != 1:
             return False
         # Check that the outlier metric is an absconsion metric
         if not any(
-            metric.name == officer.outlier_metrics[0]["metric_id"]
+            metric.name == officer_outcomes.outlier_metrics[0]["metric_id"]
             and metric.is_absconsion_metric
             for metric in self.config.metrics
         ):
             return False
 
-        officer_pseudo_id = officer.pseudonymized_id
+        officer_pseudo_id = officer_outcomes.pseudonymized_id
         disqualifying_events = [
             e
             for e in self.events
@@ -178,7 +181,9 @@ class OutliersActionStrategyQualifier:
         return True
 
     def action_strategy_outlier_new_officer_eligible(
-        self, officer: SupervisionOfficerEntity
+        self,
+        officer: SupervisionOfficerEntity,
+        officer_outcomes: SupervisionOfficerOutcomes,
     ) -> bool:
         """
         Officer is eligible for ACTION_STRATEGY_OUTLIER_NEW_OFFICER if
@@ -187,7 +192,7 @@ class OutliersActionStrategyQualifier:
         (3) There are not any surfaced events with this type
         """
         if not officer.earliest_person_assignment_date or (
-            len(officer.outlier_metrics) == 0
+            len(officer_outcomes.outlier_metrics) == 0
             or officer.earliest_person_assignment_date
             < (date.today() - relativedelta(months=15))
         ):
@@ -196,7 +201,7 @@ class OutliersActionStrategyQualifier:
         disqualifying_events = [
             e
             for e in self.events
-            if e.officer_pseudonymized_id == officer.pseudonymized_id
+            if e.officer_pseudonymized_id == officer_outcomes.pseudonymized_id
             and e.action_strategy
             == ActionStrategyType.ACTION_STRATEGY_OUTLIER_NEW_OFFICER.value
         ]
@@ -206,7 +211,7 @@ class OutliersActionStrategyQualifier:
         return True
 
     def action_strategy_60_perc_outliers_eligible(
-        self, officers: List[SupervisionOfficerEntity]
+        self, officers_outcomes: List[SupervisionOfficerOutcomes]
     ) -> bool:
         """
         Supervisor is eligible for ACTION_STRATEGY_60_PERC_OUTLIERS if
@@ -215,12 +220,12 @@ class OutliersActionStrategyQualifier:
         (3) ACTION_STRATEGY_60_PERC_OUTLIERS has not been surfaced for this supervisor
         """
         # if supervisor has fewer than 4 officers on their team, they are not eligible
-        if len(officers) < 4:
+        if len(officers_outcomes) < 4:
             return False
 
         # if less than 60 percent of officers are outliers, supervisor is not eligible
-        num_outliers = len([o for o in officers if len(o.outlier_metrics) > 0])
-        if num_outliers / len(officers) < 0.6:
+        num_outliers = len([o for o in officers_outcomes if len(o.outlier_metrics) > 0])
+        if num_outliers / len(officers_outcomes) < 0.6:
             return False
 
         # if the supervisor has already surfaced this banner, they are not eligible
@@ -235,33 +240,35 @@ class OutliersActionStrategyQualifier:
         return True
 
     def get_eligible_action_strategy_for_officer(
-        self, officer: SupervisionOfficerEntity
+        self,
+        officer: SupervisionOfficerEntity,
+        officer_outcomes: SupervisionOfficerOutcomes,
     ) -> Optional[str]:
         """
         Returns the eligible action strategy type enum value for a given officer,
         or None if the officer is not eligible for any of the action strategies
         """
-        is_outlier = len(officer.outlier_metrics) > 0
-        officer_pseudo_id = officer.pseudonymized_id
+        is_outlier = len(officer_outcomes.outlier_metrics) > 0
+        officer_pseudo_id = officer_outcomes.pseudonymized_id
         # This is an ordered (prioritized) list. Do not change the order of these
         # unless the priority requirement has changed
         if self.action_strategy_outlier_eligible(officer_pseudo_id, is_outlier):
             return ActionStrategyType.ACTION_STRATEGY_OUTLIER.value
-        if self.action_strategy_outlier_3_months_eligible(officer):
+        if self.action_strategy_outlier_3_months_eligible(officer_outcomes):
             return ActionStrategyType.ACTION_STRATEGY_OUTLIER_3_MONTHS.value
-        if self.action_strategy_outlier_absconsion_eligible(officer):
+        if self.action_strategy_outlier_absconsion_eligible(officer_outcomes):
             return ActionStrategyType.ACTION_STRATEGY_OUTLIER_ABSCONSION.value
-        if self.action_strategy_outlier_new_officer_eligible(officer):
+        if self.action_strategy_outlier_new_officer_eligible(officer, officer_outcomes):
             return ActionStrategyType.ACTION_STRATEGY_OUTLIER_NEW_OFFICER.value
         return None
 
     def get_eligible_action_strategy_for_supervisor(
-        self, officers: List[SupervisionOfficerEntity]
+        self, officers_outcomes: List[SupervisionOfficerOutcomes]
     ) -> Optional[str]:
         """
         Returns the eligible action strategy type enum value for a supervisor given their officers,
         or None if the supervisor is not eligible for any of the action strategies
         """
-        if self.action_strategy_60_perc_outliers_eligible(officers):
+        if self.action_strategy_60_perc_outliers_eligible(officers_outcomes):
             return ActionStrategyType.ACTION_STRATEGY_60_PERC_OUTLIERS.value
         return None

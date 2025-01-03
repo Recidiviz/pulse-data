@@ -1564,7 +1564,7 @@ class OutliersQuerier:
     def get_id_to_supervision_officer_outcomes_entities(
         self,
         category_type_to_compare: InsightsCaseloadCategoryType,
-        num_lookback_periods: Optional[int],
+        num_lookback_periods: Optional[int] = None,
         period_end_date: Optional[date] = None,
         officer_external_id: Optional[str] = None,
         supervisor_external_id: Optional[str] = None,

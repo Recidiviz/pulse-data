@@ -861,6 +861,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
     )
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_id_to_supervision_officer_outcomes_entities",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
     )
     @patch(
@@ -869,7 +872,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     def test_get_action_strategies_as_outlier_eligible(
         self,
         mock_enabled_states: MagicMock,
-        mock_get_outliers: MagicMock,
+        mock_get_officers: MagicMock,
+        mock_get_outcomes_by_id: MagicMock,
         mock_get_supervisor: MagicMock,
         mock_get_events: MagicMock,
     ) -> None:
@@ -888,7 +892,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 .first()
             )
 
-            mock_get_outliers.return_value = [
+            mock_get_officers.return_value = [
                 SupervisionOfficerEntity(
                     full_name=PersonName(
                         **{"given_names": "HARRY", "surname": "POTTER"}
@@ -942,6 +946,44 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 ),
             ]
 
+            mock_get_outcomes_by_id.return_value = {
+                "123": SupervisionOfficerOutcomes(
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-04-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+                "456": SupervisionOfficerOutcomes(
+                    external_id="456",
+                    pseudonymized_id="hashhashhash",
+                    caseload_category="ALL",
+                    outlier_metrics=[],
+                    top_x_pct_metrics=[],
+                ),
+            }
+
             mock_get_events.return_value = []
 
             response = self.test_client.get(
@@ -959,6 +1001,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
     )
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_id_to_supervision_officer_outcomes_entities",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
     )
     @patch(
@@ -968,6 +1013,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self,
         mock_enabled_states: MagicMock,
         mock_get_outliers: MagicMock,
+        mock_get_outcomes_by_id: MagicMock,
         mock_get_supervisor: MagicMock,
         mock_get_events: MagicMock,
     ) -> None:
@@ -1040,6 +1086,44 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     include_in_outcomes=True,
                 ),
             ]
+
+            mock_get_outcomes_by_id.return_value = {
+                "123": SupervisionOfficerOutcomes(
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-04-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+                "456": SupervisionOfficerOutcomes(
+                    external_id="456",
+                    pseudonymized_id="hashhashhash",
+                    caseload_category="ALL",
+                    outlier_metrics=[],
+                    top_x_pct_metrics=[],
+                ),
+            }
 
             mock_get_events.return_value = []
 
@@ -1088,6 +1172,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
     )
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_id_to_supervision_officer_outcomes_entities",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
     )
     @patch(
@@ -1096,7 +1183,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     def test_get_action_strategies_as_outlier_already_surfaced(
         self,
         mock_enabled_states: MagicMock,
-        mock_get_outliers: MagicMock,
+        mock_get_officers: MagicMock,
+        mock_get_outcomes_by_id: MagicMock,
         mock_get_supervisor: MagicMock,
         mock_get_events: MagicMock,
     ) -> None:
@@ -1115,7 +1203,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 .first()
             )
 
-            mock_get_outliers.return_value = [
+            mock_get_officers.return_value = [
                 SupervisionOfficerEntity(
                     full_name=PersonName(
                         **{"given_names": "HARRY", "surname": "POTTER"}
@@ -1170,6 +1258,45 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 ),
             ]
 
+            mock_get_outcomes_by_id.return_value = {
+                "123": SupervisionOfficerOutcomes(
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-04-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+                "456": SupervisionOfficerOutcomes(
+                    external_id="456",
+                    pseudonymized_id="hashhashhash",
+                    caseload_category="ALL",
+                    # This officer is ineligible for ACTION_STRATEGY_OUTLIER because they are not an outlier
+                    outlier_metrics=[],
+                    top_x_pct_metrics=[],
+                ),
+            }
+
             mock_get_events.return_value = [
                 ActionStrategySurfacedEvent(
                     state_code="us_pa",
@@ -1196,6 +1323,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
     )
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_id_to_supervision_officer_outcomes_entities",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
     )
     @patch(
@@ -1204,7 +1334,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     def test_get_action_strategies_3_months_as_outlier_eligible(
         self,
         mock_enabled_states: MagicMock,
-        mock_get_outliers: MagicMock,
+        mock_get_officers: MagicMock,
+        mock_get_outcomes_by_id: MagicMock,
         mock_get_supervisor: MagicMock,
         mock_get_events: MagicMock,
     ) -> None:
@@ -1223,12 +1354,12 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 .first()
             )
 
-            mock_get_outliers.return_value = [
+            mock_get_officers.return_value = [
                 SupervisionOfficerEntity(
                     full_name=PersonName(
                         **{"given_names": "HERMIONE", "surname": "GRANGER"}
                     ),
-                    external_id="789",
+                    external_id="456",
                     pseudonymized_id="hash4",
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
@@ -1244,12 +1375,12 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                                     "status": "FAR",
                                 },
                                 {
-                                    "end_date": "2023-04-01",
+                                    "end_date": "2023-03-01",
                                     "metric_rate": 0.1,
                                     "status": "FAR",
                                 },
                                 {
-                                    "end_date": "2023-03-01",
+                                    "end_date": "2023-02-01",
                                     "metric_rate": 0.1,
                                     "status": "FAR",
                                 },
@@ -1274,7 +1405,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     full_name=PersonName(
                         **{"given_names": "LORD", "surname": "VOLDEMORT"}
                     ),
-                    external_id="789",
+                    external_id="678",
                     pseudonymized_id="hash6",
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
@@ -1317,6 +1448,85 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     include_in_outcomes=True,
                 ),
             ]
+
+            mock_get_outcomes_by_id.return_value = {
+                "678": SupervisionOfficerOutcomes(
+                    external_id="678",
+                    pseudonymized_id="hash6",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-03-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-02-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-01-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+                "456": SupervisionOfficerOutcomes(
+                    external_id="456",
+                    pseudonymized_id="hash4",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-03-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-02-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-01-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+            }
 
             mock_get_events.return_value = [
                 ActionStrategySurfacedEvent(
@@ -1365,6 +1575,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
     )
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_id_to_supervision_officer_outcomes_entities",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
     )
     @patch(
@@ -1373,7 +1586,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     def test_get_action_strategies_3_months_as_outlier_ineligible(
         self,
         mock_enabled_states: MagicMock,
-        mock_get_outliers: MagicMock,
+        mock_get_officers: MagicMock,
+        mock_get_outcomes_by_id: MagicMock,
         mock_get_supervisor: MagicMock,
         mock_get_events: MagicMock,
     ) -> None:
@@ -1392,13 +1606,13 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 .first()
             )
 
-            mock_get_outliers.return_value = [
+            mock_get_officers.return_value = [
                 # This officer is ineligible for ACTION_STRATEGY_OUTLIER_3_MONTHS because outlier status is not consecutive for 3+ months
                 SupervisionOfficerEntity(
                     full_name=PersonName(
                         **{"given_names": "DRACO", "surname": "MALFOY"}
                     ),
-                    external_id="789",
+                    external_id="567",
                     pseudonymized_id="hash5",
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
@@ -1482,7 +1696,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     full_name=PersonName(
                         **{"given_names": "HERMIONE", "surname": "GRANGER"}
                     ),
-                    external_id="789",
+                    external_id="890",
                     pseudonymized_id="hash8",
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
@@ -1520,6 +1734,108 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     include_in_outcomes=True,
                 ),
             ]
+
+            mock_get_outcomes_by_id.return_value = {
+                "567": SupervisionOfficerOutcomes(
+                    external_id="567",
+                    pseudonymized_id="hash5",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-03-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-02-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+                "789": SupervisionOfficerOutcomes(
+                    external_id="789",
+                    pseudonymized_id="hash7",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-04-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-03-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+                "890": SupervisionOfficerOutcomes(
+                    external_id="890",
+                    pseudonymized_id="hash8",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-04-01",
+                                    "metric_rate": 0.1,
+                                    "status": "NEAR",
+                                },
+                                {
+                                    "end_date": "2023-03-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+            }
 
             mock_get_events.return_value = [
                 ActionStrategySurfacedEvent(
@@ -1566,6 +1882,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
     )
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_id_to_supervision_officer_outcomes_entities",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
     )
     @patch(
@@ -1574,7 +1893,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     def test_get_action_strategies_3_months_as_outlier_already_surfaced(
         self,
         mock_enabled_states: MagicMock,
-        mock_get_outliers: MagicMock,
+        mock_get_officers: MagicMock,
+        mock_get_outcomes_by_id: MagicMock,
         mock_get_supervisor: MagicMock,
         mock_get_events: MagicMock,
     ) -> None:
@@ -1593,12 +1913,12 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 .first()
             )
 
-            mock_get_outliers.return_value = [
+            mock_get_officers.return_value = [
                 SupervisionOfficerEntity(
                     full_name=PersonName(
                         **{"given_names": "HERMIONE", "surname": "GRANGER"}
                     ),
-                    external_id="789",
+                    external_id="456",
                     pseudonymized_id="hash4",
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
@@ -1644,7 +1964,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     full_name=PersonName(
                         **{"given_names": "LORD", "surname": "VOLDEMORT"}
                     ),
-                    external_id="789",
+                    external_id="678",
                     pseudonymized_id="hash6",
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
@@ -1687,6 +2007,85 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     include_in_outcomes=True,
                 ),
             ]
+
+            mock_get_outcomes_by_id.return_value = {
+                "456": SupervisionOfficerOutcomes(
+                    external_id="456",
+                    pseudonymized_id="hash4",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-04-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-03-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-01-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+                "678": SupervisionOfficerOutcomes(
+                    external_id="678",
+                    pseudonymized_id="hash6",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-03-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-02-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-01-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+            }
 
             mock_get_events.return_value = [
                 ActionStrategySurfacedEvent(
@@ -1734,6 +2133,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
     )
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_id_to_supervision_officer_outcomes_entities",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
     )
     @patch(
@@ -1742,7 +2144,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     def test_get_action_strategy_60_perc_outliers_eligible_eligible(
         self,
         mock_enabled_states: MagicMock,
-        mock_get_outliers: MagicMock,
+        mock_get_officers: MagicMock,
+        mock_get_outcomes_by_id: MagicMock,
         mock_get_supervisor: MagicMock,
         mock_get_events: MagicMock,
     ) -> None:
@@ -1763,7 +2166,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor.pseudonymized_id = pseudo_id
             mock_get_supervisor.return_value = supervisor
 
-            mock_get_outliers.return_value = [
+            mock_get_officers.return_value = [
                 SupervisionOfficerEntity(
                     full_name=PersonName(
                         **{"given_names": "DRACO", "surname": "MALFOY"}
@@ -1879,6 +2282,90 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 ),
             ]
 
+            mock_get_outcomes_by_id.return_value = {
+                "1": SupervisionOfficerOutcomes(
+                    external_id="1",
+                    pseudonymized_id="hash1",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+                "2": SupervisionOfficerOutcomes(
+                    external_id="2",
+                    pseudonymized_id="hash2",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+                "3": SupervisionOfficerOutcomes(
+                    external_id="3",
+                    pseudonymized_id="hash3",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+                "4": SupervisionOfficerOutcomes(
+                    external_id="4",
+                    pseudonymized_id="hash4",
+                    caseload_category="ALL",
+                    outlier_metrics=[],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+            }
+
             mock_get_events.return_value = []
 
             response = self.test_client.get(
@@ -1897,6 +2384,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
     )
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_id_to_supervision_officer_outcomes_entities",
+    )
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
     )
     @patch(
@@ -1905,7 +2395,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     def test_get_action_strategies_as_outlier_comprehensive(
         self,
         mock_enabled_states: MagicMock,
-        mock_get_outliers: MagicMock,
+        mock_get_officers: MagicMock,
+        mock_get_outcomes_by_id: MagicMock,
         mock_get_supervisor: MagicMock,
         mock_get_events: MagicMock,
     ) -> None:
@@ -1926,7 +2417,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor.pseudonymized_id = pseudo_id
             mock_get_supervisor.return_value = supervisor
 
-            mock_get_outliers.return_value = [
+            mock_get_officers.return_value = [
                 # Has no events so should return ACTION_STRATEGY_OUTLIER
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -2099,6 +2590,121 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     include_in_outcomes=True,
                 ),
             ]
+
+            mock_get_outcomes_by_id.return_value = {
+                "1": SupervisionOfficerOutcomes(
+                    external_id="1",
+                    pseudonymized_id="hash1",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[],
+                ),
+                "2": SupervisionOfficerOutcomes(
+                    external_id="2",
+                    pseudonymized_id="hash2",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-08-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-07-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-06-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[],
+                ),
+                "3": SupervisionOfficerOutcomes(
+                    external_id="3",
+                    pseudonymized_id="hash3",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "absconsions_bench_warrants",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[],
+                ),
+                "4": SupervisionOfficerOutcomes(
+                    external_id="4",
+                    pseudonymized_id="hash4",
+                    caseload_category="ALL",
+                    outlier_metrics=[],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+                "5": SupervisionOfficerOutcomes(
+                    external_id="5",
+                    pseudonymized_id="hash5",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "absconsions_bench_warrants",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[],
+                ),
+                "6": SupervisionOfficerOutcomes(
+                    external_id="6",
+                    pseudonymized_id="hash6",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "absconsions_bench_warrants",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[],
+                ),
+            }
 
             mock_get_events.return_value = [
                 ActionStrategySurfacedEvent(
