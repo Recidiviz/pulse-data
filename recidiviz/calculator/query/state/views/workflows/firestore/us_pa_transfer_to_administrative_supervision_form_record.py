@@ -17,12 +17,9 @@
 """Query for relevant metadata needed to support administrative supervision opportunity in PA
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-
-# from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
-    array_agg_case_notes_by_external_id,
     join_current_task_eligibility_spans_with_external_id,
 )
 from recidiviz.common.constants.states import StateCode
@@ -30,7 +27,10 @@ from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.us_pa_query_fragments import case_notes_helper
+from recidiviz.task_eligibility.utils.us_pa_query_fragments import (
+    adm_case_notes_helper,
+    adm_form_information_helper,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -52,64 +52,23 @@ WITH
     )}
   ),
   case_notes_cte AS (
-    {case_notes_helper()}
+    {adm_case_notes_helper()}
   ),
   array_case_notes_cte AS (
-    {array_agg_case_notes_by_external_id()}
+    /* modified version of array_agg_case_notes_by_external_id with custom sorting */
+    SELECT
+        external_id,
+        TO_JSON(ARRAY_AGG(
+            STRUCT(note_title, note_body, event_date, criteria)
+            ORDER BY note_order, event_date, note_title, note_body, criteria
+        )) AS case_notes,
+    FROM eligible_and_almost_eligible
+    LEFT JOIN case_notes_cte
+        USING(external_id)
+    GROUP BY 1
   ),
   form_information AS (
-    SELECT person_id,
-        LOGICAL_OR(offense_type = 'DRUGS' 
-            OR(offense_type IS NULL
-                AND (description LIKE '%DRUG%'
-                    OR description LIKE '%DRG%'
-                    OR description LIKE '%MARIJUANA%'
-                    OR description LIKE '%MARA%'
-                    OR description LIKE '%METH%'
-                    OR description LIKE '%COCAINE%'
-                    OR description LIKE '%HALLUCINOGEN%'
-                    OR description LIKE '%NARC%'
-                    OR description LIKE '%VCS%' -- violation of controlled substances act 
-                    OR description LIKE '%CSA%'
-                    OR (description LIKE '%CONT%' AND description LIKE '%SUB%' AND description NOT LIKE '%ALC%') 
-                    OR ((description LIKE '%CS%' OR description LIKE '%C/S%') 
-                        AND (description LIKE '%DEL%' OR description LIKE '%POS%' OR description LIKE '%MNF%' 
-                            OR description LIKE '%MANU%' OR description like '%PWI%') -- deliver, possess, manufacture, possess with intent
-                        AND description NOT LIKE '%ALC%')))
-                        -- cs can mean criminal solicitation or controlled substances so trying to narrow it down a bit 
-            ) AS form_information_drug_charge_initial,
-            
-        -- 35 P.S. 780-113 (14) - administration/dispensary/delivery of drugs by practitioner
-        LOGICAL_OR((statute LIKE '%13A14%'
-                OR statute LIKE '%13.A14%')
-            OR (description LIKE '%DRUG%' 
-                AND description LIKE '%ADMIN%' 
-                AND description LIKE '%DISP%' 
-                AND description LIKE '%DEL%' 
-                AND description LIKE '%PRAC%')) AS form_information_statue_14,
-                
-        -- 35 P.S. 780-113 (30) - manufacture, sale, delivery, or possession with intent to deliver 
-        LOGICAL_OR((statute LIKE '%13A30%' 
-                OR statute LIKE '%13.A30%')
-            OR (((description LIKE '%POSS%' AND description LIKE '%INT%' AND description LIKE '%DEL%')
-                    OR description LIKE '%PWI%'
-                    OR description LIKE '%P/W/I%'
-                    OR REGEXP_REPLACE(description, r'[^a-zA-Z0-9]', '') like '%POSSWITHINT%'
-                    OR REGEXP_REPLACE(description, r'[^a-zA-Z0-9]', '') like '%POSSWINT%' 
-                    OR (description LIKE '%MAN%' AND description LIKE '%SAL%' AND description LIKE '%DEL%')
-                    OR description LIKE '%MSD%'
-                    OR description LIKE '%M/S/D%')
-                AND (description NOT LIKE '%PAR%' -- doesn't include paraphernalia 
-                    AND description NOT LIKE '%NON%'))) AS form_information_statue_30, -- doesn't include non-controlled substances
-        
-        -- 35 P.S. 780-113 (37) - possessing excessive amounts of steroids
-        LOGICAL_OR((statute LIKE '%13A37%'
-                OR statute LIKE '%13.A37%')
-            OR description LIKE '%POSSESS EXCESSIVE AMOUNTS OF STERIODS%') AS form_information_statue_37, 
-            -- steroids is misspelled in the data
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_charge`
-    WHERE state_code = 'US_PA'
-    GROUP BY 1
+    {adm_form_information_helper()}
   )
   SELECT
     eligible_and_almost_eligible.*,

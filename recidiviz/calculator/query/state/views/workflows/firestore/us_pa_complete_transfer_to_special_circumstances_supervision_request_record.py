@@ -20,16 +20,16 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
-    array_agg_case_notes_by_external_id,
     join_current_task_eligibility_spans_with_external_id,
     opportunity_query_final_select_with_case_notes,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
+    task_eligibility_criteria_state_specific_dataset,
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.us_pa_query_fragments import case_notes_helper
+from recidiviz.task_eligibility.utils.us_pa_query_fragments import spc_case_notes_helper
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -50,10 +50,20 @@ WITH eligible_and_almost_eligible AS (
     eligible_and_almost_eligible_only=True,
 )}),
 case_notes_cte AS (
-{case_notes_helper()}
+{spc_case_notes_helper()}
 ),
 array_case_notes_cte AS (
-{array_agg_case_notes_by_external_id()}
+    /* modified version of array_agg_case_notes_by_external_id with custom sorting */
+    SELECT
+        external_id,
+        TO_JSON(ARRAY_AGG(
+            STRUCT(note_title, note_body, event_date, criteria)
+            ORDER BY note_order, event_date, note_title, note_body, criteria
+        )) AS case_notes,
+    FROM eligible_and_almost_eligible
+    LEFT JOIN case_notes_cte
+        USING(external_id)
+    GROUP BY 1
 )
 {opportunity_query_final_select_with_case_notes()}
 """
@@ -66,6 +76,7 @@ US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_PA
     ),
+    criteria_dataset=task_eligibility_criteria_state_specific_dataset(StateCode.US_PA),
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,

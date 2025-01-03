@@ -16,7 +16,10 @@
 # =============================================================================
 """Helper fragments to import data for case notes in PA"""
 
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    nonnull_end_date_exclusive_clause,
+)
 
 
 def case_when_special_case() -> str:
@@ -271,15 +274,8 @@ AND (
           OR statute LIKE '%2717.BII%')
 
 -- 18 Pa.C.S. § 2718 Strangulation When Graded as a Felony
-/* TODO(#33420) Flag cases that could make someone ineligible but where we don't have enough info to determine 
-In this case, we don't know whether the strangulation charges were graded as felonies
-    OR ((statute LIKE '%2718%'
-        OR {statute_is_conspiracy_or_attempt()}
-        OR {statute_is_solicitation()}
-        OR statute IS NULL)
-      AND (description LIKE '%STRANG%'
-        OR description IS NULL)
-      AND classification_type = 'FELONY') */ 
+-- in this case, we can pull strangulation charges but we don't know whether they were graded as felonies
+-- this is now flagged in case notes, see spc_case_notes_helper fxn in us_pa_query_fragments
 
 -- 18 Pa.C.S. § 3011 Trafficking of Persons When Graded as a Felony of the First Degree
 -- only 3011.1.A1 & A2 are specified as felonies of the first degree
@@ -416,14 +412,91 @@ In this case, we don't know whether the strangulation charges were graded as fel
     """
 
 
+def adm_form_information_helper() -> str:
+    # this pulls information used to complete form 402a, the drug addendum for admin supervision
+    return """
+        SELECT person_id,
+        LOGICAL_OR(offense_type = 'DRUGS' 
+            OR(offense_type IS NULL
+                AND (description LIKE '%DRUG%'
+                    OR description LIKE '%DRG%'
+                    OR description LIKE '%MARIJUANA%'
+                    OR description LIKE '%MARA%'
+                    OR description LIKE '%METH%'
+                    OR description LIKE '%COCAINE%'
+                    OR description LIKE '%HALLUCINOGEN%'
+                    OR description LIKE '%NARC%'
+                    OR description LIKE '%VCS%' -- violation of controlled substances act 
+                    OR description LIKE '%CSA%'
+                    OR (description LIKE '%CONT%' AND description LIKE '%SUB%' AND description NOT LIKE '%ALC%') 
+                    OR ((description LIKE '%CS%' OR description LIKE '%C/S%') 
+                        AND (description LIKE '%DEL%' OR description LIKE '%POS%' OR description LIKE '%MNF%' 
+                            OR description LIKE '%MANU%' OR description like '%PWI%') -- deliver, possess, manufacture, possess with intent
+                        AND description NOT LIKE '%ALC%')))
+                        -- cs can mean criminal solicitation or controlled substances so trying to narrow it down a bit 
+            ) AS form_information_drug_charge_initial,
+
+        -- 35 P.S. 780-113 (14) - administration/dispensary/delivery of drugs by practitioner
+        LOGICAL_OR((statute LIKE '%13A14%'
+                OR statute LIKE '%13.A14%')
+            OR (description LIKE '%DRUG%' 
+                AND description LIKE '%ADMIN%' 
+                AND description LIKE '%DISP%' 
+                AND description LIKE '%DEL%' 
+                AND description LIKE '%PRAC%')) AS form_information_statue_14,
+
+        -- 35 P.S. 780-113 (30) - manufacture, sale, delivery, or possession with intent to deliver 
+        LOGICAL_OR((statute LIKE '%13A30%' 
+                OR statute LIKE '%13.A30%')
+            OR (((description LIKE '%POSS%' AND description LIKE '%INT%' AND description LIKE '%DEL%')
+                    OR description LIKE '%PWI%'
+                    OR description LIKE '%P/W/I%'
+                    OR REGEXP_REPLACE(description, r'[^a-zA-Z0-9]', '') like '%POSSWITHINT%'
+                    OR REGEXP_REPLACE(description, r'[^a-zA-Z0-9]', '') like '%POSSWINT%' 
+                    OR (description LIKE '%MAN%' AND description LIKE '%SAL%' AND description LIKE '%DEL%')
+                    OR description LIKE '%MSD%'
+                    OR description LIKE '%M/S/D%')
+                AND (description NOT LIKE '%PAR%' -- doesn't include paraphernalia 
+                    AND description NOT LIKE '%NON%' -- doesn't include non-controlled substances
+                    AND description NOT LIKE 'ID THEFT%'))) AS form_information_statue_30,  -- doesn't include possession of id with intent to use
+
+        -- 35 P.S. 780-113 (37) - possessing excessive amounts of steroids
+        LOGICAL_OR((statute LIKE '%13A37%'
+                OR statute LIKE '%13.A37%')
+            OR description LIKE '%POSSESS EXCESSIVE AMOUNTS OF STERIODS%') AS form_information_statue_37, 
+            -- steroids is misspelled in the data
+    FROM `{project_id}.{normalized_state_dataset}.state_charge`
+    WHERE state_code = 'US_PA'
+    GROUP BY 1
+    """
+
+
 def case_notes_helper() -> str:
     return f"""
-    /* pull special conditions for the current supervision period related to treatment and/or evaluations */
+    /* pull special conditions for the current supervision period related to treatment, evaluations, and enhanced supervision.
+        also display previous conditions related to treatment, evaluations, and enhanced supervision IF the client has a 
+        condition specifying that all previously imposed conditions apply */
+        
+    WITH prev_conditions_apply AS (
+      -- pulls all clients who currently have a special condition that specifies that previous special conditions should apply 
+      SELECT DISTINCT sup.person_id
+      FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sup
+      WHERE sup.state_code = 'US_PA'
+        AND conditions LIKE '%PREVIOUS%'
+        AND termination_date IS NULL
+    )    
     SELECT DISTINCT pei.external_id,
       'Special Conditions' AS criteria,
-      CASE WHEN condition LIKE '%EVALUATION%' THEN 'EVALUATION' ELSE 'TREATMENT' END AS note_title,
+      CASE WHEN condition LIKE '%PREVIOUS%' THEN 'PREVIOUS CONDITIONS APPLY'
+        WHEN termination_date IS NOT NULL THEN 'PREVIOUS CONDITION'
+        WHEN condition LIKE '%EVALUATION%' THEN 'EVALUATION' 
+        WHEN condition LIKE '%ENHANCE%' THEN 'ENHANCED SUPERVISION'
+        ELSE 'TREATMENT' END AS note_title,
       condition AS note_body,
       CAST(NULL AS DATE) AS event_date,
+      CASE WHEN termination_date IS NULL AND condition NOT LIKE '%PREVIOUS%' THEN 0 -- first display current conditions (that aren't "previous conditions apply")
+        WHEN condition LIKE '%PREVIOUS%' THEN 1 -- then display "previous conditions apply"
+        ELSE 2 END AS note_order, -- then display all the previous conditions 
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sup
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
       ON sup.person_id = pei.person_id
@@ -431,9 +504,12 @@ def case_notes_helper() -> str:
       AND id_type = 'US_PA_PBPP',
     UNNEST(SPLIT(conditions, '##')) condition
     WHERE sup.state_code = 'US_PA' 
-      AND termination_date IS NULL
+      AND (termination_date IS NULL -- either a current special condition 
+        OR sup.person_id IN (SELECT person_id FROM prev_conditions_apply)) -- or a past condition IF the client's current condition specifies that previous conditions apply) 
       AND ((condition LIKE '%TREATMENT%' AND condition LIKE '%SPECIAL CONDITION%')
-        OR condition LIKE '%EVALUATION%')
+        OR condition LIKE '%EVALUATION%'
+        OR condition LIKE '%ENHANCE%'
+        OR (condition LIKE '%PREVIOUS%' AND termination_date IS NULL)) -- display the condition "previous conditions apply" only if it is a current condition 
     
     UNION ALL 
     
@@ -476,15 +552,16 @@ def case_notes_helper() -> str:
             OR participation_status_raw_text IN ('DISCHARGED PRIOR TO COMPLETION') THEN discharge_date
           ELSE referral_date
         END AS event_date,
+        NULL as note_order,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` tre
-    INNER JOIN supervision_starts sup 
+    LEFT JOIN supervision_starts sup 
       ON sup.person_id = tre.person_id
-      AND COALESCE(tre.discharge_date, tre.start_date, tre.referral_date) >= sup.start_date
-        -- one or more of these dates are often missing depending on the program status, so using all 3 
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
       ON tre.person_id = pei.person_id
       AND tre.state_code = pei.state_code
       AND id_type = 'US_PA_PBPP'
+    WHERE (COALESCE(tre.discharge_date, tre.start_date, tre.referral_date) >= sup.start_date -- only display treatments during current supervision period 
+            OR tre.person_id IN (SELECT person_id FROM prev_conditions_apply)) -- UNLESS special conditions from a previous term apply, then we display all past treatments 
     ) 
     
     UNION ALL 
@@ -502,6 +579,7 @@ def case_notes_helper() -> str:
         ELSE 'EMPLOYED' END AS note_title,
       CASE WHEN employment_status IN ('EMPLOYED_FULL_TIME', 'EMPLOYED_PART_TIME') THEN employer_name ELSE '' END AS note_body,
       start_date AS event_date,
+      NULL as note_order,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` emp
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
       ON emp.person_id = pei.person_id
@@ -509,4 +587,74 @@ def case_notes_helper() -> str:
       AND id_type = 'US_PA_PBPP'
     WHERE emp.state_code = 'US_PA'
       AND end_date IS NULL
+    """
+
+
+def adm_case_notes_helper() -> str:
+    # this pulls all pa case notes and adds a few that should only be displayed for the admin supervision opportunity
+    return f"""
+    SELECT * FROM ({case_notes_helper()})
+    
+    UNION ALL
+    
+    /* pulls all potential barriers to eligibility - these are gray area cases that we want to flag to the agent because
+    we don't have all the information we need to determine whether it should change eligibility */
+    SELECT DISTINCT pei.external_id,
+      'Potential Barriers to Eligibility' AS criteria,
+      CASE WHEN statute LIKE '%3731%' THEN 'DUI' 
+        WHEN statute LIKE '%5903%' THEN 'OBSCENE MATERIALS'
+        ELSE 'DRUG' 
+        END AS note_title,
+      CASE WHEN statute like '%3731%' THEN 'This reentrant has 75 C.S. 3731 relating to DUI on their criminal record. They would be ineligible for admin supervision if this charge resulted in bodily injury. Check criminal history for bodily injury and update eligibility accordingly.' 
+        WHEN (statute LIKE '%5903.A4%' OR statute LIKE '%5903A4%') THEN 'This reentrant has 18 C.S. 5903(4) relating to obscene materials on their criminal record. They would be ineligible for admin supervision if the victim of this charge was a minor. Check criminal history for minor victim and update eligibility accordingly.'
+        WHEN (statute LIKE '%5903.A5%' OR statute LIKE '%5903A5%') THEN 'This reentrant has 18 C.S. 5903(5) relating to obscene performance on their criminal record. They would be ineligible for admin supervision if the victim of this charge was a minor. Check criminal history for minor victim and update eligibility accordingly.'
+        WHEN form_information_statue_14 THEN 'This reentrant has 35 P.S. 780-113(14) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.' 
+        WHEN form_information_statue_30 THEN 'This reentrant has 35 P.S. 780-113(30) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.'
+        WHEN form_information_statue_37 THEN 'This reentrant has 35 P.S. 780-113(37) relating to steroids on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.'
+        END AS note_body,
+      CAST(NULL AS DATE) AS event_date,
+      NULL as note_order,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_charge` sc
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+      ON sc.person_id = pei.person_id
+      AND sc.state_code = pei.state_code
+      AND id_type = 'US_PA_PBPP'
+    LEFT JOIN ({adm_form_information_helper()}) form
+      ON sc.person_id = form.person_id
+    WHERE sc.state_code = 'US_PA' 
+      AND (sc.statute LIKE '%3731%' 
+        OR (statute LIKE '%5903.A4%' OR statute LIKE '%5903A4%' OR statute LIKE '%5903.A5%' OR statute LIKE '%5903A5%')
+        OR form.form_information_statue_14
+        OR form.form_information_statue_30
+        OR form.form_information_statue_37)
+    """
+
+
+def spc_case_notes_helper() -> str:
+    # this pulls all pa case notes and adds one that should only be displayed for the special circumstances opportunity
+    return f"""
+    SELECT * FROM ({case_notes_helper()})
+
+    UNION ALL
+
+    /* pulls all potential barriers to eligibility - these are gray area cases that we want to flag to the agent because
+    we don't have all the information we need to determine whether it should change eligibility */
+    SELECT DISTINCT pei.external_id,
+      'Potential Barriers to Eligibility' AS criteria,
+      'STRANGULATION' AS note_title,
+      'This reentrant has 18 C.S. 2718 relating to strangulation on their criminal record. Check criminal history: if this charge was graded as a felony, the reentrant is considered a violent case and must serve 5 years rather than 3 years on supervision before becoming eligible' AS note_body,
+      CAST(NULL AS DATE) AS event_date,
+      NULL as note_order,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_charge` sc
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+      ON sc.person_id = pei.person_id
+      AND sc.state_code = pei.state_code
+      AND id_type = 'US_PA_PBPP'
+    INNER JOIN `{{project_id}}.{{criteria_dataset}}.meets_special_circumstances_criteria_for_time_served_materialized` crit
+      ON sc.person_id = crit.person_id
+      AND sc.state_code = crit.state_code 
+      AND CURRENT_DATE('US/Eastern') BETWEEN crit.start_date AND {nonnull_end_date_exclusive_clause('crit.end_date')} 
+    WHERE sc.state_code = 'US_PA' 
+      AND (sc.statute LIKE '%2718%' OR sc.description LIKE '%STRANG%')
+      AND JSON_EXTRACT_SCALAR(crit.reason, "$.case_type") = 'non-life sentence (non-violent case)' -- only pull cases that would otherwise be considered non-violent
     """

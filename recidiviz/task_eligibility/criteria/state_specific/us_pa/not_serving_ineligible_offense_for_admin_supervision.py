@@ -167,7 +167,7 @@ _REASON_QUERY = f"""
               
             -- Former 75 Pa. C.s. 3731 relating to DUI/Controlled Substance in cases involving bodily injury
             -- we actually can't check for this - statute 3731 includes all DUIs, not just cases involving bodily injuries
-            -- TODO(#33420) - flag cases that could make someone ineligible
+            -- this is now flagged in case notes, see adm_case_notes_helper fxn in us_pa_query_fragments
 
             -- 75 Pa.C.S. 3732 Relating to Homicide by Vehicle
             OR(((statute LIKE '%3732%' AND statute NOT LIKE '%3732.1%' AND statute NOT LIKE '%37321%') -- 3732.1 is technically assault, not homicide
@@ -212,7 +212,7 @@ _REASON_QUERY = f"""
             -- 18 Pa. C.S. 5903(4)(5)(6) obscene/sexual material/performance where the victim is minor
             -- 5903A4 & 5903A5 can be perpetrated against a non-minor (i) or a minor (ii)
             -- but this info is not specified in the statute field or description, so we can't know for sure 
-            -- TODO(#33420) - flag cases that could make someone ineligible
+            -- this is now flagged in case notes, see adm_case_notes_helper fxn in us_pa_query_fragments
             OR (statute LIKE '%5903.A6%'
                 OR statute LIKE '%5903A6%')
                 
