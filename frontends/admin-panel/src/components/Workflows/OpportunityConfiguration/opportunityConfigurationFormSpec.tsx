@@ -112,6 +112,10 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
         Edit: KeylessCriteriaCopyEdit,
         View: KeylessCriteriaCopyView,
       },
+      methodologyUrl: {
+        label: "Criteria Tooltip Icon Link",
+        required: true,
+      },
     },
   },
   {
@@ -127,10 +131,6 @@ export const opportunityConfigFormSpec: FormSpec<OpportunityConfiguration> = [
         View: SidebarComponentsView,
       },
       eligibilityDateText: {},
-      methodologyUrl: {
-        label: "Methodology URL",
-        required: true,
-      },
     },
   },
   {
