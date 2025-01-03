@@ -38,7 +38,6 @@ from werkzeug import Response
 
 from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import get_users_blueprint
-from recidiviz.monitoring.flask_insrumentation import instrument_flask_app
 from recidiviz.monitoring.providers import (
     create_monitoring_meter_provider,
     create_monitoring_tracer_provider,
@@ -56,9 +55,6 @@ structured_logging.setup()
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 
 app = Flask(__name__)
-
-# Set up instrumentation libraries prior to initializing our various clients (i.e. gRPC, SQLAlchemy, etc)
-instrument_flask_app(app=app)
 
 # TODO(#24741): Remove once admin panel migration is completed
 api = Api(

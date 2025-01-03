@@ -35,7 +35,6 @@ from recidiviz.admin_panel.routes.outliers import outliers_blueprint
 from recidiviz.admin_panel.routes.workflows import workflows_blueprint
 from recidiviz.auth.auth_endpoint import get_auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import get_users_blueprint
-from recidiviz.monitoring.flask_insrumentation import instrument_flask_app
 from recidiviz.monitoring.providers import (
     create_monitoring_meter_provider,
     create_monitoring_tracer_provider,
@@ -60,9 +59,6 @@ _STATIC_FOLDER = os.path.abspath(
 
 
 app = Flask(__name__)
-
-# Set up instrumentation libraries prior to initializing our various clients (i.e. gRPC, SQLAlchemy, etc)
-instrument_flask_app(app=app)
 
 requires_authorization = build_compute_engine_auth_decorator(
     backend_service_id_secret_name=LOAD_BALANCER_SERVICE_ID_SECRET_NAME
