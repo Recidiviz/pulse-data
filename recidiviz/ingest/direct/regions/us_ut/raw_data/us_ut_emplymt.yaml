@@ -8,61 +8,98 @@ primary_key_cols:
 columns:
   - name: emplymt_id
     description: |-
-      TODO(#33372): Fill in column description
+      Primary key for this table. Unique ID for each combination of person, employer, and
+      time frame.
   - name: ofndr_num
     description: |-
-      TODO(#33372): Fill in column description
+      Unique identifier for a person in custody of the Utah DOC.
     field_type: person_external_id
     external_id_type: US_UT_DOC
     is_pii: True
   - name: emplyr_id
     description: |-
-      TODO(#33372): Fill in column description
+      Seemingly an ID that relates to the employer, rather than the employment period
+      or person employed. May join to a separate lookup table of employers.
+      TODO(#33372): Find out what these values mean.
     is_pii: True
   - name: emplymt_strt_dt
     description: |-
-      TODO(#33372): Fill in column description
+      The date this person started working this job.
+    null_values:
+      - "(null)"
   - name: job_title
     description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
+      The name of the job.
+    null_values:
+      - "(null)"
   - name: emplymt_stat
     description: |-
-      TODO(#33372): Fill in column description
+      Employment status
+    known_values:
+      - value: P
+        description: Past
+      - value: C
+        description: Current
   - name: end_dt
     description: |-
-      TODO(#33372): Fill in column description
+      The date this person stopped working this job.
+    null_values:
+      - "(null)"
   - name: wage_amt
     description: |-
-      TODO(#33372): Fill in column description
+      The dollar amount the person is paid per period in wage_per.
   - name: wage_per
     description: |-
-      TODO(#33372): Fill in column description
+      The cadence on which a person receives the payment amount in wage_amt.
   - name: hrs_work_wk
     description: |-
-      TODO(#33372): Fill in column description
+      How many hours a week the person works on this job.
+    null_values:
+      - "(null)"
   - name: rsn_left_cd
     description: |-
-      TODO(#33372): Fill in column description
+      The reason the person no longer holds this job, if applicable.
+      TODO(#33372): Find out what these values mean.
+    known_values:
+      - value: C
+      - value: H
+      - value: B
+      - value: F
+      - value: A
+      - value: D
+      - value: V
+      - value: E
+      - value: M
+      - value: O
+      - value: S
+      - value: P
+      - value: R
+      - value: G
+    null_values:
+      - "(null)"
   - name: cmt
     description: |-
-      TODO(#33372): Fill in column description
+      Free-text comment. Sometimes includes the only indication that a person is unemployed.
     is_pii: True
+    null_values:
+      - "(null)"
   - name: shift_cd
     description: |-
       TODO(#33372): Fill in column description
   - name: work_site
     description: |-
-      TODO(#33372): Fill in column description
+      The location where a person is working.
     is_pii: True
   - name: ph_ext
     description: |-
-      TODO(#33372): Fill in column description
+      The person's phone extension at this job.
     is_pii: True
   - name: supr_full_name
     description: |-
-      TODO(#33372): Fill in column description
+      Full name of the employee's supervisor.
     is_pii: True
+    null_values:
+      - "(null)"
   - name: schd_strt_tm
     description: |-
       TODO(#33372): Fill in column description
@@ -71,10 +108,11 @@ columns:
       TODO(#33372): Fill in column description
   - name: pay_day_cmt
     description: |-
-      TODO(#33372): Fill in column description
+      Free-text comment about a person's pay and pay periods.
+    is_pii: True
   - name: updt_usr_id
     description: |-
-      TODO(#33372): Fill in column description
+      The ID of the staff member who verified this employment.
     is_pii: True
   - name: updt_dt
     description: |-
@@ -82,14 +120,19 @@ columns:
     field_type: datetime
   - name: vrfy_dt
     description: |-
-      TODO(#33372): Fill in column description
+      Date when employment was most recently verified.
+    null_values:
+      - "(null)"
   - name: vrfy_usr_id
     description: |-
-      TODO(#33372): Fill in column description
+      The user ID of the person who verified this employment.
     is_pii: True
   - name: vrfy_rslt_flg
     description: |-
-      TODO(#33372): Fill in column description
+      Y/N flag for whether employment was verified on the date indicated in vrfy_date.
+      Value for closed employment periods is N.
+    null_values:
+      - "(null)"
   - name: vrfy_mthd_cd
     description: |-
-      TODO(#33372): Fill in column description
+      A code that represents the method used to verify employment.

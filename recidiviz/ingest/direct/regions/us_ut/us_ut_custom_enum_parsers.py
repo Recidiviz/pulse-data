@@ -22,3 +22,26 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_ut_custom_enum_parsers.<function name>
 """
+from recidiviz.common.constants.state.state_employment_period import (
+    StateEmploymentPeriodEmploymentStatus,
+)
+
+
+def parse_employment_status(
+    raw_text: str,
+) -> StateEmploymentPeriodEmploymentStatus:
+    """Determines the status of an employment period. If a person's job title does not
+    signify that they are unemployed, we assume their appearance in the emplymt raw data
+    table means they are employed in some capacity."""
+    hours_per_week, job_title, comment = raw_text.split("@@")
+    if (
+        "UNEMPL" in job_title.upper()
+        or job_title.upper() == "NONE"
+        or "UNEMPL" in comment
+    ):
+        return StateEmploymentPeriodEmploymentStatus.UNEMPLOYED
+    if hours_per_week != "NONE":
+        if int(float(hours_per_week)) >= 40:
+            return StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME
+        return StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME
+    return StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT
