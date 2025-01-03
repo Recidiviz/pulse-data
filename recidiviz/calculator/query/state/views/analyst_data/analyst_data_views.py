@@ -33,6 +33,9 @@ from recidiviz.calculator.query.state.views.analyst_data.all_task_type_ineligibl
 from recidiviz.calculator.query.state.views.analyst_data.all_task_type_marked_ineligible_spans import (
     ALL_TASK_TYPE_MARKED_INELIGIBLE_SPANS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.all_task_type_marked_submitted_spans import (
+    ALL_TASK_TYPE_MARKED_SUBMITTED_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.consecutive_payments_preprocessed import (
     CONSECUTIVE_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -336,6 +339,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER,
     ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER,
     ALL_TASK_TYPE_MARKED_INELIGIBLE_SPANS_VIEW_BUILDER,
+    ALL_TASK_TYPE_MARKED_SUBMITTED_SPANS_VIEW_BUILDER,
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
     EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,

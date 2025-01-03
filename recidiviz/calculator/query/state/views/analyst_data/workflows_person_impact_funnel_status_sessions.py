@@ -50,7 +50,7 @@ WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_DESCRIPTION = (
 DISCRETE_USAGE_EVENTS_DICT = {
     event: selector
     for event, selector in USAGE_EVENTS_DICT.items()
-    if event != "MARKED_INELIGIBLE"
+    if event not in ("MARKED_INELIGIBLE", "IN_PROGRESS")
 }
 
 # TODO(#35954): Replace this with a generalized funnel status sessions function
@@ -211,6 +211,29 @@ marked_ineligible_sessions AS (
     ) = 1
 )
 ,
+marked_submitted_sessions AS (
+    SELECT
+        a.* EXCEPT (end_date),
+        # Marked submitted spans are processed in the same way as marked ineligible spans:
+        # Takes the earliest end date between the submitted span end and the usage reset dates
+        # This ensures that we close out submitted spans when a client moves out of the justice 
+        # system or becomes newly eligible or almost eligible for an opportunity
+        {revert_nonnull_end_date_clause(f"LEAST({nonnull_end_date_clause('a.end_date')}, {nonnull_end_date_clause('b.end_date')})")} AS end_date_exclusive,
+    FROM
+        `{{project_id}}.analyst_data.all_task_type_marked_submitted_spans_materialized` a
+    LEFT JOIN
+        usage_status_end_dates b
+    ON
+        a.person_id = b.person_id
+        AND a.task_type = b.task_type
+        AND {nonnull_end_date_clause("b.end_date")} > a.start_date
+    # Use the first end date following the event as the end date of the session
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY person_id, task_type, start_date 
+        ORDER BY {nonnull_end_date_clause("b.end_date")}
+    ) = 1
+)
+,
 surfaceable_sessions AS (
     SELECT
         state_code,
@@ -288,6 +311,21 @@ all_sessions AS (
         NULL AS task_completed,
         denial_reasons,
     FROM marked_ineligible_sessions
+    UNION ALL
+    SELECT
+        state_code,
+        person_id,
+        task_type,
+        start_date,
+        CASE WHEN end_date_exclusive > CURRENT_DATE("US/Eastern") THEN NULL ELSE end_date_exclusive END AS end_date,
+        NULL AS is_justice_involved,
+        NULL AS is_eligible,
+        NULL AS is_almost_eligible,
+        NULL AS is_surfaceable,
+        "IN_PROGRESS" AS usage_event_type,
+        NULL AS task_completed,
+        NULL AS denial_reasons,
+    FROM marked_submitted_sessions
     UNION ALL
     SELECT
         state_code,
