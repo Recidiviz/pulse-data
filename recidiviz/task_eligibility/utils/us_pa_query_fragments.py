@@ -577,7 +577,7 @@ def case_notes_helper() -> str:
         WHEN employment_status_raw_text = 'UNSTU' THEN 'UNEMPLOYED - STUDENT'
         WHEN employment_status_raw_text = 'UTWRK' THEN 'UNEMPLOYED - UNABLE TO WORK'
         ELSE 'EMPLOYED' END AS note_title,
-      CASE WHEN employment_status IN ('EMPLOYED_FULL_TIME', 'EMPLOYED_PART_TIME') THEN employer_name ELSE '' END AS note_body,
+      CASE WHEN employment_status IN ('EMPLOYED_FULL_TIME', 'EMPLOYED_PART_TIME') THEN COALESCE(employer_name, 'Unknown Employer') ELSE '' END AS note_body,
       start_date AS event_date,
       NULL as note_order,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` emp
