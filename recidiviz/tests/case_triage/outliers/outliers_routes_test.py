@@ -247,6 +247,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     display_name="General + Other Caseloads",
                 ),
             ],
+            vitals_metrics_methodology_url="https://recidiviz.org",
             vitals_metrics=[
                 OutliersVitalsMetricConfig(
                     metric_id="timely_risk_assessment",

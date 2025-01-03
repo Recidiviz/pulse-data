@@ -385,6 +385,7 @@ if __name__ == "__main__":
                 metric_fixtures[TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION],
             ],
             learn_more_url="https://recidiviz.org",
+            vitals_metrics_methodology_url="https://recidiviz.org",
             vitals_metrics=[
                 OutliersVitalsMetricConfig(
                     metric_id="timely_risk_assessment",

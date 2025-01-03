@@ -686,6 +686,9 @@ class OutliersProductConfiguration:
 
     action_strategy_copy: Dict = attr.ib(default=ACTION_STRATEGIES_DEFAULT_COPY)
 
+    # The string that represents the URL explaining vitals metrics
+    vitals_metrics_methodology_url: str = attr.ib(default="")
+
     vitals_metrics: List[OutliersVitalsMetricConfig] = attr.ib(default=[])
 
     def to_json(self) -> Dict[str, Any]:

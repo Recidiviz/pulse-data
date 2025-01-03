@@ -691,6 +691,7 @@ Incarceration rate denominator description""",
             },
             {"metricId": "timely_contact", "titleDisplayName": "Timely Contact"},
         ],
+        "vitalsMetricsMethodologyUrl": "https://recidiviz.org",
         "worseThanRateLabel": "label2",
     }
 }
