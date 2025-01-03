@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  ofndr_num: STRING
+  race_cd: STRING
+  ethnic_cd_ncic: STRING
+  sex: STRING
+  dob: STRING
+  email_addr: STRING
+  fname: STRING
+  mname: STRING
+  lname: STRING
+  phone_num: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    full_name:
+      $person_name:
+        $given_names: fname
+        $middle_names: mname
+        $surname: lname
+    birthdate: dob
+    current_email_address: email_addr
+    current_phone_number: phone_num
+    gender:
+      $conditional:
+        - $if:
+            $not_null: sex
+          $then:
+            $enum_mapping:
+              $raw_text: sex
+              $mappings:
+                StateGender.MALE:
+                  - M
+                StateGender.FEMALE:
+                  - F
+                # TODO(#35794): Confirm these mappings
+                StateGender.INTERNAL_UNKNOWN:
+                  - G
+                  - N
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: race_cd
+              # TODO(#35794): Confirm these mappings
+              $mappings:
+                StateRace.WHITE:
+                  - W
+                StateRace.BLACK:
+                  - B
+                StateRace.ASIAN:
+                  - A
+                StateRace.INTERNAL_UNKNOWN:
+                  - K
+                  - "N"
+                  - U
+                  - P
+                  - H
+                  - I
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: ethnic_cd_ncic
+              # TODO(#35794): Confirm these mappings
+              $mappings:
+                StateEthnicity.INTERNAL_UNKNOWN:
+                  - "1"
+                  - "2"
+                  - "3"
+                  - "4"
+                  - "5"
+                  - "7"

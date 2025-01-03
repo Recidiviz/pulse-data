@@ -22,14 +22,20 @@ columns:
     description: |-
       TODO(#33372): Fill in column description
     is_pii: True
+    null_values:
+      - "(null)"
   - name: fname
     description: |-
       TODO(#33372): Fill in column description
     is_pii: True
+    null_values:
+      - "(null)"
   - name: mname
     description: |-
       TODO(#33372): Fill in column description
     is_pii: True
+    null_values:
+      - "(null)"
   - name: sfx_name
     description: |-
       TODO(#33372): Fill in column description
@@ -46,6 +52,8 @@ columns:
     description: |-
       Timestamp of when this record was most recently updated
     field_type: datetime
+    null_values:
+      - "(null)"
   - name: temp_name_id
     description: |-
       TODO(#33372): Fill in column description

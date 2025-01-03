@@ -9,46 +9,67 @@ is_primary_person_table: True
 columns:
   - name: ofndr_num
     description: |-
-      TODO(#33372): Fill in column description
+      Unique identifier for a person in custody of the Utah DOC.
     field_type: person_external_id
     external_id_type: US_UT_DOC
     is_primary_for_external_id_type: True
     is_pii: True
   - name: eye_color_cd
     description: |-
-      TODO(#33372): Fill in column description
+      Eye color
   - name: hair_color_cd
     description: |-
-      TODO(#33372): Fill in column description
+      Hair color
   - name: mrtl_stat_cd
     description: |-
-      TODO(#33372): Fill in column description
+      Marital Status
   - name: race_cd
     description: |-
-      TODO(#33372): Fill in column description
+      Race
     is_pii: True
+    known_values:
+      - value: H
+      - value: I
+      - value: B
+      - value: W
+      - value: K
+      - value: "N"
+      - value: U
+      - value: P
+      - value: A
+    null_values:
+      - "(null)"
   - name: rlgn_cd
     description: |-
-      TODO(#33372): Fill in column description
+      Religion
   - name: sex
     description: |-
-      TODO(#33372): Fill in column description
+      Sex
     is_pii: True
+    known_values:
+      - value: M
+      - value: F
+      - value: G
+      - value: "N"
+    null_values:
+      - "(null)"
   - name: ht_ft
     description: |-
-      TODO(#33372): Fill in column description
+      Feet component of height
   - name: ht_in
     description: |-
-      TODO(#33372): Fill in column description
+      Inches component of height
   - name: wt_lb
     description: |-
-      TODO(#33372): Fill in column description
+      Weight in pounds
   - name: ethnic_cd_ncic
     description: |-
-      TODO(#33372): Fill in column description
+      Ethnicity
+    null_values:
+      - "(null)"
   - name: immgrtn_stat
     description: |-
-      TODO(#33372): Fill in column description
+      Immigration status
   - name: cmt_rec_flg
     description: |-
       TODO(#33372): Fill in column description

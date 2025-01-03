@@ -19,6 +19,8 @@ columns:
     description: |-
       TODO(#33372): Fill in column description
     is_pii: True
+    null_values:
+      - "(null)"
   - name: brth_st
     description: |-
       TODO(#33372): Fill in column description
@@ -38,6 +40,8 @@ columns:
     description: |-
       Timestamp of when this record was most recently updated
     field_type: datetime
+    null_values:
+      - "(null)"
   - name: temp_name_id
     description: |-
       TODO(#33372): Fill in column description

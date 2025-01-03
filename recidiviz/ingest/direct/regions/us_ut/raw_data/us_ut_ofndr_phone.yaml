@@ -22,6 +22,8 @@ columns:
     description: |-
       TODO(#33372): Fill in column description
     is_pii: True
+    null_values:
+      - "(null)"
   - name: phone_typ_cd
     description: |-
       TODO(#33372): Fill in column description
@@ -33,10 +35,14 @@ columns:
     description: |-
       TODO(#33372): Fill in column description
     field_type: datetime
+    null_values:
+      - "(null)"
   - name: end_dt
     description: |-
       TODO(#33372): Fill in column description
     field_type: datetime
+    null_values:
+      - "(null)"
   - name: updt_usr_id
     description: |-
       ID of user who most recently updated this record
@@ -45,3 +51,5 @@ columns:
     description: |-
       Timestamp of when this record was most recently updated
     field_type: datetime
+    null_values:
+      - "(null)"
