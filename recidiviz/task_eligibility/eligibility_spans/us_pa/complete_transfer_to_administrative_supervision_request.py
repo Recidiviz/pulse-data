@@ -30,7 +30,6 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_past_full_term_completion_date_or_upcoming_90_days,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_pa import (
-    fulfilled_requirements,
     no_high_sanctions_in_past_year,
     not_assigned_ineligible_stat_code,
     not_on_sex_offense_protocol,
@@ -64,7 +63,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         on_supervision_at_least_one_year.VIEW_BUILDER,
         supervision_level_is_not_limited.VIEW_BUILDER,
         no_high_sanctions_in_past_year.VIEW_BUILDER,
-        fulfilled_requirements.VIEW_BUILDER,
         not_serving_ineligible_offense_for_admin_supervision.VIEW_BUILDER,
         not_on_sex_offense_protocol.VIEW_BUILDER,
         not_assigned_ineligible_stat_code.VIEW_BUILDER,

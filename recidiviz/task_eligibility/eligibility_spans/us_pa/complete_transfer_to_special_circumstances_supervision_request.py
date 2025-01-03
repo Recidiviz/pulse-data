@@ -26,7 +26,6 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_pa import (
 )
 from recidiviz.task_eligibility.criteria.general import supervision_level_is_not_limited
 from recidiviz.task_eligibility.criteria.state_specific.us_pa import (
-    fulfilled_requirements,
     marked_ineligible_for_admin_supervision,
     meets_special_circumstances_criteria_for_time_served,
     no_high_sanctions_in_past_year,
@@ -91,7 +90,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 "latest_sanction_date",
             ],
         ),
-        fulfilled_requirements.VIEW_BUILDER,
         OrTaskCriteriaGroup(
             criteria_name="US_PA_NOT_ELIGIBLE_OR_MARKED_INELIGIBLE_FOR_ADMIN_SUPERVISION",
             sub_criteria_list=[
