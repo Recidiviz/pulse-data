@@ -6,6 +6,8 @@ data_classification: validation
 primary_key_cols:
   - SUPERVISION_HISTORY_ID
 columns:
+  - name: CIS_100_CLIENT_ID
+    description: The associated client.
   - name: SUPERVISION_HISTORY_ID
     description: Primary key for this table. Joins to CIS_124_SUPERVISION_HISTORY.Supervision_History_Id
   - name: Region
