@@ -47,14 +47,15 @@ SELECT * FROM (
         LAG(location) OVER (PARTITION BY OFFICER ORDER BY edge_date) AS prev_location, 
         edge_date,
         STATUS,
+        LAG(STATUS) OVER (PARTITION BY OFFICER ORDER BY edge_date) AS prev_status, 
     FROM staff_from_docstars) cd
 WHERE 
     -- officer just started working 
     (cd.prev_location IS NULL AND cd.location IS NOT NULL) 
     -- officer changed locations
     OR cd.prev_location != location
-    -- officer's employment was terminated (RecDate in these rows is officers' termination date)
-    OR cd.STATUS='0'   
+    -- officer's employment status changed (RecDate in these rows is officers' hire/termination date)
+    OR (cd.prev_status != STATUS)
 ), 
 -- This CTE constructs periods using the compiled critical dates. End dates follow this 
 -- logic: 
