@@ -119,19 +119,6 @@ ASSIGNMENTS = AssignmentCountMetric(
     ),
 )
 
-AVG_ASSIGNMENTS_OFFICER = MiscAggregatedMetric(
-    name="avg_assignments_officer",
-    display_name="Average Asssignments Per Officer",
-    description="Average of the number of assignments to an officer's caseload",
-    populations=[MetricPopulationType.SUPERVISION],
-    unit_of_analysis_types=[
-        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
-        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
-        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-        MetricUnitOfAnalysisType.STATE_CODE,
-    ],
-)
-
 AVG_AGE = DailyAvgTimeSinceSpanStartMetric(
     name="avg_age",
     display_name="Average Age",
@@ -150,20 +137,6 @@ AVG_CRITICAL_CASELOAD_SIZE = MiscAggregatedMetric(
     "officer has critical caseload size",
     populations=[MetricPopulationType.SUPERVISION],
     unit_of_analysis_types=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
-)
-
-AVG_CRITICAL_CASELOAD_SIZE_OFFICER = MiscAggregatedMetric(
-    name="avg_critical_caseload_size_officer",
-    display_name="Average Critical Caseload Size Per Officer",
-    description="Average of the count of clients in each officer's caseload among days "
-    "when officer has critical caseload size",
-    populations=[MetricPopulationType.SUPERVISION],
-    unit_of_analysis_types=[
-        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
-        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
-        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-        MetricUnitOfAnalysisType.STATE_CODE,
-    ],
 )
 
 AVG_DAILY_CASELOAD_OFFICER = MiscAggregatedMetric(

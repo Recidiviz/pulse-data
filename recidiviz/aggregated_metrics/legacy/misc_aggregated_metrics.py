@@ -20,9 +20,7 @@ from typing import List, Optional, Tuple
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.aggregated_metrics.models.aggregated_metric import MiscAggregatedMetric
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
-    AVG_ASSIGNMENTS_OFFICER,
     AVG_CRITICAL_CASELOAD_SIZE,
-    AVG_CRITICAL_CASELOAD_SIZE_OFFICER,
     AVG_DAILY_CASELOAD_OFFICER,
     PROP_PERIOD_WITH_CRITICAL_CASELOAD,
 )
@@ -134,8 +132,6 @@ def _query_template_and_format_args(
         start_date,
         end_date,
         AVG(avg_daily_population) AS {AVG_DAILY_CASELOAD_OFFICER.name},
-        AVG(avg_critical_caseload_size) AS {AVG_CRITICAL_CASELOAD_SIZE_OFFICER.name},
-        AVG(assignments) AS {AVG_ASSIGNMENTS_OFFICER.name},
     FROM (
         SELECT 
             a.*, 

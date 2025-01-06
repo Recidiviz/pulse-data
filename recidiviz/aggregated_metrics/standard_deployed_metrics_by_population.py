@@ -27,9 +27,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_ACTIVE_LENGTH_OF_STAY_HOUSING_UNIT_TYPE_METRICS,
     AVG_ACTIVE_LENGTH_OF_STAY_SOLITARY_CONFINEMENT,
     AVG_AGE,
-    AVG_ASSIGNMENTS_OFFICER,
     AVG_CRITICAL_CASELOAD_SIZE,
-    AVG_CRITICAL_CASELOAD_SIZE_OFFICER,
     AVG_DAILY_CASELOAD_OFFICER,
     AVG_DAILY_POPULATION,
     AVG_DAILY_POPULATION_COMMUNITY_CONFINEMENT,
@@ -250,9 +248,7 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
     MetricPopulationType.SUPERVISION: [
         # Population/caseload information
         AVG_DAILY_POPULATION,
-        AVG_ASSIGNMENTS_OFFICER,
         AVG_CRITICAL_CASELOAD_SIZE,
-        AVG_CRITICAL_CASELOAD_SIZE_OFFICER,
         AVG_DAILY_CASELOAD_OFFICER,
         PROP_PERIOD_WITH_CRITICAL_CASELOAD,
         # Average daily population, person demographics
