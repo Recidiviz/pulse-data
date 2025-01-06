@@ -51,7 +51,7 @@ columns:
       - value: PROBF
         description: "Parole Revocation - Felony"
       - value: PROBFE
-        description: TODO(#34909) Document this value.
+        description: "Parole Revocation - Felony"
       - value: PROBM
         description: "Parole Revocation - Misdemeanor"
       - value: REM
@@ -59,11 +59,11 @@ columns:
       - value: WARF
         description: "Warrant - Felony"
       - value: WARFEL
-        description: TODO(#34909) Document this value.
+        description: "Warrant - Felony"
       - value: WARM
         description: "Warrant - Misdemeanor"
       - value: WARMIS
-        description: TODO(#34909) Document this value.
+        description: "Warrant - Misdemeanor"
   - name: COMMENT_TEXT
     description: A free-text comment about the offense.
     is_pii: True

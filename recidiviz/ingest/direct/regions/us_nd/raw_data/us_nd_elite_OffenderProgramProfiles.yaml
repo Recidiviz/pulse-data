@@ -31,45 +31,45 @@ columns:
       - value: BTC
         description: BISMARCK TRANSITION CENTER
       - value: BTCWTR
-        description: TODO(#34909) Document this value.
+        description: BISMARCK TRANSITION CENTER - WOMEN'S TREATMENT & RECOVERY UNIT
       - value: CJ
         description: COUNTY JAIL
       - value: DWCRC
         description: DAKOTA WOMEN'S CORR REHAB CENTER
       - value: DWCRC1
-        description: TODO(#34909) Document this value.
+        description: DAKOTA WOMEN'S CORR REHAB CENTER
       - value: FTPFAR
         description: FEMALE TRANSITION PROGRAM - FARGO
       - value: FTPMND
         description: FEMALE TRANSITION PROGRAM - MANDAN
       - value: GFC
-        description: TODO(#34909) Document this value.
+        description: GRAND FORKS CENTRE
       - value: HACTC
         description: HEART OF AMERICA CORR & TREATMENT CENTER
       - value: HRCC
-        description: TODO(#34909) Document this value.
+        description: HEART RIVER CORRECTIONAL CENTER
       - value: JRCC
         description: JAMES RIVER CORRECTIONAL CENTER
       - value: JRMU
-        description: TODO(#34909) Document this value.
+        description: JAMES RIVER MINIMUM UNIT
       - value: LRRP
-        description: TODO(#34909) Document this value.
+        description: LAKE REGION RE-ENTRY PROGRAM (DEVILS LAKE)
       - value: MRCC
         description: MISSOURI RIVER CORRECTIONAL CENTER
       - value: MTPFAR
         description: MALE TRANSITION PROGRAM - FARGO
       - value: MTPMDN
-        description: TODO(#34909) Document this value.
+        description: MALE TRANSITION PROGRAM MANDAN
       - value: MTPMND
-        description: TODO(#34909) Document this value.
+        description: MALE TRANSITION PROGRAM MANDAN
       - value: NCCRC
-        description: TODO(#18645) Fill in with answer from ND
+        description: NORTH CENTRAL CORRECTIONAL AND REHABILITATION CENTER
       - value: NDSP
         description: NORTH DAKOTA STATE PENITENTIARY
       - value: OOS
         description: OUT OF STATE
       - value: TRC
-        description: TODO(#34909) Document this value.
+        description: TOMPKINS REHABILITATIVE CENTER
       - value: TRCC
         description: TOMPKINS REHAB AND CORRECTIONAL CENTER
   - name: COMMENT_TEXT

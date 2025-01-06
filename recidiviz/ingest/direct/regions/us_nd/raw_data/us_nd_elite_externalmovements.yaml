@@ -156,7 +156,7 @@ columns:
       - value: "BTC"
         description: Bismarck Transition Center
       - value: BTCWTR
-        description: TODO(#34909) Document this value.
+        description: BISMARCK TRANSITION CENTER - WOMEN'S TREATMENT & RECOVERY UNIT
       - value: "CPP"
         description: Community Placement Program
       - value: "GFC"
@@ -190,7 +190,7 @@ columns:
       - value: "TRCC"
         description: Tompkins Rehabilitation and Correctional Center
       - value: "OUT"
-        description: "TODO(#11833): Update with facility name."
+        description: Out of State
       - value: "DEFP"
         description: Deferred Prioritization
       - value: "NTAD"

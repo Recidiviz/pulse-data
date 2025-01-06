@@ -22,14 +22,12 @@ columns:
   - name: ACTIVE_LOCATION
   - name: ACTIVE
     update_history:
-      # TODO(#34922) Ensure this column is not being used anywhere and was intentionally deleted
       - update_type: DELETION
         # This date might be wrong; there are no values for this column in the raw data table
         # so I can't tell when it was deleted
         update_datetime: 2023-04-28T00:00:00Z
   - name: ACTIVE_1
     update_history:
-      # TODO(#34922) Ensure this column is not being used anywhere and was intentionally deleted
       - update_type: DELETION
         # This date might be wrong; there are no values for this column in the raw data table
         # so I can't tell when it was deleted

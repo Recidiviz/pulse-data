@@ -38,7 +38,6 @@ columns:
     description: |-
       Codes of functional impairments to be treated during this episode.
     update_history:
-      # TODO(#34922) Ensure this column is not being used anywhere and was intentionally deleted
       - update_type: DELETION
         update_datetime: 2023-06-30T12:45:38.310129Z
   - name: CURRENT_NEEDS
