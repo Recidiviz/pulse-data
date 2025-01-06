@@ -214,7 +214,7 @@ resource "google_cloudfunctions2_function" "handle_zipfile" {
       PYTHONPATH = "/workspace"
       PROJECT_ID = var.project_id
     }
-    # TODO(#34174) add internal vpc to connect this cf to filename_normalization
+    ingress_settings = "ALLOW_INTERNAL_ONLY"
   }
 }
 
@@ -261,7 +261,8 @@ resource "google_cloudfunctions2_function" "filename_normalization" {
       ZIPFILE_HANDLER_FUNCTION_URL = google_cloudfunctions2_function.handle_zipfile.url
       PROJECT_ID                   = var.project_id
     }
-    ingress_settings = "ALLOW_INTERNAL_ONLY"
-    # TODO(#34174) add internal vpc to connect this cf to handle_zipfile
+    ingress_settings              = "ALLOW_INTERNAL_ONLY"
+    vpc_connector                 = google_vpc_access_connector.cloud_function_vpc_connector.name
+    vpc_connector_egress_settings = "ALL_TRAFFIC"
   }
 }

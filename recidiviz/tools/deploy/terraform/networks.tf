@@ -19,6 +19,8 @@ data "google_secret_manager_secret_version" "vpc_access_connector_us_central_cid
 
 data "google_secret_manager_secret_version" "vpc_access_connector_us_east_cidr" { secret = "vpc_access_connector_us_east_cidr" }
 
+data "google_secret_manager_secret_version" "vpc_access_connector_cf_cidr" { secret = "vpc_access_connector_cf_cidr" }
+
 resource "google_project_service" "vpc_access_connector" {
   service = "vpcaccess.googleapis.com"
 
@@ -51,6 +53,19 @@ resource "google_vpc_access_connector" "us_central_redis_vpc_connector" {
   network        = "default"
   max_throughput = 1000
 }
+
+# The VPC Connector is required to route a Cloud Function's egress traffic through a VPC network.
+# This setup ensures a function can securely call another Cloud Function
+# while restricting the ingress traffic to internal requests only.
+resource "google_vpc_access_connector" "cloud_function_vpc_connector" {
+  name          = "cf-vpc-connector"
+  region        = "us-central1"
+  ip_cidr_range = data.google_secret_manager_secret_version.vpc_access_connector_cf_cidr.secret_data
+  network       = "default"
+  min_instances = 2
+  max_instances = 10
+}
+
 
 resource "google_compute_address" "external_system_outbound_requests" {
   name         = "external-system-outbound-requests"
