@@ -57,12 +57,14 @@ def reset_justice_counts_fixtures(engine: Engine) -> None:
     tables: List[schema.JusticeCountsBase] = [
         schema.UserAccount,
         schema.Source,
+        schema.AgencyJurisdiction,
         schema.Spreadsheet,
         schema.Report,
         schema.Datapoint,
         schema.AgencyUserAccountAssociation,
         schema.AgencySetting,
         schema.MetricSetting,
+        schema.MetricSettingHistory,
     ]
     session = Session(bind=engine)
     for table in reversed(tables):
@@ -80,12 +82,7 @@ def reset_justice_counts_fixtures(engine: Engine) -> None:
             "Adding a group of %d objects to the db",
             len(object_group),
         )
-        # TODO(#28299) After MetricSettings migration: Add session.add_all(object_group) back.
-        # Right now, we are committing to the session within generate_fixtures() so that
-        # _get_datapoints_for_report() can access the Agency objects when we create
-        # MetricInterfaces. After the database migration, we can instead read the
-        # MetricSettings via agency_id and can then commit to the session here instead.
-        # session.add_all(object_group)
+        session.add_all(object_group)
         session.execute(
             "SELECT pg_catalog.setval(pg_get_serial_sequence('user_account', 'id'), MAX(id)) FROM user_account;"
         )
