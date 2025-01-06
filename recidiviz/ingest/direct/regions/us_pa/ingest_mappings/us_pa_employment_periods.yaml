@@ -4,8 +4,8 @@ input_columns:
   Parole_No: STRING
   Offender_Attribute_Value: STRING
   Org_Name: STRING
-  Effective_Start_Date: DATE
-  Effective_End_Date: DATE
+  start_date: DATETIME
+  end_date: DATETIME
   employment_seq_no: INTEGER
 unused_columns: []
 output:
@@ -38,5 +38,5 @@ output:
                 StateEmploymentPeriodEmploymentStatus.STUDENT:
                   - UNSTU
           employer_name: Org_Name
-          start_date: Effective_Start_Date
-          end_date: Effective_End_Date
+          start_date: start_date
+          end_date: end_date

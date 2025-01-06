@@ -16,30 +16,106 @@
 # =============================================================================
 """Query containing incarceration sentence information from the dbo_Senrec table."""
 
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
-    SELECT *, ROW_NUMBER() OVER(PARTITION BY Parole_No ORDER BY DATE(Effective_Start_Date), Org_Name) AS employment_seq_no
-    FROM (
-        SELECT DISTINCT
-            Parole_No, 
-            Offender_Attribute_Value, 
-            Org_Name, 
-            DATE(Effective_Start_Date) as Effective_Start_Date,
-            CAST(NULL AS Date) AS Effective_End_Date
-            -- TODO(#35515) Add in actual end date once PA removes the current employment filter
-            -- in dbo_EmploymentPeriod, Effective_End_Date is typically set to 12-31-9999 when the employment period is still ongoing, 
-            -- but there are a few cases where Effective_End_Date is not 12-31-9999 but in the future.  For those cases, we'll also 
-            -- assume the employment period is ongoing
-            -- CASE WHEN DATE(Effective_End_Date) > CURRENT_DATE THEN NULL
-            --     ELSE DATE(Effective_End_Date) 
-            --     END AS Effective_End_Date,
-        FROM {dbo_EmploymentPeriod}
-    )
+VIEW_QUERY_TEMPLATE = f"""
+WITH 
+-- This CTE nulls out end dates in EmploymentAvailability if it's in the future
+EmploymentAvailability_cleaned AS (
+    SELECT Parole_No,
+           CAST(Effective_Start_Date AS DATETIME) AS Effective_Start_Date,
+           CASE WHEN CAST(Effective_End_Date AS DATETIME) < CURRENT_DATE THEN CAST(Effective_End_Date AS DATETIME)
+                ELSE NULL
+                END AS Effective_End_Date,
+            Offender_Attribute_Value
+    FROM {{EmploymentAvailability}}
+),
+-- This CTE nulls out end dates in EmploymentPeriod if it's in the future
+EmploymentPeriod_cleaned AS (
+    SELECT Parole_No,
+           CAST(Effective_Start_Date AS DATETIME) AS Effective_Start_Date,
+           CASE WHEN CAST(Effective_End_Date AS DATETIME) < CURRENT_DATE THEN CAST(Effective_End_Date AS DATETIME)
+                ELSE NULL
+                END AS Effective_End_Date,
+            Org_Name
+    FROM {{EmploymentPeriod}}
+),
+-- This CTE identifies all relevant dates (so that we can make periods with them later)
+all_dates AS (
+  SELECT 
+    Parole_No, 
+    Effective_Start_Date AS start_date
+  FROM EmploymentAvailability_cleaned
+
+  UNION DISTINCT
+
+  SELECT 
+    Parole_No, 
+    Effective_End_Date AS start_date
+  FROM EmploymentAvailability_cleaned
+
+  UNION DISTINCT
+
+  SELECT 
+    Parole_No, 
+    Effective_Start_Date AS start_date
+  FROM EmploymentPeriod_cleaned
+
+  UNION DISTINCT
+
+  SELECT 
+    Parole_No, 
+    Effective_End_Date AS start_date
+  FROM EmploymentPeriod_cleaned
+),
+-- This CTE makes tiny spans based on the relevant dates
+tiny_spans AS (
+  SELECT *, 
+    LEAD(start_date) OVER(PARTITION BY Parole_No ORDER BY start_date) AS end_date
+  FROM all_dates
+  WHERE start_date IS NOT NULL
+),
+
+-- This CTE joins on all attribute values relevant to each tiny span
+initial_periods AS (
+    SELECT 
+    tiny_spans.*, 
+    status.Offender_Attribute_Value, 
+    employers.Org_Name,
+    ROW_NUMBER() OVER(PARTITION BY tiny_spans.Parole_No ORDER BY tiny_spans.start_date, Org_Name, Offender_Attribute_Value) AS employment_seq_no
+    FROM tiny_spans 
+    LEFT JOIN EmploymentAvailability_cleaned status
+    ON status.Effective_Start_Date <= tiny_spans.start_date 
+        AND COALESCE(tiny_spans.end_date, DATE(9999,9,9)) <= COALESCE(status.Effective_End_Date, DATE(9999,9,9)) 
+        AND tiny_spans.Parole_No = status.Parole_No
+    LEFT JOIN EmploymentPeriod_cleaned employers
+    ON employers.Effective_Start_Date <= tiny_spans.start_date 
+        AND COALESCE(tiny_spans.end_date, DATE(9999,9,9)) <= COALESCE(employers.Effective_End_Date, DATE(9999,9,9)) 
+        AND tiny_spans.Parole_No = employers.Parole_No
+    WHERE Org_Name IS NOT NULL OR Offender_Attribute_Value IS NOT NULL
+),
+
+-- This CTE aggregates adjacent tiny spans together
+final_periods AS (
+    {aggregate_adjacent_spans(
+        table_name="initial_periods",
+        attribute=["Offender_Attribute_Value", "Org_Name"],
+        index_columns=["Parole_No"])}
+)
+
+SELECT 
+  Parole_No,
+  Offender_Attribute_Value,
+  Org_Name,
+  start_date,
+  end_date,
+  employment_seq_no
+FROM initial_periods
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
