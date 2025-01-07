@@ -81,6 +81,9 @@ from recidiviz.calculator.query.state.views.analyst_data.insights_user_auth0_reg
 from recidiviz.calculator.query.state.views.analyst_data.insights_user_impact_funnel_status_sessions import (
     INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.insights_user_person_assignment_sessions import (
+    INSIGHTS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.invoices_preprocessed import (
     INVOICES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -333,6 +336,9 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_user_auth0_re
 from recidiviz.calculator.query.state.views.analyst_data.workflows_user_caseload_access_sessions import (
     WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_user_person_assignment_sessions import (
+    WORKFLOWS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
@@ -440,4 +446,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INSIGHTS_SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_SESSIONS_VIEW_BUILDER,
     INSIGHTS_SUPERVISOR_OUTLIER_STATUS_ARCHIVE_SESSIONS_VIEW_BUILDER,
     INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
+    WORKFLOWS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER,
+    INSIGHTS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER,
 ]
