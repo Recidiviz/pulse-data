@@ -44,6 +44,8 @@ class MetricUnitOfAnalysisType(Enum):
     PERSON_ID = "PERSON"
     ALL_STATES = "ALL_STATES"
     EXPERIMENT_VARIANT = "EXPERIMENT_VARIANT"
+    WORKFLOWS_PROVISIONED_USER = "WORKFLOWS_PROVISIONED_USER"
+    INSIGHTS_PROVISIONED_USER = "INSIGHTS_PROVISIONED_USER"
 
     @property
     def short_name(self) -> str:
@@ -195,6 +197,18 @@ class MetricUnitOfAnalysis:
                         "variant_date",
                         "is_treated",
                     ],
+                    static_attribute_columns=[],
+                )
+            case MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.ALL_STATES,
+                    primary_key_columns=["state_code", "email_address"],
+                    static_attribute_columns=[],
+                )
+            case MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.ALL_STATES,
+                    primary_key_columns=["state_code", "email_address"],
                     static_attribute_columns=[],
                 )
 

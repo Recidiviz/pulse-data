@@ -437,6 +437,85 @@ FROM
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
     ): f"SELECT * FROM `{{project_id}}.experiments_metadata.experiment_assignments_{MetricUnitOfObservationType.SUPERVISION_OFFICER.short_name}_materialized`",
+    (
+        MetricUnitOfObservationType.INSIGHTS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
+    ): """SELECT
+        state_code,
+        insights_user_email_address AS email_address,
+        start_date,
+        end_date_exclusive,
+    FROM
+        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.INSIGHTS_PRIMARY_USER,
+        MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
+    ): """SELECT
+        state_code,
+        insights_user_email_address AS email_address,
+        start_date,
+        end_date_exclusive,
+    FROM
+        `{project_id}.analyst_data.insights_provisioned_user_registration_sessions_materialized`
+    WHERE
+        is_registered
+        AND is_primary_user
+""",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_PROVISIONED_USER,
+        MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
+    ): """SELECT
+    state_code,
+    workflows_user_email_address AS email_address,
+    start_date,
+    end_date_exclusive, 
+FROM
+    `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
+        MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
+    ): """SELECT
+    state_code,
+    workflows_user_email_address AS email_address,
+    start_date,
+    end_date_exclusive, 
+FROM
+    `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized`
+WHERE
+    is_registered
+    AND is_primary_user
+""",
+    (
+        MetricUnitOfObservationType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
+    ): """SELECT
+    users.state_code,
+    users.workflows_user_email_address AS email_address,
+    staff_external.external_id AS officer_id,
+    users.start_date,
+    users.end_date_exclusive, 
+FROM
+    `{project_id}.analyst_data.workflows_provisioned_user_registration_sessions_materialized` users
+INNER JOIN
+    `{project_id}.normalized_state.state_staff` staff
+ON
+    users.workflows_user_email_address = staff.email
+    AND users.state_code = staff.state_code
+INNER JOIN
+    `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff_external
+ON
+    staff.staff_id = staff_external.staff_id
+""",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
+    ): """SELECT * FROM `{project_id}.analyst_data.workflows_user_person_assignment_sessions_materialized`""",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
+    ): """SELECT * FROM `{project_id}.analyst_data.insights_user_person_assignment_sessions_materialized`""",
 }
 
 

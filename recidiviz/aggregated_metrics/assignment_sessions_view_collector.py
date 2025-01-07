@@ -77,6 +77,8 @@ def relevant_units_of_analysis_for_population_type(
                 MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
                 MetricUnitOfAnalysisType.ALL_STATES,
                 MetricUnitOfAnalysisType.EXPERIMENT_VARIANT,
+                MetricUnitOfAnalysisType.WORKFLOWS_PROVISIONED_USER,
+                MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
             ]
 
 

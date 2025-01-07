@@ -50,9 +50,6 @@ from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions_with_officer_and_supervisor import (
     EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.insights_user_person_assignment_sessions import (
-    INSIGHTS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
 )
@@ -79,9 +76,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 )
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.workflows_user_person_assignment_sessions import (
-    WORKFLOWS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_outlier_officers import (
     SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER,
@@ -475,14 +469,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER.address: (
         "Will be referenced for Looker view of disaggregated marked ineligible status sessions and snooze "
         "details (see looker#616) (Jenna Bellassai 11/18/2024)"
-    ),
-    WORKFLOWS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER.address: (
-        "Will be referenced in aggregated metrics assignment views in stacked PR "
-        "(Mayuka Sarukkai 1/3/2025) "
-    ),
-    INSIGHTS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER.address: (
-        "Will be referenced in aggregated metrics assignment views in stacked PR "
-        "(Mayuka Sarukkai 1/3/2025) "
     ),
 }
 
