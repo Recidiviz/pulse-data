@@ -1,8 +1,6 @@
 # Defines services needed to run the Justice Counts Control Panel app (on top of shared services already in docker-compose.yaml)
 # Run via `docker-compose -f docker-compose.yaml -f docker-compose.justice-counts.yaml up`
 
-version: "3"
-
 services:
   control_panel_backend:
     image: us-central1-docker.pkg.dev/justice-counts-staging/publisher-and-dashboard-images/main:latest
@@ -25,3 +23,4 @@ services:
       # They can safely be excluded from the stat reloader for a performance boost
       - FLASK_RUN_EXCLUDE_PATTERNS=/app/.venv/**/*
       - IS_DEV=true
+      - FLASK_DEBUG=True
