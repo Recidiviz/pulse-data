@@ -1076,7 +1076,12 @@ def create_outliers_api_blueprint() -> Blueprint:
         ] = querier.get_vitals_metrics_for_supervision_officer_supervisor(
             supervisor_pseudonymized_id, user_context.can_access_all_supervisors
         )
-        return jsonify([metric.to_json() for metric in vitals_metrics])
+        return jsonify(
+            [
+                convert_nested_dictionary_keys(metric.to_json(), snake_to_camel)
+                for metric in vitals_metrics
+            ]
+        )
 
     @api.get("/<state>/officer/<pseudonymized_officer_id>/vitals")
     def vitals_metrics_for_officer(
@@ -1117,6 +1122,11 @@ def create_outliers_api_blueprint() -> Blueprint:
             officer.pseudonymized_id, user_context.can_access_all_supervisors
         )
 
-        return jsonify([metric.to_json() for metric in vitals_metrics])
+        return jsonify(
+            [
+                convert_nested_dictionary_keys(metric.to_json(), snake_to_camel)
+                for metric in vitals_metrics
+            ]
+        )
 
     return api

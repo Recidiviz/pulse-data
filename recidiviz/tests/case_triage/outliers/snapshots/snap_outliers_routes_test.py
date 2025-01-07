@@ -16,22 +16,22 @@ snapshots[
     "TestOutliersRoutes.TestOutliersRoutes get_vitals_metrics_for_officer_when_can_access_all_supervisors"
 ] = [
     {
-        "metric_id": "timely_contact",
-        "vitals_metrics": [
+        "metricId": "timely_contact",
+        "vitalsMetrics": [
             {
-                "metric_30d_delta": -17.0,
-                "metric_value": 80.0,
-                "officer_pseudonymized_id": "officerhash2",
+                "metric30DDelta": -17.0,
+                "metricValue": 80.0,
+                "officerPseudonymizedId": "officerhash2",
             }
         ],
     },
     {
-        "metric_id": "timely_risk_assessment",
-        "vitals_metrics": [
+        "metricId": "timely_risk_assessment",
+        "vitalsMetrics": [
             {
-                "metric_30d_delta": 0.0,
-                "metric_value": 94.0,
-                "officer_pseudonymized_id": "officerhash2",
+                "metric30DDelta": 0.0,
+                "metricValue": 94.0,
+                "officerPseudonymizedId": "officerhash2",
             }
         ],
     },
@@ -41,32 +41,32 @@ snapshots[
     "TestOutliersRoutes.TestOutliersRoutes get_vitals_metrics_for_supervisor_when_can_access_all_supervisors"
 ] = [
     {
-        "metric_id": "timely_contact",
-        "vitals_metrics": [
+        "metricId": "timely_contact",
+        "vitalsMetrics": [
             {
-                "metric_30d_delta": -3.0,
-                "metric_value": 95.0,
-                "officer_pseudonymized_id": "officerhash1",
+                "metric30DDelta": -3.0,
+                "metricValue": 95.0,
+                "officerPseudonymizedId": "officerhash1",
             },
             {
-                "metric_30d_delta": -17.0,
-                "metric_value": 80.0,
-                "officer_pseudonymized_id": "officerhash2",
+                "metric30DDelta": -17.0,
+                "metricValue": 80.0,
+                "officerPseudonymizedId": "officerhash2",
             },
         ],
     },
     {
-        "metric_id": "timely_risk_assessment",
-        "vitals_metrics": [
+        "metricId": "timely_risk_assessment",
+        "vitalsMetrics": [
             {
-                "metric_30d_delta": 0.0,
-                "metric_value": 100.0,
-                "officer_pseudonymized_id": "officerhash1",
+                "metric30DDelta": 0.0,
+                "metricValue": 100.0,
+                "officerPseudonymizedId": "officerhash1",
             },
             {
-                "metric_30d_delta": 0.0,
-                "metric_value": 94.0,
-                "officer_pseudonymized_id": "officerhash2",
+                "metric30DDelta": 0.0,
+                "metricValue": 94.0,
+                "officerPseudonymizedId": "officerhash2",
             },
         ],
     },
@@ -721,22 +721,22 @@ snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_get_vitals_metrics_for_officer"
 ] = [
     {
-        "metric_id": "timely_contact",
-        "vitals_metrics": [
+        "metricId": "timely_contact",
+        "vitalsMetrics": [
             {
-                "metric_30d_delta": -17.0,
-                "metric_value": 80.0,
-                "officer_pseudonymized_id": "officerhash2",
+                "metric30DDelta": -17.0,
+                "metricValue": 80.0,
+                "officerPseudonymizedId": "officerhash2",
             }
         ],
     },
     {
-        "metric_id": "timely_risk_assessment",
-        "vitals_metrics": [
+        "metricId": "timely_risk_assessment",
+        "vitalsMetrics": [
             {
-                "metric_30d_delta": 0.0,
-                "metric_value": 94.0,
-                "officer_pseudonymized_id": "officerhash2",
+                "metric30DDelta": 0.0,
+                "metricValue": 94.0,
+                "officerPseudonymizedId": "officerhash2",
             }
         ],
     },
@@ -829,32 +829,32 @@ snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_vitals_metrics_for_supervisor"
 ] = [
     {
-        "metric_id": "timely_contact",
-        "vitals_metrics": [
+        "metricId": "timely_contact",
+        "vitalsMetrics": [
             {
-                "metric_30d_delta": -3.0,
-                "metric_value": 95.0,
-                "officer_pseudonymized_id": "officerhash1",
+                "metric30DDelta": -3.0,
+                "metricValue": 95.0,
+                "officerPseudonymizedId": "officerhash1",
             },
             {
-                "metric_30d_delta": -17.0,
-                "metric_value": 80.0,
-                "officer_pseudonymized_id": "officerhash2",
+                "metric30DDelta": -17.0,
+                "metricValue": 80.0,
+                "officerPseudonymizedId": "officerhash2",
             },
         ],
     },
     {
-        "metric_id": "timely_risk_assessment",
-        "vitals_metrics": [
+        "metricId": "timely_risk_assessment",
+        "vitalsMetrics": [
             {
-                "metric_30d_delta": 0.0,
-                "metric_value": 100.0,
-                "officer_pseudonymized_id": "officerhash1",
+                "metric30DDelta": 0.0,
+                "metricValue": 100.0,
+                "officerPseudonymizedId": "officerhash1",
             },
             {
-                "metric_30d_delta": 0.0,
-                "metric_value": 94.0,
-                "officer_pseudonymized_id": "officerhash2",
+                "metric30DDelta": 0.0,
+                "metricValue": 94.0,
+                "officerPseudonymizedId": "officerhash2",
             },
         ],
     },
