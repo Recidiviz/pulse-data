@@ -576,6 +576,7 @@ releases = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Releases",
     description="The number of release events from the jurisdiction of the prison agency following a period of incarceration.",
+    additional_description="Releases are based on the number of events in which a person was released from the jurisdiction of the agency, not the number of individual people released. If the same person was released from prison three times in a time period, it would count as three releases.",
     unit=MetricUnit.RELEASES,
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
