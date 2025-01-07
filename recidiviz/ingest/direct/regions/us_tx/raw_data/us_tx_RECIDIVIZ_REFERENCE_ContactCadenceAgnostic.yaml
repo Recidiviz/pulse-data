@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RECIDIVIZ_REFERENCE_ContactCadenceAgnostic
+file_description: |-
+  An internally made table that stores information on contact cadence for agnostic contact requirements.
+data_classification: source
+primary_key_cols:
+  - supervision_level
+  - case_type
+  - SCHEDULED_HOME_REQ
+  - SCHEDULED_FIELD_REQ
+  - UNSCHEDULED_HOME_REQ
+  - UNSCHEDULED_FIELD_REQ
+  - SCHEDULED_ELECTRONIC_REQ
+  - SCHEDULED_OFFICE_REQ
+  - frequency_in_months
+columns:
+  - name: supervision_level
+    description: Supervision level.
+  - name: case_type
+    description: Case type.
+  - name: SCHEDULED_FIELD_REQ
+    description: Number of scheduled home contacts required.
+  - name: UNSCHEDULED_HOME_REQ
+    description: Number of scheduled home contacts required.
+  - name: SCHEDULED_HOME_REQ
+    description: Number of scheduled home contacts required.
+  - name: SCHEDULED_ELECTRONIC_REQ
+    description: Number of scheduled home contacts required.
+  - name: SCHEDULED_OFFICE_REQ
+    description: Number of scheduled home contacts required.
+  - name: UNSCHEDULED_FIELD_REQ
+    description: Number of scheduled home contacts required.
+  - name: frequency_in_months
+    description: The frequency in which the contact should be completed in months.
+  - name: contact_types_accepted
+    description: a string list of all the contact types allowed
+update_cadence: IRREGULAR
+is_code_file: True

@@ -1565,3 +1565,22 @@ US_TN:
   Violations:
     task_eligibility_criteria_us_tn.no_high_sanctions_in_past_year: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+US_TX:
+  RECIDIVIZ_REFERENCE_ContactCadence:
+    task_eligibility_criteria_us_tx.meets_scheduled_electronic_contact_standards:
+      |-
+      Used as a reference table to indicate contact cadences. 12/30/2024.
+    task_eligibility_criteria_us_tx.meets_scheduled_field_contact_standards: |-
+      Used as a reference table to indicate contact cadences. 12/30/2024.
+    task_eligibility_criteria_us_tx.meets_scheduled_home_contact_standards: |-
+      Used as a reference table to indicate contact cadences. 12/30/2024.
+    task_eligibility_criteria_us_tx.meets_scheduled_office_contact_standards: |-
+      Used as a reference table to indicate contact cadences. 12/30/2024.
+    task_eligibility_criteria_us_tx.meets_unscheduled_field_contact_standards:
+      |-
+      Used as a reference table to indicate contact cadences. 12/30/2024.
+    task_eligibility_criteria_us_tx.meets_unscheduled_home_contact_standards: |-
+      Used as a reference table to indicate contact cadences. 12/30/2024.
+  RECIDIVIZ_REFERENCE_ContactCadenceAgnostic:
+    task_eligibility_criteria_us_tx.meets_type_agnostic_contact_standards: |-
+      Used as a reference table to indicate agnostic contact type cadences. 12/30/2024.

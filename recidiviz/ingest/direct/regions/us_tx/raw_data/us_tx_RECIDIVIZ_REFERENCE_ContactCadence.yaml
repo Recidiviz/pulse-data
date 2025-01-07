@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RECIDIVIZ_REFERENCE_ContactCadence
+file_description: |-
+  An internally made table that stores information on contact cadence.
+data_classification: source
+primary_key_cols:
+  - supervision_level
+  - case_type
+  - contact_type
+  - frequency_in_months
+  - replacement
+  - quantity
+columns:
+  - name: supervision_level
+    description: Supervision level.
+  - name: case_type
+    description: Case type.
+  - name: contact_type
+    description: Contact type.
+  - name: frequency_in_months
+    description: The frequency in which the contact should be completed in months.
+  - name: replacement
+    description: The other types of contacts that be replacemnts.
+  - name: quantity
+    description: The number of contacts required in the time span.
+update_cadence: IRREGULAR
+is_code_file: True
