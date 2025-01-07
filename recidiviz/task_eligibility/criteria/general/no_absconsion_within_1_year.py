@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Defines a criteria span view that sowsn if an individual has been absconsion-free
+within the last 1 year.
 """
-Defines a criteria span view that sowsn if an individual has been absconsion-free
-within the last 10 years.
-"""
+
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -28,13 +28,13 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NO_ABSCONSION_WITHIN_10_YEARS"
+_CRITERIA_NAME = "NO_ABSCONSION_WITHIN_1_YEAR"
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     no_absconsion_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
-        date_interval=10,
+        date_interval=1,
         date_part="YEAR",
     )
 )

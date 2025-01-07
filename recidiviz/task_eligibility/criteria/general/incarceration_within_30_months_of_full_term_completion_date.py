@@ -15,27 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Defines a criteria span view that sowsn if an individual has been absconsion-free
-within the last 10 years.
+Defines a criteria span view that shows spans of time during which
+someone is incarcerated within 30 months of their full term completion date.
 """
-
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    no_absconsion_within_time_interval_criteria_builder,
+    is_past_completion_date_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NO_ABSCONSION_WITHIN_10_YEARS"
+_CRITERIA_NAME = "INCARCERATION_WITHIN_30_MONTHS_OF_FULL_TERM_COMPLETION_DATE"
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    no_absconsion_within_time_interval_criteria_builder(
+    is_past_completion_date_criteria_builder(
+        compartment_level_1_filter="INCARCERATION",
+        meets_criteria_leading_window_time=30,
+        date_part="MONTH",
+        critical_date_name_in_reason="full_term_completion_date",
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
-        date_interval=10,
-        date_part="YEAR",
     )
 )
 

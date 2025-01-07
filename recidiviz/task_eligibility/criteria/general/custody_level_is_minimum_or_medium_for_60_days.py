@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,29 +13,29 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# =============================================================================
-"""
-Defines a criteria span view that sowsn if an individual has been absconsion-free
-within the last 10 years.
+# ============================================================================
+"""This criteria view builder defines spans of time where residents have been
+MINIMUM or MEDIUM custody level for at least 60 days as tracked by our `sessions` dataset.
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    no_absconsion_within_time_interval_criteria_builder,
+    get_minimum_time_served_criteria_query,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NO_ABSCONSION_WITHIN_10_YEARS"
+_CRITERIA_NAME = "CUSTODY_LEVEL_IS_MINIMUM_OR_MEDIUM_FOR_60_DAYS"
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    no_absconsion_within_time_interval_criteria_builder(
+    get_minimum_time_served_criteria_query(
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
-        date_interval=10,
-        date_part="YEAR",
+        time_served_interval="DAY",
+        minimum_time_served=60,
+        custody_levels=["MINIMUM", "MEDIUM"],
     )
 )
 

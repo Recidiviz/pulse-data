@@ -157,6 +157,7 @@ def get_minimum_time_served_criteria_query(
     compartment_level_1_types: Optional[List[str]] = None,
     compartment_level_2_types: Optional[List[str]] = None,
     supervision_levels: Optional[List[str]] = None,
+    custody_levels: Optional[List[str]] = None,
     housing_unit_types: Optional[List[str]] = None,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """Returns a state-agnostic criterion view builder indicating spans of time when a
@@ -194,6 +195,9 @@ def get_minimum_time_served_criteria_query(
 
     supervision_levels : Optional[List[str]], optional
         A list of supervision levels by which to filter sessions. Defaults to None.
+
+    custody_levels: Optional[List[str]], optional
+        A list of custody levels by which to filter sessions. Defaults to None.
 
     housing_unit_types : Optional[List[str]], optional
         A list of housing-unit types by which to filter sessions. Defaults to None.
@@ -240,6 +244,11 @@ def get_minimum_time_served_criteria_query(
         sessions_table = "supervision_level_sessions_materialized"
         formatted_values = "', '".join(supervision_levels)
         sessions_conditions.append(f"supervision_level IN ('{formatted_values}')")
+
+    if custody_levels is not None:
+        sessions_table = "custody_level_sessions_materialized"
+        formatted_values = "', '".join(custody_levels)
+        sessions_conditions.append(f"custody_level IN ('{formatted_values}')")
 
     if housing_unit_types is not None:
         sessions_table = "housing_unit_type_sessions_materialized"
@@ -948,6 +957,64 @@ def is_past_completion_date_criteria_builder(
                 name=critical_date_name_in_reason,
                 type=bigquery.enums.StandardSqlTypeNames.DATE,
                 description="Date when the critical date has passed",
+            ),
+        ],
+    )
+
+
+def no_absconsion_within_time_interval_criteria_builder(
+    criteria_name: str,
+    description: str,
+    date_interval: int,
+    date_part: str,
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """
+    Returns a criteria query builder that has spans of time when someone has not absconded
+    within a given time interval.
+    Args:
+        criteria_name (str): Criteria query name
+        description (str): Criteria query description
+        date_interval (int): Number of <date_part> when the absconsion will be counted as
+            valid.
+        date_part (str): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR".
+    """
+    criteria_query = f"""WITH absconded_sessions AS (
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        DATE_ADD(start_date, INTERVAL {date_interval} {date_part}) AS end_date,
+        FALSE AS meets_criteria,
+        start_date AS absconded_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
+    WHERE compartment_level_2 = 'ABSCONSION'
+    ),
+
+    {create_sub_sessions_with_attributes('absconded_sessions')}
+
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        LOGICAL_OR(meets_criteria) AS meets_criteria,
+        TO_JSON(STRUCT(MAX(absconded_date) AS most_recent_absconded_date)) AS reason,
+        MAX(absconded_date) AS most_recent_absconded_date,
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4"""
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=criteria_query,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="most_recent_absconded_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Start date of most recent absconsion",
             ),
         ],
     )
