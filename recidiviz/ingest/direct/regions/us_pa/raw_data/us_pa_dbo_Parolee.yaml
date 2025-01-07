@@ -52,7 +52,7 @@ columns:
   - name: Notes
     is_pii: True
     description: |-
-      Details on Scars, Marks, and Tattoos
+      Details on Scars, Marks, Tattoos, and other notes
   - name: timestamp
   - name: LastName
     is_pii: True
@@ -115,6 +115,8 @@ columns:
   - name: SkinTone
   - name: MaritalStatus
   - name: PA_OtherDesc
+    description: Other Description
+    is_pii: True
   - name: ParoleType
     description: Parole type
   - name: ParoleType2
