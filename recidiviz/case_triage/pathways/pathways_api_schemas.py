@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Contains Marshmallow schemas for the Pathways API """
-from typing import Dict, Union
-
 import attr
 import marshmallow.fields
 from marshmallow import Schema, fields, validate
@@ -34,7 +32,7 @@ FETCH_METRIC_SCHEMAS_BY_NAME = {}
 for metric_class in ALL_METRICS:
     dimension_mapping_collection = metric_class.dimension_mapping_collection
 
-    schema_fields: Dict[str, Union[marshmallow.fields.Field, type]] = {
+    schema_fields: dict[str, marshmallow.fields.Field] = {
         "filters": fields.Dict(
             EnumField(
                 Dimension,
