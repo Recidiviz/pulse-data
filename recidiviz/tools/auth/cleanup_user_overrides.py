@@ -22,19 +22,19 @@ columns are equivalent, it removes the entry.
 The script can be run against a local database or against one running in Cloud SQL.
 
 Usage against default development database (docker-compose v1) after `docker-compose up` has been
-run: docker exec pulse-data_case_triage_backend_1 pipenv run python -m
-recidiviz.tools.auth.cleanup_user_overrides
+run: docker exec pulse-data_admin_panel_backend_1 pipenv run python -m
+recidiviz.tools.auth.cleanup_user_overrides --state_code US_XX
 
 Usage against default development database (docker-compose v2) after `docker-compose up` has been
-run: docker exec pulse-data-case_triage_backend-1 pipenv run python -m
-recidiviz.tools.auth.cleanup_user_overrides
+run: docker exec pulse-data-admin_panel_backend-1 pipenv run python -m
+recidiviz.tools.auth.cleanup_user_overrides --state_code US_XX
 
 To run against Cloud SQL, specify the project id: python -m
-recidiviz.tools.auth.cleanup_user_overrides --project_id recidiviz-staging
+recidiviz.tools.auth.cleanup_user_overrides --project_id recidiviz-staging --state_code US_XX
 
 The tool can also be run in dry-run mode to see what would happen before making actual changes to
-the database: python -m recidiviz.tools.auth.cleanup_user_overrides --project_id recidiviz-staging
---dry_run
+the database:
+python -m recidiviz.tools.auth.cleanup_user_overrides --project_id recidiviz-staging --state_code US_XX --dry_run
 """
 
 import argparse
@@ -119,9 +119,13 @@ def _run_update_stmt(
             update(UserOverride)
             .where(where_clause)
             .values(**{key: None})
-            .execution_options(synchronize_session="fetch")
+            .execution_options(synchronize_session=False)
+            .returning(UserOverride.email_address)
+        ).all()
+        updated_users = [user.email_address for user in results]
+        logging.info(
+            "set %s to null for %d rows: %s", key, len(updated_users), updated_users
         )
-        logging.info("set %s to null for %d rows", key, results.rowcount)
 
 
 def cleanup_user_overrides(session: Session, dry_run: bool, state_code: str) -> None:
@@ -169,9 +173,11 @@ def cleanup_user_overrides(session: Session, dry_run: bool, state_code: str) -> 
                     UserOverride.state_code == state_code
                 )
             )
-            .execution_options(synchronize_session="fetch")
+            .execution_options(synchronize_session=False)
+            .returning(UserOverride.email_address)
         )
-        logging.info("deleted %d rows", results.rowcount)
+        deleted_users = [user.email_address for user in results]
+        logging.info("deleted %d rows: %s", len(deleted_users), deleted_users)
 
 
 def parse_arguments(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
