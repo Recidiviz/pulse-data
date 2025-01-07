@@ -146,6 +146,7 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = f"""
             AND {state_specific_entity_filter("supervision_population_metrics")}
         AND ps.is_supervision_officer
         AND NOT (supervision_population_metrics.state_code = "US_IX" AND (IFNULL(attr.specialized_caseload_type_primary, "") = "TRANSITIONAL" OR ps.is_supervision_officer_supervisor))
+        AND supervision_population_metrics.supervision_type != "INVESTIGATION"
         GROUP BY state_code, date_of_supervision, supervising_district_external_id, supervising_officer_external_id, district_id, district_name
     )
     

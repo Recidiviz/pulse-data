@@ -57,6 +57,7 @@ WITH overdue_lsir AS (
         -- 210 is 6 months (180 days) for the 6 month time series chart + 30 days for monthly average on the first day
         AND level_2_supervision_location_external_id IS NOT NULL
         -- Remove duplicate entries created when unnesting a state that does not have L2 locations
+        AND compliance.supervision_type != "INVESTIGATION"
     GROUP BY
         state_code,
         date_of_supervision,

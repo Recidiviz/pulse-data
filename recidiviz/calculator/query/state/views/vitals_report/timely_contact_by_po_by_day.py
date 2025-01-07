@@ -54,6 +54,7 @@ WITH overdue_contacts AS (
         -- Remove duplicate entries created when unnesting a state that does not have L2 locations
         AND date_of_supervision >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 210 DAY)
         -- 210 is 6 months (180 days) for the 6 month time series chart + 30 days for monthly average on the first day
+        AND compliance.supervision_type != "INVESTIGATION"
     GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id, level_2_supervision_location_external_id
     )
 

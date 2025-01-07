@@ -47,6 +47,7 @@ UNNEST ([compliance.level_2_supervision_location_external_id, 'ALL']) AS level_2
 UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
 -- Remove duplicate entries created when unnesting a state that does not have L2 locations
 WHERE level_2_supervision_location_external_id IS NOT NULL
+AND compliance.supervision_type != "INVESTIGATION"
 """
 
 SUPERVISION_MISMATCHES_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
