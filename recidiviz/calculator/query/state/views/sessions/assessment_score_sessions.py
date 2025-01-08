@@ -57,19 +57,28 @@ WITH state_assessment AS (
     FROM
         `{project_id}.{normalized_state_dataset}.state_assessment`
     WHERE
-    -- for US_MI, identify COMPAS scales that determine risk level
-        (state_code = "US_MI" AND assessment_class_raw_text IN ("7/8", "72/73", "8042/8043", "8138/8139"))
         -- keep only relevant assessment types
-        OR (
-            state_code != "US_MI"
-            AND (
-                assessment_type IN ("LSIR", "STRONG_R", "CAF", "CSRA", "ACCAT")
-                OR assessment_type LIKE "ORAS%"
+        (
+            -- for US_MI, identify COMPAS scales that determine risk level
+            (
+                state_code = "US_MI" 
+                AND assessment_class_raw_text IN ("7/8", "72/73", "8042/8043", "8138/8139")
             )
+            -- all other states besides MI
+            OR (
+                state_code != "US_MI"
+                AND (
+                    assessment_type IN ("LSIR", "STRONG_R", "CAF", "CSRA", "ACCAT")
+                    OR assessment_type LIKE "ORAS%"
+                )
+            )
+            -- TODO(#35297) In AZ, we care about mental health assessments
+            OR (
+                state_code = 'US_AZ' 
+                AND assessment_type = 'INTERNAL_UNKNOWN' 
+                AND assessment_class = 'MENTAL_HEALTH'
+                )
         )
-
-        -- TODO(#35297) In AZ, we care about mental health assessments
-        OR (state_code = 'US_AZ' AND assessment_type = 'INTERNAL_UNKNOWN' AND assessment_class = 'MENTAL_HEALTH')
         AND assessment_date IS NOT NULL
     -- keep only assessments with scores or levels
         AND (
