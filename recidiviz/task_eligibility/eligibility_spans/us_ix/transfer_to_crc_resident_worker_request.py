@@ -36,8 +36,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     crc_resident_worker_time_based_criteria,
     in_crc_facility_or_pwcc_unit_1,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
-    no_detainers_for_xcrc_and_crc,
     no_sex_offender_alert,
+    not_detainers_for_xcrc_and_crc,
     not_serving_a_rider_sentence,
     tentative_parole_date_not_within_6_months,
 )
@@ -67,7 +67,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         custody_level_is_minimum.VIEW_BUILDER,
-        no_detainers_for_xcrc_and_crc.VIEW_BUILDER,
+        not_detainers_for_xcrc_and_crc.VIEW_BUILDER,
         not_serving_for_sexual_offense.VIEW_BUILDER,
         no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
         US_IX_NOT_IN_CRC_FACILITY_VIEW_BUILDER,

@@ -37,8 +37,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     in_crc_facility_or_pwcc_unit_1_for_60_days,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_class_a_or_b_dor_for_6_months,
-    no_detainers_for_xcrc_and_crc,
     no_sex_offender_alert,
+    not_detainers_for_xcrc_and_crc,
     tentative_parole_date_within_6_months,
 )
 from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
@@ -75,7 +75,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ),
         custody_level_is_minimum.VIEW_BUILDER,
         no_class_a_or_b_dor_for_6_months.VIEW_BUILDER,
-        no_detainers_for_xcrc_and_crc.VIEW_BUILDER,
+        not_detainers_for_xcrc_and_crc.VIEW_BUILDER,
         not_serving_for_sexual_offense.VIEW_BUILDER,
         no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
         no_sex_offender_alert.VIEW_BUILDER,

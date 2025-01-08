@@ -160,7 +160,7 @@ SELECT
     person_id,
     start_date,
     end_date,
-    False as meets_criteria,
+    TRUE as meets_criteria,
     TO_JSON(STRUCT(start_date AS latest_detainer_start_date,
         DetainerTypeDesc AS latest_detainer_type,
         DetainerStatusDesc AS latest_detainer_status)) AS reason,

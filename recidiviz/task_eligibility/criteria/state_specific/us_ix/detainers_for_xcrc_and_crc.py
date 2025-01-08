@@ -16,7 +16,7 @@
 # =============================================================================
 """
 Defines a criteria view that currently incarcerated individuals
-who do not have an active detainer or hold for Idaho XCRC.
+who do have an active detainer or hold for Idaho XCRC.
 """
 from google.cloud import bigquery
 
@@ -34,11 +34,11 @@ from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_IX_NO_DETAINERS_FOR_XCRC_AND_CRC"
+_CRITERIA_NAME = "US_IX_DETAINERS_FOR_XCRC_AND_CRC"
 
 _DESCRIPTION = """
 Defines a criteria view that currently incarcerated individuals
-who do not have an active detainer or hold for Idaho XCRC and CRC.
+who do have an active detainer or hold for Idaho XCRC and CRC.
 """
 
 _QUERY_TEMPLATE = f"""
@@ -52,7 +52,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         state_code=StateCode.US_IX,
-        meets_criteria_default=True,
         reasons_fields=[
             ReasonsField(
                 name="latest_detainer_start_date",
