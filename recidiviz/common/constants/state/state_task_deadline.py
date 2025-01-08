@@ -63,6 +63,7 @@ class StateTaskType(StateEntityEnum):
     )
     TREATMENT_REFERRAL = state_enum_strings.state_task_type_treatment_referral
     TREATMENT_VERIFICATION = state_enum_strings.state_task_type_treatment_verification
+    PAROLE_HEARING = state_enum_strings.state_task_type_parole_hearing
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
@@ -124,6 +125,10 @@ _STATE_TASK_TYPES_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
         "Perform a risk (or other) assessment on this person. More information about "
         "the type of assessment may be specified in the `StateTaskDeadline` "
         "`task_subtype` field."
+    ),
+    StateTaskType.PAROLE_HEARING: (
+        "Perform a parole hearing. This hearing could either be the initial parole"
+        "hearing or a subsequent parole hearing. "
     ),
     StateTaskType.PAYMENT_VERIFICATION: (
         "Verify whether this person has paid any requisite fines and fees."

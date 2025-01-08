@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  OffenderId: STRING
+  TermId: STRING
+  hearing_date: STRING
+  UpdateDate: DATETIME
+  type: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    task_deadlines:
+      - StateTaskDeadline:
+          task_type: $literal_enum(StateTaskType.PAROLE_HEARING)
+          eligible_date: hearing_date
+          update_datetime: UpdateDate
+          task_subtype: type
+          task_metadata:
+            $json_dict:
+              external_id:
+                $concat:
+                  $values:
+                    - OffenderId
+                    - TermId
+                    - type
+              sentence_group_external_id: TermId

@@ -816,6 +816,7 @@ state_task_type = Enum(
     state_enum_strings.state_task_type_transfer_to_supervision_from_incarceration,
     state_enum_strings.state_task_type_treatment_referral,
     state_enum_strings.state_task_type_treatment_verification,
+    state_enum_strings.state_task_type_parole_hearing,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_task_type",

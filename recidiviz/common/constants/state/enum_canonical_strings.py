@@ -662,6 +662,7 @@ state_task_type_home_visit = "HOME_VISIT"
 state_task_type_new_assessment = "NEW_ASSESSMENT"
 state_task_type_payment_verification = "PAYMENT_VERIFICATION"
 state_task_type_special_condition_verification = "SPECIAL_CONDITION_VERIFICATION"
+state_task_type_parole_hearing = "PAROLE_HEARING"
 state_task_type_transfer_to_administrative_supervision = (
     "TRANSFER_TO_ADMINISTRATIVE_SUPERVISION"
 )
