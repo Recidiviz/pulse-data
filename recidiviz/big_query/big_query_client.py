@@ -197,14 +197,12 @@ class BigQueryViewMaterializationResult:
         return assert_type(self.completed_materialization_job.slot_millis, int)
 
     @property
-    def total_bytes_processed(self) -> int:
-        return assert_type(
-            self.completed_materialization_job.total_bytes_processed, int
-        )
+    def total_bytes_processed(self) -> int | None:
+        return self.completed_materialization_job.total_bytes_processed
 
     @property
-    def total_bytes_billed(self) -> int:
-        return assert_type(self.completed_materialization_job.total_bytes_billed, int)
+    def total_bytes_billed(self) -> int | None:
+        return self.completed_materialization_job.total_bytes_billed
 
 
 class BigQueryClient:
