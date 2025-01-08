@@ -466,7 +466,7 @@ class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
     # where x can be specified on the OutliersMetricConfig in a state's OutliersBackendConfig
     top_x_pct_metrics: list = attr.ib()
     # The officer's avg caseload size in the latest period
-    avg_daily_population: float = attr.ib()
+    avg_daily_population: Optional[float] = attr.ib()
     # The caseload category this officer is part of
     caseload_category: str = attr.ib()
     # Whether this officer is included in outcomes calculations

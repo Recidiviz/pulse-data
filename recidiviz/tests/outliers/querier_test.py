@@ -355,6 +355,20 @@ class TestOutliersQuerier(InsightsDbTestCase):
         if entity:
             self.assertEqual(entity.zero_grant_opportunities, [])
 
+    def test_get_supervision_officer_entity_found_match_for_officer_with_null_avg_population(
+        self,
+    ) -> None:
+        # Return matching supervision officer entity
+        entity = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
+            pseudonymized_officer_id="officerhash5",
+            category_type_to_compare=InsightsCaseloadCategoryType.ALL,
+            include_workflows_info=True,
+            num_lookback_periods=0,
+        )
+        self.assertIsNotNone(entity)
+        if entity:
+            self.assertEqual(entity.avg_daily_population, None)
+
     def test_get_supervision_officer_entity_found_match_with_highlights(self) -> None:
         # Return matching supervision officer entity where officer should be highlighted for a metric in the latest period
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
