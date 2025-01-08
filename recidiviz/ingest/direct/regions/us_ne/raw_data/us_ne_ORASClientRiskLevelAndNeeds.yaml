@@ -19,17 +19,25 @@ columns:
   - name: overrideRiskLevelId
     description: |-
       Override risk level id
+    null_values:
+      - "NULL"
   - name: overrideReasonCode
     description: |-
       Override reason code
+    null_values:
+      - "NULL"
   - name: assessmentDate
     field_type: datetime
     description: |-
       Date of assessment
+    null_values:
+      - "NULL"
   - name: assessmentDueDate
     field_type: datetime
     description: |-
       Date assessment due
+    null_values:
+      - "NULL"
   - name: criminalHistory
     description: |-
       Look up in ORASCriminalHistory
@@ -54,6 +62,8 @@ columns:
   - name: supervisionLevelOverrideCode
     description: |-
       TODO(#31972): Fill in with answers from NE
+    null_values:
+      - "NULL"
   - name: createdBy
     description: |-
       TODO(#31972): Fill in with answers from NE
@@ -62,6 +72,8 @@ columns:
     field_type: datetime
     description: |-
       Date row created
+    null_values:
+      - "NULL"
   - name: modifiedBy
     description: |-
       TODO(#31972): Fill in with answers from NE
@@ -91,9 +103,13 @@ columns:
   - name: riskLevel
     description: |-
       TODO(#31972): Fill in with answers from NE
+    null_values:
+      - "NULL"
   - name: overrideRiskLevelCode
     description: |-
       TODO(#31972): Fill in with answers from NE
+    null_values:
+      - "NULL"
   - name: overrideComments
     description: |-
       TODO(#31972): Fill in with answers from NE

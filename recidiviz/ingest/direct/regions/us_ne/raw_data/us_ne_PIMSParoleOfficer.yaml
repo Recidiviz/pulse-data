@@ -38,10 +38,14 @@ columns:
     field_type: datetime
     description: |-
       Start date
+    null_values:
+      - "NULL"
   - name: endDate
     field_type: datetime
     description: |-
       End date
+    null_values:
+      - "NULL"
   - name: isActive
     description: |-
       Active emlpoyee
@@ -62,6 +66,8 @@ columns:
     field_type: datetime
     description: |-
       TODO(#31972): Fill in with answers from NE
+    null_values:
+      - "NULL"
   - name: modifiedBy
     description: |-
       TODO(#31972): Fill in with answers from NE
@@ -70,6 +76,8 @@ columns:
     field_type: datetime
     description: |-
       date modified
+    null_values:
+      - "NULL"
   - name: supervisor
     description: |-
       Supervisor

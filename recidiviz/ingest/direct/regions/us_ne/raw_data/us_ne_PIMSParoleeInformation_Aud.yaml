@@ -37,19 +37,29 @@ columns:
   - name: fk_paroleOfficerId
     description: |-
       Foreign key to parole officer ID
+    null_values:
+      - "NULL"
   - name: dateOfParole
     field_type: datetime
     description: |-
       Date of parole
+    null_values:
+      - "NULL"
   - name: paroleType
     description: |-
       Type of parole
+    null_values:
+      - "NULL"
   - name: currentStatusCode
     description: |-
       Current status code
+    null_values:
+      - "NULL"
   - name: countyParoledToCode
     description: |-
       County paroled to
+    null_values:
+      - "NULL"
   - name: inOutStateIndicator1Code
     description: |-
       In out state indicator code 1, link to codevalue table
@@ -63,9 +73,13 @@ columns:
     field_type: datetime
     description: |-
       Discharge date
+    null_values:
+      - "NULL"
   - name: dischargeType
     description: |-
       Discharge type
+    null_values:
+      - "NULL"
   - name: revocationDate
     field_type: datetime
     description: |-
@@ -84,6 +98,8 @@ columns:
     field_type: datetime
     description: |-
       Record created when
+    null_values:
+      - "NULL"
   - name: modifiedBy
     description: |-
       Record modified by
@@ -92,6 +108,8 @@ columns:
     field_type: datetime
     description: |-
       Record modified when
+    null_values:
+      - "NULL"
   - name: fkInitailHearingIdUpdate
     description: |-
       Foreign key to initial hearing id updated
@@ -106,6 +124,8 @@ columns:
     field_type: datetime
     description: |-
       Record updates when
+    null_values:
+      - "NULL"
   - name: operation
     description: |-
       Operation
