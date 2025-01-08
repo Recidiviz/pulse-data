@@ -25,6 +25,9 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.general import (
     transfer_out_of_disciplinary_or_temporary_solitary_confinement,
 )
+from recidiviz.task_eligibility.criteria.general import (
+    housing_unit_type_is_solitary_confinement,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     eligible_for_reclassification_from_solitary_to_general,
 )
@@ -44,7 +47,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        eligible_for_reclassification_from_solitary_to_general.VIEW_BUILDER
+        eligible_for_reclassification_from_solitary_to_general.VIEW_BUILDER,
+        housing_unit_type_is_solitary_confinement.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_out_of_disciplinary_or_temporary_solitary_confinement.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
