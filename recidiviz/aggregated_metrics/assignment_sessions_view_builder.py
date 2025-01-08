@@ -516,6 +516,42 @@ ON
         MetricUnitOfObservationType.PERSON_ID,
         MetricUnitOfAnalysisType.INSIGHTS_PROVISIONED_USER,
     ): """SELECT * FROM `{project_id}.analyst_data.insights_user_person_assignment_sessions_materialized`""",
+    (
+        MetricUnitOfObservationType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.OFFICER_OUTLIER_USAGE_COHORT,
+    ): """
+SELECT
+    state_code,
+    officer_id,
+    cohort_month_end_date,
+    cohort_month_end_date AS start_date,
+    CAST(NULL AS DATE) AS end_date_exclusive,
+    metric_id,
+    outlier_usage_cohort,
+FROM
+    `{project_id}.analyst_data.insights_officer_outlier_usage_cohort_materialized`""",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.OFFICER_OUTLIER_USAGE_COHORT,
+    ): f"""
+SELECT
+    cohort.state_code,
+    sessions.person_id,
+    cohort.cohort_month_end_date,
+    GREATEST(cohort.cohort_month_end_date, sessions.start_date) AS start_date,
+    sessions.end_date_exclusive AS end_date_exclusive,
+    cohort.metric_id,
+    cohort.outlier_usage_cohort,
+FROM
+    `{{project_id}}.analyst_data.insights_officer_outlier_usage_cohort_materialized` cohort
+-- Get all persons supervised by the officer after the cohort month end date
+LEFT JOIN
+    `{{project_id}}.sessions.supervision_officer_sessions_materialized` sessions
+ON
+    cohort.officer_id = sessions.supervising_officer_external_id
+    AND cohort.state_code = sessions.state_code
+    AND {nonnull_end_date_clause("sessions.end_date_exclusive")} >= cohort.cohort_month_end_date
+""",
 }
 
 

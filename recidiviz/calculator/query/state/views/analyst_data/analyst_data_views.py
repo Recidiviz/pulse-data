@@ -60,6 +60,9 @@ from recidiviz.calculator.query.state.views.analyst_data.incarceration_incidents
 from recidiviz.calculator.query.state.views.analyst_data.insights_caseload_category_sessions import (
     INSIGHTS_CASELOAD_CATEGORY_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.insights_officer_outlier_usage_cohort import (
+    INSIGHTS_OFFICER_OUTLIER_USAGE_COHORT_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.insights_provisioned_user_registration_sessions import (
     INSIGHTS_PROVISIONED_USER_REGISTRATION_SESSIONS_VIEW_BUILDER,
 )
@@ -448,4 +451,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INSIGHTS_USER_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER,
     INSIGHTS_USER_PERSON_ASSIGNMENT_SESSIONS_VIEW_BUILDER,
+    INSIGHTS_OFFICER_OUTLIER_USAGE_COHORT_VIEW_BUILDER,
 ]

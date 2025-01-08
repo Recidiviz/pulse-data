@@ -66,6 +66,7 @@ def relevant_units_of_analysis_for_population_type(
                 MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
                 MetricUnitOfAnalysisType.STATE_CODE,
                 MetricUnitOfAnalysisType.ALL_STATES,
+                MetricUnitOfAnalysisType.OFFICER_OUTLIER_USAGE_COHORT,
             ]
         case MetricPopulationType.JUSTICE_INVOLVED:
             return [
