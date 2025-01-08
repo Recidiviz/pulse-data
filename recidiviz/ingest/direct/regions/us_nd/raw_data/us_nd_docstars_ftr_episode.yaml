@@ -34,16 +34,14 @@ columns:
   - name: LOCATION_ID
     description: |-
       ID of the location of the assigned FTR provider for this episode.
-  - name: FUNCTIONAL_IMPAIRMENTS
-    description: |-
-      Codes of functional impairments to be treated during this episode.
-    update_history:
-      - update_type: DELETION
-        update_datetime: 2023-06-30T12:45:38.310129Z
   - name: CURRENT_NEEDS
     description: |-
       A replacement field for FUNCTIONAL_IMPAIRMENTS. Codes of needs to be treated 
       during this episode.
+    update_history:
+      - update_type: RENAME
+        update_datetime: 2023-06-30T12:45:38.310129Z
+        previous_value: FUNCTIONAL_IMPAIRMENTS
   - name: IS_CLINICAL_ASSESSMENT
     description: |-
       Whether a clinical assessment was performed during this episode.

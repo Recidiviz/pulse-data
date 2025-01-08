@@ -8,7 +8,6 @@ input_columns:
   COORDINATOR_GUID: STRING
   ASSIGNED_PROVIDER_ID: STRING
   LOCATION_ID: STRING
-  FUNCTIONAL_IMPAIRMENTS: STRING
   IS_CLINICAL_ASSESSMENT: STRING
   ASSESSMENT_LOCATION: STRING
   REFERRAL_REASON: STRING
@@ -34,7 +33,6 @@ unused_columns:
   - PEER_SUPPORT_ACCEPTED
   - COORDINATOR_GUID
   - ALLOW_VIEWING
-  - CURRENT_NEEDS
 output:
   StatePerson:
     external_ids:
@@ -78,7 +76,7 @@ output:
               strengths: STRENGTHS
               needs: NEEDS
               is_clinical_assessment: IS_CLINICAL_ASSESSMENT
-              functional_impairments: FUNCTIONAL_IMPAIRMENTS
+              current_needs: CURRENT_NEEDS
               assessment_location: ASSESSMENT_LOCATION
               referral_reason: REFERRAL_REASON
               specialist_first_name: SPECIALIST_FIRST_NAME
