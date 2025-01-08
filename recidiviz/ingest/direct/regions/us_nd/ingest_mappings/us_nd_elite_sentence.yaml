@@ -39,6 +39,15 @@ output:
       - StatePersonExternalId:
           external_id: OFFENDER_BOOK_ID
           id_type: $literal("US_ND_ELITE_BOOKING")
+    sentence_groups:
+      # As of 11/19/24, 12 OFFENDER_BOOK_IDs appear in elite_sentences with sentence information,
+      # but are unable to be connected to a sentence group. Do not hydrate this variable
+      # for those sentences.
+      - $conditional:
+          - $if: $variable(has_sentence_group)
+            $then:
+              StateSentenceGroup:
+                external_id: OFFENDER_BOOK_ID
     sentences:
       - StateSentence:
           external_id:

@@ -1219,7 +1219,6 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_nd_ingest_view_results.elite_offense_in_custody_and_pos_report_data",
     "us_nd_ingest_view_results.elite_program_assignment",
     "us_nd_ingest_view_results.elite_sentence",
-    "us_nd_ingest_view_results.elite_sentence_group",
     "us_nd_ingest_view_results.elite_sentence_status_snapshot",
     "us_nd_ingest_view_results.elite_staff",
     "us_nd_ingest_view_results.task_deadlines",

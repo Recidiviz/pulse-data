@@ -87,6 +87,3 @@ num_allowed_rows_overrides:
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 25
     override_reason: TODO(#26250) - Needs investigation
-  - validation_name: inferred_group_aggregated_projected_dates_validation
-    hard_num_allowed_rows_override: 6000
-    override_reason: TODO(#36648) - Needs investigation
