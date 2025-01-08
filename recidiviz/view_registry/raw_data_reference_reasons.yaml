@@ -190,10 +190,6 @@ US_AZ:
     us_az_validation.incarceration_population_by_custody_level: |-
       This is a raw data table containing external comparison validation data, being
       pulled into a validation view directly.
-  validation_daily_count_sheet_by_facility:
-    us_az_validation.incarceration_population_by_facility: |-
-      This is a raw data table containing external comparison validation data, being
-      pulled into a validation view directly.
   validation_daily_count_sheet_by_supervision_type:
     us_az_validation.supervision_population_by_type: |-
       This is a raw data table containing external comparison validation data, being

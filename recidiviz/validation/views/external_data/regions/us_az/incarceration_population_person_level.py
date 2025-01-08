@@ -26,7 +26,7 @@ from recidiviz.validation.views import dataset_config
 VIEW_QUERY_TEMPLATE = """
 SELECT DISTINCT
   'US_AZ' AS state_code,
-  ADC_NUMBER AS person_external_id, 
+   CAST(CAST(ADC_NUMBER AS INT64) AS STRING) AS person_external_id, 
   'US_AZ_ADC_NUMBER' AS external_id_type,
   DATE(REPORT_DATE) AS date_of_stay,
   prison.PRISON_NAME AS facility,
