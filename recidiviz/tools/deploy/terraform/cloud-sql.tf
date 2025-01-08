@@ -91,13 +91,16 @@ module "pathways_database" {
 module "insights_database" {
   source = "./modules/cloud-sql-instance"
 
-  project_id        = var.project_id
-  instance_key      = "insights"
-  base_secret_name  = "insights"
-  region            = var.region
-  zone              = var.zone
-  secondary_zone    = "us-central1-b"
-  tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
+  project_id       = var.project_id
+  instance_key     = "insights"
+  base_secret_name = "insights"
+  region           = var.region
+  zone             = var.zone
+  secondary_zone   = "us-central1-b"
+  tier = coalesce(
+    var.default_sql_tier,
+    var.project_id == "recidiviz-staging" ? "db-custom-1-3840" : "db-custom-2-8192"
+  ) # staging: 1 vCPU, 3.75GB Memory production: 2 vCPUs, 8GB Memory
   has_readonly_user = true
 
   additional_databases = [
@@ -115,13 +118,16 @@ module "insights_database" {
 module "workflows_database" {
   source = "./modules/cloud-sql-instance"
 
-  project_id        = var.project_id
-  instance_key      = "workflows"
-  base_secret_name  = "workflows"
-  region            = var.region
-  zone              = var.zone
-  secondary_zone    = "us-central1-b"
-  tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
+  project_id       = var.project_id
+  instance_key     = "workflows"
+  base_secret_name = "workflows"
+  region           = var.region
+  zone             = var.zone
+  secondary_zone   = "us-central1-b"
+  tier = coalesce(
+    var.default_sql_tier,
+    var.project_id == "recidiviz-staging" ? "db-custom-1-3840" : "db-custom-2-8192"
+  ) # staging: 1 vCPU, 3.75GB Memory production: 2 vCPUs, 8GB Memory
   has_readonly_user = true
 
   additional_databases = [
