@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violation` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  CaseManagerStaffId: STRING
+  CaseManagerFirstNm: STRING
+  CaseManagerLastNm: STRING
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: CaseManagerStaffId
+          id_type: $literal("US_IA_STAFFID")
+    full_name:
+      $person_name:
+        $given_names: CaseManagerFirstNm
+        $surname: CaseManagerLastNm

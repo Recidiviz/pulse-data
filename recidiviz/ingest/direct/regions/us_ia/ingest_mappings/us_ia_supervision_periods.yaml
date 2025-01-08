@@ -1,0 +1,663 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_person` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderCd: STRING
+  SupervisionStatusInformationId: STRING
+  start_date: DATE
+  end_date: DATE
+  SupervisionStatus: STRING
+  movement: STRING
+  next_movement: STRING
+  CaseManagerStaffId: STRING
+  Specialty: STRING
+  WorkUnitId: STRING
+  SupervisionLevel: STRING
+  SupervisionModifier: STRING
+  period_seq_num: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OffenderCd
+                - SupervisionStatusInformationId
+                - period_seq_num
+          start_date: start_date
+          termination_date: end_date
+          supervision_site: WorkUnitId
+          supervising_officer_staff_external_id: CaseManagerStaffId
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: CaseManagerStaffId
+                $then: $literal("US_IA_STAFFID")
+          supervision_type:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: SupervisionModifier
+                    $options:
+                      - $literal("Absconded")
+                      - $literal("Escaped")
+                $then:
+                  $enum_mapping:
+                    $raw_text: SupervisionModifier
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.ABSCONSION:
+                        - "Absconded"
+                        - "Escaped"
+              - $else_if:
+                  $in:
+                    $value: Specialty
+                    $options:
+                      - $literal("Warrant")
+                      - $literal("Home Confinement - Federal Offender")
+                      - $literal("Federal - Direct Home Confinement")
+                $then:
+                  $enum_mapping:
+                    $raw_text: Specialty
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.BENCH_WARRANT:
+                        - Warrant
+                      StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
+                        - Home Confinement - Federal Offender
+                        - Federal - Direct Home Confinement
+              - $else:
+                  $enum_mapping:
+                    $raw_text: SupervisionStatus
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.PROBATION:
+                        - Interstate Compact Probation
+                        - Probation
+                      StateSupervisionPeriodSupervisionType.PAROLE:
+                        - Interstate Compact Parole
+                        - Parole
+                        - Special Sentence
+                      StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
+                        - CCUSO Release with Supervision 229A.9A
+                        - Community Supervision 902.3A
+          custodial_authority:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: SupervisionModifier
+                    $options:
+                      - $literal("Supervised in Other State")
+                      - $literal("Paroled from Prison to another State")
+                      - $literal("Concurrent Prison Sentence - Non-Iowa")
+                      - $literal("Detained by Another State")
+                      - $literal("Detained by Non-Iowa Jurisdiction")
+                      - $literal("Paroled to Detainer - ICE")
+                      - $literal("Paroled to Detainer - INS")
+                      - $literal("Paroled to Detainer - Out of State")
+                      - $literal("Paroled to Detainer - U. S. Marshall")
+                $then:
+                  $enum_mapping:
+                    $raw_text: SupervisionModifier
+                    $mappings:
+                      StateCustodialAuthority.OTHER_STATE:
+                        - "Supervised in Other State"
+                        - "Paroled from Prison to another State"
+                        - "Concurrent Prison Sentence - Non-Iowa"
+                        - "Detained by Another State"
+                        - "Detained by Non-Iowa Jurisdiction"
+                        - "Paroled to Detainer - Out of State"
+                      StateCustodialAuthority.FEDERAL:
+                        - "Paroled to Detainer - ICE"
+                        - "Paroled to Detainer - INS"
+                        - "Paroled to Detainer - U. S. Marshall"
+              - $else_if:
+                  $in:
+                    $value: Specialty
+                    $options:
+                      - $literal("County Jail Contract")
+                      - $literal("Home Confinement - Federal Offender")
+                      - $literal("Federal - Direct Home Confinement")
+                      - $literal("Federal BOP")
+                $then:
+                  $enum_mapping:
+                    $raw_text: Specialty
+                    $mappings:
+                      StateCustodialAuthority.COUNTY:
+                        - "County Jail Contract"
+                      StateCustodialAuthority.FEDERAL:
+                        - "Home Confinement - Federal Offender"
+                        - "Federal - Direct Home Confinement"
+                        - "Federal BOP"
+              - $else: $literal_enum(StateCustodialAuthority.SUPERVISION_AUTHORITY)
+          supervision_level:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: SupervisionModifier
+                    $options:
+                      - $literal("Absconded")
+                      - $literal("Escaped")
+                      - $literal("Concurrent Prison Sentence - Non-Iowa")
+                      - $literal("Detained by Another State")
+                      - $literal("Detained by Non-Iowa Jurisdiction")
+                      - $literal("In Jail")
+                      - $literal("In Jail - Mental Health Assistance")
+                      - $literal("In Prison")
+                      - $literal("Paroled to Detainer")
+                      - $literal("Paroled to Detainer - ICE")
+                      - $literal("Paroled to Detainer - INS")
+                      - $literal("Paroled to Detainer - Iowa")
+                      - $literal("Paroled to Detainer - Out of State")
+                      - $literal("Paroled to Detainer - U. S. Marshall")
+                $then:
+                  $enum_mapping:
+                    $raw_text: SupervisionModifier
+                    $mappings:
+                      StateSupervisionLevel.ABSCONSION:
+                        - Absconded
+                        - Escaped
+                      StateSupervisionLevel.IN_CUSTODY:
+                        - Concurrent Prison Sentence - Non-Iowa
+                        - Detained by Another State
+                        - Detained by Non-Iowa Jurisdiction
+                        - In Jail
+                        - In Jail - Mental Health Assistance
+                        - In Prison
+                        - Paroled to Detainer
+                        - Paroled to Detainer - ICE
+                        - Paroled to Detainer - INS
+                        - Paroled to Detainer - Iowa
+                        - Paroled to Detainer - Out of State
+                        - Paroled to Detainer - U. S. Marshall
+              - $else_if:
+                  $in:
+                    $value: Specialty
+                    $options:
+                      - $literal("Intensive Supervision - Low Functioning Offenders")
+                      - $literal("Diversion Program")
+                      - $literal("Radio Frequency")
+                      - $literal("Global Positioning Satellite - Cellular")
+                      - $literal("Electronic Monitoring - Radio Frequency")
+                      - $literal("Electronic Monitoring - MEMS")
+                      - $literal("Electronic Monitoring - Global")
+                      - $literal("Global Positioning - Satellite")
+                      - $literal("Intensive Supervision")
+                      - $literal("Intensive Supervision - Team")
+                      - $literal("Intensive Supervision - Pretrial Release")
+                      - $literal("Jail (Designated Site)")
+                      - $literal("Low Risk Probation")
+                      - $literal("Minimum Risk Program")
+                      - $literal("Day Reporting - Residential")
+                      - $literal("Day Reporting Supervision")
+                      - $literal("Warrant")
+                $then:
+                  $enum_mapping:
+                    $raw_text: Specialty
+                    $mappings:
+                      StateSupervisionLevel.HIGH:
+                        - Intensive Supervision - Low Functioning Offenders
+                        - Intensive Supervision
+                        - Intensive Supervision - Team
+                        - Intensive Supervision - Pretrial Release
+                      StateSupervisionLevel.DIVERSION:
+                        - Diversion Program
+                      StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY:
+                        - Radio Frequency
+                        - Global Positioning Satellite - Cellular
+                        - Electronic Monitoring - Radio Frequency
+                        - Electronic Monitoring - MEMS
+                        - Electronic Monitoring - Global
+                        - Global Positioning - Satellite
+                      StateSupervisionLevel.IN_CUSTODY:
+                        - Jail (Designated Site)
+                      StateSupervisionLevel.LIMITED:
+                        - Low Risk Probation
+                        - Minimum Risk Program
+                      StateSupervisionLevel.RESIDENTIAL_PROGRAM:
+                        - Day Reporting - Residential
+                        - Day Reporting Supervision
+                      StateSupervisionLevel.WARRANT:
+                        - Warrant
+              - $else:
+                  $enum_mapping:
+                    $raw_text: SupervisionLevel
+                    $mappings:
+                      StateSupervisionLevel.UNSUPERVISED:
+                        - Level 0 - IDAP Monitoring
+                        - Level 0 - None
+                        - Level 0 - Self Supervision
+                        - Level 0 - Not Available for Supervision
+                      StateSupervisionLevel.LIMITED:
+                        - Level 1
+                      StateSupervisionLevel.MINIMUM:
+                        - Level 2
+                      StateSupervisionLevel.MEDIUM:
+                        - Level 3
+                      StateSupervisionLevel.HIGH:
+                        - Level 4
+                        - Level 4 - New
+                      StateSupervisionLevel.MAXIMUM:
+                        - Level 5
+          case_type_entries:
+            - $conditional:
+                - $if:
+                    $in:
+                      $value: Specialty
+                      $options:
+                        - $literal("Domestic Abuse Supervision")
+                        - $literal("Drug Court Supervision")
+                        - $literal("Mental Health Court")
+                        - $literal("Mental Health Re-Entry")
+                        - $literal("Sex Offender")
+                        - $literal("Veterans Court Supervision")
+                  $then:
+                    StateSupervisionCaseTypeEntry:
+                      case_type:
+                        $enum_mapping:
+                          $raw_text: Specialty
+                          $mappings:
+                            StateSupervisionCaseType.DOMESTIC_VIOLENCE:
+                              - Domestic Abuse Supervision
+                            StateSupervisionCaseType.DRUG_COURT:
+                              - Drug Court Supervision
+                            StateSupervisionCaseType.MENTAL_HEALTH_COURT:
+                              - Mental Health Court
+                              - Mental Health Re-Entry
+                            StateSupervisionCaseType.SEX_OFFENSE:
+                              - Sex Offender
+                            StateSupervisionCaseType.VETERANS_COURT:
+                              - Veterans Court Supervision
+          admission_reason:
+            $enum_mapping:
+              $raw_text: movement
+              $mappings:
+                StateSupervisionPeriodAdmissionReason.ABSCONSION:
+                  - "Absconded"
+                  - "Absconded/Escaped"
+                  - "Escape Warrant Requested"
+                StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
+                  - "Release to Iowa Parole"
+                  - "Release to Interstate Compact Parole"
+                  - "Paroled from Prison to another State"
+                  - "County Confinement Hold Release"
+                StateSupervisionPeriodAdmissionReason.COURT_SENTENCE:
+                  - "Probation Granted"
+                  - "Special Sentence Granted"
+                  - "Release to Shock Probation"
+                  - "Release to Non-Shock Probation"
+                StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - "Supervised in Other State Ended"
+                  - "Paroled from Prison to another State Ended"
+                  - "Deported Ended"
+                StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                  - "Supervised in Other State"
+                  - "Supervision Status Change"
+                  - "Violators Program Admit/Parole"
+                  - "Transferred to Different Location"
+                  - "County Jail Hold"
+                  - "Temporary Release for Court Appearance"
+                  - "NCC Violators Program/Probation"
+                  - "Parole to Detainer"
+                  - "Detained by Non-Iowa Jurisdiction Ended"
+                  - "Violator Program Placement"
+                  - "Temporary Release for Court Appearance Return"
+                  - "Temporary Release Return"
+                  - "Temporary Release"
+                  - "Final Release of Safekeeper"
+                  - "County Jail Contract Placement"
+                  - "Safekeeper"
+                  - "Referred to Alternative Intervention"
+                  - "Parole returned with additional sentence"
+                  - "Residential Placement"
+                  - "Revoked"
+                  - "Temporary Release to Hospital"
+                  - "Release to Work Release"
+                  - "OWI Facility Admission"
+                  - "Warrant Served"
+                  - "Transfer to OWI Facility"
+                  - "Terminated by Court"
+                  - "Release to Appeal Bond"
+                  - "Transportation Holdover"
+                  - "Terminated-Voluntary Return to Jail/Prison"
+                  - "Warrant Recalled"
+                  - "Release Transportation Holdover"
+                  - "Appeal Bond Return"
+                  - "Final Release to MHI"
+                StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION:
+                  - "Absconded Ended"
+                  - "Escape Ended"
+                StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION:
+                  - "Violator Program Return to Probation"
+                  - "Violator Program Release"
+                  - "Violator Program Return to Parole"
+                  - "Return to Parole after hearing"
+                StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN:
+                  - "ICON Programming Issue"
+                StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  # Mostly show up in in custody periods
+                  - "New Court Commitment"
+                  - "Probation Revocation"
+                  - "Detained by Non-Iowa Jurisdiction"
+                  # No exactly sure what's going on, but happen infrequently (<1500 times)
+                  - "Discharge, End of Sentence"
+                  - "Returned to Sending Jurisdiction"
+                  - "Deported"
+                  - "Parole Revocation"
+                  - "Work Release Revocation"
+                  - "Probation Discharged"
+                  - "Automatic Revocation - Parole"
+                  - "Special Sentence Revocation"
+                  - "OWI Revocation"
+                  - "Shock Probation Revocation"
+                  - "Work Release Granted"
+                  - "Death"
+                  - "Concurrent Prison Sentence - Non-Iowa"
+                  - "Final Discharge, Other"
+                  - "Shock Probation Return"
+                  - "Parole Discharged"
+                  - "Other OWI Return"
+                  - "Released to Custody of US Bureau of Prisons"
+                  - "Concurrent Prison Sentence - Non-Iowa ended"
+                  - "Revoked - Serve in Jail"
+                  - "Release of Prison Compact"
+                  - "Released to Custody of US Probation Office"
+                  - "Paroled with immediate discharge"
+                  - "Federal Residential Offender - Successful"
+                  - "Other CBC Return - Non Punitive"
+                  - "Prison Compact"
+                  - "Federal Residential Offender - Unsuccessful"
+                  - "Resentence by Court"
+                  - "Parole Revocation - Release to Work Release"
+                  - "Revoked - Time Served"
+                  - "Other CBC Release - Non Punitive"
+                  - "Revoked from Parole - Discharged"
+                  - "Automatic Revocation - Special Sentence"
+                  - "Special Sentence Discharged"
+                  # only show up in really old data (pre 2011)
+                  - "Transfer to New Institution"
+                  - "Admission from Transfer (Admit from another institution)"
+                  - "Parole returned pending hearing - no pending charges"
+                  - "Discharge By District Action"
+                  - "Violator Program - Unsuccessful/Administrative"
+                  - "New Court Commitment - OWI"
+                  - "Final Discharge, Parole Board Ordered"
+                  - "Jail Placement"
+                  - "Violators Program Admit/Probation"
+                  - "CBC/Associates Admit Info"
+                  - "Parole returned after final hearing"
+                  - "Court Ordered Safekeeper"
+                  - "Final Discharge, Court Ordered"
+                  - "Discharged - Expiration (partial completion)"
+                  - "Parole with Immediate Discharge"
+                  - "New Court Commitment - Probation Revocation - OWI"
+                  - "Admission from OWI Facility"
+                  - "Escapee Returned"
+                  - "Shock probation Revocation for additional sentence"
+                  - "Shock probation Revocation for technical violation"
+                  - "Other Temporary Release"
+                  - "Temporary Release for Furlough"
+                  - "Shock Probation Return with New Sentence (probation not revoked on original sentence)"
+                  - "Parole Return - Medical/Non-Punitive"
+                  - "Discharged - Early (partial completion)"
+                  - "Work Release Revocation, Technical Violation"
+                  - "Release by Court Order"
+                  - "Pre Release/Shock Consideration"
+                  - "Return for Corrective Action"
+                  - "Appeal Bond Return, No New Charges (Lost Appeal)"
+                  - "Parole returned pending hearing - pending charges"
+                  - "Escapee Returned, Additional Sentence"
+                  - "Nonpenal Sentence Safekeeper (county jail)"
+                  - "Parole With Immediate Discharge"
+                  - "Violator Program Return to Work Release"
+                  - "Transfer Out of State Cuncurrent"
+                  - "Death, Unknown Causes"
+                  - "Parole Violation with Additional Sentence - OWI"
+                  - "Work Release Return After Final Hearing"
+                  - "Continue Parole after Medical Return"
+                  - "Luster Heights Probationer Admit"
+                  - "Appeal Bond Return, w/additional sentence"
+                  - "Return from Probation Other Than Shock"
+                  - "Violator Program Admit/Work Release"
+                  - "Transfer Out of State Concurrent"
+                  - "Return Out of State Concurrent"
+                  - "Case Release to Compact Housing"
+                  - "Death, Suicide"
+                  - "MHI-DHS Safekeeper (civilly committed)"
+                  - "Death, Natural Causes"
+                  - "Iowa Inmate Returned, Interstate Compact"
+                  - "Luster Heights Probationer Release Unsuccessful"
+                  - "Death, Accidental"
+                  - "Mittimus Withdrawn"
+                  - "Compact Safekeeper (federal or other state)"
+                  - "Final Discharge, Commutation"
+                  - "Transfer to MHI"
+                  - "Return from Probation Other Than Shock, add. Sentence"
+                  - "Released on Bond"
+                  - "Other Work Release Return - Nonpunitive"
+                  - "Transfer Out of State"
+                  - "Parole returned pending sentence on new charge"
+                  - "Transfer to Juvenile Facility"
+                  - "Work Release Return with Hearing - No pending charges"
+                  - "Death, Non Accidental"
+                  - "Escapee Returned , new Charges, Pending Adjudication"
+                  - "Work Release Return With Additional Sentence"
+          termination_reason:
+            $enum_mapping:
+              $raw_text: next_movement
+              $mappings:
+                StateSupervisionPeriodTerminationReason.ABSCONSION:
+                  - "Absconded"
+                  - "Absconded/Escaped"
+                StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
+                  - "Transfer to New Institution"
+                  - "County Jail Hold"
+                  - "New Court Commitment"
+                  - "Admission from Transfer (Admit from another institution)"
+                  - "Parole returned with additional sentence"
+                  - "New Court Commitment - OWI"
+                  - "Jail Placement"
+                  - "Sent Back to Jail (Designated Jail Sites Only)"
+                  - "Transfer to Juvenile Facility"
+                StateSupervisionPeriodTerminationReason.COMMUTED:
+                  - "Terminated by Appeal - Conviction Overturned"
+                  - "Final Discharge, Commutation"
+                StateSupervisionPeriodTerminationReason.DEATH:
+                  - "Death"
+                  - "Death, Unknown Causes"
+                  - "Death, Suicide"
+                  - "Death, Natural Causes"
+                  - "Death, Accidental"
+                  - "Death, Non Accidental"
+                StateSupervisionPeriodTerminationReason.DISCHARGE:
+                  - "Discharge - Early Discharge"
+                  - "Terminated by Court"
+                  - "Discharged - Contempt"
+                  - "Discharged - Absconder/Escape"
+                  - "Absconder Discharged"
+                  - "Discharged - Absconder"
+                  - "Revoked From Parole - Discharged"
+                  - "Discharge By District Action"
+                  - "Discharged - Deported"
+                  - "Final Discharge, Parole Board Ordered"
+                  - "Probation Discharged"
+                  - "Final Discharge, Court Ordered"
+                  - "Discharged - Expiration (partial completion)"
+                  - "Parole with Immediate Discharge"
+                  - "Discharged - Early (partial completion)"
+                  - "Paroled w/Immediate Discharge"
+                  - "Final Discharge, Other"
+                  - "Parole Discharged"
+                  - "Parole With Immediate Discharge"
+                  - "Paroled with immediate discharge"
+                  - "Federal Residential Offender - Successful"
+                  - "Discharged - Determinate Sentence"
+                  - "Revoked from Parole - Discharged"
+                  - "Special Sentence Discharged"
+                StateSupervisionPeriodTerminationReason.EXPIRATION:
+                  - "Discharged - Expiration of Sentence"
+                  - "Discharge, End of Sentence"
+                StateSupervisionPeriodTerminationReason.VACATED:
+                  - "Acquitted/Dismissed"
+                StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - "Supervised in Other State"
+                  - "Returned to Sending Jurisdiction"
+                  - "Detained by Non-Iowa Jurisdiction"
+                  - "Returned to Sending Jurisdiction (Interstate Comp)"
+                  - "Paroled from Prison to another State"
+                  - "Release to Interstate Compact Parole"
+                  - "Deported"
+                  - "Probation Granted - Non-DOC Supervision"
+                  - "Released to Custody of US Bureau of Prisons"
+                  - "Concurrent Prison Sentence - Non-Iowa"
+                  - "Released to Custody of US Probation Office"
+                  - "Paroled to Detainer - Out of State"
+                  - "Transfer Out of State Cuncurrent"
+                  - "Paroled to Detainer - INS"
+                  - "Transfer Out of State Concurrent"
+                  - "Paroled to Detainer - U.S. Marshall"
+                  - "Transfer Out of State"
+                StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
+                  - "Supervision Status Change"
+                  - "Paroled from Prison to another State Ended"
+                  - "Transferred to Different Location"
+                  - "Release to Iowa Parole"
+                  - "Temporary Release for Court Appearance"
+                  - "Release to Shock Probation"
+                  - "Escape Warrant Requested"
+                  - "Violator Program Return to Probation"
+                  - "Detained by Non-Iowa Jurisdiction Ended"
+                  - "Parole to Detainer"
+                  - "Supervised in Other State Ended"
+                  - "Violator Program Placement"
+                  - "Released to Special Sentence"
+                  - "Probation Granted"
+                  - "Violator Program Release"
+                  - "Temporary Release for Court Appearance Return"
+                  - "County Confinement Hold Release"
+                  - "Violators Program Admit/Parole"
+                  - "Temporary Release Return"
+                  - "Special Sentence Granted"
+                  - "Temporary Release"
+                  - "Referred to Alternative Intervention"
+                  - "Final Release of Safekeeper"
+                  - "Safekeeper"
+                  - "Residential Placement"
+                  - "Warrant Served"
+                  - "Release to Work Release"
+                  - "OWI Facility Admission"
+                  - "Transfer to OWI Facility"
+                  - "Warrant Recalled"
+                  - "Release to Appeal Bond"
+                  - "Terminated-Voluntary Return to Jail/Prison"
+                  - "Transportation Holdover"
+                  - "Release Transportation Holdover"
+                  - "Final Release to MHI"
+                  - "Appeal Bond Return"
+                  - "Deported Ended"
+                  - "Release to Non-Shock Probation"
+                  - "Probation Granted - Reconsideration of Sentence"
+                  - "Parole Granted"
+                  - "Released to OWI Continuum"
+                  - "Concurrent Prison Sentence - Non-Iowa ended"
+                  - "Resentence by Court"
+                  - "Paroled to Detainer - Iowa"
+                StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION:
+                  - "Absconded Ended"
+                  - "Escape Ended"
+                StateSupervisionPeriodTerminationReason.REVOCATION:
+                  - "Revoked"
+                  - "Revoked - Serve in Jail"
+                  - "Revoked From Parole - Work Release Granted"
+                  - "Probation Revocation"
+                  - "Revoked - Time Served"
+                  - "Parole returned pending hearing - no pending charges"
+                  - "Parole Revocation"
+                  - "Work Release Revocation"
+                  - "Parole returned after final hearing"
+                  - "Revoked - Fine Imposed"
+                  - "Automatic Revocation - Parole"
+                  - "Special Sentence Revocation"
+                  - "Revoked - Zero Tolerance"
+                  - "New Court Commitment - Probation Revocation - OWI"
+                  - "OWI Revocation"
+                  - "Escapee Returned"
+                  - "Shock probation Revocation for additional sentence"
+                  - "Shock probation Revocation for technical violation"
+                  - "Shock Probation Return with New Sentence (probation not revoked on original sentence)"
+                  - "Shock Probation Revocation"
+                  - "Work Release Revocation, Technical Violation"
+                  - "Return for Corrective Action"
+                  - "Parole returned pending hearing - pending charges"
+                  - "Escapee Returned, Additional Sentence"
+                  - "Other OWI Return"
+                  - "Shock Probation Return"
+                  - "Work Release Return After Final Hearing"
+                  - "Return Out of State Concurrent"
+                  - "Parole Revocation - Release to Work Release"
+                  - "Iowa Inmate Returned, Interstate Compact"
+                  - "Automatic Revocation - Special Sentence"
+                  - "Return from Probation Other Than Shock, add. Sentence"
+                  - "Parole returned pending sentence on new charge"
+                  - "Escapee Returned , new Charges, Pending Adjudication"
+                  - "Work Release Return With Additional Sentence"
+                StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN:
+                  - "ICBC"
+                  - "ICON Programming Issue"
+                StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
+                  # Not sure what's happening here
+                  - "County Jail Contract Placement"
+                  # Not sure but infrequent (< 200 times)
+                  - "Federal Residential Offender - Unsuccessful"
+                  - "Work Release Granted"
+                  - "Terminated - Voluntary Return to Jail/Prison"
+                  - "Other CBC Return - Non Punitive"
+                  - "Prison Compact"
+                  - "Release of Prison Compact"
+                  - "Other CBC Release - Non Punitive"
+                  # only really old
+                  - "NCC Violators Program/Probation"
+                  - "Violator Program Return to Parole"
+                  - "Violator Program - Unsuccessful/Administrative"
+                  - "Temporary Release to Hospital"
+                  - "Return to Parole after hearing"
+                  - "Violators Program Admit/Probation"
+                  - "CBC/Associates Admit Info"
+                  - "Court Ordered Safekeeper"
+                  - "Admission from OWI Facility"
+                  - "Other Temporary Release"
+                  - "Temporary Release for Furlough"
+                  - "Adjudicated (Pretrial Only)"
+                  - "Parole Return - Medical/Non-Punitive"
+                  - "Release by Court Order"
+                  - "Pre Release/Shock Consideration"
+                  - "Appeal Bond Return, No New Charges (Lost Appeal)"
+                  - "Nonpenal Sentence Safekeeper (county jail)"
+                  - "Violator Program Return to Work Release"
+                  - "Parole Violation with Additional Sentence - OWI"
+                  - "Charge Amended"
+                  - "Continue Parole after Medical Return"
+                  - "Luster Heights Probationer Admit"
+                  - "Appeal Bond Return, w/additional sentence"
+                  - "Return from Probation Other Than Shock"
+                  - "Violator Program Admit/Work Release"
+                  - "Work Unit - Field to Residential"
+                  - "Case Release to Compact Housing"
+                  - "Released on Bond"
+                  - "Work Unit - Field to Prison"
+                  - "MHI-DHS Safekeeper (civilly committed)"
+                  - "Luster Heights Probationer Release Unsuccessful"
+                  - "Mittimus Withdrawn"
+                  - "Compact Safekeeper (federal or other state)"
+                  - "Transfer to MHI"
+                  - "Work Unit - Field to Field"
+                  - "Other Work Release Return - Nonpunitive"
+                  - "Probation Granted - Non Shock"
+                  - "Work Release Return with Hearing - No pending charges"
+                  - "Work Unit - Case Manager to Case Manager"
+                  - "Work Unit - Residential to Prison"
+                  - "Transferred to Release on Recognizance (Pretrial)"
