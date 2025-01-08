@@ -43,7 +43,8 @@ PRODUCTION_PRIMARY_ENABLED_STATES: Set[StateCode] = {
 # all states enabled in prod primary must also be enabled in prod secondary, plus
 # the states we just want to be enabled in prod secondary
 PRODUCTION_SECONDARY_ENABLED_STATES: Set[StateCode] = {
-    *PRODUCTION_PRIMARY_ENABLED_STATES
+    StateCode.US_TN,
+    *PRODUCTION_PRIMARY_ENABLED_STATES,
 }
 
 
@@ -51,7 +52,6 @@ PRODUCTION_SECONDARY_ENABLED_STATES: Set[StateCode] = {
 # all states in any version of prod must able be enabled in staging primary, plus
 STAGING_PRIMARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_ME,
-    StateCode.US_TN,
     *PRODUCTION_SECONDARY_ENABLED_STATES,
 }
 # all states enabled in staging primary must be enabled in staging secondary, plus the
