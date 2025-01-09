@@ -1181,7 +1181,6 @@ class OutliersQuerier:
     def get_vitals_metrics_for_supervision_officer(
         self,
         officer_pseudonymized_id: str,
-        can_access_all_supervisors: Optional[bool] = False,
     ) -> List[VitalsMetric]:
         """
         Retrieve vitals metrics for officers by officer pseudo ID.
@@ -1189,8 +1188,6 @@ class OutliersQuerier:
 
         return self._get_vitals_metrics_from_officer_pseudonymized_ids(
             supervision_officer_pseudonymized_ids=[officer_pseudonymized_id]
-            if not can_access_all_supervisors
-            else None
         )
 
     def get_vitals_metrics_for_supervision_officer_supervisor(

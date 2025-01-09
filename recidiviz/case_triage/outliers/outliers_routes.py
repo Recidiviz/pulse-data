@@ -1118,9 +1118,7 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         vitals_metrics: List[
             VitalsMetric
-        ] = querier.get_vitals_metrics_for_supervision_officer(
-            officer.pseudonymized_id, user_context.can_access_all_supervisors
-        )
+        ] = querier.get_vitals_metrics_for_supervision_officer(officer.pseudonymized_id)
 
         return jsonify(
             [
