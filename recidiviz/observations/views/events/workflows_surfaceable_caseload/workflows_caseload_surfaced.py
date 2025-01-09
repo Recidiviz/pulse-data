@@ -69,6 +69,7 @@ ON
     AND b.person_record_type = "RESIDENT"
 WHERE
     a.search_id_value IS NOT NULL 
+    AND a.context_page_url LIKE "%workflows%"
 QUALIFY ROW_NUMBER() OVER (
     PARTITION BY state_code, task_type, timestamp, search_id_value
     ORDER BY c.start_date DESC

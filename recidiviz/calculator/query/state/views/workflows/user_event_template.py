@@ -93,7 +93,6 @@ def user_event_template(
             } AS pseudonymized_id,
             timestamp,
             session_id,
-            context_page_url,
             user_id,
             {','.join(add_columns)}{',' if add_columns else ''}
         FROM `{{project_id}}.{{segment_dataset}}.{table_name}`
