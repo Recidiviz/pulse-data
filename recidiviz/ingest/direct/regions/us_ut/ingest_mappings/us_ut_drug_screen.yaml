@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_drug_screen` to the
+# corresponding ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  ofndr_num: STRING
+  tst_id: STRING
+  tst_dt: STRING
+  smpl_typ_cd: STRING
+  sbstnc_sbstnc_desc: STRING
+  sbstnc_found_flg: STRING
+  admit_use_flg: STRING
+  med_invalidate_flg: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    drug_screens:
+      - StateDrugScreen:
+          external_id:
+            $concat:
+              $values:
+                - tst_id
+                - sbstnc_sbstnc_desc
+              $separator: "@@"
+          drug_screen_date: tst_dt
+          drug_screen_result:
+            $conditional:
+              - $if:
+                  $equal:
+                    - admit_use_flg
+                    - $literal("Y")
+                $then: $literal_enum(StateDrugScreenResult.ADMITTED_POSITIVE)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: sbstnc_found_flg
+                    $mappings:
+                      StateDrugScreenResult.NEGATIVE: "N"
+                      StateDrugScreenResult.POSITIVE: "Y"
+          sample_type:
+            $enum_mapping:
+              $raw_text: smpl_typ_cd
+              $mappings:
+                # TODO(#37051): Get a code table for these values.
+                StateDrugScreenSampleType.INTERNAL_UNKNOWN:
+                  - U
+                  - S
+                  - B
+                  - A
+                  - D
+                  - N
+                  - T
+                  - F
+                  - E
+                  - H
+                  - L
+                  - P
+                  - M
+          drug_screen_metadata:
+            $json_dict:
+              medical_exemption: med_invalidate_flg
+              substance: sbstnc_sbstnc_desc

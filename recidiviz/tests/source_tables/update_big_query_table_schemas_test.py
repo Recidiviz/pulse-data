@@ -1894,6 +1894,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_tx_state.state_supervision_violation_response_decision_entry",
     "us_tx_state.state_supervision_violation_type_entry",
     "us_tx_state.state_task_deadline",
+    "us_ut_ingest_view_results.drug_screen",
     "us_ut_ingest_view_results.employment_period",
     "us_ut_ingest_view_results.state_person",
     "us_ut_normalized_state.state_assessment",
