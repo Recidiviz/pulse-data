@@ -48,6 +48,7 @@ export const insightsConfigurationSchema = z.object({
       body: z.string(),
     })
   ),
+  vitalsMetricsMethodologyUrl: z.string(),
 });
 
 export type InsightsConfiguration = z.infer<typeof insightsConfigurationSchema>;

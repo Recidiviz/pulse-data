@@ -978,6 +978,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             "slightly_worse_than_rate_label": "slightly worse than statewide rate",
             "at_or_below_rate_label": "At or below statewide rate",
             "exclusion_reason_description": "excluded because x",
+            "vitals_metrics_methodology_url": "http://example.com/methodology",
         }
 
         querier = OutliersQuerier(StateCode.US_PA)
@@ -1013,6 +1014,7 @@ class TestOutliersQuerier(InsightsDbTestCase):
             "slightly_worse_than_rate_label": "slightly worse than statewide rate",
             "at_or_below_rate_label": "At or below statewide rate",
             "exclusion_reason_description": "excluded because x",
+            "vitals_metrics_methodology_url": "http://example.com/methodology",
         }
 
         querier = OutliersQuerier(StateCode.US_PA)

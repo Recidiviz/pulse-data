@@ -363,6 +363,10 @@ class Configuration(InsightsBase):
         server_default=json.dumps(ACTION_STRATEGIES_DEFAULT_COPY),
     )
 
+    vitals_metrics_methodology_url = Column(
+        String, nullable=False, server_default="https://www.recidiviz.org/"
+    )
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             field.name: getattr(self, field.name, None) for field in self.__table__.c

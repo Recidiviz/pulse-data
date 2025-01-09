@@ -45,6 +45,7 @@ const ACTION_STRATEGIES_DEFAULT_COPY = {
 export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
   {
     featureVariant: null,
+    vitalsMetricsMethodologyUrl: "my-methodology-url.org",
     supervisionOfficerLabel: "officer",
     supervisionDistrictLabel: "district",
     supervisionUnitLabel: "unit",
@@ -77,6 +78,7 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
   },
   {
     featureVariant: "featureVariant1",
+    vitalsMetricsMethodologyUrl: "my-methodology-url.org",
     supervisionOfficerLabel: "agent",
     supervisionDistrictLabel: "region",
     supervisionUnitLabel: "unit",
@@ -109,6 +111,7 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
   },
   {
     featureVariant: "featureVariant1",
+    vitalsMetricsMethodologyUrl: "my-methodology-url.org",
     supervisionOfficerLabel: "agent",
     supervisionDistrictLabel: "district",
     supervisionUnitLabel: "unit",

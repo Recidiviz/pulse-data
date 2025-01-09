@@ -126,6 +126,25 @@ const AddConfigForm = ({
             <Input placeholder="Enter new feature variant" />
           </Form.Item>
         </Form.Item>
+        <Heading>Vitals Configuration</Heading>
+        <div>
+          Vitals metrics provide insights into how well officers and locations
+          adhere to key standards, such as timely discharge and risk
+          assessments. This section allows you to configure the display and
+          functionality of vitals metrics in the application.
+        </div>
+        <Form.Item
+          name="vitalsMetricsMethodologyURL"
+          label="Vitals Metrics Methodology URL"
+          rules={[
+            {
+              required: true,
+              message: `Please input the vitals metrics methodology/FAQ URL for ${stateCode}`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
         <Heading>Labels</Heading>
         <Form.Item
           name="supervisionOfficerLabel"

@@ -352,6 +352,7 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
                             "abscondersLabel": "absconders",
                             "atOrAboveRateLabel": "At or above statewide rate",
                             "docLabel": "DOC",
+                            "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
                             "actionStrategyCopy": ACTION_STRATEGIES_DEFAULT_COPY,
                         }
                     ),
