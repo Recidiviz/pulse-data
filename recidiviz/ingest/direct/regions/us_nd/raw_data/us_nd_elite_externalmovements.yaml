@@ -132,6 +132,8 @@ columns:
         description: Montana State Prison
       - value: "CONT"
         description: "TODO(#11833): Update with facility name."
+      - value: JRMU
+        description: JAMES RIVER MINIMUM UNIT
   - name: MOVEMENT_SEQ
     description: |-
       The ordered index of the movement among the full set of movements associated with a particular booking.
@@ -170,7 +172,7 @@ columns:
       - value: "JRCC"
         description: James River Correctional Center
       - value: JRMU
-        description: TODO(#34909) Document this value.
+        description: JAMES RIVER MINIMUM UNIT
       - value: "LRRP"
         description: Lake Region Residential Reentry Center
       - value: "MRCC"
