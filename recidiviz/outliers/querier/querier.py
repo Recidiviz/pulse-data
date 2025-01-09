@@ -1305,8 +1305,6 @@ class OutliersQuerier:
                     == category_type_to_compare.value,
                     # Should exclude vitals metrics rows
                     SupervisionOfficerMetric.period == MetricTimePeriod.YEAR.value,
-                    # TODO(#33947): Don't filter out excluded officers
-                    SupervisionOfficerMetric.include_in_outcomes,
                 )
                 .group_by(SupervisionOfficerMetric.officer_id)
                 .subquery()
