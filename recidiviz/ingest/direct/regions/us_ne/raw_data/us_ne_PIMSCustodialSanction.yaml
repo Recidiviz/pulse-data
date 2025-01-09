@@ -17,18 +17,28 @@ columns:
     field_type: datetime
     description: |-
       Recommended start date
+    null_values:
+      - "NULL"
   - name: preferredLocationCode
     description: |-
       Preferred location code
+    null_values:
+      - "NULL"
   - name: alternateLocationCode
     description: |-
       Alternate location code
+    null_values:
+      - "NULL"
   - name: custodialSanctionDuration
     description: |-
       Custodial sanction duration
+    null_values:
+      - "NULL"
   - name: revisedSanctionDuration
     description: |-
       Revised sanction duration
+    null_values:
+      - "NULL"
   - name: contested
     description: |-
       Contested
@@ -36,10 +46,14 @@ columns:
     field_type: datetime
     description: |-
       Date of hearing
+    null_values:
+      - "NULL"
   - name: actualJailAdmitDate
     field_type: datetime
     description: |-
       Date admitted to jail
+    null_values:
+      - "NULL"
   - name: useAltLocOnCommitmentPDF
     description: |-
       Use altenate location on commitment
@@ -50,6 +64,8 @@ columns:
   - name: boardDecisionCode
     description: |-
       Board decision code
+    null_values:
+      - "NULL"
   - name: notAppropriateOptionsCode
     description: |-
       TODO(#31972): Fill in with answers from NE

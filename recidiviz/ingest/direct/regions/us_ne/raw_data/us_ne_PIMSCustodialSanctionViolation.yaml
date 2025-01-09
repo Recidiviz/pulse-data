@@ -15,20 +15,30 @@ columns:
   - name: fkPIMSCustodialSanctionViolationSpecialConditionId
     description: |-
       Foreign key id to PIMSCustodialSanctionViolationSpecialCondition table
+    null_values:
+      - "NULL"
   - name: violationTypeCode
     description: |-
       Violation type code
+    null_values:
+      - "NULL"
   - name: violationDate
     field_type: datetime
     description: |-
       Date of violation
+    null_values:
+      - "NULL"
   - name: createdDate
     description: |-
       Date created
+    null_values:
+      - "NULL"
   - name: createdBy
     description: |-
       User created by
     is_pii: true
+    null_values:
+      - "NULL"
   - name: modifiedBy
     description: |-
       User modified by
@@ -37,6 +47,8 @@ columns:
     field_type: datetime
     description: |-
       Date modified
+    null_values:
+      - "NULL"
   - name: version
     description: |-
       version

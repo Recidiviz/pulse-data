@@ -18,23 +18,35 @@ columns:
   - name: employerName
     description: |-
       Name of employer
+    null_values:
+      - "NULL"
   - name: addressLine1
     description: |-
       Address line 1
     is_pii: True
+    null_values:
+      - "NULL"
   - name: addressLine2
     description: |-
       Address Line 2
     is_pii: True
+    null_values:
+      - "NULL"
   - name: city
     description: |-
       City
+    null_values:
+      - "NULL"
   - name: state
     description: |-
       State
+    null_values:
+      - "NULL"
   - name: zipCode5
     description: |-
       Zip code 5
+    null_values:
+      - "NULL"
   - name: zipCode4
     description: |-
       Zip code 4
@@ -42,31 +54,47 @@ columns:
     description: |-
       Employer phone number
     is_pii: True
+    null_values:
+      - "NULL"
   - name: contactPhone
     description: |-
       Contact phone
     is_pii: True
+    null_values:
+      - "NULL"
   - name: contactPerson
     description: |-
       Contact person
     is_pii: True
+    null_values:
+      - "NULL"
   - name: jobTitle
     description: |-
       Job title
+    null_values:
+      - "NULL"
   - name: startDate
     field_type: datetime
     description: |-
       Employment start date
+    null_values:
+      - "NULL"
   - name: endDate
     field_type: datetime
     description: |-
       Employment end date
+    null_values:
+      - "NULL"
   - name: employmentStatus
     description: |-
       Employment status
+    null_values:
+      - "NULL"
   - name: employmentStatusOther
     description: |-
       Employment status other
+    null_values:
+      - "NULL"
   - name: comments
     description: |-
       Comments
@@ -75,6 +103,8 @@ columns:
     field_type: datetime
     description: |-
       Record created when
+    null_values:
+      - "NULL"
   - name: createdByUserid
     description: |-
       Record created by
@@ -83,6 +113,8 @@ columns:
     field_type: datetime
     description: |-
       Record last updated when
+    null_values:
+      - "NULL"
   - name: lastUpdatedByUserid
     description: |-
       Record last updated by
@@ -91,6 +123,10 @@ columns:
     field_type: datetime
     description: |-
       Date effective
+    null_values:
+      - "NULL"
   - name: employmentTypeCode
     description: |-
       Employment type code
+    null_values:
+      - "NULL"

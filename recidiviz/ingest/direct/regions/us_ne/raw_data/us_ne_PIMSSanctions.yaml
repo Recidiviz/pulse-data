@@ -17,6 +17,8 @@ columns:
     field_type: datetime
     description: |-
       Date entered
+    null_values:
+      - "NULL"
   - name: ProbationerID
     description: |-
       Probationer ID
@@ -38,10 +40,14 @@ columns:
     field_type: datetime
     description: |-
       PO Notified date
+    null_values:
+      - "NULL"
   - name: ViolationDt
     field_type: datetime
     description: |-
       Violation date
+    null_values:
+      - "NULL"
   - name: Synopsis
     description: |-
       Synopsis
@@ -49,59 +55,91 @@ columns:
   - name: VioSeverity
     description: |-
       Violation severity
+    null_values:
+      - "NULL"
   - name: ResponseDt
     field_type: datetime
     description: |-
       Response date
+    null_values:
+      - "NULL"
   - name: ResponseLevel
     description: |-
       Response level
+    null_values:
+      - "NULL"
   - name: Presumptive
     description: |-
       Presumptive
+    null_values:
+      - "NULL"
   - name: BehaviorType
     description: |-
       Behavior type
+    null_values:
+      - "NULL"
   - name: numbeOfAttachments
     description: |-
       Number of attachments
+    null_values:
+      - "NULL"
   - name: sanctionAcceptanceCode
     description: |-
       Sanction acceptance code
+    null_values:
+      - "NULL"
   - name: sanctionDetails
     description: |-
       Sanction details
     is_pii: True
+    null_values:
+      - "NULL"
   - name: version
   - name: sanctionDetailsId
     description: |-
       Sanction details id
+    null_values:
+      - "NULL"
   - name: SanctionDetailsVersion
     description: |-
       Sanction details version
+    null_values:
+      - "NULL"
   - name: sanctionDetailsCreatedBy
     description: |-
       Sanction details created by user
     is_pii: True
+    null_values:
+      - "NULL"
   - name: sanctionDetailsModifiedBy
     description: |-
       Sanction detaisl modified by
+    null_values:
+      - "NULL"
   - name: sanctionDetailsCreatedDate
     field_type: datetime
     description: |-
       Sanction details created date
+    null_values:
+      - "NULL"
   - name: sanctionDetailsModifiedDate
     field_type: datetime
     description: |-
       Sanction details modified date
+    null_values:
+      - "NULL"
   - name: createdDate
     field_type: datetime
     description: |-
       Date record created
+    null_values:
+      - "NULL"
   - name: modifiedDate
     field_type: datetime
     description: |-
       Dare record modified
+    null_values:
+      - "NULL"
   - name: createdBy
     description: |-
       User created by
