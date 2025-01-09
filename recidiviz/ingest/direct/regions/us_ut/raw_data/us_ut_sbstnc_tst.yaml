@@ -1,0 +1,167 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: sbstnc_tst
+file_description: |-
+  Substance tests.
+data_classification: source
+primary_key_cols:
+  - tst_id
+  - ofndr_num
+columns:
+  - name: tst_id
+    description: |-
+      Primary key component. ID of test.
+  - name: ofndr_num
+    description: |-
+      Primary key component. ID of person tested.
+    field_type: person_external_id
+    external_id_type: US_UT_DOC
+    is_pii: True
+  - name: smpl_rqst_dt
+    description: |-
+      Date the sample was requested. Formatted MM/DD/YYYY
+    field_type: datetime
+    null_values:
+      - "(null)"
+  - name: smpl_rqst_tm
+    description: |-
+      Time the sample was requested. Formatted HH:MM:SS
+    null_values:
+      - "(null)"
+  - name: smpl_typ_cd
+    description: |-
+      Code for the type of sample used for this test.
+    null_values:
+      - "(null)"
+  - name: sched_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          This field is always null
+  - name: rfsd_sbstnc_tst_dt
+    description: |-
+      Date the person refused the substance test, where applicable.
+    field_type: datetime
+    null_values:
+      - "(null)"
+  - name: cllct_dt
+    description: |-
+      Date the sample was collected.
+    field_type: datetime
+    null_values:
+      - "(null)"
+  - name: cllct_tm
+    description: |-
+      Time the sample was collected.
+    null_values:
+      - "(null)"
+  - name: cllct_by_id
+    description: |-
+      ID of the person who collected the sample
+    is_pii: True
+    null_values:
+      - "(null)"
+  - name: tst_mthd_cd
+    description: |-
+      Code for the method of testing used.
+    null_values:
+      - "(null)"
+  - name: tst_dt
+    description: |-
+      Date of substance test
+    field_type: datetime
+    null_values:
+      - "(null)"
+  - name: tst_by_id
+    description: |-
+      ID of the person who conducted the substance test
+    is_pii: True
+    null_values:
+      - "(null)"
+  - name: tst_by_name
+    description: |-
+      Name of person who conducted the substance test
+    is_pii: True
+    null_values:
+      - "(null)"
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          This field is always null
+  - name: rslt_chall_dt
+    description: |-
+      Date the test result was challenged, where applicable.
+    field_type: datetime
+    null_values:
+      - "(null)"
+  - name: evidence_id
+    description: |-
+      TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
+  - name: sbstnc_tst_cmt
+    description: |-
+      TODO(#33372): Fill in column description
+    is_pii: True
+    null_values:
+      - "(null)"
+  - name: cllct_loc_desc
+    description: |-
+      TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
+  - name: smpl_not_tst_dt
+    description: |-
+      TODO(#33372): Fill in column description
+    field_type: datetime
+    null_values:
+      - "(null)"
+  - name: tst_sched_typ_cd
+    description: |-
+      TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
+  - name: ofndr_med_rpt_flg
+    description: |-
+      TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
+  - name: prsn_dvsn_id
+    description: |-
+      TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
+  - name: prsn_cmplx_id
+    description: |-
+      TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
+  - name: prsn_fclty_id
+    description: |-
+      TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
+  - name: sbstnc_tmprd_flg
+    description: |-
+      TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          This field is always null
+  - name: updt_usr_id
+    description: |-
+      ID of user who most recently updated this record
+    null_values:
+      - "(null)"
+    is_pii: True
+  - name: updt_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime
+    null_values:
+      - "(null)"
