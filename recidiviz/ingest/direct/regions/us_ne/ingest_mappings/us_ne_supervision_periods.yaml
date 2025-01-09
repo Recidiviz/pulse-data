@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_periods`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  inmateNumber: INTEGER
+  periodId: INTEGER
+  supervisedLevel: STRING
+  paroleOfficerID: INTEGER
+  countyParoledTo: STRING
+  inOutStateIndicator1Code: STRING
+  inOutStateIndicator2Code: STRING
+  inOutStateIndicator3Code: STRING
+  startReason: STRING
+  endReason: STRING
+  startDate: DATETIME
+  endDate: DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - inmateNumber
+                - periodId
+          supervision_type: $literal_enum(StateSupervisionPeriodSupervisionType.PAROLE)
+          start_date: startDate
+          termination_date: endDate
+          county_code: countyParoledTo
+          supervision_site: $literal("OFFICE OF PAROLE ADMINISTRATION") # all supervision sites have this name, defer to county
+          supervising_officer_staff_external_id: paroleOfficerID
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: paroleOfficerID
+                $then: $literal("US_NE_PAROLE_STAFF_ID")
+          admission_reason:
+            $enum_mapping:
+              $raw_text: startReason
+              $mappings:
+                StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
+                  - 1 - Regular (Discretionary)
+                  - 2 - Reparole
+                StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                  - Supervision Level Change # Recidiviz-made to indicate period changes due to supervision level change
+                  - Parole Officer Change # Recidiviz-made to indicate new periods from parole office changes
+          termination_reason:
+            $enum_mapping:
+              $raw_text: endReason
+              $mappings:
+                StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - RETURNED TO SENDING STATE
+                  - PV PICKED UP BY SENDING STATE
+                StateSupervisionPeriodTerminationReason.ABSCONSION:
+                  - ABSCOND (ENDED SUERVISION)
+                StateSupervisionPeriodTerminationReason.VACATED:
+                  - SENTENCE VACATED
+                StateSupervisionPeriodTerminationReason.DEATH:
+                  - DECEASED
+                StateSupervisionPeriodTerminationReason.DISCHARGE:
+                  - DISCHARGE FROM RE-PAROLE
+                  - EARLY DISCHARGE BY PAROLE BRD
+                  - Discharged in Error
+                  - DISCHARGE FROM PAROLE
+                StateSupervisionPeriodTerminationReason.EXPIRATION:
+                  - EXPIRATION OF PAROLE
+                  - EXPIRATION OF RE-PAROLE
+                StateSupervisionPeriodTerminationReason.REVOCATION:
+                  - Revoked
+                  - Rescinded
+                StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
+                  - Parole Officer Change # Recidiviz-made to indicate period changes due to parole officer change
+                  - Supervision Level Change # Recidiviz-made to indicate period changes due to supervision level change
+                StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
+                  - REJ OF TRANSFER W/APPRVD RFRI
+                  - TRANSFERRED ENDED SUPERVISION
+                  - SENTENCE AMENDED
+                StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN:
+                  - OTHER
+          supervision_level:
+            $enum_mapping:
+              $raw_text: supervisedLevel
+              $mappings:
+                StateSupervisionLevel.MINIMUM:
+                  - "Low"
+                  - "SO: Low" # Sex Offense: Low
+                  - "DV: Low" # Domestic Violence: Low
+                StateSupervisionLevel.MEDIUM:
+                  - "Moderate"
+                  - "Low/Moderate"
+                  - "DV: Moderate/Low Mod" # Domestic Violence: Moderate/Low Mod
+                  - "SO: Moderate" # Sex Offense: Moderate
+                StateSupervisionLevel.HIGH:
+                  - "DV: High/Very High" #Domestic Violence: High/Very High
+                  - "High"
+                  - "SO: High Initial 6 Months" # Sex Offense: high initial 6 months
+                  - "SO: High" # Sex Offense: High
+                  - Very High
+                StateSupervisionLevel.INTERNAL_UNKNOWN:
+                  - "Conditional"
+          custodial_authority:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - inOutStateIndicator1Code
+                    - inOutStateIndicator2Code
+                    - inOutStateIndicator3Code
+                  $include_nulls: True
+              $custom_parser: us_ne_custom_enum_parsers.parse_custodial_authority

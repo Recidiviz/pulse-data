@@ -35,6 +35,7 @@ columns:
       Foreign key to ParoleOfficer table
     null_values:
       - "NULL"
+    is_pii: True
   - name: dateOfParole
     field_type: datetime
     description: |-

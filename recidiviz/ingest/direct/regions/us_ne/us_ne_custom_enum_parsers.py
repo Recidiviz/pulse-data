@@ -25,6 +25,7 @@ my_enum_field:
 from typing import Optional
 
 from recidiviz.common.constants.state.state_sentence import StateSentencingAuthority
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 
 
 def parse_sentencing_authority(
@@ -42,3 +43,20 @@ def parse_sentencing_authority(
         return StateSentencingAuthority.OTHER_STATE
 
     return StateSentencingAuthority.COUNTY
+
+
+def parse_custodial_authority(
+    raw_text: str,
+) -> Optional[StateCustodialAuthority]:
+    """
+    Determine custodial authority from in/out state indicator codes
+    See https://drive.google.com/drive/folders/1C1GDoQFttK_gJtOR0dcfJ2mRd9o2PVuI
+    for Nebraska usage of inOutStateIndicator1Code (code1),
+    inOutStateIndicator2Code (location code), and inOutStateIndicator3Code (code2)
+    """
+    code1, location, code2 = raw_text.split("@@")
+
+    if ((code1 == "2" and code2 == "1") or code1 == "4") and location != "NE":
+        return StateCustodialAuthority.OTHER_STATE
+
+    return StateCustodialAuthority.SUPERVISION_AUTHORITY
