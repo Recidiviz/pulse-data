@@ -33,9 +33,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     meets_functional_literacy_tpr,
     no_active_felony_detainers,
     no_ineligible_tpr_offense_convictions,
-    no_tpr_denial_in_current_incarceration,
+    no_tpr_denial_or_release_in_current_incarceration,
     no_tpr_removals_from_self_improvement_programs,
-    no_transition_release_in_current_sentence_span,
     not_eligible_or_almost_eligible_for_overdue_for_acis_dtp,
     not_eligible_or_almost_eligible_for_overdue_for_recidiviz_dtp,
     within_6_months_of_recidiviz_tpr_date,
@@ -51,9 +50,6 @@ from recidiviz.task_eligibility.eligibility_spans.us_az.overdue_for_recidiviz_dt
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
-    AndTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -72,14 +68,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # b. Offenses
         no_ineligible_tpr_offense_convictions.VIEW_BUILDER,
         # c. No TPR denials in current incarceration, TPRs on current sentence and no ACIS TPR date
-        AndTaskCriteriaGroup(
-            criteria_name="US_AZ_NO_TPR_DENIAL_OR_RELEASE_IN_CURRENT_INCARCERATION",
-            sub_criteria_list=[
-                no_tpr_denial_in_current_incarceration.VIEW_BUILDER,
-                no_transition_release_in_current_sentence_span.VIEW_BUILDER,
-            ],
-            allowed_duplicate_reasons_keys=[],
-        ),
+        no_tpr_denial_or_release_in_current_incarceration.VIEW_BUILDER,
         # d. Self improvement programs
         no_tpr_removals_from_self_improvement_programs.VIEW_BUILDER,
         # e. Time

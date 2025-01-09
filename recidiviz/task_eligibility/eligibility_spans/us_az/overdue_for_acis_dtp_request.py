@@ -27,6 +27,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     incarceration_past_acis_dtp_date,
+    no_dtp_denial_or_previous_dtp_release,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -42,6 +43,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         incarceration_past_acis_dtp_date.VIEW_BUILDER,
+        # This is a catch for denials for DTP
+        no_dtp_denial_or_previous_dtp_release.VIEW_BUILDER,
     ],
     completion_event_builder=early_release_to_drug_program_overdue.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(

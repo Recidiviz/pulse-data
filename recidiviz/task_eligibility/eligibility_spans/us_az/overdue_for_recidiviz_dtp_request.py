@@ -37,12 +37,11 @@ from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     is_us_citizen_or_legal_permanent_resident,
     meets_functional_literacy_dtp,
     no_active_felony_detainers,
-    no_dtp_denial_in_current_incarceration,
+    no_dtp_denial_or_previous_dtp_release,
     no_dtp_removals_from_self_improvement_programs,
     no_ineligible_dtp_offense_convictions,
     no_major_violent_violation_during_incarceration,
     no_unsatisfactory_program_ratings_within_3_months,
-    not_previous_dtp_participant,
     not_serving_flat_sentence,
     only_drug_offense_convictions,
     within_6_months_of_recidiviz_dtp_date,
@@ -111,14 +110,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         only_drug_offense_convictions.VIEW_BUILDER,
         no_ineligible_dtp_offense_convictions.VIEW_BUILDER,
         # c. No DTP denials in current incarceration, DTPs in the past
-        AndTaskCriteriaGroup(
-            criteria_name="US_AZ_NO_DTP_DENIAL_OR_PREVIOUS_DTP_RELEASE",
-            sub_criteria_list=[
-                no_dtp_denial_in_current_incarceration.VIEW_BUILDER,
-                not_previous_dtp_participant.VIEW_BUILDER,
-            ],
-            allowed_duplicate_reasons_keys=[],
-        ),
+        no_dtp_denial_or_previous_dtp_release.VIEW_BUILDER,
         # d. Self improvement programs
         no_dtp_removals_from_self_improvement_programs.VIEW_BUILDER,
         # e. Time

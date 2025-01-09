@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_az import (
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     incarceration_past_acis_tpr_date,
     incarceration_within_6_months_of_acis_dtp_date,
+    no_tpr_denial_or_release_in_current_incarceration,
     not_eligible_or_almost_eligible_for_overdue_for_acis_dtp,
 )
 from recidiviz.task_eligibility.criteria_condition import TimeDependentCriteriaCondition
@@ -55,6 +56,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         incarceration_past_acis_tpr_date.VIEW_BUILDER,
         NOT_INCARCERATION_WITHIN_6_MONTHS_OF_ACIS_DTP_DATE,
         not_eligible_or_almost_eligible_for_overdue_for_acis_dtp.VIEW_BUILDER,
+        # This is a catch for denials for TPR
+        no_tpr_denial_or_release_in_current_incarceration.VIEW_BUILDER,
     ],
     completion_event_builder=early_release_to_community_confinement_supervision_overdue.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
