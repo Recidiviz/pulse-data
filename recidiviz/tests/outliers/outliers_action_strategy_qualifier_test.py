@@ -905,25 +905,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[
-                {
-                    "metric_id": "incarceration_starts_and_inferred",
-                    "top_x_pct": 10,
-                }
-            ],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -993,20 +974,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
             # Within 15 months of today
@@ -1048,20 +1015,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
             # More than 15 months from today
@@ -1103,20 +1056,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -1156,20 +1095,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
             earliest_person_assignment_date=datetime.date(2022, 9, 30),
@@ -1216,20 +1141,6 @@ class TestOutliersActionStrategyQualifier(TestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Hogwarts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
             earliest_person_assignment_date=datetime.date(2022, 9, 30),

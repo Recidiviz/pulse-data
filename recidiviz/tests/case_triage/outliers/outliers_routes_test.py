@@ -399,30 +399,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-04-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     earliest_person_assignment_date=date(2024, 1, 1),
                     zero_grant_opportunities=["usPaAdminSupervision"],
@@ -437,9 +413,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[],
-                    top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     earliest_person_assignment_date=date(2024, 1, 1),
                     zero_grant_opportunities=[],
@@ -548,25 +521,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-04-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -579,9 +533,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[],
-                    top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -903,30 +854,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-04-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -939,9 +866,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[],
-                    top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -1044,30 +968,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-04-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -1080,9 +980,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[],
-                    top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -1214,30 +1111,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-04-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -1250,10 +1123,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    # This officer is ineligible for ACTION_STRATEGY_OUTLIER because they are not an outlier
-                    outlier_metrics=[],
-                    top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -1365,40 +1234,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-03-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-02-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-01-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -1411,40 +1246,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-03-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-02-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-01-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -1618,35 +1419,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-03-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-02-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -1660,35 +1432,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-04-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-03-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -1702,35 +1445,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-04-01",
-                                    "metric_rate": 0.1,
-                                    "status": "NEAR",
-                                },
-                                {
-                                    "end_date": "2023-03-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -1924,40 +1638,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-04-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-03-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-01-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -1970,40 +1650,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-03-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-02-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-01-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -2177,25 +1823,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -2208,25 +1835,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -2239,25 +1847,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -2270,14 +1859,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -2429,20 +2010,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -2457,30 +2024,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "metric_one",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-08-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-07-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                                {
-                                    "end_date": "2023-06-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -2495,20 +2038,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "absconsions_bench_warrants",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -2522,14 +2051,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[],
-                    top_x_pct_metrics=[
-                        {
-                            "metric_id": "incarceration_starts_and_inferred",
-                            "top_x_pct": 10,
-                        }
-                    ],
                     avg_daily_population=10.0,
                     include_in_outcomes=True,
                 ),
@@ -2544,20 +2065,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "absconsions_bench_warrants",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     earliest_person_assignment_date=date(2022, 7, 30),
                     include_in_outcomes=True,
@@ -2572,20 +2079,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     supervisor_external_id="102",
                     supervisor_external_ids=["102"],
                     district="Hogwarts",
-                    caseload_category="ALL",
-                    outlier_metrics=[
-                        {
-                            "metric_id": "absconsions_bench_warrants",
-                            "statuses_over_time": [
-                                {
-                                    "end_date": "2023-05-01",
-                                    "metric_rate": 0.1,
-                                    "status": "FAR",
-                                },
-                            ],
-                        }
-                    ],
-                    top_x_pct_metrics=[],
                     avg_daily_population=10.0,
                     earliest_person_assignment_date=date(2022, 7, 30),
                     include_in_outcomes=True,
@@ -2932,20 +2425,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -3009,20 +2488,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -3109,20 +2574,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -3182,9 +2633,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -3248,20 +2696,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "other_metric",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -3340,20 +2774,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": build_test_metric_1(StateCode.US_PA).name,
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -3443,30 +2863,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": build_test_metric_1(StateCode.US_PA).name,
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                },
-                {
-                    "metric_id": build_test_metric_3(StateCode.US_PA).name,
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                },
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -3560,20 +2956,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -3667,20 +3049,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "incarceration_starts_and_inferred",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -3799,20 +3167,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -3832,61 +3186,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 "message": "User cannot access all supervisors and does not supervise the requested officer.",
             },
         )
-
-    @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.supervisor_exists_with_external_id",
-    )
-    @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
-    )
-    @patch(
-        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
-    )
-    @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
-    )
-    def test_get_officer_not_outlier(
-        self,
-        mock_config: MagicMock,
-        mock_enabled_states: MagicMock,
-        mock_get_officer_entity: MagicMock,
-        mock_supervisor_exists: MagicMock,
-    ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_pa", "101", can_access_all_supervisors=True
-        )
-        mock_enabled_states.return_value = ["US_PA"]
-
-        mock_config.return_value = OutliersBackendConfig(
-            metrics=[build_test_metric_3(StateCode.US_PA)],
-        )
-
-        mock_get_officer_entity.return_value = SupervisionOfficerEntity(
-            full_name=PersonName(**{"given_names": "OLIVIA", "surname": "RODRIGO"}),
-            external_id="123",
-            pseudonymized_id="hashhash",
-            supervisor_external_id="102",
-            supervisor_external_ids=["102"],
-            district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[],
-            top_x_pct_metrics=[],
-            avg_daily_population=10.0,
-            zero_grant_opportunities=[
-                "usPaSpecialCircumstancesSupervision",
-                "usPaAdminSupervision",
-            ],
-            include_in_outcomes=True,
-        )
-
-        mock_supervisor_exists.return_value = False
-        response = self.test_client.get(
-            "/outliers/US_PA/officer/hashhash?period_end_date=2023-05-01",
-            headers={"Origin": "http://localhost:3000"},
-        )
-
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.snapshot.assert_match(response.json, name="test_get_officer_not_outlier")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.supervisor_exists_with_external_id",
@@ -3927,20 +3226,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -4002,20 +3287,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id="102",
             supervisor_external_ids=["102"],
             district="Guts",
-            caseload_category="ALL",
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.1,
-                            "status": "FAR",
-                        },
-                    ],
-                }
-            ],
-            top_x_pct_metrics=[],
             avg_daily_population=10.0,
             include_in_outcomes=True,
         )
@@ -5344,10 +4615,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id=supervisor_external_id,
             supervisor_external_ids=[supervisor_external_id],
             district="Some District",
-            outlier_metrics=[],
-            top_x_pct_metrics=[],
             avg_daily_population=5,
-            caseload_category="ALL",
             include_in_outcomes=True,
         )
 
@@ -5422,10 +4690,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id=supervisor_external_id,
             supervisor_external_ids=[supervisor_external_id],
             district="Some District",
-            outlier_metrics=[],
-            top_x_pct_metrics=[],
             avg_daily_population=5,
-            caseload_category="ALL",
             include_in_outcomes=True,
         )
 
@@ -5495,10 +4760,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervisor_external_id=supervisor_external_id,
             supervisor_external_ids=["authorized_id"],
             district="Some District",
-            outlier_metrics=[],
-            top_x_pct_metrics=[],
             avg_daily_population=5,
-            caseload_category="ALL",
             include_in_outcomes=True,
         )
 

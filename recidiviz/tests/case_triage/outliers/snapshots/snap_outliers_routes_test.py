@@ -346,36 +346,9 @@ snapshots[
     ]
 }
 
-snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] = {
-    "officer": {
-        "avgDailyPopulation": 10.0,
-        "caseloadCategory": "ALL",
-        "district": "Guts",
-        "earliestPersonAssignmentDate": None,
-        "externalId": "123",
-        "fullName": {
-            "givenNames": "Olivia",
-            "middleNames": None,
-            "nameSuffix": None,
-            "surname": "Rodrigo",
-        },
-        "includeInOutcomes": True,
-        "outlierMetrics": [],
-        "pseudonymizedId": "hashhash",
-        "supervisorExternalId": "102",
-        "supervisorExternalIds": ["102"],
-        "topXPctMetrics": [],
-        "zeroGrantOpportunities": [
-            "usPaSpecialCircumstancesSupervision",
-            "usPaAdminSupervision",
-        ],
-    }
-}
-
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
     "officer": {
         "avgDailyPopulation": 10.0,
-        "caseloadCategory": "ALL",
         "district": "Guts",
         "earliestPersonAssignmentDate": None,
         "externalId": "123",
@@ -386,18 +359,9 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
             "surname": "Rodrigo",
         },
         "includeInOutcomes": True,
-        "outlierMetrics": [
-            {
-                "metricId": "absconsions_bench_warrants",
-                "statusesOverTime": [
-                    {"endDate": "2023-05-01", "metricRate": 0.1, "status": "FAR"}
-                ],
-            }
-        ],
         "pseudonymizedId": "hashhash",
         "supervisorExternalId": "102",
         "supervisorExternalIds": ["102"],
-        "topXPctMetrics": [],
         "zeroGrantOpportunities": None,
     }
 }
@@ -406,7 +370,6 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
     "officers": [
         {
             "avgDailyPopulation": 10.0,
-            "caseloadCategory": "ALL",
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": "Mon, 01 Jan 2024 00:00:00 GMT",
             "externalId": "123",
@@ -417,26 +380,13 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
                 "surname": "Potter",
             },
             "includeInOutcomes": True,
-            "outlierMetrics": [
-                {
-                    "metricId": "metric_one",
-                    "statusesOverTime": [
-                        {"endDate": "2023-05-01", "metricRate": 0.1, "status": "FAR"},
-                        {"endDate": "2023-04-01", "metricRate": 0.1, "status": "FAR"},
-                    ],
-                }
-            ],
             "pseudonymizedId": "hashhash",
             "supervisorExternalId": "102",
             "supervisorExternalIds": ["102"],
-            "topXPctMetrics": [
-                {"metricId": "incarceration_starts_and_inferred", "topXPct": 10}
-            ],
             "zeroGrantOpportunities": ["usPaAdminSupervision"],
         },
         {
             "avgDailyPopulation": 10.0,
-            "caseloadCategory": "ALL",
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": "Mon, 01 Jan 2024 00:00:00 GMT",
             "externalId": "456",
@@ -447,11 +397,9 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
                 "surname": "Weasley",
             },
             "includeInOutcomes": True,
-            "outlierMetrics": [],
             "pseudonymizedId": "hashhashhash",
             "supervisorExternalId": "102",
             "supervisorExternalIds": ["102"],
-            "topXPctMetrics": [],
             "zeroGrantOpportunities": [],
         },
     ]
@@ -463,7 +411,6 @@ snapshots[
     "officers": [
         {
             "avgDailyPopulation": 10.0,
-            "caseloadCategory": "ALL",
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": None,
             "externalId": "123",
@@ -474,24 +421,13 @@ snapshots[
                 "surname": "Potter",
             },
             "includeInOutcomes": True,
-            "outlierMetrics": [
-                {
-                    "metricId": "metric_one",
-                    "statusesOverTime": [
-                        {"endDate": "2023-05-01", "metricRate": 0.1, "status": "FAR"},
-                        {"endDate": "2023-04-01", "metricRate": 0.1, "status": "FAR"},
-                    ],
-                }
-            ],
             "pseudonymizedId": "hashhash",
             "supervisorExternalId": "102",
             "supervisorExternalIds": ["102"],
-            "topXPctMetrics": [],
             "zeroGrantOpportunities": None,
         },
         {
             "avgDailyPopulation": 10.0,
-            "caseloadCategory": "ALL",
             "district": "Hogwarts",
             "earliestPersonAssignmentDate": None,
             "externalId": "456",
@@ -502,11 +438,9 @@ snapshots[
                 "surname": "Weasley",
             },
             "includeInOutcomes": True,
-            "outlierMetrics": [],
             "pseudonymizedId": "hashhashhash",
             "supervisorExternalId": "102",
             "supervisorExternalIds": ["102"],
-            "topXPctMetrics": [],
             "zeroGrantOpportunities": None,
         },
     ]

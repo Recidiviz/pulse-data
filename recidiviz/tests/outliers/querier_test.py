@@ -445,43 +445,6 @@ class TestOutliersQuerier(InsightsDbTestCase):
         )
         self.snapshot.assert_match(actual, name="test_get_supervision_officer_entity_changing_caseload_categories")  # type: ignore[attr-defined]
 
-    def test_get_supervision_officer_entity_conflicting_caseload_categories(
-        self,
-    ) -> None:
-        with SessionFactory.using_database(self.insights_database_key) as session:
-            new_outlier_status_dict = {
-                "state_code": "US_PA",
-                "officer_id": "09",
-                "metric_id": "incarceration_starts_and_inferred",
-                "period": "YEAR",
-                "end_date": "2023-05-01",
-                "metric_rate": "0.333",
-                "target": "0.14",
-                "threshold": "0.21",
-                "status": "FAR",
-                "category_type": "SEX_OFFENSE_BINARY",
-                "caseload_category": "SEX_OFFENSE",
-                "caseload_type": "SEX_OFFENSE",
-            }
-            new_outlier_status_dict_conflicting_category = new_outlier_status_dict | {
-                "metric_id": "absconsions_bench_warrants",
-                "caseload_type": "NOT_SEX_OFFENSE",
-            }
-            session.add(
-                SupervisionOfficerOutlierStatus(**new_outlier_status_dict),
-                SupervisionOfficerOutlierStatus(
-                    **new_outlier_status_dict_conflicting_category
-                ),
-            )
-
-        with self.assertRaises(ValueError):
-            OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
-                pseudonymized_officer_id="officerhash9",
-                category_type_to_compare=InsightsCaseloadCategoryType.SEX_OFFENSE_BINARY,
-                include_workflows_info=True,
-                num_lookback_periods=1,
-            )
-
     def test_get_supervision_officer_entity_included_in_outcomes(self) -> None:
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             # officer fixture where include_in_outcomes=True

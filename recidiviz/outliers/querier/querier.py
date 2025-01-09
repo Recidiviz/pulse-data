@@ -1271,8 +1271,6 @@ class OutliersQuerier:
                 else period_end_date
             )
 
-            earliest_end_date = end_date - relativedelta(months=num_lookback_periods)
-
             avgs_subquery = (
                 session.query(
                     SupervisionOfficerMetric.officer_id,
@@ -1310,6 +1308,8 @@ class OutliersQuerier:
                     == category_type_to_compare.value,
                     # Should exclude vitals metrics rows
                     SupervisionOfficerMetric.period == MetricTimePeriod.YEAR.value,
+                    # TODO(#33947): Don't filter out excluded officers
+                    SupervisionOfficerMetric.include_in_outcomes,
                 )
                 .group_by(SupervisionOfficerMetric.officer_id)
                 .subquery()
@@ -1323,38 +1323,7 @@ class OutliersQuerier:
                 SupervisionOfficer.supervisor_external_id,
                 SupervisionOfficer.supervisor_external_ids,
                 SupervisionOfficer.supervision_district,
-                SupervisionOfficerOutlierStatus.metric_id,
                 SupervisionOfficer.earliest_person_assignment_date,
-                # Get an array of JSON objects for the officer's rates and statuses in the selected periods
-                func.array_agg(
-                    aggregate_order_by(
-                        func.jsonb_build_object(
-                            "end_date",
-                            SupervisionOfficerOutlierStatus.end_date,
-                            "metric_rate",
-                            SupervisionOfficerOutlierStatus.metric_rate,
-                            "status",
-                            SupervisionOfficerOutlierStatus.status,
-                            "caseload_category",
-                            SupervisionOfficerOutlierStatus.caseload_category,
-                        ),
-                        SupervisionOfficerOutlierStatus.end_date.desc(),
-                    )
-                ).label("statuses_over_time"),
-                # Get an array of JSON objects for the officer's rates and statuses in the selected periods
-                func.array_agg(
-                    aggregate_order_by(
-                        func.jsonb_build_object(
-                            "is_top_x_pct",
-                            SupervisionOfficerOutlierStatus.is_top_x_pct,
-                            "top_x_pct",
-                            SupervisionOfficerOutlierStatus.top_x_pct,
-                            "end_date",
-                            SupervisionOfficerOutlierStatus.end_date,
-                        ),
-                        SupervisionOfficerOutlierStatus.end_date.desc(),
-                    )
-                ).label("is_top_x_pct_over_time"),
                 avgs_subquery.c.avg_daily_population,
                 include_in_outcomes_subquery.c.include_in_outcomes,
             ]
@@ -1366,22 +1335,9 @@ class OutliersQuerier:
                     avgs_subquery.c.officer_id == SupervisionOfficer.external_id,
                 )
                 .join(
-                    SupervisionOfficerOutlierStatus,
-                    SupervisionOfficer.external_id
-                    == SupervisionOfficerOutlierStatus.officer_id,
-                )
-                .join(
                     include_in_outcomes_subquery,
                     include_in_outcomes_subquery.c.officer_id
                     == SupervisionOfficer.external_id,
-                )
-                .filter(
-                    # Get the statuses for all periods between requested or latest end_date and earliest end date
-                    SupervisionOfficerOutlierStatus.end_date.between(
-                        earliest_end_date, end_date
-                    ),
-                    SupervisionOfficerOutlierStatus.category_type
-                    == category_type_to_compare.value,
                 )
                 .group_by(
                     SupervisionOfficer.external_id,
@@ -1390,7 +1346,6 @@ class OutliersQuerier:
                     SupervisionOfficer.supervisor_external_id,
                     SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
-                    SupervisionOfficerOutlierStatus.metric_id,
                     SupervisionOfficer.earliest_person_assignment_date,
                     avgs_subquery.c.avg_daily_population,
                     include_in_outcomes_subquery.c.include_in_outcomes,
@@ -1482,110 +1437,25 @@ class OutliersQuerier:
 
             for record in officer_status_records:
                 external_id = record.external_id
-
-                # Get whether or not the officer was an outlier for the period with the requested end date
-                try:
-                    # Since statuses_over_time is sorted by end_date descending, the first item should be the latest.
-                    latest_period_status_obj = record.statuses_over_time[0]
-                except IndexError:
-                    # If the officer doesn't have any status between the earliest_end_date and end_date, skip this row.
-                    continue
-
-                if latest_period_status_obj["end_date"] != str(end_date):
-                    # If the latest status for the officer isn't the same as the requested end date, skip this row.
-                    continue
-
-                # Get the caseload category for the latest period so we can put it directly on the officer entity
-                latest_period_caseload_category = latest_period_status_obj[
-                    "caseload_category"
-                ]
-                is_outlier = latest_period_status_obj["status"] == "FAR"
-
-                # Get whether or not the officer is in the top x% of a metric for the period with the requested end date
-                try:
-                    # Since is_top_x_pct_over_time is sorted by end_date descending, the first item should be the latest.
-                    latest_is_top_x_pct_obj = record.is_top_x_pct_over_time[0]
-
-                    if latest_is_top_x_pct_obj["end_date"] != str(end_date):
-                        # If the officer doesn't have any is_top_x_pct between the earliest_end_date and end_date, skip this row.
-                        is_top_x_pct = False
-                    else:
-                        is_top_x_pct = latest_is_top_x_pct_obj.get(
-                            "is_top_x_pct", False
-                        )
-
-                except IndexError:
-                    # If is_top_x_pct_over_time is empty, the metric is not configured to calculate top x% officers.
-                    is_top_x_pct = False
-
-                if external_id in officer_external_id_to_entity:
-                    existing_entity = officer_external_id_to_entity[external_id]
-                    if is_outlier:
-                        existing_entity.outlier_metrics.append(
-                            {
-                                "metric_id": record.metric_id,
-                                "statuses_over_time": record.statuses_over_time,
-                            }
-                        )
-                    if is_top_x_pct:
-                        existing_entity.top_x_pct_metrics.append(
-                            {
-                                "metric_id": record.metric_id,
-                                "top_x_pct": record.is_top_x_pct_over_time[0][
-                                    "top_x_pct"
-                                ],
-                            }
-                        )
-                    if (
-                        existing_entity.caseload_category
-                        != latest_period_caseload_category
-                    ):
-                        raise ValueError(
-                            f"Officer with pseudonymized id {existing_entity.pseudonymized_id} has multiple caseload_category values for the latest period"
-                        )
-                else:
-                    officer_external_id_to_entity[
-                        external_id
-                    ] = SupervisionOfficerEntity(
-                        full_name=PersonName(**record.full_name),
-                        external_id=record.external_id,
-                        pseudonymized_id=record.pseudonymized_id,
-                        supervisor_external_id=record.supervisor_external_id,
-                        supervisor_external_ids=record.supervisor_external_ids,
-                        district=record.supervision_district,
-                        earliest_person_assignment_date=record.earliest_person_assignment_date,
-                        caseload_category=latest_period_caseload_category,
-                        avg_daily_population=record.avg_daily_population,
-                        zero_grant_opportunities=(
-                            [
-                                x.replace("task_completions_", "")
-                                for x in record.zero_grant_opportunities or []
-                            ]
-                            if include_workflows_info
-                            else None
-                        ),
-                        outlier_metrics=(
-                            [
-                                {
-                                    "metric_id": record.metric_id,
-                                    "statuses_over_time": record.statuses_over_time,
-                                }
-                            ]
-                            if is_outlier
-                            else []
-                        ),
-                        top_x_pct_metrics=(
-                            [
-                                {
-                                    "metric_id": record.metric_id,
-                                    "top_x_pct": record.statuses_over_time,
-                                }
-                            ]
-                            if is_top_x_pct
-                            else []
-                        ),
-                        include_in_outcomes=record.include_in_outcomes,
-                    )
+                officer_external_id_to_entity[external_id] = SupervisionOfficerEntity(
+                    full_name=PersonName(**record.full_name),
+                    external_id=record.external_id,
+                    pseudonymized_id=record.pseudonymized_id,
+                    supervisor_external_id=record.supervisor_external_id,
+                    supervisor_external_ids=record.supervisor_external_ids,
+                    district=record.supervision_district,
+                    earliest_person_assignment_date=record.earliest_person_assignment_date,
+                    avg_daily_population=record.avg_daily_population,
+                    zero_grant_opportunities=(
+                        [
+                            x.replace("task_completions_", "")
+                            for x in record.zero_grant_opportunities or []
+                        ]
+                        if include_workflows_info
+                        else None
+                    ),
+                    include_in_outcomes=record.include_in_outcomes,
+                )
 
             return officer_external_id_to_entity
 
