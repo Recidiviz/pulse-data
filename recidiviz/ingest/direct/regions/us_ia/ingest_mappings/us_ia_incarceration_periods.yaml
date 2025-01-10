@@ -1,0 +1,587 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_person` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderCd: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  movement: STRING
+  next_movement: STRING
+  SupervisionStatus: STRING
+  SupervisionModifier: STRING
+  period_seq_num: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderCd
+          id_type: $literal("US_IA_OFFENDERCD")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OffenderCd
+                - period_seq_num
+          incarceration_type:
+            $conditional:
+              - $if:
+                  $not_null: SupervisionStatus
+                $then:
+                  $enum_mapping:
+                    $raw_text: SupervisionStatus
+                    $mappings:
+                      StateIncarcerationType.STATE_PRISON:
+                        - Prison
+                        - Prison Compact
+                        - Prison Safekeeper
+                        - OWI Continuum
+                        - Work Release
+                      StateIncarcerationType.COUNTY_JAIL:
+                        - Jail (Designated Site)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: SupervisionModifier
+                    $mappings:
+                      StateIncarcerationType.STATE_PRISON:
+                        - In Prison
+                      StateIncarcerationType.COUNTY_JAIL:
+                        - In Jail
+                      StateIncarcerationType.OUT_OF_STATE:
+                        - Concurrent Prison Sentence - Non-Iowa
+                        - Detained by Another State
+                        - Paroled to Detainer - Out of State
+                        - Detained by Non-Iowa Jurisdiction
+                      StateIncarcerationType.FEDERAL_PRISON:
+                        - Paroled to Detainer - ICE
+                        - Paroled to Detainer - INS
+                        - Temp release to U.S. Marshall
+                        - Paroled to Detainer - U. S. Marshall
+                      StateIncarcerationType.INTERNAL_UNKNOWN:
+                        - In Jail - Mental Health Assistance
+                        - Paroled to Detainer - Iowa
+                        - Paroled to Detainer
+          specialized_purpose_for_incarceration:
+            $conditional:
+              - $if:
+                  $not_null: SupervisionModifier
+                $then:
+                  $enum_mapping:
+                    $raw_text: SupervisionModifier
+                    $mappings:
+                      StateSpecializedPurposeForIncarceration.GENERAL:
+                        - In Prison
+                        - Concurrent Prison Sentence - Non-Iowa
+                      StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY:
+                        - In Jail
+                        - Paroled to Detainer - ICE
+                        - Paroled to Detainer - INS
+                        - Temp release to U.S. Marshall
+                        - Paroled to Detainer - U. S. Marshall
+                        - Paroled to Detainer - Iowa
+                        - Paroled to Detainer
+                        - Detained by Another State
+                        - Paroled to Detainer - Out of State
+                        - Detained by Non-Iowa Jurisdiction
+                      StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON:
+                        - In Jail - Mental Health Assistance
+              - $else:
+                  $enum_mapping:
+                    $raw_text: SupervisionStatus
+                    $mappings:
+                      StateSpecializedPurposeForIncarceration.GENERAL:
+                        - Prison
+                        - Prison Compact
+                        - Prison Safekeeper
+                        - OWI Continuum
+                        - Work Release
+                      StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY:
+                        - Jail (Designated Site)
+          admission_date: start_date
+          release_date: end_date
+          # TODO(#37070): Review and revise mappings for admission reason
+          admission_reason:
+            $enum_mapping:
+              $raw_text: movement
+              $mappings:
+                StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                  - Transfer to Juvenile Facility
+                  - Transfer from Juvenile Institution
+                  - Transfer to OWI Facility
+                  - Admission from Transfer
+                  - Case Release to Compact Housing
+                  # Not totally sure these should go here
+                  - Transfer Out of State Concurrent
+                  - Transfer Out of State
+                  - Paroled from Prison to another State
+                  - Paroled to Detainer - Out of State
+                  - Paroled to Detainer - U.S. Marshall
+                  - Paroled to Detainer - INS
+                  - Released to Custody of US Bureau of Prisons
+                  - Released to Custody of US Probation Office
+                  - Deported
+                  - Detained by Non-Iowa Jurisdiction
+                  - Released to Special Sentence
+                  - Release to Interstate Compact Parole
+                  - Modifier start - Detained by Non-Iowa Jurisdiction
+                  - Transfer to New Institution
+                  - Admission from Transfer (Admit from another institution)
+                  - Returned to Sending Jurisdiction
+                  - Transfer Out of State Cuncurrent
+                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - Return Out of State Concurrent
+                  - Iowa Inmate Returned, Interstate Compact
+                  - Prison Compact
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                  - Escape Return
+                  - Escape Ended
+                  - Escapee Returned, new Charges, Pending Adjudication
+                  - Escapee Returned, Additional Sentence
+                  - Escapee Returned, Pending Sentence
+                  - Return from Escape
+                  - Absconded Ended
+                  - Escapee Returned , new Charges, Pending Adjudication
+                StateIncarcerationPeriodAdmissionReason.ESCAPE:
+                  - Escape Warrant Requested
+                  - AWOL From Furlough
+                  - Absconded
+                StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                  - Parole Violation with Additional Sentence - OWI
+                  - Pretrial Release Granted
+                  - Nonpenal Sentence Safekeeper (county jail)
+                  - Supervised in Other State
+                  - Safekeeper
+                  - Release of Prison Compact
+                  - Compact Safekeeper (federal or other state)
+                  - Modifier start - Concurrent Prison Sentence - Non-Iowa
+                  - Deported Ended
+                  - Detained by Non-Iowa Jurisdiction Ended
+                  - Concurrent Prison Sentence - Non-Iowa ended
+                  - Probation Granted - Reconsideration of Sentence
+                  - Concurrent Prison Sentence - Non-Iowa
+                  - Transportation Holdover
+                  - Paroled from Prison to another State Ended
+                  - Court Ordered Safekeeper
+                  - Supervised in Other State Ended
+                  - Special Sentence Granted
+                  - Release Transportation Holdover
+                  - Released to OWI Continuum
+                StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                  - Parole Revocation
+                  - Shock Probation Revocation
+                  - Shock Probation Revocation for additional sentence
+                  - Work Release Revocation, Technical Violation
+                  - Parole Revocation - Release to Work Release
+                  - Work Release Return, Day Reporting Revocation
+                  - Special Sentence Revocation
+                  - Work Release Return with Additional Sentence
+                  - Work Release Return, No pending charges
+                  - Parole Return - Medical/Non-Punitive
+                  - Parole returned with additional sentence
+                  - Violator Program Revocation
+                  - Parole returned pending hearing
+                  - Parole returned pending sentence on new charge
+                  - Return from Probation Other Than Shock, add. Sentence
+                  - Revoked - Zero Tolerance
+                  - Revoked
+                  - OWI Revocation
+                  - Shock Probation Return
+                  - Revoked - Serve in Jail
+                  - Shock probation Revocation for technical violation
+                  - Return from Probation Other Than Shock
+                  - Automatic Revocation - Parole
+                  - Probation Revocation
+                  - Parole returned pending hearing - pending charges
+                  - Work Release Revocation
+                  - Revoked From Parole - Work Release Granted
+                  - Revoked - Time Served
+                  - Parole returned after final hearing
+                  - Automatic Revocation - Special Sentence
+                  - Other OWI Return
+                  - Shock probation Revocation for additional sentence
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                  - Admission from OWI Facility
+                  - New Court Commitment
+                  - New Court Commitment - OWI
+                  - New Court Commitment - Probation Revocation - OWI
+                  - In Prison
+                  - Status start - OWI Continuum
+                  - Status start - Prison Compact
+                  - Status start - Prison Safekeeper
+                  - Status start - Prison
+                  - OWI Facility Admission
+                  - Shock Probation Return with New Sentence (probation not revoked on original sentence)
+                  - Civil Commitment - Sex Offender
+                  - MHI-DHS Safekeeper (civilly committed)
+                  - Resentence by Court
+                  - Modifier start - In Prison
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE:
+                  - Temporary Release to U.S. Marshall
+                  - Temporary Release to Hospital
+                  - Temporary Release for Court Appearance
+                  - Temporary Release for Furlough
+                  - Temporary Release for Court Appearance Return
+                  - Temporary Release to Court Appearance
+                  - Violator Program Return to Work Release
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
+                  - Temporary Release Return
+                  - Work Release Return After Final Hearing
+                  - Work Release Return with Hearing - No pending charges
+                  - Escapee Returned
+                  - Work Unit - Residential to Prison
+                  - Work Release Return with Hearing - Pending charges
+                  - Appeal Bond Return, w/additional sentence
+                  - Appeal Bond Return, No New Charges (Lost Appeal)
+                  - Appeal Bond Return
+                  - Work Release Return Pending Sentencing
+                  - Other Work Release Return - Nonpunitive
+                  - Work Release Return With Additional Sentence
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
+                  - In Jail
+                  - Parole granted to Detainer
+                  - Paroled to Detainer - Iowa
+                  - Parole returned pending hearing - no pending charges
+                  - Temporary Custody
+                  - Modifier start - Paroled to Detainer - Out of State
+                  - Modifier start - In Jail - Mental Health Assistance
+                  - Modifier start - Paroled to Detainer - Iowa
+                  - Modifier start - Paroled to Detainer
+                  - Modifier start - Paroled to Detainer - INS
+                  - Status start - Jail (Designated Site)
+                  - Parole to Detainer
+                  - County Jail Hold
+                  - Modifier start - Temp release to U.S. Marshall
+                  - Modifier start - Paroled to Detainer - U. S. Marshall
+                  - Terminated - Voluntary Return to Jail/Prison
+                  - Modifier start - In Jail
+                  - Modifier start - Paroled to Detainer - ICE
+                  - Modifier start - Detained by Another State
+                  - Other Temporary Release
+                  - Temporary Release
+                  - Status start - Work Release
+                  - Work Release Granted
+                  - Release to Work Release
+                  - Release to Appeal Bond
+                  - Sent Back to Jail (Designated Jail Sites Only)
+                  - Paroled to Detainer - Out of state
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  # Not sure why these discharge periods exist
+                  - Final Discharge, Court Ordered
+                  - Final Discharge, Other
+                  - Discharge By District Action
+                  - Discharge, End of Sentence
+                  - Discharged - Expiration of Sentence
+                  - Discharged - Determinate Sentence
+                  - Final Release to MHI
+                  - Final Release of Safekeeper
+                  - Final Release to Iowa Parole
+                  - Discharge - Early Discharge
+                  - Final Discharge, Parole Board Ordered
+                  - Release by Court Order
+                  - Violator Program Return to Parole
+                  - Violator Program Release
+                  - Violator Program - Unsuccessful/Administrative
+                  - Violator Program Admit/Parole
+                  - Violator Program Admit/Probation
+                  - Luster Heights Probationer Release Unsuccessful
+                  - Probation Granted - Non Shock
+                  - County Confinement Hold Release
+                  - Release to Shock Probation
+                  - Revoked from Parole - Discharged
+                  - Probation Granted
+                  - Work Release Discharged
+                  - Parole With Immediate Discharge
+                  - Parole Granted
+                  - CBC/Associates Admit Info
+                  - Death, Unknown Causes
+                  - Parole Discharged
+                  - Death
+                  - Violator Program Return to Probation
+                  - Release to Iowa Parole
+                  - Pre Release/Shock Consideration
+                  - Other CBC Release - Non Punitive
+                  - Paroled w/Immediate Discharge
+                  - Continue Parole after Medical Return
+                  - Return to Parole after hearing
+                  - Terminated by Court
+                  - OWI Discharged
+                  - Terminated by Appeal - Conviction Overturned
+                  - Acquitted/Dismissed
+                  - Probation Discharged
+                  - Release to Non-Shock Probation
+                  - ICBC
+                  - Adjudicated (Pretrial Only)
+                  - Parole with Immediate Discharge
+                  - Special Sentence Discharged
+                  - Other CBC Return - Non Punitive
+                StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
+                  - Violator Program Placement
+                  - Violator Program Admit/Work Release
+                  - Return for Corrective Action
+                  - Violators Program Admit/Probation
+                  - Violators Program Admit/Parole
+                  - NCC Violators Program/Probation
+          # TODO(#37070): Review and revise mappings for release reason
+          release_reason:
+            $enum_mapping:
+              $raw_text: next_movement
+              $mappings:
+                StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - Paroled from Prison to another State
+                  - Release to Interstate Compact Parole
+                  - Paroled to Detainer - U.S. Marshall
+                  - Paroled to Detainer - Iowa
+                  - Paroled to Detainer - ICE
+                  - Paroled to Detainer - Out of State
+                  - Parole to Detainer - ICE
+                  - Transfer Out of State Concurrent
+                  - Transfer Out of State
+                  - Released to Custody of US Bureau of Prisons
+                  - Released to Custody of US Probation Office
+                  - Temporary Release to U.S. Marshall
+                  - Return to Sending Jurisdiction
+                  - Compact Safekeeper (federal or other state)
+                  - Concurrent Prison Sentence - Non-Iowa
+                  - Modifier start - Paroled to Detainer - U. S. Marshall
+                  - Modifier start - Paroled to Detainer - ICE
+                  - Modifier start - Paroled to Detainer - Out of State
+                  - Modifier start - Detained by Non-Iowa Jurisdiction
+                  - Deported
+                  - Modifier start - Paroled to Detainer - INS
+                  - Probation Granted - Non-DOC Supervision
+                  - Modifier start - Temp release to U.S. Marshall
+                  - Returned to Sending Jurisdiction
+                  - Supervised in Other State
+                  - Detained by Non-Iowa Jurisdiction
+                  - Transfer Out of State Cuncurrent
+                  - Returned to Sending Jurisdiction (Interstate Comp)
+                  - Paroled to Detainer - Out of state
+                  - Paroled to Detainer - INS
+                  - Modifier start - Detained by Another State
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                  - Parole Discharged
+                  - Parole with Immediate Discharge
+                  - Paroled w/Immediate Discharge
+                  - Paroled from Prison to another State Ended
+                  - Final Discharge, Parole Board Ordered
+                  - Discharge By District Action
+                  - Discharged - Expiration of Sentence
+                  - Discharged - Determinate Sentence
+                  - Discharge, End of Sentence
+                  - Discharged - Deported
+                  - Discharge - Early Discharge
+                  - Final Discharge, Court Ordered
+                  - Release by Court Order
+                  - Terminated by Court
+                  - Probation Discharged
+                  - Revoked from Parole - Discharged
+                  - Final Discharge, Other
+                  - Discharged - Absconder
+                  - Discharged - Contempt
+                  - Absconder Discharged
+                  - Work Release Discharged
+                  - Discharged - Absconder/Escape
+                  - Special Sentence Discharged
+                  - OWI Discharged
+                  - Parole With Immediate Discharge
+                  - Final Release of Safekeeper
+                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                  - Parole returned after final hearing
+                  - Parole returned pending hearing - pending charges
+                  - Parole returned pending sentence on new charge
+                  - Parole returned pending hearing - no pending charges
+                  - Parole Return - Medical/Non-Punitive
+                  - Parole Violation with Additional Sentence - OWI
+                  - Return from Probation Other Than Shock, add. Sentence
+                  - Return for Corrective Action
+                  - Luster Heights Probationer Release Unsuccessful
+                  - Probation Granted - Non Shock
+                  - Other CBC Release - Non Punitive
+                  - Pre Release/Shock Consideration
+                  - CBC/Associates Admit Info
+                  - ICBC
+                StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
+                  - Release to Shock Probation
+                  - Shock probation Revocation for technical violation
+                  - Violator Program Return to Probation
+                  - Probation Granted
+                  - Probation Granted - Reconsideration of Sentence
+                  - Release to Non-Shock Probation
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                  - Parole Granted
+                  - Return to Parole after hearing
+                  - Final Release to Iowa Parole
+                  - Special Sentence Granted
+                  - Violator Program Return to Parole
+                  - Release to Iowa Parole
+                  - Continue Parole after Medical Return
+                  - Adjudicated (Pretrial Only)
+                  - Released on Bond
+                  - Released to Special Sentence
+                  - Pretrial Release Granted
+                StateIncarcerationPeriodReleaseReason.VACATED:
+                  - Terminated by Appeal - Conviction Overturned
+                  - Acquitted/Dismissed
+                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
+                  - In Prison
+                  - Status start - OWI Continuum
+                  - Status start - Prison Safekeeper
+                  - Status start - Prison
+                  - Final Release to MHI
+                  - Paroled to Detainer
+                  - Parole granted to Detainer
+                  - In Jail
+                  - In Jail - Mental Health Assistance
+                  - County Confinement Hold Release
+                  - Sent Back to Jail (Designated Jail Sites Only)
+                  - Temporary Custody
+                  - Return from Probation Other Than Shock
+                  - Prison Compact
+                  - Parole Revocation - Release to Work Release
+                  - Violator Program - Unsuccessful/Administrative
+                  - Probation Revocation
+                  - Modifier start - In Jail
+                  - Revoked - Zero Tolerance
+                  - Nonpenal Sentence Safekeeper (county jail)
+                  - Modifier start - In Jail - Mental Health Assistance
+                  - Status start - Work Release
+                  - Safekeeper
+                  - Violators Program Admit/Probation
+                  - New Court Commitment - OWI
+                  - Parole Revocation
+                  - Modifier start - Paroled to Detainer
+                  - Work Release Return, Day Reporting Revocation
+                  - Civil Commitment - Sex Offender
+                  - County Jail Hold
+                  - Parole to Detainer
+                  - Status start - Jail (Designated Site)
+                  - Supervised in Other State Ended
+                  - Work Release Revocation, Technical Violation
+                  - Revoked
+                  - Special Sentence Revocation
+                  - Charge Amended
+                  - Shock probation Revocation for additional sentence
+                  - Modifier start - In Prison
+                  - Shock Probation Revocation
+                  - Other OWI Return
+                  - Case Release to Compact Housing
+                  - Terminated - Voluntary Return to Jail/Prison
+                  - Released to OWI Continuum
+                  - Release Transportation Holdover
+                  - Automatic Revocation - Special Sentence
+                  - Automatic Revocation - Parole
+                  - Violator Program Placement
+                  - Shock Probation Return
+                  - OWI Revocation
+                  - Revoked From Parole - Work Release Granted
+                  - Other CBC Return - Non Punitive
+                  - Work Release Revocation
+                  - Concurrent Prison Sentence - Non-Iowa ended
+                  - Violator Program Release
+                  - Transportation Holdover
+                  - Revoked - Time Served
+                  - Modifier start - Concurrent Prison Sentence - Non-Iowa
+                  - Parole returned with additional sentence
+                  - Violators Program Admit/Parole
+                  - MHI-DHS Safekeeper (civilly committed)
+                  - New Court Commitment - Probation Revocation - OWI
+                  - NCC Violators Program/Probation
+                  - Revoked - Serve in Jail
+                  - Court Ordered Safekeeper
+                  - New Court Commitment
+                  - Resentence by Court
+                StateIncarcerationPeriodReleaseReason.DEATH:
+                  - Death
+                  - Death, Unknown Causes
+                StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE:
+                  - Return from Escape
+                  - Escape Ended
+                  - Escapee Returned, New Charges, Pending Adjudication
+                  - Escapee Returned, Additional Sentence
+                  - Escape Return
+                  - Escapee Returned
+                  - Absconded Ended
+                  - Escapee Returned , new Charges, Pending Adjudication
+                StateIncarcerationPeriodReleaseReason.TRANSFER:
+                  - Transfer to Juvenile Facility
+                  - Transfer from Juvenile Institution
+                  - Admission from Transfer (Admit from another institution)
+                  - Transfer to OWI Facility
+                  - Transfer to New Institution
+                  - Return Out of State Concurrent
+                  - Iowa Inmate Returned, Interstate Compact
+                  - Detained by Non-Iowa Jurisdiction Ended
+                  - Admission from OWI Facility
+                  - OWI Facility Admission
+                  - Release of Prison Compact
+                  - Other Work Release Return - Nonpunitive
+                  - Shock Probation Return with New Sentence (probation not revoked on original sentence)
+                  - Work Unit - Residential to Prison
+                  - Modifier start - Paroled to Detainer - Iowa
+                  - Deported Ended
+                StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
+                  - Temporary Release to Hospital
+                  - Temporary Release for Court Appearance
+                  - Temporary Release for Furlough
+                  - Temporary Release to Court Appearance
+                  - Other Temporary Release
+                  - Release to Work Release
+                  - Violator Program Admit/Work Release
+                  - Violator Program Return to Work Release
+                  - Work Release Granted
+                  - Temporary Release
+                  - Release to Appeal Bond
+                StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE:
+                  - Temporary Release for Court Appearance Return
+                  - Temporary Release Return
+                  - Work Release Return With Additional Sentence
+                  - Work Release Return Pending Sentencing
+                  - Work Release Return After Final Hearing
+                  - Work Release Return with Hearing - Pending charges
+                  - Work Release Return with Hearing - No pending charges
+                  - Appeal Bond Return, w/additional sentence
+                  - Appeal Bond Return, No New Charges (Lost Appeal)
+                  - Appeal Bond Return
+                StateIncarcerationPeriodReleaseReason.ESCAPE:
+                  - Escape Warrant Requested
+                  - AWOL From Furlough
+                  - Absconded
+          custodial_authority:
+            $conditional:
+              - $if:
+                  $not_null: SupervisionModifier
+                $then:
+                  $enum_mapping:
+                    $raw_text: SupervisionModifier
+                    $mappings:
+                      StateCustodialAuthority.STATE_PRISON:
+                        - In Prison
+                        - Paroled to Detainer - Iowa
+                        - Paroled to Detainer
+                      StateCustodialAuthority.COUNTY:
+                        - In Jail
+                        - In Jail - Mental Health Assistance
+                      StateCustodialAuthority.OTHER_STATE:
+                        - Concurrent Prison Sentence - Non-Iowa
+                        - Detained by Another State
+                        - Paroled to Detainer - Out of State
+                        - Detained by Non-Iowa Jurisdiction
+                      StateCustodialAuthority.FEDERAL:
+                        - Paroled to Detainer - ICE
+                        - Paroled to Detainer - INS
+                        - Temp release to U.S. Marshall
+                        - Paroled to Detainer - U. S. Marshall
+              - $else:
+                  $enum_mapping:
+                    $raw_text: SupervisionStatus
+                    $mappings:
+                      StateCustodialAuthority.STATE_PRISON:
+                        - Prison
+                        - Prison Compact
+                        - Prison Safekeeper
+                        - OWI Continuum
+                        - Work Release
+                      StateCustodialAuthority.COUNTY:
+                        - Jail (Designated Site)

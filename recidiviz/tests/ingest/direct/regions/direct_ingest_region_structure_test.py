@@ -880,6 +880,10 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 # TODO(#19835): Write tests for this view and remove exemption
                 "supervision_violation_response",
             },
+            StateCode.US_IA: {
+                # TODO(#37074): Write tests for this view and remove exemption
+                "incarceration_periods",
+            },
         }
 
         for state_code in get_existing_direct_ingest_states():
