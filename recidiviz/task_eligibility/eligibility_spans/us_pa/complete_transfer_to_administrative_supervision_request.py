@@ -26,6 +26,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_pa import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (
+    supervision_level_is_not_electronic_monitoring,
     supervision_level_is_not_limited,
     supervision_past_full_term_completion_date_or_upcoming_90_days,
 )
@@ -67,6 +68,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_on_sex_offense_protocol.VIEW_BUILDER,
         not_assigned_ineligible_stat_code.VIEW_BUILDER,
         not_supervision_past_full_term_completion_date_or_upcoming_90_days_view_builder,
+        supervision_level_is_not_electronic_monitoring.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
     almost_eligible_condition=TimeDependentCriteriaCondition(
