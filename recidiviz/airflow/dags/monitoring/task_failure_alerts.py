@@ -36,6 +36,7 @@ from recidiviz.airflow.dags.utils.environment import (
 )
 
 INCIDENT_START_DATE_LOOKBACK = timedelta(days=21)
+RAW_DATA_INCIDENT_START_DATE_LOOKBACK = timedelta(days=42)
 
 
 def report_failed_tasks() -> None:

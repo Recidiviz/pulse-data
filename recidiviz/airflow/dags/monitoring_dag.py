@@ -32,7 +32,7 @@ from recidiviz.airflow.dags.monitoring.raw_data_file_tag_import_runs_sql_query_g
     RawDataFileTagImportRunSqlQueryGenerator,
 )
 from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
-    INCIDENT_START_DATE_LOOKBACK,
+    RAW_DATA_INCIDENT_START_DATE_LOOKBACK,
     report_failed_tasks,
 )
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
@@ -95,7 +95,7 @@ def create_monitoring_dag() -> None:
         task_id=FETCH_RAW_DATA_FILE_TAG_IMPORT_RUNS_TASK_ID,
         cloud_sql_conn_id=cloud_sql_conn_id_for_schema_type(SchemaType.OPERATIONS),
         query_generator=RawDataFileTagImportRunSqlQueryGenerator(
-            lookback=INCIDENT_START_DATE_LOOKBACK
+            lookback=RAW_DATA_INCIDENT_START_DATE_LOOKBACK
         ),
     )
 
