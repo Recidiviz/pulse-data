@@ -107,6 +107,7 @@ SELECT
     reason,
     reason_v2
 FROM _aggregated
+WHERE state_code = 'US_XX'
 """
 
         self.assertEqual(view.view_query, expected_query_template)
@@ -188,6 +189,7 @@ SELECT
     reason,
     reason_v2
 FROM _aggregated
+WHERE state_code = 'US_XX'
 """
 
         self.assertEqual(view.view_query, expected_query_template)

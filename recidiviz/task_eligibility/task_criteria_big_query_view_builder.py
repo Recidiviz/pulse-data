@@ -17,7 +17,7 @@
 """Defines BigQueryViewBuilders that can be used to define single criteria span views.
 These views are used as inputs to a task eligibility spans view.
 """
-from typing import List, Union
+from typing import List, Optional, Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -29,7 +29,9 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 
 
 def get_template_with_reasons_as_json(
-    query_template: str, reasons_fields: List[ReasonsField]
+    query_template: str,
+    reasons_fields: List[ReasonsField],
+    state_code: Optional[str] = None,
 ) -> str:
     # If no reason fields are provided, default to NULL
     reasons_query_fragment = "TO_JSON(STRUCT())"
@@ -38,6 +40,10 @@ def get_template_with_reasons_as_json(
         reasons_query_fragment = convert_cols_to_json(
             [field.name for field in reasons_fields]
         )
+    if state_code:
+        state_code_query_fragment = f"\nWHERE state_code = '{state_code}'"
+    else:
+        state_code_query_fragment = ""
     return f"""
 WITH criteria_query_base AS (
 {query_template.rstrip().rstrip(";")}
@@ -75,7 +81,7 @@ SELECT
     meets_criteria,
     reason,
     reason_v2
-FROM _aggregated
+FROM _aggregated{state_code_query_fragment}
 """
 
 
@@ -116,6 +122,7 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             view_query_template=get_template_with_reasons_as_json(
                 query_template=criteria_spans_query_template,
                 reasons_fields=reasons_fields,
+                state_code=state_code.value,
             ),
             should_materialize=True,
             materialized_address_override=None,
