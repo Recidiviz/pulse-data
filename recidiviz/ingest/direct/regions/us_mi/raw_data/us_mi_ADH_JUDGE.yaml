@@ -307,6 +307,8 @@ columns:
         description: 88th District Court-Atlanta
       - value: "19556"
         description: 6th District Court-Mackinac
+      - value: "5606"
+        description: 87th District Court-Gaylord
   - name: bar_number
     is_pii: True
   - name: last_update_user
