@@ -26,7 +26,7 @@ VIEW_QUERY_TEMPLATE = """
 SELECT
   t.ofndr_num,
   t.tst_id,
-  t.tst_dt,
+  CAST(LEFT(t.tst_dt, 10) AS DATE) AS tst_dt,
   t.smpl_typ_cd,
   s.sbstnc_sbstnc_desc,
   r.sbstnc_found_flg,
@@ -42,6 +42,8 @@ JOIN
   {sbstnc_sbstnc_cd} s
 ON
   (r.sbstnc_cd = s.sbstnc_sbstnc_cd)
+WHERE 
+  tst_dt IS NOT NULL
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

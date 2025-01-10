@@ -5,7 +5,7 @@ manifest_language: 1.0.0
 input_columns:
   ofndr_num: STRING
   tst_id: STRING
-  tst_dt: STRING
+  tst_dt: DATE
   smpl_typ_cd: STRING
   sbstnc_sbstnc_desc: STRING
   sbstnc_found_flg: STRING
