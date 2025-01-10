@@ -16,6 +16,7 @@
 # =============================================================================
 """Defines all Justice Counts metrics for Supervision."""
 
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.common import ExpenseType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
@@ -86,6 +87,7 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
+    Context,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
@@ -534,6 +536,7 @@ daily_population = MetricDefinition(
         AggregatedDimension(
             dimension=RaceAndEthnicity,
             required=True,
+            contexts=[Context(key=ContextKey.OTHER_RACE_DESCRIPTION, label="")],
             dimension_to_description={
                 CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "A single-day count of the number of people who are supervised under the jurisdiction of the agency whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
                 CensusRace.ASIAN: "A single-day count of the number of people who are supervised under the jurisdiction of the agency whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",

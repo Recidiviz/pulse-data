@@ -60,6 +60,7 @@ class MetricAggregatedDimensionData:
     dimension_to_contexts: Dict[DimensionBase, List[MetricContextData]] = attr.Factory(
         dict
     )
+    contexts: List[MetricContextData] = attr.Factory(list)
     # Maps dimension to configuration status (whether the agency considers
     # the includes/excludes of each dimension of this disaggregation to be fully
     # configured to their satisfaction)
@@ -113,6 +114,11 @@ class MetricAggregatedDimensionData:
                     if include_excludes_setting is not None
                 }
                 for dimension, includes_excludes_member_to_setting in self.dimension_to_includes_excludes_member_to_setting.items()
+            },
+            "contexts": {
+                context.key.name: context.value
+                for context in self.contexts
+                if context.value is not None
             },
             # Dict[DimensionBase, List[MetricContextData]]
             "dimension_to_contexts": {
@@ -228,6 +234,10 @@ class MetricAggregatedDimensionData:
             dimension_to_includes_excludes_member_to_setting=dimension_to_includes_excludes_member_to_setting,
             dimension_to_contexts=dimension_to_contexts,
             dimension_to_includes_excludes_configured_status=dimension_to_includes_excludes_configured_status,
+            contexts=MetricContextData.get_metric_context_data_from_storage_json(
+                stored_metric_contexts=json.get("contexts", {}),
+                metric_definition_contexts=aggregated_dimension.contexts or [],
+            ),
             is_breakdown_configured=ConfigurationStatus.from_json(
                 json.get("is_breakdown_configured")
             ),
@@ -293,6 +303,14 @@ class MetricAggregatedDimensionData:
             response["helper_text"] = dimension_definition.helper_text
             response["required"] = dimension_definition.required
             response["should_sum_to_total"] = dimension_definition.should_sum_to_total
+            context_key_to_context_definition = {
+                context.key: context for context in dimension_definition.contexts or []
+            }
+            response["contexts"] = [
+                c.to_json(context_definition=context_key_to_context_definition[c.key])
+                for c in self.contexts
+                if c.key in context_key_to_context_definition
+            ]
         elif (
             dimension_definition.dimension_identifier()
             == RaceAndEthnicity.dimension_identifier()
@@ -464,7 +482,14 @@ class MetricAggregatedDimensionData:
                         dimension.to_enum().value, None
                     )
                     for dimension in dimension_class  # type: ignore[attr-defined]
-                }
+                },
+                contexts=[
+                    MetricContextData(
+                        key=ContextKey[context["key"]],
+                        value=context["value"],
+                    )
+                    for context in json.get("contexts", [])
+                ],
             )  # example: {RaceAndEthnicity.BLACK: 50, RaceAndEthnicity.WHITE: 20})
 
         # default_dimension_enabled_status will be True or False if a disaggregation is being turned off/on,
@@ -481,13 +506,22 @@ class MetricAggregatedDimensionData:
         if (
             disaggregation_definition is not None
             and disaggregation_definition.dimension_to_includes_excludes is None
+            and disaggregation_definition.contexts is None
         ):
-            # If the disaggregation definition has no includes_excludes options specified,
+            # If the disaggregation definition has no includes_excludes options specified or any contexts,
             # return a MetricAggregatedDimensionData object with just a dimension_to_enabled_status
             # dict.
             return cls(
                 dimension_to_enabled_status=dimension_to_enabled_status,
                 is_breakdown_configured=is_breakdown_configured,
+            )
+        disaggregation_contexts = []
+        for context in json.get("contexts", []):
+            disaggregation_contexts.append(
+                MetricContextData(
+                    key=ContextKey[context["key"]],
+                    value=context["value"],
+                )
             )
 
         dimension_enum_value_to_includes_excludes_member_to_setting = {}
@@ -534,7 +568,13 @@ class MetricAggregatedDimensionData:
             # get the IncludesExcludesSet, which contains all the
             # members of the includes/excludes enum as well as the default settings.
             includes_excludes_set = (
-                disaggregation_definition.dimension_to_includes_excludes.get(dimension)
+                (
+                    disaggregation_definition.dimension_to_includes_excludes.get(
+                        dimension
+                    )
+                )
+                if disaggregation_definition.dimension_to_includes_excludes is not None
+                else None
             )
             member_to_include_excludes_setting = {}
             # Example: {"SETTING_1": "Yes", "SETTING_2": "No...}
@@ -564,6 +604,7 @@ class MetricAggregatedDimensionData:
             dimension_to_enabled_status=dimension_to_enabled_status,
             dimension_to_includes_excludes_member_to_setting=dimension_to_includes_excludes_member_to_setting,
             dimension_to_contexts=dimension_to_contexts,
+            contexts=disaggregation_contexts,
             is_breakdown_configured=is_breakdown_configured,
             dimension_to_includes_excludes_configured_status=dimension_to_includes_excludes_configured_status,
         )

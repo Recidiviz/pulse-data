@@ -182,6 +182,11 @@ class MetricInterface:
                         dimension_to_enabled_status={
                             d: None for d in aggregated_dimension.dimension  # type: ignore[attr-defined]
                         },
+                        # Add null contexts if the aggregated dimension has an empty context field.
+                        contexts=[
+                            MetricContextData(key=context.key, value=None)
+                            for context in metric_definition.contexts
+                        ],
                     )
                 )
 
@@ -273,7 +278,6 @@ class MetricInterface:
 
         contexts = MetricContextData.get_metric_context_data_from_storage_json(
             stored_metric_contexts=json.get("contexts", {}),
-            # stored_metric_contexts=dict(json.get("contexts", []).items()),
             metric_definition_contexts=metric_definition.contexts,
         )
 

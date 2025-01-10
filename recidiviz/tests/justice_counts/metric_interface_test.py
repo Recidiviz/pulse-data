@@ -63,6 +63,7 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
+    Context,
     IncludesExcludesSetting,
 )
 from recidiviz.justice_counts.metrics.metric_interface import (
@@ -245,6 +246,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 ],
                 "disaggregations": [
                     {
+                        "contexts": [],
                         "key": "metric/law_enforcement/calls_for_service/type",
                         "display_name": "Call Types",
                         "required": True,
@@ -401,6 +403,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 ],
                 "disaggregations": [
                     {
+                        "contexts": [],
                         "key": "metric/offense/type",
                         "display_name": "Offense Types",
                         "required": True,
@@ -613,6 +616,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
             "disaggregations": [
                 {
                     "key": OffenseType.dimension_identifier(),
+                    "contexts": [],
                     "dimensions": [
                         {"key": OffenseType.DRUG.value, "value": 50},
                         {"key": OffenseType.PERSON.value, "value": 50},
@@ -718,6 +722,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "contexts": {},
                 "aggregated_dimensions": {
                     "metric/law_enforcement/calls_for_service/type": {
+                        "contexts": {},
                         "dimension_to_enabled_status": {
                             "EMERGENCY": False,
                             "NON_EMERGENCY": False,
@@ -782,6 +787,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "contexts": {},
                 "aggregated_dimensions": {
                     "metric/law_enforcement/calls_for_service/type": {
+                        "contexts": {},
                         "dimension_to_enabled_status": {
                             "EMERGENCY": True,
                             "NON_EMERGENCY": False,
@@ -908,6 +914,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
             "contexts": {},
             "aggregated_dimensions": {
                 "metric/law_enforcement/calls_for_service/type": {
+                    "contexts": {},
                     "dimension_to_enabled_status": {
                         "EMERGENCY": True,
                         "NON_EMERGENCY": False,
@@ -937,6 +944,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
             ],
             aggregated_dimensions=[
                 MetricAggregatedDimensionData(
+                    contexts=[],
                     dimension_to_value={
                         CallType.EMERGENCY: None,
                         CallType.NON_EMERGENCY: None,
@@ -1100,6 +1108,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "contexts": [],
                 "disaggregations": [
                     {
+                        "contexts": [],
                         "key": "metric/law_enforcement/calls_for_service/type",
                         "helper_text": None,
                         "required": True,
@@ -1357,6 +1366,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "contexts": [],
                 "disaggregations": [
                     {
+                        "contexts": [],
                         "key": "metric/law_enforcement/calls_for_service/type",
                         "helper_text": None,
                         "required": True,
@@ -1614,6 +1624,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "contexts": [],
                 "disaggregations": [
                     {
+                        "contexts": [],
                         "key": "metric/law_enforcement/calls_for_service/type",
                         "helper_text": None,
                         "required": True,
@@ -1877,6 +1888,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "value": None,
                 "disaggregations": [
                     {
+                        "contexts": [],
                         "key": CallType.dimension_identifier(),
                         "enabled": True,
                         "required": True,
@@ -2262,6 +2274,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "contexts": [],
                 "disaggregations": [
                     {
+                        "contexts": [],
                         "key": "metric/law_enforcement/calls_for_service/type",
                         "helper_text": None,
                         "required": True,
@@ -2510,6 +2523,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
             "disaggregations": [
                 {
                     "key": CallType.dimension_identifier(),
+                    "contexts": [],
                     "dimensions": [
                         {"key": CallType.UNKNOWN.value, "enabled": False},
                         {"key": CallType.EMERGENCY.value, "enabled": False},
@@ -3624,6 +3638,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 dimension_definition=AggregatedDimension(
                     dimension=RaceAndEthnicity,
                     required=True,
+                    contexts=[Context(key=ContextKey.OTHER_RACE_DESCRIPTION, label="")],
                     dimension_to_description={
                         CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
                         CensusRace.ASIAN: "The number of arrests, citations, and summonses made by the agency of people whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines all Justice Counts metrics for the Jail system."""
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.jails import (
     ExpenseType,
     FundingType,
@@ -90,6 +91,7 @@ from recidiviz.justice_counts.includes_excludes.person import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
+    Context,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
@@ -572,6 +574,7 @@ total_daily_population = MetricDefinition(
         AggregatedDimension(
             dimension=RaceAndEthnicity,
             required=False,
+            contexts=[Context(key=ContextKey.OTHER_RACE_DESCRIPTION, label="")],
             dimension_to_description={
                 CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "A single-day count of the number of people incarcerated in the agency's jurisdiction whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
                 CensusRace.ASIAN: "A single-day count of the number of people incarcerated in the agency's jurisdiction whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
@@ -669,6 +672,7 @@ pre_adjudication_daily_population = MetricDefinition(
         AggregatedDimension(
             dimension=RaceAndEthnicity,
             required=True,
+            contexts=[Context(key=ContextKey.OTHER_RACE_DESCRIPTION, label="")],
             dimension_to_description={
                 CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have not yet been adjudicated whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
                 CensusRace.ASIAN: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have not yet been adjudicated whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
@@ -794,6 +798,7 @@ post_adjudication_daily_population = MetricDefinition(
         AggregatedDimension(
             dimension=RaceAndEthnicity,
             required=True,
+            contexts=[Context(key=ContextKey.OTHER_RACE_DESCRIPTION, label="")],
             dimension_to_description={
                 CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have been adjudicated and convicted whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
                 CensusRace.ASIAN: "A single-day count of the number of people incarcerated in the agency's jurisdiction who have been adjudicated and convicted whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",

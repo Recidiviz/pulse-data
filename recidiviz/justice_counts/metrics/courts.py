@@ -16,6 +16,7 @@
 # =============================================================================
 """Defines all Justice Counts metrics for Courts and Pretrial."""
 
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.common import DispositionType, ExpenseType
 from recidiviz.justice_counts.dimensions.courts import (
     CaseSeverityType,
@@ -75,6 +76,7 @@ from recidiviz.justice_counts.includes_excludes.person import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
+    Context,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
@@ -442,6 +444,7 @@ sentences_imposed = MetricDefinition(
         AggregatedDimension(
             dimension=RaceAndEthnicity,
             required=False,
+            contexts=[Context(key=ContextKey.OTHER_RACE_DESCRIPTION, label="")],
             dimension_to_description={
                 CensusRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "The number of cases in which the court imposed a sentence as a result of a criminal conviction of people whose race is listed as Native American, American Indian, Native Alaskan, or similar. This includes people with origins in the original populations or Tribal groups of North, Central, or South America.",
                 CensusRace.ASIAN: "The number of cases in which the court imposed a sentence as a result of a criminal conviction of people whose race is listed as Asian. This includes people with origins in China, Japan, Korea, Laos, Vietnam, as well as India, Malaysia, the Philippines, and other countries in East and South Asia.",
