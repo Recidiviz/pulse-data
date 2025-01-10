@@ -22,6 +22,7 @@ from recidiviz.task_eligibility.criteria.general import (
     negative_da_within_90_days,
     not_serving_for_sexual_offense,
     on_supervision_at_least_one_year,
+    supervision_level_is_not_diversion,
     supervision_level_is_not_limited,
     supervision_not_past_full_term_completion_date,
 )
@@ -70,6 +71,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_raw_text_is_not_so_or_soto.VIEW_BUILDER,
         not_serving_for_sexual_offense.VIEW_BUILDER,
         no_recent_marked_ineligible_unless_ffr.VIEW_BUILDER,
+        supervision_level_is_not_diversion.VIEW_BUILDER,
     ],
     completion_event_builder=COMPLETE_TRANSFER_TO_LSU_LINE_STAFF_VERSION.completion_event_builder,
     almost_eligible_condition=PickNCompositeCriteriaCondition(

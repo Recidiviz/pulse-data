@@ -27,6 +27,7 @@ from recidiviz.task_eligibility.completion_events.general import (
 from recidiviz.task_eligibility.criteria.general import (
     negative_da_within_90_days,
     on_supervision_at_least_one_year,
+    supervision_level_is_not_diversion,
     supervision_level_is_not_limited,
     supervision_not_past_full_term_completion_date,
 )
@@ -64,6 +65,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_active_nco.VIEW_BUILDER,
         supervision_level_is_not_limited.VIEW_BUILDER,
         supervision_level_raw_text_is_not_so.VIEW_BUILDER,
+        supervision_level_is_not_diversion.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
     almost_eligible_condition=PickNCompositeCriteriaCondition(
