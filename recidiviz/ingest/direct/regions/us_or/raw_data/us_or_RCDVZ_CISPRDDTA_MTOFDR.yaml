@@ -18,11 +18,7 @@ columns:
       TODO(#17148): Fill in with answer from OR
   - name: CASE_DATE
     description: |-
-      TODO(#17148): Fill in with answer from OR
-    field_type: datetime
-    datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+      Not really a date field
     null_values:
       - "0"
   - name: MTA_APPLNID

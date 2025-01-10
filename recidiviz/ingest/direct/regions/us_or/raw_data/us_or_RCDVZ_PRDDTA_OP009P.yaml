@@ -185,6 +185,8 @@ columns:
         description: TODO(#35462) Document this value.
       - value: CLOS
         description: TODO(#35462) Document this value.
+      - value: CMPO
+        description: TODO(#35462) Document this value.
       - value: CNLV
         description: TODO(#35462) Document this value.
       - value: CNPA
@@ -266,6 +268,8 @@ columns:
       - value: INAC
         description: TODO(#35462) Document this value.
       - value: INTK
+        description: TODO(#35462) Document this value.
+      - value: INTO
         description: TODO(#35462) Document this value.
       - value: INTR
         description: TODO(#35462) Document this value.

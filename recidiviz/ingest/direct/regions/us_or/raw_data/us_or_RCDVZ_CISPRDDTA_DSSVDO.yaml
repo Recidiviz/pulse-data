@@ -23,7 +23,7 @@ columns:
       Date effective
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
     null_values:
       - "0"
   - name: SVDO_LOCATION
@@ -37,7 +37,7 @@ columns:
       Designation discontinued date
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
     null_values:
       - "0"
   - name: DISCONTINUED_REASON
@@ -52,6 +52,9 @@ columns:
   - name: DOCKET_NUMBER_3
     description: |-
       TODO(#17148): Fill in with answer from OR
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: Field isn't used.
   - name: RECORD_ADD_LOCATION
     description: |-
       Record added at location
@@ -67,7 +70,7 @@ columns:
       Date record was added
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
     null_values:
       - "0"
   - name: LAST_UPDATE_LOCATION
@@ -85,6 +88,6 @@ columns:
       Date last updated
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
     null_values:
       - "0"

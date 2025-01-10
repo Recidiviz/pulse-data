@@ -50,7 +50,7 @@ columns:
       Date reviewed
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
     null_values:
       - "0"
   - name: RECORD_ADD_LOCATION
@@ -68,7 +68,7 @@ columns:
       Date record was added
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
     null_values:
       - "0"
   - name: LAST_UPDATE_LOCATION
@@ -86,6 +86,6 @@ columns:
       Record last updated when
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%Y%m%d', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
     null_values:
       - "0"
