@@ -53,7 +53,7 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidationFailure,
 )
 
-MAX_CONCURRENT_VALIDATION_THREADS = 16  # TODO(#29946) determine reasonable default
+MAX_THREADS = 3  # TODO(#29946) determine reasonable default
 
 COLUMN_VALIDATION_CLASSES: List[Type[RawDataColumnImportBlockingValidation]] = [
     NonNullValuesColumnValidation,
@@ -66,8 +66,6 @@ COLUMN_VALIDATION_CLASSES: List[Type[RawDataColumnImportBlockingValidation]] = [
 class DirectIngestRawTablePreImportValidator:
     """Validator class responsible for executing import-blocking validations on raw data
     loaded into temporary BigQuery tables."""
-
-    default_retry_policy: retry.Retry = retry.Retry(predicate=ssl_error_retry_predicate)
 
     def __init__(
         self,
@@ -142,33 +140,34 @@ class DirectIngestRawTablePreImportValidator:
         self, validations_to_run: List[RawDataImportBlockingValidation]
     ) -> List[RawDataImportBlockingValidationFailure]:
         """Executes |validations_to_run| concurrently, returning any errors we encounter."""
+        job_to_validation = {
+            self.big_query_client.run_query_async(
+                query_str=validation.query,
+                use_query_cache=True,
+                job_labels=[
+                    RawDataImportStepBQLabel.RAW_DATA_PRE_IMPORT_VALIDATIONS.value
+                ],
+            ): validation
+            for validation in validations_to_run
+        }
+
+        ssl_retry_policy = retry.Retry(predicate=ssl_error_retry_predicate)
+
         errors = []
-        with futures.ThreadPoolExecutor(
-            max_workers=MAX_CONCURRENT_VALIDATION_THREADS
-        ) as executor:
-            job_futures = [
-                executor.submit(self._execute_validation, validation)
-                for validation in validations_to_run
-            ]
+        with futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+            job_futures = {
+                executor.submit(job.result, retry=ssl_retry_policy): validation_info
+                for job, validation_info in job_to_validation.items()
+            }
             for f in futures.as_completed(job_futures):
-                error = f.result()
+                validation_info: RawDataImportBlockingValidation = job_futures[f]
+
+                error = validation_info.get_error_from_results(
+                    bq_query_job_result_to_list_of_row_dicts(f.result())
+                )
                 if error:
                     errors.append(error)
         return errors
-
-    def _execute_validation(
-        self, validation: RawDataImportBlockingValidation
-    ) -> RawDataImportBlockingValidationFailure | None:
-        job = self.big_query_client.run_query_async(
-            query_str=validation.query,
-            use_query_cache=True,
-            job_labels=[RawDataImportStepBQLabel.RAW_DATA_PRE_IMPORT_VALIDATIONS.value],
-        )
-
-        result = job.result(retry=self.default_retry_policy)
-        return validation.get_error_from_results(
-            bq_query_job_result_to_list_of_row_dicts(result)
-        )
 
     def run_raw_data_temp_table_validations(
         self,
