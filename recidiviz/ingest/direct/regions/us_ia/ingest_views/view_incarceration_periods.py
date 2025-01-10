@@ -52,7 +52,7 @@ WITH
             "Work Release"
         )  
     ),
-    This CTE grabs all spans of time where somebody had a relevant incarceration related supervision modifier
+    -- This CTE grabs all spans of time where somebody had a relevant incarceration related supervision modifier
     incarceration_modifier_dates AS (
         SELECT 
             OffenderCd, 
