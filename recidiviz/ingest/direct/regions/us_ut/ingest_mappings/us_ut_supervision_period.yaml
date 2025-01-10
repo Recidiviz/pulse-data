@@ -31,7 +31,7 @@ output:
           termination_date: end_date
           # TODO(#37075): Get a code table so we can properly map these values.
           supervision_level: $literal_enum(StateSupervisionLevel.INTERNAL_UNKNOWN)
-          # TODO(#34251): Ingest StateStaff to facilitate hydrating these fields.
+          # TODO(#37235): Hydrating these fields once StateStaff is hydrated.
           # Do not ingest supervising staff since we do not have state_staff ingested yet
           # and it is not necessary for the ET analysis.
           # supervising_officer_staff_external_id: agnt_id
