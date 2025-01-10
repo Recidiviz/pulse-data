@@ -13,24 +13,40 @@ columns:
   - name: body_loc_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: body_loc_desc
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: loc_typ_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: mdcl_acuity_lvl_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: region_id
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: prsn_cmplx_id
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: ir_cstdy_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: vld_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"

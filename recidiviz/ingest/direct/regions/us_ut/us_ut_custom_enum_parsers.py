@@ -25,6 +25,9 @@ my_enum_field:
 from recidiviz.common.constants.state.state_employment_period import (
     StateEmploymentPeriodEmploymentStatus,
 )
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 
 
 def parse_employment_status(
@@ -45,3 +48,13 @@ def parse_employment_status(
             return StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME
         return StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME
     return StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT
+
+
+def parse_supervision_type(raw_text: str) -> StateSupervisionPeriodSupervisionType:
+    if raw_text:
+        if "PROBATION" in raw_text:
+            return StateSupervisionPeriodSupervisionType.PROBATION
+        if "PAROLE" in raw_text:
+            return StateSupervisionPeriodSupervisionType.PAROLE
+        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+    return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN

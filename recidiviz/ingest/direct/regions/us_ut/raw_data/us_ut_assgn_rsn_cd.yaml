@@ -12,9 +12,15 @@ columns:
   - name: assgn_rsn_desc
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: ntfy_agnt_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: vld_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"

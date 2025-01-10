@@ -21,25 +21,39 @@ columns:
   - name: stat_beg_dt
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
     field_type: datetime
   - name: stat_beg_tm
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: stat_end_dt
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
     field_type: datetime
   - name: lgl_stat_chg_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: prev_lgl_stat_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: updt_usr_id
     description: |-
       ID of user who most recently updated this record
+    null_values:
+      - "(null)"
     is_pii: True
   - name: updt_dt
     description: |-
       Timestamp of when this record was most recently updated
+    null_values:
+      - "(null)"
     field_type: datetime

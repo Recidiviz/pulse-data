@@ -1,0 +1,286 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_period` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  ofndr_num: STRING
+  period_id: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  start_reason: STRING
+  end_reason: STRING
+  lgl_stat_desc: STRING
+  body_loc_desc: STRING
+  sprvsn_lvl_cd: STRING
+  agnt_id: STRING
+unused_columns: [sprvsn_lvl_cd, agnt_id]
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - ofndr_num
+                - period_id
+          start_date: start_date
+          termination_date: end_date
+          # TODO(#37075): Get a code table so we can properly map these values.
+          supervision_level: $literal_enum(StateSupervisionLevel.INTERNAL_UNKNOWN)
+          # TODO(#34251): Ingest StateStaff to facilitate hydrating these fields.
+          # Do not ingest supervising staff since we do not have state_staff ingested yet
+          # and it is not necessary for the ET analysis.
+          # supervising_officer_staff_external_id: agnt_id
+          # supervising_officer_staff_external_id_type:
+          #   $conditional:
+          #     - $if:
+          #         $not_null: agnt_id
+          #       $then: $literal("US_UT_XXXX")
+          supervision_site: body_loc_desc
+          admission_reason:
+            $enum_mapping:
+              $raw_text: start_reason
+              $mappings:
+                StateSupervisionPeriodAdmissionReason.ABSCONSION:
+                  - ABSCOND
+                  - WALKAWAY
+                  - ESCAPE
+                  - AWOL
+                StateSupervisionPeriodAdmissionReason.COURT_SENTENCE:
+                  - PROBATION START
+                  - NEW COMMITMENT
+                  - NEW COMMITMENT/PROB VIOLATION
+                  - FAILED TO APPEAR AT SENTENCING
+                  - PLEA IN ABEYANCE START
+                  - CASE DISMISSED BY COURT
+                  - APPEAL REVERSED
+                  - COMMUTATION OF SENTENCE
+                  - REVERSED COURT ORDER
+                  - APPEAL-REVERSED ORIGINAL ORDER
+                  - APPEAL FILED/CASE PENDING
+                  - APPEAL AFFIRMED
+                  - APPEAL-AFFIRMED ORIGINAL ORDER
+                  - PARDON
+                StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
+                  - FUGITIVE LOCATED
+                  - INMATE COURTESY HOLD
+                  - INMATE COURTESY RELEASE
+                  - DISCHARGED/DEPORTED
+                  - DISCHARGED/OBSCIS DOWNLOAD
+                  - DISCHARGED/INMATE CASE
+                  - DISCHARGED/HOLD
+                  - DISCHARGED/OTHER JURISDICTION
+                  - DISCHARGED/SUCCESSFUL
+                  - DISCHARGED/UNSUCCESSFUL
+                  - DISCHARGED/ABSCOND
+                  - DISCHARGED/OTHER
+                  - DIAGNOSTIC START
+                  - NEW DIAGNOSTIC REFERRAL
+                  - DIAGNOSTIC RELEASE
+                  - JAIL RELEASE
+                  - CCC RELEASE
+                  - PAROLE
+                  - PAROLE TO CUSTODY
+                  - PAROLE CONT/RELEASE FROM PRISN
+                  - PAROLE VIOLATOR PROGRAM
+                  - PAROLE RESTARTED
+                  - PAROLE/HALFWAY OUT
+                  - PAROLE HALFWAY OUT
+                  - PAROLE CONTINUED
+                  - REL FM HALFWAY OUT
+                  - REL FM HALFWAY BACK
+                  - EXPIRATION OF SENTENCE
+                  - INMATE COURT ORDER RELEASE
+                  - COLLECTION ONLY RELEASED
+                  - NOT SUPVSD AFTER SCREENING
+                  - PROBATION RESTARTED
+                  - PROBATION REINSTATED
+                  - PROBATION CONTINUED
+                  - PROBATION REVOKED
+                StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - DEPORTED/NOT TERMINATED
+                  - EXTRADITION
+                  - COMPACT IN START
+                  - COMPACT OUT/UTAH TO OTHR STATE
+                  - COMPACT DENIED
+                  - COMP RET TO OTHER/NOT COMPLETE
+                  - COMP RET TO UTAH/NOT COMPLETE
+                StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                  - MOVE/OTHER STATE PRISON
+                  - MOVE/OTHER STATE JAIL
+                  - MOVE/FEDERAL FACILITY
+                  - MOVE/STATE HOSPITAL
+                  - MOVE/MEDICAL
+                  - MOVE/PRISON TEMP HOUSING
+                  - MOVE/UTAH JAIL
+                  - BODY LOCATION CHANGE
+                  - OBSCIS LOCATION CHANGE
+                  - OBSCIS LEGAL STATUS CHANGE
+                  - OBSCIS INITIAL ENTRY-PRE 1985
+                  - FIELD OP TRANSFER
+                  - MOVE/PRISON HOUSING
+                  - MOVE/CCC HOUSING
+                  - Supervisor Change
+                  - Supervision Level Change
+                  - WARRANT RECALLED
+                  - DENIED FIELD OP TRANSFR/OBSCIS
+                  - NOT SUPVSD AFTER INVESTIGATION
+                  - NOT SUPVSD AFTER APPEAL
+                  - EXPIRATION TO HOLD
+                  - FACILITY NAME CHANGE
+                StateSupervisionPeriodAdmissionReason.INVESTIGATION:
+                  - INVESTIGATION NOT COMPLETED
+                  - JAIL ENTRY
+                  - JAIL ENTRY-72 HOUR HOLD
+                  - RET PRSN/REV PEND/72 HOUR HOLD
+                  - RET PRSN/REV PEND
+                  - RET PRSN/REV PENDING
+                  - RETURN PRSN/REV PENDING
+                  - RET PRSN FROM OUT COUNT
+                  - RET PRSN/PAR REVOKED
+                  - PAROLE REVOKED
+                  - ARRESTED
+                  - WARRANT ISSUED
+                  - NEW REFERRAL
+                  - JAIL-RIM SANCTION (1-3 DAY)
+                StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - HALFWAY BACK
+                  - DIED
+                  - DIED/EXECUTION
+                  - DIED/SUICIDE
+                  - DIED/NATURAL CAUSES
+                  - DIED/ACCIDENTAL
+                  - DIED/KILLED
+                  - DIVERSION START
+                  - COLLECTION ONLY START
+                  - DISCHARGED TO PSRB
+                StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION:
+                  - RETURNED FROM ABSCOND
+                  - WALKAWAY RETURNED
+                  - ESCAPE RETURNED
+                  - AWOL RETURNED
+          termination_reason:
+            $enum_mapping:
+              $raw_text: end_reason
+              $mappings:
+                StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
+                  - ARRESTED
+                  - JAIL ENTRY
+                  - PAROLE REVOKED
+                  - NEW COMMITMENT
+                  - JAIL ENTRY-72 HOUR HOLD
+                  - JAIL-RIM SANCTION (1-3 DAY)
+                  - NEW COMMITMENT/PROB VIOLATION
+                StateSupervisionPeriodTerminationReason.ABSCONSION:
+                  - ABSCOND
+                  - WALKAWAY
+                StateSupervisionPeriodTerminationReason.COMMUTED:
+                  - COMMUTATION OF SENTENCE
+                StateSupervisionPeriodTerminationReason.DEATH:
+                  - DIED
+                  - DIED/EXECUTION
+                  - DIED/SUICIDE
+                  - DIED/NATURAL CAUSES
+                  - DIED/ACCIDENTAL
+                  - DIED/KILLED
+                StateSupervisionPeriodTerminationReason.DISCHARGE:
+                  - DISCHARGED/OTHER JURISDICTION
+                  - DISCHARGED/SUCCESSFUL
+                  - DISCHARGED/OBSCIS DOWNLOAD
+                  - DISCHARGED/UNSUCCESSFUL
+                  - DISCHARGED/DEPORTED
+                  - DISCHARGED/ABSCOND
+                  - DISCHARGED/HOLD
+                  - DISCHARGED/INMATE CASE
+                  - DISCHARGED TO PSRB
+                  - INMATE COURTESY RELEASE
+                  - CASE DISMISSED BY COURT
+                  - INMATE COURT ORDER RELEASE
+                StateSupervisionPeriodTerminationReason.EXPIRATION:
+                  - EXPIRATION OF SENTENCE
+                  - EXPIRATION TO HOLD
+                  - PAROLE TO CUSTODY
+                  - COLLECTION ONLY RELEASED
+                  - NOT SUPVSD AFTER INVESTIGATION
+                  - NOT SUPVSD AFTER APPEAL
+                  - NOT SUPVSD AFTER SCREENING
+                StateSupervisionPeriodTerminationReason.INVESTIGATION:
+                  - RET PRSN/REV PENDING
+                  - RET PRSN/REV PEND
+                  - PAROLE VIOLATOR PROGRAM
+                  - NEW REFERRAL
+                  - APPEAL FILED/CASE PENDING
+                  - FUGITIVE LOCATED
+                  - AWOL
+                  - WALKAWAY RETURNED
+                  - ESCAPE
+                  - AWOL RETURNED
+                  - ESCAPE RETURNED
+                StateSupervisionPeriodTerminationReason.REVOCATION:
+                  - PROBATION REVOKED
+                  - RET PRSN/PAR REVOKED
+                  - RET PRSN/REV PEND/72 HOUR HOLD
+                  - RET PRSN FROM OUT COUNT
+                StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
+                  - Supervisor Change
+                  - Supervision Level Change
+                  - MOVE/PRISON HOUSING
+                  - BODY LOCATION CHANGE
+                  - JAIL RELEASE
+                  - WARRANT ISSUED
+                  - FIELD OP TRANSFER
+                  - OBSCIS LOCATION CHANGE
+                  - MOVE/UTAH JAIL
+                  - OBSCIS LEGAL STATUS CHANGE
+                  - FACILITY NAME CHANGE
+                  - MOVE/OTHER STATE JAIL
+                  - MOVE/FEDERAL FACILITY
+                  - PROBATION CONTINUED
+                  - WARRANT RECALLED
+                  - MOVE/STATE HOSPITAL
+                  - MOVE/PRISON TEMP HOUSING
+                  - MOVE/OTHER STATE PRISON
+                  - MOVE/MEDICAL
+                  - PAROLE CONT/RELEASE FROM PRISN
+                  - PAROLE CONTINUED
+                  - PAROLE RESTARTED
+                  - PAROLE/HALFWAY OUT
+                  - PROBATION START
+                  - PAROLE
+                  - COMP RET TO OTHER/NOT COMPLETE
+                  - COMP RET TO UTAH/NOT COMPLETE
+                  - DEPORTED/NOT TERMINATED
+                  - APPEAL-REVERSED ORIGINAL ORDER
+                  - MOVE/CCC HOUSING
+                  - COMPACT OUT/UTAH TO OTHR STATE
+                  - COMPACT IN START
+                  - COMPACT DENIED
+                  - FAILED TO APPEAR AT SENTENCING
+                  - APPEAL REVERSED
+                  - INVESTIGATION NOT COMPLETED
+                  - DENIED FIELD OP TRANSFR/OBSCIS
+                StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
+                  - DIAGNOSTIC RELEASE
+                  - REVERSED COURT ORDER
+                  - INMATE COURTESY HOLD
+                  - APPEAL AFFIRMED
+                  - PLEA IN ABEYANCE START
+                  - PROBATION RESTARTED
+                  - COLLECTION ONLY START
+                  - CCC RELEASE
+                  - DIVERSION START
+                  - NEW DIAGNOSTIC REFERRAL
+                  - DIAGNOSTIC START
+                  - PROBATION REINSTATED
+                  - EXTRADITION
+                  - HALFWAY BACK
+                  - REL FM HALFWAY OUT
+                  - REL FM HALFWAY BACK
+          supervision_type:
+            $enum_mapping:
+              $raw_text: lgl_stat_desc
+              $custom_parser: us_ut_custom_enum_parsers.parse_supervision_type

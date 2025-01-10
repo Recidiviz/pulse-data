@@ -18,25 +18,39 @@ columns:
   - name: body_loc_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: assgn_dt
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
     field_type: datetime
   - name: assgn_tm
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: assgn_rsn_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: end_dt
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
     field_type: datetime
   - name: updt_usr_id
     description: |-
       ID of user who most recently updated this record
+    null_values:
+      - "(null)"
     is_pii: True
   - name: updt_dt
     description: |-
       Timestamp of when this record was most recently updated
     field_type: datetime
+    null_values:
+      - "(null)"

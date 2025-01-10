@@ -12,18 +12,30 @@ columns:
   - name: lgl_stat_desc
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: terminated_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: need_spr_agnt_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: lgl_stat_displaycd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: hrchy
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: vld_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"

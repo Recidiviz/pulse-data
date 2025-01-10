@@ -12,15 +12,25 @@ columns:
   - name: lgl_stat_chg_desc
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: new_cmtmnt_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: assgn_rsn_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: sprvsn_exit_typ_id
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: vld_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"

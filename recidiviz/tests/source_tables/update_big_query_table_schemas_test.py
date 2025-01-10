@@ -1899,6 +1899,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ut_ingest_view_results.drug_screen",
     "us_ut_ingest_view_results.employment_period",
     "us_ut_ingest_view_results.state_person",
+    "us_ut_ingest_view_results.supervision_period",
     "us_ut_normalized_state.state_assessment",
     "us_ut_normalized_state.state_charge",
     "us_ut_normalized_state.state_charge_incarceration_sentence_association",
