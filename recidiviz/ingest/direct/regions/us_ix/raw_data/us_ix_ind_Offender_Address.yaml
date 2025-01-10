@@ -103,6 +103,8 @@ columns:
         description: TODO(#34964) Document this value.
       - value: "5"
         description: TODO(#34964) Document this value.
+      - value: "6"
+        description: TODO(#34964) Document this value.
       - value: "7"
         description: TODO(#34964) Document this value.
       - value: "8"
