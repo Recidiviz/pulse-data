@@ -21,7 +21,7 @@ from recidiviz.outliers import constants
 from recidiviz.outliers.types import OutliersMetric
 
 
-class AggregatedMetricsCollector:
+class OutliersAggregatedMetricsCollector:
     @classmethod
     def get_metrics(cls) -> list[EventCountMetric]:
         return [

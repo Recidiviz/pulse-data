@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,20 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for AggregatedMetricsCollector"""
-
-from unittest import TestCase
-
-import pytest
-
-from recidiviz.outliers.aggregated_metrics_collector import (
-    OutliersAggregatedMetricsCollector,
-)
-
-
-@pytest.mark.usefixtures("snapshottest_snapshot")
-class TestAggregatedMetricsCollector(TestCase):
-    def test_get_metrics(self) -> None:
-        all_metrics = OutliersAggregatedMetricsCollector.get_metrics()
-        names = [metric.name for metric in all_metrics]
-        self.snapshot.assert_match(names, name="test_get_metrics")  # type: ignore[attr-defined]

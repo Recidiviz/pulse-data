@@ -21,7 +21,7 @@ import os
 import pkgutil
 import re
 from types import FunctionType, ModuleType
-from typing import Any, Callable, List, Optional, Set, Type
+from typing import Any, Callable, List, Optional, Type
 
 from recidiviz.utils.types import T, assert_type
 
@@ -152,6 +152,7 @@ class ModuleCollectorMixin:
         file_prefix_filter: Optional[str] = None,
         validate_fn: Optional[Callable[[T, ModuleType], None]] = None,
         expect_match_in_all_files: bool = True,
+        deduplicate_found_attributes: bool = True,
     ) -> List[T]:
         """Collects and returns a list of all attributes with the correct type /
          specifications defined in files in a given directory. If the collection
@@ -182,6 +183,10 @@ class ModuleCollectorMixin:
             expect_match_in_all_files: If True, throws if a matching attribute does not
                 exist in all discovered python files. Otherwise, just skips files with
                 no matching attribute.
+            deduplicate_found_attributes: If True, all found attributes will be
+                deduplicated. This can only be True if the attribute_type is a hashable
+                type. If false, found attributes are added to a list without checking
+                for duplicates.
         Returns:
             List of |attribute_type|
         """
@@ -190,7 +195,9 @@ class ModuleCollectorMixin:
                 "You must specify a callable_regex if you are trying to collect callabes"
             )
 
-        found_attributes: Set[T] = set()
+        found_attributes: set[T] | list[T] = (
+            set() if deduplicate_found_attributes else []
+        )
         dir_modules = [dir_module]
         while dir_modules:
             dir_module = dir_modules.pop(0)
@@ -256,6 +263,15 @@ class ModuleCollectorMixin:
                 for val in found_attributes_in_module:
                     if validate_fn:
                         validate_fn(val, child_module)
-                    found_attributes.add(val)
+
+                    if isinstance(found_attributes, list):
+                        found_attributes.append(val)
+                    elif isinstance(found_attributes, set):
+                        found_attributes.add(val)
+                    else:
+                        raise ValueError(
+                            f"Unexpected type for found_attributes: "
+                            f"[{type(found_attributes)}]"
+                        )
 
         return list(found_attributes)

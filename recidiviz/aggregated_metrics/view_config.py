@@ -18,6 +18,9 @@
 
 from typing import Sequence
 
+from recidiviz.aggregated_metrics.aggregated_metric_collection_config import (
+    AggregatedMetricsCollection,
+)
 from recidiviz.aggregated_metrics.aggregated_metrics_view_collector import (
     collect_aggregated_metric_view_builders_for_collection,
     collect_assignments_by_time_period_builders_for_collections,
@@ -25,46 +28,81 @@ from recidiviz.aggregated_metrics.aggregated_metrics_view_collector import (
 from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
     collect_assignment_sessions_view_builders,
 )
+from recidiviz.aggregated_metrics.configuration import collections as collections_module
 from recidiviz.aggregated_metrics.legacy.collect_standard_aggregated_metric_views import (
     collect_standard_legacy_aggregated_metric_views,
 )
 from recidiviz.aggregated_metrics.legacy.metric_time_periods import (
     METRIC_TIME_PERIODS_VIEW_BUILDER,
 )
-from recidiviz.aggregated_metrics.standard_aggregated_metrics_collection_config import (
-    STANDARD_COLLECTION_CONFIG,
-)
 from recidiviz.aggregated_metrics.supervision_officer_caseload_count_spans import (
     SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
 )
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.outliers.outliers_views import (
-    OUTLIERS_AGGREGATED_METRICS_COLLECTION_CONFIG,
-)
-from recidiviz.calculator.query.state.views.vitals_report.vitals_aggregated_metrics import (
-    VITALS_AGGREGATED_METRICS_COLLECTION_CONFIG,
-)
+from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
+from recidiviz.utils.immutable_key_dict import ImmutableKeyDict
+
+
+def collect_aggregated_metrics_collection_configs() -> list[
+    AggregatedMetricsCollection
+]:
+    collections = ModuleCollectorMixin.collect_top_level_attributes_in_module(
+        attribute_type=AggregatedMetricsCollection,
+        dir_module=collections_module,
+        attribute_name_regex=r".*AGGREGATED_METRICS_COLLECTION_CONFIG",
+        deduplicate_found_attributes=False,
+    )
+    if not collections:
+        raise ValueError(
+            f"Did not find any AggregatedMetricsCollection in [{collections_module}]"
+        )
+    return collections
+
+
+def get_all_aggregated_metrics_collections_view_builders(
+    all_collections: list[AggregatedMetricsCollection],
+) -> Sequence[BigQueryViewBuilder]:
+    builders: ImmutableKeyDict[
+        BigQueryAddress, BigQueryViewBuilder
+    ] = ImmutableKeyDict()
+    for collection in all_collections:
+        try:
+            # Add to an immutable key dictionary to make sure there are no duplicate
+            # addresses.
+            builders.update(
+                {
+                    b.address: b
+                    for b in collect_aggregated_metric_view_builders_for_collection(
+                        collection
+                    )
+                }
+            )
+        except KeyError as e:
+            # TODO(#29291): Once there is a way to add a tag to differentiate views in
+            #  collections, add hint about that here.
+            raise ValueError(
+                f"Found AggregatedMetricsCollection in dataset "
+                f"[{collection.output_dataset_id}] that has views overlapping with "
+                f"another AggregatedMetricsCollection defined in the "
+                f"{collections_module.__name__} module."
+            ) from e
+    return list(builders.values())
 
 
 def get_aggregated_metrics_view_builders() -> Sequence[BigQueryViewBuilder]:
     """
     Returns a list of builders for all views related to aggregated metrics
     """
+    all_collections = collect_aggregated_metrics_collection_configs()
     return [
+        # TODO(#35914): Delete this view once it is no longer used
         METRIC_TIME_PERIODS_VIEW_BUILDER,
         SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
         # TODO(#35913): Remove these builders entirely once metrics are fully covered by
         #  the new optimized metrics.
         *collect_standard_legacy_aggregated_metric_views(),
         *collect_assignment_sessions_view_builders(),
-        *collect_assignments_by_time_period_builders_for_collections(
-            [
-                STANDARD_COLLECTION_CONFIG,
-                OUTLIERS_AGGREGATED_METRICS_COLLECTION_CONFIG,
-                VITALS_AGGREGATED_METRICS_COLLECTION_CONFIG,
-            ]
-        ),
-        *collect_aggregated_metric_view_builders_for_collection(
-            STANDARD_COLLECTION_CONFIG
-        ),
+        *collect_assignments_by_time_period_builders_for_collections(all_collections),
+        *get_all_aggregated_metrics_collections_view_builders(all_collections),
     ]

@@ -17,9 +17,6 @@
 """All the views for the vitals report."""
 from typing import List
 
-from recidiviz.aggregated_metrics.aggregated_metrics_view_collector import (
-    collect_aggregated_metric_view_builders_for_collection,
-)
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.vitals_report.overdue_lsir_by_po_by_day import (
     OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER,
@@ -42,9 +39,6 @@ from recidiviz.calculator.query.state.views.vitals_report.supervision_population
 from recidiviz.calculator.query.state.views.vitals_report.timely_contact_by_po_by_day import (
     TIMELY_CONTACT_BY_PO_BY_DAY_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.vitals_report.vitals_aggregated_metrics import (
-    VITALS_AGGREGATED_METRICS_COLLECTION_CONFIG,
-)
 
 VITALS_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_OFFICERS_AND_DISTRICTS_VIEW_BUILDER,
@@ -54,7 +48,4 @@ VITALS_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     TIMELY_CONTACT_BY_PO_BY_DAY_VIEW_BUILDER,
     SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_BUILDER,
     SUPERVISION_CASE_COMPLIANCE_SPANS_VIEW_BUILDER,
-    *collect_aggregated_metric_view_builders_for_collection(
-        VITALS_AGGREGATED_METRICS_COLLECTION_CONFIG
-    ),
 ]

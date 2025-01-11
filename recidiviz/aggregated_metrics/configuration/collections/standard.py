@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,11 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a map of metrics that are part of our standard aggregated metrics collection,
-grouped by the population they should be calculated for.
+"""Aggregated metrics collection definition for our standard set of aggregated metrics.
 """
-from typing import Dict, List
 
+from recidiviz.aggregated_metrics.aggregated_metric_collection_config import (
+    AggregatedMetricsCollection,
+)
+from recidiviz.aggregated_metrics.aggregated_metrics_view_collector import (
+    collect_aggregated_metric_view_builders_for_collection,
+)
+from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
+from recidiviz.aggregated_metrics.metric_time_period_config import (
+    MetricTimePeriodConfig,
+)
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     ABSCONSIONS_BENCH_WARRANTS,
@@ -152,15 +160,46 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+# TODO(#35913), TODO(#35917): Make this private once legacy agg metrics definitions no
+#  longer reference it.
+UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: dict[
+    MetricPopulationType, list[MetricUnitOfAnalysisType]
+] = {
+    MetricPopulationType.INCARCERATION: [
+        MetricUnitOfAnalysisType.FACILITY,
+        MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ],
+    MetricPopulationType.SUPERVISION: [
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ],
+    MetricPopulationType.JUSTICE_INVOLVED: [
+        MetricUnitOfAnalysisType.STATE_CODE,
+        MetricUnitOfAnalysisType.FACILITY,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ],
+}
 
 # TODO(#29291): Filter this metrics list down to only metrics we use downstream in
 #  products / Looker, then make it easier for DAs, etc to query configured metrics
 #  in an ad-hoc way from notebooks, etc.
-
-
+# Defines a map of metrics that are part of our standard aggregated metrics collection,
+# grouped by the population they should be calculated for.
 # Metrics should be added only if necessary for products or analyses, since additions
 # will have a meaningful impact on view update performance.
-METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] = {
+# TODO(#35913), TODO(#35917): Make this private once legacy agg metrics definitions no
+#  longer reference it.
+METRICS_BY_POPULATION_TYPE: dict[MetricPopulationType, list[AggregatedMetric]] = {
     MetricPopulationType.INCARCERATION: [
         # Average daily population
         AVG_DAILY_POPULATION,
@@ -365,3 +404,30 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         PROP_SENTENCE_SERVED_AT_LIBERTY_START,
     ],
 }
+
+_STANDARD_METRICS_YEARS_TRACKED = 7
+
+STANDARD_AGGREGATED_METRICS_COLLECTION_CONFIG = AggregatedMetricsCollection.build(
+    output_dataset_id=AGGREGATED_METRICS_DATASET_ID,
+    time_periods=[
+        MetricTimePeriodConfig.monthly_year_periods(
+            lookback_months=_STANDARD_METRICS_YEARS_TRACKED * 12
+        ),
+        MetricTimePeriodConfig.monthly_quarter_periods(
+            lookback_months=_STANDARD_METRICS_YEARS_TRACKED * 12
+        ),
+        MetricTimePeriodConfig.month_periods(
+            lookback_months=_STANDARD_METRICS_YEARS_TRACKED * 12
+        ),
+    ],
+    unit_of_analysis_types_by_population_type=UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
+    metrics_by_population_type=METRICS_BY_POPULATION_TYPE,
+)
+
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        for vb in collect_aggregated_metric_view_builders_for_collection(
+            STANDARD_AGGREGATED_METRICS_COLLECTION_CONFIG
+        ):
+            vb.build_and_print()

@@ -83,34 +83,6 @@ def _get_assignments_by_time_period_cte_name(
     return f"{unit_of_observation_type.value.lower()}_assignments_by_time_period"
 
 
-def _build_assignments_by_time_period_cte_queries(
-    *,
-    population_type: MetricPopulationType,
-    unit_of_analysis_type: MetricUnitOfAnalysisType,
-    metric_class: AggregatedMetricClassType,
-    unit_of_observation_types: set[MetricUnitOfObservationType],
-    time_period: MetricTimePeriodConfig,
-) -> dict[str, str]:
-    """Returns a dictionary mapping CTE name to the CTE query for all CTEs that produce
-    assignments by time period rows (one per unit of observation type referenced by
-    metrics).
-    """
-    cte_queries_by_name = {}
-    for unit_of_observation_type in unit_of_observation_types:
-        assignments_address = AssignmentsByTimePeriodViewBuilder.build_materialized_address(
-            time_period=time_period,
-            population_type=population_type,
-            unit_of_observation_type=unit_of_observation_type,
-            unit_of_analysis_type=unit_of_analysis_type,
-            metric_time_period_to_assignment_join_type=metric_class.metric_time_period_to_assignment_join_type(),
-        )
-
-        assignments_by_time_period_query = assignments_address.select_query_template()
-        cte_name = _get_assignments_by_time_period_cte_name(unit_of_observation_type)
-        cte_queries_by_name[cte_name] = assignments_by_time_period_query
-    return cte_queries_by_name
-
-
 def _build_output_rows_cte_query(
     *,
     unit_of_analysis_type: MetricUnitOfAnalysisType,

@@ -58,6 +58,7 @@ from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.observations.metric_unit_of_observation_type import (
     MetricUnitOfObservationType,
 )
+from recidiviz.utils.immutable_key_dict import ImmutableKeyDict
 
 METRIC_CLASSES: list[AggregatedMetricClassType] = [
     PeriodEventAggregatedMetric,
@@ -215,11 +216,14 @@ def collect_aggregated_metric_view_builders_for_collection(
     already been called with this config to produce the appropriate
     AssignmentsByTimePeriodViewBuilder views referenced by this collection.
     """
-    builders: list[
-        AggregatedMetricsBigQueryViewBuilder
-        | UnionAllBigQueryViewBuilder
-        | SimpleBigQueryViewBuilder
-    ] = []
+    builders: ImmutableKeyDict[
+        BigQueryAddress,
+        (
+            AggregatedMetricsBigQueryViewBuilder
+            | UnionAllBigQueryViewBuilder
+            | SimpleBigQueryViewBuilder
+        ),
+    ] = ImmutableKeyDict()
 
     for metric_class in METRIC_CLASSES:
         if not is_metric_class_supported_by_optimized_format(metric_class):
@@ -234,43 +238,43 @@ def collect_aggregated_metric_view_builders_for_collection(
                 continue
 
             for unit_of_analysis_type in population_config.units_of_analysis:
-                time_period_specific_builders = []
+                time_period_specific_builders: ImmutableKeyDict[
+                    BigQueryAddress, AggregatedMetricsBigQueryViewBuilder
+                ] = ImmutableKeyDict()
                 for time_period in collection_config.time_periods:
-                    time_period_specific_builders.append(
-                        AggregatedMetricsBigQueryViewBuilder(
-                            dataset_id=collection_config.output_dataset_id,
-                            population_type=population_type,
-                            unit_of_analysis_type=unit_of_analysis_type,
-                            metric_class=metric_class,
-                            metrics=metrics,
-                            time_period=time_period,
-                        )
-                    )
-                builders.extend(time_period_specific_builders)
-                builders.append(
-                    _build_time_periods_unioned_view_builder(
+                    builder = AggregatedMetricsBigQueryViewBuilder(
                         dataset_id=collection_config.output_dataset_id,
                         population_type=population_type,
                         unit_of_analysis_type=unit_of_analysis_type,
                         metric_class=metric_class,
-                        parents=time_period_specific_builders,
+                        metrics=metrics,
+                        time_period=time_period,
                     )
+                    time_period_specific_builders[builder.address] = builder
+                builders.update(time_period_specific_builders)
+
+                unioned_builder = _build_time_periods_unioned_view_builder(
+                    dataset_id=collection_config.output_dataset_id,
+                    population_type=population_type,
+                    unit_of_analysis_type=unit_of_analysis_type,
+                    metric_class=metric_class,
+                    parents=list(time_period_specific_builders.values()),
                 )
+
+                builders[unioned_builder.address] = unioned_builder
 
     for (
         population_type,
         population_config,
     ) in collection_config.population_configs.items():
         for unit_of_analysis_type in population_config.units_of_analysis:
-            builders.append(
-                generate_all_aggregated_metrics_view_builder(
-                    unit_of_analysis=MetricUnitOfAnalysis.for_type(
-                        unit_of_analysis_type
-                    ),
-                    population_type=population_type,
-                    metrics=population_config.metrics,
-                    dataset_id_override=population_config.output_dataset_id,
-                )
+            all_metrics_builder = generate_all_aggregated_metrics_view_builder(
+                unit_of_analysis=MetricUnitOfAnalysis.for_type(unit_of_analysis_type),
+                population_type=population_type,
+                metrics=population_config.metrics,
+                dataset_id_override=population_config.output_dataset_id,
             )
 
-    return builders
+            builders[all_metrics_builder.address] = all_metrics_builder
+
+    return list(builders.values())

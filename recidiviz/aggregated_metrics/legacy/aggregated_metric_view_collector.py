@@ -17,6 +17,10 @@
 """Returns all aggregated metric view builders for specified populations and units of analysis"""
 from typing import Dict, List
 
+from recidiviz.aggregated_metrics.configuration.collections.standard import (
+    METRICS_BY_POPULATION_TYPE,
+    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
+)
 from recidiviz.aggregated_metrics.legacy.misc_aggregated_metrics import (
     generate_misc_aggregated_metrics_view_builder,
 )
@@ -38,12 +42,6 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
 )
 from recidiviz.aggregated_metrics.query_building.aggregated_metric_query_utils import (
     is_metric_class_supported_by_optimized_format,
-)
-from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
-    METRICS_BY_POPULATION_TYPE,
-)
-from recidiviz.aggregated_metrics.standard_deployed_unit_of_analysis_types_by_population_type import (
-    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

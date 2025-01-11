@@ -17,14 +17,12 @@
 """Collects the standard set of deployed aggregated metrics views using legacy
 (expensive) query structure.
 """
+from recidiviz.aggregated_metrics.configuration.collections.standard import (
+    METRICS_BY_POPULATION_TYPE,
+    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
+)
 from recidiviz.aggregated_metrics.legacy.aggregated_metric_view_collector import (
     collect_legacy_aggregated_metrics_view_builders,
-)
-from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
-    METRICS_BY_POPULATION_TYPE,
-)
-from recidiviz.aggregated_metrics.standard_deployed_unit_of_analysis_types_by_population_type import (
-    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 

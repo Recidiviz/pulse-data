@@ -18,11 +18,11 @@
 
 import unittest
 
+from recidiviz.aggregated_metrics.configuration.collections.standard import (
+    METRICS_BY_POPULATION_TYPE,
+)
 from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
-)
-from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
-    METRICS_BY_POPULATION_TYPE,
 )
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_generator import (
     get_lookml_views_for_metrics,

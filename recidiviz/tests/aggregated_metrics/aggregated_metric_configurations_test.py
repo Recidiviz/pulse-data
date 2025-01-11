@@ -19,6 +19,9 @@
 import itertools
 import unittest
 
+from recidiviz.aggregated_metrics.configuration.collections.standard import (
+    METRICS_BY_POPULATION_TYPE,
+)
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentSpanValueAtStartMetric,
     DailyAvgSpanValueMetric,
@@ -27,9 +30,6 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     EventValueMetric,
     SpanMetricConditionsMixin,
     SumSpanDaysMetric,
-)
-from recidiviz.aggregated_metrics.standard_deployed_metrics_by_population import (
-    METRICS_BY_POPULATION_TYPE,
 )
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,

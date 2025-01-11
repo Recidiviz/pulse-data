@@ -22,6 +22,9 @@ from recidiviz.aggregated_metrics.assignment_sessions_view_builder import (
     get_metric_assignment_sessions_materialized_table_address,
     has_configured_assignment_query,
 )
+from recidiviz.aggregated_metrics.configuration.collections.standard import (
+    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
+)
 from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
@@ -40,9 +43,6 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
     get_static_attributes_query_for_unit_of_analysis,
-)
-from recidiviz.aggregated_metrics.standard_deployed_unit_of_analysis_types_by_population_type import (
-    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
 )
 from recidiviz.calculator.query.bq_utils import (
     MAGIC_START_DATE,

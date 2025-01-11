@@ -15,29 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """All Outliers views."""
-from typing import Any, List, Sequence
+from typing import List
 
-from recidiviz.aggregated_metrics.aggregated_metric_collection_config import (
-    AggregatedMetricsCollection,
-)
-from recidiviz.aggregated_metrics.aggregated_metrics_view_collector import (
-    collect_aggregated_metric_view_builders_for_collection,
-)
-from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
-from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
-    AVG_DAILY_POPULATION,
-)
-from recidiviz.aggregated_metrics.models.metric_population_type import (
-    MetricPopulationType,
-)
-from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
-)
-from recidiviz.aggregated_metrics.standard_aggregated_metrics_collection_config import (
-    STANDARD_TIME_PERIODS,
-)
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import OUTLIERS_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
 )
@@ -86,7 +66,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics i
 from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics import (
     SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 )
-from recidiviz.outliers.aggregated_metrics_collector import AggregatedMetricsCollector
 
 OUTLIERS_ARCHIVE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_OFFICER_METRICS_ARCHIVE_VIEW_BUILDER,
@@ -113,38 +92,8 @@ OUTLIERS_IMPACT_VIEW_BUILDERS_TO_EXPORT: List[BigQueryViewBuilder] = [
     SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 ]
 
-_METRICS_BY_POPULATION_TYPE: dict[MetricPopulationType, list[AggregatedMetric[Any]]] = {
-    MetricPopulationType.SUPERVISION: [
-        AVG_DAILY_POPULATION,
-        *AggregatedMetricsCollector.get_metrics(),
-    ]
-}
-
-_UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: dict[
-    MetricPopulationType, list[MetricUnitOfAnalysisType]
-] = {
-    MetricPopulationType.SUPERVISION: [
-        MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY
-    ]
-}
-
-
-OUTLIERS_AGGREGATED_METRICS_COLLECTION_CONFIG = AggregatedMetricsCollection.build(
-    output_dataset_id=OUTLIERS_VIEWS_DATASET,
-    time_periods=STANDARD_TIME_PERIODS,
-    unit_of_analysis_types_by_population_type=_UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
-    metrics_by_population_type=_METRICS_BY_POPULATION_TYPE,
-)
-
-INSIGHTS_AGGREGATED_METRICS_VIEW_BUILDERS: Sequence[
-    BigQueryViewBuilder
-] = collect_aggregated_metric_view_builders_for_collection(
-    OUTLIERS_AGGREGATED_METRICS_COLLECTION_CONFIG
-)
-
 OUTLIERS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     *INSIGHTS_VIEW_BUILDERS_TO_EXPORT,
     *OUTLIERS_ARCHIVE_VIEW_BUILDERS,
     *OUTLIERS_IMPACT_VIEW_BUILDERS_TO_EXPORT,
-    *INSIGHTS_AGGREGATED_METRICS_VIEW_BUILDERS,
 ]
