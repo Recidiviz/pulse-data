@@ -68,7 +68,7 @@ WITH state_assessment AS (
             OR (
                 state_code != "US_MI"
                 AND (
-                    assessment_type IN ("LSIR", "STRONG_R", "CAF", "CSRA", "ACCAT")
+                    assessment_type IN ("LSIR", "STRONG_R", "CAF", "CSRA", "ACCAT", "TX_CSST", "TX_CST", "TX_RT", "TX_SRT")
                     OR assessment_type LIKE "ORAS%"
                 )
             )
@@ -80,6 +80,7 @@ WITH state_assessment AS (
                 )
         )
         AND assessment_date IS NOT NULL
+        AND assessment_date > '1900-01-01'
     -- keep only assessments with scores or levels
         AND (
             assessment_score IS NOT NULL
