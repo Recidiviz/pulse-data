@@ -30,9 +30,9 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodCustodyLevel,
     StateIncarcerationPeriodHousingUnitCategory,
     StateIncarcerationPeriodHousingUnitType,
-    StateIncarcerationPeriodCustodyLevel,
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_staff_caseload_type import (
@@ -334,6 +334,8 @@ def parse_supervision_level(
     # If neither of the above cases are true, then base supervision level off of the
     # supervision_level field directly.
     if supervision_level:
+        if supervision_level == "ADM":
+            return StateSupervisionLevel.LIMITED
         if supervision_level == "MIN":
             return StateSupervisionLevel.MINIMUM
         if supervision_level == "MED":
