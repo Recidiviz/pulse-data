@@ -20,7 +20,10 @@
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
@@ -814,7 +817,7 @@ def workflows_state_specific_supervision_level() -> str:
 
 
 def workflows_state_specific_supervision_type() -> str:
-    return """
+    return f"""
     SELECT
         state_code,
         person_id,
@@ -824,7 +827,7 @@ def workflows_state_specific_supervision_type() -> str:
         which a person has multiple open supervision periods with different raw-text
         supervision types.) */
         STRING_AGG(DISTINCT supervision_type_raw_text, ", " ORDER BY supervision_type_raw_text) AS supervision_type,
-    FROM `{project_id}.{normalized_state_dataset}.state_supervision_period`
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
     WHERE state_code='US_OR'
         AND termination_date IS NULL
     GROUP BY 1, 2
@@ -846,9 +849,18 @@ def workflows_state_specific_supervision_type() -> str:
             ELSE NULL
             END
             AS supervision_type,
-    FROM `{project_id}.{normalized_state_dataset}.state_supervision_period`
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
     WHERE state_code='US_TN'
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY start_date DESC) = 1
+        /* Normalized state supervision periods have duplicates on person_id and start_date for approximately 2% of rows. 
+        The vast majority of these are due to 0-day periods, which this line addresses. The remaining are addressed by first
+        choosing the later termination date, since we want the most recent supervision type information. For any remaining
+        duplicates, we deterministically choose officer alphabetically and finally external_id, which is unique for all
+        supervision periods */
+        AND start_date != {nonnull_end_date_exclusive_clause('termination_date')}
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY start_date DESC, 
+                                                           {nonnull_end_date_exclusive_clause('termination_date')} DESC, 
+                                                           supervising_officer_staff_external_id, 
+                                                           external_id) = 1
     """
 
 
