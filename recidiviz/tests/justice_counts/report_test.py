@@ -121,7 +121,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             session.commit()
             datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(datapoints), 2)
+            self.assertEqual(len(datapoints), 1)
 
         with SessionFactory.using_database(self.database_key) as session:
             ReportInterface.delete_reports_by_id(
@@ -621,25 +621,20 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             session.commit()
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 2)
+            self.assertEqual(len(total_datapoints), 1)
 
-            # We should have two datapoints that have a value associated with them, one
-            # for the aggregated Law Enforcement budget and one for the context.
+            # We should have a datapoint that represents the aggregated Law Enforcement budget
             datapoints_with_value = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))
                 .order_by(schema.Datapoint.id)
                 .all()
             )
-            self.assertEqual(len(datapoints_with_value), 2)
+            self.assertEqual(len(datapoints_with_value), 1)
             report_metric = self.test_schema_objects.funding_metric
             self.assertEqual(
                 get_value(datapoints_with_value[0]),
                 report_metric.value,
-            )
-            self.assertEqual(
-                get_value(datapoints_with_value[1]),
-                assert_type(report_metric.contexts, list)[0].value,
             )
 
     def test_add_empty_metric(self) -> None:
@@ -655,7 +650,6 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.get_funding_metric(
                     value=None,
-                    include_contexts=False,
                 ),
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
@@ -708,18 +702,17 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             session.commit()
 
             total_datapoints = session.query(schema.Datapoint).all()
-            # 1 aggregate datapoint, 4 breakdown datapoints, and 1 context datapoint
-            self.assertEqual(len(total_datapoints), 6)
+            # 1 aggregate datapoint, 4 breakdown datapoints
+            self.assertEqual(len(total_datapoints), 5)
 
-            # There should be three datapoints with non-null values: one containing aggregate value,
-            # and other with the context value
+            # The aggregate value datapoint should have a non-null values
             datapoints_with_value = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))
                 .all()
             )
 
-            self.assertEqual(len(datapoints_with_value), 3)
+            self.assertEqual(len(datapoints_with_value), 2)
             reported_aggregated_dimensions = assert_type(
                 incomplete_report.aggregated_dimensions, list
             )
@@ -729,10 +722,6 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 reported_aggregated_dimensions[0].dimension_to_value[
                     CallType.NON_EMERGENCY
                 ],
-            )
-            self.assertEqual(
-                get_value(datapoints_with_value[2]),
-                "our metrics are different because xyz",
             )
 
     def test_add_calls_for_service_metric(self) -> None:
@@ -760,7 +749,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             session.commit()
 
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 6)
+            self.assertEqual(len(total_datapoints), 5)
             # We should have four datapoints with non-null values:
             # one aggregate value and three breakdowns.
             datapoints_with_value = (
@@ -769,7 +758,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .all()
             )
 
-            self.assertEqual(len(datapoints_with_value), 5)
+            self.assertEqual(len(datapoints_with_value), 4)
 
             self.assertEqual(
                 get_value(datapoints_with_value[0]),
@@ -789,10 +778,6 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 get_value(datapoints_with_value[3]),
                 aggregated_dimensions[0].dimension_to_value[CallType.UNKNOWN],
-            )
-            self.assertEqual(
-                get_value(datapoints_with_value[4]),
-                "our metrics are different because xyz",
             )
 
     def test_add_population_metric(self) -> None:
@@ -915,7 +900,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             session.commit()
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 2)
+            self.assertEqual(len(total_datapoints), 1)
 
             datapoints_with_value = (
                 session.query(schema.Datapoint)
@@ -923,7 +908,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .all()
             )
 
-            self.assertEqual(len(datapoints_with_value), 2)
+            self.assertEqual(len(datapoints_with_value), 1)
             # This should be a no-op, because the metric definition is the same
             # according to our unique constraints, so we update the existing records
             # (which does nothing, since nothing has changed)
@@ -953,7 +938,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .order_by(schema.Datapoint.id)
                 .all()
             )
-            self.assertEqual(len(queried_datapoints_no_op), 2)
+            self.assertEqual(len(queried_datapoints_no_op), 1)
             self.assertAlmostEqual(datapoints_with_value, queried_datapoints_no_op)
 
     def test_update_metric_with_new_values(self) -> None:
@@ -983,15 +968,15 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             session.commit()
 
             total_datapoints = session.query(schema.Datapoint).all()
-            # One aggregate datapoint, 4 breakdowns, one context
-            self.assertEqual(len(total_datapoints), 6)
+            # One aggregate datapoint, 4 breakdowns
+            self.assertEqual(len(total_datapoints), 5)
             datapoints_with_value = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))
                 .all()
             )
 
-            self.assertEqual(len(datapoints_with_value), 5)
+            self.assertEqual(len(datapoints_with_value), 4)
             aggregated_dimensions = assert_type(
                 report_metric.aggregated_dimensions, list
             )
@@ -1010,10 +995,6 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 get_value(datapoints_with_value[3]),
                 aggregated_dimensions[0].dimension_to_value[CallType.UNKNOWN],
-            )
-            self.assertEqual(
-                get_value(datapoints_with_value[4]),
-                assert_type(report_metric.contexts, list)[0].value,
             )
 
             # This should result in an update to the existing database objects
@@ -1050,7 +1031,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .all()
             )
 
-            self.assertEqual(len(datapoints_with_value), 5)
+            self.assertEqual(len(datapoints_with_value), 4)
 
             self.assertEqual(
                 get_value(datapoints_with_value[0]), new_report_metric.value
@@ -1070,77 +1051,6 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 get_value(datapoints_with_value[3]),
                 aggregated_dimensions[0].dimension_to_value[CallType.UNKNOWN],
             )
-            self.assertEqual(
-                get_value(datapoints_with_value[4]),
-                assert_type(new_report_metric.contexts, list)[0].value,
-            )
-
-    def test_update_metric_with_new_contexts(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(self.test_schema_objects.test_user_A)
-            inserts: List[schema.Datapoint] = []
-            updates: List[schema.Datapoint] = []
-            histories: List[schema.DatapointHistory] = []
-            ReportInterface.add_or_update_metric(
-                session=session,
-                inserts=inserts,
-                updates=updates,
-                histories=histories,
-                report=self.test_schema_objects.test_report_monthly,
-                report_metric=self.test_schema_objects.reported_calls_for_service_metric,
-                user_account=self.test_schema_objects.test_user_A,
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
-            DatapointInterface.flush_report_datapoints(
-                session=session,
-                inserts=inserts,
-                updates=updates,
-                histories=histories,
-            )
-            session.commit()
-            total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 6)
-            datapoints_with_value = (
-                session.query(schema.Datapoint)
-                .filter(schema.Datapoint.value.is_not(None))
-                .all()
-            )
-            self.assertEqual(len(datapoints_with_value), 5)
-
-            # There should be one context associated with the metric
-            contexts = [d for d in datapoints_with_value if d.context_key is not None]
-            self.assertEqual(len(contexts), 1)
-
-            # Update a context
-            inserts.clear()
-            updates.clear()
-            histories.clear()
-            ReportInterface.add_or_update_metric(
-                session=session,
-                inserts=inserts,
-                updates=updates,
-                histories=histories,
-                report=self.test_schema_objects.test_report_monthly,
-                report_metric=self.test_schema_objects.get_reported_calls_for_service_metric(
-                    nullify_contexts_and_disaggregations=True
-                ),
-                user_account=self.test_schema_objects.test_user_A,
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
-            DatapointInterface.flush_report_datapoints(
-                session=session,
-                inserts=inserts,
-                updates=updates,
-                histories=histories,
-            )
-            session.commit()
-            queried_datapoints = (
-                session.query(schema.Datapoint)
-                .filter(schema.Datapoint.value.is_not(None))
-                .all()
-            )
-            contexts = [d for d in queried_datapoints if d.context_key is not None]
-            self.assertEqual(len(contexts), 0)
 
     def test_get_metrics_for_empty_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -1522,15 +1432,11 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .filter(schema.Datapoint.value.is_not(None))
                 .all()
             )
-            self.assertEqual(len(datapoints_with_value), 5)
+            self.assertEqual(len(datapoints_with_value), 4)
             self.assertEqual(get_value(datapoints_with_value[0]), 100.0)
             self.assertEqual(get_value(datapoints_with_value[1]), 20.0)
             self.assertEqual(get_value(datapoints_with_value[2]), 60.0)
             self.assertEqual(get_value(datapoints_with_value[3]), 20.0)
-            self.assertEqual(
-                get_value(datapoints_with_value[4]),
-                "our metrics are different because xyz",
-            )
 
             # If user explicitly sets metric value as None, but doesn't include disaggregations or contexts,
             # the metric value will be changed, but disaggregations and contexts will be left alone. You have
@@ -1566,8 +1472,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .filter(schema.Datapoint.value.is_not(None))
                 .all()
             )
-            # 4 and not 5 because the aggregate metric value did change to None
-            self.assertEqual(len(datapoints_with_value), 4)
+            # 3 and not 4 because the aggregate metric value did change to None
+            self.assertEqual(len(datapoints_with_value), 3)
 
             # If user doesn't include contexts at all, this doesn't delete anything.
             # To delete them, you'd have to specifically include them with values

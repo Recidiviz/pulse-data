@@ -469,27 +469,12 @@ class JusticeCountsSchemaTestObjects:
     @staticmethod
     def get_funding_metric(
         value: Optional[int] = 100000,
-        include_contexts: bool = True,
-        nullify_contexts_and_disaggregations: bool = False,
     ) -> MetricInterface:
         return MetricInterface(
             key=law_enforcement.funding.key,
             value=value,
             is_metric_enabled=True,
-            contexts=(
-                [
-                    MetricContextData(
-                        key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                        value=(
-                            "our metrics are different because xyz"
-                            if not nullify_contexts_and_disaggregations
-                            else None
-                        ),
-                    ),
-                ]
-                if include_contexts
-                else []
-            ),
+            contexts=[],
             aggregated_dimensions=[],
             is_includes_excludes_configured=None,
         )
@@ -825,16 +810,7 @@ class JusticeCountsSchemaTestObjects:
             key=law_enforcement.calls_for_service.key,
             value=value,
             is_metric_enabled=True,
-            contexts=[
-                MetricContextData(
-                    key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                    value=(
-                        "our metrics are different because xyz"
-                        if not nullify_contexts_and_disaggregations
-                        else None
-                    ),
-                ),
-            ],
+            contexts=[],
             aggregated_dimensions=(
                 [
                     MetricAggregatedDimensionData(
@@ -911,12 +887,6 @@ class JusticeCountsSchemaTestObjects:
             key=law_enforcement.arrests.key,
             is_metric_enabled=True,
             value=120,
-            contexts=[
-                MetricContextData(
-                    key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                    value="our metrics are different because xyz",
-                ),
-            ],
             aggregated_dimensions=[
                 MetricAggregatedDimensionData(
                     dimension_to_value={

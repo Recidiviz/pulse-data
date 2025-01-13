@@ -56,11 +56,10 @@ DatapointUniqueKey = Tuple[
 
 class DatapointInterface:
     """Contains methods for working with Datapoint.
-    Datapoints can either be numeric metric values, or contexts associated with a metric.
-    In either case, metric_definition_key indicates which metric the datapoint applies to.
-    If context_key is not None, the datapoint is a context. value_type will be numeric for non-context
-    datapoints, and otherwise will indicate the type of context. If dimension_identifier_to_member is not
-    None the numeric value applies to a particular dimension.
+    Datapoints are numeric metric values associated with a metric. The
+    metric_definition_key indicates which metric the datapoint applies to.
+    If dimension_identifier_to_member is not None the numeric value applies
+    to a particular dimension.
     """
 
     ### Fetch from the DB ###

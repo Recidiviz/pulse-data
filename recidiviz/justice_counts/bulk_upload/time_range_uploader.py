@@ -222,7 +222,6 @@ class TimeRangeUploader:
         return MetricInterface(
             key=self.metricfile.definition.key,
             value=aggregate_value,
-            contexts=[],
             aggregated_dimensions=(
                 [MetricAggregatedDimensionData(dimension_to_value=dimension_to_value)]
                 if dimension_to_value is not None

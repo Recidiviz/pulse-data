@@ -194,13 +194,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "filenames": ["funding", "funding_by_type"],
                 "includes_excludes": [],
                 "is_includes_excludes_configured": None,
-                "contexts": [
-                    {
-                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
-                        "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
-                        "value": "our metrics are different because xyz",
-                    },
-                ],
+                "contexts": [],
                 "disaggregations": [],
                 "datapoints": None,
             },
@@ -237,13 +231,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "includes_excludes": [],
                 "is_includes_excludes_configured": None,
-                "contexts": [
-                    {
-                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
-                        "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
-                        "value": "our metrics are different because xyz",
-                    },
-                ],
+                "contexts": [],
                 "disaggregations": [
                     {
                         "contexts": [],
@@ -394,13 +382,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 ],
                 "includes_excludes": [],
                 "is_includes_excludes_configured": None,
-                "contexts": [
-                    {
-                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
-                        "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
-                        "value": "our metrics are different because xyz",
-                    },
-                ],
+                "contexts": [],
                 "disaggregations": [
                     {
                         "contexts": [],
@@ -606,13 +588,6 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
         response_json = {
             "key": metric_definition.key,
             "value": 100,
-            "contexts": [
-                {
-                    "key": metric_definition.contexts[0].key.value,
-                    "value": "definition of arrest",
-                    "multiple_choice_options": [],
-                }
-            ],
             "disaggregations": [
                 {
                     "key": OffenseType.dimension_identifier(),
@@ -633,12 +608,6 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
             MetricInterface(
                 key=metric_definition.key,
                 value=100,
-                contexts=[
-                    MetricContextData(
-                        key=metric_definition.contexts[0].key,
-                        value="definition of arrest",
-                    )
-                ],
                 aggregated_dimensions=[
                     MetricAggregatedDimensionData(
                         dimension_to_value={
@@ -3726,13 +3695,7 @@ class TestMetricInterface(JusticeCountsDatabaseTestCase):
                 {
                     "additional_description": law_enforcement.arrests.additional_description,
                     "category": "Operations and Dynamics",
-                    "contexts": [
-                        {
-                            "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
-                            "key": "INCLUDES_EXCLUDES_DESCRIPTION",
-                            "value": "our metrics are different because xyz",
-                        }
-                    ],
+                    "contexts": [],
                     "custom_frequency": None,
                     "datapoints": None,
                     "description": "The number of arrests, citations, and summonses made by the agency.",

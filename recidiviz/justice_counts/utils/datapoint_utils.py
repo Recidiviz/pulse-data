@@ -82,6 +82,9 @@ def is_datapoint_deprecated(datapoint: schema.Datapoint) -> bool:
     metric = METRIC_KEY_TO_METRIC.get(datapoint.metric_definition_key)
     if metric is None:
         return True
+    # Filter out report context datapoints
+    if datapoint.context_key is not None and datapoint.report_id is not None:
+        return True
     _, success = get_dimension(datapoint)
     return not success
 

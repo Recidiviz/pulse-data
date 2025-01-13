@@ -138,9 +138,7 @@ class FeedInterface:
         }
         """
         # 1. First fetch all datapoints for this agency
-        # TODO(#14626): Combine with data viz functionality since that also only
-        # needs to fetch non-context datapoints. Eventually adjust to include
-        # contexts in the feed as well.
+        # TODO(#14626): Combine with data viz functionality.
         reports = ReportInterface.get_reports_by_agency_id(
             session=session,
             agency_id=agency_id,

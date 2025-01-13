@@ -583,34 +583,6 @@ class ReportInterface:
                         upload_method=upload_method,
                     )
                 )
-
-        # Finally, add a datapoint for each context
-        context_key_to_value = {
-            context.key: context.value for context in report_metric.contexts
-        }
-        for context in metric_definition.contexts or []:
-            if context.key not in context_key_to_value:
-                # If this context wasn't reported, skip it. Don't add a blank
-                # datapoint, which will overwrite any previously reported values.
-                continue
-
-            datapoint_json_list.append(
-                DatapointInterface.add_report_datapoint(
-                    session=session,
-                    inserts=inserts,
-                    updates=updates,
-                    histories=histories,
-                    existing_datapoints_dict=existing_datapoints_dict,
-                    user_account=user_account,
-                    current_time=current_time,
-                    metric_definition_key=metric_definition.key,
-                    report=report,
-                    value=context_key_to_value[context.key],
-                    context_key=context.key,
-                    agency=agency,
-                    upload_method=upload_method,
-                )
-            )
         return [dp for dp in datapoint_json_list if dp is not None]
 
     ### Helpers ###
