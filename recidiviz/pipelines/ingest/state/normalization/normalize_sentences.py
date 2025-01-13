@@ -34,6 +34,7 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentenceType,
     StateSentencingAuthority,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ncic import get_description
 from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.state.entities import (
@@ -334,6 +335,7 @@ def get_normalized_sentence_groups(
 
 
 def get_normalized_sentencing_entities(
+    state_code: StateCode,
     sentences: List[StateSentence],
     sentence_groups: List[StateSentenceGroup],
     delegate: StateSpecificSentenceNormalizationDelegate,
@@ -355,7 +357,7 @@ def get_normalized_sentencing_entities(
         g.external_id: g for g in get_normalized_sentence_groups(sentence_groups)
     }
     inferred_groups = get_normalized_inferred_sentence_groups(
-        list(normalized_sentences_by_external_id.values())
+        state_code, delegate, list(normalized_sentences_by_external_id.values())
     )
     for inferred_group in inferred_groups:
         inferred_id = inferred_group.sentence_inferred_group_id

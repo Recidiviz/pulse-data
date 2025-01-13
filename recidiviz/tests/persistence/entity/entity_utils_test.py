@@ -86,7 +86,7 @@ from recidiviz.persistence.database.schema_utils import (
     is_association_table,
 )
 from recidiviz.persistence.entity import entity_utils
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, HasExternalIdEntity
 from recidiviz.persistence.entity.entity_utils import (
     EntityFieldIndex,
     EntityFieldType,
@@ -101,6 +101,7 @@ from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_table_id,
     get_many_to_many_relationships,
     get_module_for_entity_class,
+    group_has_external_id_entities_by_function,
     is_many_to_many_relationship,
     is_many_to_one_relationship,
     is_one_to_many_relationship,
@@ -1660,3 +1661,68 @@ class TestBidirectionalUpdates(TestCase):
                 entity.__class__
             )
             self.assertEqual(len(many_to_many_relationships), 0)
+
+
+def test_group_has_external_id_entities_by_function() -> None:
+    class Example(HasExternalIdEntity):
+        """only has external id"""
+
+    A = Example(external_id="A")
+    B = Example(external_id="B")
+    C = Example(external_id="C")
+    D = Example(external_id="D")
+
+    # These are all external IDs
+    GROUPINGS = {
+        "A": {"C"},
+        "B": {"C", "D"},
+        "C": {"A", "B"},
+        "D": {"B"},
+    }
+
+    def _grouping_func(a: HasExternalIdEntity, b: HasExternalIdEntity) -> bool:
+        if not (a and b):
+            return False
+        return b.external_id in GROUPINGS[a.external_id]
+
+    result = group_has_external_id_entities_by_function([A, B, C, D], _grouping_func)
+    assert result[0] == {"A", "B", "C", "D"}
+
+    # Two inferred group from sentences, D all alone
+    GROUPINGS = {
+        "A": {"C"},
+        "B": {"C"},
+        "C": {"A", "B"},
+        "D": set(),
+    }
+    result = group_has_external_id_entities_by_function([A, B, C, D], _grouping_func)
+    assert len(result) == 2
+    assert {"A", "B", "C"} in result
+    assert {"D"} in result
+
+    # # Two inferred group from sentences, B and D together
+    GROUPINGS = {
+        "A": {"C"},
+        "B": {"D"},
+        "C": {"A"},
+        "D": {"B"},
+    }
+    result = group_has_external_id_entities_by_function([A, B, C, D], _grouping_func)
+    assert len(result) == 2
+    assert {"B", "D"} in result
+    assert {"A", "C"} in result
+
+    # No groups, each sentence is their own group.
+    GROUPINGS = {
+        "A": set(),
+        "B": set(),
+        "C": set(),
+        "D": set(),
+    }
+    result = group_has_external_id_entities_by_function([A, B, C, D], _grouping_func)
+    assert sorted(result) == [
+        {"A"},
+        {"B"},
+        {"C"},
+        {"D"},
+    ]

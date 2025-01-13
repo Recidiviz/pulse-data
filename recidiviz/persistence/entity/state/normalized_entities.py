@@ -861,6 +861,16 @@ class NormalizedStateSentenceInferredGroup(NormalizedStateEntity, HasExternalIdE
         """This value separates sentence external IDs in this entity's external ID"""
         return "@#@"
 
+    @classmethod
+    def from_sentence_external_ids(
+        cls, state_code: StateCode, ids: list[str] | set[str]
+    ) -> "NormalizedStateSentenceInferredGroup":
+        ids = sorted(ids)
+        return cls(
+            state_code=state_code.value,
+            external_id=cls.external_id_delimiter().join(ids),
+        )
+
 
 @attr.s(eq=False, kw_only=True)
 class NormalizedStateSentenceGroup(NormalizedStateEntity, HasExternalIdEntity):

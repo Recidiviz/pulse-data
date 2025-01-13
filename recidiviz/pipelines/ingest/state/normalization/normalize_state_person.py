@@ -150,6 +150,7 @@ def build_normalized_state_person(
         normalized_sentence_groups,
         normalized_sentence_inferred_groups,
     ) = get_normalized_sentencing_entities(
+        state_code=state_code,
         sentences=person.sentences,
         sentence_groups=person.sentence_groups,
         delegate=sentencing_delegate,

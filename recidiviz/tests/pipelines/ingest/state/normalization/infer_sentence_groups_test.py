@@ -34,11 +34,14 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateChargeV2,
     NormalizedStateSentence,
     NormalizedStateSentenceGroup,
+    NormalizedStateSentenceInferredGroup,
     NormalizedStateSentenceStatusSnapshot,
 )
 from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import (
-    InferredGroupBuilder,
     get_normalized_inferred_sentence_groups,
+)
+from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
+    StateSpecificSentenceNormalizationDelegate,
 )
 
 
@@ -67,7 +70,8 @@ class TestInferredSentenceGroups(unittest.TestCase):
     SENTENCE_2_EXTERNAL_ID = "sentence-002"
     SENTENCE_3_EXTERNAL_ID = "sentence-003"
 
-    STATE_CODE_VALUE = StateCode.US_XX.value
+    STATE_CODE = StateCode.US_XX
+    DELEGATE = StateSpecificSentenceNormalizationDelegate()
 
     def test_from_sentences_that_only_share_state_provided_groups(self) -> None:
         """
@@ -77,13 +81,13 @@ class TestInferredSentenceGroups(unittest.TestCase):
         then they are not in the same inferred group.
         """
         group_a = NormalizedStateSentenceGroup(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.GROUP_A_EXTERNAL_ID,
             sentence_group_id=hash(self.GROUP_A_EXTERNAL_ID),
             sentence_inferred_group_id=None,
         )
         group_b = NormalizedStateSentenceGroup(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.GROUP_B_EXTERNAL_ID,
             sentence_group_id=hash(self.GROUP_A_EXTERNAL_ID),
             sentence_inferred_group_id=None,
@@ -92,7 +96,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
         # Sentences 1 and 2 are in group A, sentence 3 is in group B
         # Group A is from JAN-MAR, Group B begins APR 1
         sentence_1 = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_1_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_1_EXTERNAL_ID),
             sentence_group_external_id=group_a.external_id,
@@ -102,7 +106,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentence_type=StateSentenceType.PROBATION,
             sentence_status_snapshots=[
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.JAN_01),
                     status_end_datetime=as_datetime(self.MAR_01),
                     sequence_num=1,
@@ -110,7 +114,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
                     sentence_status_snapshot_id=1,
                 ),
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.MAR_01),
                     status_end_datetime=None,
                     sequence_num=2,
@@ -120,7 +124,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             ],
         )
         sentence_2 = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_2_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_2_EXTERNAL_ID),
             sentence_group_external_id=group_a.external_id,
@@ -130,7 +134,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentence_type=StateSentenceType.PROBATION,
             sentence_status_snapshots=[
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.JAN_01),
                     status_end_datetime=as_datetime(self.MAR_01),
                     sequence_num=1,
@@ -138,7 +142,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
                     sentence_status_snapshot_id=11,
                 ),
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.MAR_01),
                     status_end_datetime=None,
                     sequence_num=2,
@@ -148,7 +152,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             ],
         )
         sentence_3 = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_3_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_3_EXTERNAL_ID),
             sentence_group_external_id=group_b.external_id,
@@ -158,7 +162,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentence_type=StateSentenceType.STATE_PRISON,
             sentence_status_snapshots=[
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.APR_01),
                     status_end_datetime=None,
                     sequence_num=1,
@@ -168,13 +172,15 @@ class TestInferredSentenceGroups(unittest.TestCase):
             ],
         )
         actual_inferred_groups = get_normalized_inferred_sentence_groups(
+            self.STATE_CODE,
+            self.DELEGATE,
             normalized_sentences=[sentence_1, sentence_2, sentence_3],
         )
-        inferred_a = InferredGroupBuilder.build_inferred_group_from_sentences(
-            [sentence_1, sentence_2]
+        inferred_a = NormalizedStateSentenceInferredGroup.from_sentence_external_ids(
+            self.STATE_CODE, [sentence_1.external_id, sentence_2.external_id]
         )
-        inferred_b = InferredGroupBuilder.build_inferred_group_from_sentences(
-            [sentence_3]
+        inferred_b = NormalizedStateSentenceInferredGroup.from_sentence_external_ids(
+            self.STATE_CODE, [sentence_3.external_id]
         )
         assert sorted(actual_inferred_groups, key=lambda g: g.external_id) == [
             inferred_a,
@@ -187,13 +193,13 @@ class TestInferredSentenceGroups(unittest.TestCase):
         share an imposed_date, then they are in the same inferred group.
         """
         group_a = NormalizedStateSentenceGroup(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.GROUP_A_EXTERNAL_ID,
             sentence_group_id=hash(self.GROUP_A_EXTERNAL_ID),
             sentence_inferred_group_id=None,
         )
         group_b = NormalizedStateSentenceGroup(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.GROUP_B_EXTERNAL_ID,
             sentence_group_id=hash(self.GROUP_A_EXTERNAL_ID),
             sentence_inferred_group_id=None,
@@ -201,7 +207,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
         # Sentences 1 and 2 are in group A, sentence 3 is in group B
         # However, sentence 1 & 3 were imposed together.
         sentence_1 = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_1_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_1_EXTERNAL_ID),
             sentence_group_external_id=group_a.external_id,
@@ -211,7 +217,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentence_type=StateSentenceType.PROBATION,
             sentence_status_snapshots=[
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.JAN_01),
                     status_end_datetime=as_datetime(self.MAR_01),
                     sequence_num=1,
@@ -219,7 +225,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
                     sentence_status_snapshot_id=1,
                 ),
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.MAR_01),
                     status_end_datetime=None,
                     sequence_num=2,
@@ -229,7 +235,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             ],
         )
         sentence_2 = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_2_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_2_EXTERNAL_ID),
             sentence_group_external_id=group_a.external_id,
@@ -239,7 +245,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentence_type=StateSentenceType.PROBATION,
             sentence_status_snapshots=[
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.JAN_01),
                     status_end_datetime=as_datetime(self.MAR_01),
                     sequence_num=1,
@@ -247,7 +253,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
                     sentence_status_snapshot_id=11,
                 ),
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.MAR_01),
                     status_end_datetime=None,
                     sequence_num=2,
@@ -257,7 +263,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             ],
         )
         sentence_3 = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_3_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_3_EXTERNAL_ID),
             sentence_group_external_id=group_b.external_id,
@@ -267,7 +273,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentence_type=StateSentenceType.PROBATION,
             sentence_status_snapshots=[
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.JAN_01),
                     status_end_datetime=None,
                     sequence_num=1,
@@ -277,11 +283,19 @@ class TestInferredSentenceGroups(unittest.TestCase):
             ],
         )
         actual_inferred_groups = get_normalized_inferred_sentence_groups(
+            self.STATE_CODE,
+            self.DELEGATE,
             normalized_sentences=[sentence_1, sentence_2, sentence_3],
         )
-        sentences = [sentence_1, sentence_2, sentence_3]
-        inferred_group = InferredGroupBuilder.build_inferred_group_from_sentences(
-            sentences
+        inferred_group = (
+            NormalizedStateSentenceInferredGroup.from_sentence_external_ids(
+                self.STATE_CODE,
+                [
+                    sentence_1.external_id,
+                    sentence_2.external_id,
+                    sentence_3.external_id,
+                ],
+            )
         )
         assert actual_inferred_groups == [inferred_group]
         assert (
@@ -295,13 +309,13 @@ class TestInferredSentenceGroups(unittest.TestCase):
         then they are in the same inferred group.
         """
         group_a = NormalizedStateSentenceGroup(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.GROUP_A_EXTERNAL_ID,
             sentence_group_id=hash(self.GROUP_A_EXTERNAL_ID),
             sentence_inferred_group_id=None,
         )
         group_b = NormalizedStateSentenceGroup(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.GROUP_B_EXTERNAL_ID,
             sentence_group_id=hash(self.GROUP_A_EXTERNAL_ID),
             sentence_inferred_group_id=None,
@@ -309,7 +323,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
         # Sentences 1 and 2 are in group A, sentence 3 is in group B
         # However, 3 begins serving before sentence 1 is terminated
         sentence_1 = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_1_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_1_EXTERNAL_ID),
             sentence_group_external_id=group_a.external_id,
@@ -319,7 +333,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentence_type=StateSentenceType.PROBATION,
             sentence_status_snapshots=[
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.JAN_01),
                     status_end_datetime=as_datetime(self.MAR_01),
                     sequence_num=1,
@@ -327,7 +341,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
                     sentence_status_snapshot_id=1,
                 ),
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.MAR_01),
                     status_end_datetime=None,
                     sequence_num=2,
@@ -337,7 +351,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             ],
         )
         sentence_2 = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_2_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_2_EXTERNAL_ID),
             sentence_group_external_id=group_a.external_id,
@@ -347,7 +361,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentence_type=StateSentenceType.PROBATION,
             sentence_status_snapshots=[
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.JAN_01),
                     status_end_datetime=as_datetime(self.MAR_01),
                     sequence_num=1,
@@ -355,7 +369,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
                     sentence_status_snapshot_id=11,
                 ),
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.MAR_01),
                     status_end_datetime=None,
                     sequence_num=2,
@@ -365,7 +379,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             ],
         )
         sentence_3 = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_3_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_3_EXTERNAL_ID),
             sentence_group_external_id=group_b.external_id,
@@ -375,7 +389,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentence_type=StateSentenceType.PROBATION,
             sentence_status_snapshots=[
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.FEB_01),
                     status_end_datetime=None,
                     sequence_num=1,
@@ -385,11 +399,19 @@ class TestInferredSentenceGroups(unittest.TestCase):
             ],
         )
         actual_inferred_groups = get_normalized_inferred_sentence_groups(
+            self.STATE_CODE,
+            self.DELEGATE,
             normalized_sentences=[sentence_1, sentence_2, sentence_3],
         )
-        sentences = [sentence_1, sentence_2, sentence_3]
-        inferred_group = InferredGroupBuilder.build_inferred_group_from_sentences(
-            sentences
+        inferred_group = (
+            NormalizedStateSentenceInferredGroup.from_sentence_external_ids(
+                self.STATE_CODE,
+                [
+                    sentence_1.external_id,
+                    sentence_2.external_id,
+                    sentence_3.external_id,
+                ],
+            )
         )
         assert actual_inferred_groups == [inferred_group]
         assert (
@@ -405,13 +427,13 @@ class TestInferredSentenceGroups(unittest.TestCase):
         together.
         """
         common_charge = NormalizedStateChargeV2(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id="TEST-CHARGE",
             charge_v2_id=hash("TEST-CHARGE"),
             status=StateChargeV2Status.CONVICTED,
         )
         incarceration_sentence = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_1_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_1_EXTERNAL_ID),
             sentence_group_external_id=None,
@@ -422,7 +444,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             charges=[common_charge],
             sentence_status_snapshots=[
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.JAN_01),
                     status_end_datetime=as_datetime(self.MAR_01),
                     sequence_num=1,
@@ -430,7 +452,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
                     sentence_status_snapshot_id=1,
                 ),
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.MAR_01),
                     status_end_datetime=None,
                     sequence_num=2,
@@ -440,7 +462,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             ],
         )
         parole_sentence = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_2_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_2_EXTERNAL_ID),
             sentence_group_external_id=None,
@@ -455,11 +477,15 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentence_status_snapshots=[],
         )
         actual_inferred_groups = get_normalized_inferred_sentence_groups(
+            self.STATE_CODE,
+            self.DELEGATE,
             normalized_sentences=[incarceration_sentence, parole_sentence],
         )
-        sentences = [incarceration_sentence, parole_sentence]
-        inferred_group = InferredGroupBuilder.build_inferred_group_from_sentences(
-            sentences
+        inferred_group = (
+            NormalizedStateSentenceInferredGroup.from_sentence_external_ids(
+                self.STATE_CODE,
+                [incarceration_sentence.external_id, parole_sentence.external_id],
+            )
         )
         assert actual_inferred_groups == [inferred_group]
         assert inferred_group.external_id == "sentence-001@#@sentence-002"
@@ -473,21 +499,21 @@ class TestInferredSentenceGroups(unittest.TestCase):
         together, with distinct identifiers used in each system.
         """
         charge_with_common_date_1 = NormalizedStateChargeV2(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id="TEST-CHARGE-1",
             charge_v2_id=hash("TEST-CHARGE-1"),
             offense_date=datetime.date(2024, 1, 1),
             status=StateChargeV2Status.CONVICTED,
         )
         charge_with_common_date_2 = NormalizedStateChargeV2(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id="TEST-CHARGE-2",
             charge_v2_id=hash("TEST-CHARGE-2"),
             offense_date=datetime.date(2024, 1, 1),
             status=StateChargeV2Status.CONVICTED,
         )
         incarceration_sentence = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_1_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_1_EXTERNAL_ID),
             sentence_group_external_id=None,
@@ -498,7 +524,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             charges=[charge_with_common_date_1],
             sentence_status_snapshots=[
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.JAN_01),
                     status_end_datetime=as_datetime(self.MAR_01),
                     sequence_num=1,
@@ -506,7 +532,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
                     sentence_status_snapshot_id=1,
                 ),
                 NormalizedStateSentenceStatusSnapshot(
-                    state_code=self.STATE_CODE_VALUE,
+                    state_code=self.STATE_CODE.value,
                     status_update_datetime=as_datetime(self.MAR_01),
                     status_end_datetime=None,
                     sequence_num=2,
@@ -516,7 +542,7 @@ class TestInferredSentenceGroups(unittest.TestCase):
             ],
         )
         parole_sentence = NormalizedStateSentence(
-            state_code=self.STATE_CODE_VALUE,
+            state_code=self.STATE_CODE.value,
             external_id=self.SENTENCE_2_EXTERNAL_ID,
             sentence_id=hash(self.SENTENCE_2_EXTERNAL_ID),
             sentence_group_external_id=None,
@@ -531,11 +557,15 @@ class TestInferredSentenceGroups(unittest.TestCase):
             sentence_status_snapshots=[],
         )
         actual_inferred_groups = get_normalized_inferred_sentence_groups(
+            self.STATE_CODE,
+            self.DELEGATE,
             normalized_sentences=[incarceration_sentence, parole_sentence],
         )
-        sentences = [incarceration_sentence, parole_sentence]
-        inferred_group = InferredGroupBuilder.build_inferred_group_from_sentences(
-            sentences
+        inferred_group = (
+            NormalizedStateSentenceInferredGroup.from_sentence_external_ids(
+                self.STATE_CODE,
+                [incarceration_sentence.external_id, parole_sentence.external_id],
+            )
         )
         assert actual_inferred_groups == [inferred_group]
         assert inferred_group.external_id == "sentence-001@#@sentence-002"

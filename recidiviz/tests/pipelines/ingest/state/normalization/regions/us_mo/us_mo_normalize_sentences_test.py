@@ -39,7 +39,7 @@ from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     string_representation,
 )
 from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import (
-    InferredGroupBuilder,
+    NormalizedStateSentenceInferredGroup,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
     get_normalized_sentencing_entities,
@@ -639,16 +639,20 @@ def test_person_001_sentencing_normalization() -> None:
     )
 
     INFERRED_GROUP_FROM_19900117 = (
-        InferredGroupBuilder.build_inferred_group_from_sentences(
-            [NORMALIZED_SENTENCE_001_19900117_1]
+        NormalizedStateSentenceInferredGroup.from_sentence_external_ids(
+            StateCode.US_MO, [NORMALIZED_SENTENCE_001_19900117_1.external_id]
         )
     )
     NORMALIZED_SENTENCE_001_19900117_1.sentence_inferred_group_id = (
         INFERRED_GROUP_FROM_19900117.sentence_inferred_group_id
     )
     INFERRED_GROUP_FROM_20040224 = (
-        InferredGroupBuilder.build_inferred_group_from_sentences(
-            [NORMALIZED_SENTENCE_001_20040224_1, NORMALIZED_SENTENCE_001_20040224_2]
+        NormalizedStateSentenceInferredGroup.from_sentence_external_ids(
+            StateCode.US_MO,
+            [
+                NORMALIZED_SENTENCE_001_20040224_1.external_id,
+                NORMALIZED_SENTENCE_001_20040224_2.external_id,
+            ],
         )
     )
     NORMALIZED_SENTENCE_001_20040224_1.sentence_inferred_group_id = (
@@ -694,6 +698,7 @@ def test_person_001_sentencing_normalization() -> None:
         actual_normalized_sentence_groups,
         actual_inferred_groups,
     ) = get_normalized_sentencing_entities(
+        StateCode.US_MO,
         person_001.sentences,
         person_001.sentence_groups,
         UsMoSentenceNormalizationDelegate(),

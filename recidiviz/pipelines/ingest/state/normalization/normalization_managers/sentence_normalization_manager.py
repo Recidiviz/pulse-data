@@ -35,6 +35,7 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateCharge,
     NormalizedStateIncarcerationSentence,
+    NormalizedStateSentence,
     NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.entity_normalization_manager import (
@@ -46,6 +47,22 @@ from recidiviz.pipelines.ingest.state.normalization.normalized_entity_conversion
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
+
+
+def sentences_overlap_serving(
+    s1: NormalizedStateSentence, s2: NormalizedStateSentence
+) -> bool:
+    span1 = s1.first_serving_status_to_terminating_status_dt_range
+    span2 = s2.first_serving_status_to_terminating_status_dt_range
+    if not (span1 and span2):
+        return False
+    if span1.lower_bound_inclusive in span2 or span2.lower_bound_inclusive in span1:
+        return True
+    if span1.upper_bound_exclusive == span2.lower_bound_inclusive:
+        return True
+    if span2.upper_bound_exclusive == span1.lower_bound_inclusive:
+        return True
+    return False
 
 
 # pylint: disable=unused-argument
@@ -77,6 +94,45 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
         status that is followed by other statuses.
         """
         return False
+
+    # TODO(#36078) Make default method for imposed sentence groups
+
+    @staticmethod
+    def sentences_are_in_same_inferred_group(
+        s1: NormalizedStateSentence, s2: NormalizedStateSentence
+    ) -> bool:
+        """
+        Returns True if the two given sentences belong in the same
+        NormalizedStateSentenceInferredGroup.
+        An inferred group is created when two sentences:
+            - Have the same NormalizedStateSentenceGroup
+            - Have the same imposed_date
+            - Have a common charge
+            - Have charges with a common offense_date
+            - Have an overlapping span of time between the first SERVING
+              status and terminating status.
+        """
+        # Sentences have the same state provided sentence group
+        if s1.sentence_group_external_id == s2.sentence_group_external_id and (
+            s1.sentence_group_external_id and s2.sentence_group_external_id
+        ):
+            return True
+        # Sentences have the same imposed date
+        if (s1.imposed_date == s2.imposed_date) and (
+            s1.imposed_date and s2.imposed_date
+        ):
+            return True
+        # Sentences have a common charge
+        if {c.charge_v2_id for c in s1.charges}.intersection(
+            {c.charge_v2_id for c in s2.charges}
+        ):
+            return True
+        # Sentences have a common offense date
+        if {c.offense_date for c in s1.charges if c.offense_date}.intersection(
+            {c.offense_date for c in s2.charges if c.offense_date}
+        ):
+            return True
+        return sentences_overlap_serving(s1, s2)
 
 
 class SentenceNormalizationManager(EntityNormalizationManager):

@@ -17,6 +17,7 @@
 """Utils for working with Entity classes or various |entities| modules."""
 import importlib
 import inspect
+import itertools
 import json
 import re
 from collections import defaultdict
@@ -24,7 +25,21 @@ from enum import Enum, auto
 from functools import cache
 from io import TextIOWrapper
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
+
+from more_itertools import first
 
 from recidiviz.common.attr_mixins import (
     BuildableAttrFieldType,
@@ -45,6 +60,7 @@ from recidiviz.persistence.entity.base_entity import (
     EnumEntity,
     ExternalIdEntity,
     HasExternalIdEntity,
+    HasExternalIdEntityT,
     HasMultipleExternalIdsEntity,
     RootEntity,
 )
@@ -1066,3 +1082,50 @@ def get_entities_by_association_table_id(
     ), get_entity_class_in_module_with_table_id(
         entities_module, match.group("table_id_2")
     )
+
+
+def group_has_external_id_entities_by_function(
+    entities: list[HasExternalIdEntityT],
+    grouping_func: Callable[[HasExternalIdEntityT, HasExternalIdEntityT], bool],
+) -> list[set[str]]:
+    """
+    Given a list of entities having an external ID and a callable
+    to compare them, this function groups the external IDs of those entities together
+    by the condition of the callable.
+    For example, consider this mapping of relationships
+    {
+        "A": {"B", "C"},
+        "B": {"D"},
+        "C": {"A"},
+        "D": {"B"},
+    }
+    meaning A matches B and C, B matches D, and so on...
+    this function returns [{"A", "B", "C", "D"}]
+    Notice the length of the returned list is the number of groups
+    and each set within the list is a group of external IDs.
+    """
+
+    # Map of ungrouped external ids to external ids of all entities that this entity is
+    # directly linked to and must be grouped together with.
+    external_ids_to_group: dict[str, set[str]] = {
+        s.external_id: set() for s in entities
+    }
+
+    for s1, s2 in itertools.combinations(entities, 2):
+        if grouping_func(s1, s2):
+            external_ids_to_group[s1.external_id].add(s2.external_id)
+            external_ids_to_group[s2.external_id].add(s1.external_id)
+
+    grouped_external_ids: list[set[str]] = []
+    while external_ids_to_group:
+        current_group = set()
+        ids_for_current_group = {first(external_ids_to_group)}
+        while ids_for_current_group:
+            external_id = ids_for_current_group.pop()
+            current_group.add(external_id)
+            for e in external_ids_to_group.pop(external_id):
+                if e not in current_group and e not in ids_for_current_group:
+                    ids_for_current_group.add(e)
+        grouped_external_ids.append(current_group)
+
+    return grouped_external_ids
