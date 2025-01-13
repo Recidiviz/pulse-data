@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentences` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  inmateNumber: STRING
+  employmentId: STRING
+  startDate: DATE
+  endDate: DATE
+  employerName: STRING
+  jobTitle: STRING
+  employmentStatus: STRING
+  employmentTypeCode: STRING
+  addressLine1: STRING
+  city: STRING
+  state: STRING
+  zipCode5: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    employment_periods:
+      - StateEmploymentPeriod:
+          external_id:
+            $concat:
+              $values:
+                - inmateNumber
+                - employmentId
+          employment_status:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - employmentStatus
+                    - employmentTypeCode
+                  $include_nulls: True
+              $custom_parser: us_ne_custom_enum_parsers.parse_employment_status
+          start_date: startDate
+          end_date: endDate
+          employer_name: employerName
+          employer_address:
+            $physical_address:
+              $address_1: addressLine1
+              $city: city
+              $state: state
+              $zip: zipCode5
+          job_title: jobTitle
+          end_reason:
+            $conditional:
+              - $if:
+                  $not_null: endDate
+                $then:
+                  $enum_mapping:
+                    $raw_text: employmentStatus
+                    $custom_parser: us_ne_custom_enum_parsers.parse_employment_endReason

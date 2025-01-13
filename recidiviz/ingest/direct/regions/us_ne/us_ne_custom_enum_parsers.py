@@ -24,6 +24,10 @@ my_enum_field:
 """
 from typing import Optional
 
+from recidiviz.common.constants.state.state_employment_period import (
+    StateEmploymentPeriodEmploymentStatus,
+    StateEmploymentPeriodEndReason,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentencingAuthority
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 
@@ -60,3 +64,67 @@ def parse_custodial_authority(
         return StateCustodialAuthority.OTHER_STATE
 
     return StateCustodialAuthority.SUPERVISION_AUTHORITY
+
+
+def parse_employment_status(
+    raw_text: str,
+) -> Optional[StateEmploymentPeriodEmploymentStatus]:
+    """
+    Determine employment status from employmentStatus field and employmentType
+    """
+    status, work_type = raw_text.split("@@")
+
+    if status == "CURRENT EMPLOYER" and work_type == "PART-TIME":
+        return StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME
+
+    if status == "CURRENT EMPLOYER" and work_type == "FULL-TIME":
+        return StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME
+
+    if status in ("CURRENT EMPLOYER", "SECOND JOB"):
+        return StateEmploymentPeriodEmploymentStatus.EMPLOYED_UNKNOWN_AMOUNT
+
+    if status in (
+        "DISABLED, UNABLE TO WORK OR FINISH PROGRAM",
+        "TEMP ILLNESS / INJURY",
+    ):
+        return StateEmploymentPeriodEmploymentStatus.UNABLE_TO_WORK
+
+    if status in ("RETIRED", "SOCIAL SECURITY DISABILITY"):
+        return StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE
+
+    return StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN
+
+
+def parse_employment_endReason(
+    raw_text: str,
+) -> Optional[StateEmploymentPeriodEndReason]:
+    """
+    Determine employment status from employmentStatus field and employmentType
+    """
+
+    if raw_text == "RETIRED":
+        return StateEmploymentPeriodEndReason.RETIRED
+
+    if raw_text == "REVOKED":
+        return StateEmploymentPeriodEndReason.INCARCERATED
+
+    if raw_text in (
+        "TEMP ILLNESS / INJURY",
+        "DISABLED, UNABLE TO WORK OR FINISH PROGRAM",
+        "SOCIAL SECURITY DISABILITY",
+    ):
+        return StateEmploymentPeriodEndReason.MEDICAL
+
+    if raw_text == "EMPLOYER-TERMINATED":
+        return StateEmploymentPeriodEndReason.FIRED
+
+    if raw_text == "SELF-TERMINATED":
+        return StateEmploymentPeriodEndReason.QUIT
+
+    if raw_text == "LAID OFF / BETWEEN TEMP ASSIGNMENTS":
+        return StateEmploymentPeriodEndReason.LAID_OFF
+
+    if raw_text in ("CHANGED JOBS WITHOUT PERMISSION", "CHANGED JOBS WITH PERMISSION"):
+        return StateEmploymentPeriodEndReason.NEW_JOB
+
+    return StateEmploymentPeriodEndReason.INTERNAL_UNKNOWN
