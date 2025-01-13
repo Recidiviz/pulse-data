@@ -8,115 +8,202 @@ primary_key_cols:
 columns:
   - name: ofndr_addr_id
     description: |-
-      TODO(#33372): Fill in column description
+      The primary key.
   - name: ofndr_num
     description: |-
-      TODO(#33372): Fill in column description
+      Unique identifier of a person under UT supervision.
     field_type: person_external_id
     external_id_type: US_UT_DOC
     is_pii: True
   - name: addr_typ_cd
     description: |-
-      TODO(#33372): Fill in column description
+      Code describing the type of address associated with the person.
+    # These are all guesses -- need to confirm with UT
+    known_values:
+      - value: H
+        description: House
+      - value: P
+        description: Prison
+      - value: J
+        description: Jail
+      - value: I
+        description: Also prison -- not sure why I though. Perhaps interstate?
+      - value: T
+        description: Transitional program
+      - value: M
+        description: Mailing address
+      - value: C
+        description: Correctional facility
+      - value: S
+        description: Secondary address?
+    null_values:
+      - "(null)"
   - name: orig_addr_typ_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: addr_strt_dt
     description: |-
-      TODO(#33372): Fill in column description
+      Date this address became associated with this person.
+    null_values:
+      - "(null)"
+      - "1111-11-11 00:00:00"
     field_type: datetime
   - name: addr_end_dt
     description: |-
-      TODO(#33372): Fill in column description
+      Date this address stopped being associated with this person.
     field_type: datetime
+    null_values:
+      - "(null)"
   - name: pssa_unit_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: pssa_range
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: psda_num
     description: |-
       TODO(#33372): Fill in column description
+    is_pii: true
+    null_values:
+      - "(null)"
   - name: psda_pre_dir
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: psda_street
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
     is_pii: True
   - name: psda_sfx_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: psda_post_dir
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: city
     description: |-
-      TODO(#33372): Fill in column description
+      City where the address is located.
+    null_values:
+      - "(null)"
     is_pii: True
   - name: st
     description: |-
-      TODO(#33372): Fill in column description
+      State where the address is located.
+    null_values:
+      - "(null)"
     is_pii: True
   - name: zip
     description: |-
-      TODO(#33372): Fill in column description
+      Zip code of the addres.
     is_pii: True
+    null_values:
+      - "(null)"
   - name: ctry_cd
     description: |-
-      TODO(#33372): Fill in column description
+      Country code of the address.
+    null_values:
+      - "(null)"
   - name: area_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: ph_num
     description: |-
-      TODO(#33372): Fill in column description
+      Phone number associated with the address. I would guess this isn't always the
+      persons phone number, but instead might sometimes be the home owners or the
+      facilities number.
     is_pii: True
+    null_values:
+      - "(null)"
   - name: vld_addr_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: apt_complex_id
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: mail_addr_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: assgn_zone
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: updt_usr_id
     description: |-
       ID of user who most recently updated this record
+    null_values:
+      - "(null)"
     is_pii: True
   - name: updt_dt
     description: |-
       Timestamp of when this record was most recently updated
+    null_values:
+      - "(null)"
     field_type: datetime
   - name: vrfy_dt
     description: |-
-      TODO(#33372): Fill in column description
+      When the address was verified.
     field_type: datetime
+    null_values:
+      - "(null)"
   - name: vrfy_usr_id
     description: |-
-      TODO(#33372): Fill in column description
+      User who verfied the address. Unsure if this is the person who verified the
+      address in the system, or actually on the ground.
     is_pii: True
+    null_values:
+      - "(null)"
   - name: vrfy_rslt_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: vrfy_mthd_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: new_addr_id
     description: |-
-      TODO(#33372): Fill in column description
+      This appears to sometimes match up better with ofndr_addr_hist.addr_id, though
+      it's often (null) or 0, and is duplicated many times in this table. Not sure how
+      to use it correctly yet.
+    null_values:
+      - "(null)"
   - name: new_ofndr_addr_hist_id
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: cnvrt_dt
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
     field_type: datetime
   - name: naive_convert_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
