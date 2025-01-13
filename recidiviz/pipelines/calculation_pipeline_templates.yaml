@@ -170,6 +170,20 @@ metric_pipelines:
     metric_types: VIOLATION
     region: us-west3
 
+    # Full US_NE calculations with no time limit
+  - pipeline: population_span_metrics
+    state_code: US_NE
+    metric_types: SUPERVISION_POPULATION_SPAN
+    region: us-west1
+  - pipeline: supervision_metrics
+    state_code: US_NE
+    metric_types: SUPERVISION_START SUPERVISION_TERMINATION
+    region: us-west3
+  - pipeline: violation_metrics
+    state_code: US_NE
+    metric_types: VIOLATION
+    region: us-west3
+
   # Full US_CA calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_CA
