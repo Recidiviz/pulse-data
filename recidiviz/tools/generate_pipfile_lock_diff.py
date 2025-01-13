@@ -52,8 +52,8 @@ def _package_summary_dataframe_for_group(
 
 
 def _format_change_row(row: dict) -> str:
-    self = str(row["self"]).lstrip("=")
-    other = str(row["other"]).lstrip("=")
+    self = str(row["self"]).lstrip("=") or "—"
+    other = str(row["other"]).lstrip("=") or "—"
 
     if self != other:
         contents = f"```diff\n- {self}\n+ {other}\n```"
@@ -87,8 +87,8 @@ def _generate_markdown_table_of_package_group_difference(
                     # The newline before the contents is significant; GitHub won't process markdown without it
                     f"<td>\n\n`{package_name}`</td>",
                     _format_change_row(row["version"]),
-                    _format_change_row(row["markers"]),
-                    _format_change_row(row["extras"]),
+                    _format_change_row(row.get("markers", {"self": "", "other": ""})),
+                    _format_change_row(row.get("extras", {"self": "", "other": ""})),
                 ]
             )
             + "</tr>"
@@ -96,11 +96,13 @@ def _generate_markdown_table_of_package_group_difference(
         ]
     )
 
+    # Add some additional padding to the version column width
+    column_padding = "&nbsp;" * 32
     return f"""<table>
     <thead>
     <tr>
         <th scope="col" align="left">Package Name</th>
-        <th scope="col" align="left">Version</th>
+        <th scope="col" align="left">Version{column_padding}</th>
         <th scope="col" align="left">Markers</th>
         <th scope="col" align="left">Extras</th>
     </tr>
