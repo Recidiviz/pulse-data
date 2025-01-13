@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: com_MentalHealthTreatmentType
+file_description: |-
+  Table containing mental health treatment type codes
+data_classification: source
+primary_key_cols:
+  - MentalHealthTreatmentTypeId
+columns:
+  - name: MentalHealthTreatmentTypeId
+    description: Mental health treatment type id
+  - name: MentalHealthTreatmentTypeDesc
+    description: Mental health treatment type description
+  - name: Inactive
+    description: Inactive flag
+  - name: Locking
+  - name: InsertUserId
+    description: Insert user ID
+    is_pii: true
+  - name: InsertDate
+    description: Date record inserted
+    field_type: datetime
+  - name: UpdateUserId
+    description: Update user Id
+    is_pii: true
+  - name: UpdateDate
+    description: Date record updated
+    field_type: datetime
+  - name: IsCustom
+    description: Is custom flag
+update_cadence: IRREGULAR
+is_code_file: true

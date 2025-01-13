@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: com_SubstanceAbuseTreatment
+file_description: |-
+  Table containing information substance abuse treatment
+data_classification: source
+primary_key_cols:
+  - SubstanceAbuseTreatmentId
+columns:
+  - name: SubstanceAbuseTreatmentId
+    description: Substance abuse treatment Id
+  - name: TreatmentLocation
+    description: Treatment location
+  - name: TreatmentYear
+    description: year of treatment
+  - name: TreatmentCompletedId
+    description: treatment completed Id
+  - name: SubstanceAbuseInfoId
+    description: Substance abuse info Id
+  - name: Locking
+  - name: InsertUserId
+    description: Insert user Id
+    is_pii: true
+  - name: InsertDate
+    description: Date record inserted
+    field_type: datetime
+  - name: UpdateUserId
+    description: Update user Id
+    is_pii: true
+  - name: UpdateDate
+    description: Date record updated
+    field_type: datetime

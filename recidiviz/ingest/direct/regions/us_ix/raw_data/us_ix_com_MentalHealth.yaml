@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: com_MentalHealth
+file_description: |-
+  Table containing mental health record information
+data_classification: source
+primary_key_cols:
+  - MentalHealthId
+columns:
+  - name: MentalHealthId
+    description: Mental health record Id.
+  - name: EntryDate
+    description: Date record was entered
+    field_type: datetime
+  - name: StaffId
+    description: Staff Id
+    is_pii: true
+  - name: DOCLocationId
+    description: DOC Location Id.
+  - name: MentalHealthCommitmentId
+    description: Mental health commitment Id
+  - name: MentalHealthTreatmentId
+    description: Mental health treatment Id
+  - name: MentalHealthTreatmentTypeId
+    description: Mental health treatment type Id
+  - name: ConditionNoneApply
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: ConditionAdditionalComments
+    description: Condition additional comments
+    is_pii: true
+  - name: OffenderId
+    description: Offender Id.
+    is_pii: true
+  - name: Locking
+  - name: InsertUserId
+    description: Insert user ID
+    is_pii: true
+  - name: InsertDate
+    description: Date record inserted
+    field_type: datetime
+  - name: UpdateUserId
+    description: Update user Id
+    is_pii: true
+  - name: UpdateDate
+    description: Date record updated
+    field_type: datetime
+  - name: SelfReported
+    description: Self reported flag
+  - name: Verified
+    description: Verified flag
+  - name: ApprovalDate
+    description: Data record approved
+    field_type: datetime
+  - name: ApprovalStaffId
+    description: Approval staff id
+    is_pii: true

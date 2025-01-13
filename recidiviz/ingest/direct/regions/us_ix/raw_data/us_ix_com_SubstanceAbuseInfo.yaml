@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: com_SubstanceAbuseInfo
+file_description: |-
+  Table containing information on client Substance abuse
+data_classification: source
+primary_key_cols:
+  - SubstanceAbuseInfoId
+columns:
+  - name: SubstanceAbuseInfoId
+    description: Subtance abuse info Id
+  - name: EntryDate
+    description: Date record was entered
+    field_type: datetime
+  - name: StaffId
+    is_pii: true
+    description: Staff id
+  - name: DOCLocationId
+    description: DOC location Id
+  - name: SSIDate
+    description: SSI date
+    field_type: datetime
+  - name: SSIResultId
+    description: SSI result Id
+  - name: ASIDate
+    description: ASI date
+    field_type: datetime
+  - name: ASIDrugResultId
+    description: ASI drug result Id
+  - name: ASIAlcoholResultId
+    description: ASI alcohol result Id
+  - name: DrugClaimedLastYearId
+    description: drug claimed last year Id
+  - name: DrugAbuseApparentId
+    description: drug abuse apparent Id
+  - name: DrugTreatmentId
+    description: drug treatment Id
+  - name: AlcoholClaimedLastYearId
+    description: alcohol claimed last year Id
+  - name: AlcoholAbuseApparentId
+    description: alcohol abuse apparant Id
+  - name: AlcoholTreatmentId
+    description: Alcohol treatment Id
+  - name: DrugNotUsed
+    description: Drug not used flag
+  - name: DrugAdditionalComments
+    description: Drug additional comments
+    is_pii: true
+  - name: AlcoholUseLastYear
+    description: alcohol use last year
+  - name: AlcoholAgeofFirstUse
+    description: age of first use of alcohol
+  - name: AlcoholTimesPerWeek
+    description: times per week alcohol used
+  - name: AlcoholDateofLastUse
+    description: alcohol date of last use
+    field_type: datetime
+  - name: AlcoholNotUsed
+    description: alcohol not used flag
+  - name: AlcoholAdditionalComments
+    description: alcohol additional comments
+    is_pii: true
+  - name: TreatmentLocation
+    description: treatment location
+  - name: TreatmentYear
+    description: treatment year
+  - name: TreatmentCompletedId
+    description: treatment completed Id
+  - name: TreatmentAdditionalComments
+    description: treatment additional comments
+    is_pii: true
+  - name: OffenderId
+    description: Offender Id
+    is_pii: true
+  - name: Locking
+  - name: InsertUserId
+    description: Insert user ID
+    is_pii: true
+  - name: InsertDate
+    description: Date record inserted
+    field_type: datetime
+  - name: UpdateUserId
+    description: Update user Id
+    is_pii: true
+  - name: UpdateDate
+    description: Date record updated
+    field_type: datetime
