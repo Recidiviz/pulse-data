@@ -134,7 +134,7 @@ const AddConfigForm = ({
           functionality of vitals metrics in the application.
         </div>
         <Form.Item
-          name="vitalsMetricsMethodologyURL"
+          name="vitalsMetricsMethodologyUrl"
           label="Vitals Metrics Methodology URL"
           rules={[
             {

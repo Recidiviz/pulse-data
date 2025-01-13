@@ -97,6 +97,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-26T13:30:00",
         "updatedBy": "alexa@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -181,6 +182,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:03",
         "updatedBy": "dana2@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -265,6 +267,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:02",
         "updatedBy": "dana1@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -349,6 +352,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:01",
         "updatedBy": "fake@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -433,6 +437,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:00:03",
         "updatedBy": "dana2@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
 ]
@@ -522,6 +527,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-26T13:30:00",
         "updatedBy": "alexa@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -606,6 +612,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:03",
         "updatedBy": "dana2@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -690,6 +697,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:02",
         "updatedBy": "dana1@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -774,6 +782,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:01",
         "updatedBy": "fake@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -858,6 +867,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:00:03",
         "updatedBy": "dana2@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
 ]
@@ -947,6 +957,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-26T13:30:00",
         "updatedBy": "alexa@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -1031,6 +1042,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:03",
         "updatedBy": "dana2@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -1115,6 +1127,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:02",
         "updatedBy": "dana1@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -1199,6 +1212,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:01",
         "updatedBy": "fake@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -1283,6 +1297,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:00:03",
         "updatedBy": "dana2@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
 ]
@@ -1372,6 +1387,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-02-01T00:00:00",
         "updatedBy": "test-user@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -1456,6 +1472,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-26T13:30:00",
         "updatedBy": "alexa@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -1540,6 +1557,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:03",
         "updatedBy": "dana2@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -1624,6 +1642,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:02",
         "updatedBy": "dana1@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -1708,6 +1727,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:01",
         "updatedBy": "fake@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -1792,6 +1812,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:00:03",
         "updatedBy": "dana2@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
 ]
@@ -1881,6 +1902,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-02-01T00:00:00",
         "updatedBy": "test-user@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -1965,6 +1987,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-26T13:30:00",
         "updatedBy": "alexa@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -2049,6 +2072,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:03",
         "updatedBy": "dana2@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -2133,6 +2157,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:02",
         "updatedBy": "dana1@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -2217,6 +2242,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:30:01",
         "updatedBy": "fake@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
@@ -2301,6 +2327,7 @@ See more details on this and other action strategies [here](https://www.recidivi
         "supervisorHasNoOutlierOfficersLabel": "Nice! No officers are outliers on any metrics this month.",
         "updatedAt": "2024-01-01T13:00:03",
         "updatedBy": "dana2@recidiviz.org",
+        "vitalsMetricsMethodologyUrl": "http://example.com/methodology",
         "worseThanRateLabel": "Far worse than statewide rate",
     },
 ]
