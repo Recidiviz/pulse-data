@@ -55,4 +55,8 @@ columns:
     description: Gender restrictions for community opportunity. If null, then none exist.
   - name: genericDescription
     description: A generic description of the community opportunity
+  - name: countiesServed
+    description: Counties the opportunity is available in
+  - name: status
+    description: Status of the opportunity
 update_cadence: IRREGULAR
