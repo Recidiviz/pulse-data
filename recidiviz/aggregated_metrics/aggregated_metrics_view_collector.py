@@ -101,6 +101,15 @@ def _build_time_periods_unioned_view_builder(
         metric_class=metric_class,
     )
 
+    found_period_names = set()
+    for parent in parents:
+        if (period_name := parent.time_period.period_name) in found_period_names:
+            raise ValueError(
+                f"Found multiple parents for view [{view_address.to_str()}] with "
+                f"multiple parents with period_name [{period_name}]"
+            )
+        found_period_names.add(period_name)
+
     if not parents:
         raise ValueError(
             f"Expected at least one parent for UnionAllBigQueryViewBuilder "

@@ -93,6 +93,7 @@ def _get_time_period_cte(
         max_period_end_date=max_end_date.date() if max_end_date else None,
         rolling_period_unit=rolling_period_unit,
         rolling_period_length=rolling_period_length,
+        period_name=MetricTimePeriod.CUSTOM.value,
     )
 
     return f"""

@@ -101,7 +101,7 @@ def build_vitals_aggregated_metrics_collection_config() -> AggregatedMetricsColl
                 # calculate values for each day in the time period.
                 rolling_period_unit=MetricTimePeriod.DAY,
                 rolling_period_length=1,
-                period_name_type=MetricTimePeriod.MONTH,
+                period_name=MetricTimePeriod.MONTH.value,
                 config_name=f"30_days_rolling_last_{VITALS_METRICS_LOOKBACK_DAYS}_days",
                 description=(
                     f"30 day-long metric periods, with one ending on every day for the "

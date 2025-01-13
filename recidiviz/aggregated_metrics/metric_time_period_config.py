@@ -72,7 +72,7 @@ class MetricTimePeriodConfig:
     max_period_end_date: date | None = attr.ib(validator=attr_validators.is_opt_date)
 
     # The value for the period column of the output query.
-    period_name_type: MetricTimePeriod = attr.ib(default=MetricTimePeriod.CUSTOM)
+    period_name: str = attr.ib(validator=attr_validators.is_str)
 
     # Used to describe this metric time period in view docstrings. Must be set if this
     # config is used to generate a deployed view.
@@ -147,10 +147,10 @@ class MetricTimePeriodConfig:
         ]
 
     @staticmethod
-    def week_periods(lookback_weeks: int) -> "MetricTimePeriodConfig":
+    def week_periods_monday_aligned(lookback_weeks: int) -> "MetricTimePeriodConfig":
         """Returns a MetricTimePeriodConfig that can be used to generate a query that
-        produces week-long time periods that start on Monday, with periods starting up
-        to |lookback_weeks| weeks ago.
+        produces week-long time periods that each start on Monday, with periods starting
+        up to |lookback_weeks| weeks ago.
         """
         period_length = relativedelta(weeks=1)
         if lookback_weeks < period_length.weeks:
@@ -170,8 +170,11 @@ class MetricTimePeriodConfig:
             rolling_period_unit=MetricTimePeriod.WEEK,
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
-            period_name_type=MetricTimePeriod.WEEK,
-            description=f"Weekly metric periods for the last {lookback_weeks} weeks",
+            period_name=MetricTimePeriod.WEEK.value,
+            description=(
+                f"Weekly metric periods for the last full {lookback_weeks} weeks that "
+                f"start on a Monday"
+            ),
             config_name=f"last_{lookback_weeks}_weeks",
         )
 
@@ -197,7 +200,7 @@ class MetricTimePeriodConfig:
             rolling_period_unit=MetricTimePeriod.DAY,
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
-            period_name_type=MetricTimePeriod.DAY,
+            period_name=MetricTimePeriod.DAY.value,
             description=f"Daily metric periods for the last {lookback_days} days",
             config_name=f"last_{lookback_days}_days",
         )
@@ -226,7 +229,7 @@ class MetricTimePeriodConfig:
             rolling_period_unit=MetricTimePeriod.MONTH,
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
-            period_name_type=MetricTimePeriod.MONTH,
+            period_name=MetricTimePeriod.MONTH.value,
             description=f"Monthly metric periods for the last {lookback_months} months",
             config_name=f"last_{lookback_months}_months",
         )
@@ -255,7 +258,7 @@ class MetricTimePeriodConfig:
             rolling_period_unit=MetricTimePeriod.MONTH,
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
-            period_name_type=MetricTimePeriod.QUARTER,
+            period_name=MetricTimePeriod.QUARTER.value,
             description=(
                 f"Quarter-long (3 month) metric periods, ending (exclusive) on the "
                 f"first of every month, for the last {lookback_months} months"
@@ -288,7 +291,7 @@ class MetricTimePeriodConfig:
             rolling_period_unit=MetricTimePeriod.MONTH,
             min_period_end_date=min_period_end_date,
             max_period_end_date=max_period_end_date,
-            period_name_type=MetricTimePeriod.YEAR,
+            period_name=MetricTimePeriod.YEAR.value,
             description=(
                 f"Year-long metric periods, ending (exclusive) on the first of every "
                 f"month, for the last {lookback_months} months"
@@ -311,7 +314,7 @@ class MetricTimePeriodConfig:
         rolling_interval_str = (
             f"INTERVAL {rolling_period_length} {rolling_period_unit.value}"
         )
-        period_str = f'"{self.period_name_type.value}"'
+        period_str = f'"{self.period_name}"'
         interval_str = f"INTERVAL {self.interval_length} {self.interval_unit.value}"
         min_date_str = f'"{self.min_period_end_date.isoformat()}"'
         max_date_str = (

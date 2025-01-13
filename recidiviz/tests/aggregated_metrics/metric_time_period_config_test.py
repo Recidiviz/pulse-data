@@ -73,15 +73,17 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
             sorted(results[0].keys()),
         )
 
-    def test_week_periods(self) -> None:
+    def test_week_periods_monday_aligned(self) -> None:
         lookback_weeks = 2
 
         # Tuesday, Nov 12, 2024 (US/Eastern time)
         with freeze_time("2024-11-12 00:00:00-05:00"):
             self.assertEqual("2024-11-12", current_date_us_eastern().isoformat())
 
-            metric_time_period_config = MetricTimePeriodConfig.week_periods(
-                lookback_weeks=lookback_weeks
+            metric_time_period_config = (
+                MetricTimePeriodConfig.week_periods_monday_aligned(
+                    lookback_weeks=lookback_weeks
+                )
             )
             query_str = metric_time_period_config.build_query()
 
@@ -108,14 +110,16 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
             sorted(results[0].keys()),
         )
 
-    def test_week_periods_last_day_of_week(self) -> None:
+    def test_week_periods_monday_aligned__last_day_of_week(self) -> None:
         lookback_weeks = 2
 
         # Sunday, Nov 10, 2024 (US/Eastern time)
         with freeze_time("2024-11-10 00:00:00-05:00"):
             self.assertEqual("2024-11-10", current_date_us_eastern().isoformat())
-            metric_time_period_config = MetricTimePeriodConfig.week_periods(
-                lookback_weeks=lookback_weeks
+            metric_time_period_config = (
+                MetricTimePeriodConfig.week_periods_monday_aligned(
+                    lookback_weeks=lookback_weeks
+                )
             )
             query_str = metric_time_period_config.build_query()
 
@@ -142,15 +146,17 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
             sorted(results[0].keys()),
         )
 
-    def test_week_periods_first_day_of_week(self) -> None:
+    def test_week_periods_monday_aligned__first_day_of_week(self) -> None:
         lookback_weeks = 2
 
         # Monday, Nov 11, 2024 (US/Eastern time)
         with freeze_time("2024-11-11 00:00:00-05:00"):
             self.assertEqual("2024-11-11", current_date_us_eastern().isoformat())
 
-            metric_time_period_config = MetricTimePeriodConfig.week_periods(
-                lookback_weeks=lookback_weeks
+            metric_time_period_config = (
+                MetricTimePeriodConfig.week_periods_monday_aligned(
+                    lookback_weeks=lookback_weeks
+                )
             )
             query_str = metric_time_period_config.build_query()
 
@@ -300,6 +306,7 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
                 rolling_period_unit=MetricTimePeriod.WEEK,
                 min_period_end_date=datetime.date(2024, 1, 30),
                 max_period_end_date=datetime.date(2024, 2, 15),
+                period_name="CUSTOM",
             )
             query_str = metric_time_period_config.build_query()
 

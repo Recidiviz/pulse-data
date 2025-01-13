@@ -52,7 +52,7 @@ _MONTH_PERIODS_QUERY = MetricTimePeriodConfig.month_periods(
     lookback_months=_METRICS_YEARS_TRACKED * 12
 ).build_query()
 
-_WEEK_PERIODS_QUERY = MetricTimePeriodConfig.week_periods(
+_WEEK_PERIODS_QUERY = MetricTimePeriodConfig.week_periods_monday_aligned(
     lookback_weeks=_METRIC_YEARS_TRACKED_WEEK_OVERRIDE * 52
 ).build_query()
 
