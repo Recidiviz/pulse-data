@@ -26,6 +26,7 @@ from recidiviz.justice_counts.metrics.metric_interface import (
     MetricDefinition,
     MetricInterface,
 )
+from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
@@ -243,6 +244,14 @@ class MetricSettingInterface:
                 .filter(schema.MetricSetting.agency_id == agency.id)
                 .all()
             )
+
+        # Filter out metric settings for deprecated metrics
+        agency_metric_settings = [
+            metric_setting
+            for metric_setting in agency_metric_settings
+            if metric_setting.metric_definition_key in METRIC_KEY_TO_METRIC
+        ]
+
         key_to_metric_interfaces = {
             item.metric_definition_key: MetricInterface.from_storage_json(
                 item.metric_interface
