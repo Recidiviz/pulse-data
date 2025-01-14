@@ -42,6 +42,7 @@ input_columns:
   ReleaseEligibilityDate: STRING
   sentence_source: STRING
   Task_Dates: STRING
+  CSL_flag: STRING
 unused_columns:
   - ChargeOffense
 variables:
@@ -143,6 +144,7 @@ variables:
         CASE_NUMBER: CaseNumber
         CONVICTION_COUNTY: ConvictionCounty
         FULL_EXP_DATE: FullExpirationDate
+        CSL_FLAG: CSL_flag
   - is_violent:
       $equal:
         - AssaultiveOffenseFlag

@@ -107,6 +107,7 @@ cleaned_Sentence_view AS (
             ELSE NULL END AS lifetime_flag,
         Sentence.ReleaseEligibilityDate as ReleaseEligibilityDate,
         'SENTENCE' AS sentence_source,
+        JOSentence.LifetimeSupervision AS CSL_Flag,
     FROM {{Sentence@ALL}} Sentence
     LEFT JOIN {{JOCharge}} JOCharge
     USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
@@ -144,7 +145,8 @@ cleaned_Diversion_view AS (
         CAST(NULL as STRING) as ISCSentencyType,
         CAST(NULL as STRING) as lifetime_flag,
         CAST(NULL as STRING) as ReleaseEligibilityDate,
-        'DIVERSION' AS sentence_source
+        'DIVERSION' AS sentence_source,
+        CAST(NULL as STRING) as CSL_flag,
     FROM {{Diversion@ALL}} Diversion
     LEFT JOIN {{OffenderStatute}} OffenderStatute USING (Offense)
 ),
@@ -207,7 +209,8 @@ cleaned_ISCSentence_view AS (
         ISC.ISCSentencyType as ISCSentencyType,
         CASE WHEN ISC.Sentence LIKE '%LIFE%' THEN 'is_life' END as lifetime_flag,
         CAST(NULL as STRING) as ReleaseEligibilityDate,
-        'ISC' AS sentence_source
+        'ISC' AS sentence_source,
+        CAST(NULL as STRING) AS CSL_flag,
     FROM {{ISCSentence@ALL}} ISC
     LEFT JOIN consecutive_ISCRelated_sentences ISCR ON 
         ISC.OffenderID = ISCR.OffenderID AND
@@ -303,6 +306,7 @@ most_recent_sentence_information AS (
             Sentences.lifetime_flag,
             Sentences.ReleaseEligibilityDate,
             Sentences.sentence_source,
+            Sentences.CSL_Flag,
             ROW_NUMBER() OVER(PARTITION BY OffenderId, ConvictionCounty, CaseYear, CaseNumber, CountNumber, sentence_source ORDER BY Sentences.LastUpdateDate DESC) AS seq
         FROM all_sentence_sources_joined Sentences
         LEFT JOIN order_sentence_actions_by_date_per_sentence
@@ -385,7 +389,8 @@ SELECT DISTINCT
     lifetime_flag,
     ReleaseEligibilityDate,
     sentence_source,
-    Task_Dates
+    Task_Dates,
+    CSL_flag,
 FROM most_recent_sentence_information mr
 LEFT JOIN discharge_task_deadline_array USING(OffenderID, ConvictionCounty,CaseYear,CaseNumber,CountNumber)
 INNER JOIN all_latest_sentences_joined a1
