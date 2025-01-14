@@ -15,6 +15,10 @@ columns:
   - name: ofnse_disp_cd
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: max_yrs
     description: |-
       TODO(#33372): Fill in column description
@@ -42,24 +46,48 @@ columns:
   - name: law_cd
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: life_cat_cd
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: consec_to_ofnse
     description: |-
       TODO(#33372): Fill in column description
   - name: cncrnt_yrs
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: cncrnt_mo
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: cncrnt_day
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: sent_grp_num
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: updt_usr_id
     description: |-
       ID of user who most recently updated this record

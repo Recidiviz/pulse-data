@@ -36,6 +36,8 @@ columns:
         description: Correctional facility
       - value: S
         description: Secondary address?
+      - value: F
+        description: Unknown
     null_values:
       - "(null)"
   - name: orig_addr_typ_cd
@@ -114,6 +116,10 @@ columns:
   - name: ctry_cd
     description: |-
       Country code of the address.
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
     null_values:
       - "(null)"
   - name: area_cd

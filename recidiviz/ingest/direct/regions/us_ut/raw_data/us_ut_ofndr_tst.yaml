@@ -39,9 +39,21 @@ columns:
   - name: ofn_assess_tst_id
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: ofn_ofndr_tst_id
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: tst_qstn_rspns_id
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)

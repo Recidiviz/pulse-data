@@ -98,6 +98,10 @@ columns:
   - name: cmpct_mbr_cd
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: dist_flg
     description: |-
       TODO(#33372): Fill in column description
@@ -119,15 +123,31 @@ columns:
   - name: crt_case_yr
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: crt_case_type
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: crt_case_assign_num
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: js_link
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: potential_earned_compliance_dt
     description: |-
       TODO(#33372): Fill in column description

@@ -35,6 +35,10 @@ columns:
   - name: plea_dt
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
     field_type: datetime
   - name: updt_usr_id
     description: |-

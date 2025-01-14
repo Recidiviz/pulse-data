@@ -9,9 +9,13 @@ columns:
   - name: sprvsn_tsk_grp_cd
     description: |-
       TODO(#33372): Fill in column description
-  - name: _desc
+  - name: descr
     description: |-
       TODO(#33372): Fill in column description
+    update_history:
+      - update_type: RENAME
+        update_datetime: 2024-12-13T00:00:00+00:00
+        previous_value: _desc
   - name: vld_flg
     description: |-
       TODO(#33372): Fill in column description

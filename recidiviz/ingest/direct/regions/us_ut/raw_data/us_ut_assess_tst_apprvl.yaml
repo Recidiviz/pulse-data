@@ -12,9 +12,13 @@ columns:
   - name: assess_tst_id
     description: |-
       TODO(#33372): Fill in column description
-  - name: _order
+  - name: ordr
     description: |-
       TODO(#33372): Fill in column description
+    update_history:
+      - update_type: RENAME
+        update_datetime: 2024-12-13T00:00:00+00:00
+        previous_value: _order
   - name: assess_apprvl_options_id
     description: |-
       TODO(#33372): Fill in column description

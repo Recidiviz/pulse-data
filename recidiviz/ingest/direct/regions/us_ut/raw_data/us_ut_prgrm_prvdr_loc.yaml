@@ -35,19 +35,39 @@ columns:
   - name: second_area_cd
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: second_ph_num
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
     is_pii: True
   - name: fax_area_cd
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: fax_ph_num
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: email_addr
     description: |-
       TODO(#33372): Fill in column description
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: |-
+          As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
     is_pii: True
   - name: area_cd
     description: |-
