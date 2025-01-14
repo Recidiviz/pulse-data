@@ -428,6 +428,54 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "insights early adoption funnel usage (Mayuka Sarukkai 10/11/2024)"
     ),
     BigQueryAddress(
+        dataset_id="task_eligibility_criteria_general",
+        table_id="not_incarceration_within_20_years_of_full_term_completion_date",
+    ): (
+        "This criteria view will eventually be referenced by ID CLD (Sam Norcia 01/10/2025)"
+    ),
+    BigQueryAddress(
+        dataset_id="task_eligibility_criteria_us_ix",
+        table_id="detainers_for_reclassification",
+    ): (
+        "This criteria view will eventually be referenced by ID CLD (Sam Norcia 01/10/2025)"
+    ),
+    BigQueryAddress(
+        dataset_id="task_eligibility_criteria_us_ix",
+        table_id="mandatory_overrides_for_reclassification",
+    ): (
+        "This criteria view will eventually be referenced by ID CLD (Sam Norcia 01/10/2025)"
+    ),
+    BigQueryAddress(
+        dataset_id="task_eligibility_criteria_us_ix",
+        table_id="not_mandatory_overrides_for_reclassification",
+    ): (
+        "This criteria view will eventually be referenced by ID CLD (Sam Norcia 01/10/2025)"
+    ),
+    BigQueryAddress(
+        dataset_id="task_eligibility_criteria_us_ix",
+        table_id="not_parole_hearing_date_within_5_years",
+    ): (
+        "This criteria view will eventually be referenced by ID CLD (Sam Norcia 01/10/2025)"
+    ),
+    BigQueryAddress(
+        dataset_id="task_eligibility_criteria_us_ix",
+        table_id="not_tentative_parole_date_within_3_years",
+    ): (
+        "This criteria view will eventually be referenced by ID CLD (Sam Norcia 01/10/2025)"
+    ),
+    BigQueryAddress(
+        dataset_id="task_eligibility_criteria_us_ix",
+        table_id="parole_hearing_date_within_5_years",
+    ): (
+        "This criteria view will eventually be referenced by ID CLD (Sam Norcia 01/10/2025)"
+    ),
+    BigQueryAddress(
+        dataset_id="task_eligibility_criteria_us_ix",
+        table_id="serving_a_life_sentence_and_not_tpd_within_3_years",
+    ): (
+        "This criteria view will eventually be referenced by ID CLD (Sam Norcia 01/10/2025)"
+    ),
+    BigQueryAddress(
         dataset_id="task_eligibility_criteria_us_tx",
         table_id="meets_scheduled_field_contact_standards",
     ): (

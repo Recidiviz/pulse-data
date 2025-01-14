@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Defines a criteria view that currently incarcerated individuals
-who do have an active detainer or hold for Idaho XCRC.
+Defines a criteria view that shows spans of time during which a resident has
+a detainer that would result in a mandatory override of reclassification.
 """
 from google.cloud import bigquery
 
@@ -27,22 +27,21 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
-    DETAINER_TYPE_LST_CRC,
-    HOLD_TYPE_LST_CRC,
+    DETAINER_TYPE_LST_CLD,
     detainer_span,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_IX_DETAINERS_FOR_XCRC_AND_CRC"
+_CRITERIA_NAME = "US_IX_DETAINERS_FOR_RECLASSIFICATION"
 
 _DESCRIPTION = """
-Defines a criteria view that currently incarcerated individuals
-who do have an active detainer or hold for Idaho XCRC and CRC.
+Defines a criteria view that shows spans of time during which a resident has
+a detainer that would result in a mandatory override of reclassification.
 """
 
 _QUERY_TEMPLATE = f"""
-{detainer_span(DETAINER_TYPE_LST_CRC + HOLD_TYPE_LST_CRC)}
+{detainer_span(DETAINER_TYPE_LST_CLD)}
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

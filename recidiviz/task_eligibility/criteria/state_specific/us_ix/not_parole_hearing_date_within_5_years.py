@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,34 +16,27 @@
 # =============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 20 years of their full term completion date.
+someone is not within 5 years of their parole hearing date.
 """
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    parole_hearing_date_within_5_years,
 )
-from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    is_past_completion_date_criteria_builder,
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "INCARCERATION_WITHIN_20_YEARS_OF_FULL_TERM_COMPLETION_DATE"
+_CRITERIA_NAME = "US_IX_PAROLE_HEARING_DATE_WITHIN_5_YEARS"
 
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 20 years of their full term completion date.
+someone is not within 5 years of their parole hearing date.
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    is_past_completion_date_criteria_builder(
-        compartment_level_1_filter="INCARCERATION",
-        meets_criteria_leading_window_time=20,
-        date_part="YEAR",
-        critical_date_name_in_reason="full_term_completion_date",
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-    )
-)
+VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+    sub_criteria=parole_hearing_date_within_5_years.VIEW_BUILDER,
+).as_criteria_view_builder
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

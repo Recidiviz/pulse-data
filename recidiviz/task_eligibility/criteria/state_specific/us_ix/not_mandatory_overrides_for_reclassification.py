@@ -16,34 +16,28 @@
 # =============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 20 years of their full term completion date.
+someone does not have a mandatory override for reclassification to a lower custody level.
 """
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    mandatory_overrides_for_reclassification,
 )
-from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    is_past_completion_date_criteria_builder,
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "INCARCERATION_WITHIN_20_YEARS_OF_FULL_TERM_COMPLETION_DATE"
+_CRITERIA_NAME = "US_IX_NOT_MANDATORY_OVERRIDES_FOR_RECLASSIFICATION"
 
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 20 years of their full term completion date.
+someone does not have a mandatory override for reclassification to a lower custody level.
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    is_past_completion_date_criteria_builder(
-        compartment_level_1_filter="INCARCERATION",
-        meets_criteria_leading_window_time=20,
-        date_part="YEAR",
-        critical_date_name_in_reason="full_term_completion_date",
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-    )
-)
+VIEW_BUILDER = InvertedTaskCriteriaBigQueryViewBuilder(
+    sub_criteria=mandatory_overrides_for_reclassification.VIEW_BUILDER,
+).as_criteria_view_builder
+
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

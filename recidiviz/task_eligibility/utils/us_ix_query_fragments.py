@@ -43,8 +43,23 @@ IX_CRC_FACILITIES = [
     "Treasure Valley Community Reentry Center",
 ]
 
-DETAINER_TYPE_LST = ["59"]
-HOLD_TYPE_LST = ["84", "112", "85", "61", "87", "86", "62", "88", "67", "83", "113"]
+DETAINER_TYPE_LST_CRC = ["59"]
+HOLD_TYPE_LST_CRC = ["84", "112", "85", "61", "87", "86", "62", "88", "67", "83", "113"]
+# detainer types related to felonies and immigration (https://docs.google.com/spreadsheets/d/1sV6BLWQQiQ4mrtzWJiooaHzO_sgk-bNkCMdwolQ8aVk/edit?usp=sharing)
+DETAINER_TYPE_LST_CLD = [
+    "59",
+    "84",
+    "85",
+    "112",
+    "87",
+    "2",
+    "60",
+    "108",
+    "98",
+    "99",
+    "101",
+    "78",
+]
 
 IX_STATE_CODE_WHERE_CLAUSE = "WHERE state_code = 'US_IX'"
 

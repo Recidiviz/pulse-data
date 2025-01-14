@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2025 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,37 +13,38 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# =============================================================================
+# ============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 20 years of their full term completion date.
+if someone is serving a life sentence, their tentative parole date is
+not within 3 years.
 """
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+
+from recidiviz.task_eligibility.criteria.general import serving_a_life_sentence
+from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    not_tentative_parole_date_within_3_years,
 )
-from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    is_past_completion_date_criteria_builder,
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    AndTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "INCARCERATION_WITHIN_20_YEARS_OF_FULL_TERM_COMPLETION_DATE"
-
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 20 years of their full term completion date.
+if someone is serving a life sentence, their tentative parole date is 
+not within 3 years.
 """
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    is_past_completion_date_criteria_builder(
-        compartment_level_1_filter="INCARCERATION",
-        meets_criteria_leading_window_time=20,
-        date_part="YEAR",
-        critical_date_name_in_reason="full_term_completion_date",
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-    )
-)
+
+VIEW_BUILDER = AndTaskCriteriaGroup(
+    criteria_name="US_IX_SERVING_A_LIFE_SENTENCE_AND_NOT_TPD_WITHIN_3_YEARS",
+    sub_criteria_list=[
+        serving_a_life_sentence.VIEW_BUILDER,
+        not_tentative_parole_date_within_3_years.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[],
+).as_criteria_view_builder
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
