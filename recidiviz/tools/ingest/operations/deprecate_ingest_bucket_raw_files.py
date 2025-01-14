@@ -45,7 +45,6 @@ from recidiviz.tools.ingest.operations.helpers.move_ingest_bucket_raw_files_to_d
     MoveIngestBucketRawFilesToDeprecatedController,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
@@ -110,17 +109,10 @@ def _parse_arguments() -> argparse.Namespace:
     return args
 
 
-def main() -> None:
+def _deprecate_files(args: argparse.Namespace) -> None:
     """Move files matching the given criteria from the ingest bucket to deprecated storage,
     and invalidate any relevant rows from the metadata tables in the operations db.
     """
-    args = _parse_arguments()
-    if args.start_date_bound > args.end_date_bound:
-        raise ValueError(
-            "The start date bound must be less than or equal to the end date bound."
-        )
-    logging.getLogger().setLevel(logging.INFO)
-
     (
         successful_gcsfs_file_paths,
         failed_gcsfs_file_paths,
@@ -170,6 +162,20 @@ def main() -> None:
         )
 
 
+def main() -> None:
+    """Move files matching the given criteria from the ingest bucket to deprecated storage,
+    and invalidate any relevant rows from the metadata tables in the operations db.
+    """
+    args = _parse_arguments()
+    if args.start_date_bound > args.end_date_bound:
+        raise ValueError(
+            "The start date bound must be less than or equal to the end date bound."
+        )
+    logging.getLogger().setLevel(logging.INFO)
+
+    with local_project_id_override(args.project_id):
+        _deprecate_files(args)
+
+
 if __name__ == "__main__":
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        main()
+    main()
