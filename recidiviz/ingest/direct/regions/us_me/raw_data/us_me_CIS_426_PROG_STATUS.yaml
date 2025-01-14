@@ -21,7 +21,6 @@ columns:
     field_type: datetime
     description: |-
       The datetime when the status change took effect.
-  - name: Locking_Tsp
   - name: Modified_By_Tx
     is_pii: True
   - name: Modified_On_Date
