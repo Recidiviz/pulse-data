@@ -621,6 +621,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ix_ingest_view_results.state_charge",
     "us_ix_ingest_view_results.state_sentence",
     "us_ix_ingest_view_results.state_sentence_group",
+    "us_ix_ingest_view_results.state_sentence_status_snapshot",
     "us_ix_ingest_view_results.state_staff",
     "us_ix_ingest_view_results.state_staff_caseload_type_periods",
     "us_ix_ingest_view_results.state_staff_role_location_periods",

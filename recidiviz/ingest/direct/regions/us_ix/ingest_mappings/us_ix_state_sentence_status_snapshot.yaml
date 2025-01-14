@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_charges` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OffenderId: STRING
+  SentenceId: STRING
+  status_update_datetime: DATETIME
+  status: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    sentences:
+      - StateSentence:
+          external_id: SentenceId
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                status_update_datetime: status_update_datetime
+                status:
+                  $enum_mapping:
+                    $raw_text: status
+                    $mappings:
+                      StateSentenceStatus.SERVING:
+                        - "SERVING"
+                      StateSentenceStatus.COMPLETED:
+                        - "COMPLETED"
+                sequence_num:
+                  $conditional:
+                    - $if:
+                        $equal: [status, $literal("SERVING")]
+                      $then: $literal("1")
+                    - $else_if:
+                        $equal: [status, $literal("COMPLETED")]
+                      $then: $literal("2")
