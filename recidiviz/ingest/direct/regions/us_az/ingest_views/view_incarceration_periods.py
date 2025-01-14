@@ -43,16 +43,12 @@ SELECT DISTINCT
         IFNULL(current_use_lookup.DESCRIPTION, 'None'))
       ELSE CAST(NULL AS STRING)
   END AS HOUSING_UNIT_DETAIL,
-  -- If there is no location ID for the LOCATOR_CODE_ID, or there is no LOCATOR_CODE_ID, use the 
-  -- UNIT_ID associated with this movement entry. 
-  -- If a row has a populated hospital or county jail field, assume that is where the person is even if they are also assigned a location in a more permanent facility.
+  -- If a row has a populated hospital or county jail field, assume that is where the
+  -- person is located even if they are also assigned a location in a more permanent facility.
   UPPER(REPLACE(jail_lookup.DESCRIPTION, 'Court in ', '')) AS jail_location, 
 -- For some reason hospital locations sometimes say "Court in XX County"
   UPPER(REPLACE(REPLACE(hospital_lookup.DESCRIPTION, 'Court in ', ''), 'Hospital in ', '')) AS hospital_location,
-  -- TODO(#34785): Clarify why there are sometimes mismatches between the LOCATOR_CODE_ID, UNIT_ID, and PRISON_ID.
-  -- Whenever possible, simplify this logic. Ideally, we would use only LOCATOR_CODE_ID as a location source.
-  COALESCE(locator.LOCATOR_NAME, unit.UNIT_NAME) AS location_name,
-  traffic.LOCATOR_CODE_ID, 
+  unit.UNIT_NAME AS location_name,
   prison.prison_name AS prison_name
 FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY} traffic
 LEFT JOIN {DOC_EPISODE} ep
@@ -73,13 +69,14 @@ LEFT JOIN {LOOKUPS} hospital_lookup
   ON(DESTINATION_HOSPITAL_ID = hospital_lookup.LOOKUP_ID)
 -- Only include rows related to prison episodes.
 LEFT JOIN {AZ_DOC_LOCATOR_CODE} locator
-  ON(traffic.LOCATOR_CODE_ID = locator.LOCATOR_CODE_ID AND locator.ACTIVE = 'Y')
+  ON(traffic.UNIT_ID = locator.UNIT_ID AND locator.ACTIVE = 'Y')
 LEFT JOIN {LOOKUPS} custody_level_lookup
   ON(locator.CUSTODY_LEVEL_ID = custody_level_lookup.LOOKUP_ID)
 LEFT JOIN {LOOKUPS} current_use_lookup
   ON(locator.CURRENT_USE_ID = current_use_lookup.LOOKUP_ID)
 WHERE (traffic.MOVEMENT_DATE IS NOT NULL
   AND NULLIF(MOVEMENT_CODE_ID, 'NULL') IS NOT NULL)
+-- Only include rows related to prison episodes.
   AND (UPPER(action_lookup.DESCRIPTION) LIKE "%PRISON%" 
   OR action_lookup.DESCRIPTION IS NULL 
   OR UPPER(action_lookup.DESCRIPTION) = 'NOT APPLICABLE'
@@ -130,7 +127,6 @@ SELECT DISTINCT
   CAST(NULL AS STRING) AS jail_location,
   CAST(NULL AS STRING) AS hospital_location,
   CAST(NULL AS STRING) AS location_name,
-  CAST(NULL AS STRING) AS LOCATOR_CODE_ID,
   CAST(NULL AS STRING) AS prison_name,
 FROM {DOC_CLASSIFICATION} class
 -- Older classifications do not always have scores associated. We left join the SCORE 
@@ -162,7 +158,6 @@ carry_forward_attributes AS (
     -- prioritize classification custody levels as we assume they are more reliable for the time being
     LAST_VALUE(CLASSIFICATION_CUSTODY_LEVEL IGNORE NULLS) OVER person_window AS custody_level,
     location_name,
-    locator_code_id,
     LAST_VALUE(prison_name IGNORE NULLS) OVER person_window AS prison_name,
     housing_unit_detail,
     jail_location,
@@ -186,7 +181,7 @@ carry_forward_attributes AS (
 WINDOW person_window AS (PARTITION BY PERSON_ID, DOC_ID ORDER BY COALESCE(MOVEMENT_DATE,CLASSIFICATION_DATE),
   action_ranking,
   --deterministically sort when people are in multiple locations at the same time
-  locator_code_id, prison_name, hospital_location, jail_location, CLASSIFICATION_CUSTODY_LEVEL, housing_unit_detail
+  prison_name, location_name, hospital_location, jail_location, CLASSIFICATION_CUSTODY_LEVEL, housing_unit_detail
   ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
 ),
 -- Create periods based on the critical dates with all attributes carried forward as appropriate.
@@ -196,7 +191,6 @@ periods AS (
     PERSON_ID,
     DOC_ID,
     location_name,
-    locator_code_id,
     prison_name,
     housing_unit_detail,
     jail_location,
@@ -219,7 +213,7 @@ periods AS (
   -- when both movements begin with NULL, order deterministically (these are all internal movements & are doubled, one OUT and one IN)
   MOVEMENT_DESCRIPTION DESC,
   -- There is exactly one case of a person being in two locations with all other things being equal. This sorts the two rows deterministically.
-  locator_code_id, prison_name, hospital_location, jail_location, custody_level, housing_unit_detail)
+  prison_name, location_name, hospital_location, jail_location, custody_level, housing_unit_detail)
   )
 -- Each of these conditions helps avoid including classifications that happen after a
 -- period has closed, which incorrectly keeps periods open forever.
