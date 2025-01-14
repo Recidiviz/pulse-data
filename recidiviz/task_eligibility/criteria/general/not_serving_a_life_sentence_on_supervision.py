@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when someone is not serving a life sentence.
+"""Describes the spans of time when someone is not serving a life sentence on supervision.
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -26,17 +26,15 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#37445) Rename to specify incarceration
+_CRITERIA_NAME = "NOT_SERVING_A_LIFE_SENTENCE_ON_SUPERVISION"
 
-_CRITERIA_NAME = "NOT_SERVING_A_LIFE_SENTENCE"
-
-_DESCRIPTION = """Describes the spans of time when someone is not serving a life sentence.
+_DESCRIPTION = """Describes the spans of time when someone is not serving a life sentence on supervision.
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     get_ineligible_offense_type_criteria(
         criteria_name=_CRITERIA_NAME,
-        compartment_level_1="INCARCERATION",
+        compartment_level_1="SUPERVISION",
         description=_DESCRIPTION,
         where_clause="WHERE sent.is_life",
         additional_json_fields=["LOGICAL_OR(sent.is_life) AS life_sentence"],

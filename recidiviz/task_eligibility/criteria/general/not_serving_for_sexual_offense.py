@@ -26,9 +26,11 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#37445) Rename to specify incarceration
 _CRITERIA_NAME = "NOT_SERVING_FOR_SEXUAL_OFFENSE"
 
-_DESCRIPTION = """Describes the spans of time when someone is not serving a sentence for a sex offense.
+_DESCRIPTION = """Describes the spans of time when someone is not serving a sentence for a sex offense while
+incarcerated.
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = get_ineligible_offense_type_criteria(
