@@ -387,8 +387,8 @@ class RawTableColumnInfo:
         """
         return self.field_type == RawTableColumnFieldType.DATETIME
 
-    def _existed_at_datetime(self, dt: datetime) -> bool:
-        """Determines if the column existed at the given datetime."""
+    def exists_at_datetime(self, dt: datetime) -> bool:
+        """Determines if the column exists at the given datetime."""
         if self.update_history is None:
             return True
 
@@ -418,7 +418,7 @@ class RawTableColumnInfo:
         returns the name of the column as it appeared at the given datetime
         or None if the column did not exist at that datetime.
         """
-        if not self._existed_at_datetime(dt):
+        if not self.exists_at_datetime(dt):
             return None
 
         if self.update_history is None:
@@ -710,9 +710,16 @@ class DirectIngestRawFileConfig:
         return one(infos)
 
     @property
-    def documented_columns(self) -> List[RawTableColumnInfo]:
-        """Filters to only documented columns."""
-        return [column for column in self.columns if column.description]
+    def current_columns(self) -> List[RawTableColumnInfo]:
+        """Returns the columns that currently exist in the raw file config. This is
+        necessary because a column in self.columns may have been marked as deleted."""
+        now = datetime.now(timezone.utc)
+        return [column for column in self.columns if column.exists_at_datetime(now)]
+
+    @property
+    def current_documented_columns(self) -> List[RawTableColumnInfo]:
+        """Filters to only current columns with descriptions."""
+        return [column for column in self.current_columns if column.description]
 
     @property
     def datetime_cols(self) -> List[Tuple[str, Optional[List[str]]]]:
@@ -733,7 +740,7 @@ class DirectIngestRawFileConfig:
         """Returns true if the raw file config does not provide enough information for this
         table to be used in ingest views or *latest views.
         """
-        return not self.documented_columns or (
+        return not self.current_documented_columns or (
             len(self.primary_key_cols) == 0 and not self.no_valid_primary_keys
         )
 

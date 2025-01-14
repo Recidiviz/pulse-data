@@ -617,7 +617,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
 
         self.assertEqual("", config.primary_key_str)
         self.assertEqual(["UTF-8", "ISO-8859-1"], config.encodings_to_try())
-        self.assertEqual([], config.documented_columns)
+        self.assertEqual([], config.current_documented_columns)
         self.assertEqual([], config.datetime_cols)
         self.assertFalse(config.has_enums)
         self.assertTrue(config.is_undocumented)
@@ -659,7 +659,9 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
 
         self.assertEqual("Col1", config.primary_key_str)
         self.assertEqual(["UTF-8", "ISO-8859-1"], config.encodings_to_try())
-        self.assertEqual(["Col1", "Col3"], [c.name for c in config.documented_columns])
+        self.assertEqual(
+            ["Col1", "Col3"], [c.name for c in config.current_documented_columns]
+        )
         self.assertEqual(["Col3", "Col4"], [name for name, _ in config.datetime_cols])
         self.assertFalse(config.has_enums)
         self.assertFalse(config.is_undocumented)
@@ -687,7 +689,8 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         )
 
         self.assertEqual(
-            ["Col1", "Col3", "Col5"], [c.name for c in config.documented_columns]
+            ["Col1", "Col3", "Col5"],
+            [c.name for c in config.current_documented_columns],
         )
         self.assertEqual(["Col3", "Col4"], [name for name, _ in config.datetime_cols])
         self.assertTrue(config.has_enums)
@@ -1041,7 +1044,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 ),
                 RawTableColumnInfo(
                     name="Col2",
-                    description="description",
+                    description=None,
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
                     update_history=[
@@ -1081,6 +1084,10 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
         self.assertEqual(
             ["Col1", "Col2"],
             config.column_names_at_datetime(datetime(2022, 4, 1, tzinfo=timezone.utc)),
+        )
+        self.assertEqual(["Col1", "Col2"], [col.name for col in config.current_columns])
+        self.assertEqual(
+            ["Col1"], [col.name for col in config.current_documented_columns]
         )
 
     def test_column_mappings_from_datetime_to_current(self) -> None:

@@ -28,6 +28,8 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder imp
     RawDataTableBigQuerySchemaBuilder,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    ColumnUpdateInfo,
+    ColumnUpdateOperation,
     DirectIngestRawFileConfig,
     RawDataClassification,
     RawDataFileUpdateCadence,
@@ -88,6 +90,20 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,
+                ),
+                RawTableColumnInfo(
+                    name="col6",
+                    field_type=RawTableColumnFieldType.DATETIME,
+                    is_pii=False,
+                    description="deleted column should have no effect",
+                    update_history=[
+                        ColumnUpdateInfo(
+                            update_type=ColumnUpdateOperation.DELETION,
+                            update_datetime=datetime.datetime(
+                                2000, 1, 1, tzinfo=datetime.timezone.utc
+                            ),
+                        )
+                    ],
                 ),
             ],
             supplemental_order_by_clause="",

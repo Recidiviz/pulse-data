@@ -216,7 +216,9 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
     def columns_from_raw_file_config(
         config: DirectIngestRawFileConfig, headers: Tuple[str, ...]
     ) -> Tuple[str, ...]:
-        column_names = tuple(column.name for column in config.documented_columns)
+        column_names = tuple(
+            column.name for column in config.current_documented_columns
+        )
         if headers != column_names:
             raise ValueError(
                 "Columns in file do not match file config:\n"

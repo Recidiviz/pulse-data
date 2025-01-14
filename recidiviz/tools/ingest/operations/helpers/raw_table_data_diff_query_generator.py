@@ -214,7 +214,9 @@ class RawTableDataDiffQueryGenerator(RawTableDiffQueryGenerator):
 
     def generate_query(self, file_tag: str) -> str:
         file_config = self.region_raw_file_config.raw_file_configs[file_tag]
-        column_names = [column.name for column in file_config.documented_columns]
+        column_names = [
+            column.name for column in file_config.current_documented_columns
+        ]
 
         return StrictStringFormatter().format(
             QUERY_TEMPLATE,

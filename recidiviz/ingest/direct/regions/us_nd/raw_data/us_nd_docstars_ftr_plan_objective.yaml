@@ -16,6 +16,8 @@ columns:
   - name: STATUS
   - name: CREATED_BY
     is_pii: True
+    description: |-
+      User that entered information
   - name: NOTES
     is_pii: True
   - name: RecDate

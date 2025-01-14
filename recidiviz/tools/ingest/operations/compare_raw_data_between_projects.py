@@ -112,7 +112,9 @@ def compare_raw_data_between_projects(
         ):
             continue
 
-        columns = ", ".join([column.name for column in file_config.documented_columns])
+        columns = ", ".join(
+            [column.name for column in file_config.current_documented_columns]
+        )
         columns += ", " + ", ".join(RECIDIVIZ_COLUMNS)
 
         query_job = source_bq_client.run_query_async(

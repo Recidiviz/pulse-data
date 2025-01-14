@@ -249,16 +249,19 @@ class RawTableQueryBuilder:
         raw_file_config: DirectIngestRawFileConfig,
         filter_to_only_documented_columns: bool,
     ) -> str:
-        columns_to_return = (
-            raw_file_config.documented_columns
-            if filter_to_only_documented_columns
-            else raw_file_config.columns
-        )
-        if filter_to_only_documented_columns and not raw_file_config.documented_columns:
+        if (
+            filter_to_only_documented_columns
+            and not raw_file_config.current_documented_columns
+        ):
             raise ValueError(
                 f"Found no available (documented) columns for file [{raw_file_config.file_tag}]"
             )
 
+        columns_to_return = (
+            raw_file_config.current_documented_columns
+            if filter_to_only_documented_columns
+            else raw_file_config.current_columns
+        )
         columns_str = ", ".join([column.name for column in columns_to_return])
         return columns_str
 
@@ -309,23 +312,25 @@ class RawTableQueryBuilder:
         raw_file_config: DirectIngestRawFileConfig,
         filter_to_only_documented_columns: bool,
     ) -> str:
-        """For each column in the config, this function builds a column query that first casts the column's specified
+        """For each non-deleted column in the config, this function builds a column query that first casts the column's specified
         null_values to NULL (if present), then normalizes the column to a DATETIME-formatted string if it is a datetime column.
         If neither apply, no special logic is included in the column's query clause. If filter_to_only_documented_columns is True,
         then only documented columns will be included in the query.
 
         Returns a string of comma-separated column queries.
         """
-        if filter_to_only_documented_columns and not raw_file_config.documented_columns:
+        if (
+            filter_to_only_documented_columns
+            and not raw_file_config.current_documented_columns
+        ):
             raise ValueError(
                 f"Found no available (documented) columns for file [{raw_file_config.file_tag}]"
             )
 
-        # TODO(#35844) update to use current columns
         columns = (
-            raw_file_config.documented_columns
+            raw_file_config.current_documented_columns
             if filter_to_only_documented_columns
-            else raw_file_config.columns
+            else raw_file_config.current_columns
         )
 
         column_queries = []
