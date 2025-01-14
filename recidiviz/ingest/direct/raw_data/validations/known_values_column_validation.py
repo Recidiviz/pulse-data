@@ -34,12 +34,11 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
 from recidiviz.utils.string import StrictStringFormatter
 
 KNOWN_VALUES_CHECK_TEMPLATE = """
-SELECT {column_name}
+SELECT DISTINCT {column_name}
 FROM {project_id}.{dataset_id}.{table_id}
 WHERE {column_name} IS NOT NULL
     AND {column_name} NOT IN ({known_values})
     {null_values_filter}
-LIMIT 1
 """
 
 
@@ -118,6 +117,7 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
         self, results: List[Dict[str, Any]]
     ) -> RawDataImportBlockingValidationFailure | None:
         if results:
+            missing_values = [result[self.column_name] for result in results]
             # At least one row found with a value not in the known_values set
             return RawDataImportBlockingValidationFailure(
                 validation_type=self.validation_type(),
@@ -126,7 +126,7 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
                     f"Found column [{self.column_name}] on raw file [{self.file_tag}] "
                     f"not matching any of the known_values defined in its configuration YAML."
                     f"\nDefined known values: [{', '.join(self.known_values)}]."
-                    f"\nFirst value that does not parse: [{results[0][self.column_name]}]."
+                    f"\nValues that did not parse: [{', '.join(missing_values)}]."
                 ),
             )
         # All rows have values in the known_values set

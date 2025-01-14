@@ -17,6 +17,7 @@
 """Unit tests for expected_type_column_validation.py."""
 
 from typing import Dict, List, Optional, Type
+from unittest.mock import patch
 
 import attr
 
@@ -51,16 +52,28 @@ class TestExpectedTypeColumnValidation(ColumnValidationTestCase):
             self.happy_col, field_type=self.column_type, null_values=["N/A"]
         )
         self.sad_col = attr.evolve(self.sad_col, field_type=self.column_type)
+        self.limit_values_patcher = patch(
+            "recidiviz.ingest.direct.raw_data.validations.expected_type_column_validation.ERROR_MESSAGE_ROW_LIMIT",
+            3,
+        )
+        self.limit_values_patcher.start()
+        self.test_data: List[Dict[str, Optional[str]]] = [
+            {self.happy_col_name: "1", self.sad_col_name: "5"},
+            {self.happy_col_name: "2", self.sad_col_name: "5D"},
+            {self.happy_col_name: "3", self.sad_col_name: "5D"},
+            {self.happy_col_name: "4", self.sad_col_name: "5E"},
+            {self.happy_col_name: "N/A", self.sad_col_name: "50"},
+        ]
+
+    def tearDown(self) -> None:
+        self.limit_values_patcher.stop()
+        return super().tearDown()
 
     def get_validation_class(self) -> Type[RawDataColumnImportBlockingValidation]:
         return ExpectedTypeColumnValidation
 
     def get_test_data(self) -> List[Dict[str, Optional[str]]]:
-        return [
-            {self.happy_col_name: "1", self.sad_col_name: "5"},
-            {self.happy_col_name: "2", self.sad_col_name: "5D"},
-            {self.happy_col_name: "N/A", self.sad_col_name: "50"},
-        ]
+        return self.test_data
 
     def test_dont_validate_string_type(self) -> None:
         for column_type in [
@@ -97,7 +110,24 @@ class TestExpectedTypeColumnValidation(ColumnValidationTestCase):
             error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}]"
             f" not matching the field_type defined in its configuration YAML."
             f"\nDefined type: [{self.column_type.value}]."
-            f"\nFirst value that does not parse: [5D].",
+            f"\nAll [2] values that do not parse: [5D, 5E].",
+        )
+
+        self.validation_failure_test(expected_error)
+
+    def test_validation_failure_first_n(self) -> None:
+        self.test_data = [
+            *self.test_data,
+            {self.happy_col_name: "5", self.sad_col_name: "5F"},
+        ]
+
+        expected_error = RawDataImportBlockingValidationFailure(
+            validation_type=RawDataImportBlockingValidationType.EXPECTED_TYPE,
+            validation_query=self.create_validation(self.sad_col).query,
+            error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}]"
+            f" not matching the field_type defined in its configuration YAML."
+            f"\nDefined type: [{self.column_type.value}]."
+            f"\nFirst [3] of many values that do not parse: [5D, 5E, 5F].",
         )
 
         self.validation_failure_test(expected_error)

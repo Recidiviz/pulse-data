@@ -32,13 +32,15 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
 )
 from recidiviz.utils.string import StrictStringFormatter
 
+ERROR_MESSAGE_ROW_LIMIT = 10
+
 DATETIME_PARSERS_CHECK_TEMPLATE = """
-SELECT {column_name}
+SELECT DISTINCT {column_name}
 FROM {project_id}.{dataset_id}.{table_id}
 WHERE {column_name} IS NOT NULL
   AND COALESCE({datetime_sql_parsers}) IS NULL
   {null_values_filter}
-LIMIT 1
+LIMIT {error_message_limit}
 """
 
 
@@ -116,12 +118,19 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
             null_values_filter=self._build_null_values_filter(
                 self.column_name, self.null_values
             ),
+            error_message_limit=ERROR_MESSAGE_ROW_LIMIT,
         )
 
     def get_error_from_results(
         self, results: List[Dict[str, Any]]
     ) -> RawDataImportBlockingValidationFailure | None:
         if results:
+            unparseable_datetimes = [result[self.column_name] for result in results]
+            unparseable_prefix = (
+                f"First [{len(unparseable_datetimes)}] of many"
+                if len(unparseable_datetimes) == ERROR_MESSAGE_ROW_LIMIT
+                else f"All [{len(unparseable_datetimes)}]"
+            )
             # At least one datetime value didn't parse correctly
             return RawDataImportBlockingValidationFailure(
                 validation_type=self.validation_type(),
@@ -130,7 +139,7 @@ class DatetimeParsersColumnValidation(RawDataColumnImportBlockingValidation):
                     f"Found column [{self.column_name}] on raw file [{self.file_tag}] "
                     f"not matching any of the datetime_sql_parsers defined in its configuration YAML."
                     f"\nDefined parsers: [{', '.join(self.datetime_sql_parsers)}]."
-                    f"\nFirst value that does not parse: [{results[0][self.column_name]}]."
+                    f"\n{unparseable_prefix} values that do not parse: [{', '.join(unparseable_datetimes)}]."
                 ),
             )
         # All datetime values parsed

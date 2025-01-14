@@ -70,6 +70,8 @@ class TestDatetimeParsersColumnValidation(ColumnValidationTestCase):
                 self.sad_col_name: "01/01/2022",
             },
             {self.happy_col_name: "01/01/2022", self.sad_col_name: "5D"},
+            {self.happy_col_name: "01/02/2022", self.sad_col_name: "5D"},
+            {self.happy_col_name: "01/03/2022", self.sad_col_name: "5E"},
             {self.happy_col_name: "0000", self.sad_col_name: "02/01/2022"},
         ]
 
@@ -97,7 +99,7 @@ class TestDatetimeParsersColumnValidation(ColumnValidationTestCase):
             error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] "
             f"not matching any of the datetime_sql_parsers defined in its configuration YAML."
             f"\nDefined parsers: [{', '.join(self.datetime_sql_parsers)}]."
-            f"\nFirst value that does not parse: [5D].",
+            f"\nAll [2] values that do not parse: [5D, 5E].",
         )
 
         self.validation_failure_test(expected_error)

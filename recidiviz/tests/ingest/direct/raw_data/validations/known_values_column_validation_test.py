@@ -97,7 +97,35 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
             error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] "
             f"not matching any of the known_values defined in its configuration YAML."
             f"\nDefined known values: [{', '.join(self.known_values)}]."
-            f"\nFirst value that does not parse: [z].",
+            f"\nValues that did not parse: [z].",
+        )
+
+        self.validation_failure_test(expected_error)
+
+    def test_validation_failure_no_known_values(self) -> None:
+        self.sad_col = attr.evolve(
+            self.sad_col,
+            known_values=self._known_values_strings_to_enums([]),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError, r"known_values for sad_col must not be empty"
+        ):
+            self.create_validation(self.sad_col)
+
+    def test_validation_failure_multiple_known(self) -> None:
+        self.sad_col = attr.evolve(
+            self.sad_col,
+            known_values=self._known_values_strings_to_enums(["z"]),
+        )
+
+        expected_error = RawDataImportBlockingValidationFailure(
+            validation_type=RawDataImportBlockingValidationType.KNOWN_VALUES,
+            validation_query=self.create_validation(self.sad_col).query,
+            error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] "
+            f"not matching any of the known_values defined in its configuration YAML."
+            f"\nDefined known values: [z]."
+            f"\nValues that did not parse: [a, b].",
         )
 
         self.validation_failure_test(expected_error)
@@ -153,12 +181,11 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
             column=happy_col,
         )
         expected_query = r"""
-SELECT happy_col
+SELECT DISTINCT happy_col
 FROM recidiviz-bq-emulator-project.test_dataset.test_table
 WHERE happy_col IS NOT NULL
     AND happy_col NOT IN ("a\\b", "c\\d")
     AND happy_col NOT IN ("0000", "\\NA")
-LIMIT 1
 """
         self.assertEqual(validation.build_query(), expected_query)
 
@@ -175,11 +202,10 @@ LIMIT 1
             column=happy_col,
         )
         expected_query = r"""
-SELECT happy_col
+SELECT DISTINCT happy_col
 FROM recidiviz-bq-emulator-project.test_dataset.test_table
 WHERE happy_col IS NOT NULL
     AND happy_col NOT IN ("\\")
     AND happy_col NOT IN ("0000")
-LIMIT 1
 """
         self.assertEqual(validation.build_query(), expected_query)

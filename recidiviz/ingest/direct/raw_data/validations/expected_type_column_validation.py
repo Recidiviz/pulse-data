@@ -34,13 +34,15 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
 )
 from recidiviz.utils.string import StrictStringFormatter
 
+ERROR_MESSAGE_ROW_LIMIT = 10
+
 EXPECTED_TYPE_CHECK_TEMPLATE = """
-SELECT {column_name}
+SELECT DISTINCT {column_name}
 FROM {project_id}.{dataset_id}.{table_id}
 WHERE {column_name} IS NOT NULL
     AND SAFE_CAST({column_name} AS {type}) IS NULL
     {null_values_filter}
-LIMIT 1
+LIMIT {error_message_limit}
 """
 
 COLUMN_TYPE_TO_BIG_QUERY_TYPE = {
@@ -124,12 +126,19 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
             null_values_filter=self._build_null_values_filter(
                 self.column_name, self.null_values
             ),
+            error_message_limit=ERROR_MESSAGE_ROW_LIMIT,
         )
 
     def get_error_from_results(
         self, results: List[Dict[str, Any]]
     ) -> RawDataImportBlockingValidationFailure | None:
         if results:
+            non_matching_types = [result[self.column_name] for result in results]
+            non_matching_prefix = (
+                f"First [{len(non_matching_types)}] of many"
+                if len(non_matching_types) == ERROR_MESSAGE_ROW_LIMIT
+                else f"All [{len(non_matching_types)}]"
+            )
             # At least one row found with a value that can't be cast to the expected type
             return RawDataImportBlockingValidationFailure(
                 validation_type=self.validation_type(),
@@ -138,7 +147,7 @@ class ExpectedTypeColumnValidation(RawDataColumnImportBlockingValidation):
                     f"Found column [{self.column_name}] on raw file [{self.file_tag}]"
                     f" not matching the field_type defined in its configuration YAML."
                     f"\nDefined type: [{self.column_type.value}]."
-                    f"\nFirst value that does not parse: [{results[0][self.column_name]}]."
+                    f"\n{non_matching_prefix} values that do not parse: [{', '.join(non_matching_types)}]."
                 ),
             )
         # All rows can be cast to the expected type
