@@ -31,6 +31,9 @@ from recidiviz.calculator.query.state.views.sentence_sessions.overlapping_senten
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_inferred_group_projected_date_sessions import (
     SENTENCE_INFERRED_GROUP_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_inferred_group_serving_period_projected_dates import (
+    SENTENCE_INFERRED_GROUP_SERVING_PERIOD_PROJECTED_DATES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_serving_period import (
     SENTENCE_SERVING_PERIOD_VIEW_BUILDER,
 )
@@ -61,4 +64,6 @@ SENTENCE_SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     OVERLAPPING_SENTENCE_SERVING_PERIODS_VIEW_BUILDER,
     # Normalized sentence status raw texts sessionized across sentences
     SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER,
+    # Sentence group serving periods with projected dates
+    SENTENCE_INFERRED_GROUP_SERVING_PERIOD_PROJECTED_DATES_VIEW_BUILDER,
 ]

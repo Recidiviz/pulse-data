@@ -45,6 +45,7 @@ Output fields for this view are:
         The maximum full term release date (max) across the sentences affiliated with this inferred group.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.sessions_query_fragments import sessionize_ledger_data
 from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_group_projected_dates import (
@@ -52,6 +53,9 @@ from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_agg
 )
 from recidiviz.calculator.query.state.views.sentence_sessions.inferred_group_aggregated_sentence_projected_dates import (
     INFERRED_GROUP_AGGREGATED_SENTENCE_PROJECTED_DATES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
+    STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -119,6 +123,7 @@ sessionized_cte AS
 SELECT
     *
 FROM sessionized_cte
+WHERE state_code NOT IN ({{v2_non_migrated_states}})
 """
 
 
@@ -129,6 +134,10 @@ SENTENCE_INFERRED_GROUP_PROJECTED_DATE_SESSIONS_VIEW_BUILDER = (
         view_query_template=QUERY_TEMPLATE,
         description=__doc__,
         should_materialize=True,
+        v2_non_migrated_states=list_to_query_string(
+            string_list=STATES_NOT_MIGRATED_TO_SENTENCE_V2_SCHEMA,
+            quoted=True,
+        ),
     )
 )
 
