@@ -86,4 +86,4 @@ class UsMeSftpDownloadDelegate(BaseSftpDownloadDelegate):
                 no limit by default; consider setting a limit if a file can be
                 successfully received with sftp but hangs with Paramiko.
         """
-        return {MAX_CONCURRENT_READ_THREADS: 8}
+        return {MAX_CONCURRENT_READ_THREADS: 1}
