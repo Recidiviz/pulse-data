@@ -183,10 +183,14 @@ class MetricInterface:
                             d: None for d in aggregated_dimension.dimension  # type: ignore[attr-defined]
                         },
                         # Add null contexts if the aggregated dimension has an empty context field.
-                        contexts=[
-                            MetricContextData(key=context.key, value=None)
-                            for context in metric_definition.contexts
-                        ],
+                        contexts=(
+                            [
+                                MetricContextData(key=context.key, value=None)
+                                for context in aggregated_dimension.contexts
+                            ]
+                            if aggregated_dimension.contexts is not None
+                            else []
+                        ),
                     )
                 )
 
