@@ -165,13 +165,17 @@ from recidiviz.persistence.entity.state.state_entity_mixins import (
 
 @attr.s(eq=False, kw_only=True)
 class StatePersonAddressPeriod(
-    StateEntityMixin, EnumEntity, BuildableAttr, DefaultableAttr
+    StateEntityMixin, BuildableAttr, DefaultableAttr, Entity
 ):
     """
-    The StatePersonAddressPeriod object represents information about
-    a person’s address during a particular period of time.
-    This object can be used to identify a person’s physical residence over
-    time or their contact information for receiving mail.
+    A single StatePersonAddressPeriod entity represents a person's physical, mailing,
+    or other address for a defined period of time.
+
+    All StatePersonAddressPeriod entities for a given person can provide a historical look
+    at their address history, while the most recent entity can provide a current known address.
+
+    A person's StatePersonAddressPeriod entities' uniqueness are determined by the address
+    characteristics, address start and end dates, and address type.
     """
 
     # Attributes

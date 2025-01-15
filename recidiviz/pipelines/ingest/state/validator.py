@@ -407,6 +407,7 @@ def validate_root_entity(
 def _get_state_person_specific_errors(
     root_entity: state_entities.StatePerson,
 ) -> List[str]:
+    """Yields errors for entities related to StatePerson objects."""
     error_messages: list[str] = []
     error_messages.extend(_sentencing_entities_checks(root_entity))
 

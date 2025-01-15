@@ -17,6 +17,7 @@
 """Class responsible for merging a root entity tree with new / updated child entities
 into an existing version of that root entity.
 """
+import json
 from collections import defaultdict
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type
 
@@ -44,8 +45,12 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.schema_edge_direction_checker import (
     direction_checker_for_module,
 )
+from recidiviz.persistence.entity.serialization import serialize_entity_into_json
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import StatePersonAlias
+from recidiviz.persistence.entity.state.entities import (
+    StatePersonAddressPeriod,
+    StatePersonAlias,
+)
 from recidiviz.persistence.entity.state.state_entity_mixins import (
     LedgerEntityMixin,
     LedgerEntityMixinT,
@@ -61,6 +66,13 @@ from recidiviz.utils.types import T, assert_type
 
 # Schema classes that can have multiple parents of different types.
 _MULTI_PARENT_ENTITY_TYPES = [entities.StateCharge, entities.StateChargeV2]
+
+
+def state_person_address_period_key(address_period: StatePersonAddressPeriod) -> str:
+    return json.dumps(
+        serialize_entity_into_json(address_period, entities_module=entities),
+        sort_keys=True,
+    )
 
 
 def state_person_alias_key(alias: StatePersonAlias) -> str:
@@ -169,6 +181,8 @@ class RootEntityUpdateMerger:
                         key_fn = external_id_key
                     elif issubclass(child_cls, StatePersonAlias):
                         key_fn = state_person_alias_key
+                    elif issubclass(child_cls, StatePersonAddressPeriod):
+                        key_fn = state_person_address_period_key
                     elif issubclass(child_cls, LedgerEntityMixin):
                         key_fn = ledger_entity_key
                     else:
