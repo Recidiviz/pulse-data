@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -796,6 +796,8 @@ def workflows_state_specific_supervision_level() -> str:
                     THEN session_attributes.correctional_level_raw_text
                     ELSE sl.most_recent_active_supervision_level 
                 END)
+            -- OR prefers to see the raw-text supervision levels in the tool
+            WHEN sl.state_code = 'US_OR' THEN session_attributes.correctional_level_raw_text
             WHEN sl.state_code = 'US_PA' THEN 
                 (CASE 
                     -- US_PA does not use the term limited supervision, specify admin/special circumstances instead
