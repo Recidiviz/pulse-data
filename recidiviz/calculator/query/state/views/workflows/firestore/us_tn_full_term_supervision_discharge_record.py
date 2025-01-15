@@ -182,7 +182,7 @@ sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed
     FROM ({keep_contact_codes(
             codes_cte="relevant_codes",
             comments_cte="comments_clean",
-            where_clause_codes_cte="WHERE contact_type IN ('VRPT','VWAR','COHC','AARP') OR contact_type LIKE '%ABS%'",
+            where_clause_codes_cte="WHERE contact_type IN ('VRPT','VWAR','COHC','ARRP') OR contact_type LIKE '%ABS%'",
             keep_last=False
             )})
 
