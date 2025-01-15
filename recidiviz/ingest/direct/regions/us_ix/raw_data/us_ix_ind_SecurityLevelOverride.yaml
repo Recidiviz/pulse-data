@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ind_SecurityLevelOverride
+file_description: |-
+  Code table containing information on security level override information
+data_classification: source
+primary_key_cols:
+  - SecurityLevelOverrideId
+columns:
+  - name: SecurityLevelOverrideId
+    description: Security level override Id
+  - name: SecurityLevelOverrideName
+    description: Security level override name
+  - name: SecurityLevelOverrideDesc
+    description: Security level override description
+  - name: SecurityLevelOverrideRank
+    description: Security level override rank
+  - name: SystemRow
+  - name: Locking
+  - name: InsertUserId
+    description: User ID of employee who entered record
+    is_pii: True
+  - name: InsertDate
+    description: Record insert date
+    field_type: datetime
+  - name: UpdateUserId
+    description: User ID of employee who updated record
+    is_pii: True
+  - name: UpdateDate
+    description: Record update date
+    field_type: datetime
+  - name: Inactive
+    description: Flag for whether record is inactive
+  - name: IsCustom
+    description: Flag for whether record is custom
