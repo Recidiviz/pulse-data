@@ -104,54 +104,58 @@ def _parse_arguments() -> argparse.Namespace:
         help="List of file tags to filter for. If not set, will move all files.",
     )
 
-    args = parser.parse_args()
-
-    return args
+    return parser.parse_args()
 
 
-def _deprecate_files(args: argparse.Namespace) -> None:
+def main(
+    *,
+    project_id: str,
+    state_code: StateCode,
+    ingest_instance: DirectIngestInstance,
+    start_date_bound: datetime.date | None,
+    end_date_bound: datetime.date | None,
+    file_tag_filters: list[str],
+    dry_run: bool,
+) -> None:
     """Move files matching the given criteria from the ingest bucket to deprecated storage,
     and invalidate any relevant rows from the metadata tables in the operations db.
     """
+    if start_date_bound and end_date_bound and start_date_bound > end_date_bound:
+        raise ValueError(
+            f"The start date bound [{start_date_bound}] must be less than or equal to the end date bound [{end_date_bound}]."
+        )
+
     (
         successful_gcsfs_file_paths,
         failed_gcsfs_file_paths,
     ) = MoveIngestBucketRawFilesToDeprecatedController.create_controller(
-        state_code=args.state_code,
-        project_id=args.project_id,
-        ingest_instance=args.ingest_instance,
-        start_date_bound=(
-            datetime.date.fromisoformat(args.start_date_bound)
-            if args.start_date_bound
-            else None
-        ),
-        end_date_bound=(
-            datetime.date.fromisoformat(args.end_date_bound)
-            if args.end_date_bound
-            else None
-        ),
-        file_tag_filters=args.file_tag_filters,
-        dry_run=args.dry_run,
+        state_code=state_code,
+        project_id=project_id,
+        ingest_instance=ingest_instance,
+        start_date_bound=start_date_bound,
+        end_date_bound=end_date_bound,
+        file_tag_filters=file_tag_filters,
+        dry_run=dry_run,
     ).run()
 
     # TODO(#28239): delete once raw data import DAG is live
     # The invalidation logic only supports the new operations tables
     if successful_gcsfs_file_paths and is_raw_data_import_dag_enabled(
-        args.state_code, args.ingest_instance
+        state_code, ingest_instance
     ):
         InvalidateOperationsDBFilesController.create_controller(
-            project_id=args.project_id,
-            state_code=args.state_code,
-            ingest_instance=args.ingest_instance,
+            project_id=project_id,
+            state_code=state_code,
+            ingest_instance=ingest_instance,
             normalized_filenames_filter=[
                 f.file_name for f in successful_gcsfs_file_paths
             ],
-            dry_run=args.dry_run,
+            dry_run=dry_run,
         ).run()
     elif successful_gcsfs_file_paths:
         prompt_for_confirmation(
             "All associated rows in our operations db must be marked as invalidated.\nHave you already done so?",
-            dry_run=args.dry_run,
+            dry_run=dry_run,
         )
 
     if failed_gcsfs_file_paths:
@@ -162,20 +166,25 @@ def _deprecate_files(args: argparse.Namespace) -> None:
         )
 
 
-def main() -> None:
-    """Move files matching the given criteria from the ingest bucket to deprecated storage,
-    and invalidate any relevant rows from the metadata tables in the operations db.
-    """
-    args = _parse_arguments()
-    if args.start_date_bound > args.end_date_bound:
-        raise ValueError(
-            "The start date bound must be less than or equal to the end date bound."
-        )
+if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
+    args = _parse_arguments()
 
     with local_project_id_override(args.project_id):
-        _deprecate_files(args)
-
-
-if __name__ == "__main__":
-    main()
+        main(
+            project_id=args.project_id,
+            state_code=args.state_code,
+            ingest_instance=args.ingest_instance,
+            start_date_bound=(
+                datetime.date.fromisoformat(args.start_date_bound)
+                if args.start_date_bound is not None
+                else None
+            ),
+            end_date_bound=(
+                datetime.date.fromisoformat(args.end_date_bound)
+                if args.end_date_bound is not None
+                else None
+            ),
+            file_tag_filters=args.file_tag_filters,
+            dry_run=args.dry_run,
+        )
