@@ -94,6 +94,7 @@ class TaskCompletionEventType(Enum):
     TRANSFER_TO_NO_CONTACT_PAROLE = "TRANSFER_TO_NO_CONTACT_PAROLE"
     GRANTED_INSTITUTIONAL_WORKER_STATUS = "GRANTED_INSTITUTIONAL_WORKER_STATUS"
     TRANSFER_TO_SUPERVISION_RUN_FACILITY = "TRANSFER_TO_SUPERVISION_RUN_FACILITY"
+    TRANSFER_TO_ADMINISTRATIVE_SUPERVISION = "TRANSFER_TO_ADMINISTRATIVE_SUPERVISION"
 
     @property
     def system_type(self) -> WorkflowsSystemType:
@@ -133,6 +134,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_NO_CONTACT_PAROLE,
             TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
+            TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
         ]:
             return WorkflowsSystemType.SUPERVISION
         raise ValueError(
@@ -208,6 +210,7 @@ class TaskCompletionEventType(Enum):
         if self in [
             TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
+            TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
         ]:
             return DecarceralImpactType.TRANSFER_TO_LIMITED_SUPERVISION
         if self in [
@@ -255,6 +258,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_MINIMUM_FACILITY,
             TaskCompletionEventType.TRANSFER_TO_NO_CONTACT_PAROLE,
             TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
+            TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_SUPERVISION_RUN_FACILITY,
         ]:
             return True
@@ -313,6 +317,7 @@ class TaskCompletionEventType(Enum):
             TaskCompletionEventType.TRANSFER_TO_MINIMUM_FACILITY,
             TaskCompletionEventType.TRANSFER_TO_NO_CONTACT_PAROLE,
             TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
+            TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
             TaskCompletionEventType.TRANSFER_TO_SUPERVISION_RUN_FACILITY,
         ]:
             return False

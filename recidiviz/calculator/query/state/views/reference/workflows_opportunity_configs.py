@@ -496,7 +496,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_type="usPaAdminSupervision",
         experiment_id="US_PA_ADMIN_SUPERVISION_WORKFLOWS",
         opportunity_record_view_name="us_pa_transfer_to_administrative_supervision_form_record_materialized",
-        task_completion_event=TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
+        task_completion_event=TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
         source_filename="us_pa_transfer_to_administrative_supervision_form_record.json",
         export_collection_name="US_PA-adminSupervisionReferrals",
         opportunity_type_path_str="adminSupervision",
@@ -507,7 +507,6 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_type="usPaSpecialCircumstancesSupervision",
         experiment_id="US_PA_SPECIAL_CIRCUMSTANCES_SUPERVISION_WORKFLOWS",
         opportunity_record_view_name="us_pa_complete_transfer_to_special_circumstances_supervision_request_record_materialized",
-        # TODO(#34373) - Change mapping for special circumstances supervision once new "super-type" entity is created
         task_completion_event=TaskCompletionEventType.TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION,
         source_filename="us_pa_complete_transfer_to_special_circumstances_supervision_request_record.json",
         export_collection_name="US_PA-specialCircumstancesSupervisionReferrals",

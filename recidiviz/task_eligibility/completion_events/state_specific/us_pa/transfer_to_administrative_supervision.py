@@ -39,14 +39,12 @@ WHERE supervision_level_raw_text like '%ADM%'
     AND state_code = 'US_PA'
 """
 
-VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
-    StateSpecificTaskCompletionEventBigQueryViewBuilder(
-        state_code=StateCode.US_PA,
-        completion_event_type=TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
-        description=_DESCRIPTION,
-        completion_event_query_template=_QUERY_TEMPLATE,
-        sessions_dataset=dataset_config.SESSIONS_DATASET,
-    )
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
+    state_code=StateCode.US_PA,
+    completion_event_type=TaskCompletionEventType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
+    description=_DESCRIPTION,
+    completion_event_query_template=_QUERY_TEMPLATE,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
 )
 
 if __name__ == "__main__":
