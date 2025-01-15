@@ -284,8 +284,7 @@ const LegacyStateProceedWithFlashChecklist = (): JSX.Element => {
                   LegacyFlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
                 }
               >
-                python -m
-                recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
+                python -m recidiviz.tools.ingest.operations.deprecate_raw_data
                 --project-id {projectId} --region {stateCode.toLowerCase()}{" "}
                 --ingest-instance SECONDARY --skip-prompts True --dry-run False
               </CodeBlock>

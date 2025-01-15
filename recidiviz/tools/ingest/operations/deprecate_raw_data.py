@@ -15,23 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Script for moving files in state storage to the deprecated folder in state storage.
+Script for deprecating imported raw data. This script will :
+(1) move state storage to the deprecated folder in state storage
+    Example path transformation:
+        gs://recidiviz-123-direct-ingest-state-storage/us_nd/raw/2019/08/12/
+            processed_2019-08-12T00:00:00:000000_raw_docstars_contacts.csv ->
+        gs://recidiviz-123-direct-ingest-state-storage/us_nd/deprecated/deprecated_on_2020-07-22/raw/2019/08/12/
+            processed_2019-08-12T00:00:00:000000_raw_docstars_contacts.csv
 
-Example path transformation:
-gs://recidiviz-123-direct-ingest-state-storage/us_nd/raw/2019/08/12/
-unprocessed_2019-08-12T00:00:00:000000_raw_docstars_contacts.csv ->
-gs://recidiviz-123-direct-ingest-state-storage/us_nd/deprecated/deprecated_on_2020-07-22/raw/2019/08/12/
-unprocessed_2019-08-12T00:00:00:000000_raw_docstars_contacts.csv
+(2) deprecate matching raw data files in the operations database
+(3) delete matching raw data rows out of BigQuery 
 
 When run in dry-run mode (the default), will log the move of each file, but will not execute them.
 You can use EITHER --file-tag-filters OR --file-tag-regex, but NOT BOTH.
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated \
-    --region us_nd --start-date-bound  2019-08-12 \
-    --end-date-bound 2019-08-17 --project-id recidiviz-staging \
+python -m recidiviz.tools.ingest.operations.deprecate_raw_data \
+    --project-id recidiviz-staging \
+    --region us_nd \
     --ingest-instance PRIMARY \
+    --start-date-bound  2019-08-12 \
+    --end-date-bound 2019-08-17 \
     --dry-run True \
     --skip-prompts False \
     [--file-tag-filters docstars_contacts elite_offenders] \
@@ -184,7 +189,7 @@ class MoveFilesToDeprecatedController:
 
 
 def parse_arguments() -> argparse.Namespace:
-    """Parses and validates the arguments for the move_storage_raw_files_to_deprecated script."""
+    """Parses and validates the arguments for the deprecate_raw_data script."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )

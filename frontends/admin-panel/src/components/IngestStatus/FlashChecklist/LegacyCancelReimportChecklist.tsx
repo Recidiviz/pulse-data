@@ -219,8 +219,7 @@ const LegacyStateCancelReimportChecklist = (): JSX.Element => {
                   LegacyCancelReimportChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
                 }
               >
-                python -m
-                recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
+                python -m recidiviz.tools.ingest.operations.deprecate_raw_data
                 --project-id {projectId} --region {stateCode.toLowerCase()}{" "}
                 --ingest-instance SECONDARY --skip-prompts True --dry-run False
               </CodeBlock>

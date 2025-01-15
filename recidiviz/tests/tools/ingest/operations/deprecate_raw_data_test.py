@@ -19,7 +19,7 @@ import unittest
 from datetime import date
 
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated import (
+from recidiviz.tools.ingest.operations.deprecate_raw_data import (
     MoveFilesToDeprecatedController,
 )
 
