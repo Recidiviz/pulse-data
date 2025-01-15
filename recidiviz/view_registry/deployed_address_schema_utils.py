@@ -128,6 +128,9 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewBuilder,
     DirectIngestRawDataTableLatestViewCollector,
 )
+from recidiviz.monitoring.platform_kpis.reliability.stale_metric_exports import (
+    STALE_METRIC_EXPORTS_VIEW_BUILDER,
+)
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
@@ -240,6 +243,8 @@ def state_agnostic_deployed_views_without_state_code_column(
         SPARK_LIFE_YEARS_VIEW_BUILDER.address,
         # This view backs the Vertex AI for case note search and is not allowed to have a state_code column (only allowed to have id and jsonData columns)
         CASE_NOTES_DATA_STORE_VIEW_BUILDER.address,
+        # These views look at the platform as a whole, not breaking data down by state.
+        STALE_METRIC_EXPORTS_VIEW_BUILDER.address,
     }
 
     return {

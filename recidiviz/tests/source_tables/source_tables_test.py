@@ -33,7 +33,6 @@ COMMON_VESTIGES = [
     #  TODO(#34767): Remove these tracker tables from the list once they're referenced
     #   in downstream views.
     "validation_results.validations_completion_tracker",
-    "view_update_metadata.metric_view_data_export_tracker",
     "view_update_metadata.refresh_bq_dataset_tracker",
     "view_update_metadata.rematerialization_tracker",
     "view_update_metadata.view_update_tracker",

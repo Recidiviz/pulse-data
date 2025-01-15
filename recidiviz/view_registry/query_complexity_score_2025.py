@@ -266,6 +266,9 @@ def _function_complexity_score(function_expression: expr.Func) -> int:
         expr.DatetimeTrunc,
         expr.LastDay,
         expr.DateFromParts,
+        expr.TimestampDiff,
+        expr.TimestampTrunc,
+        expr.TimestampAdd,
     }:
         return 3
 

@@ -40,6 +40,9 @@ from recidiviz.ingest.direct.views.view_config import (
 from recidiviz.ingest.views.view_config import (
     get_view_builders_for_views_to_update as get_ingest_infra_view_builders,
 )
+from recidiviz.monitoring.platform_kpis.view_config import (
+    get_platform_kpi_views_to_update,
+)
 from recidiviz.observations.view_config import (
     get_view_builders_for_views_to_update as get_observations_view_builders,
 )
@@ -70,6 +73,7 @@ def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
             get_task_eligibility_view_builders(),
             get_validation_view_builders(),
             VALIDATION_METADATA_VIEW_BUILDERS,
+            get_platform_kpi_views_to_update(),
         )
     )
 
@@ -125,6 +129,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "outliers_views",
     "overdue_discharge_alert",
     "partner_data_csg",
+    "platform_kpis",
     "po_report_views",
     "population_projection_data",
     "practices_views",
