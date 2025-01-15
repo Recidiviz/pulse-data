@@ -125,7 +125,6 @@ COPY_SUPERAGENCY_METRIC_SETTINGS_TO_CHILD_AGENCIES_JOB_NAME = "projects/{project
 AGENCIES_TO_EXCLUDE = {
     74: "Muskegon County Prosecutor's Office",
     75: "Douglas County District Attorney's Office",
-    79: "San Leandro Police Department",
     81: "Yavapai County District Attorney",
     83: "Georgia Department of Community Supervision",
     84: "Indiana Public Defender Commission",
