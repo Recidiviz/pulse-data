@@ -135,6 +135,7 @@ run_cmd gcloud run jobs update csg-data-pull --image "${PROD_IMAGE_URL}" --regio
 run_cmd gcloud run jobs update upload-reminder-email-job --image "${PROD_IMAGE_URL}" --region "us-central1" --project "justice-counts-production"
 run_cmd gcloud run jobs update copy-superagency-metric-settings-to-child-agencies --image "${PROD_IMAGE_URL}" --region "us-central1" --project "justice-counts-production"
 run_cmd gcloud run jobs update available-agency-dashboards-api-response-job --image "${PROD_IMAGE_URL}" --region "us-central1" --project "justice-counts-production"
+run_cmd gcloud run jobs update detect-duplicate-datapoints --image "${LATEST_DOCKER_TAG}" --region "us-central1" --project "justice-counts-production"
 # TODO(#16325): Automatically create a new release in the justice-counts repo.
 
 echo "Production deploy of Publisher and Agency Dashboard succeeded."
