@@ -85,7 +85,19 @@ columns:
       The date that the offense was referred to the courts system for an official charge.
     field_type: datetime
   - name: Summons_Date
-
+  - name: ag_case_ind
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2025-01-14T00:00:00Z
+  - name: sealed_juvenile_ind
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2025-01-14T00:00:00Z
+  - name: sealed_record_comments_tx
+    is_pii: True
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2025-01-14T00:00:00Z
 table_relationships:
   - foreign_table: CIS_100_CLIENT
     join_logic:
