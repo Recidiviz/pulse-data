@@ -2653,7 +2653,7 @@ class NormalizedStatePersonAddressPeriod(NormalizedStateEntity, Entity):
 
 
 @attr.s(eq=False, kw_only=True)
-class NormalizedStatePersonHousingStatusPeriod(NormalizedStateEntity, EnumEntity):
+class NormalizedStatePersonHousingStatusPeriod(NormalizedStateEntity, Entity):
     """Models a housing status period associated with a particular StatePerson."""
 
     # Attributes

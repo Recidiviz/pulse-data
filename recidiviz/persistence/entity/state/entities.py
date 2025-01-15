@@ -235,7 +235,7 @@ class StatePersonAddressPeriod(
 
 @attr.s(eq=False, kw_only=True)
 class StatePersonHousingStatusPeriod(
-    StateEntityMixin, EnumEntity, BuildableAttr, DefaultableAttr
+    StateEntityMixin, BuildableAttr, DefaultableAttr, Entity
 ):
     """
     The StatePersonHousingStatusPeriod object represents

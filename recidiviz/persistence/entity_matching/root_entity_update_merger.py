@@ -50,6 +50,7 @@ from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
     StatePersonAddressPeriod,
     StatePersonAlias,
+    StatePersonHousingStatusPeriod,
 )
 from recidiviz.persistence.entity.state.state_entity_mixins import (
     LedgerEntityMixin,
@@ -71,6 +72,15 @@ _MULTI_PARENT_ENTITY_TYPES = [entities.StateCharge, entities.StateChargeV2]
 def state_person_address_period_key(address_period: StatePersonAddressPeriod) -> str:
     return json.dumps(
         serialize_entity_into_json(address_period, entities_module=entities),
+        sort_keys=True,
+    )
+
+
+def state_person_housing_status_period_key(
+    housing_status_period: StatePersonHousingStatusPeriod,
+) -> str:
+    return json.dumps(
+        serialize_entity_into_json(housing_status_period, entities_module=entities),
         sort_keys=True,
     )
 
@@ -183,6 +193,8 @@ class RootEntityUpdateMerger:
                         key_fn = state_person_alias_key
                     elif issubclass(child_cls, StatePersonAddressPeriod):
                         key_fn = state_person_address_period_key
+                    elif issubclass(child_cls, StatePersonHousingStatusPeriod):
+                        key_fn = state_person_housing_status_period_key
                     elif issubclass(child_cls, LedgerEntityMixin):
                         key_fn = ledger_entity_key
                     else:
