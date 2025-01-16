@@ -39,6 +39,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person import StateResidencyStatus
+from recidiviz.common.constants.state.state_person_address_period import (
+    StatePersonAddressType,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentencingAuthority
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_staff_caseload_type import (
@@ -625,3 +628,11 @@ def incarceration_type_from_unit_or_facility(raw_text: str) -> StateIncarceratio
         # in these cases, not the facility type.
         return StateIncarcerationType.OUT_OF_STATE
     return StateIncarcerationType.STATE_PRISON
+
+
+def parse_address_type(raw_text: str) -> StatePersonAddressType:
+    if raw_text:
+        if "PO BOX" in raw_text or "P O " in raw_text or "GENERAL DELIVERY" in raw_text:
+            return StatePersonAddressType.MAILING_ONLY
+        return StatePersonAddressType.PHYSICAL_RESIDENCE
+    return StatePersonAddressType.INTERNAL_UNKNOWN

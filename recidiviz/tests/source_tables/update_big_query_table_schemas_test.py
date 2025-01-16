@@ -1203,6 +1203,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_nd_ingest_view_results.docstars_lsi_chronology",
     "us_nd_ingest_view_results.docstars_offendercasestable_with_officers",
     "us_nd_ingest_view_results.docstars_offenders",
+    "us_nd_ingest_view_results.docstars_offenders_address_period",
     "us_nd_ingest_view_results.docstars_offenders_early_term_v2",
     "us_nd_ingest_view_results.docstars_offensestable",
     "us_nd_ingest_view_results.docstars_sentence",

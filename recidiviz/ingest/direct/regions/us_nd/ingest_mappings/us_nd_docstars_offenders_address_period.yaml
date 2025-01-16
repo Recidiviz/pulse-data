@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  SID: STRING
+  ADDRESS: STRING
+  CITY: STRING
+  COUNTY_CODE: STRING
+  STATE: STRING
+  ZIP: STRING
+  start_date: DATETIME
+  end_date: DATETIME
+  session_id: STRING
+  date_gap_id: STRING
+unused_columns: [date_gap_id, session_id]
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID
+          id_type: $literal("US_ND_SID")
+    address_periods:
+      - StatePersonAddressPeriod:
+          address_start_date: start_date
+          address_end_date: end_date
+          address_type:
+            $enum_mapping:
+              $raw_text: ADDRESS
+              $custom_parser: us_nd_custom_enum_parsers.parse_address_type
+          address_line_1: ADDRESS
+          address_city: CITY
+          address_county:
+            $custom:
+              $function: us_nd_custom_parsers.normalize_county_code
+              $args:
+                county_code: COUNTY_CODE
+          address_zip: ZIP
+          address_metadata:
+            $json_dict:
+              state_residence: STATE
