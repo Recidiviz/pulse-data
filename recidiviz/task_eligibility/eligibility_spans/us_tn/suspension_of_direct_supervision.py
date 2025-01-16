@@ -64,8 +64,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # meeting financial obligations as outlined in payment plan. May be able to
         # reuse existing criterion/criteria, or may need to create a new criterion.
         at_least_12_months_since_most_recent_positive_drug_test.VIEW_BUILDER,
-        # TODO(#33640): Double-check that this existing general criterion is correct for
-        # the specific SDS requirement related to an individual's latest drug screen.
         latest_drug_test_is_negative.VIEW_BUILDER,
         no_supervision_violation_report_within_2_years.VIEW_BUILDER,
         # TODO(#33627): Update/change time-served criterion to account for the fact that
