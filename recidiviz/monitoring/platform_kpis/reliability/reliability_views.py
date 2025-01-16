@@ -26,6 +26,9 @@ from recidiviz.monitoring.platform_kpis.reliability.stale_metric_exports import 
 from recidiviz.monitoring.platform_kpis.reliability.stale_metric_exports_by_state import (
     STALE_METRIC_EXPORTS_BY_STATE_VIEW_BUILDER,
 )
+from recidiviz.monitoring.platform_kpis.reliability.validation_hard_failure_spans import (
+    VALIDATION_HARD_FAILURE_SPANS_VIEW_BUILDER,
+)
 
 
 def get_platform_reliability_kpi_views_to_update() -> list[BigQueryViewBuilder]:
@@ -33,4 +36,5 @@ def get_platform_reliability_kpi_views_to_update() -> list[BigQueryViewBuilder]:
         STALE_METRIC_EXPORT_SPANS_BY_STATE_VIEW_BUILDER,
         STALE_METRIC_EXPORTS_BY_STATE_VIEW_BUILDER,
         STALE_METRIC_EXPORTS_VIEW_BUILDER,
+        VALIDATION_HARD_FAILURE_SPANS_VIEW_BUILDER,
     ]

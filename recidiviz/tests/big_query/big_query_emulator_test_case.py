@@ -210,7 +210,10 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
             future.result()
 
     def run_query_test(
-        self, query_str: str, expected_result: Iterable[Dict[str, Any]]
+        self,
+        query_str: str,
+        expected_result: Iterable[Dict[str, Any]],
+        enforce_order: bool = True,
     ) -> None:
         query_job = self.bq_client.run_query_async(
             query_str=query_str, use_query_cache=True
@@ -218,7 +221,13 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         contents_iterator: Iterable[Dict[str, Any]] = BigQueryResultsContentsHandle(
             query_job
         ).get_contents_iterator()
-        self.assertEqual(expected_result, list(contents_iterator))
+        if enforce_order:
+            self.assertEqual(expected_result, list(contents_iterator))
+        else:
+            self.assertSetEqual(
+                {frozenset(expected.items()) for expected in expected_result},
+                {frozenset(actual.items()) for actual in contents_iterator},
+            )
 
     def create_mock_table(
         self,

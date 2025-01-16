@@ -56,6 +56,7 @@ class SimpleBigQueryViewBuilderTestCase(BigQueryEmulatorTestCase):
         self,
         input_data: dict[BigQueryAddress, list[TableRow]],
         expected_result: list[TableRow],
+        enforce_order: bool = True,
     ) -> None:
         view = self.view_builder.build()
         if view.parent_tables != set(self.parent_schemas):
@@ -65,7 +66,9 @@ class SimpleBigQueryViewBuilderTestCase(BigQueryEmulatorTestCase):
         for address, schema in self.parent_schemas.items():
             self.create_mock_table(address, schema)
             self.load_rows_into_table(address, input_data[address])
-        self.run_query_test(view.view_query, expected_result)
+        self.run_query_test(
+            view.view_query, expected_result, enforce_order=enforce_order
+        )
 
 
 _ExampleVB = SimpleBigQueryViewBuilder(
