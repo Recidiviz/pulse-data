@@ -33,6 +33,7 @@ PRODUCTION_PRIMARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_MO,
     StateCode.US_ND,
     StateCode.US_PA,
+    StateCode.US_TN,
     # states we "rolled" out to prod that aren't enabled in prod but we un-gate them
     # so if/when they are they will use the new raw data infra
     StateCode.US_OZ,
@@ -43,7 +44,6 @@ PRODUCTION_PRIMARY_ENABLED_STATES: Set[StateCode] = {
 # all states enabled in prod primary must also be enabled in prod secondary, plus
 # the states we just want to be enabled in prod secondary
 PRODUCTION_SECONDARY_ENABLED_STATES: Set[StateCode] = {
-    StateCode.US_TN,
     *PRODUCTION_PRIMARY_ENABLED_STATES,
 }
 
