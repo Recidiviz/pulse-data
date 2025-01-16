@@ -17,6 +17,7 @@
 """Builder for a task eligiblity spans view that shows the spans of time during which
 someone in ID is eligible to complete the form for transfer to limited unit supervision.
 """
+from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
@@ -40,6 +41,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
 from recidiviz.task_eligibility.criteria_condition import (
     NotEligibleCriteriaCondition,
     PickNCompositeCriteriaCondition,
+    TimeDependentCriteriaCondition,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -74,9 +76,12 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
                 criteria=income_verified_within_3_months.VIEW_BUILDER,
                 description="Only missing income verification",
             ),
-            NotEligibleCriteriaCondition(
+            TimeDependentCriteriaCondition(
                 criteria=on_supervision_at_least_one_year.VIEW_BUILDER,
-                description="Only missing a year on supervision criteria",
+                reasons_date_field="minimum_time_served_date",
+                interval_length=1,
+                interval_date_part=BigQueryDateInterval.MONTH,
+                description="Only missing a month on supervision criteria",
             ),
         ],
         at_most_n_conditions_true=1,
