@@ -38,6 +38,9 @@ from recidiviz.calculator.query.state.views.external_reference.external_referenc
 from recidiviz.calculator.query.state.views.impact.impact_dashboard_views import (
     IMPACT_DASHBOARD_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.jii_texting.jii_texting_views import (
+    JII_TOOLS_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     OUTLIERS_VIEW_BUILDERS,
 )
@@ -99,6 +102,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             IMPACT_REPORTS_VIEWS,
             SENTENCE_SESSIONS_VIEW_BUILDERS,
             SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS,
+            JII_TOOLS_VIEW_BUILDERS,
         )
     )
 )

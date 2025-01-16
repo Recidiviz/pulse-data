@@ -104,3 +104,6 @@ AUTH0_EVENTS: str = "auth0_events"
 
 # Views that contain aggregated metrics related to impact reports
 IMPACT_REPORTS_DATASET_ID = "impact_reports"
+
+# Views that are used to text JII
+JII_TEXTING_DATASET_ID = "jii_texting"

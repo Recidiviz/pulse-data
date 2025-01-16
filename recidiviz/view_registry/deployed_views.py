@@ -264,6 +264,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "validation_metadata",
     "validation_views",
     "vitals_report_views",
+    "jii_texting",
 }
 
 
