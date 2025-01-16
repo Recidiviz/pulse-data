@@ -66,8 +66,6 @@ SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER = (
             "CleanedProviderPhoneNumber",
             "ProviderWebsite",
             "ProviderAddress",
-            "CapacityTotal",
-            "CapacityAvailable",
             "NeedsAddressed",
             "developmentalDisabilityDiagnosisCriterion",
             "noCurrentOrPriorSexOffenseCriterion",
@@ -88,6 +86,8 @@ SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER = (
             "lastUpdatedDate",
             "genders",
             "genericDescription",
+            "counties",
+            "status",
         ],
     )
 )

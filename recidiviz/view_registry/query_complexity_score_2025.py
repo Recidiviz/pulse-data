@@ -299,7 +299,10 @@ def _function_complexity_score(function_expression: expr.Func) -> int:
         expr.RegexpLike,
         expr.RegexpSplit,
         expr.RegexpILike,
-    } or (function_type == expr.Anonymous and function_name in {"REGEXP_SUBSTR"}):
+    } or (
+        function_type == expr.Anonymous
+        and function_name in {"REGEXP_SUBSTR", "REGEXP_EXTRACT_ALL"}
+    ):
         return 10
 
     # Date parsing is error-prone and ideally we'd be doing this in very few places
