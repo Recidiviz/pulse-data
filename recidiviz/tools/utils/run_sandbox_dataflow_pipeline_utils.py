@@ -111,7 +111,8 @@ def push_sandbox_dataflow_pipeline_docker_image(
     environment = get_environment_for_project(project_id)
     # Build and submit the image to "us-docker.pkg.dev/recidiviz-staging/dataflow-dev/{username}-build:latest"
     print(
-        "Submitting build (this takes a few minutes, or longer on the first run).....\n"
+        "Submitting build (this takes a few minutes, or longer on the first run). DO "
+        "NOT SWITCH BRANCHES UNTIL THIS COMPLETES.....\n"
     )
     run_command(
         f"""
@@ -125,7 +126,10 @@ def push_sandbox_dataflow_pipeline_docker_image(
 
     submit_build_exec_seconds = time.time() - submit_build_start
     build_minutes, build_seconds = divmod(submit_build_exec_seconds, 60)
-    print(f"Submitted build in {build_minutes} minutes and {build_seconds} seconds.\n")
+    print(
+        f"Submitted build in {build_minutes} minutes and {build_seconds} seconds. You "
+        f"can switch branches now :-) \n"
+    )
 
 
 def run_sandbox_dataflow_pipeline(params: PipelineParameters, skip_build: bool) -> None:

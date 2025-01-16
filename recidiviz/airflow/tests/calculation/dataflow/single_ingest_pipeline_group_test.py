@@ -22,6 +22,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
+import pytz
 import yaml
 from airflow.models.dag import DAG, dag
 from airflow.operators.empty import EmptyOperator
@@ -29,7 +30,8 @@ from airflow.utils.state import DagRunState
 from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group import (
-    _check_for_valid_watermarks,
+    _check_for_valid_watermarks_task,
+    check_for_valid_watermarks,
     create_single_ingest_pipeline_group,
 )
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
@@ -75,6 +77,75 @@ def _create_test_single_ingest_pipeline_group_dag(state_code: StateCode) -> DAG:
         )
 
     return test_single_ingest_pipeline_group_dag()
+
+
+class TestCheckForValidWatermarks(unittest.TestCase):
+    """Tests for the check_for_valid_watermarks helper"""
+
+    DATE_1_ISO = datetime(2025, 1, 1, 0, 0, 0, 0, tzinfo=pytz.UTC).isoformat()
+    DATE_2_ISO = datetime(2025, 2, 2, 0, 0, 0, 0, tzinfo=pytz.UTC).isoformat()
+
+    def test_check_for_valid_watermarks__valid(self) -> None:
+        # We shouldn't hit this empty case, but technically valid
+        self.assertTrue(
+            check_for_valid_watermarks(watermarks={}, max_update_datetimes={})
+        )
+
+        # Files that don't have watermarks are ok
+        self.assertTrue(
+            check_for_valid_watermarks(
+                watermarks={},
+                max_update_datetimes={"tagA": self.DATE_1_ISO},
+            )
+        )
+
+        # Equal to watermark is ok
+        self.assertTrue(
+            check_for_valid_watermarks(
+                watermarks={"tagA": self.DATE_1_ISO},
+                max_update_datetimes={"tagA": self.DATE_1_ISO},
+            )
+        )
+
+        # Greater than watermark is ok
+        self.assertTrue(
+            check_for_valid_watermarks(
+                watermarks={"tagA": self.DATE_1_ISO},
+                max_update_datetimes={"tagA": self.DATE_2_ISO},
+            )
+        )
+
+        # Multiple tags example
+        self.assertTrue(
+            check_for_valid_watermarks(
+                watermarks={"tagA": self.DATE_1_ISO},
+                max_update_datetimes={"tagA": self.DATE_2_ISO, "tagB": self.DATE_1_ISO},
+            )
+        )
+
+    def test_check_for_valid_watermarks__no_current_max_date(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found critical raw data tables that either do not exist or are empty: "
+            r"\['tagA'\]",
+        ):
+            # TagA is missing from max_update_datetimes
+            check_for_valid_watermarks(
+                watermarks={"tagA": self.DATE_1_ISO},
+                max_update_datetimes={"tagB": self.DATE_2_ISO},
+            )
+
+    def test_check_for_valid_watermarks__stale_current_max_date(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"\[tagA\] Current max update_datetime: 2025-01-01T00:00:00\+00:00. Last "
+            r"ingest pipeline run update_datetime: 2025-02-02T00:00:00\+00:00.",
+        ):
+            # TagA has stale data
+            check_for_valid_watermarks(
+                watermarks={"tagA": self.DATE_2_ISO},
+                max_update_datetimes={"tagA": self.DATE_1_ISO, "tagB": self.DATE_2_ISO},
+            )
 
 
 @patch.dict(
@@ -238,14 +309,14 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
     @patch(
-        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group._check_for_valid_watermarks"
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group._check_for_valid_watermarks_task"
     )
     def test_initialize_ingest_pipeline_fails_when_watermark_datetime_greater_than_max_update_datetime(
         self,
         mock_check_for_valid_watermarks: MagicMock,
     ) -> None:
         mock_check_for_valid_watermarks.side_effect = (
-            lambda watermarks, max_update_datetimes: _check_for_valid_watermarks(
+            lambda watermarks, max_update_datetimes: _check_for_valid_watermarks_task(
                 watermarks={"test_file_tag": "2023-01-26 00:00:0.000000+00"},
                 max_update_datetimes={"test_file_tag": "2023-01-25 00:00:0.000000+00"},
             )
@@ -297,14 +368,14 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             self.assertEqual(DagRunState.FAILED, result.dag_run_state)
 
     @patch(
-        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group._check_for_valid_watermarks"
+        "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group._check_for_valid_watermarks_task"
     )
     def test_initialize_ingest_pipeline_when_watermark_datetime_less_than_max_update_datetime(
         self,
         mock_check_for_valid_watermarks: MagicMock,
     ) -> None:
         mock_check_for_valid_watermarks.side_effect = (
-            lambda watermarks, max_update_datetimes: _check_for_valid_watermarks(
+            lambda watermarks, max_update_datetimes: _check_for_valid_watermarks_task(
                 watermarks={"test_file_tag": "2023-01-24 00:00:0.000000+00"},
                 max_update_datetimes={"test_file_tag": "2023-01-25 00:00:0.000000+00"},
             )

@@ -116,23 +116,57 @@ def check_region_has_launchable_ingest_views(state_code: StateCode) -> bool:
 @task(
     task_id=CHECK_FOR_VALID_WATERMARKS_TASK_ID,
 )
-def _check_for_valid_watermarks(
+def _check_for_valid_watermarks_task(
     watermarks: Dict[str, str], max_update_datetimes: Dict[str, str]
 ) -> bool:
-    for raw_file_tag, watermark_for_file in watermarks.items():
-        if raw_file_tag not in max_update_datetimes:
-            raise ValueError(
-                f"Watermark file_tag '{raw_file_tag}' not found in "
-                f"max_update_datetimes: {max_update_datetimes.keys()}"
-            )
+    return check_for_valid_watermarks(
+        watermarks=watermarks, max_update_datetimes=max_update_datetimes
+    )
 
+
+def check_for_valid_watermarks(
+    watermarks: Dict[str, str], max_update_datetimes: Dict[str, str]
+) -> bool:
+    """Checks that the data currently in our raw data tables is just as new or newer
+    than the data was the last time we ran this ingest pipeline.
+    """
+    missing_file_tags = {
+        raw_file_tag: watermark_for_file
+        for raw_file_tag, watermark_for_file in watermarks.items()
+        if raw_file_tag not in max_update_datetimes
+    }
+
+    if missing_file_tags:
+        raise ValueError(
+            f"Found critical raw data tables that either do not exist or are empty: "
+            f"{sorted(missing_file_tags.keys())}.\nWe cannot run the ingest pipeline "
+            f"until data has been added to this table that has an update_datetime "
+            f"greater than or equal to the high watermark for each of these files: "
+            f"{missing_file_tags}.YOU SHOULD GENERALLY NOT CLEAR ROWS FROM THE "
+            f"direct_ingest_dataflow_raw_table_upper_bounds TABLE TO RESOLVE THIS "
+            f"ERROR UNLESS THE TABLES IN QUESTION ARE NOW DEFINITELY UNUSED."
+        )
+
+    stale_file_tag_errors = []
+
+    for raw_file_tag, watermark_for_file in watermarks.items():
         if watermark_for_file > max_update_datetimes[raw_file_tag]:
-            raise ValueError(
-                f"Raw file {raw_file_tag} has older data than the last time the ingest "
-                f"pipeline was run. Current max update_datetime: "
+            error_str = (
+                f"  * [{raw_file_tag}] Current max update_datetime: "
                 f"{max_update_datetimes[raw_file_tag]}. Last ingest pipeline run "
-                f"update_datetime: {watermark_for_file}.",
+                f"update_datetime: {watermark_for_file}."
             )
+            stale_file_tag_errors.append(error_str)
+
+    if stale_file_tag_errors:
+        errors = "\n".join(stale_file_tag_errors)
+        raise ValueError(
+            f"Found critical raw data tables with older data than the last time the "
+            f"ingest pipeline was run:\n{errors}\nYOU SHOULD "
+            f"ONLY CLEAR ROWS FROM direct_ingest_dataflow_raw_table_upper_bounds TO "
+            f"RESOLVE THIS ERROR IF YOU'RE ABSOLUTELY CERTAIN THE OLDER VERSION OF THE "
+            f"DATA IN THESE TABLES IS ACTUALLY MORE CURRENT / CORRECT."
+        )
 
     return True
 
@@ -183,7 +217,7 @@ def _initialize_ingest_pipeline(
             ),
         )
 
-        check_for_valid_watermarks = _check_for_valid_watermarks(
+        check_for_valid_watermarks_task = _check_for_valid_watermarks_task(
             watermarks=get_watermarks.output,  # type: ignore[arg-type]
             max_update_datetimes=get_max_update_datetimes.output,  # type: ignore[arg-type]
         )
@@ -193,7 +227,7 @@ def _initialize_ingest_pipeline(
         (
             check_ingest_pipeline_should_run_in_dag
             >> [get_max_update_datetimes, get_watermarks]
-            >> check_for_valid_watermarks
+            >> check_for_valid_watermarks_task
             >> _verify_raw_data_flashing_not_in_progress(state_code)
         )
 
