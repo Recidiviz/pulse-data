@@ -164,7 +164,7 @@ class RawDataImportStepBQLabel(Enum):
 
     RAW_DATA_TEMP_LOAD = BigQueryJobLabel(
         key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
-        value=platform_logging_strings.RAW_DATA_PRE_IMPORT_TRANSFORMATIONS,
+        value=platform_logging_strings.RAW_DATA_TEMP_LOAD,
     )
     RAW_DATA_PRE_IMPORT_TRANSFORMATIONS = BigQueryJobLabel(
         key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
@@ -180,11 +180,11 @@ class RawDataImportStepBQLabel(Enum):
     )
     RAW_DATA_PRUNING = BigQueryJobLabel(
         key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
-        value=platform_logging_strings.RAW_DATA_PRE_IMPORT_VALIDATIONS,
+        value=platform_logging_strings.RAW_DATA_PRUNING,
     )
     RAW_DATA_TABLE_APPEND = BigQueryJobLabel(
         key=platform_logging_strings.RAW_DATA_IMPORT_STEP,
-        value=platform_logging_strings.RAW_DATA_PRE_IMPORT_VALIDATIONS,
+        value=platform_logging_strings.RAW_DATA_TABLE_APPEND,
     )
 
 
