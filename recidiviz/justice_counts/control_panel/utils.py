@@ -328,3 +328,7 @@ def get_available_agency_dashboards_api_response_file_path(
         bucket_name=bucket_name,
         blob_name=f"available-dashboards-api-response-{today.month}.{today.day}.{today.year}",
     )
+
+
+def is_email_excluded(user_email: str, excluded_domains: List[str]) -> bool:
+    return any(user_email.endswith(domain) for domain in excluded_domains)

@@ -38,6 +38,7 @@ from google.oauth2.service_account import Credentials
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.control_panel.utils import (
     append_row_to_spreadsheet,
+    is_email_excluded,
     write_data_to_spreadsheet,
 )
 from recidiviz.justice_counts.jobs.pull_agencies_with_published_data import (
@@ -45,7 +46,10 @@ from recidiviz.justice_counts.jobs.pull_agencies_with_published_data import (
     get_reported_metrics_and_dashboard_helper,
 )
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
-from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
+from recidiviz.justice_counts.metrics.metric_registry import (
+    METRIC_KEY_TO_METRIC,
+    METRICS_BY_SYSTEM,
+)
 from recidiviz.justice_counts.utils.constants import (
     AGENCIES_TO_EXCLUDE,
     JUSTICE_COUNTS_SENTRY_DSN,
@@ -64,6 +68,7 @@ from recidiviz.utils.environment import (
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
+EXCLUDED_DOMAINS = ["@insomniacdesign.com", "@recidiviz.org", "@csg.org"]
 # Spreadsheet Name: Justice Counts Data Pull
 # https://docs.google.com/spreadsheets/d/1Vcz110SWJoTE345w3buPd8oYnwqu-Q_mIJ4C-9z_CC0/edit#gid=870547342
 DATA_PULL_SPREADSHEET_ID = "1Vcz110SWJoTE345w3buPd8oYnwqu-Q_mIJ4C-9z_CC0"
@@ -207,26 +212,39 @@ def summarize(
 
     for metric_setting in metric_settings:
         # Update last_update.
+
+        if metric_setting.metric_definition_key not in METRIC_KEY_TO_METRIC:
+            # Don't surface data about deprecated metrics
+            continue
+
         last_update = max(
             last_update,
-            metric_setting.created_at
-            if metric_setting.created_at is not None
-            else a_long_time_ago,
-            metric_setting.last_updated
-            if metric_setting.last_updated is not None
-            else a_long_time_ago,
+            (
+                metric_setting.created_at
+                if metric_setting.created_at is not None
+                else a_long_time_ago
+            ),
+            (
+                metric_setting.last_updated
+                if metric_setting.last_updated is not None
+                else a_long_time_ago
+            ),
         )
 
         # Update initial_metric_config_date. We use both created_at and last_updated
         # since the last_updated column was introduced before created_at existed.
         initial_metric_config_date = min(
             initial_metric_config_date,
-            metric_setting.created_at
-            if metric_setting.created_at is not None
-            else tomorrow,
-            metric_setting.last_updated
-            if metric_setting.last_updated is not None
-            else tomorrow,
+            (
+                metric_setting.created_at
+                if metric_setting.created_at is not None
+                else tomorrow
+            ),
+            (
+                metric_setting.last_updated
+                if metric_setting.last_updated is not None
+                else tomorrow
+            ),
         )
 
         # Update metrics_configured, metrics_available, and metrics_unavailable.
@@ -585,6 +603,13 @@ def generate_agency_summary_csv(
     ) = get_all_data(session=session)
     logger.info("Number of agencies: %s", len(agencies))
 
+    users = [
+        user
+        for user in users
+        if not is_email_excluded(
+            user_email=user.email, excluded_domains=EXCLUDED_DOMAINS
+        )
+    ]
     user_id_to_auth0_user = {
         user["id"]: auth0_user_id_to_user.get(user["auth0_user_id"]) for user in users
     }
@@ -593,21 +618,18 @@ def generate_agency_summary_csv(
     # A dictionary that maps agency ids to the date of the last user visit to that agency
     agency_id_to_last_visit: Dict[str, datetime.date] = defaultdict()
     for assoc in agency_user_account_associations:
-        auth0_user = user_id_to_auth0_user[assoc["user_account_id"]]
-        if (
+        auth0_user = user_id_to_auth0_user.get(assoc["user_account_id"])
+        if auth0_user is None:
             # Skip over CSG and Recidiviz users -- we shouldn't
             # count as a true login!
-            auth0_user
-            and "csg" not in auth0_user["email"]
-            and "recidiviz" not in auth0_user["email"]
-        ):
-            agency_id_to_users[assoc["agency_id"]].append(auth0_user)
+            continue
+        agency_id_to_users[assoc["agency_id"]].append(auth0_user)
 
-            if assoc["last_visit"] is not None:
-                assoc_last_visit = assoc["last_visit"].date()
-                agency_last_visit = agency_id_to_last_visit.get(assoc["agency_id"])
-                if not agency_last_visit or (assoc_last_visit > agency_last_visit):
-                    agency_id_to_last_visit[assoc["agency_id"]] = assoc_last_visit
+        if assoc["last_visit"] is not None:
+            assoc_last_visit = assoc["last_visit"].date()
+            agency_last_visit = agency_id_to_last_visit.get(assoc["agency_id"])
+            if not agency_last_visit or (assoc_last_visit > agency_last_visit):
+                agency_id_to_last_visit[assoc["agency_id"]] = assoc_last_visit
 
     # A dictionary that maps agency ids to agency objects
     agency_id_to_agency = {}

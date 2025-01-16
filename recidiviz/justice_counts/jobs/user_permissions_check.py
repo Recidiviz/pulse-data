@@ -30,7 +30,10 @@ import requests
 import sentry_sdk
 from sqlalchemy.orm import Session
 
-from recidiviz.justice_counts.control_panel.utils import is_demo_agency
+from recidiviz.justice_counts.control_panel.utils import (
+    is_demo_agency,
+    is_email_excluded,
+)
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import JUSTICE_COUNTS_SENTRY_DSN
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
@@ -51,6 +54,7 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.secrets import get_secret
 
 SCHEMA_TYPE = schema_type = SchemaType.JUSTICE_COUNTS
+EXCLUDED_DOMAINS = ["@insomniacdesign.com"]
 logger = logging.getLogger(__name__)
 
 
@@ -221,6 +225,8 @@ def construct_user_infos(
     user_infos = []
     child_agency_id_to_agency = {}
     for user in non_csg_users:
+        if is_email_excluded(user_email=user.email, excluded_domains=EXCLUDED_DOMAINS):
+            continue
         states = set()
         agency_names = []
         superagencies = []
@@ -284,7 +290,7 @@ def check_user_permissions(
 
     def add_users(text: str, user_infos: List[List[Any]]) -> str:
         # Add information about these users to the text string
-        for (name, agencies) in user_infos:
+        for name, agencies in user_infos:
             text += f"* {name}: {len(agencies)} Agencies\n"
         text += "\n"
         return text
@@ -292,7 +298,7 @@ def check_user_permissions(
     text = ""
     if csg_users_with_wrong_role:
         text += "The following CSG users have non-read-only access to a production agency: \n"
-        for (name, agencies, role) in csg_users_with_wrong_role:
+        for name, agencies, role in csg_users_with_wrong_role:
             text += f"* {name}: [Role] {format_role(role)}, {len(agencies)} Agencies\n"
         text += "\n"
 
@@ -315,7 +321,7 @@ def check_user_permissions(
 
     if users_with_multiple_states:
         text += "The following users have access to agencies in multiple states: \n"
-        for (name, states, agencies) in users_with_multiple_states:
+        for name, states, agencies in users_with_multiple_states:
             text += (
                 f"* {name}: [States] {', '.join(states)}, {len(agencies)} Agencies\n"
             )
@@ -323,7 +329,7 @@ def check_user_permissions(
 
     if users_with_no_agencies:
         text += "The following users don't have access to any agencies: \n"
-        for (name, email) in users_with_no_agencies:
+        for name, email in users_with_no_agencies:
             text += f"* {name}, {email}\n"
 
     if not text:
