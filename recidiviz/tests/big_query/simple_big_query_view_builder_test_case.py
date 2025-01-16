@@ -59,10 +59,13 @@ class SimpleBigQueryViewBuilderTestCase(BigQueryEmulatorTestCase):
         enforce_order: bool = True,
     ) -> None:
         view = self.view_builder.build()
-        if view.parent_tables != set(self.parent_schemas):
+        try:
+            self.assertSetEqual(view.parent_tables, set(self.parent_schemas))
+        except Exception as e:
             raise ValueError(
                 "The schemas defined for in `parent_schemas` do not match the parent tables for this view."
-            )
+            ) from e
+
         for address, schema in self.parent_schemas.items():
             self.create_mock_table(address, schema)
             self.load_rows_into_table(address, input_data[address])
