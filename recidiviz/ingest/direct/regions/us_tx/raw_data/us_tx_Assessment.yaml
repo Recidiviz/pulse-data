@@ -6,7 +6,7 @@ data_classification: source
 primary_key_cols:
   - SID_Number
   - Assessment_Type
-  - Assessment_Approved_Date
+  - ASSESSMENT_DATE
 columns:
   - name: SID_Number
     is_pii: True
@@ -24,7 +24,11 @@ columns:
   - name: Assessment_Class
     description: |-
       Class of assessment.
-  - name: Assessment_Approved_Date
+  - name: ASSESSMENT_DATE
     description: |-
       Date assessment was approved.
     field_type: datetime
+    update_history:
+      - update_type: RENAME
+        update_datetime: 2025-01-16T00:00:00Z
+        previous_value: Assessment_Approved_Date

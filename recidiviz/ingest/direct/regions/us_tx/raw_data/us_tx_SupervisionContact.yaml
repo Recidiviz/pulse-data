@@ -45,3 +45,6 @@ columns:
   - name: Deleted_Flag
     description: |-
       Flag indicatiing whether record was deleted.
+  - name: COLLATERAL_CONTACT
+    description: |-
+      Field indicating whether there was a collateral contact

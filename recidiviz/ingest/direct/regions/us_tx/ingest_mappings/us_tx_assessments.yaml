@@ -7,7 +7,7 @@ input_columns:
   Assessment_Type: STRING
   Assessment_Level: STRING
   Assessment_Class: STRING
-  Assessment_Approved_Date: STRING
+  ASSESSMENT_DATE: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -22,8 +22,8 @@ output:
               $values:
                 - SID_Number
                 - Assessment_Type
-                - Assessment_Approved_Date
-          assessment_date: Assessment_Approved_Date
+                - ASSESSMENT_DATE
+          assessment_date: ASSESSMENT_DATE
           assessment_class:
             $enum_mapping:
               $raw_text: Assessment_Class

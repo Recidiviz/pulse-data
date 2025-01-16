@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: AssessmentAdditions
+file_description: |-
+  This table contains additional information on TDCJ assessments, specifically SOTS tests and scores.
+data_classification: source
+primary_key_cols:
+  - SID_Number
+  - SOTS_TEST_DATE
+columns:
+  - name: SID_Number
+    is_pii: True
+    description: |-
+      This is a unique identifier assigned to a particular person. This ID will never change throughout a person's life.
+  - name: SOTS_RISK_SCORE
+    description: |-
+      SOTS assessment risk score.
+  - name: SOTS_RISK_LEVEL
+    description: |-
+      SOTS assessment risk level.
+  - name: SOTS_TEST_DATE
+    description: |-
+      SOTS assessment date.
+  - name: SOTS_EST_DOC
+    description: |-
+      TODO(#37508) Document this field.

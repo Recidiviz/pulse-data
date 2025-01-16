@@ -28,7 +28,7 @@ SELECT
     Assessment_Type,
     Assessment_Level,
     Assessment_Class,
-    Assessment_Approved_Date
+    ASSESSMENT_DATE
 FROM {Assessment}
 WHERE Deleted_Flag = "Active"
 """
