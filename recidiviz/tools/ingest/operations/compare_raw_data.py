@@ -65,7 +65,8 @@ def _get_table_name_prefix(
     cmp_project_id: str,
     cmp_ingest_instance: DirectIngestInstance,
 ) -> str:
-    return f"{region_code}_src_{src_project_id}_{src_ingest_instance.value}_cmp_{cmp_project_id}_{cmp_ingest_instance.value}_"
+    unix_ts = int(datetime.datetime.now(tz=datetime.UTC).timestamp())
+    return f"{region_code}_src_{src_project_id}_{src_ingest_instance.value}_cmp_{cmp_project_id}_{cmp_ingest_instance.value}_{unix_ts}_"
 
 
 def _log_successes(succeeded_tables: List[str]) -> None:

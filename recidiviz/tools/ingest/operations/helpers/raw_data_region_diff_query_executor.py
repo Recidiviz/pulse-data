@@ -137,6 +137,8 @@ class RawDataRegionDiffQueryExecutor:
             results_list = bq_query_job_result_to_list_of_row_dicts(result)
             if not results_list:
                 succeeded_tables.append(file_tag)
+                if self.save_to_table:
+                    self.bq_client.delete_table(self._get_table_address(file_tag))
             else:
                 failed_table_results[
                     file_tag
