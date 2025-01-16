@@ -131,7 +131,7 @@ class MoveFilesToDeprecatedController:
             # TODO(#28239): delete once raw data import DAG is live
             # The invalidation logic only supports the new operations tables
             if not is_raw_data_import_dag_enabled(
-                StateCode(self.region_code.upper()), DirectIngestInstance.PRIMARY
+                StateCode(self.region_code.upper()), self.ingest_instance
             ):
                 operations_table = DirectIngestRawFileMetadata.__tablename__
 
@@ -150,7 +150,7 @@ class MoveFilesToDeprecatedController:
                 )
 
         if is_raw_data_import_dag_enabled(
-            StateCode(self.region_code.upper()), DirectIngestInstance.PRIMARY
+            StateCode(self.region_code.upper()), self.ingest_instance
         ):
             invalidated_files = InvalidateOperationsDBFilesController.create_controller(
                 project_id=self.project_id,
