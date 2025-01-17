@@ -294,6 +294,7 @@ state_person:
 state_person_address_period:
   fields:
     address_city: The city name of the address
+    address_country: The country name of the address
     address_county: The county name of the address
     address_end_date: Date on which a person's address ended
     address_is_verified: Boolean to determine whether the person's address has been verified
@@ -301,6 +302,7 @@ state_person_address_period:
     address_line_2: The second line of the address, should denote apt. number or PO box number
     address_metadata: Arbitrary JSON-formatted metadata relevant to a fine understanding of a particular address
     address_start_date: Date on which a person's address changed or was registered for the first time
+    address_state: The state code of the address
     address_type: Indicates the address type
     address_type_raw_text: Text used to infer address_type
     address_zip: The 5 digit zipcode of the address

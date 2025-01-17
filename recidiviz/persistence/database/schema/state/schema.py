@@ -1022,6 +1022,16 @@ class StatePersonAddressPeriod(StateBase, _ReferencesStatePersonSharedColumns):
         comment="The city name of the address",
     )
 
+    address_state = Column(
+        String(255),
+        comment="The state code of the address",
+    )
+
+    address_country = Column(
+        String(255),
+        comment="The country name of the address",
+    )
+
     address_zip = Column(
         String(255),
         comment="The 5 digit zipcode of the address",

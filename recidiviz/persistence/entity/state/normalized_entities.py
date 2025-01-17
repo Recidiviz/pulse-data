@@ -2613,6 +2613,14 @@ class NormalizedStatePersonAddressPeriod(NormalizedStateEntity, Entity):
         default=None, validator=attr_validators.is_opt_str
     )
 
+    address_state: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    address_country: str | None = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
     address_zip: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )

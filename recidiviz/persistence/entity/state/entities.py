@@ -191,6 +191,15 @@ class StatePersonAddressPeriod(
         default=None, validator=attr_validators.is_opt_str
     )
 
+    # TODO(#5508) Convert this to enum
+    address_state: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    address_country: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
     address_zip: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
