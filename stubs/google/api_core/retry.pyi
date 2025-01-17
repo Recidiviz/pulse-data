@@ -23,7 +23,12 @@ def if_exception_type(
 
 class Retry:
     def __init__(
-        self, predicate: Callable[[Exception], Callable[[Exception], bool]]
+        self,
+        predicate: Callable[[Exception], Callable[[Exception], bool]],
+        initial: float = ...,
+        maximum: float = ...,
+        multiplier: float = ...,
+        timeout: Optional[float] = ...,
     ) -> None: ...
     def __call__(
         self, func: Callable, on_error: Optional[Callable] = None

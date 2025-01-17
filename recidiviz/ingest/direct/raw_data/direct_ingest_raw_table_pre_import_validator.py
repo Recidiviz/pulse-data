@@ -26,7 +26,7 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_job_labels import RawDataImportStepBQLabel
 from recidiviz.big_query.big_query_utils import bq_query_job_result_to_list_of_row_dicts
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.retry_predicate import ssl_error_retry_predicate
+from recidiviz.common.retry_predicate import rate_limit_retry_predicate
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
@@ -53,7 +53,10 @@ from recidiviz.ingest.direct.types.raw_data_import_blocking_validation import (
     RawDataImportBlockingValidationFailure,
 )
 
-MAX_THREADS = 3  # TODO(#29946) determine reasonable default
+MAX_THREADS = 4  # TODO(#29946) determine reasonable default
+DEFAULT_INITIAL_DELAY = 15.0  # 15 seconds
+DEFAULT_MAXIMUM_DELAY = 60.0 * 2  # 2 minutes, in seconds
+DEFAULT_TOTAL_TIMEOUT = 60.0 * 8  # 8 minutes, in seconds
 
 COLUMN_VALIDATION_CLASSES: List[Type[RawDataColumnImportBlockingValidation]] = [
     NonNullValuesColumnValidation,
@@ -151,12 +154,19 @@ class DirectIngestRawTablePreImportValidator:
             for validation in validations_to_run
         }
 
-        ssl_retry_policy = retry.Retry(predicate=ssl_error_retry_predicate)
+        rate_limit_retry_policy = retry.Retry(
+            initial=DEFAULT_INITIAL_DELAY,
+            maximum=DEFAULT_MAXIMUM_DELAY,
+            timeout=DEFAULT_TOTAL_TIMEOUT,
+            predicate=rate_limit_retry_predicate,
+        )
 
         errors = []
         with futures.ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
             job_futures = {
-                executor.submit(job.result, retry=ssl_retry_policy): validation_info
+                executor.submit(
+                    job.result, retry=rate_limit_retry_policy
+                ): validation_info
                 for job, validation_info in job_to_validation.items()
             }
             for f in futures.as_completed(job_futures):

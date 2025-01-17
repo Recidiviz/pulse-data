@@ -20,6 +20,8 @@ from google.api_core import exceptions  # pylint: disable=no-name-in-module
 from google.api_core import retry
 from requests.exceptions import SSLError
 
+EXCEEDED_RATE_LIMITS_ERROR_MESSAGE: str = "Exceeded rate limits:"
+
 
 def google_api_retry_predicate(
     exception: Exception,
@@ -35,3 +37,12 @@ def google_api_retry_predicate(
 def ssl_error_retry_predicate(exc: BaseException) -> bool:
     """Unexpected SSL EOF Errors may occur when working with threaded requests, this predicate will retry them"""
     return isinstance(exc, SSLError)
+
+
+def rate_limit_retry_predicate(exc: Exception) -> bool:
+    """Retries if there are SSL errors or rate-limit errors."""
+    return ssl_error_retry_predicate(exc) or (
+        isinstance(exc, exceptions.GoogleAPICallError)
+        and isinstance(exc, exceptions.Forbidden)
+        and EXCEEDED_RATE_LIMITS_ERROR_MESSAGE in str(exc)
+    )
