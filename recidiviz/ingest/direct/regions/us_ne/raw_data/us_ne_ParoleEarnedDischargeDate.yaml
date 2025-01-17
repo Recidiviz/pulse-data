@@ -17,6 +17,8 @@ columns:
     field_type: datetime
     description: |-
       Parole earned discharge date
+    null_values:
+      - "NULL"
   - name: paroleEarnedDischargeTerm
     description: |-
       Parole earned discharge term
