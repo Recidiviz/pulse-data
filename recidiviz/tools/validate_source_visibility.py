@@ -335,6 +335,7 @@ def main() -> int:
         "recidiviz.big_query.big_query_view_sandbox_context",
         "recidiviz.big_query.constants",
         "recidiviz.big_query.export.export_query_config",
+        "recidiviz.big_query.row_access_policy_query_builder",
         "recidiviz.cloud_storage.gcs_file_system",
         "recidiviz.cloud_storage.gcs_file_system_impl",
         "recidiviz.cloud_storage.gcsfs_factory",

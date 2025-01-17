@@ -413,7 +413,7 @@ class SamenessPerViewValidationCheckerTest(BigQueryEmulatorTestCase):
     def tearDown(self) -> None:
         for dataset in self.bq_client.list_datasets():
             for table in self.bq_client.list_tables(dataset.dataset_id):
-                self.bq_client.delete_table(BigQueryAddress.from_list_item(table))
+                self.bq_client.delete_table(BigQueryAddress.from_table(table))
         super().tearDown()
 
     def test_strings(self) -> None:

@@ -195,7 +195,7 @@ def compare_dataflow_output_to_sandbox(
         else:
             # Clean up the existing tables in the dataset
             for table in bq_client.list_tables(sandbox_comparison_output_dataset_id):
-                bq_client.delete_table(BigQueryAddress.from_list_item(table))
+                bq_client.delete_table(BigQueryAddress.from_table(table))
 
     bq_client.create_dataset_if_necessary(
         sandbox_comparison_output_dataset_id,

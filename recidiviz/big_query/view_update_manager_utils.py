@@ -57,7 +57,7 @@ def delete_unmanaged_views_and_tables_from_dataset(
     if not bq_client.dataset_exists(dataset_id):
         raise ValueError(f"Dataset {dataset_id} does not exist in BigQuery")
     for table in list(bq_client.list_tables(dataset_id)):
-        table_bq_address = BigQueryAddress.from_list_item(table)
+        table_bq_address = BigQueryAddress.from_table(table)
         if table_bq_address not in managed_tables:
             unmanaged_views_and_tables.add(table_bq_address)
     for view_address in unmanaged_views_and_tables:

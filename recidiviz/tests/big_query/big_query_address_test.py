@@ -59,7 +59,7 @@ class TestBigQueryAddress(unittest.TestCase):
             }
         )
 
-        self.assertEqual(address_1, BigQueryAddress.from_list_item(list_item))
+        self.assertEqual(address_1, BigQueryAddress.from_table(list_item))
 
         self.assertEqual(
             "SELECT * FROM `{project_id}.my_dataset.my_table`",

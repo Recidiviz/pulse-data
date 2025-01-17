@@ -46,16 +46,23 @@ class BigQueryAddress:
     table_id: str = attr.ib(validator=attr_validators.is_str)
 
     @classmethod
-    def from_list_item(cls, table: bigquery.table.TableListItem) -> "BigQueryAddress":
-        return cls(dataset_id=table.dataset_id, table_id=table.table_id)
-
-    @classmethod
     def from_str(cls, address_str: str) -> "BigQueryAddress":
         """Converts a string in the format 'dataset.table' to BigQueryAddress."""
         parts = address_str.split(".")
         if len(parts) != 2 or not all(parts):
             raise ValueError("Input must be in the format 'dataset.table'.")
         return cls(dataset_id=parts[0], table_id=parts[1])
+
+    @classmethod
+    def from_table(
+        cls,
+        table: (
+            bigquery.table.Table
+            | bigquery.table.TableReference
+            | bigquery.table.TableListItem
+        ),
+    ) -> "BigQueryAddress":
+        return cls(dataset_id=table.dataset_id, table_id=table.table_id)
 
     def to_str(self) -> str:
         return f"{self.dataset_id}.{self.table_id}"

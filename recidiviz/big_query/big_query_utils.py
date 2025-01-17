@@ -341,3 +341,7 @@ def get_file_destinations_for_bq_export(
         GcsfsFilePath.from_absolute_path(get_file_name(i, file_name_no_ext, ext))
         for i in range(file_count)
     ]
+
+
+def table_has_field(table: bigquery.Table, field: str) -> bool:
+    return any(f.name == field for f in table.schema)
