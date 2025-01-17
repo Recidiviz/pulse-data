@@ -8,17 +8,17 @@ primary_key_cols:
 columns:
   - name: ofndr_tst_id
     description: |-
-      TODO(#33372): Fill in column description
+      Primary key.
   - name: tot_score
     description: |-
-      TODO(#33372): Fill in column description
+      The total score of the test.
   - name: eval_desc
     description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
+      An english description of the result of the test. Helps bucket scores into groups.
+      Example values are MAXIMUM (HIGH), High Beginning (ESL) , and Moderate Risk.
   - name: override_score
     description: |-
-      TODO(#33372): Fill in column description
+      The score if it was overriden.
   - name: override_by_id
     description: |-
       TODO(#33372): Fill in column description
@@ -32,7 +32,7 @@ columns:
     is_pii: True
   - name: override_eval_desc
     description: |-
-      TODO(#33372): Fill in column description
+      The eval_desc associated with the override_score.
     is_pii: True
   - name: override_rsn_cd
     description: |-

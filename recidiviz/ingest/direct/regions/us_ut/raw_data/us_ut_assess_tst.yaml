@@ -1,39 +1,43 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: assess_tst
 file_description: |-
-  Assessment Test
+  This table contains information about the various tests, specifically the test name.
 data_classification: source
 primary_key_cols:
   - assess_tst_id
 columns:
   - name: assess_tst_id
     description: |-
-      TODO(#33372): Fill in column description
+      This is the ID of the test.
   - name: assess_cat_cd
     description: |-
       TODO(#33372): Fill in column description
   - name: assess_tst_typ_cd
     description: |-
-      TODO(#33372): Fill in column description
+      Always the same -- the code is for SECTIONAL.
   - name: tst_title
     description: |-
-      TODO(#33372): Fill in column description
+      The name of the test -- for example, LS/RNR RISK-NEED-RESPONSIVITY.
   - name: vndr_name
     description: |-
-      TODO(#33372): Fill in column description
+      The vendor of the test.
     is_pii: True
   - name: tst_obj
     description: |-
-      TODO(#33372): Fill in column description
+      A description of the objectives of the test. Can be useful for understanding what
+      a specific test is for.
   - name: tst_instruct
     description: |-
-      TODO(#33372): Fill in column description
+      Instructions for administering the test.
   - name: vld_flg
     description: |-
       TODO(#33372): Fill in column description
   - name: substance_flg
     description: |-
       TODO(#33372): Fill in column description
+    known_values:
+      - value: Y
+      - value: N
   - name: assmnt_prty_id
     description: |-
       TODO(#33372): Fill in column description
@@ -61,3 +65,7 @@ import_blocking_validation_exemptions:
   - validation_type: NONNULL_VALUES
     exemption_reason: |-
       As of 1/14/25, this table is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
+table_relationships:
+  - foreign_table: assess_tst_cat_cd
+    join_logic:
+      - assess_tst.assess_cat_cd = assess_tst_cat_cd.assess_cat_cd

@@ -1,0 +1,215 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_employment_period` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  ofndr_num: STRING
+  ofndr_tst_id: STRING
+  tst_title: STRING
+  tst_dt: DATE
+  tot_score: STRING
+  eval_desc: STRING
+  assess_cat_desc: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    assessments:
+      - StateAssessment:
+          external_id: ofndr_tst_id
+          assessment_class:
+            $enum_mapping:
+              $raw_text: assess_cat_desc
+              $mappings:
+                StateAssessmentClass.RISK:
+                  - "RISK/NEED"
+                StateAssessmentClass.SEX_OFFENSE:
+                  - "SEX OFFENDER"
+                  - "SOTP" # Sex Offender Treatment Plan
+                StateAssessmentClass.EDUCATION:
+                  - "ACADEMIC"
+                StateAssessmentClass.MENTAL_HEALTH:
+                  - "MENTAL HEALTH"
+                StateAssessmentClass.SUBSTANCE_ABUSE:
+                  - "SUBSTANCE ABUSE"
+                StateAssessmentClass.INTERNAL_UNKNOWN:
+                  - "CLASSIFICATIONS -BEH"
+                  - "CLASSIFICATIONS -SEC"
+                  - "SCREENING"
+                  - "TRANSITION"
+                  - "THERAPEUTIC"
+                  - "QUESTIONNAIRE"
+                  - "BOPP GUIDELINES"
+          assessment_type:
+            $enum_mapping:
+              $raw_text: tst_title
+              $mappings:
+                StateAssessmentType.LSIR:
+                  - "LSI-R:SV SCREENING VERSION"
+                StateAssessmentType.INTERNAL_UNKNOWN:
+                  # TODO(#37453) We can probably filter out some of these assessments
+                  - "TO BE DELETED"
+                  - "MIO ASSESSMENT"
+                  - "TREATMENT PLAN"
+                  - "TREATMENT OTHER"
+                  - "CAP QUESTIONAIRE"
+                  - "INITIAL SCREENING"
+                  - "OTHER - SATP NOTE"
+                  - "GROUP PROGRESS NOTE"
+                  - "TREATMENT DISCHARGE"
+                  - "TX PLAN - SATP NOTE"
+                  - "DISCHARGE - SATP NOTE"
+                  - "TREATMENT UPDATE NOTE"
+                  - "TX REVIEW - SATP NOTE"
+                  - "WRNA SURVEY-COMMUNITY"
+                  - "INDIVIDUAL - SATP NOTE"
+                  - "GROUP NOTES - SATP NOTE"
+                  - "TREATMENT PROGRESS NOTE"
+                  - "TREATMENT TRANSFER NOTE"
+                  - "COPY OF CAP QUESTIONAIRE"
+                  - "INDIVIDUAL PROGRESS NOTE"
+                  - "TREATMENT/SUPERVISION NOTE"
+                  - "COPY OF CLINICAL ASSESSMENT"
+                  - "COPY OF TREATMENT DISCHARGE"
+                  - "INTERIM GROUP TREATMENT NOTE"
+                  - "TREATMENT DISCHARGE - DSM IV"
+                  - "COPY OF ADMISSION - SATP NOTE"
+                  - "COPY OF TX REVIEW - SATP NOTE"
+                  - "COPY OF COPY OF CAP QUESTIONAI"
+                  - "COPY OF WRNA INSTITUTION"
+                  - "COPY OF WRNA PRE-RELEASE"
+                  - "COPY OF COPY OF COPY OF COPY O"
+                  - "COPY OF COPY OF COPY OF LS/RNR"
+                  - "COPY OF COPY OF LS/RNR RISK-NE"
+                  - "COPY OF COPY OF WRNA INSTITUTI"
+                  - "COPY OF LS/RNR RISK-NEED-RESPO"
+                  - "ADMISSION - SATP NOTE"
+                  - "LSI-R LVL OF SERVICE INVENTORY"
+                  - "TCUDS-V DRUG SCREEN"
+                  - "WRNA INSTITUTION"
+                  - "WRNA PRE-RELEASE"
+                  - "WRNA PROBATION / PAROLE"
+                  - "TANF ELIGIBILITY SCREENING"
+                  - "FORM 1- GENERAL MATRIX_SCORING"
+                  - "SENTENCING GUIDELINES_BASIC"
+                  - "SENTENCING GUIDELINES_LONG"
+                  - "TRANSITION CHECKLIST"
+                  - "MNSOST-R SEX OFFENDER ASSESSME"
+                  - "AP&P CLINICAL TREATMENT PLAN"
+                  - "COPY OF AP&P CLINICAL TREATMEN"
+                  - "SOTP DELETE"
+                  - "BEHAVIORAL ASSESSMENT"
+                  - "MALE CUSTODY ASSESSMENT"
+                  - "FEMALE CUSTODY ASSESSMENT"
+                  - "MALE CUSTODY RE-ASSESSMENT"
+                  - "FEMALE CUSTODY RE-ASSESSMENT"
+                  - "LS/RNR RISK-NEED-RESPONSIVITY"
+                  - "COPY OF AP&P CLINICAL SA/MH AS"
+                  - "DOC CLINICAL SA/MH ASSESSMENT"
+                  - "CONVERTED LS/RNR RISK-NEED-RES"
+                  - "COPY OF CONVERTED LS/RNR RISK-"
+                  - "COPY OF COPY OF CONVERTED LS/R"
+                  - "SOTP STATIC 99R - ON HOLD"
+                  - "SOTP STATIC 2002R - ON HOLD"
+                  - "AP&P TX DISCHARGE/TRANSFER"
+                  - "SOTP TREATMENT PLAN"
+                  - "SOTP GROUP PROGRESS NOTE"
+                  - "SOTP STABLE 2007 - ON HOLD"
+                  - "SOTP INDIVIDUAL PROGRESS NOTE"
+                  - "MALE CUSTODY ASSESSMENT *"
+                  - "FEMALE CUSTODY ASSESSMENT *"
+                  - "MALE CUSTODY RE-ASSESSMENT *"
+                  - "FEMALE CUSTODY RE-ASSESSMENT *"
+                  - "VASOR"
+                  - "SOTIPS"
+                  - "ADVERSE CHILDHOOD EXPERIENCES"
+                  - "COPY OF ADVERSE CHILDHOOD EXPE"
+                  - "SOTP TC SUPERVISION NOTE"
+                  - "SOTP (TA) TREATABILITY ASSESS"
+                  - "SOTP PRE-TREAMENT ASSESS -HOLD"
+                  - "PRE OH SOTP RISK ASSESS SCORES"
+                  - "TCU - CRIMINAL THINKING SCALES"
+                  - "CLINICAL ASSESSMENT - DSM-IV"
+                  - "COPY OF POST OH SOTP RISK ASSE"
+                  - "TABE READING TEST SCORES"
+                  - "CASAS ASSESSMENT MATH LEVEL"
+                  - "CASAS ASSESSMENT READING LEVEL"
+                  - "POST OH SOTP RISK ASSES SCORES"
+                  - "POST OH SOTP RISK ASSESS SCORE"
+                  - "CASAS ASSESSMENT ESL READING"
+                  - "CASAS ASSESSMENT ESL LISTENING"
+                  - "COPY OF CASAS ASSESSMENT ESL L"
+                  - "COPY OF CASAS ASSESSMENT ESL R"
+                  - "CLINICAL ASSESSMENT"
+                  - "ASAM CRITERIA"
+                  - "COPY OF ASAM CRITERIA"
+                  - "COPY OF ASAM ASSESSMENT"
+                  - "ASAM ASSESSMENT"
+          assessment_date: tst_dt
+          assessment_score: tot_score
+          assessment_level:
+            $enum_mapping:
+              # TODO(#37453) We can probably filter out some of these assessments
+              $raw_text: eval_desc
+              $mappings:
+                StateAssessmentLevel.MINIMUM:
+                  - "MINIMUM (LOW)"
+                  - "MINIMUM (LEVEL 4)"
+                  - "BEGINNING LITERACY: (K - 1ST)"
+                  - "BEGINNING LITERACY (K - 1ST)"
+                  - "LOW BEGINNING (ESL)"
+                StateAssessmentLevel.LOW:
+                  - "LOW"
+                  - "LOW RISK"
+                  - "BEGINNING LITERACY (ESL)"
+                  - "BEGINNING BASIC (2ND - 3RD)"
+                  - "BEGINNING BASIC: (2ND - 3RD)"
+                  - "LOW INTERMEDIATE (4TH - 5TH)"
+                  - "LOW INTERMEDIATE: (4TH - 5TH)"
+                  - "HIGH BEGINNING (ESL)"
+                  - "LOW INTERMEDIATE (ESL)"
+                StateAssessmentLevel.MODERATE:
+                  - "MEDIUM"
+                  - "MODERATE"
+                  - "MODERATE LOW"
+                  - "MEDIUM (MOD)"
+                  - "MIDDLE INTERMEDIATE (6TH - 7TH)"
+                  - "HIGH INTERMEDIATE: (6TH - 8TH)"
+                  - "HIGH INTERMEDIATE (7TH - 8TH)"
+                  - "HIGH INTERMEDIATE (ESL)"
+                  - "MODERATE RISK"
+                  - "MODERATE HIGH"
+                  - "MEDIUM (LEVEL 3)"
+                StateAssessmentLevel.HIGH:
+                  - "HIGH"
+                  - "HIGH RISK"
+                  - "LOW ADULT SECONDARY: (9TH - 10TH)"
+                  - "ADULT SECONDARY (9TH - 12TH)"
+                  - "HIGH ADULT SECONDARY: (11TH - 12TH)"
+                  - "HIGH (LEVEL 2)"
+                  - "`HIGH"
+                StateAssessmentLevel.VERY_HIGH:
+                  - "VERY HIGH"
+                  - "ADVANCED (ESL)"
+                StateAssessmentLevel.MAXIMUM:
+                  - "MAXIMUM"
+                  - "MAXIMUM (LEVEL 1)"
+                  - "MAXIMUM (HIGH)"
+                  - "EXTREME"
+                StateAssessmentLevel.INTERNAL_UNKNOWN:
+                  - "REFERRAL NOT RECOMMENDED"
+                  - ". . ."
+                  - "LEVEL I - GOP"
+                  - "LEVEL II - IOP"
+                  - "LEVEL II - IOP (SPANISH)"
+                  - "ACCEPTED TO SOTP TRACKING LIST"
+                  - "NOT ACCEPTED TO SOTP TRACKING LIST"
+                  - "LEVEL II - IOP (OTHER)"
+                  - "LEVEL III - RSUT"
+                  - "REFERRAL RECOMMENDED"
+                  - "ACE SCORE"
+                  - "INTENSIVE"
+                  - "FULLMER"

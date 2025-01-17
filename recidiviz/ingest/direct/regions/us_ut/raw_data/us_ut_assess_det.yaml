@@ -33,3 +33,15 @@ columns:
     description: |-
       Timestamp of when this record was most recently updated
     field_type: datetime
+table_relationships:
+  - foreign_table: assess_sel
+    join_logic:
+      - assess_det.score_id = assess_sel.score_id
+      - assess_det.assess_itm_cd = assess_sel.assess_itm_cd
+      - assess_det.rsk_need_typ_cd = assess_sel.rsk_need_typ_cd
+      - assess_det.rsk_need_sctn_cd = assess_sel.rsk_need_sctn_cd
+  - foreign_table: assess_cat
+    join_logic:
+      - assess_det.assess_itm_cd = assess_cat.assess_itm_cd
+      - assess_det.rsk_need_typ_cd = assess_cat.rsk_need_typ_cd
+      - assess_det.rsk_need_sctn_cd = assess_cat.rsk_need_sctn_cd

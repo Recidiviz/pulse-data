@@ -27,3 +27,9 @@ columns:
   - name: score_val
     description: |-
       TODO(#33372): Fill in column description
+table_relationships:
+  - foreign_table: assess_cat
+    join_logic:
+      - assess_sel.assess_itm_cd = assess_cat.assess_itm_cd
+      - assess_sel.rsk_need_typ_cd = assess_cat.rsk_need_typ_cd
+      - assess_sel.rsk_need_sctn_cd = assess_cat.rsk_need_sctn_cd
