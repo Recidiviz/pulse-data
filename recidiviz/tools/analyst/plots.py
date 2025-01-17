@@ -50,6 +50,7 @@ RECIDIVIZ_COLORS = [
     "#5F8FD9",
 ]
 
+
 # Plot settings
 def plot_settings(
     ax: Optional[plt.Axes] = None,

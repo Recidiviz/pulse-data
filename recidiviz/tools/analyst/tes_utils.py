@@ -17,7 +17,7 @@
 "Task Eligibility Spans (TES) methods for analysis"
 
 import datetime
-import json
+import importlib
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -115,14 +115,27 @@ def get_task_query(
         )
     )
 
+    tes_fields = """
+        s.* EXCEPT (end_date, start_date, end_reason, task_name, ineligible_criteria, task_eligibility_span_id, reasons, reasons_v2),
+        IF(s.start_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.start_date) AS start_date,
+        IF(COALESCE(s.end_date,'9999-01-01') > '3000-01-01', CURRENT_DATE("US/Eastern"), s.end_date) AS end_date,
+    """
+
+    criteria_fields = [
+        f"""'{c}' NOT IN UNNEST(ineligible_criteria) AS meets_criterion_{c}"""
+        for c in get_criteria_names(task_name, state_code)
+    ]
+    criteria_fields_query_fragment = ",\n".join(criteria_fields) + ",\n"
+
     # Define the SQL query
     # Join demographics if user calls any of them
     if race or gender or age:
         current_query = f"""
         SELECT
-            s.* EXCEPT (end_date, start_date, end_reason, task_name, task_eligibility_span_id),
+            {tes_fields}
+            {criteria_fields_query_fragment}
             d.prioritized_race_or_ethnicity AS race,
-            d.birthdate AS birthdate,
+            IF(d.birthdate < '1900-01-01', NULL, d.birthdate) AS birthdate,
             d.gender AS gender,
             IF(
                 --If the date is 1000-01-01, then set it to 1900-01-01:
@@ -142,9 +155,8 @@ def get_task_query(
     else:
         current_query = f"""
         SELECT
-            s.* EXCEPT (end_date, start_date, end_reason, task_name, task_eligibility_span_id),
-            IF(s.start_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.start_date) AS start_date,
-            IF(s.end_date > '3000-01-01', CURRENT_DATE("US/Eastern"), s.end_date) AS end_date
+            {tes_fields}
+            {criteria_fields_query_fragment}
         FROM `{project_id}.{tes_address.to_str()}` s
         ORDER BY 1,2,3
         """
@@ -157,27 +169,30 @@ def get_task_query(
     )
 
     # Convert 'start_date' and 'end_date' columns to datetime
-    df["start_date"] = pd.to_datetime(df["start_date"])
-    df["end_date"] = pd.to_datetime(df["end_date"])
+    df["start_date"] = pd.to_datetime(df["start_date"], errors="coerce")
+    df["end_date"] = pd.to_datetime(df["end_date"], errors="coerce")
 
     return df
 
 
-def get_criteria_names_from_tes_reasons(df: pd.DataFrame) -> List[str]:
-    """
-    Takes a TES Task Query data frame and returns a list of criteria names.
+def get_criteria_names(
+    task_name: str,
+    state_code: str,
+) -> List[str]:
+    tes_module = importlib.import_module(
+        f"recidiviz.task_eligibility.eligibility_spans.{state_code.lower()}.{task_name.lower()}"
+    )
+    criteria_name_list = [
+        view_builder.criteria_name
+        for view_builder in tes_module.VIEW_BUILDER.criteria_spans_view_builders
+    ]
 
-    Args:
-        df (pd.DataFrame): TES Task Query data frame
-    """
-
-    # Retrieve all criteria_names from reason blob
-    first_reason_blob = json.loads(df.reasons.iloc[0])  # we only need the first one
-
-    return [item["criteria_name"] for item in first_reason_blob]
+    return criteria_name_list
 
 
 def gen_tes_spans_by_removing_each_criteria_once(
+    task_name: str,
+    state_code: str,
     df_task_query: pd.DataFrame,
 ) -> pd.DataFrame:
     """
@@ -197,25 +212,21 @@ def gen_tes_spans_by_removing_each_criteria_once(
     """
 
     # Retrieve all criteria_names from reason blob
-    criteria_names = get_criteria_names_from_tes_reasons(df_task_query)
+    criteria_names = get_criteria_names(task_name, state_code)
 
-    def check_criteria_removal(
-        ineligible_criteria: List[str], criteria: str, is_eligible: int
-    ) -> bool:
-        if is_eligible:
-            return True
-        # Check if it is the only criteria in ineligible_criteria. We could check more than one criteria at once
-        return bool(np.all(np.isin(ineligible_criteria, criteria)))
+    df_task_query["num_eligible_criteria"] = (
+        df_task_query[[f"meets_criterion_{criterion}" for criterion in criteria_names]]
+        .astype(int)
+        .sum(axis=1)
+    )
 
-    vectorized_check = np.vectorize(check_criteria_removal)
-
-    for criteria in criteria_names:
-        # Use vectorized operation instead of loop
-        df_task_query["remove_" + criteria] = vectorized_check(
-            df_task_query["ineligible_criteria"].values,
-            criteria,
-            df_task_query["is_eligible"].values,
-        )
+    for criterion in criteria_names:
+        # Check if person is either fully eligible, or this is the only criterion for which
+        # they are ineligible.
+        df_task_query[f"remove_{criterion}"] = (
+            (df_task_query["num_eligible_criteria"] == len(criteria_names) - 1)
+            & (~df_task_query[f"meets_criterion_{criterion}"])
+        ) | (df_task_query["is_eligible"])
 
     # Relevant columns for the eligibility graph
     relevant_columns = [
@@ -226,7 +237,7 @@ def gen_tes_spans_by_removing_each_criteria_once(
         "is_eligible",
     ] + [col for col in df_task_query.columns if col.startswith("remove_")]
 
-    return df_task_query[relevant_columns]
+    return df_task_query[relevant_columns].copy()
 
 
 def sort_criteria_least_to_most_impactful_cumulative_impact(
@@ -240,7 +251,7 @@ def sort_criteria_least_to_most_impactful_cumulative_impact(
     step
 
     Args:
-        crtieria_names (List): list returned by get_criteria_names_from_tes_reasons
+        crtieria_names (List): list returned by get_criteria_names
         df_task_query_copy (DataFrame): DataFrame that indicates eligible population and
             inelegible_criteria
     """
@@ -249,17 +260,9 @@ def sort_criteria_least_to_most_impactful_cumulative_impact(
     while criteria_names:
         criteria_impact = {}
         for criteria in criteria_names:
-            # Create a column that indicates who is elegible considering only x criteria
-            df_task_query_copy[f"eligible_considering_{criteria}"] = np.where(
-                df_task_query_copy["ineligible_criteria"].apply(
-                    lambda x, c=criteria: c not in x
-                ),
-                1,
-                0,
-            )
             # Elegible population considering x criteria minus elegible ppulation considering all criterion. Impact
             criteria_impact[criteria] = (
-                df_task_query_copy[f"eligible_considering_{criteria}"].sum()
+                df_task_query_copy[f"meets_criterion_{criteria}"].sum()
                 - df_task_query_copy["is_eligible"].sum()
             )
 
@@ -277,7 +280,7 @@ def sort_criteria_least_to_most_impactful_cumulative_impact(
 
         # Filter the dataframe
         df_task_query_copy = df_task_query_copy[
-            df_task_query_copy[f"eligible_considering_{least_impactful_crtieria}"] == 1
+            df_task_query_copy[f"meets_criterion_{least_impactful_crtieria}"]
         ]
 
         # Check if df_set is empty to avoid further processing
@@ -287,6 +290,8 @@ def sort_criteria_least_to_most_impactful_cumulative_impact(
 
 
 def gen_tes_spans_by_adding_each_criteria_one_by_one(
+    task_name: str,
+    state_code: str,
     df_task_query: pd.DataFrame,
 ) -> pd.DataFrame:
     """
@@ -304,7 +309,7 @@ def gen_tes_spans_by_adding_each_criteria_one_by_one(
         df_task_query (pd.DataFrame): TES Task Query data frame
     """
     # Retrieve all criteria_names from reason blob
-    criteria_names = get_criteria_names_from_tes_reasons(df_task_query)
+    criteria_names = get_criteria_names(task_name, state_code)
     # Sort criteria_names from least impactful to most impactful
     final_sorted_lst = sort_criteria_least_to_most_impactful_cumulative_impact(
         criteria_names, df_task_query
@@ -312,11 +317,6 @@ def gen_tes_spans_by_adding_each_criteria_one_by_one(
 
     # Add criteria one by one and remove folks that become ineligible after each added criteria
     df_task_query["everyone_is_eligible"] = 1
-
-    def check_criteria(ineligible_criteria: List[str], criteria: str) -> bool:
-        return criteria not in ineligible_criteria
-
-    vectorized_check = np.vectorize(check_criteria)
 
     for i, criteria in enumerate(final_sorted_lst):
         # If first criteria, start assuming everyone is eligible
@@ -328,8 +328,9 @@ def gen_tes_spans_by_adding_each_criteria_one_by_one(
                 "add_" + final_sorted_lst[i - 1]
             ]
 
-        # Use vectorized operation to create mask. Multiply eligible population left by the previous criteria by the mask
-        mask = vectorized_check(df_task_query["ineligible_criteria"].values, criteria)
+        mask = df_task_query[f"meets_criterion_{criteria}"].astype(int)
+
+        # Multiply eligible population left by the previous criteria by the mask
         df_task_query["add_" + criteria] *= mask
 
     # Relevant columns for the eligibility graph
@@ -341,7 +342,7 @@ def gen_tes_spans_by_adding_each_criteria_one_by_one(
         "everyone_is_eligible",
     ] + [col for col in df_task_query.columns if col.startswith("add_")]
 
-    return df_task_query[relevant_columns]
+    return df_task_query[relevant_columns].copy()
 
 
 def count_people_per_month(
@@ -510,7 +511,9 @@ def count_tes_spans_per_month_adding_each_criteria_one_by_one(
                 )
                 continue
             # Generate tes spans for each demographic group
-            df_set = gen_tes_spans_by_adding_each_criteria_one_by_one(df_set)
+            df_set = gen_tes_spans_by_adding_each_criteria_one_by_one(
+                task_name, state_code, df_set
+            )
             agg_df = count_people_per_month(df_set)
             final_dfs_dict[demographic_name] = agg_df
 
@@ -520,7 +523,9 @@ def count_tes_spans_per_month_adding_each_criteria_one_by_one(
     # Pull task query data to PD
     df = get_task_query(task_name, state_code, project_id)
 
-    result_df = gen_tes_spans_by_adding_each_criteria_one_by_one(df)
+    result_df = gen_tes_spans_by_adding_each_criteria_one_by_one(
+        task_name, state_code, df
+    )
 
     # Group by month
     agg_df = count_people_per_month(result_df)
@@ -574,14 +579,11 @@ def count_tes_spans_per_month_removing_each_criteria_once(
                 print(f"Warning: No data to process for {demographics_name}")
                 continue
             # Remove criteria one by one in the original dataframe
-            all_population_df = gen_tes_spans_by_removing_each_criteria_once(df_set)
+            all_population_df = gen_tes_spans_by_removing_each_criteria_once(
+                task_name, state_code, df_set
+            )
             # Group by month
             agg_df = count_people_per_month(all_population_df)
-            # substract the number of eligible folks to each column
-            for col in range(1, len(agg_df.columns)):
-                agg_df[agg_df.columns[col]] = (
-                    agg_df[agg_df.columns[col]] - agg_df["is_eligible"]
-                )
 
             agg_df.drop(columns="is_eligible", inplace=True)
             final_dict[demographics_name] = agg_df
@@ -589,16 +591,12 @@ def count_tes_spans_per_month_removing_each_criteria_once(
 
     # If no demographics are provided, return only one dataframe for all population
     # Remove criteria one by one in the original dataframe
-    all_population_df = gen_tes_spans_by_removing_each_criteria_once(all_population_df)
+    all_population_df = gen_tes_spans_by_removing_each_criteria_once(
+        task_name, state_code, all_population_df
+    )
 
     # Group by month
     agg_df = count_people_per_month(all_population_df)
-
-    # substract the number of eligible folks to each column
-    for col in range(1, len(agg_df.columns)):
-        agg_df[agg_df.columns[col]] = (
-            agg_df[agg_df.columns[col]] - agg_df["is_eligible"]
-        )
 
     agg_df.drop(columns="is_eligible", inplace=True)
     return agg_df
