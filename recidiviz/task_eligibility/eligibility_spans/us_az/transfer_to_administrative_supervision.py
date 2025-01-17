@@ -25,6 +25,7 @@ from recidiviz.task_eligibility.completion_events.general import (
 from recidiviz.task_eligibility.criteria.general import (
     no_supervision_violation_within_15_months,
     on_supervision_at_least_15_months,
+    supervision_level_is_not_limited,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_az import (
     mental_health_score_3_or_below,
@@ -46,6 +47,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
+        supervision_level_is_not_limited.VIEW_BUILDER,
         # 1.6 Mental Health Score of 3 or below.
         mental_health_score_3_or_below.VIEW_BUILDER,
         # 1.8 Offenders with ineligible offenses are only eligible if they've been 15 months violation free
