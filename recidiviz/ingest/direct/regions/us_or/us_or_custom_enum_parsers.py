@@ -128,7 +128,8 @@ def parse_sentence_status(raw_text: str) -> Optional[StateSentenceStatus]:
         return StateSentenceStatus.VACATED
 
     if (
-        term_code in ("COMP", "EXEC", "DIED", "DISC", "DSCH", "EXPI", "POST", "TERM")
+        term_code
+        in ("COMP", "EXEC", "DIED", "DISC", "DSCH", "EXPI", "POST", "TERM", "CRTR")
         or term_code == "NONE"
         and term_date != "NONE"
     ):

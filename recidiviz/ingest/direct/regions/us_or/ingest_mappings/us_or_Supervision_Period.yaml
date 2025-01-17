@@ -156,6 +156,7 @@ output:
                   - PRCD # Conditional Discharge-Status Change Only
                   - XERD # Admitted in Error and Discharged
                   - EARL # Early Termination of Prob-order req.
+                  - CRTR # REVOKE/TERM MISD PROB SUPV - ORDER REQ'D - OR USES as a TERMINATION
                 StateSupervisionPeriodTerminationReason.EXPIRATION:
                   - EXPI # Sentence Expiration - See longer definition
                   - POST # SGL Prison/LC Sentence Expired
@@ -189,7 +190,6 @@ output:
                   - PARO # Parole - Parole Order Required
                   - CCPR # Concurrent Probation (only 4 instances)
                   - APPE # Appeal - Appeal won - Court Order Required
-                  - CRTR # REVOKE/TERM MISD PROB SUPV - ORDER REQ'D -
                   - ABEX # ABSC EXPI/DISM BY COURT or LSA -DOC REQ
                   - LEAV # Temporary or Transitional Leave
                   - INPR # Inactive Probation
