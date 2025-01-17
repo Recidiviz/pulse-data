@@ -124,6 +124,13 @@ class PerViewUpdateStats:
         return materialization_result.total_bytes_billed
 
     @property
+    def job_id(self) -> str | None:
+        materialization_result = self.create_or_update_result.materialization_result
+        if not materialization_result:
+            return None
+        return materialization_result.job_id
+
+    @property
     def graph_depth(self) -> int:
         return self.view_processing_metadata.graph_depth
 
@@ -187,6 +194,7 @@ class PerViewUpdateStats:
             "slot_millis": self.slot_millis,
             "total_bytes_processed": self.total_bytes_processed,
             "total_bytes_billed": self.total_bytes_billed,
+            "job_id": self.job_id,
             "graph_depth": self.graph_depth,
             "num_ancestor_views": self.num_ancestor_views,
             "parent_addresses": sorted(a.to_str() for a in self.parent_addresses),

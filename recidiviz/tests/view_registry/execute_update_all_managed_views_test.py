@@ -107,6 +107,7 @@ class TestPerViewUpdateStatsPersister(BigQueryEmulatorTestCase):
         mock_query_job.slot_millis = 123
         mock_query_job.total_bytes_processed = 4500
         mock_query_job.total_bytes_billed = 4000
+        mock_query_job.job_id = "job_123"
 
         persister = PerViewUpdateStatsPersister(bq_client=self.bq_client)
 

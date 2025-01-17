@@ -50,14 +50,24 @@ schema:
     type: INTEGER
     mode: NULLABLE
     description: >-
-      If `was_materialized` is True, returns the number of bytes processed running the materialization query. See docs 
-      for more information on this value: https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics2.FIELDS.total_bytes_processed.
+      If `was_materialized` is True, returns the number of bytes processed running the materialization query. Note that for queries against tables
+      with row-level permissions, this value will be null. See docs for more information on this value:
+      https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics2.FIELDS.total_bytes_processed.
   - name: total_bytes_billed
     type: INTEGER
     mode: NULLABLE
     description: >-
-      If `was_materialized` is True, returns the number of bytes billed running the materialization query. See docs 
-      for more information on this value: https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics2.FIELDS.total_bytes_billed.
+      If `was_materialized` is True, returns the number of bytes billed running the materialization query. Note that for queries against tables
+      with row-level permissions, this value will be null. See docs for more information on this value:
+      https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobStatistics2.FIELDS.total_bytes_billed.
+  - name: job_id
+    type: STRING
+    mode: NULLABLE
+    description: >-
+      If `was_materialized` is True, returns the job_id of the materialization query. This can be used to join against the
+      `protopayload_auditlog.servicedata_v1_bigquery.jobCompletedEvent.job.jobName.jobId` field in the `log_sinks.cloudaudit_googleapis_com_data_access_*`
+      table to get `protopayload_auditlog.servicedata_v1_bigquery.jobCompletedEvent.job.jobStatistics.totalProcessedBytes` and
+      `protopayload_auditlog.servicedata_v1_bigquery.jobCompletedEvent.job.jobStatistics.totalBilledBytes` for queries against tables with row-level permissions.
 
   # Generic complexity
   - name: graph_depth

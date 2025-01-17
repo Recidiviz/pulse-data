@@ -214,6 +214,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
             "slot_millis": None,
             "total_bytes_processed": None,
             "total_bytes_billed": None,
+            "job_id": None,
             "graph_depth": 0,
             "num_ancestor_views": 0,
             "parent_addresses": ["some_dataset.table"],
@@ -236,6 +237,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
         mock_query_job.slot_millis = 123
         mock_query_job.total_bytes_processed = 4500
         mock_query_job.total_bytes_billed = 4000
+        mock_query_job.job_id = "job_123"
 
         stats = PerViewUpdateStats(
             success_datetime=datetime.datetime(2024, 1, 1, tzinfo=pytz.UTC),
@@ -286,6 +288,7 @@ class TestPerViewUpdateStats(unittest.TestCase):
             "slot_millis": 123,
             "total_bytes_processed": 4500,
             "total_bytes_billed": 4000,
+            "job_id": "job_123",
             "graph_depth": 2,
             "num_ancestor_views": 2,
             "parent_addresses": ["some_dataset.raw_latest_view"],
@@ -387,6 +390,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
             mock_query_job.slot_millis = view_index * 20
             mock_query_job.total_bytes_processed = view_index * 2000
             mock_query_job.total_bytes_billed = view_index * 1000
+            mock_query_job.job_id = f"job_{view_index}"
 
             materialization_result = None
             if builder.materialized_address:
@@ -446,6 +450,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "slot_millis": 0,
                 "total_bytes_billed": 0,
                 "total_bytes_processed": 0,
+                "job_id": "job_0",
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
@@ -468,6 +473,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "slot_millis": None,
                 "total_bytes_billed": None,
                 "total_bytes_processed": None,
+                "job_id": None,
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
@@ -493,6 +499,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "slot_millis": 40,
                 "total_bytes_billed": 2000,
                 "total_bytes_processed": 4000,
+                "job_id": "job_2",
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
@@ -516,6 +523,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "slot_millis": 60,
                 "total_bytes_billed": 3000,
                 "total_bytes_processed": 6000,
+                "job_id": "job_3",
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
@@ -539,6 +547,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "slot_millis": 80,
                 "total_bytes_billed": 4000,
                 "total_bytes_processed": 8000,
+                "job_id": "job_4",
             },
             {
                 "success_timestamp": "2024-01-01T00:00:00+00:00",
@@ -561,6 +570,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                 "slot_millis": 100,
                 "total_bytes_billed": 5000,
                 "total_bytes_processed": 10000,
+                "job_id": "job_5",
             },
         ]
 

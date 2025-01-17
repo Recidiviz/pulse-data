@@ -204,6 +204,10 @@ class BigQueryViewMaterializationResult:
     def total_bytes_billed(self) -> int | None:
         return self.completed_materialization_job.total_bytes_billed
 
+    @property
+    def job_id(self) -> str:
+        return assert_type(self.completed_materialization_job.job_id, str)
+
 
 class BigQueryClient:
     """Interface for a wrapper around the bigquery.Client with convenience functions for querying, creating, copying and
