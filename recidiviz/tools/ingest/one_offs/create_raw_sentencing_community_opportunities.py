@@ -18,13 +18,12 @@
 Local script for taking individual CSV files for sentencing community opportunities by district and combining them into a single CSV file with a new delimiter.
 
 Example Usage:
-    python -m recidiviz.tools.ingest.one_offs.create_raw_sentencing_community_opportunities --input_file_names district-1.csv district-2.csv --output_file_name output.csv
+    python -m recidiviz.tools.ingest.one_offs.create_raw_sentencing_community_opportunities --input_file_names district-1.csv district-2.csv --output_file_name output.csv --exclude_capacity_columns
 """
 
 import argparse
 import csv
 import logging
-import re
 import sys
 from datetime import datetime
 from typing import List
@@ -50,6 +49,7 @@ COLUMN_NAME_MAPPING = {
     "Counties Served": "countiesServed",
     "Status": "status",
     "Generic Description (do not edit please!)": "genericDescription",
+    "District (do not edit please!)": "District",
 }
 
 ORIGINAL_DELIMITER = ","
@@ -58,16 +58,15 @@ NEW_LINE_DELIMITER = "‡"
 
 
 def create_raw_sentencing_community_opportunities(
-    input_file_paths: List[str], output_file_path: str
+    input_file_paths: List[str],
+    output_file_path: str,
+    exclude_capacity_columns: bool = False,
 ) -> None:
     """Creates a new CSV file with the specified delimiter for the provided files."""
 
     date = datetime.today().strftime("%Y-%m-%d")
 
     for idx, input_file_path in enumerate(input_file_paths):
-        # Infer the district name from the file name
-        district = "D" + re.findall(r"\d+", input_file_path)[0]
-
         # Read the entire content of the input file
         with open(
             input_file_path, mode="r", newline="", encoding="utf-8"
@@ -91,21 +90,30 @@ def create_raw_sentencing_community_opportunities(
                 ]
 
                 # Manually add these columns since they won't be present in the input file
-                mapped_columns.extend(
-                    [
-                        "District",
-                        "CapacityTotal",
-                        "CapacityAvailable",
-                        "lastUpdatedDate",
-                    ]
-                )
+                extra_columns = [
+                    "lastUpdatedDate",
+                ]
+                if not exclude_capacity_columns:
+                    extra_columns.extend(
+                        [
+                            "CapacityTotal",
+                            "CapacityAvailable",
+                        ]
+                    )
+
+                mapped_columns.extend(extra_columns)
+
                 modified_rows.append(mapped_columns)
 
             for row in reader:
                 cleaned_row = [field.replace("\n", ",") for field in row]
 
-                # Add the district, capacity total, capacity available, and last updated date
-                cleaned_row.extend([district, "", "", date])
+                # Add the district and last updated date, and capacity columns if they shouldn't be excluded
+                extra_values = [date]
+                if not exclude_capacity_columns:
+                    extra_values.extend(["", ""])
+
+                cleaned_row.extend(extra_values)
                 modified_rows.append(cleaned_row)
 
         # Write the modified content to the output file
@@ -137,6 +145,13 @@ def parse_arguments() -> argparse.Namespace:
         help="The filepath of the output CSV file.",
     )
 
+    parser.add_argument(
+        "--exclude_capacity_columns",
+        required=False,
+        action=argparse.BooleanOptionalAction,
+        help="Whether to include capacity columns.",
+    )
+
     return parser.parse_args()
 
 
@@ -145,6 +160,5 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     create_raw_sentencing_community_opportunities(
-        args.input_file_paths,
-        args.output_file_path,
+        args.input_file_paths, args.output_file_path, args.exclude_capacity_columns
     )

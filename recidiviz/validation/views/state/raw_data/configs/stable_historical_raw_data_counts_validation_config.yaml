@@ -68,6 +68,12 @@ PERMANENT:
       exclusion_reason:
         Small reference file that is updated infrequently -- small changes in file size
         cause large % changes. This file is also not currently used in a view.
+  US_ND:
+    - file_tag: RECIDIVIZ_REFERENCE_community_opportunities
+      exclusion_reason:
+        Small reference file that is updated infrequently -- small changes in file size
+        cause large % changes. This file is also maintained manually, so changes are
+        always monitored.
 DATE_RANGE:
   US_MO:
     - file_tag: LBAKRDTA_TAK237
