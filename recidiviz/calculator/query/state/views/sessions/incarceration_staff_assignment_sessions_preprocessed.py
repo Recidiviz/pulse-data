@@ -40,6 +40,9 @@ INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
     UNION ALL
     SELECT *
     FROM `{project_id}.sessions.us_az_incarceration_staff_assignment_sessions_preprocessed` 
+    UNION ALL
+    SELECT *
+    FROM `{project_id}.sessions.us_ix_incarceration_staff_assignment_sessions_preprocessed` 
 """
 
 INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
