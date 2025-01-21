@@ -21,3 +21,24 @@ TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
 
 # Maximum length for any column description on any column.
 BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH = 1024
+
+# MOST external tables have the _FILE_NAME psudeocolumn available for query, see:
+# https://cloud.google.com/bigquery/docs/query-cloud-storage-data#query_the_file_name_pseudo-column
+EXTERNAL_DATA_FILE_NAME_PSEUDOCOLUMN = "_FILE_NAME"
+
+# However, some external tables do not (e.g. google sheets) do not have the _FILE_NAME
+# pseudocolumn.
+EXTERNAL_DATA_SOURCE_FORMATS_WITHOUT_FILE_NAME_PSUEDOCOLUMN = {
+    "GOOGLE_SHEETS",
+}
+
+# if time partitioning does not specify a field name, it means it uses ingest-time
+# partitioning; in these cases, there are additional psuedocolumns that are available.
+# see https://cloud.google.com/bigquery/docs/querying-partitioned-tables#query_an_ingestion-time_partitioned_table
+# for more info
+# _PARTITIONTIME is available for all time partitioning types
+PARTITION_TIME_PSEUDOCOLUMN = "_PARTITIONTIME"
+# _PARTITIONDATE is ONLY available for DAY partitioned tables
+PARTITION_DATE_PSEUDOCOLUMN = "_PARTITIONDATE"
+
+REQUIRE_PARTITION_FILTER_FIELD_NAME = "require_partition_filter"

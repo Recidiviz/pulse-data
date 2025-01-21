@@ -21,11 +21,24 @@ from typing import Any
 
 import attr
 from google.cloud import bigquery
-from google.cloud.bigquery import ExternalConfig, SchemaField, Table
+from google.cloud.bigquery import (
+    ExternalConfig,
+    SchemaField,
+    Table,
+    TimePartitioning,
+    TimePartitioningType,
+)
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+from recidiviz.big_query.constants import (
+    EXTERNAL_DATA_FILE_NAME_PSEUDOCOLUMN,
+    EXTERNAL_DATA_SOURCE_FORMATS_WITHOUT_FILE_NAME_PSUEDOCOLUMN,
+    PARTITION_DATE_PSEUDOCOLUMN,
+    PARTITION_TIME_PSEUDOCOLUMN,
+    REQUIRE_PARTITION_FILTER_FIELD_NAME,
+    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+)
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -40,9 +53,6 @@ DEFAULT_SOURCE_TABLE_DESCRIPTION = (
 )
 
 
-EXTERNAL_DATA_FILE_NAME_PSEUDOCOLUMN = "_FILE_NAME"
-
-
 @attr.s(auto_attribs=True)
 class SourceTableConfig:
     """Object representing a BigQuery table"""
@@ -51,10 +61,36 @@ class SourceTableConfig:
     description: str
     schema_fields: list[SchemaField]
     clustering_fields: list[str] | None = attr.ib(factory=list)
+    time_partitioning: TimePartitioning | None = attr.ib(default=None)
+    require_partition_filter: bool | None = attr.ib(default=None)
     external_data_configuration: ExternalConfig | None = attr.ib(default=None)
     yaml_definition_path: str | None = attr.ib(default=None)
     deployed_projects: list[str] = attr.ib(factory=list)
     is_sandbox_table: bool = attr.ib(default=False)
+
+    def __attrs_post_init__(self) -> None:
+        # we use .to_api_repr().get() here as doing time_partitioning.require_partition_filter
+        # raises a deprecation warning; however, it can be set from `from_api_repr` w/o
+        # the same warning so we still need to check it
+        if (
+            self.time_partitioning is not None
+            and self.time_partitioning.to_api_repr().get(
+                REQUIRE_PARTITION_FILTER_FIELD_NAME
+            )
+            is not None
+        ):
+            raise ValueError(
+                "Setting the require_partition_filter property on TimePartitioning is "
+                "deprecated. Please follow the instructions in go/source-table-time-partitioning "
+                "to move this property to the table-level"
+            )
+
+        if self.time_partitioning is not None and self.require_partition_filter is None:
+            raise ValueError(
+                "require_partition_filter must be set if time_partitioning is set. If "
+                "this did not happen automatically, please see go/source-table-time-partitioning "
+                "for context on how to configure this."
+            )
 
     def has_column(self, column: str) -> bool:
         return any(c.name == column for c in self.schema_fields + self.pseudocolumns)
@@ -70,28 +106,46 @@ class SourceTableConfig:
         These are columns that will not be returned by a SELECT * query on this table,
         but can be explicitly queried.
         """
-        if not self.external_data_configuration:
-            return []
+        psuedocolumns = []
 
-        no_file_name_column_formats = {
-            # Google Sheets backed tables do not have the _FILE_NAME pseudocolumn
-            "GOOGLE_SHEETS",
-        }
-        if (
-            self.external_data_configuration.source_format
-            in no_file_name_column_formats
-        ):
-            return []
+        # if time partitioning does not specify a field name, it means it uses ingest-time
+        # partitioning; in these cases, there are additional psuedocolumns that are available.
+        if self.time_partitioning and self.time_partitioning.field is None:
+            if self.time_partitioning.type_ == TimePartitioningType.DAY:
+                # if it uses day-based partitioning, there are two psuedocolumns
+                psuedocolumns.append(
+                    SchemaField(
+                        name=PARTITION_DATE_PSEUDOCOLUMN,
+                        field_type=bigquery.enums.SqlTypeNames.DATE.value,
+                        mode="REQUIRED",
+                    )
+                )
 
-        return [
-            # Most external tables have the _FILE_NAME column available for query, see:
-            # https://cloud.google.com/bigquery/docs/query-cloud-storage-data#query_the_file_name_pseudo-column
-            SchemaField(
-                name=EXTERNAL_DATA_FILE_NAME_PSEUDOCOLUMN,
-                field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,
-                mode="REQUIRED",
+            psuedocolumns.append(
+                SchemaField(
+                    name=PARTITION_TIME_PSEUDOCOLUMN,
+                    field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,
+                    mode="REQUIRED",
+                )
             )
-        ]
+
+        # MOST external tables have the _FILE_NAME column available for query, see:
+        # https://cloud.google.com/bigquery/docs/query-cloud-storage-data#query_the_file_name_pseudo-column;
+        # however, some external tables do not (such as google sheets)
+        if (
+            self.external_data_configuration
+            and self.external_data_configuration.source_format
+            not in EXTERNAL_DATA_SOURCE_FORMATS_WITHOUT_FILE_NAME_PSUEDOCOLUMN
+        ):
+            psuedocolumns.append(
+                SchemaField(
+                    name=EXTERNAL_DATA_FILE_NAME_PSEUDOCOLUMN,
+                    field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,
+                    mode="REQUIRED",
+                )
+            )
+
+        return psuedocolumns
 
     def as_sandbox_table(self, sandbox_dataset_prefix: str) -> "SourceTableConfig":
         if self.is_sandbox_table:
@@ -110,7 +164,8 @@ class SourceTableConfig:
         )
 
     def to_dict(self) -> dict[str, Any]:
-        representation = {
+        """Provides a serializable representation of a SourceTableConfig object."""
+        representation: dict[str, Any] = {
             "address": {
                 "dataset_id": self.address.dataset_id,
                 "table_id": self.address.table_id,
@@ -133,6 +188,12 @@ class SourceTableConfig:
                 "external_data_configuration"
             ] = self.external_data_configuration.to_api_repr()
 
+        if self.time_partitioning:
+            representation["time_partitioning"] = self.time_partitioning.to_api_repr()
+
+        if self.require_partition_filter is not None:
+            representation["require_partition_filter"] = self.require_partition_filter
+
         return representation
 
     @classmethod
@@ -144,6 +205,12 @@ class SourceTableConfig:
             "external_data_configuration", dict
         ):
             external_data_configuration = ExternalConfig.from_api_repr(external_config)
+
+        time_partitioning = None
+        if time_partitioning_dict := yaml_definition.pop_optional(
+            "time_partitioning", dict
+        ):
+            time_partitioning = TimePartitioning.from_api_repr(time_partitioning_dict)
 
         return cls(
             address=BigQueryAddress(**yaml_definition.pop("address", dict)),
@@ -159,6 +226,10 @@ class SourceTableConfig:
                 "deployed_projects", str
             )
             or [],
+            time_partitioning=time_partitioning,
+            require_partition_filter=yaml_definition.pop_optional(
+                "require_partition_filter", bool
+            ),
         )
 
     @classmethod
@@ -174,6 +245,8 @@ class SourceTableConfig:
             schema_fields=schema,
             clustering_fields=table.clustering_fields,
             external_data_configuration=table.external_data_configuration,
+            time_partitioning=table.time_partitioning,
+            require_partition_filter=table.require_partition_filter,
         )
 
 

@@ -43,6 +43,7 @@ class SourceTableFailedToUpdateError(ValueError):
 class SourceTableDryRunResult(enum.StrEnum):
     CREATE_TABLE = "create_table"
     MISMATCH_CLUSTERING_FIELDS = "mismatch_clustering_fields"
+    MISMATCH_PARTITIONING_FIELDS = "mismatch_partitioning_fields"
     NO_CHANGES = "no_changes"
     UPDATE_SCHEMA_WITH_CHANGES = "update_schema_with_changes"
     UPDATE_SCHEMA_MODE_CHANGES = "update_schema_mode_changes"
@@ -61,6 +62,28 @@ def _validate_clustering_fields_match(
         return True
 
     return current_table.clustering_fields == source_table_config.clustering_fields
+
+
+def _validate_partitioning_fields_match(
+    current_table: bigquery.Table, source_table_config: SourceTableConfig
+) -> bool:
+    if (
+        not current_table.time_partitioning
+        and not source_table_config.time_partitioning
+        and current_table.require_partition_filter is not None
+        and source_table_config.require_partition_filter is not None
+    ):
+        return True
+
+    # Allows the implicit None == False since they have the same behavior
+    same_require_partition_filter = bool(
+        current_table.require_partition_filter
+    ) == bool(source_table_config.require_partition_filter)
+
+    return (
+        same_require_partition_filter
+        and current_table.time_partitioning == source_table_config.time_partitioning
+    )
 
 
 def validate_table_schema_fields(
@@ -101,6 +124,14 @@ class SourceTableUpdateManager:
             # Compare schema derived from metric class to existing dataflow views and
             # update if necessary.
             current_table = self.client.get_table(source_table_config.address)
+
+            if not _validate_partitioning_fields_match(
+                current_table, source_table_config
+            ):
+                return (
+                    source_table_config.address,
+                    SourceTableDryRunResult.MISMATCH_PARTITIONING_FIELDS,
+                )
 
             if not _validate_clustering_fields_match(
                 current_table, source_table_config
@@ -219,6 +250,16 @@ class SourceTableUpdateManager:
                 # update if necessary.
                 current_table = self.client.get_table(source_table_config.address)
                 try:
+                    if not _validate_partitioning_fields_match(
+                        current_table, source_table_config
+                    ):
+                        raise ValueError(
+                            f"Existing table: {source_table_config.address} "
+                            f"has time partitioning config [{current_table.time_partitioning}] "
+                            f" and require_partition_filter [{current_table.require_partition_filter}] that does "
+                            f"not match [{source_table_config.time_partitioning}] and [{source_table_config.require_partition_filter}]"
+                        )
+
                     if not _validate_clustering_fields_match(
                         current_table, source_table_config
                     ):
@@ -248,12 +289,17 @@ class SourceTableUpdateManager:
                     self.client.create_table_with_schema(
                         address=source_table_config.address,
                         schema_fields=source_table_config.schema_fields,
+                        clustering_fields=source_table_config.clustering_fields,
+                        time_partitioning=source_table_config.time_partitioning,
+                        require_partition_filter=source_table_config.require_partition_filter,
                     )
             else:
                 self.client.create_table_with_schema(
                     address=source_table_config.address,
                     schema_fields=source_table_config.schema_fields,
                     clustering_fields=source_table_config.clustering_fields,
+                    time_partitioning=source_table_config.time_partitioning,
+                    require_partition_filter=source_table_config.require_partition_filter,
                 )
         except Exception as e:
             logging.exception(

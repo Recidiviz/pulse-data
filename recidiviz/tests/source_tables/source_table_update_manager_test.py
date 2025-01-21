@@ -219,6 +219,77 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
             ),
         )
 
+    # TODO(#37283) re-add when emulator supports partitioning
+    def _test_partitioning_fields(self) -> None:
+        """test for update manager's handling of time partitioning"""
+        table_address = BigQueryAddress(
+            dataset_id="test_dataset", table_id="test_table"
+        )
+
+        table_config = SourceTableConfig(
+            address=table_address,
+            schema_fields=[
+                bigquery.SchemaField("name", "STRING"),
+                bigquery.SchemaField("dt", "DATETIME"),
+            ],
+            description="partitioned table",
+            time_partitioning=bigquery.TimePartitioning(field="dt"),
+        )
+        with_partitioning = SourceTableCollection(
+            dataset_id="test_dataset",
+            source_tables_by_address={table_address: table_config},
+            update_config=SourceTableCollectionUpdateConfig.static(),
+            description="Description for dataset test_dataset",
+        )
+        self.source_table_update_manager.update(
+            source_table_collection=with_partitioning
+        )
+
+        # update a second time should be a no-op
+        self.source_table_update_manager.update(
+            source_table_collection=SourceTableCollection(
+                dataset_id="test_dataset",
+                source_tables_by_address={table_address: table_config},
+                update_config=SourceTableCollectionUpdateConfig.static(),
+                description="Description for dataset test_dataset",
+            )
+        )
+
+        with self.assertRaisesRegex(
+            SourceTableFailedToUpdateError, "has time partitioning.+that does not match"
+        ):
+            self.source_table_update_manager.update(
+                source_table_collection=SourceTableCollection(
+                    dataset_id="test_dataset",
+                    source_tables_by_address={
+                        table_address: attr.evolve(
+                            table_config,
+                            # should fail
+                            time_partitioning=bigquery.TimePartitioning(),
+                        )
+                    },
+                    update_config=SourceTableCollectionUpdateConfig.static(),
+                    description="Description for dataset test_dataset",
+                )
+            )
+        with self.assertRaisesRegex(
+            SourceTableFailedToUpdateError, "has time partitioning.+that does not match"
+        ):
+            self.source_table_update_manager.update(
+                source_table_collection=SourceTableCollection(
+                    dataset_id="test_dataset",
+                    source_tables_by_address={
+                        table_address: attr.evolve(
+                            table_config,
+                            # should fail
+                            time_partitioning=None,
+                        )
+                    },
+                    update_config=SourceTableCollectionUpdateConfig.static(),
+                    description="Description for dataset test_dataset",
+                )
+            )
+
 
 class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
     """Tests SourceTableUpdateManager recreate_on_error handling"""

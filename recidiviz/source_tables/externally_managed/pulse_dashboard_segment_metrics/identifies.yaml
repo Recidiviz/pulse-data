@@ -78,3 +78,6 @@ schema:
     type: STRING
     mode: NULLABLE
 clustering_fields: null
+time_partitioning:
+  type: DAY
+require_partition_filter: false

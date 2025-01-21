@@ -1410,7 +1410,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.bq_client.create_table_with_schema(
             address=self.mock_table_address,
             schema_fields=schema_fields,
-            date_partition_field="partition_field",
+            time_partitioning=bigquery.TimePartitioning(
+                field="partition_field", type_=bigquery.TimePartitioningType.DAY
+            ),
         )
         self.mock_client.create_table.assert_called_once()
         table = self.mock_client.create_table.mock_calls[0].args[0]
@@ -1422,21 +1424,21 @@ class BigQueryClientImplTest(unittest.TestCase):
             table.time_partitioning,
         )
 
-    def test_create_table_with_schema_partition_bad_field_type(self) -> None:
+    def test_create_table_with_schema_no_partition_require_partition_fields(
+        self,
+    ) -> None:
+        """Tests that the create_table_with_schema function calls the create_table function on the client."""
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
-        schema_fields = [
-            bigquery.SchemaField("new_schema_field", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("partition_field", "STRING", mode="REQUIRED"),
-        ]
+        schema_fields = [bigquery.SchemaField("new_schema_field", "STRING")]
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Date partition field \[partition_field\] has unsupported type: \[STRING\].",
+            "Cannot require a partition filter on a table that is not partitioned.",
         ):
             self.bq_client.create_table_with_schema(
                 address=self.mock_table_address,
                 schema_fields=schema_fields,
-                date_partition_field="partition_field",
+                require_partition_filter=True,
             )
 
     def test_update_schema_only_field_updates_or_additions(self) -> None:
