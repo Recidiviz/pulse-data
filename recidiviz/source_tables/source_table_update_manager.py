@@ -30,6 +30,7 @@ from recidiviz.big_query.big_query_client import (
 )
 from recidiviz.source_tables.source_table_config import (
     SourceTableCollection,
+    SourceTableCollectionUpdateConfig,
     SourceTableConfig,
 )
 from recidiviz.tools.deploy.logging import redirect_logging_to_file
@@ -40,7 +41,12 @@ class SourceTableFailedToUpdateError(ValueError):
     pass
 
 
-class SourceTableDryRunResult(enum.StrEnum):
+class SourceTableUpdateType(enum.StrEnum):
+    """Describes the type of change a source table update job would need to make to a
+    given source table in order to make the schema in BQ match the schema defined in
+    code.
+    """
+
     CREATE_TABLE = "create_table"
     MISMATCH_CLUSTERING_FIELDS = "mismatch_clustering_fields"
     MISMATCH_PARTITIONING_FIELDS = "mismatch_partitioning_fields"
@@ -50,6 +56,41 @@ class SourceTableDryRunResult(enum.StrEnum):
     UPDATE_SCHEMA_TYPE_CHANGES = "update_schema_field_type_changes"
     UPDATE_SCHEMA_WITH_ADDITIONS = "update_schema_with_additions"
     UPDATE_SCHEMA_WITH_DELETIONS = "update_schema_with_deletions"
+
+    def is_allowed_update_for_config(
+        self, update_config: SourceTableCollectionUpdateConfig
+    ) -> bool:
+        """Returns True if this update type is allowed for a source table with the given
+        |update_config|, False otherwise.
+        """
+        if self is SourceTableUpdateType.NO_CHANGES:
+            return True
+
+        if update_config == SourceTableCollectionUpdateConfig.regenerable():
+            return True
+
+        if update_config == SourceTableCollectionUpdateConfig.externally_managed():
+            return False
+
+        if update_config == SourceTableCollectionUpdateConfig.protected():
+            if self in {
+                SourceTableUpdateType.CREATE_TABLE,
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
+            }:
+                return True
+
+            if self in {
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES,
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS,
+                SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES,
+                SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES,
+                SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS,
+                SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
+            }:
+                return False
+            raise ValueError(f"Unexpected SourceTableUpdateType: {self}")
+
+        raise ValueError(f"Unexpected update_config: {update_config}")
 
 
 def _validate_clustering_fields_match(
@@ -90,16 +131,16 @@ def validate_table_schema_fields(
     table_schema_fields: dict[str, bigquery.SchemaField],
     desired_schema_fields: dict[str, bigquery.SchemaField],
     field_names: Iterable[str],
-) -> SourceTableDryRunResult | None:
+) -> SourceTableUpdateType | None:
     for name in field_names:
         old_schema_field = table_schema_fields[name]
         new_schema_field = desired_schema_fields[name]
 
         if old_schema_field.field_type != new_schema_field.field_type:
-            return SourceTableDryRunResult.UPDATE_SCHEMA_TYPE_CHANGES
+            return SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES
 
         if old_schema_field.mode != new_schema_field.mode:
-            return SourceTableDryRunResult.UPDATE_SCHEMA_MODE_CHANGES
+            return SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES
 
     return None
 
@@ -114,12 +155,12 @@ class SourceTableUpdateManager:
         self,
         source_table_collection: SourceTableCollection,
         source_table_address: BigQueryAddress,
-    ) -> tuple[BigQueryAddress, SourceTableDryRunResult]:
+    ) -> tuple[BigQueryAddress, SourceTableUpdateType]:
         """Performs a dry run of a table update for a given config"""
         source_table_config = source_table_collection.source_tables_by_address[
             source_table_address
         ]
-        result = SourceTableDryRunResult.CREATE_TABLE
+        result = SourceTableUpdateType.CREATE_TABLE
         if self.client.table_exists(source_table_config.address):
             # Compare schema derived from metric class to existing dataflow views and
             # update if necessary.
@@ -130,7 +171,7 @@ class SourceTableUpdateManager:
             ):
                 return (
                     source_table_config.address,
-                    SourceTableDryRunResult.MISMATCH_PARTITIONING_FIELDS,
+                    SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
                 )
 
             if not _validate_clustering_fields_match(
@@ -138,7 +179,7 @@ class SourceTableUpdateManager:
             ):
                 return (
                     source_table_config.address,
-                    SourceTableDryRunResult.MISMATCH_CLUSTERING_FIELDS,
+                    SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS,
                 )
 
             table_schema_fields = {field.name: field for field in current_table.schema}
@@ -155,7 +196,7 @@ class SourceTableUpdateManager:
                 and source_table_collection.validation_config.only_check_required_columns
             ):
                 if desired_schema_field_names.issubset(table_schema_field_names):
-                    result = SourceTableDryRunResult.NO_CHANGES
+                    result = SourceTableUpdateType.NO_CHANGES
 
                     if field_changes := validate_table_schema_fields(
                         table_schema_fields,
@@ -164,32 +205,33 @@ class SourceTableUpdateManager:
                     ):
                         result = field_changes
                 else:
-                    result = SourceTableDryRunResult.UPDATE_SCHEMA_WITH_CHANGES
+                    result = SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES
 
                 return source_table_config.address, result
 
             if table_schema_field_names == desired_schema_field_names:
-                result = SourceTableDryRunResult.NO_CHANGES
+                result = SourceTableUpdateType.NO_CHANGES
                 if field_changes := validate_table_schema_fields(
                     table_schema_fields, desired_schema_fields, table_schema_field_names
                 ):
                     result = field_changes
             elif to_add and to_remove:
-                result = SourceTableDryRunResult.UPDATE_SCHEMA_WITH_CHANGES
+                result = SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES
             elif to_add:
-                result = SourceTableDryRunResult.UPDATE_SCHEMA_WITH_ADDITIONS
+                result = SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
             else:
-                result = SourceTableDryRunResult.UPDATE_SCHEMA_WITH_DELETIONS
+                result = SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS
 
         return source_table_config.address, result
 
+    # TODO(#33293): Check for deleted tables that aren't tracked in code anymore.
     def dry_run(
         self, source_table_collections: list[SourceTableCollection], log_file: str
-    ) -> dict[SourceTableDryRunResult, list[BigQueryAddress]]:
+    ) -> dict[SourceTableUpdateType, list[BigQueryAddress]]:
         """Performs a dry run update of the schemas of all tables specified by the provided list of collections,
         printing a progress bar as tables complete"""
 
-        result_by_address: dict[BigQueryAddress, SourceTableDryRunResult] = {}
+        result_by_address: dict[BigQueryAddress, SourceTableUpdateType] = {}
 
         with redirect_logging_to_file(log_file):
             successes, exceptions = map_fn_with_progress_bar_results(
@@ -219,11 +261,9 @@ class SourceTableUpdateManager:
 
                 result_by_address[address] = result
 
-        changes: dict[SourceTableDryRunResult, list[BigQueryAddress]] = defaultdict(
-            list
-        )
+        changes: dict[SourceTableUpdateType, list[BigQueryAddress]] = defaultdict(list)
         for address, result in result_by_address.items():
-            if result != SourceTableDryRunResult.NO_CHANGES:
+            if result != SourceTableUpdateType.NO_CHANGES:
                 changes[result].append(address)
 
         return changes
@@ -328,11 +368,14 @@ class SourceTableUpdateManager:
         for source_table_config in source_table_collection.source_tables:
             self._update_table(source_table_collection, source_table_config.address)
 
+    # TODO(#33293): Delete tables that don't exist in code anymore (if regenerable()
+    #  collection - enforce that all collections in the same dataset have the same
+    #  update_config()) or fail if we can't delete the table.
     def update_async(
         self,
         source_table_collections: list[SourceTableCollection],
         log_file: str,
-        log_output: bool = False,
+        log_output: bool,
     ) -> tuple[
         list[tuple[Any, dict[str, Any]]], list[tuple[Exception, dict[str, Any]]]
     ]:

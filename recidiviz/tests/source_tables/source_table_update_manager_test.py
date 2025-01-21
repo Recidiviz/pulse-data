@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests capabilities of the SourceTableUpdateManager"""
 import tempfile
+import unittest
 from typing import Any
 from unittest.mock import patch
 
@@ -39,9 +40,9 @@ from recidiviz.source_tables.source_table_config import (
     SourceTableConfig,
 )
 from recidiviz.source_tables.source_table_update_manager import (
-    SourceTableDryRunResult,
     SourceTableFailedToUpdateError,
     SourceTableUpdateManager,
+    SourceTableUpdateType,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -49,6 +50,21 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 
 _DATASET_1 = "dataset_1"
 _TABLE_1 = "table_1"
+
+
+class TestSourceTableUpdateType(unittest.TestCase):
+    """Tests for SourceTableUpdateType"""
+
+    def test_is_allowed_update_for_config(self) -> None:
+        possible_update_configs = [
+            SourceTableCollectionUpdateConfig.regenerable(),
+            SourceTableCollectionUpdateConfig.externally_managed(),
+            SourceTableCollectionUpdateConfig.protected(),
+        ]
+
+        for update_type in SourceTableUpdateType:
+            for update_config in possible_update_configs:
+                update_type.is_allowed_update_for_config(update_config)
 
 
 class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
@@ -431,7 +447,7 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
         self.assertEqual(
             dict(changes),
             {
-                SourceTableDryRunResult.UPDATE_SCHEMA_WITH_ADDITIONS: [
+                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS: [
                     BigQueryAddress(
                         dataset_id="test_dataset", table_id="test_table_modified"
                     )
@@ -474,7 +490,7 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
 
             self.assertEqual(
                 {
-                    SourceTableDryRunResult.UPDATE_SCHEMA_WITH_CHANGES: [
+                    SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES: [
                         BigQueryAddress(
                             dataset_id="test_dataset", table_id="test_table_modified"
                         )
