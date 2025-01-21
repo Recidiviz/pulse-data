@@ -92,6 +92,8 @@ columns:
         description: DAKOTA WOMEN'S CORR REHAB CENTER
       - value: INACT
         description: Inactive
+      - value: CJ
+        description: COUNTY JAIL
   - name: CASELOAD_TYPE
     description: |-
       Unknown, always INST or blank.
