@@ -53,7 +53,7 @@ def collect_yaml_managed_source_table_collections(
     return [
         SourceTableCollection(
             dataset_id=dataset_id,
-            update_config=SourceTableCollectionUpdateConfig.static(),
+            update_config=SourceTableCollectionUpdateConfig.protected(),
             source_tables_by_address={
                 source_table.address: source_table
                 for source_table in source_tables

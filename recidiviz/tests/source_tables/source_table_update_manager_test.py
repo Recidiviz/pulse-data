@@ -119,7 +119,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                     description="Raw data table",
                 )
             },
-            update_config=SourceTableCollectionUpdateConfig.static(),
+            update_config=SourceTableCollectionUpdateConfig.protected(),
             description="Description for dataset test_dataset",
         )
 
@@ -138,7 +138,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                     description="Raw data table",
                 )
             },
-            update_config=SourceTableCollectionUpdateConfig.static(),
+            update_config=SourceTableCollectionUpdateConfig.protected(),
             description="Description for dataset test_dataset",
         )
 
@@ -163,7 +163,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         with_clustering = SourceTableCollection(
             dataset_id="test_dataset",
             source_tables_by_address={table_address: table_config},
-            update_config=SourceTableCollectionUpdateConfig.static(),
+            update_config=SourceTableCollectionUpdateConfig.protected(),
             description="Description for dataset test_dataset",
         )
         self.source_table_update_manager.update(source_table_collection=with_clustering)
@@ -180,7 +180,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                             clustering_fields=None,
                         )
                     },
-                    update_config=SourceTableCollectionUpdateConfig.static(),
+                    update_config=SourceTableCollectionUpdateConfig.protected(),
                     description="Description for dataset test_dataset",
                 )
             )
@@ -202,7 +202,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         collection = SourceTableCollection(
             dataset_id="test_dataset",
             source_tables_by_address={table_address: table_config},
-            update_config=SourceTableCollectionUpdateConfig.static(),
+            update_config=SourceTableCollectionUpdateConfig.protected(),
             description="Description for dataset test_dataset",
         )
         self.source_table_update_manager.update(source_table_collection=collection)
@@ -214,7 +214,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                 source_tables_by_address={
                     table_address: attr.evolve(table_config, clustering_fields=[])
                 },
-                update_config=SourceTableCollectionUpdateConfig.static(),
+                update_config=SourceTableCollectionUpdateConfig.protected(),
                 description="Description for dataset test_dataset",
             ),
         )
@@ -238,7 +238,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
         with_partitioning = SourceTableCollection(
             dataset_id="test_dataset",
             source_tables_by_address={table_address: table_config},
-            update_config=SourceTableCollectionUpdateConfig.static(),
+            update_config=SourceTableCollectionUpdateConfig.protected(),
             description="Description for dataset test_dataset",
         )
         self.source_table_update_manager.update(
@@ -250,7 +250,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
             source_table_collection=SourceTableCollection(
                 dataset_id="test_dataset",
                 source_tables_by_address={table_address: table_config},
-                update_config=SourceTableCollectionUpdateConfig.static(),
+                update_config=SourceTableCollectionUpdateConfig.protected(),
                 description="Description for dataset test_dataset",
             )
         )
@@ -268,7 +268,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                             time_partitioning=bigquery.TimePartitioning(),
                         )
                     },
-                    update_config=SourceTableCollectionUpdateConfig.static(),
+                    update_config=SourceTableCollectionUpdateConfig.protected(),
                     description="Description for dataset test_dataset",
                 )
             )
@@ -285,7 +285,7 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                             time_partitioning=None,
                         )
                     },
-                    update_config=SourceTableCollectionUpdateConfig.static(),
+                    update_config=SourceTableCollectionUpdateConfig.protected(),
                     description="Description for dataset test_dataset",
                 )
             )
@@ -321,7 +321,7 @@ class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
             SourceTableCollection(
                 dataset_id=cls.dataset_id,
                 source_tables_by_address={cls.table_address: cls.existing_table_config},
-                update_config=SourceTableCollectionUpdateConfig.static(),
+                update_config=SourceTableCollectionUpdateConfig.protected(),
                 description=f"Description for dataset {cls.dataset_id}",
             )
         ]
@@ -394,7 +394,7 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
         collection = SourceTableCollection(
             dataset_id="test_dataset",
             description="Description for dataset test_dataset",
-            update_config=SourceTableCollectionUpdateConfig.static(),
+            update_config=SourceTableCollectionUpdateConfig.protected(),
         )
         collection.add_source_table(
             "test_table_unmodified",
@@ -442,7 +442,7 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
     def test_table_minimum_required_columns(self) -> None:
         collection = attr.evolve(
             self.get_source_tables()[0],
-            update_config=SourceTableCollectionUpdateConfig.unmanaged(),
+            update_config=SourceTableCollectionUpdateConfig.externally_managed(),
             validation_config=SourceTableCollectionValidationConfig(
                 only_check_required_columns=True,
             ),

@@ -91,7 +91,7 @@ def build_raw_data_source_table_collections_for_state_and_instance(
         SourceTableCollection(
             dataset_id=raw_data_pruning_new_raw_data_dataset(state_code, instance),
             labels=labels,
-            update_config=SourceTableCollectionUpdateConfig.static(),
+            update_config=SourceTableCollectionUpdateConfig.protected(),
             default_table_expiration_ms=ONE_DAY_MS,
             description=(
                 "Contains intermediate results of the raw data import process that "
@@ -103,7 +103,7 @@ def build_raw_data_source_table_collections_for_state_and_instance(
                 state_code, instance
             ),
             labels=labels,
-            update_config=SourceTableCollectionUpdateConfig.static(),
+            update_config=SourceTableCollectionUpdateConfig.protected(),
             default_table_expiration_ms=ONE_DAY_MS,
             description=(
                 "Contains intermediate results of the raw data import process that "
@@ -113,7 +113,7 @@ def build_raw_data_source_table_collections_for_state_and_instance(
         SourceTableCollection(
             dataset_id=raw_data_temp_load_dataset(state_code, instance),
             labels=labels,
-            update_config=SourceTableCollectionUpdateConfig.static(),
+            update_config=SourceTableCollectionUpdateConfig.protected(),
             # TODO(#30687) consider raising this if we think that there are
             # certain temp tables we would want to keep around for longer
             # by default (i.e. those that have a import-blocking validation)
@@ -133,7 +133,7 @@ def build_raw_data_source_table_collections_for_state_and_instance(
         ),
         # Changes to raw data source tables must be manually executed by implementation
         # engineers
-        update_config=SourceTableCollectionUpdateConfig.static(),
+        update_config=SourceTableCollectionUpdateConfig.protected(),
         labels=labels,
         description=f"Raw data tables from {StateCode.get_state(state_code)}",
     )

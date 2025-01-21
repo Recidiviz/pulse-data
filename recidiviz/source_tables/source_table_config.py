@@ -359,7 +359,7 @@ class SourceTableCollectionValidationConfig:
     only_check_required_columns: bool
 
 
-@attr.s(auto_attribs=True, frozen=True)
+@attr.define(frozen=True, kw_only=True)
 class SourceTableCollectionUpdateConfig:
     """Configuration object for how we attempt to manage the schema of source tables"""
 
@@ -368,13 +368,17 @@ class SourceTableCollectionUpdateConfig:
     # For tables that are ephemeral, or whose contents are fully repopulated each time they're changed,
     # it may be beneficial to recreate the table in the case of an update error (e.g. incompatible schema type changes,
     # clustering field mismatch)
-    recreate_on_update_error: bool = attr.ib(default=False)
+    recreate_on_update_error: bool
 
     @classmethod
-    def unmanaged(cls) -> "SourceTableCollectionUpdateConfig":
-        """Unmanaged tables are used in our view graph, but whose creation / schema updates are not managed by our code
-        For example, pulse_dashboard_segment_metrics is created by a Segment reverse ETL integration.
-        We want to have a copy of its schema in code, but we don't want to attempt to manage its schema."""
+    def externally_managed(cls) -> "SourceTableCollectionUpdateConfig":
+        """Externally managed tables are used in our view graph, but whose creation /
+        schema updates are not managed by our standard table update process. For
+        example, pulse_dashboard_segment_metrics is created by a Segment reverse ETL
+        integration. We want to have a copy of its schema in code, but we don't want to
+        attempt to manage its schema. We will check during our table update that the
+        actual schema in BQ matches what is defined in code.
+        """
         return cls(
             attempt_to_manage=False,
             allow_field_deletions=False,
@@ -382,9 +386,12 @@ class SourceTableCollectionUpdateConfig:
         )
 
     @classmethod
-    def static(cls) -> "SourceTableCollectionUpdateConfig":
-        """Static table collections contain data that may not easily be reconstructed from other sources.
-        This configuration is the most precautionary, disallowing any field deletions as it may result in data loss."""
+    def protected(cls) -> "SourceTableCollectionUpdateConfig":
+        """Protected table collections contain tables whose schemas are managed by our
+        standard table update process, but which may not easily be reconstructed from
+        other sources. This configuration is the most precautionary, disallowing any
+        field deletions as it may result in data loss.
+        """
         return cls(
             attempt_to_manage=True,
             allow_field_deletions=False,
@@ -394,8 +401,9 @@ class SourceTableCollectionUpdateConfig:
     @classmethod
     def regenerable(cls) -> "SourceTableCollectionUpdateConfig":
         """Regenerable tables can be reconstructed from another source on the fly.
-        This configuration allows field deletion. If invalid schema updates are requested (ie changing a column's type),
-        it will be dropped and recreated with the new schema.
+        This configuration allows field deletion. If invalid schema updates are
+        requested (ie changing a column's type), it will be dropped and recreated with
+        the new schema.
         """
         return cls(
             attempt_to_manage=True,

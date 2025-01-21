@@ -45,7 +45,7 @@ def collect_duplicative_us_mi_validation_oneoffs() -> list[SourceTableCollection
     dataset_id = dataset_config.validation_oneoff_dataset_for_state(StateCode.US_MI)
     collection = SourceTableCollection(
         dataset_id=dataset_id,
-        update_config=SourceTableCollectionUpdateConfig.unmanaged(),
+        update_config=SourceTableCollectionUpdateConfig.externally_managed(),
         source_tables_by_address={
             source_table.address: source_table for source_table in cb_971_source_tables
         },
@@ -57,7 +57,7 @@ def collect_duplicative_us_mi_validation_oneoffs() -> list[SourceTableCollection
 
     orc_report_collection = SourceTableCollection(
         dataset_id=dataset_id,
-        update_config=SourceTableCollectionUpdateConfig.unmanaged(),
+        update_config=SourceTableCollectionUpdateConfig.externally_managed(),
         validation_config=SourceTableCollectionValidationConfig(
             only_check_required_columns=True
         ),

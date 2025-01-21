@@ -78,7 +78,7 @@ def collect_externally_managed_source_table_collections(
     return [
         SourceTableCollection(
             dataset_id=dataset_id,
-            update_config=SourceTableCollectionUpdateConfig.unmanaged(),
+            update_config=SourceTableCollectionUpdateConfig.externally_managed(),
             validation_config=datasets_to_validation_config.get(dataset_id, None),
             source_tables_by_address={
                 source_table.address: source_table

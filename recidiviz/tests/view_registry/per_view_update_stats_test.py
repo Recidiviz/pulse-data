@@ -320,7 +320,7 @@ class TestBuildPerViewUpdateStats(unittest.TestCase):
                     description=f"Description for {table_address.to_str()}",
                 )
             },
-            update_config=SourceTableCollectionUpdateConfig.static(),
+            update_config=SourceTableCollectionUpdateConfig.protected(),
             description=f"Description for dataset {table_address.dataset_id}",
         )
 

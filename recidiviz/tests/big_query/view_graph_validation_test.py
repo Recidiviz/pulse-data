@@ -300,7 +300,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                         address: repository.source_tables[address]
                         for address in list(source_table_addresses)
                     },
-                    update_config=SourceTableCollectionUpdateConfig.static(),
+                    update_config=SourceTableCollectionUpdateConfig.protected(),
                     description=f"Fake description for dataset {dataset_id}",
                 )
                 for dataset_id, source_table_addresses in groupby(

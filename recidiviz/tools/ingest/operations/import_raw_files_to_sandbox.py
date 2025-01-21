@@ -191,7 +191,7 @@ def source_table_collection_for_paths(
                     sandbox_dataset_prefix=sandbox_dataset_prefix,
                 ),
                 labels=labels,
-                update_config=SourceTableCollectionUpdateConfig.static(),
+                update_config=SourceTableCollectionUpdateConfig.protected(),
                 default_table_expiration_ms=ONE_DAY_MS,
                 description=(
                     "Contains intermediate results of a sandbox raw data import process"
