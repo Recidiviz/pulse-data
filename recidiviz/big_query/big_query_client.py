@@ -813,7 +813,7 @@ class BigQueryClient:
         *,
         address: BigQueryAddress,
         desired_schema_fields: List[bigquery.SchemaField],
-        allow_field_deletions: bool = True,
+        allow_field_deletions: bool,
     ) -> None:
         """Updates the schema of the table at the given address to match the
         desired_schema_fields. This may result in both adding and dropping fields from
@@ -920,19 +920,6 @@ class BigQueryClient:
 
         Returns the dataset_id the dataset data was backed up to, or None if the
         source dataset does not exist.
-        """
-
-    @abc.abstractmethod
-    def update_datasets_to_match_reference_schema(
-        self, *, reference_dataset_id: str, stale_schema_dataset_ids: List[str]
-    ) -> None:
-        """Updates the schemas of the datasets in |stale_schema_dataset_ids| to match
-        the schema of the reference dataset. This means:
-          - Adding tables that exist in the reference but not in the stale schema dataset
-          - Deleting tables that do not exist in the reference dataset
-          - Updating the schemas of matching tables to be equal
-
-        Disclaimer: Use with caution! This will delete data.
         """
 
     @abc.abstractmethod
@@ -2129,7 +2116,7 @@ class BigQueryClientImpl(BigQueryClient):
         *,
         address: BigQueryAddress,
         desired_schema_fields: List[bigquery.SchemaField],
-        allow_field_deletions: bool = True,
+        allow_field_deletions: bool,
     ) -> None:
         self._validate_schema(address, desired_schema_fields)
         table_ref = self._table_ref_for_address(address)
@@ -2504,53 +2491,6 @@ class BigQueryClientImpl(BigQueryClient):
                 request={"name": transfer_config.name}
             )
             logging.info("Finished deleting transfer config [%s]", transfer_config.name)
-
-    def update_datasets_to_match_reference_schema(
-        self, *, reference_dataset_id: str, stale_schema_dataset_ids: List[str]
-    ) -> None:
-        reference_tables = self.list_tables(reference_dataset_id)
-        reference_table_schemas = {
-            t.table_id: self.get_table(
-                BigQueryAddress(dataset_id=reference_dataset_id, table_id=t.table_id)
-            ).schema
-            for t in reference_tables
-        }
-
-        for stale_schema_dataset_id in stale_schema_dataset_ids:
-            stale_schema_tables = self.list_tables(stale_schema_dataset_id)
-            stale_table_schemas = {
-                t.table_id: self.get_table(
-                    BigQueryAddress(
-                        dataset_id=stale_schema_dataset_id, table_id=t.table_id
-                    )
-                ).schema
-                for t in stale_schema_tables
-            }
-
-            for table_id, reference_schema in reference_table_schemas.items():
-                reference_table_address = BigQueryAddress(
-                    dataset_id=stale_schema_dataset_id, table_id=table_id
-                )
-                if table_id not in stale_table_schemas:
-                    self.create_table_with_schema(
-                        address=reference_table_address, schema_fields=reference_schema
-                    )
-
-            for table_id, stale_table_schema in stale_table_schemas.items():
-                stale_table_address = BigQueryAddress(
-                    dataset_id=stale_schema_dataset_id, table_id=table_id
-                )
-                if table_id not in reference_table_schemas:
-                    self.delete_table(stale_table_address)
-                    continue
-
-                if reference_table_schemas[table_id] == stale_table_schema:
-                    continue
-
-                self.update_schema(
-                    address=stale_table_address,
-                    desired_schema_fields=reference_table_schemas[table_id],
-                )
 
     def add_timestamp_suffix_to_dataset_id(self, dataset_id: str) -> str:
         timestamp = (

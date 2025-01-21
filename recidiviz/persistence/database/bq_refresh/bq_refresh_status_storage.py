@@ -135,7 +135,9 @@ def update_bq_refresh_status_table(
         # Compare schema derived from schema table to existing dataset and
         # update if necessary.
         bq_client.update_schema(
-            address=bq_refresh_status_address, desired_schema_fields=table_schema
+            address=bq_refresh_status_address,
+            desired_schema_fields=table_schema,
+            allow_field_deletions=False,
         )
     else:
         bq_client.create_table_with_schema(

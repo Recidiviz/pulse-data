@@ -1462,7 +1462,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         self.bq_client.update_schema(
-            address=self.mock_table_address, desired_schema_fields=new_schema_fields
+            address=self.mock_table_address,
+            desired_schema_fields=new_schema_fields,
+            allow_field_deletions=True,
         )
 
         # We should only have to get the table once to update it
@@ -1501,7 +1503,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         self.bq_client.update_schema(
-            address=self.mock_table_address, desired_schema_fields=new_schema_fields
+            address=self.mock_table_address,
+            desired_schema_fields=new_schema_fields,
+            allow_field_deletions=True,
         )
 
         # We should only have to get the table once to update it
@@ -1553,7 +1557,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.query.side_effect = mock_query
 
         self.bq_client.update_schema(
-            address=self.mock_table_address, desired_schema_fields=new_schema_fields
+            address=self.mock_table_address,
+            desired_schema_fields=new_schema_fields,
+            allow_field_deletions=True,
         )
 
         # We call get_table() twice - once at the beginning and once after we have
@@ -1598,7 +1604,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             "Cannot change this type to INT.",
         ):
             self.bq_client.update_schema(
-                address=self.mock_table_address, desired_schema_fields=new_schema_fields
+                address=self.mock_table_address,
+                desired_schema_fields=new_schema_fields,
+                allow_field_deletions=True,
             )
 
         self.mock_client.get_table.assert_called_once()
@@ -1627,7 +1635,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             r"Cannot change the mode of field SchemaField\('field_1'.*\) to REQUIRED",
         ):
             self.bq_client.update_schema(
-                address=self.mock_table_address, desired_schema_fields=new_schema_fields
+                address=self.mock_table_address,
+                desired_schema_fields=new_schema_fields,
+                allow_field_deletions=True,
             )
 
         self.mock_client.get_table.assert_called_once()
