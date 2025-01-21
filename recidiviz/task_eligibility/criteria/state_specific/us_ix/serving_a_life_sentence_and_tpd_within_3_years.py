@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,12 +16,12 @@
 # ============================================================================
 """
 Defines a criteria span view that shows spans of time during which someone is serving a life sentence
-and their tentative parole date is not within 3 years.
+and their tentative parole date is within 3 years.
 """
 
 from recidiviz.task_eligibility.criteria.general import serving_a_life_sentence
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    not_tentative_parole_date_within_3_years,
+    tentative_parole_date_within_3_years,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     AndTaskCriteriaGroup,
@@ -31,15 +31,15 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which someone is serving a life sentence 
-and their tentative parole date is not within 3 years.
+and their tentative parole date is within 3 years.
 """
 
 
 VIEW_BUILDER = AndTaskCriteriaGroup(
-    criteria_name="US_IX_SERVING_A_LIFE_SENTENCE_AND_NOT_TPD_WITHIN_3_YEARS",
+    criteria_name="US_IX_SERVING_A_LIFE_SENTENCE_AND_TPD_WITHIN_3_YEARS",
     sub_criteria_list=[
         serving_a_life_sentence.VIEW_BUILDER,
-        not_tentative_parole_date_within_3_years.VIEW_BUILDER,
+        tentative_parole_date_within_3_years.VIEW_BUILDER,
     ],
     allowed_duplicate_reasons_keys=[],
 ).as_criteria_view_builder

@@ -171,6 +171,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q4 impo
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q5 import (
     US_IX_SLS_Q5_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_sls_q6 import (
+    US_IX_SLS_Q6_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_early_discharge_sessions_preprocessing import (
     US_ME_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
@@ -370,6 +373,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_IX_SLS_Q3_VIEW_BUILDER,
     US_IX_SLS_Q4_VIEW_BUILDER,
     US_IX_SLS_Q5_VIEW_BUILDER,
+    US_IX_SLS_Q6_VIEW_BUILDER,
     US_ME_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_ME_SENTENCE_TERM_VIEW_BUILDER,
     US_ME_INVOICES_PREPROCESSED_VIEW_BUILDER,

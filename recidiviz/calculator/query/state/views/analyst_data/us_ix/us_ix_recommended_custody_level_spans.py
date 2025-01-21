@@ -44,7 +44,8 @@ WITH union_scores AS (
             NULL AS q2_score,
             NULL AS q3_score,
             NULL AS q4_score,
-            NULL AS q5_score
+            NULL AS q5_score,
+            NULL AS q6_score,
         FROM 
             `{{project_id}}.{{analyst_dataset}}.us_ix_sls_q1_materialized` sls
         
@@ -59,7 +60,8 @@ WITH union_scores AS (
             q2_score,
             NULL AS q3_score,
             NULL AS q4_score,
-            NULL AS q5_score
+            NULL AS q5_score,
+            NULL AS q6_score,
         FROM 
             `{{project_id}}.{{analyst_dataset}}.us_ix_sls_q2_materialized` sls
         
@@ -74,7 +76,8 @@ WITH union_scores AS (
             NULL AS q2_score,
             q3_score,
             NULL AS q4_score,
-            NULL AS q5_score
+            NULL AS q5_score,
+            NULL AS q6_score,
         FROM 
             `{{project_id}}.{{analyst_dataset}}.us_ix_sls_q3_materialized` sls
         
@@ -89,7 +92,8 @@ WITH union_scores AS (
             NULL AS q2_score,
             NULL AS q3_score,
             q4_score,
-            NULL AS q5_score
+            NULL AS q5_score,
+            NULL AS q6_score,
         FROM 
             `{{project_id}}.{{analyst_dataset}}.us_ix_sls_q4_materialized` sls
             
@@ -104,16 +108,33 @@ WITH union_scores AS (
             NULL AS q2_score,
             NULL AS q3_score,
             NULL AS q4_score,
-            q5_score
+            q5_score,
+            NULL AS q6_score,
         FROM 
             `{{project_id}}.{{analyst_dataset}}.us_ix_sls_q5_materialized` sls
+        
+        UNION ALL 
+        
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            NULL AS q1_score,
+            NULL AS q2_score,
+            NULL AS q3_score,
+            NULL AS q4_score,
+            NULL AS q5_score,
+            q6_score,
+        FROM 
+            `{{project_id}}.{{analyst_dataset}}.us_ix_sls_q6_materialized` sls
     )
     ,
     {create_sub_sessions_with_attributes(table_name='union_scores')},
     -- This CTE computes the relevant sub-scores needed for computing a recommended custody level
     dedup_cte AS (
         SELECT *,
-            q1_score + q2_score + q3_score + q4_score + q5_score AS calculated_total_score,
+            q1_score + q2_score + q3_score + q4_score + q5_score + q6_score AS calculated_total_score,
         FROM (
             SELECT
                 person_id,
@@ -129,7 +150,9 @@ WITH union_scores AS (
                 --if q4_score (age) is NULL overall score should be NULL
                 MAX(q4_score) AS q4_score,
                 --if q5_score is NULL, resident had no DORs in relevant time frame, q5_score = -1
-                COALESCE(MAX(q5_score),-1) AS q5_score
+                COALESCE(MAX(q5_score),-1) AS q5_score,
+                --if q6_score is NULL, resident is not eligible for proximity to release, q6_score = 0
+                COALESCE(MAX(q6_score),0) AS q6_score,
             FROM
                 sub_sessions_with_attributes
             GROUP BY
@@ -152,6 +175,7 @@ WITH union_scores AS (
                 q3_score AS q3_score,
                 q4_score AS q4_score,
                 q5_score AS q5_score,
+                q6_score AS q6_score,
                 calculated_total_score AS calculated_total_score
             )) AS score_metadata
         FROM

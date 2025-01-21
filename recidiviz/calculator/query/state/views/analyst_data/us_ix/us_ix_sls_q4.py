@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ US_IX_SLS_Q4_VIEW_NAME = "us_ix_sls_q4"
 
 US_IX_SLS_Q4_VIEW_DESCRIPTION = """Computes Q4 (age) of Idaho's Reclassification of Security Level form at any point
 in time. See details of the Reclassification Form here:
-https://drive.google.com/file/d/1lmzOgjjlcMuBlVvYEqfWOlbQ5HGjZpJ_/view?usp=sharing
+https://drive.google.com/file/d/1-Y3-RAqPEUrAKoeSdkNTDmB-V1YAEp1l/view
     """
 
 US_IX_SLS_Q4_QUERY_TEMPLATE = f"""
