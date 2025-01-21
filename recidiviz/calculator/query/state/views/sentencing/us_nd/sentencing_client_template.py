@@ -44,7 +44,12 @@ SELECT DISTINCT
     ) AS full_name,
     p.birthdate as birth_date,
     p.gender as gender,
-    off_raw.COUNTY_RESIDENCE as county,
+    -- If someone does not live in ND, their "County of Residence" will be "OUT OF STATE".
+    CASE WHEN 
+      JSON_EXTRACT_SCALAR(a.address_metadata, '$.state_residence') != 'ND' THEN 'OUT OF STATE'
+    -- Counties are stored in the format "US_ND_COUNTY_NAME". This cleans that so the output is only "COUNTY NAME".
+      ELSE REGEXP_REPLACE(REGEXP_REPLACE(a.address_county, r'US_ND_', ''), '_', ' ') 
+    END AS county,
     CONCAT('[', case_ids,']') AS case_ids,
     CAST(null AS STRING) as district,
 FROM
@@ -58,8 +63,11 @@ LEFT JOIN
     `{project_id}.{normalized_state_dataset}.state_person` p
 USING
     (person_id)
-LEFT JOIN 
-    `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offenders_latest` off_raw
+LEFT JOIN
+    `{project_id}.{normalized_state_dataset}.state_person_address_period` a
 USING
-    (SID)
+    (person_id)
+-- Choose the most recent county of residence
+QUALIFY ROW_NUMBER() OVER (w) = 1
+WINDOW w AS (PARTITION BY psi.SID ORDER BY IFNULL(address_end_date, '9999-12-31') DESC)
 """
