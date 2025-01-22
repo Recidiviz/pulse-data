@@ -4,109 +4,34 @@ file_description: |-
   TODO(#33372): Fill in the file description
 data_classification: source
 primary_key_cols:
-  - rim_sanction_history_id
+  - rim_sanction_id
 columns:
-  - name: rim_sanction_history_id
-    description: |-
-      TODO(#33372): Fill in column description
-  - name: rim_ofndr_violation_event_id
-    description: |-
-      TODO(#33372): Fill in column description
   - name: rim_sanction_id
     description: |-
       TODO(#33372): Fill in column description
-  - name: rim_goal_typ_id
+  - name: sanction_level
     description: |-
       TODO(#33372): Fill in column description
-  - name: rim_status_id
+  - name: sanction_desc
     description: |-
       TODO(#33372): Fill in column description
-  - name: agent_acknowledge_dt
+  - name: jail_days_num
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: rcmnd_reqd_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: wrnt_flg
     description: |-
       TODO(#33372): Fill in column description
   - name: rcmnd_desc
     description: |-
       TODO(#33372): Fill in column description
     is_pii: True
-  - name: sanction_cmt
+  - name: sort_seq
     description: |-
       TODO(#33372): Fill in column description
     is_pii: True
-  - name: sprvsr_dcsn_id
+  - name: vld_flg
     description: |-
       TODO(#33372): Fill in column description
-  - name: sprvsr_dcsn_dt
-    description: |-
-      TODO(#33372): Fill in column description
-  - name: sprvsr_approval_flg
-    description: |-
-      TODO(#33372): Fill in column description
-  - name: sprvsr_cmt
-    description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
-  - name: rim_agcy_id
-    description: |-
-      TODO(#33372): Fill in column description
-  - name: intr_case_num
-    description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
-  - name: bopp_dcsn_id
-    description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
-  - name: court_bopp_dcsn_name
-    description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
-  - name: court_bopp_dcsn_dt
-    description: |-
-      TODO(#33372): Fill in column description
-  - name: court_bopp_approval_flg
-    description: |-
-      TODO(#33372): Fill in column description
-  - name: court_bopp_cmt
-    description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
-  - name: retracted_dt
-    description: |-
-      TODO(#33372): Fill in column description
-  - name: court_request
-    description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
-  - name: court_response
-    description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
-  - name: court_rim_request_id
-    description: |-
-      TODO(#33372): Fill in column description
-  - name: court_apprv_days
-    description: |-
-      TODO(#33372): Fill in column description
-  - name: crt_loc_desc
-    description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
-  - name: udoca_id
-    description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
-  - name: created_by_usr_id
-    description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
-  - name: created_dt
-    description: |-
-      TODO(#33372): Fill in column description
-  - name: updt_usr_id
-    description: |-
-      ID of user who most recently updated this record
-    is_pii: True
-  - name: updt_dt
-    description: |-
-      Timestamp of when this record was most recently updated
-    field_type: datetime
