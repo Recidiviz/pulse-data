@@ -35,6 +35,9 @@ from recidiviz.monitoring.platform_kpis.reliability.validation_hard_failure_span
 from recidiviz.monitoring.platform_kpis.reliability.validation_hard_failure_time_to_resolution import (
     VALIDATION_HARD_FAILURE_TIME_TO_RESOLUTION_VIEW_BUILDER,
 )
+from recidiviz.monitoring.platform_kpis.reliability.validation_ongoing_hard_failures import (
+    VALIDATION_ONGOING_HARD_FAILURES_VIEW_BUILDER,
+)
 
 
 def get_platform_reliability_kpi_views_to_update() -> list[BigQueryViewBuilder]:
@@ -45,4 +48,5 @@ def get_platform_reliability_kpi_views_to_update() -> list[BigQueryViewBuilder]:
         VALIDATION_HARD_FAILURE_SPANS_VIEW_BUILDER,
         VALIDATION_HARD_FAILURE_TIME_TO_RESOLUTION_VIEW_BUILDER,
         VALIDATION_DISTINCT_HARD_FAILURES_VIEW_BUILDER,
+        VALIDATION_ONGOING_HARD_FAILURES_VIEW_BUILDER,
     ]
