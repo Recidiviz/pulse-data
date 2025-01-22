@@ -67,6 +67,12 @@ _QUERY_TEMPLATE = f"""
           ADC_NUMBER = external_id
         WHERE
           status.DESCRIPTION = 'Detainer Saved'
+          -- Time Comp told us these types of detainers are not disqualifying.
+          AND TYPE_ID NOT IN (
+            '1976', -- Notification Request
+            '1975', -- Misdemeanor
+            '1972' -- Child Support
+          )
           AND is_finalized = 'Y'
           AND pei.state_code = 'US_AZ'
           AND pei.id_type = 'US_AZ_ADC_NUMBER'
