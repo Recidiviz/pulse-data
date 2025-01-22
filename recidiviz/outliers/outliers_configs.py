@@ -33,6 +33,7 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
     TIMELY_CONTACT,
+    TIMELY_F2F_CONTACT,
     TIMELY_RISK_ASSESSMENT,
     TREATMENT_STARTS,
     VIOLATION_RESPONSES,
@@ -92,7 +93,7 @@ The denominator is the average daily caseload for the officer over the given tim
                 list_table_text="""Clients will appear on this list multiple times if they have had more than one absconsion under this officer in the time period.""",
             ),
         ],
-        vitals_metrics=[TIMELY_RISK_ASSESSMENT, TIMELY_CONTACT],
+        vitals_metrics=[TIMELY_RISK_ASSESSMENT, TIMELY_F2F_CONTACT],
         supervision_officer_metric_exclusions="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",

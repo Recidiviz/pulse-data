@@ -117,6 +117,10 @@ TIMELY_CONTACT = OutliersVitalsMetricConfig(
     metric_id="timely_contact",
     title_display_name="Timely Contact",
 )
+TIMELY_F2F_CONTACT = OutliersVitalsMetricConfig(
+    metric_id="timely_contact",
+    title_display_name="Timely F2F Contact",
+)
 
 # Lantern Events
 VIOLATIONS = OutliersClientEvent(aggregated_metric=metric_config.VIOLATIONS)
