@@ -151,7 +151,13 @@ individual_sentence AS (
   supervision_external_id,
   supervision_type,
   judicial_district_code,
-  judge,
+  CONCAT(
+    -- Grab first name (everything before the comma)
+    REGEXP_EXTRACT(judge, r',\\s*(\\w+)$'),
+    ' ',
+    -- Grab last name (everything after the comma)
+    REGEXP_EXTRACT(judge, r'^(\\w+),')
+  ) AS judge,
   --create a ranking for supervision type to enable sentence deduplication
   IF(supervision_type = "IC PROBATION", 2, 1) AS supervision_type_rank,
   --order crime names and classifcations by severity 
