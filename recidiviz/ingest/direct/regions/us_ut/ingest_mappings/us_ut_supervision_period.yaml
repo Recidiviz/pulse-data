@@ -13,7 +13,7 @@ input_columns:
   body_loc_desc: STRING
   sprvsn_lvl_cd: STRING
   agnt_id: STRING
-unused_columns: [sprvsn_lvl_cd]
+unused_columns: []
 output:
   StatePerson:
     external_ids:
@@ -30,7 +30,48 @@ output:
           start_date: start_date
           termination_date: end_date
           # TODO(#37075): Get a code table so we can properly map these values.
-          supervision_level: $literal_enum(StateSupervisionLevel.INTERNAL_UNKNOWN)
+          supervision_level:
+            $enum_mapping:
+              $raw_text: sprvsn_lvl_cd
+              $mappings:
+                StateSupervisionLevel.INTERNAL_UNKNOWN:
+                  - "100"
+                  - "1000"
+                  - "1200"
+                  - "1300"
+                  - "1400"
+                  - "1500"
+                  - "1600"
+                  - "1700"
+                  - "1800"
+                  - "2000"
+                  - "2100"
+                  - "2200"
+                  - "2300"
+                  - "2301"
+                  - "2500"
+                  - "2600"
+                  - "2700"
+                  - "2800"
+                  - "2900"
+                  - "300"
+                  - "3000"
+                  - "3100"
+                  - "3500"
+                  - "3555"
+                  - "3556"
+                  - "3557"
+                  - "3558"
+                  - "3559"
+                  - "400"
+                  - "500"
+                  - "501"
+                  - "550"
+                  - "551"
+                  - "600"
+                  - "700"
+                  - "800"
+                  - "900"
           supervising_officer_staff_external_id: agnt_id
           supervising_officer_staff_external_id_type:
             $conditional:
