@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  ofndr_num: STRING
+  ofnse_id: STRING
+  jail_days: STRING
+  probation_days: STRING
+  max_prison_days: STRING
+  total_days: INTEGER
+  relevant_update_datetime: DATETIME
+  sequence_num: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    sentences:
+      - StateSentence:
+          external_id: ofnse_id
+          sentence_lengths:
+            - $conditional:
+                - $if:
+                    $or:
+                      - $not_null: jail_days
+                      - $not_null: probation_days
+                      - $not_null: max_prison_days
+                  $then:
+                    StateSentenceLength:
+                      sentence_length_days_max: total_days
+                      length_update_datetime: relevant_update_datetime
+                      sequence_num: sequence_num

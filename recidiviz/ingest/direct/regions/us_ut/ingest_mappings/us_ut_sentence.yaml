@@ -1,0 +1,115 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  ofndr_num: STRING
+  ofnse_id: STRING
+  statute: STRING
+  charge_description: STRING
+  offense_severity_code: STRING
+  attempt_flag: STRING
+  offense_date: DATETIME
+  charge_classification_type_raw_text: STRING
+  sent_dt: DATETIME
+  probation_days: STRING
+  max_prison_days: STRING
+  sentencing_court: STRING
+  jail_days_at_sentencing: STRING
+  consec_to_ofnse: STRING
+unused_columns: []
+variables:
+  - has_jail_component:
+      $not_null: jail_days_at_sentencing
+  - has_prison_component:
+      $not_null: max_prison_days
+  - has_probation_component:
+      $not_null: probation_days
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    sentences:
+      - StateSentence:
+          external_id: ofnse_id
+          sentence_type:
+            $conditional:
+              # The sentence prescribes time with more than one custodial authority
+              - $if:
+                  $or:
+                    - $and:
+                        - $variable(has_probation_component)
+                        - $variable(has_prison_component)
+                    - $and:
+                        - $variable(has_probation_component)
+                        - $variable(has_jail_component)
+                    - $and:
+                        - $variable(has_prison_component)
+                        - $variable(has_jail_component)
+                $then: $literal_enum(StateSentenceType.SPLIT)
+              # The sentence only prescribes time in county jail
+              - $else_if:
+                  $and:
+                    - $variable(has_jail_component)
+                    - $not:
+                        $or:
+                          - $variable(has_probation_component)
+                          - $variable(has_prison_component)
+                $then: $literal_enum(StateSentenceType.COUNTY_JAIL)
+              # The sentence only prescribes time on probation
+              - $else_if:
+                  $and:
+                    - $variable(has_probation_component)
+                    - $not:
+                        $or:
+                          - $variable(has_jail_component)
+                          - $variable(has_prison_component)
+                $then: $literal_enum(StateSentenceType.PROBATION)
+              # The sentence only prescribes time in prison
+              - $else_if:
+                  $and:
+                    - $variable(has_prison_component)
+                    - $not:
+                        $or:
+                          - $variable(has_jail_component)
+                          - $variable(has_probation_component)
+                $then: $literal_enum(StateSentenceType.STATE_PRISON)
+              - $else: $literal_enum(StateSentenceType.INTERNAL_UNKNOWN)
+          imposed_date: sent_dt
+          sentencing_authority:
+            $enum_mapping:
+              $raw_text: sentencing_court
+              $custom_parser: us_ut_custom_enum_parsers.parse_sentencing_authority
+          parent_sentence_external_id_array: consec_to_ofnse
+          is_capital_punishment:
+            $conditional:
+              - $if:
+                  $equal:
+                    - offense_severity_code
+                    - $literal("CA")
+                $then: $literal_bool(True)
+          charges:
+            - StateChargeV2:
+                external_id: ofnse_id
+                statute: statute
+                description: charge_description
+                attempted:
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - attempt_flag
+                          - $literal("A")
+                      $then: $literal_bool(True)
+                    - $else: $literal_bool(False)
+                offense_date:
+                  $conditional:
+                    - $if:
+                        $not_null: offense_date
+                      $then: offense_date
+                classification_type:
+                  $enum_mapping:
+                    $raw_text: charge_classification_type_raw_text
+                    $custom_parser: us_ut_custom_enum_parsers.parse_charge_classification_type
+                status: $literal_enum(StateChargeV2Status.CONVICTED)

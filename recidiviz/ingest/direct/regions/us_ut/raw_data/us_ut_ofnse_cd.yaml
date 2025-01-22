@@ -14,34 +14,54 @@ columns:
   - name: ncic_ofnse_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: crime_degree_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: viol_cd_lst_eff
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: ofnse_desc
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: enhance
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: ofnse_typ_cd
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: full_trmn_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: full_trmn_eff_dt
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
     field_type: datetime
   - name: clfn_rsk_male
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: duty_to_warn_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
@@ -49,6 +69,8 @@ columns:
   - name: asca_typ
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
@@ -56,9 +78,13 @@ columns:
   - name: clfn_rsk_female
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: dna_reqd_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
@@ -66,6 +92,8 @@ columns:
   - name: statute
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
@@ -73,6 +101,10 @@ columns:
   - name: agg_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
   - name: vld_flg
     description: |-
       TODO(#33372): Fill in column description
+    null_values:
+      - "(null)"
