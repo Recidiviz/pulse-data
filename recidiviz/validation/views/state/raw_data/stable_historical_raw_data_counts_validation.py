@@ -30,6 +30,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.local_file_paths import filepath_relative_to_caller
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -273,12 +274,23 @@ class StableHistoricalRawDataCountsQueryBuilder:
 def collect_stable_historical_raw_data_counts_view_builders() -> (
     List[SimpleBigQueryViewBuilder]
 ):
+    """Collects and builds stable historical count validation views, skipping any
+    states that are either playground states and have the new raw data infra active.
+    """
     view_builders = []
     # TODO(#28896) deprecate this pattern
     for state_code in get_direct_ingest_states_existing_in_env():
 
-        # skip playground states
-        if get_direct_ingest_region(state_code.value).playground:
+        # TODO(#28239): remove all validations when raw data is fully rolled out
+        # skip playground states and states where stable historical counts is running
+        # as a part of raw data import
+        if get_direct_ingest_region(
+            state_code.value
+        ).playground or is_raw_data_import_dag_enabled(
+            state_code=state_code,
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+            project_id=GCP_PROJECT_PRODUCTION,
+        ):
             continue
 
         region_config = get_region_raw_file_config(state_code.value)
