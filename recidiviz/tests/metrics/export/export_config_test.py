@@ -35,6 +35,8 @@ from recidiviz.metrics.export.export_config import (
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
 from recidiviz.metrics.export.view_export_manager import get_delegate_export_map
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.utils.environment import ALL_GCP_PROJECTS
+from recidiviz.utils.environment import GCP_PROJECTS as DATA_PLATFORM_GCP_PROJECTS
 
 
 def strip_each_line(text: str) -> str:
@@ -343,3 +345,57 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             view_config_to_export.intermediate_table_name,
             "TEST_EXPORT_base_dataset_test_view_table_US_XX",
         )
+
+    def test_metric_export_override_output_project(self) -> None:
+        """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
+        export destination is not in a data platform project."""
+        lantern_dashboard_with_state_dataset_export_config = ExportViewCollectionConfig(
+            view_builders_to_export=self.views_for_dataset,
+            output_directory_uri_template="gs://{project_id}-bucket",
+            export_name="TEST_EXPORT",
+            output_project_by_data_project={
+                self.mock_project_id: "test-project",
+            },
+        )
+
+        mock_state_code = "US_XX"
+
+        view_configs_to_export = lantern_dashboard_with_state_dataset_export_config.export_configs_for_views_to_export(
+            state_code_filter=mock_state_code
+        )
+        view_config_to_export = view_configs_to_export[0]
+        assert view_config_to_export is not None
+
+        # Output project id is updated
+        self.assertEqual(
+            GcsfsDirectoryPath(
+                bucket_name="test-project-bucket", relative_path="US_XX/"
+            ),
+            view_config_to_export.output_directory,
+        )
+
+    def test_metric_exports_with_data_project_dict_is_valid(self) -> None:
+        for export_name, config in VIEW_COLLECTION_EXPORT_INDEX.items():
+            if config.output_project_by_data_project is None:
+                continue
+
+            for (
+                data_project,
+                output_project,
+            ) in config.output_project_by_data_project.items():
+                if data_project not in DATA_PLATFORM_GCP_PROJECTS:
+                    raise ValueError(
+                        f"{export_name} export config has an invalid key in the "
+                        f"output_project_by_data_project field. Keys should be one of "
+                        f"{','.join(DATA_PLATFORM_GCP_PROJECTS)}"
+                    )
+
+                if output_project not in ALL_GCP_PROJECTS:
+                    raise ValueError(
+                        f"{export_name} export config has an invalid value in the "
+                        f"output_project_by_data_project field. Values should be one of "
+                        f"{','.join(ALL_GCP_PROJECTS)}"
+                    )
+
+                # Validate that the output directory output
+                self.assertIsInstance(config.output_directory, GcsfsDirectoryPath)

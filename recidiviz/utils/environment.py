@@ -42,6 +42,8 @@ GCP_PROJECT_STAGING = "recidiviz-staging"
 GCP_PROJECT_PRODUCTION = "recidiviz-123"
 GCP_PROJECT_JUSTICE_COUNTS_STAGING = "justice-counts-staging"
 GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION = "justice-counts-production"
+GCP_PROJECT_DASHBOARDS_STAGING = "recidiviz-dashboards-staging"
+GCP_PROJECT_DASHBOARDS_PRODUCTION = "recidiviz-dashboards-production"
 # This is not a GCP environment. We use this flag when triggering local jobs.
 PROJECT_JUSTICE_COUNTS_LOCAL = "justice-counts-local"
 
@@ -49,6 +51,13 @@ GCP_ENVIRONMENTS = {env.value for env in GCPEnvironment}
 
 # Data platform projects only
 GCP_PROJECTS = [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]
+# Includes projects outside of the data platform
+ALL_GCP_PROJECTS = GCP_PROJECTS + [
+    GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+    GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+    GCP_PROJECT_DASHBOARDS_STAGING,
+    GCP_PROJECT_DASHBOARDS_PRODUCTION,
+]
 
 RECIDIVIZ_ENV = "RECIDIVIZ_ENV"
 GOOGLE_CLOUD_PROJECT = "GOOGLE_CLOUD_PROJECT"

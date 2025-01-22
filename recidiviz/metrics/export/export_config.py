@@ -106,10 +106,20 @@ class ExportViewCollectionConfig:
     # total export size would exceed 1 GB
     include_wildcard_in_uri: bool = attr.ib(default=False)
 
+    # Dictionary defining, for each data platform project, which project to output
+    # results to.
+    output_project_by_data_project: Dict[str, str] | None = attr.ib(default=None)
+
     @property
     def output_directory(self) -> GcsfsDirectoryPath:
+        output_directory_project_id = (
+            self.output_project_by_data_project[metadata.project_id()]
+            if self.output_project_by_data_project
+            else metadata.project_id()
+        )
+
         output_directory_uri = StrictStringFormatter().format(
-            self.output_directory_uri_template, project_id=metadata.project_id()
+            self.output_directory_uri_template, project_id=output_directory_project_id
         )
         return GcsfsDirectoryPath.from_absolute_path(output_directory_uri)
 
