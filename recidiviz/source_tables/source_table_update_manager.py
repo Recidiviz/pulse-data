@@ -17,9 +17,10 @@
 """Utilities for updating source table schema"""
 import enum
 import logging
-from collections import defaultdict
 from typing import Any, Iterable
 
+import attr
+import google
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -145,6 +146,13 @@ def validate_table_schema_fields(
     return None
 
 
+@attr.define
+class SourceTableUpdateDryRunResult:
+    source_table_config: SourceTableConfig
+    update_type: SourceTableUpdateType
+    deployed_table: bigquery.Table | None
+
+
 class SourceTableUpdateManager:
     """Class for managing source table updates"""
 
@@ -155,83 +163,95 @@ class SourceTableUpdateManager:
         self,
         source_table_collection: SourceTableCollection,
         source_table_address: BigQueryAddress,
-    ) -> tuple[BigQueryAddress, SourceTableUpdateType]:
+    ) -> tuple[BigQueryAddress, SourceTableUpdateDryRunResult]:
         """Performs a dry run of a table update for a given config"""
         source_table_config = source_table_collection.source_tables_by_address[
             source_table_address
         ]
-        result = SourceTableUpdateType.CREATE_TABLE
-        if self.client.table_exists(source_table_config.address):
-            # Compare schema derived from metric class to existing dataflow views and
-            # update if necessary.
+
+        try:
             current_table = self.client.get_table(source_table_config.address)
+        except google.cloud.exceptions.NotFound:
+            return source_table_config.address, SourceTableUpdateDryRunResult(
+                source_table_config=source_table_config,
+                update_type=SourceTableUpdateType.CREATE_TABLE,
+                deployed_table=None,
+            )
 
-            if not _validate_partitioning_fields_match(
-                current_table, source_table_config
-            ):
-                return (
-                    source_table_config.address,
-                    SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
-                )
+        if not _validate_partitioning_fields_match(current_table, source_table_config):
+            return source_table_config.address, SourceTableUpdateDryRunResult(
+                source_table_config=source_table_config,
+                update_type=SourceTableUpdateType.MISMATCH_PARTITIONING_FIELDS,
+                deployed_table=current_table,
+            )
 
-            if not _validate_clustering_fields_match(
-                current_table, source_table_config
-            ):
-                return (
-                    source_table_config.address,
-                    SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS,
-                )
+        if not _validate_clustering_fields_match(current_table, source_table_config):
+            return source_table_config.address, SourceTableUpdateDryRunResult(
+                source_table_config=source_table_config,
+                update_type=SourceTableUpdateType.MISMATCH_CLUSTERING_FIELDS,
+                deployed_table=current_table,
+            )
 
-            table_schema_fields = {field.name: field for field in current_table.schema}
-            table_schema_field_names = set(table_schema_fields.keys())
-            desired_schema_fields = {
-                field.name: field for field in source_table_config.schema_fields
-            }
-            desired_schema_field_names = set(desired_schema_fields.keys())
-            to_add = desired_schema_field_names - table_schema_field_names
-            to_remove = table_schema_field_names - desired_schema_field_names
+        table_schema_fields = {field.name: field for field in current_table.schema}
+        table_schema_field_names = set(table_schema_fields.keys())
+        desired_schema_fields = {
+            field.name: field for field in source_table_config.schema_fields
+        }
+        desired_schema_field_names = set(desired_schema_fields.keys())
+        to_add = desired_schema_field_names - table_schema_field_names
+        to_remove = table_schema_field_names - desired_schema_field_names
 
-            if (
-                source_table_collection.validation_config
-                and source_table_collection.validation_config.only_check_required_columns
-            ):
-                if desired_schema_field_names.issubset(table_schema_field_names):
-                    result = SourceTableUpdateType.NO_CHANGES
+        if (
+            source_table_collection.validation_config
+            and source_table_collection.validation_config.only_check_required_columns
+        ):
+            if desired_schema_field_names.issubset(table_schema_field_names):
+                found_update_type = SourceTableUpdateType.NO_CHANGES
 
-                    if field_changes := validate_table_schema_fields(
-                        table_schema_fields,
-                        desired_schema_fields,
-                        desired_schema_field_names,
-                    ):
-                        result = field_changes
-                else:
-                    result = SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES
-
-                return source_table_config.address, result
-
-            if table_schema_field_names == desired_schema_field_names:
-                result = SourceTableUpdateType.NO_CHANGES
                 if field_changes := validate_table_schema_fields(
-                    table_schema_fields, desired_schema_fields, table_schema_field_names
+                    table_schema_fields,
+                    desired_schema_fields,
+                    desired_schema_field_names,
                 ):
-                    result = field_changes
-            elif to_add and to_remove:
-                result = SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES
-            elif to_add:
-                result = SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
+                    found_update_type = field_changes
             else:
-                result = SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS
+                found_update_type = SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES
 
+            result = SourceTableUpdateDryRunResult(
+                source_table_config=source_table_config,
+                update_type=found_update_type,
+                deployed_table=current_table,
+            )
+            return source_table_config.address, result
+
+        if table_schema_field_names == desired_schema_field_names:
+            found_update_type = SourceTableUpdateType.NO_CHANGES
+            if field_changes := validate_table_schema_fields(
+                table_schema_fields, desired_schema_fields, table_schema_field_names
+            ):
+                found_update_type = field_changes
+        elif to_add and to_remove:
+            found_update_type = SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES
+        elif to_add:
+            found_update_type = SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS
+        else:
+            found_update_type = SourceTableUpdateType.UPDATE_SCHEMA_WITH_DELETIONS
+
+        result = SourceTableUpdateDryRunResult(
+            source_table_config=source_table_config,
+            update_type=found_update_type,
+            deployed_table=current_table,
+        )
         return source_table_config.address, result
 
     # TODO(#33293): Check for deleted tables that aren't tracked in code anymore.
     def dry_run(
         self, source_table_collections: list[SourceTableCollection], log_file: str
-    ) -> dict[SourceTableUpdateType, list[BigQueryAddress]]:
+    ) -> dict[BigQueryAddress, SourceTableUpdateDryRunResult]:
         """Performs a dry run update of the schemas of all tables specified by the provided list of collections,
         printing a progress bar as tables complete"""
 
-        result_by_address: dict[BigQueryAddress, SourceTableUpdateType] = {}
+        result_by_address: dict[BigQueryAddress, SourceTableUpdateDryRunResult] = {}
 
         with redirect_logging_to_file(log_file):
             successes, exceptions = map_fn_with_progress_bar_results(
@@ -261,12 +281,11 @@ class SourceTableUpdateManager:
 
                 result_by_address[address] = result
 
-        changes: dict[SourceTableUpdateType, list[BigQueryAddress]] = defaultdict(list)
-        for address, result in result_by_address.items():
-            if result != SourceTableUpdateType.NO_CHANGES:
-                changes[result].append(address)
-
-        return changes
+        return {
+            address: result
+            for address, result in result_by_address.items()
+            if result.update_type != SourceTableUpdateType.NO_CHANGES
+        }
 
     def _update_table(
         self,

@@ -79,6 +79,10 @@ def verify_github_check_statuses(
     commit_ref: str,
     success_states: Iterable[str],
 ) -> bool:
+    """Prints out the status of all GitHub checks for the given commit. Returns True
+    if the statuses of the checks all match one of the |success_states|, False
+    otherwise.
+    """
     github_client = github_helperbot_client()
     check_runs = list(
         github_client.get_repo(RECIDIVIZ_DATA_REPO)
@@ -101,6 +105,9 @@ def verify_github_check_statuses(
     ]
 
     print_check_statuses(check_runs)
+
+    # TODO(#37574): Update here to hard fail if certain required checks fail (e.g. the
+    #  table schemas check).
 
     return all(check_run.conclusion in success_states for check_run in check_runs)
 

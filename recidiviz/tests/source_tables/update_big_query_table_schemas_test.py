@@ -25,8 +25,7 @@ from recidiviz.source_tables.dataflow_output_table_collector import (
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.source_table_update_manager import SourceTableUpdateManager
 from recidiviz.source_tables.update_big_query_table_schemas import (
-    collect_managed_source_table_collections,
-    update_all_source_table_schemas,
+    update_all_managed_source_table_schemas,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -2017,13 +2016,9 @@ class UpdateBigQueryTableSchemasTest(BigQueryEmulatorTestCase):
         source_table_repository = SourceTableRepository(
             source_table_collections=get_dataflow_output_source_table_collections()
         )
-        update_all_source_table_schemas(
-            source_table_collections=collect_managed_source_table_collections(
-                source_table_repository
-            ),
+        update_all_managed_source_table_schemas(
+            source_table_repository=source_table_repository,
             update_manager=SourceTableUpdateManager(client=self.bq_client),
-            dry_run=False,
-            log_output=True,
         )
 
         found_bq_tables = build_bq_snapshot(bq_client=self.bq_client)

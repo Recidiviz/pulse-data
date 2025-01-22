@@ -99,16 +99,13 @@ def update_managed_views_operator() -> RecidivizKubernetesPodOperator:
     )
 
 
-def execute_update_big_query_table_schemata(
-    dry_run: bool,
-) -> RecidivizKubernetesPodOperator:
+def execute_update_big_query_table_schemata() -> RecidivizKubernetesPodOperator:
     task_id = "update_big_query_table_schemata"
     return build_kubernetes_pod_task(
         task_id=task_id,
         container_name=task_id,
         arguments=[
             "--entrypoint=UpdateBigQuerySourceTableSchemataEntrypoint",
-            f"--dry-run={dry_run}",
         ],
         trigger_rule=TriggerRule.ALL_DONE,
     )
@@ -296,9 +293,7 @@ def create_calculation_dag() -> None:
     # If the schema update is successful, we kick off BQ refresh.
     # If the schema update is not successful, we do not want to continue
     # with the rest of the DAG.
-    update_big_query_table_schemata = execute_update_big_query_table_schemata(
-        dry_run=False
-    )
+    update_big_query_table_schemata = execute_update_big_query_table_schemata()
 
     with TaskGroup("bq_refresh") as bq_refresh:
         operations_bq_refresh_completion = refresh_bq_dataset_operator(

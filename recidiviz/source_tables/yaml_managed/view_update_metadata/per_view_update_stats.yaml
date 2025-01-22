@@ -14,7 +14,7 @@ schema:
   - name: data_platform_version
     type: STRING
     mode: REQUIRED
-    description: The version of the deployed code running this update (e.g. "v1.123.0-alpha.1")
+    description: The version of the deployed code running this update (e.g. "v1.123.0-alpha.1").
   - name: dataset_id
     type: STRING
     mode: REQUIRED

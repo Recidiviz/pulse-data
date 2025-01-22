@@ -19,10 +19,15 @@ KubernetesPodOperator."""
 import argparse
 
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.source_tables.update_big_query_table_schemas import (
-    perform_bigquery_table_schema_update,
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    build_source_table_repository_for_collected_schemata,
 )
-from recidiviz.utils.params import str_to_bool
+from recidiviz.source_tables.update_big_query_table_schemas import (
+    SourceTableCheckType,
+    check_source_table_schemas,
+    update_all_managed_source_table_schemas,
+)
+from recidiviz.utils import metadata
 
 
 class UpdateBigQuerySourceTableSchemataEntrypoint(EntrypointInterface):
@@ -34,10 +39,21 @@ class UpdateBigQuerySourceTableSchemataEntrypoint(EntrypointInterface):
         # TODO(#27373): We likely will want to support a sandbox_dataset_prefix argument here for creation of sandbox
         # output tables
         parser = argparse.ArgumentParser()
-        parser.add_argument("--dry-run", type=str_to_bool, default=False)
-
         return parser
 
     @staticmethod
     def run_entrypoint(args: argparse.Namespace) -> None:
-        perform_bigquery_table_schema_update(dry_run=args.dry_run, log_output=True)
+        repository = build_source_table_repository_for_collected_schemata(
+            project_id=metadata.project_id(),
+        )
+
+        # Verify that none of the externally managed schemas have changed under us
+        # without a corresponding YAML change.
+        check_source_table_schemas(
+            source_table_repository=repository,
+            source_table_check_type=SourceTableCheckType.EXTERNALLY_MANAGED,
+        )
+
+        update_all_managed_source_table_schemas(
+            source_table_repository=repository,
+        )

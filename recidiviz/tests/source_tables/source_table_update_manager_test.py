@@ -41,6 +41,7 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.source_tables.source_table_update_manager import (
     SourceTableFailedToUpdateError,
+    SourceTableUpdateDryRunResult,
     SourceTableUpdateManager,
     SourceTableUpdateType,
 )
@@ -428,6 +429,10 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
         """Tests that the source tables changes are reflected in the dry run results"""
         collection = self.get_source_tables()[0]
 
+        modified_table_address = BigQueryAddress(
+            dataset_id="test_dataset", table_id="test_table_modified"
+        )
+
         # Modify a table to test changes
         collection.add_source_table(
             "test_table_modified",
@@ -436,6 +441,10 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
                 SchemaField("new_field", "STRING"),
             ],
         )
+
+        modified_table_config = collection.source_tables_by_address[
+            modified_table_address
+        ]
         update_manager = SourceTableUpdateManager(client=self.bq_client)
 
         with tempfile.NamedTemporaryFile() as file:
@@ -447,11 +456,18 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
         self.assertEqual(
             dict(changes),
             {
-                SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS: [
-                    BigQueryAddress(
-                        dataset_id="test_dataset", table_id="test_table_modified"
-                    )
-                ],
+                modified_table_address: SourceTableUpdateDryRunResult(
+                    source_table_config=modified_table_config,
+                    update_type=SourceTableUpdateType.UPDATE_SCHEMA_WITH_ADDITIONS,
+                    deployed_table=bigquery.Table(
+                        table_ref=bigquery.TableReference(
+                            bigquery.DatasetReference(
+                                "recidiviz-bq-emulator-project", "test_dataset"
+                            ),
+                            "test_table_modified",
+                        )
+                    ),
+                )
             },
         )
 
@@ -462,6 +478,10 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
             validation_config=SourceTableCollectionValidationConfig(
                 only_check_required_columns=True,
             ),
+        )
+
+        unmodified_table_address = BigQueryAddress(
+            dataset_id="test_dataset", table_id="test_table_modified"
         )
 
         # Update test_table_unmodified to only require the id column
@@ -480,6 +500,11 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
                 SchemaField("new_field", "STRING"),
             ],
         )
+
+        modified_table_config = collection.source_tables_by_address[
+            unmodified_table_address
+        ]
+
         update_manager = SourceTableUpdateManager(client=self.bq_client)
 
         with tempfile.NamedTemporaryFile() as file:
@@ -490,11 +515,18 @@ class SourceTableUpdateManagerDryRunTest(BigQueryEmulatorTestCase):
 
             self.assertEqual(
                 {
-                    SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES: [
-                        BigQueryAddress(
-                            dataset_id="test_dataset", table_id="test_table_modified"
-                        )
-                    ]
+                    unmodified_table_address: SourceTableUpdateDryRunResult(
+                        source_table_config=modified_table_config,
+                        update_type=SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES,
+                        deployed_table=bigquery.Table(
+                            bigquery.TableReference(
+                                bigquery.DatasetReference(
+                                    "recidiviz-bq-emulator-project", "test_dataset"
+                                ),
+                                "test_table_modified",
+                            )
+                        ),
+                    )
                     # test_table_unmodified had no changes as all required columns existed
                 },
                 dict(changes),
