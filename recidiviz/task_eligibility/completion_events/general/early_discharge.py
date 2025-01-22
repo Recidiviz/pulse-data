@@ -19,6 +19,7 @@ states.
 """
 
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateAgnosticTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
@@ -45,6 +46,7 @@ VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
         description=_DESCRIPTION,
         completion_event_query_template=_QUERY_TEMPLATE,
         analyst_data_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+        states_to_exclude=[StateCode.US_OR],
     )
 )
 

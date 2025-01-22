@@ -18,9 +18,10 @@
 given type. These views are used as inputs to a task eligibility spans view.
 """
 from enum import Enum
-from typing import Union
+from typing import List, Optional, Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.decarceral_impact_type import DecarceralImpactType
 from recidiviz.task_eligibility.dataset_config import (
@@ -359,6 +360,25 @@ class StateSpecificTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuil
         self.task_title = self.task_type_name.replace("_", " ").title()
 
 
+def exclude_states_in_state_specific_views(
+    query_template: str,
+    states_to_exclude: Optional[List[StateCode]] = None,
+) -> str:
+    """Wraps the base query in a CTE and excludes states that are specified in the view builder as having state-specific
+    version of the completion event"""
+
+    if states_to_exclude:
+        state_code_query_fragment = f"\nWHERE state_code NOT IN  ('{list_to_query_string([x.name for x in states_to_exclude])}')"
+    else:
+        state_code_query_fragment = ""
+    return f"""
+    WITH base_query AS (
+    {query_template.rstrip().rstrip(";")}
+    )
+    SELECT * FROM base_query{state_code_query_fragment}
+    """
+
+
 class StateAgnosticTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """Defines a BigQueryViewBuilder that can be used to define task completion events
     of a given type. These views are used as inputs to a task eligibility spans view.
@@ -369,6 +389,7 @@ class StateAgnosticTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuil
         completion_event_type: TaskCompletionEventType,
         completion_event_query_template: str,
         description: str,
+        states_to_exclude: Optional[List[StateCode]] = None,
         **query_format_kwargs: str,
     ) -> None:
         view_id = completion_event_type.value.lower()
@@ -376,7 +397,9 @@ class StateAgnosticTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuil
             dataset_id=TASK_COMPLETION_EVENTS_DATASET_ID,
             view_id=view_id,
             description=description,
-            view_query_template=completion_event_query_template,
+            view_query_template=exclude_states_in_state_specific_views(
+                completion_event_query_template, states_to_exclude
+            ),
             should_materialize=True,
             materialized_address_override=None,
             projects_to_deploy=None,
@@ -388,6 +411,7 @@ class StateAgnosticTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuil
         self.completion_event_type = completion_event_type
         self.task_type_name = completion_event_type.name
         self.task_title = self.task_type_name.replace("_", " ").title()
+        self.states_to_exclude = states_to_exclude
 
 
 TaskCompletionEventBigQueryViewBuilder = Union[
