@@ -535,6 +535,7 @@ class PrepRosterSyncTest(TestCase):
                 "last_name": "User",
                 "user_hash": "user1hash",
                 "blocked": True,
+                "blocked_on": datetime.fromisoformat("2023-01-01"),
             },
             {
                 "state_code": "US_XX",
