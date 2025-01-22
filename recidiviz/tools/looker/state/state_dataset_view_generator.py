@@ -74,12 +74,23 @@ def _field_type_for_column(column: sqlalchemy.Column) -> LookMLFieldType:
     )
 
 
+def _non_time_field_type_for_column(column: sqlalchemy.Column) -> LookMLFieldType:
+    """Convert the provided column's field type into a LookMLFieldType, excluding TIME types."""
+    field_type = _field_type_for_column(column)
+    if field_type == LookMLFieldType.TIME:
+        raise ValueError(f"Column {column.name} is a TIME type column")
+
+    return field_type
+
+
 def _build_time_column_dimension_group(
     column_name: str,
+    time_frame_options: List[LookMLTimeframesOption],
+    field_data_type: LookMLFieldDatatype,
 ) -> DimensionGroupLookMLViewField:
     """
     Return a DimensionGroupLookMLField corresponding to the given column,
-    which should be of type TIME. Dates and timestamps can be represented
+    which should be of type TIME. Dates, datetimes, and timestamps can be represented
     in Looker using a dimension group of type: time.
     """
     field_name = column_name
@@ -87,20 +98,46 @@ def _build_time_column_dimension_group(
         field_name=field_name,
         parameters=[
             LookMLFieldParameter.type(LookMLFieldType.TIME),
-            LookMLFieldParameter.timeframes(
-                [
-                    LookMLTimeframesOption.RAW,
-                    LookMLTimeframesOption.DATE,
-                    LookMLTimeframesOption.WEEK,
-                    LookMLTimeframesOption.MONTH,
-                    LookMLTimeframesOption.QUARTER,
-                    LookMLTimeframesOption.YEAR,
-                ]
-            ),
+            LookMLFieldParameter.timeframes(time_frame_options),
             LookMLFieldParameter.convert_tz(False),
-            LookMLFieldParameter.datatype(LookMLFieldDatatype.DATE),
+            LookMLFieldParameter.datatype(field_data_type),
             LookMLFieldParameter.sql(f"${{TABLE}}.{column_name}"),
         ],
+    )
+
+
+def _build_datetime_column_dimension_group(
+    column_name: str,
+) -> DimensionGroupLookMLViewField:
+    return _build_time_column_dimension_group(
+        column_name=column_name,
+        time_frame_options=[
+            LookMLTimeframesOption.RAW,
+            LookMLTimeframesOption.TIME,
+            LookMLTimeframesOption.DATE,
+            LookMLTimeframesOption.WEEK,
+            LookMLTimeframesOption.MONTH,
+            LookMLTimeframesOption.QUARTER,
+            LookMLTimeframesOption.YEAR,
+        ],
+        field_data_type=LookMLFieldDatatype.DATETIME,
+    )
+
+
+def _build_date_column_dimension_group(
+    column_name: str,
+) -> DimensionGroupLookMLViewField:
+    return _build_time_column_dimension_group(
+        column_name=column_name,
+        time_frame_options=[
+            LookMLTimeframesOption.RAW,
+            LookMLTimeframesOption.DATE,
+            LookMLTimeframesOption.WEEK,
+            LookMLTimeframesOption.MONTH,
+            LookMLTimeframesOption.QUARTER,
+            LookMLTimeframesOption.YEAR,
+        ],
+        field_data_type=LookMLFieldDatatype.DATE,
     )
 
 
@@ -136,11 +173,17 @@ def get_lookml_view_table(
 
     fields: List[LookMLViewField] = []
     for column in sorted(table.columns, key=lambda c: c.name):
-        field_type = _field_type_for_column(column)
-        if field_type == LookMLFieldType.TIME:
-            fields.append(_build_time_column_dimension_group(column.name))
+        column_type = bq_schema_column_type_for_sqlalchemy_column(column)
+        if column_type == bigquery.enums.SqlTypeNames.DATETIME:
+            fields.append(_build_datetime_column_dimension_group(column.name))
+        elif column_type == bigquery.enums.SqlTypeNames.DATE:
+            fields.append(_build_date_column_dimension_group(column.name))
         else:
-            fields.append(_build_column_dimension(table.name, column.name, field_type))
+            fields.append(
+                _build_column_dimension(
+                    table.name, column.name, _non_time_field_type_for_column(column)
+                )
+            )
 
     fields.append(
         MeasureLookMLViewField(
