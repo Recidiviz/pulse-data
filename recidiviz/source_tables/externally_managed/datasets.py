@@ -40,6 +40,8 @@ MANUALLY_UPDATED_SOURCE_TABLES_DATASET: str = "manually_updated_source_tables"
 
 VALIDATION_RESULTS_DATASET_ID: str = "validation_results"
 
+ALL_BILLING_DATA_DATASET: str = "all_billing_data"
+
 
 VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
     validation_oneoff_dataset_for_state(state_code): (
@@ -97,4 +99,5 @@ EXTERNALLY_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     VALIDATION_RESULTS_DATASET_ID: (
         "Stores results from our data validations framework."
     ),
+    ALL_BILLING_DATA_DATASET: "Stores information about our GCP cloud costs",
 }
