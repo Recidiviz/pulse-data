@@ -225,6 +225,8 @@ def state_specific_facility_exclusion(optional_prefix: Optional[str] = None) -> 
 def state_specific_external_id_type(state_code_table_prefix: str) -> str:
     return f"""
         CASE 
+          WHEN {state_code_table_prefix}.state_code = 'US_AZ'
+          THEN 'US_AZ_PERSON_ID'
           WHEN {state_code_table_prefix}.state_code = 'US_CA'
           THEN 'US_CA_DOC'
           WHEN {state_code_table_prefix}.state_code = 'US_ID'
@@ -245,8 +247,8 @@ def state_specific_external_id_type(state_code_table_prefix: str) -> str:
           THEN 'US_PA_PBPP'
           WHEN {state_code_table_prefix}.state_code = 'US_TN'
           THEN 'US_TN_DOC'
-          WHEN {state_code_table_prefix}.state_code = 'US_AZ'
-          THEN 'US_AZ_PERSON_ID'
+          WHEN {state_code_table_prefix}.state_code = 'US_TX'
+          THEN 'US_TX_SID'
         END
     """
 

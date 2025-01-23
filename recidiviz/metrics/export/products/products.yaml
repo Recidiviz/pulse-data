@@ -101,28 +101,30 @@ products:
     exports:
       - WORKFLOWS_FIRESTORE
     states:
-      - state_code: US_TN
+      - state_code: US_AR
         environment: production
-      - state_code: US_ND
+      - state_code: US_AZ
         environment: production
-      - state_code: US_ME
+      - state_code: US_CA
         environment: production
       - state_code: US_IX
         environment: production
-      - state_code: US_MO
-        environment: production
       - state_code: US_MI
         environment: production
-      - state_code: US_CA
+      - state_code: US_ME
+        environment: production
+      - state_code: US_MO
+        environment: production
+      - state_code: US_ND
         environment: production
       - state_code: US_OR
         environment: production
       - state_code: US_PA
         environment: production
-      - state_code: US_AR
+      - state_code: US_TN
         environment: production
-      - state_code: US_AZ
-        environment: production
+      - state_code: US_TX
+        environment: staging
   - name: Insights
     description: Insights is a state-agnostic product offering for staff performance and accountability.
     exports:

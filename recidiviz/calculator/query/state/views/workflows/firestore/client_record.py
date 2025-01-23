@@ -83,7 +83,8 @@ WORKFLOWS_CONFIGS_WITH_CLIENTS = [
 
 WORKFLOWS_SUPERVISION_STATES = sorted(
     {config.state_code.value for config in WORKFLOWS_CONFIGS_WITH_CLIENTS}
-)
+) + ["US_TX"]
+# Note: TX currently only supports tasks and not any opportunities
 
 WORKFLOWS_MILESTONES_STATES = ["US_IX", "US_MI", "US_CA"]
 
