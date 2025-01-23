@@ -1,5 +1,5 @@
 #  Recidiviz - a data platform for criminal justice reform
-#  Copyright (C) 2022 Recidiviz, Inc.
+#  Copyright (C) 2025 Recidiviz, Inc.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -171,6 +171,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_full_term_
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_supervision_level_downgrade_record import (
     US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_suspension_of_direct_supervision_record import (
+    US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_record import (
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
 )
@@ -228,4 +231,5 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_VIEW_BUILDER,
     US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
     US_PA_COMPLETE_TRANSFER_TO_SPECIAL_CIRCUMSTANCES_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
+    US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_BUILDER,
 ]

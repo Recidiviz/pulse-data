@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -556,6 +556,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         source_filename="us_tn_supervision_level_downgrade_record.json",
         export_collection_name="US_TN-supervisionLevelDowngrade",
         opportunity_type_path_str="supervisionLevelDowngrade",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_TN,
+        opportunity_type="usTnSuspensionOfDirectSupervision",
+        experiment_id="US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_WORKFLOWS",
+        opportunity_record_view_name="us_tn_suspension_of_direct_supervision_record_materialized",
+        task_completion_event=TaskCompletionEventType.TRANSFER_TO_NO_CONTACT_PAROLE,
+        source_filename="us_tn_suspension_of_direct_supervision_record.json",
+        export_collection_name="US_TN-suspensionOfDirectSupervisionReferrals",
+        opportunity_type_path_str="suspensionOfDirectSupervision",
         person_record_type=PersonRecordType.CLIENT,
     ),
     WorkflowsOpportunityConfig(
