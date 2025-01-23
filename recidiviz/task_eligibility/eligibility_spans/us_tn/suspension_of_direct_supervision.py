@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     no_supervision_sanction_within_1_year,
     no_warrant_within_2_years,
     not_interstate_compact_incoming,
-    not_on_life_sentence_or_lifetime_supervision,
+    not_on_community_supervision_for_life,
     special_conditions_are_current,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -77,7 +77,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_supervision_sanction_within_1_year.VIEW_BUILDER,
         no_warrant_within_2_years.VIEW_BUILDER,
         not_interstate_compact_incoming.VIEW_BUILDER,
-        not_on_life_sentence_or_lifetime_supervision.VIEW_BUILDER,
+        not_on_community_supervision_for_life.VIEW_BUILDER,
         # TODO(#33635): Double-check that this existing state-specific criterion is
         # correct for the specific SDS requirement that individuals must have completed
         # and/or complied with all special conditions.

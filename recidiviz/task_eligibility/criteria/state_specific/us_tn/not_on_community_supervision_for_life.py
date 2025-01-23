@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time during which someone in TN is not serving a life sentence
-or on lifetime supervision.
+"""Describes the spans of time during which someone in TN is not on Community
+Supervision for Life, a specific type of lifetime supervision (for sex offenses).
 """
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
@@ -27,24 +27,26 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TN_NOT_ON_LIFE_SENTENCE_OR_LIFETIME_SUPERVISION"
+_CRITERIA_NAME = "US_TN_NOT_ON_COMMUNITY_SUPERVISION_FOR_LIFE"
 
-# TODO(#35808): Account for scenarios in which a life sentence might actually end (i.e.,
+# TODO(#35808): Account for scenarios in which a CSL sentence might actually end (i.e.,
 # commutation, if the sentence is vacated, or if someone under Community Supervision for
 # Life successfully petitions for discharge).
 _QUERY_TEMPLATE = f"""
     SELECT
         state_code,
         person_id,
-        -- person becomes ineligible once any life sentence is imposed for them
+        -- person becomes ineligible once any CSL sentence is imposed for them
         MIN(date_imposed) AS start_date,
-        -- person will remain ineligible forever after a life sentence is imposed
+        -- person will remain ineligible forever after a CSL sentence is imposed
         CAST(NULL AS DATE) AS end_date,
         FALSE AS meets_criteria,
         CAST(NULL AS JSON) AS reason,
     FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
     WHERE state_code='US_TN'
-        AND life_sentence
+        /* Only consider CSL sentences, which are indicated by `CSL_FLAG` in the
+        sentence metadata. */
+        AND COALESCE(JSON_VALUE(sentence_metadata, '$.CSL_FLAG'), 'UNKNOWN')='Y'
         /* Drop zero-day sentences and sentences where the `date_imposed` is after the
         `projected_completion_date_max`. */
         AND {nonnull_end_date_exclusive_clause('projected_completion_date_max')}>date_imposed
