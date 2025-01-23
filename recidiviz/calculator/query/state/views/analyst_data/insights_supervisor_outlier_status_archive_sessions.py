@@ -80,7 +80,7 @@ aggregated_spans AS (
 )
 SELECT
     aggregated_spans.*,
-    staff.email AS email_address,
+    LOWER(staff.email) AS email_address,
 FROM
     aggregated_spans
 INNER JOIN
