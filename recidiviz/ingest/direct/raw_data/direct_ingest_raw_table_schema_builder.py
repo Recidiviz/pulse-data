@@ -157,6 +157,6 @@ class RawDataTableBigQuerySchemaBuilder:
         """
         return cls.build_bq_schema_for_config_from_columns(
             raw_file_config=raw_file_config,
-            columns=[col.name for col in raw_file_config.columns],
+            columns=[col.name for col in raw_file_config.current_columns],
             include_recidiviz_managed_fields=include_recidiviz_managed_fields,
         )

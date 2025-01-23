@@ -1551,7 +1551,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                     known_values=None,
                 ),
             ],
-            config_3.columns,
+            config_3.current_columns,
         )
         self.assertEqual(
             [expected_config_1_config_3_relationship], config_3.table_relationships

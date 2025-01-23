@@ -58,7 +58,7 @@ class TestRawDataTableBigQuerySchemaBuilder(TestCase):
     def test_build_schmea_for_big_query_simple(self) -> None:
         config = self.region_raw_file_config.raw_file_configs["tagBasicData"]
         expected_raw_table_field_names = {
-            col.name: col.description or "" for col in config.columns
+            col.name: col.description or "" for col in config.current_columns
         }
         actual_fields_no_managed = (
             RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
@@ -71,6 +71,9 @@ class TestRawDataTableBigQuerySchemaBuilder(TestCase):
             assert field.description == expected_raw_table_field_names[field.name]
             assert field.mode == "NULLABLE"
             assert field.field_type == bigquery.enums.SqlTypeNames.STRING.value
+
+        for column in expected_raw_table_field_names:
+            assert column in [field.name for field in actual_fields_no_managed]
 
         actual_fields_with_managed = (
             RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config(
@@ -96,7 +99,7 @@ class TestRawDataTableBigQuerySchemaBuilder(TestCase):
     def test_build_schmea_for_big_query_from_columns(self) -> None:
         config = self.region_raw_file_config.raw_file_configs["tagBasicData"]
         expected_raw_table_field_names = {
-            col.name: col.description or "" for col in config.columns
+            col.name: col.description or "" for col in config.current_columns
         }
         expected_raw_table_field_names["extra_col_1"] = ""
         actual_fields_no_managed = (
@@ -112,6 +115,9 @@ class TestRawDataTableBigQuerySchemaBuilder(TestCase):
             assert field.description == expected_raw_table_field_names[field.name]
             assert field.mode == "NULLABLE"
             assert field.field_type == bigquery.enums.SqlTypeNames.STRING.value
+
+        for column in expected_raw_table_field_names:
+            assert column in [field.name for field in actual_fields_no_managed]
 
         actual_fields_with_managed = (
             RawDataTableBigQuerySchemaBuilder.build_bq_schema_for_config_from_columns(

@@ -15,6 +15,12 @@ columns:
   - name: COL3
     description: |-
       column 3 description
+  - name: COL4
+    description: |-
+      column 4 description
+    update_history:
+      - update_type: DELETION
+        update_datetime: 2021-01-01T00:00:00+00:00
 custom_line_terminator: "\n"
 table_relationships:
   - foreign_table: file_tag_first
