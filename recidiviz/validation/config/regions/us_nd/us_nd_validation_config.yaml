@@ -87,3 +87,8 @@ num_allowed_rows_overrides:
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 25
     override_reason: TODO(#26250) - Needs investigation
+  - validation_name: normalized_state_charge_missing_uniform_offense_labels
+    hard_num_allowed_rows_override: 100
+    override_reason: |-
+      Will slowly grow until we rerun the CJARS script, which is currently loosely owned
+      by DSI.
