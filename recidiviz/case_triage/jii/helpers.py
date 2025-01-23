@@ -36,13 +36,13 @@ from recidiviz.case_triage.workflows.utils import (
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.string import StrictStringFormatter
 
-INITIAL_TEXT = "Hi {given_name}, we’re reaching out on behalf of the Idaho Department of Correction (IDOC). We will send information to this number about your eligibility for opportunities such as the Limited Supervision Unit (LSU), which offers a lower level of supervision.\n\nIf you have questions, reach out to {po_name}."
+INITIAL_TEXT = "Hi {given_name}, we’re reaching out on behalf of the Idaho Department of Correction (IDOC). You’re now subscribed to receive updates about potential opportunities such as the Limited Supervision Unit (LSU), which offers a lower level of supervision.\n\nWe’ll let you know by texting this number if you meet the criteria for specific programs. Receiving this message does not mean you’re already eligible for any opportunity.\n\nIf you have questions, reach out to {po_name}."
 FULLY_ELIGIBLE_TEXT = "Hi {given_name}, IDOC records show that you have met most of the requirements to be considered for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins for those in good standing (for example, no new misdemeanors).\n\nThis message does not mean that you have already been transferred to LSU. To fully qualify, your PO will need to check that:\n1. You have no active no-contact orders.\n2. You have made payments towards your fines/fees at least 3 months in a row (even small payments count).\n\nIf you believe you meet these conditions or have questions, please contact {po_name}{additional_contact}; they can confirm your eligibility and help you apply. Approval for LSU is not guaranteed."
-FULLY_ELIGIBLE_EXCEPT_FFR = "Hi {given_name}, IDOC records show that you meet most requirements, but have a remaining step in order to be considered for the Limited Supervision Unit (LSU). If you make fine/fee payments at least 3 months in a row (even small payments count), you may qualify.\n\nLSU is a lower level of supervision with monthly online check-ins for those in good standing (for example, no active no-contact orders, and no new misdemeanors). It also reduces your monthly supervision fee from $60 to $30. LSU is optional, and this message does not mean you have already been transferred.\n\nYou can reach out to {po_name}{additional_contact} to make payments or with questions about LSU. If you meet all the criteria, they can help you apply."
-MISSING_NEGATIVE_DA_OR_INCOME = "Hi {given_name}, IDOC records show you may soon be eligible to apply for the Limited Supervision Unit (LSU), a lower level of supervision for those meeting all their required conditions (for example, no active no-contact orders and no new misdemeanors).\n\nLSU is optional but offers benefits like monthly online check-ins and reduced supervision fees ($30 instead of $60/month).\n\nTo qualify, you’ll need to provide your PO with {missing_documentation}.\n\nAdditionally, you must have paid towards your fines/fees at least 3 months in a row (even small payments count).\n\nIf interested, contact {po_name}{additional_contact} to verify your eligibility and apply."
-MISSING_NEGATIVE_DA_DOCUMENTATION = "a negative urine analysis test"
-MISSING_INCOME_DOCUMENTATION = "documents like pay-stubs proving you have full-time employment, are a student, or other income sources like a pension"
-MISSING_NEGATIVE_DA_AND_INCOME = "Hi {given_name}, IDOC records show you may soon be eligible to apply for the Limited Supervision Unit (LSU), a lower level of supervision for those meeting all their required conditions.\n\nLSU is optional but offers benefits like monthly online check-ins and reduced supervision fees ($30 instead of $60/month).\n\nTo qualify, you’ll need to provide your PO with:\n1. Documents like pay-stubs proving you have full-time employment, are a student, or other income sources like a pension, and\n2. A negative urine analysis test.\n\nAdditionally, you must have paid towards your fines/fees at least 3 months in a row (even small payments count).\n\nIf interested, contact {po_name}{additional_contact} to verify your eligibility and apply."
+FULLY_ELIGIBLE_EXCEPT_FFR = "Hi {given_name}, IDOC records show you meet most requirements but have a remaining step to be considered for the Limited Supervision Unit (LSU). If you make fine/fee payments for 3 months in a row (even small payments count), you may qualify.\n\nLSU is a lower level of supervision with monthly online check-ins for those in good standing (for example, no active no-contact orders, and no new misdemeanors). It reduces your monthly supervision fee from $60 to $30. LSU is optional, and this message does not mean you have already been transferred.\n\nYou can reach out to {po_name}{additional_contact} to make payments or with questions about LSU. They must verify that you are in compliance with your conditions of supervision. If you are, they can help you apply."
+MISSING_INCOME = "Hi {given_name}, IDOC records show you may soon be eligible to apply for the Limited Supervision Unit (LSU), a lower level of supervision for those meeting all their required conditions. This message does not mean you are already eligible.\n\nLSU is optional but offers benefits like monthly online check-ins and reduced supervision fees ($30 vs. $60/month).\n\nTo qualify, you’ll need to provide your PO with documents like pay-stubs proving you have full-time employment, are a student, or other income sources like a pension.\n\nYou must also have paid towards your fines/fees at least 3 months in a row (even small payments count).\n\nIf interested, contact {po_name}{additional_contact}. They must first confirm your eligibility, then can help you apply."
+MISSING_NEGATIVE_DA = "Hi {given_name}, IDOC records show you may soon be eligible to apply for the Limited Supervision Unit (LSU), a lower level of supervision for those meeting all their required conditions. This message does not mean you are already eligible.\n\nLSU is optional but offers benefits like monthly online check-ins and reduced supervision fees ($30 instead of $60/month).\n\nTo qualify, you’ll need to provide your PO with a negative urine analysis test.\n\nAdditionally, you must have paid towards your fines/fees at least 3 months in a row (even small payments count).\n\nIf interested, contact {po_name}{additional_contact}. They must verify that you are in compliance with your conditions of supervision. If you are, they can help you apply."
+MISSING_NEGATIVE_DA_AND_INCOME = "Hi {given_name}, IDOC records show you may soon be eligible to apply for the Limited Supervision Unit (LSU), a lower level of supervision for those meeting all their required conditions.\n\nLSU is optional but offers benefits like monthly online check-ins and reduced supervision fees ($30 instead of $60/month).\n\nTo qualify, you’ll need to provide your PO with:\n1. Documents like pay-stubs proving you have full-time employment, are a student, or other income sources like a pension, and\n2. A negative urine analysis test.\n\nAdditionally, you must have paid towards your fines/fees at least 3 months in a row (even small payments count).\n\nIf interested, contact {po_name}{additional_contact}. They must first confirm your eligibility, then can help you apply."
+VISIT = "\n\nSee all requirements at rviz.co/id_lsu."
 LEARN_MORE = "\n\nLearn more at rviz.co/id_lsu."
 ALL_CLOSER = "\n\nReply STOP to stop receiving these messages at any time. We’re unable to respond to messages sent to this number."
 
@@ -228,6 +228,7 @@ def construct_text_body(
             po_name=po_name,
             additional_contact=additional_contact,
         )
+        text_body += LEARN_MORE
     elif fully_eligible is True and fines_n_fees_denials is True:
         text_body += StrictStringFormatter().format(
             FULLY_ELIGIBLE_EXCEPT_FFR,
@@ -235,28 +236,29 @@ def construct_text_body(
             po_name=po_name,
             additional_contact=additional_contact,
         )
+        text_body += LEARN_MORE
     elif (
         missing_negative_da_within_90_days is True
         and missing_income_verified_within_3_months is False
     ):
         text_body += StrictStringFormatter().format(
-            MISSING_NEGATIVE_DA_OR_INCOME,
+            MISSING_NEGATIVE_DA,
             given_name=given_name,
-            missing_documentation=MISSING_NEGATIVE_DA_DOCUMENTATION,
             po_name=po_name,
             additional_contact=additional_contact,
         )
+        text_body += VISIT
     elif (
         missing_negative_da_within_90_days is False
         and missing_income_verified_within_3_months is True
     ):
         text_body += StrictStringFormatter().format(
-            MISSING_NEGATIVE_DA_OR_INCOME,
+            MISSING_INCOME,
             given_name=given_name,
-            missing_documentation=MISSING_INCOME_DOCUMENTATION,
             po_name=po_name,
             additional_contact=additional_contact,
         )
+        text_body += VISIT
     elif (
         missing_negative_da_within_90_days is True
         and missing_income_verified_within_3_months is True
@@ -267,8 +269,8 @@ def construct_text_body(
             po_name=po_name,
             additional_contact=additional_contact,
         )
+        text_body += VISIT
 
-    text_body += LEARN_MORE
     text_body += ALL_CLOSER
     return text_body
 

@@ -26,10 +26,10 @@ from recidiviz.case_triage.jii.helpers import (
     FULLY_ELIGIBLE_TEXT,
     INITIAL_TEXT,
     LEARN_MORE,
-    MISSING_INCOME_DOCUMENTATION,
+    MISSING_INCOME,
+    MISSING_NEGATIVE_DA,
     MISSING_NEGATIVE_DA_AND_INCOME,
-    MISSING_NEGATIVE_DA_DOCUMENTATION,
-    MISSING_NEGATIVE_DA_OR_INCOME,
+    VISIT,
     generate_eligibility_text_messages_dict,
     generate_initial_text_messages_dict,
 )
@@ -392,13 +392,12 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
                 "external_id": "0",
                 "phone_num": "1234567890",
                 "text_body": StrictStringFormatter().format(
-                    MISSING_NEGATIVE_DA_OR_INCOME,
+                    MISSING_INCOME,
                     given_name="Ted",
-                    missing_documentation=MISSING_INCOME_DOCUMENTATION,
                     po_name="Test Po 1",
                     additional_contact=" or contact a specialist at district2Admin@idoc.idaho.gov",
                 )
-                + LEARN_MORE
+                + VISIT
                 + ALL_CLOSER,
                 "po_name": "Test Po 1",
                 "district": "district 2",
@@ -410,13 +409,12 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
                 "external_id": "1",
                 "phone_num": "1111111111",
                 "text_body": StrictStringFormatter().format(
-                    MISSING_NEGATIVE_DA_OR_INCOME,
+                    MISSING_NEGATIVE_DA,
                     given_name="Roy",
-                    missing_documentation=MISSING_NEGATIVE_DA_DOCUMENTATION,
                     po_name="Test Po 1",
                     additional_contact=" or a specialist at d4ppspecialists@idoc.idaho.gov or 208-327-7008",
                 )
-                + LEARN_MORE
+                + VISIT
                 + ALL_CLOSER,
                 "po_name": "Test Po 1",
                 "district": "district 4",
@@ -450,7 +448,7 @@ class TestSendJIITexts(BigQueryEmulatorTestCase):
                     po_name="Test Po 2",
                     additional_contact=" or a specialist at specialistsd3@idoc.idaho.gov or (208) 454-7601",
                 )
-                + LEARN_MORE
+                + VISIT
                 + ALL_CLOSER,
                 "po_name": "Test Po 2",
                 "district": "district 3",
