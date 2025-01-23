@@ -49,7 +49,7 @@ from typing import Dict, List, Optional, Set, Type, cast
 
 import attr
 import pandas as pd
-from google.cloud.bigquery import DatasetReference, WriteDisposition
+from google.cloud.bigquery import DatasetReference
 from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -309,12 +309,12 @@ class StateDatasetValidator:
             ).format_address_for_query(),
             state_code_filter=self.state_code_filter.value,
         )
-        self.bq_client.insert_into_table_from_query_async(
-            destination_address=mappings_address.to_project_agnostic_address(),
-            write_disposition=WriteDisposition.WRITE_TRUNCATE,
+        self.bq_client.create_table_from_query(
+            address=mappings_address.to_project_agnostic_address(),
             query=query,
             use_query_cache=False,
-        ).result()
+            overwrite=True,
+        )
 
     def output_root_entity_id_mapping_errors(
         self, root_entity_cls: Type[Entity]
@@ -342,12 +342,11 @@ class StateDatasetValidator:
         jobs = []
         for output_table_id, template in output_table_id_to_template.items():
             jobs.append(
-                self.bq_client.insert_into_table_from_query_async(
-                    destination_address=BigQueryAddress(
+                self.bq_client.create_table_from_query_async(
+                    address=BigQueryAddress(
                         dataset_id=self.output_dataset_id,
                         table_id=output_table_id,
                     ),
-                    write_disposition=WriteDisposition.WRITE_TRUNCATE,
                     query=StrictStringFormatter().format(
                         template,
                         root_entity_id_col=root_entity_id_col,
@@ -360,6 +359,7 @@ class StateDatasetValidator:
                         state_code_filter=self.state_code_filter.value,
                     ),
                     use_query_cache=False,
+                    overwrite=True,
                 )
             )
         self.bq_client.wait_for_big_query_jobs(jobs)
@@ -618,12 +618,12 @@ USING({associated_entity_2_pk})
             table_id=f"{table_address.table_id}_{dataset_name}_comparable",
         )
 
-        self.bq_client.insert_into_table_from_query_async(
-            destination_address=comparable_table_address.to_project_agnostic_address(),
-            write_disposition=WriteDisposition.WRITE_TRUNCATE,
+        self.bq_client.create_table_from_query(
+            address=comparable_table_address.to_project_agnostic_address(),
             query=comparable_rows_query,
             use_query_cache=False,
-        ).result()
+            overwrite=True,
+        )
         return comparable_table_address
 
     def _root_is_direct_parent(self, entity_cls: Type[Entity]) -> bool:

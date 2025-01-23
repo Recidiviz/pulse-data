@@ -89,7 +89,7 @@ def create_or_update_source_table_collections(
             "Cannot create sandboxed datasets for non-sandboxed collections"
         )
 
-    update_manager = SourceTableUpdateManager()
+    update_manager = SourceTableUpdateManager(bq_client)
     update_manager.update_async(
         source_table_collections=source_table_collections,
         log_file=os.path.join(

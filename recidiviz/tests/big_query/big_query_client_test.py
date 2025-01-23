@@ -803,7 +803,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             not_found_ok=True,
         )
 
-    def test_create_table_from_query(self) -> None:
+    def test_create_table_from_query_async(self) -> None:
         """Tests that the create_table_from_query function calls the function to create a table from a query."""
         self.bq_client.create_table_from_query_async(
             address=self.mock_table_address,
@@ -813,24 +813,34 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
         self.mock_client.query.assert_called()
 
-    def test_insert_into_table_from_query_async_with_clustering_fields(
+    def test_create_table_from_query(self) -> None:
+        """Tests that the create_table_from_query function calls the function to create a table from a query."""
+        self.bq_client.create_table_from_query(
+            address=self.mock_table_address,
+            query="SELECT * FROM some.fake.table",
+            query_parameters=[],
+            use_query_cache=False,
+        )
+        self.mock_client.query.assert_called()
+
+    def test_create_table_from_query_async_with_clustering_fields(
         self,
     ) -> None:
         """
-        Tests that insert_into_table_from_query_async() handles BigQueryViews that
+        Tests that create_table_from_query_async() handles BigQueryViews that
         include clustering_fields in the config passed to client.query().
         """
         fake_query = "SELECT NULL LIMIT 0"
         fake_cluster_fields = ["clustering_field_1", "clustering_field_2"]
-        self.bq_client.insert_into_table_from_query_async(
-            destination_address=BigQueryAddress(
+        self.bq_client.create_table_from_query_async(
+            address=BigQueryAddress(
                 dataset_id=self.mock_dataset_id,
                 table_id="fake_table_temp",
             ),
             query=fake_query,
-            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
             clustering_fields=fake_cluster_fields,
             use_query_cache=False,
+            overwrite=True,
         )
 
         # get inputs passed to client.query()
@@ -859,7 +869,6 @@ class BigQueryClientImplTest(unittest.TestCase):
                     table_id="fake_table_temp",
                 ),
                 query=fake_query,
-                write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
                 clustering_fields=fake_cluster_fields,
                 use_query_cache=False,
             )
@@ -2798,7 +2807,8 @@ class BigQueryClientImplTest(unittest.TestCase):
                     ),
                     exists_ok=False,
                 ),
-            ]
+            ],
+            any_order=True,
         )
 
     def test_copy_dataset_tables_overwrite(self) -> None:
@@ -3070,6 +3080,36 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.assertEqual(
             "dataset_id_2021_04_14_03_14_23_567800", dataset_id_with_timestamp
         )
+
+    def test_row_level_permissions(self) -> None:
+        table_ref = bigquery.TableReference(
+            bigquery.DatasetReference(self.mock_project_id, "us_oz_dataset"),
+            "table",
+        )
+        table = bigquery.Table(
+            table_ref, [bigquery.SchemaField("state_code", "STRING")]
+        )
+        self.mock_client.create_table.return_value = table
+
+        self.bq_client.create_table(table)
+
+        self.mock_client.query.assert_called_once()
+        query = self.mock_client.query.mock_calls[0].kwargs["query"]
+        self.assertIn("DROP ALL ROW ACCESS POLICIES", query)
+        self.assertIn("CREATE OR REPLACE ROW ACCESS POLICY", query)
+
+    def test_no_row_level_permissions(self) -> None:
+        table_ref = bigquery.TableReference(
+            bigquery.DatasetReference(self.mock_project_id, "dataset"),
+            "table",
+        )
+        table = bigquery.Table(table_ref)
+        self.mock_client.create_table.return_value = table
+
+        self.bq_client.create_table(table)
+
+        # Don't apply row-level permissions for non-state specific tables
+        self.mock_client.query.assert_not_called()
 
 
 class MaterializeTableJobConfigMatcher:

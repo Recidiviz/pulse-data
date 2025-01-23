@@ -142,6 +142,9 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         )
         self.bq_error_handling_patcher.start()
         self.bq_client = BigQueryClientImpl()
+        self.bq_client.apply_row_level_permissions = Mock(  # type: ignore
+            return_value="Row level permissions not supported in BQ Emulator"
+        )
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()

@@ -56,7 +56,6 @@ from datetime import date
 from typing import List
 
 from google.cloud import bigquery
-from google.cloud.bigquery import WriteDisposition
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -225,7 +224,6 @@ def load_from_temp_to_permanent_table(
             temp_table=TEMP_DESTINATION_ADDRESS.table_id,
             final_table=FINAL_DESTINATION_ADDRESS.table_id,
         ),
-        write_disposition=WriteDisposition.WRITE_APPEND,
         use_query_cache=True,
     )
 

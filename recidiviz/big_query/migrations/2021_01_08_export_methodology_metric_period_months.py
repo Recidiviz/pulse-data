@@ -30,8 +30,6 @@ import logging
 import sys
 from typing import List, Tuple
 
-from google.cloud.bigquery import WriteDisposition
-
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
@@ -90,7 +88,6 @@ def main(dry_run: bool) -> None:
                 ),
                 query=insert_query,
                 allow_field_additions=True,
-                write_disposition=WriteDisposition.WRITE_APPEND,
                 use_query_cache=False,
             )
 

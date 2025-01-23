@@ -39,7 +39,6 @@ from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import attr
 import pandas as pd
-from google.cloud.bigquery import WriteDisposition
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import (
@@ -275,12 +274,12 @@ class WorkflowsOutliersDatasetValidator:
             ).format_address_for_query(),
             state_code_filter=self.state_code_filter.value,
         )
-        self.bq_client.insert_into_table_from_query_async(
-            destination_address=mappings_address.to_project_agnostic_address(),
-            write_disposition=WriteDisposition.WRITE_TRUNCATE,
+        self.bq_client.create_table_from_query(
+            address=mappings_address.to_project_agnostic_address(),
             query=query,
             use_query_cache=False,
-        ).result()
+            overwrite=True,
+        )
 
     def _filtered_table_rows_clause_for_table(
         self,
@@ -317,9 +316,11 @@ class WorkflowsOutliersDatasetValidator:
         a different dataset.
         """
         entity_primary_key, excluded_keys, _ = ADDRESS_BY_STATE[self.state_code_filter][
-            table_address.to_project_agnostic_address()
-            if not original_reference_table_address
-            else original_reference_table_address
+            (
+                table_address.to_project_agnostic_address()
+                if not original_reference_table_address
+                else original_reference_table_address
+            )
         ]
 
         filtered_with_new_cols = self._filtered_table_rows_clause_for_table(
@@ -360,12 +361,13 @@ class WorkflowsOutliersDatasetValidator:
             table_id=f"{table_address.table_id}_{dataset_name}_comparable",
         )
 
-        self.bq_client.insert_into_table_from_query_async(
-            destination_address=comparable_table_address.to_project_agnostic_address(),
-            write_disposition=WriteDisposition.WRITE_TRUNCATE,
+        self.bq_client.create_table_from_query(
+            address=comparable_table_address.to_project_agnostic_address(),
             query=comparable_rows_query,
             use_query_cache=False,
-        ).result()
+            overwrite=True,
+        )
+
         return comparable_table_address
 
     def _generate_table_specific_comparison_result(

@@ -22,7 +22,6 @@ from http import HTTPStatus
 from typing import Dict, Tuple
 
 import flask
-from google.cloud.bigquery import WriteDisposition
 from google.cloud.bigquery.table import TableListItem
 from more_itertools import one
 
@@ -260,6 +259,7 @@ SOURCE_DATA_JOIN_CLAUSE_WITH_MONTH_LIMIT_TEMPLATE = """LEFT JOIN
           LIMIT {day_count_limit})
         ON created_on = keep_created_date"""
 
+
 # TODO(#27436) Speed up this process and lower the allowed attempt deadline
 def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
     """Moves old output in Dataflow metrics tables to tables in a cold storage dataset.
@@ -367,7 +367,6 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
                 ),
                 query=insert_query,
                 allow_field_additions=True,
-                write_disposition=WriteDisposition.WRITE_APPEND,
                 use_query_cache=True,
             )
 
@@ -427,7 +426,6 @@ def _decommission_dataflow_metric_table(
             ),
             query=insert_query,
             allow_field_additions=True,
-            write_disposition=WriteDisposition.WRITE_APPEND,
             use_query_cache=True,
         )
 

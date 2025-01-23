@@ -335,7 +335,8 @@ class BigQueryClient:
         self, table: bigquery.Table, *, overwrite: bool = False
     ) -> bigquery.Table:
         """Creates a new table in big query. If |overwrite| is False and the table
-        already exists, raises an AlreadyExists error.
+        already exists, raises an AlreadyExists error. Once the table is created, applies row-level permissions
+        to the table if applicable.
 
         Args:
             table: The Table to create.
@@ -621,6 +622,40 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
+    def create_table_from_query(
+        self,
+        *,
+        address: BigQueryAddress,
+        query: str,
+        use_query_cache: bool,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+        overwrite: Optional[bool] = False,
+        clustering_fields: Optional[List[str]] = None,
+        time_partitioning: bigquery.TimePartitioning | None = None,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
+    ) -> bigquery.table.RowIterator:
+        """Creates a table at the given address with the output from the given query.
+        If overwrite is False, a 'duplicate' error is returned in the job result if the
+        table already exists and contains data. If overwrite is True, overwrites the
+        table if it already exists. Once the table is created, applies row-level permissions
+        to the table if applicable.
+
+        Args:
+            address: The address where the table should be created.
+            query: The query to run. The result will be loaded into the new table.
+            query_parameters: Optional parameters for the query
+            overwrite: Whether or not to overwrite an existing table.
+            clustering_fields: Columns by which to cluster the table.
+            time_partitioning: Configuration for time period partitioning that should be
+                applied to the table.
+            use_query_cache: Whether to look for the result in the query cache. See:
+                https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
+            job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
+
+        Returns:
+            The result of the QueryJob."""
+
+    @abc.abstractmethod
     def insert_into_table_from_table_async(
         self,
         *,
@@ -665,7 +700,6 @@ class BigQueryClient:
         use_query_cache: bool,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         allow_field_additions: bool = False,
-        write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
         clustering_fields: Optional[List[str]] = None,
         time_partitioning: bigquery.TimePartitioning | None = None,
         job_labels: Optional[list[BigQueryJobLabel]] = None,
@@ -683,8 +717,6 @@ class BigQueryClient:
             allow_field_additions: Whether or not to allow new columns to be created in
                 the destination table if the schema in the query result does not exactly
                 match the destination table. Defaults to False.
-            write_disposition: What to do if the destination table already exists.
-                Defaults to WRITE_APPEND, which will append rows to an existing table.
             clustering_fields: Columns by which to cluster the table.
             time_partitioning: Configuration for time period partitioning that should be
                 applied to the table.
@@ -787,7 +819,8 @@ class BigQueryClient:
         require_partition_filter: bool | None = None,
     ) -> bigquery.Table:
         """Creates a table in the given dataset with the given schema fields. Raises an
-        error if a table with the same table_id already exists in the dataset.
+        error if a table with the same table_id already exists in the dataset. Once the table is created, applies row-level permissions
+        to the table if applicable.
 
         Args:
             address: The address of the table to be created
@@ -1225,7 +1258,19 @@ class BigQueryClientImpl(BigQueryClient):
     def create_table(
         self, table: bigquery.Table, *, overwrite: bool = False
     ) -> bigquery.Table:
-        return self.client.create_table(table, exists_ok=overwrite)
+        created_table = self.client.create_table(table, exists_ok=overwrite)
+
+        try:
+            self.apply_row_level_permissions(created_table)
+        except Exception as e:
+            logging.error(
+                "Failed to apply row-level permissions to table [%s]. "
+                "Table was created successfully, but row-level permissions were not applied.",
+                created_table.table_id,
+            )
+            raise e
+
+        return created_table
 
     def create_or_update_view(
         self, view: BigQueryView, *, might_exist: bool = True
@@ -1595,7 +1640,7 @@ class BigQueryClientImpl(BigQueryClient):
             else bigquery.job.WriteDisposition.WRITE_EMPTY
         )
 
-        return self.insert_into_table_from_query_async(
+        return self._insert_into_table_from_query_async(
             destination_address=address,
             query=query,
             query_parameters=query_parameters,
@@ -1605,6 +1650,51 @@ class BigQueryClientImpl(BigQueryClient):
             use_query_cache=use_query_cache,
             job_labels=job_labels,
         )
+
+    def create_table_from_query(
+        self,
+        *,
+        address: BigQueryAddress,
+        query: str,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+        overwrite: Optional[bool] = False,
+        clustering_fields: Optional[List[str]] = None,
+        time_partitioning: bigquery.TimePartitioning | None = None,
+        use_query_cache: bool,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
+    ) -> bigquery.table.RowIterator:
+        query_job = self.create_table_from_query_async(
+            address=address,
+            query=query,
+            query_parameters=query_parameters,
+            overwrite=overwrite,
+            clustering_fields=clustering_fields,
+            time_partitioning=time_partitioning,
+            use_query_cache=use_query_cache,
+            job_labels=job_labels,
+        )
+        try:
+            result = query_job.result()
+        except Exception as e:
+            logging.error(
+                "Create table job [%s] failed for table [%s] with errors: %s",
+                query_job.job_id,
+                address.to_str(),
+                query_job.errors,
+            )
+            raise e
+
+        try:
+            self.apply_row_level_permissions(self.get_table(address))
+        except Exception as e:
+            logging.error(
+                "Failed to apply row-level permissions to table [%s]. "
+                "Table was created successfully, but row-level permissions were not applied.",
+                address.to_str(),
+            )
+            raise e
+
+        return result
 
     def _insert_into_table_from_table_async(
         self,
@@ -1709,19 +1799,46 @@ class BigQueryClientImpl(BigQueryClient):
                 f"Found filter clause [{filter_clause}] that does not begin with WHERE"
             )
 
-    def insert_into_table_from_query_async(
+    def _insert_into_table_from_query_async(
         self,
         *,
         destination_address: BigQueryAddress,
         query: str,
+        write_disposition: str,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         allow_field_additions: bool = False,
-        write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
         clustering_fields: Optional[List[str]] = None,
         time_partitioning: bigquery.TimePartitioning | None = None,
         use_query_cache: bool,
         job_labels: Optional[list[BigQueryJobLabel]] = None,
     ) -> bigquery.QueryJob:
+        """Inserts the results of the given query into the table at the given address.
+        Creates a table if one does not yet exist. If |allow_field_additions| is set to
+        False and the table exists, the schema of the query result must match the schema
+        of the destination table.
+
+        Args:
+            destination_address: The address of the table where the result should be
+                inserted.
+            query: The query to run. The result will be loaded into the table.
+            write_disposition: The write disposition for the query. Must be one of:
+                bigquery.WriteDisposition.WRITE_TRUNCATE: Overwrite the table.
+                bigquery.WriteDisposition.WRITE_APPEND: Append to the table.
+                bigquery.WriteDisposition.WRITE_EMPTY: Error if the table exists and is non-empty.
+            query_parameters: Optional parameters for the query.
+            allow_field_additions: Whether or not to allow new columns to be created in
+                the destination table if the schema in the query result does not exactly
+                match the destination table. Defaults to False.
+            clustering_fields: Columns by which to cluster the table.
+            time_partitioning: Configuration for time period partitioning that should be
+                applied to the table.
+            use_query_cache: Whether to look for the result in the query cache. See:
+                https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
+            job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
+
+        Returns:
+            A QueryJob which will contain the results once the query is complete.
+        """
 
         destination_table_ref = self._table_ref_for_address(destination_address)
 
@@ -1783,6 +1900,30 @@ class BigQueryClientImpl(BigQueryClient):
             query=query,
             location=self.region,
             job_config=query_job_config,
+        )
+
+    def insert_into_table_from_query_async(
+        self,
+        *,
+        destination_address: BigQueryAddress,
+        query: str,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+        allow_field_additions: bool = False,
+        clustering_fields: Optional[List[str]] = None,
+        time_partitioning: bigquery.TimePartitioning | None = None,
+        use_query_cache: bool,
+        job_labels: Optional[list[BigQueryJobLabel]] = None,
+    ) -> bigquery.QueryJob:
+        return self._insert_into_table_from_query_async(
+            destination_address=destination_address,
+            query=query,
+            query_parameters=query_parameters,
+            allow_field_additions=allow_field_additions,
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+            clustering_fields=clustering_fields,
+            time_partitioning=time_partitioning,
+            use_query_cache=use_query_cache,
+            job_labels=job_labels,
         )
 
     def insert_into_table_from_table_async(
@@ -1957,7 +2098,7 @@ class BigQueryClientImpl(BigQueryClient):
             table.require_partition_filter = require_partition_filter
 
         logging.info("Creating table %s", address.to_str())
-        return self.client.create_table(table)
+        return self.create_table(table)
 
     def set_table_expiration(
         self, address: BigQueryAddress, expiration: datetime.datetime
