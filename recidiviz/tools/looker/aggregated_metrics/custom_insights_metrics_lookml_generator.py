@@ -133,6 +133,7 @@ def main(
             ],
             view_name,
             additional_view_fields=[],
+            assignment_types_dict=INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions={},
         ).write(output_directory, source_script_path=__file__)
 

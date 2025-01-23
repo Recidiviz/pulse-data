@@ -22,8 +22,8 @@ from recidiviz.aggregated_metrics.assignment_sessions_view_builder import (
     get_metric_assignment_sessions_materialized_table_address,
     has_configured_assignment_query,
 )
-from recidiviz.aggregated_metrics.configuration.collections.standard import (
-    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
+from recidiviz.aggregated_metrics.assignment_sessions_view_collector import (
+    relevant_units_of_analysis_for_population_type,
 )
 from recidiviz.aggregated_metrics.metric_time_period_config import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
@@ -87,13 +87,18 @@ from recidiviz.view_registry.deployed_views import (
 
 # Loops through all configured population <> unit of analysis combinations and generates a dictionary
 # that maps their combined name (assignment type) to a tuple with population and unit of analysis type
-ASSIGNMENT_NAME_TO_TYPES = {
+ASSIGNMENT_NAME_TO_TYPES: dict[
+    str, tuple[MetricPopulationType, MetricUnitOfAnalysisType]
+] = {
     f"{population_type.population_name_short}_{unit_of_analysis_type.short_name}".upper(): (
         population_type,
         unit_of_analysis_type,
     )
-    for population_type, unit_of_analysis_types in UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE.items()
-    for unit_of_analysis_type in unit_of_analysis_types
+    for population_type in MetricPopulationType
+    if population_type != MetricPopulationType.CUSTOM
+    for unit_of_analysis_type in relevant_units_of_analysis_for_population_type(
+        population_type
+    )
 }
 
 # Special case: add person unit of analysis for the whole justice involved population
@@ -1603,6 +1608,9 @@ def custom_metrics_view_query_template(
     view_name: str,
     unit_of_observation: MetricUnitOfObservation,
     json_field_filters: List[str],
+    assignment_types_dict: Dict[
+        str, Tuple[MetricPopulationType, MetricUnitOfAnalysisType]
+    ],
     include_column_mapping: bool = True,
 ) -> str:
     """Returns query template that unions together all LookML view dependencies to generate a custom metrics table.
@@ -1611,9 +1619,50 @@ def custom_metrics_view_query_template(
 
     assignments_and_attributes_view = (
         f"${{person_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}"
-        if MetricUnitOfObservationType.PERSON_ID
-        else f"${{{unit_of_observation.type.short_name}_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}"
+        if unit_of_observation.type == MetricUnitOfObservationType.PERSON_ID
+        else f"${{{unit_of_observation.type.short_name}_assignments_{view_name}.SQL_TABLE_NAME}}"
     )
+    # Identify fields to exclude from the select from the assignments view to be used
+    # in the `column_attributes` cte, which will map to all fields relevant to a unit
+    # of analysis and attributes
+    date_fields_to_exclude = [
+        "assignment_date",
+        "assignment_end_date",
+    ]
+    if unit_of_observation.type == MetricUnitOfObservationType.PERSON_ID:
+        date_fields_to_exclude.append("event_time_base_date")
+    # For all assignment types with a state_code index column, we don't
+    # want to exclude state_code in cases where it's a shared key between the
+    # unit of analysis and unit of observation. For cross-state assignment types,
+    # exclude state_code
+    index_columns_to_exclude = list_to_query_string(
+        [
+            col
+            for col in unit_of_observation.primary_key_columns_ordered
+            if col != "state_code"
+        ]
+    )
+    assignment_types_with_no_state_code_index_col = sorted(
+        assignment_type_name
+        for assignment_type_name, configuration in assignment_types_dict.items()
+        if "state_code"
+        not in MetricUnitOfAnalysis.for_type(configuration[1]).index_columns
+    )
+    assignment_types_with_no_state_code_index_col_liquid_wrap = " or ".join(
+        [
+            f'{view_name}.assignment_type._parameter_value == "{assignment_type}"'
+            for assignment_type in assignment_types_with_no_state_code_index_col
+        ]
+    )
+    index_columns_to_exclude += (
+        f"{{% if {assignment_types_with_no_state_code_index_col_liquid_wrap} %}}, state_code{{% endif %}}"
+        if assignment_types_with_no_state_code_index_col
+        else ", state_code"
+    )
+    column_attributes_to_exclude_query_fragment = (
+        list_to_query_string(date_fields_to_exclude) + ", " + index_columns_to_exclude
+    )
+
     field_filters_query_fragment = "".join(
         [
             liquid_wrap_json_field(f", {field}", field, view_name)
@@ -1647,7 +1696,7 @@ def custom_metrics_view_query_template(
     , column_mapping AS (
         SELECT DISTINCT
             * EXCEPT (
-                assignment_date, assignment_end_date, event_time_base_date, person_id
+                {column_attributes_to_exclude_query_fragment}
             )
         FROM
             assignments_and_attributes_cte
@@ -1725,6 +1774,9 @@ def generate_custom_metrics_view(
     metrics: List[AggregatedMetric],
     view_name: str,
     json_field_filters_with_suggestions: Dict[str, List[str]],
+    assignment_types_dict: Dict[
+        str, Tuple[MetricPopulationType, MetricUnitOfAnalysisType]
+    ],
     additional_view_fields: Optional[List[LookMLViewField]],
 ) -> LookMLView:
     """Generates LookMLView with derived table that joins together metric view
@@ -1745,6 +1797,7 @@ def generate_custom_metrics_view(
                 view_name=view_name,
                 unit_of_observation=MetricUnitOfObservation(type=unit_of_observation),
                 json_field_filters=list(json_field_filters_with_suggestions),
+                assignment_types_dict=assignment_types_dict,
                 # Only include full index column mappings for the first unit of observation cte
                 # to avoid having duplicate index columns in the final query
                 include_column_mapping=(

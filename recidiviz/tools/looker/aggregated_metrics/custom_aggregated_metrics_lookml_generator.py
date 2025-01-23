@@ -89,6 +89,7 @@ def main(output_directory: str, view_name: str) -> None:
             ],
             view_name,
             additional_view_fields=[],
+            assignment_types_dict=ASSIGNMENT_NAME_TO_TYPES,
             json_field_filters_with_suggestions={},
         ).write(output_directory, source_script_path=__file__)
 

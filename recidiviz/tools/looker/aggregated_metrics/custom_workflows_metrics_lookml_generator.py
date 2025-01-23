@@ -163,6 +163,7 @@ def main(
             ],
             view_name,
             additional_view_fields=[],
+            assignment_types_dict=WORKFLOWS_ASSIGNMENT_NAMES_TO_TYPES,
             json_field_filters_with_suggestions={
                 "task_type": sorted(
                     snake_to_title(builder.task_type_name)
