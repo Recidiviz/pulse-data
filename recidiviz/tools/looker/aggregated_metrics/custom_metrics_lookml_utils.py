@@ -1618,9 +1618,21 @@ def custom_metrics_view_query_template(
     """
 
     assignments_and_attributes_view = (
-        f"${{person_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}"
+        f"""
+        SELECT
+            * 
+        FROM
+            ${{person_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}
+"""
         if unit_of_observation.type == MetricUnitOfObservationType.PERSON_ID
-        else f"${{{unit_of_observation.type.short_name}_assignments_{view_name}.SQL_TABLE_NAME}}"
+        else f"""
+        SELECT
+            *, 
+            # Since there are no attributes for non-person units of observations, we add in a dummy field
+            TO_JSON_STRING(STRUCT(TRUE AS dummy_attribute)) AS all_attributes,
+        FROM
+            ${{{unit_of_observation.type.short_name}_assignments_{view_name}.SQL_TABLE_NAME}}
+"""
     )
     # Identify fields to exclude from the select from the assignments view to be used
     # in the `column_attributes` cte, which will map to all fields relevant to a unit
@@ -1685,12 +1697,7 @@ def custom_metrics_view_query_template(
         FROM
             ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}}
     )
-    , assignments_and_attributes_cte AS (
-        SELECT
-          *
-        FROM
-          {assignments_and_attributes_view}
-    )
+    , assignments_and_attributes_cte AS ({assignments_and_attributes_view})
 
     -- map all_attributes to original columns
     , column_mapping AS (
