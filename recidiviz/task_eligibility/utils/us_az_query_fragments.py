@@ -27,6 +27,7 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
+from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -34,6 +35,10 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
+    critical_date_spans_cte,
+)
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    task_deadline_critical_date_update_datetimes_cte,
 )
 
 
@@ -591,6 +596,61 @@ def no_denial_in_current_incarceration(opp_name: str) -> str:
         FROM sub_sessions_with_attributes
         GROUP BY 1,2,3,4
         """
+
+
+def incarceration_past_early_release_date(opp_name: str) -> str:
+    assert opp_name.upper() in ("TPR", "DTP"), "Opportunity Name must be one of TPR/DTP"
+    if opp_name.upper() == "TPR":
+        task_subtype = "STANDARD TRANSITION RELEASE"
+    else:
+        task_subtype = "DRUG TRANSITION RELEASE"
+    _ADDITIONAL_WHERE_CLAUSE = f"""
+                AND task_subtype = "{task_subtype}"
+                AND state_code = 'US_AZ' 
+                AND eligible_date IS NOT NULL 
+                AND eligible_date > '1900-01-01'"""
+    return f"""
+        WITH
+        {task_deadline_critical_date_update_datetimes_cte(
+        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+        critical_date_column='eligible_date',
+        additional_where_clause=_ADDITIONAL_WHERE_CLAUSE)
+    },
+        {critical_date_spans_cte()},
+        critical_date_spans_within_100_days_of_date AS (
+            SELECT 
+                state_code,
+                person_id,
+                critical_date,
+                start_datetime,
+                -- If the end_datetime is within 100 days of the critical_date, use the end_datetime
+                -- Otherwise, use the critical_date + 100 days. That way people only stay eligible
+                -- for 100 days after their relevant date. After that, they've likely loss their 
+                -- eligibility for a transition release.
+                IF(
+                    DATE_ADD(critical_date, INTERVAL 100 DAY) BETWEEN start_datetime AND IFNULL(end_datetime, '9999-12-31'),
+                    LEAST(IFNULL(end_datetime, '9999-12-31'), 
+                          DATE_ADD(critical_date, INTERVAL 100 DAY)),
+                    end_datetime
+                ) AS end_datetime,
+            FROM critical_date_spans
+            -- Drop row if critical_date or critical_date + 100 is not between start and end_date
+            WHERE (critical_date BETWEEN start_datetime AND IFNULL(end_datetime, '9999-12-31') 
+                OR DATE_ADD(critical_date, INTERVAL 100 DAY) BETWEEN start_datetime AND IFNULL(end_datetime, '9999-12-31'))
+                -- The critical_date + 100 cannot be the start_datetime, this would create zero day spans
+                AND DATE_ADD(critical_date, INTERVAL 100 DAY) != start_datetime
+        ),
+        {critical_date_has_passed_spans_cte(table_name='critical_date_spans_within_100_days_of_date')}
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            critical_date_has_passed AS meets_criteria,
+            TO_JSON(STRUCT(critical_date AS acis_{opp_name.lower()}_date)) AS reason,
+            critical_date AS acis_{opp_name.lower()}_date,
+        FROM critical_date_has_passed_spans
+    """
 
 
 ARSON_STATUTES = [

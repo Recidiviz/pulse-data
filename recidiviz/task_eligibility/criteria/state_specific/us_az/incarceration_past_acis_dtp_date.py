@@ -33,6 +33,9 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     task_deadline_critical_date_update_datetimes_cte,
 )
+from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    incarceration_past_early_release_date,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -41,12 +44,18 @@ _CRITERIA_NAME = "US_AZ_INCARCERATION_PAST_ACIS_DTP_DATE"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has passed
 their ACIS (Time Comp assigned) Drug Transition Program date."""
 
+_ADDITIONAL_WHERE_CLAUSE = """
+            AND task_subtype = 'DRUG TRANSITION RELEASE'
+            AND state_code = 'US_AZ' 
+            AND eligible_date IS NOT NULL 
+            AND eligible_date > '1900-01-01'"""
+
 _QUERY_TEMPLATE = f"""
 WITH
 {task_deadline_critical_date_update_datetimes_cte(
     task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
     critical_date_column='eligible_date',
-    additional_where_clause="AND task_subtype = 'DRUG TRANSITION RELEASE' AND state_code = 'US_AZ' AND eligible_date IS NOT NULL AND eligible_date > '1900-01-01'")
+    additional_where_clause=_ADDITIONAL_WHERE_CLAUSE)
 },
 {critical_date_spans_cte()},
 {critical_date_has_passed_spans_cte()}
@@ -66,7 +75,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
         state_code=StateCode.US_AZ,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
+        criteria_spans_query_template=incarceration_past_early_release_date("DTP"),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=False,
         reasons_fields=[
