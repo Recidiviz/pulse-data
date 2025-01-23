@@ -4,7 +4,8 @@ Hello! Before you send any email reminders please go through this checklist to m
 
 1. Change any script wording, and MAKE SURE TO PRESS SAVE (button to the left of 'Run')
 2. Ensure that you're emailing the right states! Here are the areas to double check:
-   - The 'state_code' column in the connected sheets. Are any states missing? Add them!
+   - (TODO(#35738): update with instructions about how to add/remove states to email,
+     once we are set up to correctly handle state code filters within the queries in code)
    - The state-specific if statements. This is where you can change any state-specific text, add 
       states by adding an if statement, or get rid of states by deleting the if statement
 3. Ensure that you have the correct 'Sent Emails' sheet set up by creating a new sheet
