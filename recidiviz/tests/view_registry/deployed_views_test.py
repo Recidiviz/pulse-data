@@ -95,9 +95,9 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
+    DATA_PLATFORM_GCP_PROJECTS,
     GCP_PROJECT_PRODUCTION,
     GCP_PROJECT_STAGING,
-    GCP_PROJECTS,
 )
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.types import assert_type
@@ -276,7 +276,7 @@ class DeployedViewsTest(unittest.TestCase):
                 _ = view.materialized_table_bq_description
 
     def test_views_have_valid_parents(self) -> None:
-        for project_id in GCP_PROJECTS:
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
             with local_project_id_override(project_id):
                 candidate_view_builders = deployed_view_builders()
 
@@ -562,7 +562,7 @@ class ViewDagInvariantTests(unittest.TestCase):
         directly in any comments.
         """
         for view in self.dag_walker.views:
-            for project_id in GCP_PROJECTS:
+            for project_id in DATA_PLATFORM_GCP_PROJECTS:
                 self.assertNotIn(
                     project_id,
                     view.view_query_template,
@@ -627,7 +627,7 @@ class ViewDagInvariantTests(unittest.TestCase):
             view_projects_to_deploy = (
                 view_builder.projects_to_deploy
                 if view_builder.projects_to_deploy is not None
-                else {*GCP_PROJECTS}
+                else {*DATA_PLATFORM_GCP_PROJECTS}
             )
             if not parent_constraints:
                 # If the parents have no constraints, constraints are just those on

@@ -590,7 +590,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
         self.combinations = [
             (region_code, project)
             for region_code in get_existing_direct_ingest_states()
-            for project in sorted(environment.GCP_PROJECTS)
+            for project in sorted(environment.DATA_PLATFORM_GCP_PROJECTS)
         ]
 
     def _get_related_ingest_view_pairs(

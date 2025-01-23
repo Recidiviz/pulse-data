@@ -27,7 +27,7 @@ from recidiviz.big_query.big_query_view import (
     SimpleBigQueryViewBuilder,
 )
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.validation import views as views_module
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import (
@@ -100,9 +100,11 @@ class TestConfiguredValidations(unittest.TestCase):
         validations = get_all_validations()
         not_subsets = []
         for validation in validations:
-            validation_projects = validation.projects_to_deploy or set(GCP_PROJECTS)
+            validation_projects = validation.projects_to_deploy or set(
+                DATA_PLATFORM_GCP_PROJECTS
+            )
             view_builder_projects = validation.view_builder.projects_to_deploy or set(
-                GCP_PROJECTS
+                DATA_PLATFORM_GCP_PROJECTS
             )
             if not validation_projects <= view_builder_projects:
                 not_subsets.append(validation)

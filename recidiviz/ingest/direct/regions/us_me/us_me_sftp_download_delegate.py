@@ -28,7 +28,7 @@ from recidiviz.ingest.direct.sftp.metadata import (
     MAX_CONCURRENT_READ_THREADS,
     SFTP_DISABLED_ALGORITHMS_PUB_KEYS,
 )
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 
 
 class UsMeSftpDownloadDelegate(BaseSftpDownloadDelegate):
@@ -68,7 +68,7 @@ class UsMeSftpDownloadDelegate(BaseSftpDownloadDelegate):
         return [downloaded_path.abs_path()]
 
     def supported_environments(self) -> List[str]:
-        return GCP_PROJECTS
+        return DATA_PLATFORM_GCP_PROJECTS
 
     def get_transport_kwargs(self) -> Dict[str, Any]:
         return {DISABLED_ALGORITHMS_KWARG: SFTP_DISABLED_ALGORITHMS_PUB_KEYS}

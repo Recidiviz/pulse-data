@@ -95,8 +95,8 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import persist_file_contents
 from recidiviz.utils.environment import (
+    DATA_PLATFORM_GCP_PROJECTS,
     GCP_PROJECT_STAGING,
-    GCP_PROJECTS,
     GCPEnvironment,
 )
 from recidiviz.utils.metadata import local_project_id_override
@@ -316,7 +316,7 @@ class CalculationDocumentationGenerator:
     @staticmethod
     def _get_all_source_table_datasets_to_descriptions() -> dict[str, str]:
         all_datasets_to_descriptions: dict[str, str] = {}
-        for project_id in GCP_PROJECTS:
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
             with local_project_id_override(project_id):
                 all_datasets_to_descriptions = {
                     **all_datasets_to_descriptions,
@@ -569,12 +569,14 @@ class CalculationDocumentationGenerator:
         views_str = ""
         for address_list in datasets_to_addresses.values():
             address_list = [
-                assert_type(
-                    self.dag_walker.nodes_by_address[a].view.materialized_address,
-                    BigQueryAddress,
+                (
+                    assert_type(
+                        self.dag_walker.nodes_by_address[a].view.materialized_address,
+                        BigQueryAddress,
+                    )
+                    if a.dataset_id == NORMALIZED_STATE_VIEWS_DATASET
+                    else a
                 )
-                if a.dataset_id == NORMALIZED_STATE_VIEWS_DATASET
-                else a
                 for a in address_list
             ]
             dataset = one({a.dataset_id for a in address_list})

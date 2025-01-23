@@ -33,9 +33,9 @@ from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.tests.ingest import fixtures
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
+    DATA_PLATFORM_GCP_PROJECTS,
     GCP_PROJECT_PRODUCTION,
     GCP_PROJECT_STAGING,
-    GCP_PROJECTS,
 )
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -252,7 +252,7 @@ class TestRealProductConfigs(unittest.TestCase):
         """Ensures that all minimum required metric pipelines are running before any
         product metric export is enabled for a given state.
         """
-        for project_id in GCP_PROJECTS:
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
             with local_project_id_override(project_id):
                 product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
                 enabled_metric_pipelines_by_state = (

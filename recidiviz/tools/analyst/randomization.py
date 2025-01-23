@@ -33,7 +33,7 @@ from recidiviz.source_tables.externally_managed.datasets import (
 )
 from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.types import assert_type
 
 
@@ -200,7 +200,7 @@ def upload_assignments_to_gbq(
 
     num_rows = len(df_copy)
     if upload_to_gbq:
-        for project_id in GCP_PROJECTS:
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
             project_specific_address = (
                 experiments_table_config.address.to_project_specific_address(project_id)
             )

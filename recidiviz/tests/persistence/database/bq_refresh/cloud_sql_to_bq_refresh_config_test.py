@@ -31,7 +31,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_source_table_datasets,
 )
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -47,7 +47,7 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         ]
 
         all_source_table_datasets = set()
-        for project_id in GCP_PROJECTS:
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
             with local_project_id_override(project_id):
                 all_source_table_datasets |= get_source_table_datasets(project_id)
 

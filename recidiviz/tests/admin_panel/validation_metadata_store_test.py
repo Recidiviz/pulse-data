@@ -35,7 +35,7 @@ from recidiviz.admin_panel.models.validation_pb2 import (
 )
 from recidiviz.admin_panel.validation_metadata_store import ValidationStatusStore
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.validation_models import ValidationCategory
 
@@ -69,7 +69,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
         for call in self.mock_bq_client.run_query_async.mock_calls:
             kwargs = call[2]
             query_str = kwargs["query_str"]
-            for project_id in GCP_PROJECTS:
+            for project_id in DATA_PLATFORM_GCP_PROJECTS:
                 self.assertFalse(
                     project_id in query_str,
                     f"Found substring '{project_id}' in the query string: {query_str} ",

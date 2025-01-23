@@ -41,7 +41,7 @@ from recidiviz.pipelines.ingest.state.normalization.state_specific_normalization
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_normalization_delegate,
 )
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.types import assert_subclass_list
 
 
@@ -63,7 +63,7 @@ class TestStateSpecificNormalizationDelegate(unittest.TestCase):
                 region=region,
                 delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
             )
-            for project_id in GCP_PROJECTS:
+            for project_id in DATA_PLATFORM_GCP_PROJECTS:
                 ingest_view_context = IngestViewContentsContextImpl.build_for_project(
                     project_id=project_id
                 )

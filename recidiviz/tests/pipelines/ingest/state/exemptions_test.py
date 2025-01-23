@@ -36,7 +36,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.pipelines.ingest.state.exemptions import (
     INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS,
 )
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 
 
 class TestExemptions(unittest.TestCase):
@@ -46,7 +46,7 @@ class TestExemptions(unittest.TestCase):
         state_codes = get_existing_direct_ingest_states()
         state_code_to_launchable_views: Dict[StateCode, Set[str]] = defaultdict(set)
         for state_code in state_codes:
-            for project_id in GCP_PROJECTS:
+            for project_id in DATA_PLATFORM_GCP_PROJECTS:
                 region = get_direct_ingest_region(region_code=state_code.value)
                 ingest_manifest_collector = IngestViewManifestCollector(
                     region=region,

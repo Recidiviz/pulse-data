@@ -66,7 +66,7 @@ from recidiviz.tools.gsutil_shell_helpers import (
 )
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.log_helpers import make_log_output_path
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
@@ -374,14 +374,14 @@ def main() -> None:
     )
     parser.add_argument(
         "--source-project-id",
-        choices=GCP_PROJECTS,
+        choices=DATA_PLATFORM_GCP_PROJECTS,
         required=True,
         help="Which project's files should be moved from (e.g. recidiviz-123).",
     )
 
     parser.add_argument(
         "--destination-project-id",
-        choices=GCP_PROJECTS,
+        choices=DATA_PLATFORM_GCP_PROJECTS,
         required=True,
         help="Which project's files should be moved to (e.g. recidiviz-123).",
     )

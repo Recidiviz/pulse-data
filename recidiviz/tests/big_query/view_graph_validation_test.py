@@ -45,9 +45,9 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
 from recidiviz.utils.environment import (
+    DATA_PLATFORM_GCP_PROJECTS,
     GCP_PROJECT_PRODUCTION,
     GCP_PROJECT_STAGING,
-    GCP_PROJECTS,
 )
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.types import assert_type
@@ -153,7 +153,7 @@ class BaseViewGraphTest(BigQueryEmulatorTestCase):
                 "Must specify gcp_project_id when running the view graph validation test"
             )
 
-        if cls.gcp_project_id not in GCP_PROJECTS:
+        if cls.gcp_project_id not in DATA_PLATFORM_GCP_PROJECTS:
             raise ValueError(f"Invalid project id: {cls.gcp_project_id}")
 
         return cls.gcp_project_id

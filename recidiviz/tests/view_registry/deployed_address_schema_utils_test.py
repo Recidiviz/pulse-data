@@ -23,7 +23,7 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
 from recidiviz.source_tables.source_table_config import SourceTableConfig
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_address_schema_utils import (
     STATE_AGNOSTIC_MAPPINGS_VIEWS_WITHOUT_STATE_CODE_COLUMNS,
@@ -47,7 +47,7 @@ class TestDeployedAddressesWithoutStateCodeColumn(unittest.TestCase):
         }
         cls.all_source_tables_to_configs = {}
 
-        for project_id in GCP_PROJECTS:
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
             with local_project_id_override(project_id):
                 cls.all_source_tables_to_configs = {
                     **cls.all_source_tables_to_configs,
@@ -57,7 +57,7 @@ class TestDeployedAddressesWithoutStateCodeColumn(unittest.TestCase):
                 }
 
     def test_get_deployed_addresses_without_state_code_column(self) -> None:
-        for project_id in GCP_PROJECTS:
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
             with local_project_id_override(project_id):
                 no_state_code_addresses = (
                     get_deployed_addresses_without_state_code_column(project_id)

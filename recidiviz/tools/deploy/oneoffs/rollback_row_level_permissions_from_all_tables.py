@@ -16,7 +16,7 @@ from recidiviz.tools.utils.bigquery_helpers import (
     dataset_prefix_to_filter_regex,
     run_operation_for_tables_in_datasets,
 )
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -31,9 +31,9 @@ def rollback_row_level_permissions_on_all_tables(dataset_prefix: Optional[str]) 
         client=BigQueryClientImpl(),
         prompt="Drop row level permissions",
         operation=_drop_permissions_for_table,
-        dataset_filter=dataset_prefix_to_filter_regex(dataset_prefix)
-        if dataset_prefix
-        else None,
+        dataset_filter=(
+            dataset_prefix_to_filter_regex(dataset_prefix) if dataset_prefix else None
+        ),
     )
 
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         "--project_id",
         help="Which project to apply permissions to.",
         type=str,
-        choices=GCP_PROJECTS,
+        choices=DATA_PLATFORM_GCP_PROJECTS,
         required=True,
     )
 

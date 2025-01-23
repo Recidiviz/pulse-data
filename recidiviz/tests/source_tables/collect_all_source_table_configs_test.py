@@ -27,7 +27,7 @@ from recidiviz.source_tables.source_table_config import (
     StateSpecificSourceTableLabel,
     UnionedStateAgnosticSourceTableLabel,
 )
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -35,7 +35,7 @@ class CollectAllSourceTableConfigsTest(unittest.TestCase):
     """Test for built source table collections"""
 
     def test_state_schema_tables_have_state_code(self) -> None:
-        for project_id in GCP_PROJECTS:
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
             with local_project_id_override(project_id):
                 source_table_repository = (
                     build_source_table_repository_for_collected_schemata(
@@ -82,7 +82,7 @@ class CollectAllSourceTableConfigsTest(unittest.TestCase):
                         )
 
     def test_no_duplicate_addresses_across_collections(self) -> None:
-        for project_id in GCP_PROJECTS:
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
             with local_project_id_override(project_id):
                 source_table_repository = (
                     build_source_table_repository_for_collected_schemata(

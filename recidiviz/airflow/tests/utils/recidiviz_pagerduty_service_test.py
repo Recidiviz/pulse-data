@@ -25,7 +25,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 
 
 class TestRecidivizPagerDutyService(unittest.TestCase):
@@ -81,7 +81,7 @@ class TestRecidivizPagerDutyService(unittest.TestCase):
 
     def test_services_all_have_unique_emails(self) -> None:
         found_emails: Dict[str, RecidivizPagerDutyService] = {}
-        for project_id in GCP_PROJECTS:
+        for project_id in DATA_PLATFORM_GCP_PROJECTS:
             for service in self._all_services(project_id):
                 email = service.service_integration_email
                 if email in found_emails:

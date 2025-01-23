@@ -35,8 +35,7 @@ from recidiviz.metrics.export.export_config import (
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
 from recidiviz.metrics.export.view_export_manager import get_delegate_export_map
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.utils.environment import ALL_GCP_PROJECTS
-from recidiviz.utils.environment import GCP_PROJECTS as DATA_PLATFORM_GCP_PROJECTS
+from recidiviz.utils.environment import ALL_GCP_PROJECTS, DATA_PLATFORM_GCP_PROJECTS
 
 
 def strip_each_line(text: str) -> str:

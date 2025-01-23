@@ -89,7 +89,7 @@ from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
     run_sandbox_dataflow_pipeline,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -101,7 +101,7 @@ def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
         "--project",
         type=str,
         help="ID of the GCP project.",
-        choices=GCP_PROJECTS,
+        choices=DATA_PLATFORM_GCP_PROJECTS,
         required=True,
     )
     parser.add_argument(
@@ -174,7 +174,9 @@ def get_raw_data_upper_bound_dates_json_for_sandbox_pipeline(
     }
 
     # TODO(#28239) remove once raw data import dag is fully rolled out
-    raw_file_metadata_manager: LegacyDirectIngestRawFileMetadataManager | DirectIngestRawFileMetadataManagerV2 = (
+    raw_file_metadata_manager: (
+        LegacyDirectIngestRawFileMetadataManager | DirectIngestRawFileMetadataManagerV2
+    ) = (
         LegacyDirectIngestRawFileMetadataManager(
             state_code.value, raw_data_source_instance
         )

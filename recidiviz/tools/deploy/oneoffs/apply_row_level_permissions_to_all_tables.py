@@ -3,6 +3,7 @@ Will overwrite all existing row-level permissions.
 Usage:
     python -m recidiviz.tools.deploy.oneoffs.apply_row_level_permissions_to_all_tables --project_id recidiviz-staging
 """
+
 import argparse
 import logging
 from typing import Optional
@@ -13,7 +14,7 @@ from recidiviz.tools.utils.bigquery_helpers import (
     dataset_prefix_to_filter_regex,
     run_operation_for_tables_in_datasets,
 )
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -28,9 +29,9 @@ def apply_row_level_permissions_to_all_tables(dataset_prefix: Optional[str]) -> 
         client=BigQueryClientImpl(),
         prompt="Apply row level permissions",
         operation=_apply_permissions_for_table,
-        dataset_filter=dataset_prefix_to_filter_regex(dataset_prefix)
-        if dataset_prefix
-        else None,
+        dataset_filter=(
+            dataset_prefix_to_filter_regex(dataset_prefix) if dataset_prefix else None
+        ),
     )
 
 
@@ -45,7 +46,7 @@ if __name__ == "__main__":
         "--project_id",
         help="Which project to apply permissions to.",
         type=str,
-        choices=GCP_PROJECTS,
+        choices=DATA_PLATFORM_GCP_PROJECTS,
         required=True,
     )
 

@@ -38,7 +38,7 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_converters import optional_json_str_to_dict
-from recidiviz.utils.environment import GCP_PROJECTS, in_test
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS, in_test
 from recidiviz.utils.params import str_matches_regex_type
 from recidiviz.utils.types import assert_type
 
@@ -380,7 +380,7 @@ class PipelineParameters:
             "--project",
             type=str,
             help="ID of the GCP project.",
-            choices=GCP_PROJECTS if not in_test() else None,
+            choices=DATA_PLATFORM_GCP_PROJECTS if not in_test() else None,
             required=True,
         )
 

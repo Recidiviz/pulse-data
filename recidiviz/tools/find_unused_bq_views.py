@@ -174,7 +174,7 @@ from recidiviz.source_tables.collect_all_source_table_configs import (
 from recidiviz.task_eligibility.candidate_populations.general.non_temporary_custody_incarceration_population import (
     VIEW_BUILDER as NON_TEMPORARY_CUSTODY_INCARCERATION_POPULATION_VIEW_BUILDER,
 )
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
 from recidiviz.validation.views.dataset_config import (
@@ -598,7 +598,7 @@ def get_unused_across_all_projects_addresses_from_all_views_dag(
     UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON.
     """
     unused_addresses: Optional[Set[BigQueryAddress]] = None
-    for project in GCP_PROJECTS:
+    for project in DATA_PLATFORM_GCP_PROJECTS:
         with local_project_id_override(project):
             project_dag_walker = BigQueryViewDagWalker(
                 build_views_to_update(

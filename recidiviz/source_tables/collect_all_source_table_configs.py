@@ -65,7 +65,7 @@ from recidiviz.source_tables.yaml_managed.collect_yaml_managed_source_table_conf
     collect_yaml_managed_source_table_collections,
 )
 from recidiviz.utils import environment, metadata
-from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 
 ONE_DAY_MS = 24 * 60 * 60 * 1000
@@ -274,7 +274,7 @@ def get_all_source_table_addresses() -> set[BigQueryAddress]:
     project.
     """
     all_addresses = set()
-    for project_id in GCP_PROJECTS:
+    for project_id in DATA_PLATFORM_GCP_PROJECTS:
         with local_project_id_override(project_id):
             all_addresses |= get_source_table_addresses(project_id)
     return all_addresses
