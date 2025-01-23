@@ -27,22 +27,33 @@ _VIEW_DESCRIPTION = "View with active usage events in the Insights tool"
 
 _QUERY_TEMPLATE = """
 SELECT
-    state_code,
-    email AS email_address,
-    event_ts,
+    e.state_code,
+    e.email AS email_address,
+    e.event_ts,
+    s.has_outlier_officers
 FROM
-    `{project_id}.analyst_data.insights_segment_events_materialized`
+    `{project_id}.analyst_data.insights_segment_events_materialized` e
+-- Join on funnel status sessions to get outlier status at time of usage event
+LEFT JOIN
+    `{project_id}.analyst_data.insights_user_impact_funnel_status_sessions_materialized` s
+ON
+    e.state_code = s.state_code
+AND 
+    e.email = LOWER(s.email_address)
+-- Join only the status session that overlaps with the time of the event
+AND 
+    (e.event_ts >= s.start_date and e.event_ts < s.end_date_exclusive)
 WHERE
     -- This event is the equivalent of the first page that a user sees
     -- after logging in, so we exclude from the definiton of active usage.
-    event NOT IN ("VIEWED_SUPERVISOR_PAGE")
+    e.event NOT IN ("VIEWED_SUPERVISOR_PAGE")
 """
 
 VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryViewBuilder(
     event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
     description=_VIEW_DESCRIPTION,
     sql_source=_QUERY_TEMPLATE,
-    attribute_cols=[],
+    attribute_cols=["has_outlier_officers"],
     event_date_col="event_ts",
 )
 

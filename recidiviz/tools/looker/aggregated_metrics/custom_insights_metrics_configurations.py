@@ -86,6 +86,26 @@ DISTINCT_ACTIVE_PRIMARY_INSIGHTS_USERS_LOOKER = EventDistinctUnitCountMetric(
         event_conditions_dict={},
     ),
 )
+DISTINCT_ACTIVE_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_LOOKER = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_insights_users_with_outliers_visible_in_tool",
+    display_name="Distinct Active Primary Supervisor Homepage Users with Outliers Visible in Tool",
+    description="Number of distinct primary (supervisor) Supervisor Homepage users who had outliers and had at least one active usage event "
+    "during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"has_outlier_officers": ["true"]},
+    ),
+)
+DISTINCT_ACTIVE_PRIMARY_INSIGHTS_USERS_WITHOUT_OUTLIERS_VISIBLE_IN_TOOL_LOOKER = EventDistinctUnitCountMetric(
+    name="distinct_active_primary_insights_users_without_outliers_visible_in_tool",
+    display_name="Distinct Active Primary Supervisor Homepage Users without Outliers Visible in Tool",
+    description="Number of distinct primary (supervisor) Supervisor Homepage users who did not have outliers and had at least one active usage event "
+    "during the time period",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={"has_outlier_officers": ["false"]},
+    ),
+)
 LOGINS_PRIMARY_INSIGHTS_USERS_LOOKER = EventCountMetric(
     name="logins_primary_insights_user",
     display_name="Logins, Primary Supervisor Homepage Users",
