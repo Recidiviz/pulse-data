@@ -14,7 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Prompts if all Github Actions checks that ran for a release branch did not pass"""
+"""Checks if all Github Actions checks that ran for a given commit (on main or a
+release/ branch) passed. Exits with a non-zero status if there are failing checks or the
+user confirms that it's ok to proceed.
+
+Usage:
+python -m recidiviz.tools.deploy.verify_github_check_statuses \
+  --commit_ref COMMIT_REF \
+  --prompt
+
+"""
 import argparse
 import datetime
 import logging
@@ -29,14 +38,31 @@ from recidiviz.tools.utils.script_helpers import (
     color_text,
     prompt_for_confirmation,
 )
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
 from recidiviz.utils.metadata import local_project_id_override
+
+_REQUIRED_CHECKS_BY_PROJECT = {
+    GCP_PROJECT_STAGING: {
+        "BigQuery Source Table Validation (staging)",
+    },
+    GCP_PROJECT_PRODUCTION: {
+        "BigQuery Source Table Validation (production)",
+    },
+}
 
 
 def parse_arguments(argv: List[str]) -> argparse.Namespace:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--project_id",
+        type=str,
+        help="The project we will be deploying this commit to",
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        required=True,
+    )
 
     parser.add_argument(
         "--commit_ref",
@@ -54,6 +80,11 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _get_conclusion(check_run: CheckRun) -> str:
+    # In progress checks do not have a conclusion set, but do have a status
+    return check_run.conclusion or check_run.status
+
+
 def print_check_statuses(check_runs: list[CheckRun]) -> None:
     indent_str = f"{ANSI.BLUE}>{ANSI.ENDC}"
 
@@ -61,11 +92,8 @@ def print_check_statuses(check_runs: list[CheckRun]) -> None:
         "success": ANSI.GREEN,
         "failure": ANSI.FAIL,
     }
-    print(f"Found {len(check_runs)} status checks:")
-
     for check_run in sorted(check_runs, key=lambda c: c.name):
-        # In progress checks do not have a conclusion set, but do have a status
-        conclusion = check_run.conclusion or check_run.status
+        conclusion = _get_conclusion(check_run)
         conclusion_str = color_text(
             check_colors.get(conclusion, ANSI.WARNING),
             conclusion.upper(),
@@ -76,12 +104,14 @@ def print_check_statuses(check_runs: list[CheckRun]) -> None:
 
 
 def verify_github_check_statuses(
+    project_id: str,
     commit_ref: str,
     success_states: Iterable[str],
-) -> bool:
-    """Prints out the status of all GitHub checks for the given commit. Returns True
-    if the statuses of the checks all match one of the |success_states|, False
-    otherwise.
+) -> tuple[bool, bool]:
+    """Verifies that the most recent CI check runs for the given commit all pass.
+    Prints out the status of all GitHub checks for the given commit. Returns a tuple of
+    booleans, the first one is true if all *required* checks have passed, the second one
+    is true if *all* checks have passed.
     """
     github_client = github_helperbot_client()
     check_runs = list(
@@ -104,30 +134,67 @@ def verify_github_check_statuses(
         for check_runs in check_runs_by_name.values()
     ]
 
+    print(f"Found {len(check_runs)} status checks:")
     print_check_statuses(check_runs)
 
-    # TODO(#37574): Update here to hard fail if certain required checks fail (e.g. the
-    #  table schemas check).
+    most_recent_check_runs_by_name = {
+        check_run.name: check_run for check_run in check_runs
+    }
 
-    return all(check_run.conclusion in success_states for check_run in check_runs)
+    required_check_names = _REQUIRED_CHECKS_BY_PROJECT[project_id]
+    if missing_checks := required_check_names - set(most_recent_check_runs_by_name):
+        raise ValueError(
+            f"Found required Github checks which were not run for commit {commit_ref}: "
+            f"{missing_checks}. Did the names of these checks change or did they get "
+            f"removed?"
+        )
+
+    required_check_runs = [
+        most_recent_check_runs_by_name[check_name]
+        for check_name in sorted(required_check_names)
+    ]
+
+    failing_required_check_runs = [
+        check_run
+        for check_run in required_check_runs
+        if _get_conclusion(check_run) not in success_states
+    ]
+
+    if failing_required_check_runs:
+        print(
+            f"Found {len(failing_required_check_runs)} incomplete/failing REQUIRED "
+            f"check(s):"
+        )
+        print_check_statuses(failing_required_check_runs)
+        print(
+            "You must wait for these checks to complete and/or resolve the issues "
+            "before proceeding with the deploy."
+        )
+
+    return not bool(failing_required_check_runs), all(
+        _get_conclusion(check_run) in success_states for check_run in check_runs
+    )
 
 
 def main(args: argparse.Namespace) -> None:
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        all_checks_passed = verify_github_check_statuses(
+    with local_project_id_override(args.project_id):
+        required_checks_passed, all_checks_passed = verify_github_check_statuses(
+            project_id=args.project_id,
             commit_ref=args.commit_ref,
             success_states={"success", "skipped"},
         )
+        if all_checks_passed:
+            return
 
-        if not all_checks_passed:
-            if args.prompt:
-                prompt_for_confirmation(
-                    input_text="Found checks that were not in success or skipped status. "
-                    "Are you sure you want to proceed with the deploy?",
-                    exit_on_cancel=True,
-                )
-            else:
-                sys.exit(1)
+        if not required_checks_passed or not args.prompt:
+            sys.exit(1)
+
+        # Required checks have passed, but not ALL checks have passed
+        prompt_for_confirmation(
+            input_text="Found checks that were not in success or skipped status. "
+            "Are you sure you want to proceed with the deploy?",
+            exit_on_cancel=True,
+        )
 
 
 if __name__ == "__main__":
