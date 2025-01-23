@@ -14,7 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-/* Apps Script helper functions for sending email reminders. */
+/**
+ * Apps Script helper functions for sending email reminders.
+ *
+ * You should not run any of these functions from the Apps Script UI.
+ *
+ * The functions in this file handle all the steps of sending email reminders, namely:
+ * 1. query BigQuery for all linestaff or supervisors in the states we'd like to email
+ * 2. query Auth0 to see which emails from step 1 haven't logged in this month
+ * 3. for each user, assemble an email body with copy depending on the user's state,
+ *    number of outstanding opportunities, etc. (from BQ)
+ * 4. send emails using AppsScript's GmailApp connection
+ */
 
 /**
  * @param {string} stateCode the state of the person being emailed
@@ -36,7 +47,7 @@ function stateSpecificText(stateCode, totalOpportunities, totalOutliers) {
         toolName: "the P&P Assistant Tool",
         timeZone: "America/Boise",
         opportunitiesText: `There are ${totalOpportunities} potential opportunities for clients under your supervision to receive a supervision level change, early discharge, or other milestone.`,
-        outliersText: `Across your staff’s caseloads, there are ${totalOutliers} potential opportunities for clients to be reviewed for changes to their supervision level or early discharge.`,
+        outliersText: `${totalOutliers} of your officers have been flagged as having very high absconsion or incarceration rates.`,
       };
     case "US_ME":
       return {
@@ -49,7 +60,7 @@ function stateSpecificText(stateCode, totalOpportunities, totalOutliers) {
         toolName: "Recidiviz",
         timeZone: "America/Detroit",
         opportunitiesText: `There are ${totalOpportunities} eligible opportunities for clients under your supervision, such as early discharge or classification review.`,
-        outliersText: `${totalOutliers} of your agents have been flagged as having high rates of absconder warrants or incarcerations rates.`,
+        outliersText: `${totalOutliers} of your agents have been flagged as having very high absconder warrant or incarceration rates.`,
       };
     case "US_ND":
       return {
@@ -74,7 +85,7 @@ function textToBulletPoint(text) {
 }
 
 /**
- * @returns the HTML body of the email to be sent to the person described in info
+ * @returns the HTML body of the email to be sent to the person described in `info`
  */
 function buildLoginReminderBody(info, settings) {
   const { stateCode, name, outliers, opportunities } = info;
@@ -123,13 +134,11 @@ function sendLoginReminder(info, body, sentEmailsSheet, settings) {
   const { EMAIL_SUBJECT, EMAIL_FROM_ALIAS, FEEDBACK_EMAIL } = settings;
 
   // Add a record of this email to the sent emails spreadsheet
-  const formattedTimestamp = new Date().toLocaleString("en-US", {
-    timeZone: "America/New_York",
-  });
+  const formattedTimestamp = new Date().toISOString();
   sentEmailsSheet.appendRow([
     stateCode,
     name,
-    emailDestination,
+    emailAddress,
     district,
     formattedTimestamp,
   ]);
@@ -145,19 +154,18 @@ function sendLoginReminder(info, body, sentEmailsSheet, settings) {
 /**
  * @param {boolean} checkOutliers true when we should send an email if someone has
  *                                outliers but no opportunities
- * @returns true if we should send an email to the person described in `row`
+ * @returns true if we should send an email to the person described in `info`
  */
 function shouldSendLoginReminder(info, checkOutliers, settings) {
-  const { stateCode, district, lastLogin, outliers, opportunities } = info;
+  const { district, outliers, opportunities } = info;
   const hasOutliersOrOpportunities = checkOutliers
     ? outliers || opportunities
     : opportunities;
   const { EXCLUDED_DISTRICTS } = settings;
 
-  // Only email staff with no time in the login cell, AND who have outliers/opportunities,
+  // Only email staff who have outliers/opportunities
   // AND whose district & state are known and not excluded
   return (
-    !lastLogin &&
     hasOutliersOrOpportunities &&
     district &&
     !EXCLUDED_DISTRICTS.includes(district)
@@ -166,6 +174,7 @@ function shouldSendLoginReminder(info, checkOutliers, settings) {
 
 /**
  * Send login reminder emails to all people surfaced by the provided query.
+ * Creates a new sheet within the connected sheet to track what emails were sent.
  * @param {boolean} isSupervisors true if emailing supervisors, false if linestaff
  * @param {string} query a BigQuery query collecting all people eligible for emails.
  *                       the expected shape of results is
@@ -178,11 +187,13 @@ function shouldSendLoginReminder(info, checkOutliers, settings) {
 function sendAllLoginReminders(isSupervisors, query, settings) {
   const users = isSupervisors ? "Supervisors" : "Linestaff";
 
+  console.log(`Getting list of all ${users} from BigQuery...`);
   const data = RecidivizHelpers.runQuery(query);
   if (!data) {
     console.log(`Failed to send emails: found no ${users} to email.`);
     return;
   }
+  console.log(`Found ${data.length} ${users}.`);
 
   const currentMonthYear = new Date().toLocaleString("en-US", {
     timeZone: "America/New_York",
@@ -192,19 +203,117 @@ function sendAllLoginReminders(isSupervisors, query, settings) {
   const sentEmailsSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(
     `${currentMonthYear} Sent Emails to ${users}`
   );
-  for (const row of data) {
-    const emailInfo = {
-      stateCode: row[0],
-      name: row[2],
-      emailAddress: row[3],
-      district: row[4],
-      lastLogin: row[5],
-      outliers: row[6],
-      opportunities: row[7],
-    };
-    if (shouldSendLoginReminder(emailInfo, isSupervisors, settings)) {
-      const body = buildLoginReminderBody(emailInfo, settings);
-      sendLoginReminder(emailInfo, body, sentEmailsSheet, settings);
+
+  // Convert the query results to allow for lookup by email address once we've
+  // gotten login info from auth0
+  // TODO(#35736): Update this if/when queries are changed
+  const dataByEmail = Object.fromEntries(
+    data.map((row) => [
+      row[3].toLowerCase(), // email address, case normalized
+      {
+        stateCode: row[0],
+        name: row[2],
+        district: row[4],
+        outliers: row[6],
+        opportunities: row[7],
+      },
+    ])
+  );
+  const emails = Object.keys(dataByEmail);
+
+  // last day of the previous month, 11:59pm local time
+  const cutoffDate = new Date();
+  cutoffDate.setDate(0);
+  cutoffDate.setHours(23, 59);
+
+  console.log("Getting user login information from auth0...");
+  const authToken = getAuth0Token();
+  const userLoginInfo = getUserLoginInfo(emails, authToken);
+
+  console.log("Sending emails...");
+  for (const [email, lastLogin] of userLoginInfo.entries()) {
+    if (lastLogin < cutoffDate) {
+      const emailInfo = dataByEmail[email];
+      if (shouldSendLoginReminder(emailInfo, isSupervisors, settings)) {
+        const body = buildLoginReminderBody(emailInfo, settings);
+        sendLoginReminder(emailInfo, body, sentEmailsSheet, settings);
+      }
     }
   }
+}
+
+/**
+ * Fetch and return an Auth0 Management API access token using the client ID
+ * and client secret specified in the Properties of this script (viewable through the
+ * Apps Script UI)
+ */
+function getAuth0Token() {
+  const properties = PropertiesService.getScriptProperties();
+  const options = {
+    method: "post",
+    payload: {
+      grant_type: "client_credentials",
+      client_id: properties.getProperty("AUTH0_CLIENT_ID"),
+      client_secret: properties.getProperty("AUTH0_CLIENT_SECRET"),
+      audience: "https://recidiviz.auth0.com/api/v2/",
+    },
+  };
+  const response = UrlFetchApp.fetch(
+    "https://recidiviz.auth0.com/oauth/token",
+    options
+  );
+  return JSON.parse(response.getContentText())["access_token"];
+}
+
+/**
+ * @param {list} emails      a list of emails
+ * @param {string} authToken an Auth0 Management API access token
+ * @returns an object whose keys are lowercase emails and values are the most recent
+ *          login for that email as a Date
+ */
+function getUserLoginInfo(emails, authToken) {
+  // UrlFetchApp has a 2082-character URL length limit, so we send requests to
+  // auth0 in small batches.
+  // Note that auth0 will by default paginate the request if this is more than 50.
+  const batchSize = 45;
+  let result = {};
+  for (let i = 0; i < emails.length / batchSize; i++) {
+    const batch = emails.slice(i * batchSize, (i + 1) * batchSize);
+    for (const info of getUserLoginInfoByBatch(batch, authToken)) {
+      // Users can have multiple accounts under the same email in auth0,
+      // we take the most recent login returned for this email
+      const { email, lastLogin } = info;
+      if (!(email in result) || lastLogin > result[email]) {
+        result[email] = lastLogin;
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * @param {list} batch       a list of emails that will fit into the UrlFetchApp length limit
+ * @param {string} authToken an Auth0 Management API access token
+ * @returns a list of shape [{email: str, lastLogin: Date}] for all provided emails,
+ *          emails will be lowercase
+ */
+function getUserLoginInfoByBatch(batch, authToken) {
+  // Format the emails for the query, e.g. email:("email1" OR "email2" OR "email3")
+  const emailsForQuery = batch.map((s) => `"${s}"`).join(" OR ");
+  const emailQuery = encodeURIComponent(`email:(${emailsForQuery})`);
+
+  const url = `https://recidiviz.auth0.com/api/v2/users?search_engine=v3&fields=email,last_login&q=${emailQuery}`;
+  const options = {
+    headers: {
+      authorization: `Bearer ${authToken}`,
+    },
+  };
+  // UrlFetchApp apparently throws an error if the response code is not 200,
+  // so we don't handle errors here ourselves
+  const response = UrlFetchApp.fetch(url, options);
+
+  return JSON.parse(response.getContentText()).map((o) => ({
+    email: o.email.toLowerCase(),
+    lastLogin: new Date(o.last_login),
+  }));
 }

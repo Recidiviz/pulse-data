@@ -54,8 +54,12 @@ function sendTestEmails_(sheetName, settings) {
   }
 
   for (stateCode of STATE_CODES_TO_TEST) {
+    const testSettings = {
+      ...settings,
+      EMAIL_SUBJECT: `[TESTING ${stateCode}] ${settings.EMAIL_SUBJECT}`,
+    };
     const info = { ...BASE_INFO, stateCode };
-    const body = buildLoginReminderBody(info, settings);
-    sendLoginReminder(info, body, sentEmailsSheet, settings);
+    const body = buildLoginReminderBody(info, testSettings);
+    sendLoginReminder(info, body, sentEmailsSheet, testSettings);
   }
 }

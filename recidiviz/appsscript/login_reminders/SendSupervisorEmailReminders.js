@@ -27,11 +27,12 @@ const SUPERVISOR_SETTINGS = {
   RECIDIVIZ_LINK_TEXT: "Login to Recidiviz",
 };
 
-const INCLUDED_STATES = ["US_IX", "US_MI", "US_TN"];
+const SUPERVISOR_INCLUDED_STATES = ["US_IX", "US_MI", "US_TN"];
 
-// comma-separated list of state codes as strings
-const statesForQuery = INCLUDED_STATES.map((s) => `"${s}"`).join();
-const SUPERVISOR_QUERY = `WITH supervisors AS (
+function sendSupervisorEmailReminders() {
+  // comma-separated list of state codes as strings
+  const statesForQuery = SUPERVISOR_INCLUDED_STATES.map((s) => `"${s}"`).join();
+  const supervisorQuery = `WITH supervisors AS (
 -- TODO(#35758): Query a single aggregated metrics view here.
     SELECT DISTINCT
         supervisors.state_code, 
@@ -111,6 +112,5 @@ LEFT JOIN latest_outliers
   AND supervisors.supervisor_external_id = latest_outliers.supervisor_external_id
 WHERE supervisors.state_code IN ( ${statesForQuery} )`;
 
-function sendSupervisorEmailReminders() {
-  sendAllLoginReminders(true, SUPERVISOR_QUERY, SUPERVISOR_SETTINGS);
+  sendAllLoginReminders(true, supervisorQuery, SUPERVISOR_SETTINGS);
 }

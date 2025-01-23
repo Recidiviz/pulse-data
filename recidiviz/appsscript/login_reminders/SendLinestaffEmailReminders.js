@@ -27,11 +27,12 @@ const LINESTAFF_SETTINGS = {
   RECIDIVIZ_LINK_TEXT: "Login to Recidiviz",
 };
 
-const INCLUDED_STATES = ["US_IX", "US_ME", "US_MI", "US_ND", "US_TN"];
+const LINESTAFF_INCLUDED_STATES = ["US_IX", "US_ME", "US_MI", "US_ND", "US_TN"];
 
-// comma-separated list of state codes as strings
-const statesForQuery = INCLUDED_STATES.map((s) => `"${s}"`).join();
-const LINESTAFF_QUERY = `WITH officers AS (
+function sendLinestaffEmailReminders() {
+  // comma-separated list of state codes as strings
+  const statesForQuery = LINESTAFF_INCLUDED_STATES.map((s) => `"${s}"`).join();
+  const linestaffQuery = `WITH officers AS (
 -- TODO(#35758): Query a single aggregated metrics view here.
     SELECT DISTINCT
         supervision_staff.state_code, 
@@ -136,6 +137,5 @@ LEFT JOIN latest_eligible_opportunities
   ON LOWER(latest_eligible_opportunities.officer_email) = LOWER(officers.officer_email)
 WHERE officers.state_code IN ( ${statesForQuery} )`;
 
-function sendLinestaffEmailReminders() {
-  sendAllLoginReminders(false, LINESTAFF_QUERY, LINESTAFF_SETTINGS);
+  sendAllLoginReminders(false, linestaffQuery, LINESTAFF_SETTINGS);
 }
