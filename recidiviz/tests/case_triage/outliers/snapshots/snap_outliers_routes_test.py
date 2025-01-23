@@ -109,6 +109,10 @@ snapshots[
 ] = {"hash2": None, "hashhash": "ACTION_STRATEGY_OUTLIER", "hashhashhash": None}
 
 snapshots[
+    "TestOutliersRoutes.TestOutliersRoutes test_get_action_strategies_filters_for_included_officers"
+] = {"hash2": None, "hashhash": "ACTION_STRATEGY_OUTLIER"}
+
+snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_get_action_strategies_leadership_user"
 ] = {"leadershipHash": None}
 

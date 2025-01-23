@@ -821,6 +821,204 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
+    def test_get_action_strategies_filters_for_included_officers(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_officers: MagicMock,
+        mock_get_outcomes_by_id: MagicMock,
+        mock_get_supervisor: MagicMock,
+        mock_get_events: MagicMock,
+    ) -> None:
+        pseudo_id = "hash2"
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id="102",
+            pseudonymized_id=pseudo_id,
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            mock_get_supervisor.return_value = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id == "102")
+                .first()
+            )
+
+            mock_get_officers.return_value = [
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "HARRY", "surname": "POTTER"}
+                    ),
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    avg_daily_population=10.0,
+                    include_in_outcomes=True,
+                ),
+                # Officer without outcomes
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "RON", "surname": "WEASLEY"}
+                    ),
+                    external_id="456",
+                    pseudonymized_id="hashhashhash",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    avg_daily_population=10.0,
+                    include_in_outcomes=False,
+                ),
+            ]
+
+            mock_get_outcomes_by_id.return_value = {
+                "123": SupervisionOfficerOutcomes(
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    caseload_category="ALL",
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-04-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
+                ),
+            }
+
+            mock_get_events.return_value = []
+
+            response = self.test_client.get(
+                "/outliers/us_pa/action_strategies/hash2",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.snapshot.assert_match(response.json, name="test_get_action_strategies_filters_for_included_officers")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_action_strategy_surfaced_events_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_id_to_supervision_officer_outcomes_entities",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_action_strategies_throws_error_for_missing_outcomes(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_officers: MagicMock,
+        mock_get_outcomes_by_id: MagicMock,
+        mock_get_supervisor: MagicMock,
+        mock_get_events: MagicMock,
+    ) -> None:
+        pseudo_id = "hash2"
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id="102",
+            pseudonymized_id=pseudo_id,
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            mock_get_supervisor.return_value = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id == "102")
+                .first()
+            )
+
+            mock_get_officers.return_value = [
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "HARRY", "surname": "POTTER"}
+                    ),
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    avg_daily_population=10.0,
+                    include_in_outcomes=True,
+                ),
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "RON", "surname": "WEASLEY"}
+                    ),
+                    external_id="456",
+                    pseudonymized_id="hashhashhash",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    avg_daily_population=10.0,
+                    include_in_outcomes=True,
+                ),
+            ]
+
+            # No outcomes returned for officer 456
+            mock_get_outcomes_by_id.return_value = {
+                "123": SupervisionOfficerOutcomes(
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    caseload_category="ALL",
+                    outlier_metrics=[],
+                    top_x_pct_metrics=[],
+                ),
+            }
+
+            mock_get_events.return_value = []
+
+            response = self.test_client.get(
+                "/outliers/us_pa/action_strategies/hash2",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+            self.assertEqual(
+                response.json,
+                {
+                    "message": "Missing outcomes data for officers with the pseudo ids: ['hashhashhash']"
+                },
+            )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_action_strategy_surfaced_events_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_id_to_supervision_officer_outcomes_entities",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
     def test_get_action_strategies_as_outlier_eligible(
         self,
         mock_enabled_states: MagicMock,

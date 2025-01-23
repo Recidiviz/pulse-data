@@ -940,11 +940,17 @@ def create_outliers_api_blueprint() -> Blueprint:
         category_type_to_compare = querier.get_product_configuration(
             user_context
         ).primary_category_type
-        officer_entities = querier.get_officers_for_supervisor(
-            supervisor.external_id,
-            category_type_to_compare,
-            user_context.can_access_supervision_workflows,
-        )
+
+        # For action strategies, we should only look at officers included in outcomes
+        officer_entities = [
+            o
+            for o in querier.get_officers_for_supervisor(
+                supervisor.external_id,
+                category_type_to_compare,
+                user_context.can_access_supervision_workflows,
+            )
+            if o.include_in_outcomes
+        ]
         id_to_outcomes = querier.get_id_to_supervision_officer_outcomes_entities(
             category_type_to_compare,
             supervisor_external_id=supervisor.external_id,
