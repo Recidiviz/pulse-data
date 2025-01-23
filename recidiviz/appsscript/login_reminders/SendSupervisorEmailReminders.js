@@ -16,19 +16,22 @@
 // =============================================================================
 /* Apps Script for sending email reminders to supervisors. */
 
-const EXCLUDED_DISTRICTS = ["NOT_APPLICABLE", "EXTERNAL_UNKNOWN"];
+const SUPERVISOR_SETTINGS = {
+  EXCLUDED_DISTRICTS: ["NOT_APPLICABLE", "EXTERNAL_UNKNOWN"],
+
+  EMAIL_FROM_ALIAS: "email-reports@recidiviz.org",
+  FEEDBACK_EMAIL: "feedback@recidiviz.org",
+
+  EMAIL_SUBJECT: "Recidiviz missed you this month!",
+  RECIDIVIZ_LINK: "https://dashboard.recidiviz.org/",
+  RECIDIVIZ_LINK_TEXT: "Login to Recidiviz",
+};
+
 const INCLUDED_STATES = ["US_IX", "US_MI", "US_TN"];
-
-const EMAIL_FROM_ALIAS = "email-reports@recidiviz.org";
-const FEEDBACK_EMAIL = "feedback@recidiviz.org";
-
-const EMAIL_SUBJECT = "Recidiviz missed you this month!";
-const RECIDIVIZ_LINK = "https://dashboard.recidiviz.org/";
-const RECIDIVIZ_LINK_TEXT = "Login to Recidiviz";
 
 // comma-separated list of state codes as strings
 const statesForQuery = INCLUDED_STATES.map((s) => `"${s}"`).join();
-const QUERY = `WITH supervisors AS (
+const SUPERVISOR_QUERY = `WITH supervisors AS (
 -- TODO(#35758): Query a single aggregated metrics view here.
     SELECT DISTINCT
         supervisors.state_code, 
@@ -109,108 +112,5 @@ LEFT JOIN latest_outliers
 WHERE supervisors.state_code IN ( ${statesForQuery} )`;
 
 function sendSupervisorEmailReminders() {
-  const data = RecidivizHelpers.runQuery(QUERY);
-  if (!data) {
-    console.log("Failed to send emails: found no supervisors to email.");
-    return;
-  }
-
-  const now = new Date();
-  const formattedDate = now.toLocaleString("en-US", {
-    timeZone: "America/New_York",
-    hour12: true,
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const currentMonth = now.toLocaleString("en-US", { month: "long" });
-  const currentMonthYear = now.toLocaleString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
-  const sentEmailsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(
-    `${currentMonthYear} Sent Emails to Supervisors`
-  );
-
-  for (const row of data) {
-    const stateCode = row[0];
-    const name = row[2];
-    const emailDestination = row[3];
-    const district = row[4];
-    const exactLoginTime = row[5];
-    const totalOutliers = row[6];
-    const totalOpportunities = row[7];
-
-    // Only email supervisors with no time in the login cell, AND who either have
-    // outliers or opportunities, AND whose district is known and not excluded
-    if (
-      !exactLoginTime &&
-      (totalOutliers || totalOpportunities) &&
-      district &&
-      !EXCLUDED_DISTRICTS.includes(district)
-    ) {
-      let toolName;
-      if (stateCode === "US_MI") {
-        toolName = "Recidiviz";
-      } else if (stateCode === "US_IX") {
-        toolName = "the P&P Assistant Tool";
-      } else if (stateCode === "US_TN") {
-        toolName = "the Compliant Reporting Recidiviz Tool";
-      }
-
-      let body =
-        `Hi ${name},<br><br>` +
-        `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}, here’s what you might’ve missed:<br><br>` +
-        `As of ${formattedDate} EST:<br>`;
-
-      // Add total outliers information if available
-      if (totalOutliers) {
-        if (stateCode === "US_MI") {
-          body += `- ${totalOutliers} of your agents have been flagged as having high rates of absconder warrants or incarcerations rates.<br>`;
-        } else if (stateCode === "US_IX") {
-          body += `- Across your staff’s caseloads, there are ${totalOutliers} potential opportunities for clients to be reviewed for changes to their supervision level or early discharge.<br>`;
-        }
-      }
-
-      // Add total opportunities information if available
-      if (totalOpportunities) {
-        let oppExamples;
-        if (stateCode === "US_MI") {
-          oppExamples = "early discharge or classification review";
-        } else if (stateCode === "US_TN") {
-          oppExamples = "compliant reporting or supervision level downgrade";
-        } else if (stateCode === "US_IX") {
-          oppExamples = "early discharge or transfer to limited supervision";
-        }
-        body += `- There are ${totalOpportunities} eligible opportunities for clients under your supervision, such as ${oppExamples}.<br>`;
-      }
-
-      body +=
-        "<br>" +
-        `<a href="${RECIDIVIZ_LINK}">${RECIDIVIZ_LINK_TEXT}</a><br><br>` +
-        "Thank you for your dedication, and we look forward to seeing you back on Recidiviz soon!<br><br>" +
-        "Best,<br>" +
-        "The Recidiviz Team<br><br>" +
-        `<i>If you believe you’ve received this email in error or this email contains incorrect information, please email ${FEEDBACK_EMAIL} to let us know.</i>`;
-
-      // Append data to "Sent Emails" sheet
-      const formattedTimestamp = now.toLocaleString();
-      sentEmailsSheet.appendRow([
-        stateCode,
-        name,
-        emailDestination,
-        district,
-        formattedTimestamp,
-      ]);
-
-      // Send email with alias
-      GmailApp.sendEmail(emailDestination, EMAIL_SUBJECT, "", {
-        htmlBody: body,
-        from: EMAIL_FROM_ALIAS,
-        replyTo: FEEDBACK_EMAIL,
-      });
-    }
-  }
+  sendAllLoginReminders(true, SUPERVISOR_QUERY, SUPERVISOR_SETTINGS);
 }

@@ -6,11 +6,11 @@ Hello! Before you send any email reminders please go through this checklist to m
 2. Ensure that you're emailing the right states! Here are the areas to double check:
    - (TODO(#35738): update with instructions about how to add/remove states to email,
      once we are set up to correctly handle state code filters within the queries in code)
-   - The state-specific if statements. This is where you can change any state-specific text, add 
-      states by adding an if statement, or get rid of states by deleting the if statement
-3. Ensure that you have the correct 'Sent Emails' sheet set up by creating a new sheet
-   in the connected sheet named "Month Year Sent Emails", e.g. "December 2024 Sent Emails"
-4. If there are any districts that you do NOT want to email, add them to EXCLUDED_DISTRICTS
+   - The state-specific text at the top of EmailReminderHelpers.js and the text inside
+   opportunityText and outliersText within that file.
+3. If there are any districts that you do NOT want to email, add them to 
+   EXCLUDED_DISTRICTS at the top of SendLinestaffEmailReminders.gs 
+   or SendSupervisorEmailReminders.gs
 
 If you have any questions or concerns, please reach out in the #email_reminder_rollouts
 Slack channel.

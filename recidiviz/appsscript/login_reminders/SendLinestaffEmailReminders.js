@@ -16,19 +16,22 @@
 // =============================================================================
 /* Apps Script for sending email reminders to line staff. */
 
-const EXCLUDED_DISTRICTS = ["NOT_APPLICABLE", "EXTERNAL_UNKNOWN"];
+const LINESTAFF_SETTINGS = {
+  EXCLUDED_DISTRICTS: ["NOT_APPLICABLE", "EXTERNAL_UNKNOWN"],
+
+  EMAIL_FROM_ALIAS: "email-reports@recidiviz.org",
+  FEEDBACK_EMAIL: "feedback@recidiviz.org",
+
+  EMAIL_SUBJECT: "Recidiviz missed you this month!",
+  RECIDIVIZ_LINK: "https://dashboard.recidiviz.org/",
+  RECIDIVIZ_LINK_TEXT: "Login to Recidiviz",
+};
+
 const INCLUDED_STATES = ["US_IX", "US_ME", "US_MI", "US_ND", "US_TN"];
-
-const EMAIL_FROM_ALIAS = "email-reports@recidiviz.org";
-const FEEDBACK_EMAIL = "feedback@recidiviz.org";
-
-const EMAIL_SUBJECT = "Recidiviz missed you this month!";
-const RECIDIVIZ_LINK = "https://dashboard.recidiviz.org/";
-const RECIDIVIZ_LINK_TEXT = "Login to Recidiviz";
 
 // comma-separated list of state codes as strings
 const statesForQuery = INCLUDED_STATES.map((s) => `"${s}"`).join();
-const QUERY = `WITH officers AS (
+const LINESTAFF_QUERY = `WITH officers AS (
 -- TODO(#35758): Query a single aggregated metrics view here.
     SELECT DISTINCT
         supervision_staff.state_code, 
@@ -134,102 +137,5 @@ LEFT JOIN latest_eligible_opportunities
 WHERE officers.state_code IN ( ${statesForQuery} )`;
 
 function sendLinestaffEmailReminders() {
-  const data = RecidivizHelpers.runQuery(QUERY);
-  if (!data) {
-    console.log("Failed to send emails: found no line staff to email.");
-    return;
-  }
-
-  const now = new Date();
-  const formattedDate = now.toLocaleString("en-US", {
-    timeZone: "America/New_York",
-    hour12: true,
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const currentMonth = now.toLocaleString("en-US", { month: "long" });
-  const currentMonthYear = now.toLocaleString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
-  const sentEmailsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(
-    `${currentMonthYear} Sent Emails to Linestaff`
-  );
-
-  for (const row of data) {
-    const stateCode = row[0];
-    const name = row[2];
-    const emailDestination = row[3];
-    const district = row[4];
-    const exactLoginTime = row[5];
-    const totalOpportunities = row[7];
-
-    // Only email staff with no time in the login cell, AND who have opportunities,
-    // AND whose district is known and not excluded
-    if (
-      !exactLoginTime &&
-      totalOpportunities &&
-      district &&
-      !EXCLUDED_DISTRICTS.includes(district)
-    ) {
-      let toolName;
-      if (stateCode === "US_MI") {
-        toolName = "Recidiviz";
-      } else if (stateCode === "US_IX") {
-        toolName = "the P&P Assistant Tool";
-      } else if (stateCode === "US_TN") {
-        toolName = "the Compliant Reporting Recidiviz Tool";
-      } else if (stateCode === "US_ME") {
-        toolName = "the Recidiviz tool";
-      } else if (stateCode === "US_ND") {
-        toolName = "the Recidiviz early termination tool";
-      }
-
-      let body =
-        `Hi ${name},<br><br>` +
-        `We hope you're doing well! We noticed you haven’t logged into ${toolName} yet in ${currentMonth}, here’s what you might’ve missed:<br><br>` +
-        `As of ${formattedDate} EST:<br>`;
-
-      // Add total opportunities information if available
-      if (stateCode === "US_MI") {
-        body += `- There are ${totalOpportunities} eligible opportunities for clients under your supervision, such as early discharge or classification review.<br>`;
-      } else if (stateCode === "US_TN") {
-        body += `- There are ${totalOpportunities} eligible opportunities for clients under your supervision, such as compliant reporting or supervision level downgrade.<br>`;
-      } else if (stateCode === "US_IX") {
-        body += `- There are ${totalOpportunities} potential opportunities for clients under your supervision to receive a supervision level change, early discharge, or other milestone.<br>`;
-      } else if (stateCode === "US_ME") {
-        body += `- There are ${totalOpportunities} clients under your supervision eligible for early termination.<br>`;
-      } else if (stateCode === "US_ND") {
-        body += `- There are ${totalOpportunities} clients under your supervision eligible for early termination.<br>`;
-      }
-
-      body +=
-        "<br>" +
-        `<a href="${RECIDIVIZ_LINK}">${RECIDIVIZ_LINK_TEXT}</a><br><br>` +
-        "Thank you for your dedication, and we look forward to seeing you back on Recidiviz soon!<br><br>" +
-        "Best,<br>" +
-        "The Recidiviz Team<br><br>" +
-        `<i>Recidiviz is testing sending these reminder emails 1 week before the last business day each month. If you believe you’ve received this email in error or this email contains incorrect information, please email ${FEEDBACK_EMAIL} to let us know.</i>`;
-
-      // Append data to "Sent Emails" sheet
-      const formattedTimestamp = now.toLocaleString();
-      sentEmailsSheet.appendRow([
-        stateCode,
-        name,
-        emailDestination,
-        district,
-        formattedTimestamp,
-      ]);
-
-      // Send email with alias
-      GmailApp.sendEmail(emailDestination, EMAIL_SUBJECT, "", {
-        htmlBody: body,
-        from: EMAIL_FROM_ALIAS,
-        replyTo: FEEDBACK_EMAIL,
-      });
-    }
-  }
+  sendAllLoginReminders(false, LINESTAFF_QUERY, LINESTAFF_SETTINGS);
 }
