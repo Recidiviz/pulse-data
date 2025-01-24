@@ -18,7 +18,7 @@
 
 For the time being, this is a placeholder that ingests the StateStaffExternalId with an 
 empty attached StateStaff entity. We do not receive any identifying information about
-facilities staff except for IDs.
+facilities staff except for IDs and names. TODO(#37707): Ingest staff emails.
 
 Since these are currently only relevant in validations that ensure REFERRAL_STAFF_ID 
 values match to state_staff values during ingest of state_program_assignment, the 

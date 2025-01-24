@@ -92,3 +92,8 @@ num_allowed_rows_overrides:
     override_reason: |-
       Will slowly grow until we rerun the CJARS script, which is currently loosely owned
       by DSI.
+  - validation_name: workflows_primary_users_not_in_state_staff
+    hard_num_allowed_rows_override: 60
+    override_reason: |-
+      This validation will flag every incarceration-side user as an erroring row until
+      we ingest email addresses from Elite. #TODO(#37707)
