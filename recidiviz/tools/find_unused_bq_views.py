@@ -77,9 +77,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_marked_ineligible_status_session_details import (
     WORKFLOWS_PERSON_MARKED_INELIGIBLE_STATUS_SESSION_DETAILS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.jii_texting.us_ix_lsu import (
-    US_IX_LSU_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_outlier_officers import (
     SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER,
 )
@@ -486,9 +483,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     SENTENCE_INFERRED_GROUP_SERVING_PERIOD_PROJECTED_DATES_VIEW_BUILDER.address: (
         "This is going to be used in TES queries that reference the new sentencing v2 schema "
         "(Andrew Gaidus, 2025-01-02)"
-    ),
-    US_IX_LSU_VIEW_BUILDER.address: (
-        "Will eventually be exported to GCS for JII texting work (Alexa 1/14/2025)"
     ),
 }
 

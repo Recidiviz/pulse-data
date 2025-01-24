@@ -23,4 +23,4 @@ from recidiviz.calculator.query.state.views.jii_texting.us_ix_lsu import (
     US_IX_LSU_VIEW_BUILDER,
 )
 
-JII_TOOLS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [US_IX_LSU_VIEW_BUILDER]
+JII_TEXTING_VIEW_BUILDERS: List[BigQueryViewBuilder] = [US_IX_LSU_VIEW_BUILDER]

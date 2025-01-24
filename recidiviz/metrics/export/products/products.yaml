@@ -173,3 +173,10 @@ products:
         environment: production
       - state_code: US_ME
         environment: production
+  - name: JII Texting
+    description: JII Texting is a tool used to message JII on an ongoing basis
+    exports:
+      - JII_TEXTING
+    states:
+      - state_code: US_IX
+        environment: staging

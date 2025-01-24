@@ -35,7 +35,12 @@ from recidiviz.metrics.export.export_config import (
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
 from recidiviz.metrics.export.view_export_manager import get_delegate_export_map
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.utils.environment import ALL_GCP_PROJECTS, DATA_PLATFORM_GCP_PROJECTS
+from recidiviz.utils.environment import (
+    ALL_GCP_PROJECTS,
+    DATA_PLATFORM_GCP_PROJECTS,
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+)
 
 
 def strip_each_line(text: str) -> str:
@@ -75,7 +80,13 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             len(VIEW_COLLECTION_EXPORT_INDEX.keys()),
         )
 
-    def test_metric_export_validations_match_formats(self) -> None:
+    @mock.patch.object(ExportViewCollectionConfig, "output_directory")
+    def test_metric_export_validations_match_formats(
+        self, mock_output_directory: mock.MagicMock
+    ) -> None:
+        mock_output_directory.return_value = GcsfsDirectoryPath(
+            bucket_name="test_bucket"
+        )
         gcsfs = FakeGCSFileSystem()
         for config_collection in _VIEW_COLLECTION_EXPORT_CONFIGS:
             configs = config_collection.export_configs_for_views_to_export()
@@ -373,7 +384,18 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             view_config_to_export.output_directory,
         )
 
-    def test_metric_exports_with_data_project_dict_is_valid(self) -> None:
+
+class TestExportViewCollectionConfigOutputProjectDict(unittest.TestCase):
+    """Tests the functionality of the ExportViewCollectionConfig class."""
+
+    def setUp(self) -> None:
+        self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
+        self.mock_project_id_fn = self.metadata_patcher.start()
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
+    def test_metric_exports_with_data_project_dict_uses_valid_projects(self) -> None:
         for export_name, config in VIEW_COLLECTION_EXPORT_INDEX.items():
             if config.output_project_by_data_project is None:
                 continue
@@ -396,5 +418,22 @@ class TestExportViewCollectionConfig(unittest.TestCase):
                         f"{','.join(ALL_GCP_PROJECTS)}"
                     )
 
-                # Validate that the output directory output
-                self.assertIsInstance(config.output_directory, GcsfsDirectoryPath)
+    def test_metric_exports_with_data_project_dict_has_valid_staging_output(
+        self,
+    ) -> None:
+        self.mock_project_id_fn.return_value = GCP_PROJECT_STAGING
+        for _, config in VIEW_COLLECTION_EXPORT_INDEX.items():
+            if config.output_project_by_data_project is None:
+                continue
+
+            self.assertIsInstance(config.output_directory, GcsfsDirectoryPath)
+
+    def test_metric_exports_with_data_project_dict_has_valid_production_output(
+        self,
+    ) -> None:
+        self.mock_project_id_fn.return_value = GCP_PROJECT_PRODUCTION
+        for _, config in VIEW_COLLECTION_EXPORT_INDEX.items():
+            if config.output_project_by_data_project is None:
+                continue
+
+            self.assertIsInstance(config.output_directory, GcsfsDirectoryPath)

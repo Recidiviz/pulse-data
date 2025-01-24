@@ -44,6 +44,9 @@ from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_vi
 from recidiviz.calculator.query.state.views.impact.impact_dashboard_views import (
     IMPACT_DASHBOARD_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.jii_texting.jii_texting_views import (
+    JII_TEXTING_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     INSIGHTS_VIEW_BUILDERS_TO_EXPORT,
 )
@@ -69,7 +72,12 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.view_config import collect_ingest_metadata_view_builders
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_DASHBOARDS_PRODUCTION,
+    GCP_PROJECT_DASHBOARDS_STAGING,
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+)
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.validation.views.view_config import VALIDATION_METADATA_BUILDERS
 
@@ -226,6 +234,7 @@ SENTENCING_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-sentencing-etl-data"
 CASE_NOTES_VIEWS_OUTPUT_DIRECTORY_URI = (
     "gs://{project_id}-case-notes-vertex-search-data"
 )
+JII_TEXTING_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-jii-texting-etl-data"
 
 EXPORT_ATLAS_TO_ID = {StateCode.US_IX.value: StateCode.US_ID.value}
 
@@ -394,6 +403,18 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         allow_empty=True,
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
         include_wildcard_in_uri=True,
+    ),
+    # JII Texting views
+    ExportViewCollectionConfig(
+        view_builders_to_export=JII_TEXTING_VIEW_BUILDERS,
+        output_directory_uri_template=JII_TEXTING_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="JII_TEXTING",
+        allow_empty=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
+        output_project_by_data_project={
+            GCP_PROJECT_STAGING: GCP_PROJECT_DASHBOARDS_STAGING,
+            GCP_PROJECT_PRODUCTION: GCP_PROJECT_DASHBOARDS_PRODUCTION,
+        },
     ),
 ]
 
