@@ -16,33 +16,56 @@ columns:
   - name: EFFECTIVE_DT
     description: |-
       The effective date of this record
+    null_values:
+      - "NULL"
   - name: CREATION_TS
     description: |-
       TODO(#31972): Fill in with answers from NE
+    null_values:
+      - "NULL"
   - name: REC_CNTR_CD
     description: |-
       Rec center code
+    null_values:
+      - "NULL"
   - name: LOCT_PRFX_CD
     description: |-
-      Location prefix code
+      Indicates discharge, absconsion, unknown, etc. Not always cosistent "level" of location. 
+      Sometimes indicates a housing unit but should generally be high level locations.
+    null_values:
+      - "NULL"
   - name: LOCT_SUFX_DSC
     description: |-
       TODO(#31972): Fill in with answers from NE
+    null_values:
+      - "NULL"
   - name: ADMIS_TYPE_CD
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Type of admission, similar to a sentence type.
+    null_values:
+      - "NULL"
   - name: INST_RLSE_TYPE_CD
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Reason for leaving institution/facility
+    null_values:
+      - "NULL"
   - name: INST_RLSE_DT
     description: |-
       Institution release date if they leave DCS.
+    null_values:
+      - "NULL"
   - name: LAST_ACTIVITY_TS
     description: |-
       TODO(#31972): Fill in with answers from NE
+    null_values:
+      - "NULL"
   - name: LAST_ACTIVITY_ID
     description: |-
       TODO(#31972): Fill in with answers from NE
+    null_values:
+      - "NULL"
   - name: LOCT_RELEASE_DT
     description: |-
       Release out of location.
+    null_values:
+      - "NULL"
