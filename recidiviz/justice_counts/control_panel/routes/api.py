@@ -56,6 +56,9 @@ from recidiviz.justice_counts.control_panel.utils import (
     raise_if_user_is_wrong_role,
 )
 from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.dimensions.dimension_registry import (
+    DIMENSION_IDENTIFIER_TO_DIMENSION,
+)
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
@@ -2161,6 +2164,29 @@ def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
         report_ids=report_ids,
     )
 
+    metric_settings = MetricSettingInterface.get_agency_metric_interfaces(
+        session=current_session,
+        agency=agency,
+    )
+    reporting_agency_ids = [
+        m.reporting_agency_id
+        for m in metric_settings
+        if m.reporting_agency_id is not None
+    ]
+
+    metric_key_to_metric_settings = {m.key: m for m in metric_settings}
+    metric_key_and_dimension_id_to_aggregated_dimension_setting = {
+        (m.key, a.dimension_identifier()): a
+        for m in metric_settings
+        for a in m.aggregated_dimensions
+    }
+
+    reporting_agencies = AgencyInterface.get_reporting_agencies_by_id(
+        session=current_session, reporting_agency_ids=reporting_agency_ids
+    )
+
+    reporting_agency_id_to_agency = {r.id: r for r in reporting_agencies}
+
     # Group aggregate datapoints by metric key.
     metric_key_to_aggregate_datapoints_json: DefaultDict[
         str, List[DatapointJson]
@@ -2177,6 +2203,14 @@ def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
     ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
     for datapoint in report_datapoints:
+        metric_setting = metric_key_to_metric_settings.get(
+            datapoint.metric_definition_key
+        )
+
+        if metric_setting is None or metric_setting.is_metric_enabled is not True:
+            # If metric setting is not enabled, do not surface datapoints for metric.
+            continue
+
         if datapoint.is_report_datapoint is False or datapoint.report_id is None:
             raise ValueError(
                 f"Expected get_report_datapoints_for_agency_dashboard to only return report datapoints. Instead, got a datapoint object with is_report_datapoint as {datapoint.is_report_datapoint} and report_id as {datapoint.report_id}."
@@ -2188,6 +2222,29 @@ def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
                 dimension_id,
                 dimension_member,
             ) = get_dimension_id_and_member(datapoint=datapoint)
+
+            aggregated_dimension_setting = (
+                metric_key_and_dimension_id_to_aggregated_dimension_setting.get(
+                    (datapoint.metric_definition_key, assert_type(dimension_id, str))
+                )
+            )
+
+            if aggregated_dimension_setting is None:
+                continue
+
+            dimension = DIMENSION_IDENTIFIER_TO_DIMENSION[
+                assert_type(dimension_id, str)
+            ]
+
+            if (
+                aggregated_dimension_setting.dimension_to_enabled_status is not None
+                and aggregated_dimension_setting.dimension_to_enabled_status.get(
+                    dimension[assert_type(dimension_member, str)]
+                )
+                is not True
+            ):
+                # If dimension is not enabled, do not surface datapoints for it.
+                continue
 
         datapoint_json = DatapointInterface.to_json_response(
             datapoint=datapoint,
@@ -2206,20 +2263,6 @@ def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
                 datapoint.metric_definition_key
             ].append(datapoint_json)
 
-    metrics = MetricSettingInterface.get_agency_metric_interfaces(
-        session=current_session,
-        agency=agency,
-    )
-    reporting_agency_ids = [
-        m.reporting_agency_id for m in metrics if m.reporting_agency_id is not None
-    ]
-
-    reporting_agencies = AgencyInterface.get_reporting_agencies_by_id(
-        session=current_session, reporting_agency_ids=reporting_agency_ids
-    )
-
-    reporting_agency_id_to_agency = {r.id: r for r in reporting_agencies}
-
     metrics_json = [
         metric.to_json(
             entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
@@ -2232,7 +2275,7 @@ def _get_published_data(agency_id: int, is_v2: bool = False) -> Dict[str, Any]:
             is_v2=is_v2,
             reporting_agency_id_to_agency=reporting_agency_id_to_agency,
         )
-        for metric in metrics
+        for metric in metric_settings
     ]
     fips_code_to_geoid = get_fips_code_to_geoid()
     county_code_to_county_name = get_county_code_to_county_name()

@@ -57,6 +57,9 @@ from recidiviz.justice_counts.metrics import law_enforcement, prisons
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
+from recidiviz.justice_counts.metrics.metric_disaggregation_data import (
+    MetricAggregatedDimensionData,
+)
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
@@ -900,7 +903,32 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.commit()
         agency = self.session.query(Agency).one()
         # Write test metrics to the Metrics Setting table.
-        metric_interfaces = self.test_schema_objects.get_test_metric_interfaces()
+        metric_interfaces = [
+            MetricInterface(
+                key=prisons.funding.key,
+                is_metric_enabled=False,
+            ),
+            # No breakdowns enabled
+            MetricInterface(key=prisons.staff.key, is_metric_enabled=True),
+            # breakdowns partially enabled
+            MetricInterface(
+                key=prisons.admissions.key,
+                is_metric_enabled=True,
+                aggregated_dimensions=[
+                    MetricAggregatedDimensionData(
+                        dimension_to_enabled_status={
+                            OffenseType.PERSON: True,
+                            OffenseType.PROPERTY: True,
+                            OffenseType.DRUG: False,
+                            OffenseType.PUBLIC_ORDER: False,
+                            OffenseType.OTHER: False,
+                            OffenseType.UNKNOWN: False,
+                        },
+                    )
+                ],
+            ),
+        ]
+
         for metric_interface in metric_interfaces:
             MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=self.session,
@@ -964,8 +992,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(agency["name"], "Agency Prison")
         self.assertEqual(agency["systems"], ["PRISONS"])
 
-        self.shared_test_agency_metrics(metrics=metrics)
-
         self.assertEqual(metrics[0]["datapoints"], None)
         self.assertEqual(metrics[1]["datapoints"], None)
         self.assertEqual(metrics[2]["datapoints"], None)
@@ -981,12 +1007,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(metrics[8]["datapoints"], None)
 
         self.assertEqual(metrics[3]["key"], prisons.admissions.key)
-        self.assertEqual(metrics[3]["enabled"], None)
+        self.assertEqual(metrics[3]["enabled"], True)
         self.assertEqual(
             metrics[3]["disaggregations"][0]["key"],
             OffenseType.dimension_identifier(),
         )
-        self.assertEqual(metrics[3]["disaggregations"][0]["enabled"], False)
+        self.assertEqual(metrics[3]["disaggregations"][0]["enabled"], True)
         self.check_agency_metric_datapoint(
             datapoint=metrics[3]["disaggregations"][0]["dimensions"][0]["datapoints"][
                 0
@@ -1005,42 +1031,18 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             dimension_display_name="Property Offenses",
             disaggregation_display_name="Offense Type",
         )
-        self.check_agency_metric_datapoint(
-            datapoint=metrics[3]["disaggregations"][0]["dimensions"][2]["datapoints"][
-                0
-            ],
-            value=1.0,
-            report_id=report_published.id,
-            dimension_display_name="Drug Offenses",
-            disaggregation_display_name="Offense Type",
+        self.assertIsNone(  # Drug Offenses
+            metrics[3]["disaggregations"][0]["dimensions"][2]["datapoints"]
         )
-        self.check_agency_metric_datapoint(
-            datapoint=metrics[3]["disaggregations"][0]["dimensions"][3]["datapoints"][
-                0
-            ],
-            value=5.0,
-            report_id=report_published.id,
-            dimension_display_name="Public Order Offenses",
-            disaggregation_display_name="Offense Type",
+        self.assertIsNone(  # Public Order Offenses
+            metrics[3]["disaggregations"][0]["dimensions"][3]["datapoints"]
         )
-        self.check_agency_metric_datapoint(
-            datapoint=metrics[3]["disaggregations"][0]["dimensions"][4]["datapoints"][
-                0
-            ],
-            value=2.0,
-            report_id=report_published.id,
-            dimension_display_name="Other Offenses",
-            disaggregation_display_name="Offense Type",
-        )
-        self.check_agency_metric_datapoint(
-            datapoint=metrics[3]["disaggregations"][0]["dimensions"][5]["datapoints"][
-                0
-            ],
-            value=6.0,
-            report_id=report_published.id,
-            dimension_display_name="Unknown Offenses",
-            disaggregation_display_name="Offense Type",
-        )
+        self.assertIsNone(
+            metrics[3]["disaggregations"][0]["dimensions"][4]["datapoints"]
+        )  # Other Offenses
+        self.assertIsNone(
+            metrics[3]["disaggregations"][0]["dimensions"][5]["datapoints"]
+        )  # Unknown Offenses
 
     def test_get_all_agencies_metadata(self) -> None:
         user_A = self.test_schema_objects.test_user_A
