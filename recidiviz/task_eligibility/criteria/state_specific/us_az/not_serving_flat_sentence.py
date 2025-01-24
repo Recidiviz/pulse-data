@@ -43,7 +43,7 @@ _QUERY_TEMPLATE = f"""
         TO_JSON(STRUCT(JSON_VALUE(sentence_metadata, '$.flat_sentence') as flat_sentence)) AS reason,
         JSON_VALUE(sentence_metadata, '$.flat_sentence') AS flat_sentence,
     {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap='INCARCERATION')}
-    WHERE JSON_VALUE(sentence_metadata, '$.flat_sentence') = 'Y'
+    WHERE JSON_VALUE(sentence_metadata, '$.flat_sentence') = 'TRUE'
     GROUP BY 1,2,3,4,5,sentence_metadata
     """
 

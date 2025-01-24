@@ -24,7 +24,7 @@ input_columns:
   SEX_OFFENSE_FLAG: STRING
   TPR_ELIGIBILITY_NOTE: STRING
   is_controlling: BOOLEAN
-  FLAT_SENT_FLAG: STRING
+  flat_sentence_flag: STRING
 unused_columns:
   - parole_possible
 output:
@@ -106,4 +106,4 @@ output:
                 status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
           sentence_metadata:
             $json_dict:
-              flat_sentence: FLAT_SENT_FLAG
+              flat_sentence: flat_sentence_flag

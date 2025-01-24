@@ -119,13 +119,14 @@ commitments AS ({COMMITMENT_LEVEL_DATA}),
 -- Has charge detail information like NCIC code
 ars_data_for_charges AS ({ARS_DATA_FOR_CHARGES}),
 
--- Has a flag denoting whether a sentence is a flat sentence.
+-- Identify flat sentences by adding a flag where the reason for denial from temporary
+-- release is "Exception", per suggestion from time comp.
 flat_sentence_flags AS (
     SELECT DISTINCT 
-        OFFENSE_ID,
-        FLAT_SENT_FLAG
-    FROM {{AZ_DOC_SC_EXCEPTION}}
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY OFFENSE_ID 
+        FINAL_OFFENSE_ID AS OFFENSE_ID,
+        (TEMP_RLS_DENIED_ID = '11299') AS flat_sentence_flag,
+    FROM {{AZ_DOC_SC_EPISODE}}
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY FINAL_OFFENSE_ID 
     ORDER BY CAST(COALESCE(NULLIF(UPDT_DTM,'NULL'), NULLIF(CREATE_DTM,'NULL')) AS DATETIME) DESC) = 1
 ),
 
@@ -175,7 +176,7 @@ SELECT
     SEX_OFFENSE_FLAG,
     TPR_ELIGIBILITY_NOTE,
     OFFENSE_ID = FINAL_OFFENSE_ID AS is_controlling,
-    FLAT_SENT_FLAG
+    flat_sentence_flag
 FROM 
     valid_sentences
 JOIN
