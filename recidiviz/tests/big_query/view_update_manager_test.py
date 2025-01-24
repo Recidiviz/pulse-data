@@ -27,7 +27,6 @@ from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryViewMaterializationResult
-from recidiviz.big_query.big_query_job_labels import BigQueryJobLabel
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_sandbox_context import (
@@ -35,6 +34,7 @@ from recidiviz.big_query.big_query_view_sandbox_context import (
 )
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.view_update_manager import BigQueryViewUpdateSandboxContext
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.source_tables.collect_all_source_table_configs import (
     get_source_table_datasets,
 )
@@ -73,7 +73,7 @@ class ViewManagerTest(unittest.TestCase):
             view: BigQueryView,
             # pylint: disable=unused-argument
             use_query_cache: bool,
-            job_labels: Optional[list[BigQueryJobLabel]] = None,
+            job_labels: Optional[list[ResourceLabel]] = None,
         ) -> BigQueryViewMaterializationResult:
             return BigQueryViewMaterializationResult(
                 view_address=view.address,

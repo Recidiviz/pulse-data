@@ -43,10 +43,10 @@ from recidiviz.airflow.dags.utils.constants import (
     RAISE_LOAD_PREP_ERRORS,
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_job_labels import (
-    BigQueryIngestInstanceJobLabel,
-    BigQueryStateCodeJobLabel,
-    PlatformOrchestrationBQLabel,
+from recidiviz.cloud_resources.platform_resource_labels import (
+    IngestInstanceResourceLabel,
+    PlatformOrchestrationResourceLabel,
+    StateCodeResourceLabel,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.constants.operations.direct_ingest_raw_file_import import (
@@ -96,9 +96,9 @@ def load_and_prep_paths_for_batch(
     fs = GcsfsFactory.build()
     bq_client = BigQueryClientImpl(
         default_job_labels=[
-            BigQueryStateCodeJobLabel(value=region_code.lower()),
-            BigQueryIngestInstanceJobLabel(value=raw_data_instance.value.lower()),
-            PlatformOrchestrationBQLabel.RAW_DATA_IMPORT_DAG.value,
+            StateCodeResourceLabel(value=region_code.lower()),
+            IngestInstanceResourceLabel(value=raw_data_instance.value.lower()),
+            PlatformOrchestrationResourceLabel.RAW_DATA_IMPORT_DAG.value,
         ]
     )
 
@@ -329,9 +329,9 @@ def append_to_raw_data_table_for_batch(
     fs = GcsfsFactory.build()
     bq_client = BigQueryClientImpl(
         default_job_labels=[
-            BigQueryStateCodeJobLabel(value=region_code.lower()),
-            BigQueryIngestInstanceJobLabel(value=raw_data_instance.value.lower()),
-            PlatformOrchestrationBQLabel.RAW_DATA_IMPORT_DAG.value,
+            StateCodeResourceLabel(value=region_code.lower()),
+            IngestInstanceResourceLabel(value=raw_data_instance.value.lower()),
+            PlatformOrchestrationResourceLabel.RAW_DATA_IMPORT_DAG.value,
         ]
     )
 

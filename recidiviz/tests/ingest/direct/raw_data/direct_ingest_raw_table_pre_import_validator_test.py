@@ -23,7 +23,7 @@ from unittest.mock import MagicMock
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_job_labels import BigQueryJobLabel
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_pre_import_validator import (
     DirectIngestRawTablePreImportValidator,
@@ -211,7 +211,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             query_str="\nSELECT OldCol1\nFROM test-project.test_dataset.test_table\nWHERE OldCol1 IS NOT NULL\nLIMIT 1\n",
             use_query_cache=True,
             job_labels=[
-                BigQueryJobLabel(
+                ResourceLabel(
                     key="raw_data_import_step",
                     value="raw_data_pre_import_validations",
                     parents=None,

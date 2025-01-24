@@ -30,9 +30,9 @@ from recidiviz.big_query.big_query_client import (
     BigQueryClientImpl,
     BigQueryViewMaterializationResult,
 )
-from recidiviz.big_query.big_query_job_labels import BigQueryJobLabel
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.common.constants import states
 from recidiviz.persistence.database.bq_refresh import (
     federated_cloud_sql_table_big_query_view_collector,
@@ -80,7 +80,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             view: BigQueryView,
             # pylint: disable=unused-argument
             use_query_cache: bool,
-            job_labels: Optional[list[BigQueryJobLabel]] = None,
+            job_labels: Optional[list[ResourceLabel]] = None,
         ) -> BigQueryViewMaterializationResult:
             return BigQueryViewMaterializationResult(
                 view_address=view.address,

@@ -28,14 +28,16 @@ from more_itertools import one
 from recidiviz.big_query.big_query_job_labels import (
     BigQueryAddressJobLabel,
     BigQueryDatasetIdJobLabel,
-    BigQueryJobLabel,
-    BigQueryStateAgnosticJobLabel,
-    BigQueryStateCodeJobLabel,
     BigQueryTableIdJobLabel,
 )
+from recidiviz.cloud_resources.platform_resource_labels import (
+    StateAgnosticResourceLabel,
+    StateCodeResourceLabel,
+)
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.google_cloud.big_query_utils import format_label_for_big_query
+from recidiviz.common.google_cloud.utils import format_resource_label
 
 
 @attr.s(frozen=True, kw_only=True, order=True)
@@ -132,16 +134,16 @@ class BigQueryAddress:
         return f"\n{list_str}\n"
 
     @property
-    def bq_job_labels(self) -> list[BigQueryJobLabel]:
+    def bq_job_labels(self) -> list[ResourceLabel]:
         state_code = self.state_code_for_address()
         state_code_label = (
-            BigQueryStateCodeJobLabel(value=state_code.value.lower())
+            StateCodeResourceLabel(value=state_code.value.lower())
             if state_code
-            else BigQueryStateAgnosticJobLabel()
+            else StateAgnosticResourceLabel()
         )
-        dataset_id_label_safe = format_label_for_big_query(self.dataset_id)
-        table_id_label_safe = format_label_for_big_query(self.table_id)
-        address_label_safe = format_label_for_big_query(
+        dataset_id_label_safe = format_resource_label(self.dataset_id)
+        table_id_label_safe = format_resource_label(self.table_id)
+        address_label_safe = format_resource_label(
             f"{dataset_id_label_safe}---{table_id_label_safe}"
         )
         return [

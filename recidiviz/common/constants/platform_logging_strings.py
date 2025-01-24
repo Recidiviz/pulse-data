@@ -19,6 +19,8 @@
 # -- PLATFORM ENVIRONMENTS --
 # this is the literal place where the call bq query is run
 # - key
+
+
 PLATFORM_ENVIRONMENT: str = "platform_environment"
 # - values
 AIRFLOW: str = "airflow"

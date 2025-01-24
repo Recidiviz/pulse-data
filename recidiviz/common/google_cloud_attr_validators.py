@@ -20,26 +20,26 @@ from typing import Any
 
 import attr
 
-from recidiviz.common.google_cloud.big_query_utils import format_label_for_big_query
+from recidiviz.common.google_cloud.utils import format_resource_label
 
 
-def is_valid_bq_label_value(
+def is_valid_resource_label_value(
     _instance: Any, attribute: attr.Attribute, value: str
 ) -> None:
     if not isinstance(value, str):
         raise TypeError(
             f"Expected [{attribute.name}] to be a string, found [{type(value)}]"
         )
-    if (formatted_label := format_label_for_big_query(value)) != value:
+    if (formatted_label := format_resource_label(value)) != value:
         raise TypeError(
             f"[{attribute.name}] is not a valid big query label, found [{value}]. "
             f"Please change to: [{formatted_label}]"
         )
 
 
-def is_valid_bq_label_key(
+def is_valid_resource_label_key(
     _instance: Any, attribute: attr.Attribute, value: str
 ) -> None:
-    is_valid_bq_label_value(_instance, attribute, value)
+    is_valid_resource_label_value(_instance, attribute, value)
     if len(value) == 0:
         raise TypeError(f"Expected [{attribute.name}] to be at least 1 character.")

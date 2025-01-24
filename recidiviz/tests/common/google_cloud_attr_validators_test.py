@@ -21,7 +21,7 @@ from typing import Any
 
 import attr
 
-from recidiviz.common import big_query_attr_validators
+from recidiviz.common import google_cloud_attr_validators
 
 
 class BQAttrValidatorsTest(unittest.TestCase):
@@ -31,10 +31,10 @@ class BQAttrValidatorsTest(unittest.TestCase):
         @attr.s
         class _TestClass:
             key: str = attr.ib(
-                validator=big_query_attr_validators.is_valid_bq_label_key
+                validator=google_cloud_attr_validators.is_valid_resource_label_key
             )
             value: str = attr.ib(
-                validator=big_query_attr_validators.is_valid_bq_label_value
+                validator=google_cloud_attr_validators.is_valid_resource_label_value
             )
 
         # type validation

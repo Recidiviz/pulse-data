@@ -27,9 +27,11 @@ from recidiviz.big_query.big_query_address import (
 from recidiviz.big_query.big_query_job_labels import (
     BigQueryAddressJobLabel,
     BigQueryDatasetIdJobLabel,
-    BigQueryStateAgnosticJobLabel,
-    BigQueryStateCodeJobLabel,
     BigQueryTableIdJobLabel,
+)
+from recidiviz.cloud_resources.platform_resource_labels import (
+    StateAgnosticResourceLabel,
+    StateCodeResourceLabel,
 )
 from recidiviz.common.constants.states import StateCode
 
@@ -319,7 +321,7 @@ class TestBigQueryAddress(unittest.TestCase):
         ]
 
         for address in state_specific_addresses:
-            assert BigQueryStateCodeJobLabel(value="us_xx") in address.bq_job_labels
+            assert StateCodeResourceLabel(value="us_xx") in address.bq_job_labels
 
         not_state_specific_addresses = [
             BigQueryAddress.from_str("my_dataset.my_table"),
@@ -329,4 +331,4 @@ class TestBigQueryAddress(unittest.TestCase):
         ]
 
         for address in not_state_specific_addresses:
-            assert BigQueryStateAgnosticJobLabel() in address.bq_job_labels
+            assert StateAgnosticResourceLabel() in address.bq_job_labels

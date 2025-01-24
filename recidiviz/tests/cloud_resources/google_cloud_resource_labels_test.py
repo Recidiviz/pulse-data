@@ -14,41 +14,43 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for big query labels utils."""
+"""Tests for GCP resource labels."""
 
 from unittest import TestCase
 
-from recidiviz.big_query.big_query_job_labels import (
-    BigQueryJobLabel,
-    coalesce_job_labels,
+from recidiviz.cloud_resources.resource_label import (
+    ResourceLabel,
+    coalesce_resource_labels,
 )
 
 
-class BigQueryLabelsTest(TestCase):
-    """Tests associated with the BigQueryJobLabel class"""
+class GCPResourceLabelsTest(TestCase):
+    """Tests associated with the GoogleCloudResourceLabel class and the
+    coalesce_resource_labels util
+    """
 
     def test_coalesce_labels_simple(self) -> None:
-        assert not coalesce_job_labels(should_throw_on_conflict=False)
+        assert not coalesce_resource_labels(should_throw_on_conflict=False)
 
         # simple combination
-        assert coalesce_job_labels(
-            BigQueryJobLabel(key="key", value="value"),
-            BigQueryJobLabel(key="key2", value="value"),
+        assert coalesce_resource_labels(
+            ResourceLabel(key="key", value="value"),
+            ResourceLabel(key="key2", value="value"),
             should_throw_on_conflict=False,
         ) == {"key": "value", "key2": "value"}
 
         # parent labels are expanded
-        assert coalesce_job_labels(
-            BigQueryJobLabel(
+        assert coalesce_resource_labels(
+            ResourceLabel(
                 key="child",
                 value="iii",
                 parents=[
-                    BigQueryJobLabel(
+                    ResourceLabel(
                         key="parent",
                         value="ii",
                         parents=[
-                            BigQueryJobLabel(key="grandparent_i", value="i"),
-                            BigQueryJobLabel(key="grandparent_ii", value="i"),
+                            ResourceLabel(key="grandparent_i", value="i"),
+                            ResourceLabel(key="grandparent_ii", value="i"),
                         ],
                     )
                 ],
@@ -62,23 +64,23 @@ class BigQueryLabelsTest(TestCase):
         }
 
         # parent labels are expanded and combined
-        assert coalesce_job_labels(
-            BigQueryJobLabel(
+        assert coalesce_resource_labels(
+            ResourceLabel(
                 key="child",
                 value="iii",
                 parents=[
-                    BigQueryJobLabel(
+                    ResourceLabel(
                         key="parent",
                         value="ii",
-                        parents=[BigQueryJobLabel(key="grandparent", value="i")],
+                        parents=[ResourceLabel(key="grandparent", value="i")],
                     )
                 ],
             ),
-            BigQueryJobLabel(
+            ResourceLabel(
                 key="alto_sax",
                 value="smallest",
                 parents=[
-                    BigQueryJobLabel(
+                    ResourceLabel(
                         key="tenor_sax",
                         value="a-little-bigger",
                     )
@@ -95,12 +97,12 @@ class BigQueryLabelsTest(TestCase):
 
     def test_coalesce_labels_conflicts(self) -> None:
         # same keys, same values is ok
-        assert coalesce_job_labels(
-            BigQueryJobLabel(
+        assert coalesce_resource_labels(
+            ResourceLabel(
                 key="key",
                 value="value",
             ),
-            BigQueryJobLabel(
+            ResourceLabel(
                 key="key",
                 value="value",
             ),
@@ -111,12 +113,12 @@ class BigQueryLabelsTest(TestCase):
         with self.assertRaisesRegex(
             ValueError, r"Found conflicting labels for key \[key\]: .*"
         ):
-            coalesce_job_labels(
-                BigQueryJobLabel(
+            coalesce_resource_labels(
+                ResourceLabel(
                     key="key",
                     value="value",
                 ),
-                BigQueryJobLabel(
+                ResourceLabel(
                     key="key",
                     value="-value-",
                 ),
@@ -124,12 +126,12 @@ class BigQueryLabelsTest(TestCase):
             )
 
         # same keys, different values takes the first
-        assert coalesce_job_labels(
-            BigQueryJobLabel(
+        assert coalesce_resource_labels(
+            ResourceLabel(
                 key="key",
                 value="value",
             ),
-            BigQueryJobLabel(
+            ResourceLabel(
                 key="key",
                 value="-value-",
             ),
@@ -139,16 +141,16 @@ class BigQueryLabelsTest(TestCase):
     def test_attr_validators(self) -> None:
         with self.assertRaises(TypeError):
             # key has to be 1 char
-            BigQueryJobLabel(key="", value="aaaaa")
+            ResourceLabel(key="", value="aaaaa")
         # value is okay with empty
-        _ok = BigQueryJobLabel(key="aa", value="")
+        _ok = ResourceLabel(key="aa", value="")
 
         with self.assertRaises(TypeError):
             # no spaces
-            BigQueryJobLabel(key=" ", value="aaaaa")
+            ResourceLabel(key=" ", value="aaaaa")
 
         with self.assertRaises(TypeError):
-            BigQueryJobLabel(key="$$", value="aaaaa")
+            ResourceLabel(key="$$", value="aaaaa")
 
         with self.assertRaises(TypeError):
-            BigQueryJobLabel(key="aa", value=" ")
+            ResourceLabel(key="aa", value=" ")

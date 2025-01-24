@@ -24,8 +24,10 @@ from google.cloud.bigquery.job import LoadJob
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.big_query.big_query_job_labels import RawDataImportStepBQLabel
 from recidiviz.big_query.big_query_utils import to_big_query_valid_encoding
+from recidiviz.cloud_resources.platform_resource_labels import (
+    RawDataImportStepResourceLabel,
+)
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.csv import DEFAULT_CSV_ENCODING, DEFAULT_CSV_SEPARATOR
@@ -151,7 +153,9 @@ class DirectIngestRawFileLoadManager:
                     preserve_ascii_control_characters=True,
                     encoding=encoding,
                     field_delimiter=separator,
-                    job_labels=[RawDataImportStepBQLabel.RAW_DATA_TEMP_LOAD.value],
+                    job_labels=[
+                        RawDataImportStepResourceLabel.RAW_DATA_TEMP_LOAD.value
+                    ],
                 )
             )
         except Exception as e:
@@ -223,7 +227,7 @@ class DirectIngestRawFileLoadManager:
             overwrite=True,
             use_query_cache=False,
             job_labels=[
-                RawDataImportStepBQLabel.RAW_DATA_PRE_IMPORT_TRANSFORMATIONS.value
+                RawDataImportStepResourceLabel.RAW_DATA_PRE_IMPORT_TRANSFORMATIONS.value
             ],
         )
         try:
@@ -258,7 +262,7 @@ class DirectIngestRawFileLoadManager:
             query_job = self.big_query_client.run_query_async(
                 query_str=migration_query,
                 use_query_cache=False,
-                job_labels=[RawDataImportStepBQLabel.RAW_DATA_MIGRATIONS.value],
+                job_labels=[RawDataImportStepResourceLabel.RAW_DATA_MIGRATIONS.value],
             )
             try:
                 query_job.result()
@@ -408,7 +412,7 @@ class DirectIngestRawFileLoadManager:
             query=raw_data_diff_query,
             overwrite=True,
             use_query_cache=False,
-            job_labels=[RawDataImportStepBQLabel.RAW_DATA_PRUNING.value],
+            job_labels=[RawDataImportStepResourceLabel.RAW_DATA_PRUNING.value],
         )
 
         try:
@@ -447,7 +451,7 @@ class DirectIngestRawFileLoadManager:
             source_address=source_table,
             destination_address=destination_table,
             use_query_cache=False,
-            job_labels=[RawDataImportStepBQLabel.RAW_DATA_TABLE_APPEND.value],
+            job_labels=[RawDataImportStepResourceLabel.RAW_DATA_TABLE_APPEND.value],
         )
 
         try:
@@ -473,7 +477,7 @@ class DirectIngestRawFileLoadManager:
         delete_job = self.big_query_client.delete_from_table_async(
             address=raw_data_table,
             filter_clause="WHERE file_id = " + str(file_id),
-            job_labels=[RawDataImportStepBQLabel.RAW_DATA_TABLE_APPEND.value],
+            job_labels=[RawDataImportStepResourceLabel.RAW_DATA_TABLE_APPEND.value],
         )
         result = delete_job.result()
         if result.num_dml_affected_rows:

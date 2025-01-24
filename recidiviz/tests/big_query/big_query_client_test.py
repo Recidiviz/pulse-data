@@ -49,9 +49,9 @@ from recidiviz.big_query.big_query_address import (
     ProjectSpecificBigQueryAddress,
 )
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.big_query.big_query_job_labels import BigQueryJobLabel
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
+from recidiviz.cloud_resources.resource_label import ResourceLabel
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -308,11 +308,11 @@ class BigQueryClientImplTest(unittest.TestCase):
             query_str="fake query",
             use_query_cache=False,
             job_labels=[
-                BigQueryJobLabel(key="fake", value="label"),
-                BigQueryJobLabel(
+                ResourceLabel(key="fake", value="label"),
+                ResourceLabel(
                     key="fake2",
                     value="label2",
-                    parents=[BigQueryJobLabel(key="fake3", value="label3")],
+                    parents=[ResourceLabel(key="fake3", value="label3")],
                 ),
             ],
         )
@@ -342,7 +342,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             ),
             query="fake query",
             use_query_cache=False,
-            job_labels=[BigQueryJobLabel(key="test", value="123")],
+            job_labels=[ResourceLabel(key="test", value="123")],
         )
 
         mock_job_config.assert_called_with(
@@ -363,7 +363,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     ) -> None:
         bq_client_with_default_labels = BigQueryClientImpl(
             default_job_labels=[
-                BigQueryJobLabel(key="default", value="label"),
+                ResourceLabel(key="default", value="label"),
             ]
         )
 
@@ -389,7 +389,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     ) -> None:
         bq_client_with_default_labels = BigQueryClientImpl(
             default_job_labels=[
-                BigQueryJobLabel(key="default", value="label"),
+                ResourceLabel(key="default", value="label"),
             ]
         )
 
@@ -400,11 +400,11 @@ class BigQueryClientImplTest(unittest.TestCase):
             query="fake query",
             use_query_cache=False,
             job_labels=[
-                BigQueryJobLabel(key="fake", value="label"),
-                BigQueryJobLabel(
+                ResourceLabel(key="fake", value="label"),
+                ResourceLabel(
                     key="fake2",
                     value="label2",
-                    parents=[BigQueryJobLabel(key="default", value="label")],
+                    parents=[ResourceLabel(key="default", value="label")],
                 ),
             ],
         )
@@ -427,7 +427,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_run_query_async_labels_conflict(self, mock_job_config: MagicMock) -> None:
         bq_client_with_default_labels = BigQueryClientImpl(
             default_job_labels=[
-                BigQueryJobLabel(key="default", value="label"),
+                ResourceLabel(key="default", value="label"),
             ]
         )
 
@@ -437,7 +437,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             bq_client_with_default_labels.run_query_async(
                 query_str="fake query",
                 use_query_cache=False,
-                job_labels=[BigQueryJobLabel(key="default", value="not-label")],
+                job_labels=[ResourceLabel(key="default", value="not-label")],
             )
 
     @patch("google.cloud.bigquery.QueryJobConfig")

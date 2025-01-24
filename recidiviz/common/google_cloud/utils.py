@@ -14,16 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""String utils for big query """
+"""Utils for GCP resource lables """
 import re
 
 
-def format_label_for_big_query(label: str) -> str:
-    """Ensures that labels meet BigQuery requirements.
+def format_resource_label(label: str) -> str:
+    """Ensures that labels meet GCP requirements.
 
     The requirements for values are that they can contain only lowercase letters, numeric
     characters, underscores, and dashes, and have a maximum length of 63 characters:
-            https://cloud.google.com/bigquery/docs/labels-intro.
+            https://cloud.google.com/resource-manager/docs/labels-overview#requirements
+    This formatting *should* be valid across all GCP services, such as compute engine
+    labels and BigQuery job labels.
+
     This method converts the label string to lowercase, replaces any disallowed characters
     with a dash, and truncates the length to 63.
     """

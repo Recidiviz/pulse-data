@@ -23,8 +23,10 @@ from google.api_core import retry
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.big_query_job_labels import RawDataImportStepBQLabel
 from recidiviz.big_query.big_query_utils import bq_query_job_result_to_list_of_row_dicts
+from recidiviz.cloud_resources.platform_resource_labels import (
+    RawDataImportStepResourceLabel,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.retry_predicate import rate_limit_retry_predicate
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
@@ -148,7 +150,7 @@ class DirectIngestRawTablePreImportValidator:
                 query_str=validation.query,
                 use_query_cache=True,
                 job_labels=[
-                    RawDataImportStepBQLabel.RAW_DATA_PRE_IMPORT_VALIDATIONS.value
+                    RawDataImportStepResourceLabel.RAW_DATA_PRE_IMPORT_VALIDATIONS.value
                 ],
             ): validation
             for validation in validations_to_run
