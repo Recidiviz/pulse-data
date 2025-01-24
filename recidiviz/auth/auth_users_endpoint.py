@@ -48,6 +48,7 @@ from recidiviz.auth.helpers import (
     generate_pseudonymized_id,
     generate_user_hash,
     log_reason,
+    validate_roles,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import (
     PermissionsOverride,
@@ -208,8 +209,10 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                 f"User not found for email address hash {user_hash}, please file a bug"
             )
         (email, state_code) = attrs
-
         user_dict["email_address"] = email
+
+        validate_roles(user_dict)
+
         user_dict["state_code"] = user_dict.get("state_code", state_code)
         log_reason(user_dict, f"updating user {user_dict['email_address']}")
 
@@ -256,7 +259,8 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
         @users_blueprint.response(HTTPStatus.OK, UserSchema)
         def post(self, user_dict: Dict[str, Any]) -> UserOverride:
             """Adds a new user to UserOverride and returns the created user.
-            Returns an error message if a user already exists with that email address.
+            Returns an error message if a user already exists with that email address
+            or if the user does not have one of the predefined roles.
             """
             try:
                 user_dict["user_hash"] = generate_user_hash(user_dict["email_address"])
@@ -273,6 +277,8 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                         HTTPStatus.UNPROCESSABLE_ENTITY,
                         message="A user with this email already exists in Roster.",
                     )
+
+                validate_roles(user_dict)
 
                 log_reason(user_dict, f"adding user {user_dict['email_address']}")
 
@@ -368,17 +374,22 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
         @users_blueprint.response(HTTPStatus.OK, FullUserSchema(many=True))
         def patch(self, users: List[Dict[str, Any]]) -> List[Row]:
             """Edits existing users' info by adding or updating an entry for those users in UserOverride."""
-            user_hashes = []
-            for user_dict in users:
-                current_session.add(_create_user_override(current_session, user_dict))
-                user_hashes.append(user_dict["user_hash"])
-            current_session.commit()
-            updated_users = (
-                current_session.query(UserOverride)
-                .filter(UserOverride.user_hash.in_(user_hashes))
-                .all()
-            )
-            return updated_users
+            try:
+                user_hashes = []
+                for user_dict in users:
+                    current_session.add(
+                        _create_user_override(current_session, user_dict)
+                    )
+                    user_hashes.append(user_dict["user_hash"])
+                current_session.commit()
+                updated_users = (
+                    current_session.query(UserOverride)
+                    .filter(UserOverride.user_hash.in_(user_hashes))
+                    .all()
+                )
+                return updated_users
+            except (ProgrammingError, ValueError) as e:
+                abort(HTTPStatus.BAD_REQUEST, message=f"{e}")
 
     @users_blueprint.route("<path:user_hash>")
     class UsersByHashAPI(MethodView):  # pylint: disable=unused-variable
@@ -426,9 +437,12 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
             Edits an existing user's info by adding or updating an entry for that user in UserOverride.
             Returns the updated user.
             """
-            user_dict["user_hash"] = user_hash
-            current_session.add(_create_user_override(current_session, user_dict))
-            current_session.commit()
-            return self.get(user_hash)
+            try:
+                user_dict["user_hash"] = user_hash
+                current_session.add(_create_user_override(current_session, user_dict))
+                current_session.commit()
+                return self.get(user_hash)
+            except (ProgrammingError, ValueError) as e:
+                abort(HTTPStatus.BAD_REQUEST, message=f"{e}")
 
     return users_blueprint

@@ -1,3 +1,3 @@
-US_XX,supervision_staff@testdomain.com,3706,supervision_staff,"D1","supervision","user","pseudo-3706"
-US_XX,user@testdomain.com,98725,supervision_staff,"D2","supervision2","user2",
-US_XX,leadership@testdomain.com,,leadership_role,,"leadership","user",
+US_XX,supervision_staff@testdomain.com,3706,supervision_line_staff,"D1","supervision","user","pseudo-3706"
+US_XX,user@testdomain.com,98725,supervision_line_staff,"D2","supervision2","user2",
+US_XX,leadership@testdomain.com,,supervision_leadership,,"leadership","user",

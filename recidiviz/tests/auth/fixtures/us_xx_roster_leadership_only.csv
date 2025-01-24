@@ -1,2 +1,2 @@
 district,email_address,external_id,roles,first_name,last_name
-,leadership@testdomain.com,3975,"leadership_role, supervision_staff","leadership","user"
+,leadership@testdomain.com,3975,"supervision_leadership, supervision_line_staff","leadership","user"

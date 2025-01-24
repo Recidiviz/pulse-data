@@ -39,6 +39,7 @@ from recidiviz.auth.helpers import (
     generate_pseudonymized_id,
     generate_user_hash,
     log_reason,
+    validate_roles,
 )
 from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
@@ -125,7 +126,10 @@ def _upsert_user_rows(
         validate_email_address(row["email_address"])
 
         email = row["email_address"].lower()
+
         roles = [value.strip().lower() for value in row["roles"].split(",")]
+        row["roles"] = roles
+        validate_roles(row)
 
         # Experiments create arbitrary roles, and we don't want to throw an error if they aren't all configured
         non_experiment_roles = [

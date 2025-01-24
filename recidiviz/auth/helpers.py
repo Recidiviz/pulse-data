@@ -26,6 +26,7 @@ from flask import request
 from sqlalchemy.engine.row import Row
 
 from recidiviz.admin_panel.constants import LOAD_BALANCER_SERVICE_ID_SECRET_NAME
+from recidiviz.auth.constants import PREDEFINED_ROLES
 from recidiviz.utils import metadata, validate_jwt
 from recidiviz.utils.secrets import get_secret
 
@@ -167,3 +168,13 @@ def convert_to_dict_single_result(row: Row) -> Dict[str, Any]:
 
 def convert_to_dict_multiple_results(rows: List[Row]) -> List[Dict[str, Any]]:
     return [convert_to_dict_single_result(row) for row in rows]
+
+
+def validate_roles(user_dict: Dict[str, Any]) -> None:
+    email_address = user_dict.get("email_address")
+    roles = user_dict.get("roles")
+
+    if roles is not None and not any(role in PREDEFINED_ROLES for role in roles):
+        raise ValueError(
+            f"User {email_address} must have at least one of the following roles: {', '.join(PREDEFINED_ROLES)}"
+        )
