@@ -889,6 +889,28 @@ def get_many_to_many_relationships(entity_cls: Type[Entity]) -> Set[str]:
     return many_to_many_relationships
 
 
+def get_all_many_to_many_relationships_in_module(
+    entities_module: ModuleType,
+) -> Set[Tuple[Type[Entity], Type[Entity]]]:
+    """Returns the set of all many-to-many relationships between entities in the given module."""
+    sorted_entities = sorted(
+        get_all_entity_classes_in_module(entities_module),
+        key=lambda entity_cls: entity_cls.get_table_id(),
+    )
+    many_to_many_relationships: Set[Tuple[Type[Entity], Type[Entity]]] = set()
+
+    for i, entity_class_a in enumerate(sorted_entities):
+        for entity_class_b in sorted_entities[i + 1 :]:
+            if not entities_have_direct_relationship(
+                entity_class_a, entity_class_b
+            ) or not is_many_to_many_relationship(entity_class_a, entity_class_b):
+                continue
+
+            many_to_many_relationships.add((entity_class_a, entity_class_b))
+
+    return many_to_many_relationships
+
+
 def is_many_to_many_relationship(
     parent_cls: Type[Entity], child_cls: Type[Entity]
 ) -> bool:

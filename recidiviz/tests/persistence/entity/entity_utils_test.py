@@ -95,6 +95,7 @@ from recidiviz.persistence.entity.entity_utils import (
     entities_have_direct_relationship,
     get_all_entities_from_tree,
     get_all_entity_classes_in_module,
+    get_all_many_to_many_relationships_in_module,
     get_association_table_id,
     get_entities_by_association_table_id,
     get_entity_class_in_module_with_name,
@@ -1661,6 +1662,19 @@ class TestBidirectionalUpdates(TestCase):
                 entity.__class__
             )
             self.assertEqual(len(many_to_many_relationships), 0)
+
+    def test_get_all_many_to_many_relationships_in_module(self) -> None:
+        all_many_to_many_relationships = get_all_many_to_many_relationships_in_module(
+            state_entities
+        )
+        self.assertEqual(
+            all_many_to_many_relationships,
+            {
+                (StateCharge, StateIncarcerationSentence),
+                (StateCharge, StateSupervisionSentence),
+                (StateChargeV2, StateSentence),
+            },
+        )
 
 
 def test_group_has_external_id_entities_by_function() -> None:

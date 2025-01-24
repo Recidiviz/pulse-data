@@ -28,11 +28,10 @@ from recidiviz.big_query.big_query_utils import schema_field_for_attribute
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
-    entities_have_direct_relationship,
     get_all_entity_classes_in_module,
+    get_all_many_to_many_relationships_in_module,
     get_association_table_id,
     get_entity_class_in_module_with_name,
-    is_many_to_many_relationship,
     is_many_to_one_relationship,
 )
 from recidiviz.persistence.entity.root_entity_utils import (
@@ -127,40 +126,28 @@ def _get_association_table_to_schema_map(
     """For the given entities module, derives the set of association tables needed to
     encode many-to-many relationships and returns the schemas for those tables.
     """
-    sorted_entities = sorted(
-        get_all_entity_classes_in_module(entities_module),
-        key=lambda entity_cls: entity_cls.get_table_id(),
-    )
     association_table_to_schema = {}
 
-    for i, entity_class_a in enumerate(sorted_entities):
-        for entity_class_b in sorted_entities[i + 1 :]:
-            if not entities_have_direct_relationship(entity_class_a, entity_class_b):
-                continue
-
-            if not is_many_to_many_relationship(entity_class_a, entity_class_b):
-                continue
-
-            association_table_id = get_association_table_id(
-                entity_class_a, entity_class_b
-            )
-            schema = [
-                SchemaField(
-                    STATE_CODE_COL,
-                    bigquery.enums.SqlTypeNames.STRING.value,
-                    mode="NULLABLE",
-                ),
-                SchemaField(
-                    entity_class_a.get_class_id_name(),
-                    bigquery.enums.SqlTypeNames.INTEGER.value,
-                    mode="NULLABLE",
-                ),
-                SchemaField(
-                    entity_class_b.get_class_id_name(),
-                    bigquery.enums.SqlTypeNames.INTEGER.value,
-                    mode="NULLABLE",
-                ),
-            ]
-            association_table_to_schema[association_table_id] = schema
+    associated_entites = get_all_many_to_many_relationships_in_module(entities_module)
+    for entity_class_a, entity_class_b in associated_entites:
+        association_table_id = get_association_table_id(entity_class_a, entity_class_b)
+        schema = [
+            SchemaField(
+                STATE_CODE_COL,
+                bigquery.enums.SqlTypeNames.STRING.value,
+                mode="NULLABLE",
+            ),
+            SchemaField(
+                entity_class_a.get_class_id_name(),
+                bigquery.enums.SqlTypeNames.INTEGER.value,
+                mode="NULLABLE",
+            ),
+            SchemaField(
+                entity_class_b.get_class_id_name(),
+                bigquery.enums.SqlTypeNames.INTEGER.value,
+                mode="NULLABLE",
+            ),
+        ]
+        association_table_to_schema[association_table_id] = schema
 
     return association_table_to_schema
