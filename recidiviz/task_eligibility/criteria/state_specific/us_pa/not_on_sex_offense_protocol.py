@@ -38,22 +38,47 @@ _DESCRIPTION = """Defines a criteria span view that shows spans of time during w
 not serving on a sex offense protocol"""
 
 _QUERY_TEMPLATE = f"""
-WITH sex_offense_spans AS (
+WITH sex_offense_condition_spans AS (
     SELECT 
         state_code,
         person_id,
         start_date,
         termination_date AS end_date,
         False AS meets_criteria,
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`,
+    UNNEST(SPLIT(conditions, '##')) condition
     WHERE state_code = 'US_PA'
-        AND (conditions LIKE '%SEX OFFENDER%' AND conditions LIKE '%PROTOCOL%')
-        AND start_date <> termination_date -- exclude zero-day sessions
+        AND ((condition LIKE '%SEX%' AND condition LIKE '%OFFEN%') 
+            OR condition LIKE '%MEGANS%' 
+            OR condition LIKE '%MEGAN\\'s%')
+),
+sex_offense_treatment_spans AS (
+    SELECT 
+        state_code,
+        person_id,
+        COALESCE(start_date, referral_date, '1900-01-01') AS start_date,
+        discharge_date AS end_date,
+        False AS meets_criteria,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` 
+    WHERE state_code = 'US_PA'
+        AND JSON_EXTRACT_SCALAR(referral_metadata, "$.PROGRAM_CODE") IN ('MEGS', 'MEGP', 'SSO', 'SEXO') 
+        -- MEGS = megan's law, MEGP = megan's law, sexually violent predator, SSO = sex offender specialized caseload, SEXO = sex offender treatments/evaluations 
+),
+sex_offense_spans AS (
+    SELECT * 
+    FROM sex_offense_condition_spans
+    WHERE start_date IS DISTINCT FROM end_date -- exclude zero-day sessions
+    
+    UNION ALL
+    
+    SELECT * 
+    FROM sex_offense_treatment_spans
+    WHERE start_date IS DISTINCT FROM end_date -- exclude zero-day sessions
 ),
 {create_sub_sessions_with_attributes('sex_offense_spans')}
 , deduped_sex_offense_spans AS (
     -- addresses overlapping spans 
-    SELECT distinct
+    SELECT DISTINCT
         state_code,
         person_id,
         start_date,
