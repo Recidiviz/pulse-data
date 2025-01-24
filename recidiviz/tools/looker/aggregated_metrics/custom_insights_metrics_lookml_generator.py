@@ -58,6 +58,10 @@ from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils impor
 )
 
 INSIGHTS_ASSIGNMENT_NAMES_TO_TYPES = {
+    "ALL_SUPERVISION_STATES": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.ALL_STATES,
+    ),
     "SUPERVISION_STATE": (
         MetricPopulationType.SUPERVISION,
         MetricUnitOfAnalysisType.STATE_CODE,

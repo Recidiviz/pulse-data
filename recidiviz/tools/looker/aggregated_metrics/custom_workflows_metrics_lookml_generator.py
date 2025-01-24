@@ -86,6 +86,10 @@ WORKFLOWS_IMPACT_LOOKER_METRICS: list[AggregatedMetric] = [
 ]
 
 WORKFLOWS_ASSIGNMENT_NAMES_TO_TYPES = {
+    "ALL_JUSTICE_INVOLVED_STATES": (
+        MetricPopulationType.JUSTICE_INVOLVED,
+        MetricUnitOfAnalysisType.ALL_STATES,
+    ),
     "JUSTICE_INVOLVED_STATE": (
         MetricPopulationType.JUSTICE_INVOLVED,
         MetricUnitOfAnalysisType.STATE_CODE,
@@ -97,6 +101,10 @@ WORKFLOWS_ASSIGNMENT_NAMES_TO_TYPES = {
     "JUSTICE_INVOLVED_LOCATION_DETAIL": (
         MetricPopulationType.JUSTICE_INVOLVED,
         MetricUnitOfAnalysisType.LOCATION_DETAIL,
+    ),
+    "ALL_SUPERVISION_STATES": (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.ALL_STATES,
     ),
     "SUPERVISION_STATE": (
         MetricPopulationType.SUPERVISION,
@@ -117,6 +125,10 @@ WORKFLOWS_ASSIGNMENT_NAMES_TO_TYPES = {
     "SUPERVISION_OFFICER": (
         MetricPopulationType.SUPERVISION,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+    ),
+    "ALL_INCARCERATION_STATES": (
+        MetricPopulationType.INCARCERATION,
+        MetricUnitOfAnalysisType.ALL_STATES,
     ),
     "INCARCERATION_FACILITY": (
         MetricPopulationType.INCARCERATION,
