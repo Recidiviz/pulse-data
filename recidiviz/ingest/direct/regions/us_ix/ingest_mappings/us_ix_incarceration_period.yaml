@@ -44,6 +44,21 @@ output:
                   - Federal Facility
                 StateIncarcerationType.INTERNAL_UNKNOWN:
                   - District Office # Related to 'Court Action' in to DOC
+          custodial_authority:
+            $enum_mapping:
+              $raw_text: DOCLocationToTypeName
+              $mappings:
+                StateCustodialAuthority.STATE_PRISON:
+                  - Adult Facility/Institution
+                  - Juvenile Facility
+                StateCustodialAuthority.COUNTY:
+                  - Jail
+                StateCustodialAuthority.OTHER_STATE:
+                  - State
+                StateCustodialAuthority.FEDERAL:
+                  - Federal Facility
+                StateCustodialAuthority.INTERNAL_UNKNOWN:
+                  - District Office # Related to 'Court Action' in to DOC
           admission_date: Start_TransferDate
           release_date: End_TransferDate
           custody_level:
