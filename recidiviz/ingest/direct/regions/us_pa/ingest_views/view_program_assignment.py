@@ -128,7 +128,7 @@ VIEW_QUERY_TEMPLATE = """
         END AS TrtEndDateDay
     FROM program_data
     LEFT JOIN TrtClassCode_decode USING (TrtClassCode)
-    WHERE TrtProgramCode IN ('REF','REFO','SEXO')
+    WHERE TrtProgramCode IN ('REF','REFO','SEXO', 'MEGS', 'MEGP', 'SSO')
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
