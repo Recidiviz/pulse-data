@@ -520,6 +520,7 @@ class SandboxChangedAddresses:
                 self.state_code_filter is not None
                 and address.state_code_for_address() is not None
                 and address.state_code_for_address() != self.state_code_filter
+                and address.table_id != "us_or_location_metadata"
             )
         }
 
