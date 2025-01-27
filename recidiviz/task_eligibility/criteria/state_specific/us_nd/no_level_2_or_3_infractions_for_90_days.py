@@ -29,15 +29,14 @@ from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_ND_NO_LEVEL_2_OR_3_INFRACTIONS_FOR_6_MONTHS"
-
+_CRITERIA_NAME = "US_ND_NO_LEVEL_2_OR_3_INFRACTIONS_FOR_90_DAYS"
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     get_infractions_criteria_builder(
         description=__doc__,
         criteria_name=_CRITERIA_NAME,
-        date_part="MONTH",
-        date_interval=6,
+        date_part="DAY",
+        date_interval=90,
     )
 )
 

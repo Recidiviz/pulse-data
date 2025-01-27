@@ -1255,9 +1255,15 @@ US_ND:
     workflows_views.us_nd_transfer_to_minimum_facility_form_record: |-
       List of IDs available for a given person.
   elite_offender_medical_screenings_6i:
+    task_eligibility_criteria_us_nd.incarceration_past_parole_review_date_plus_one_month:
+      |-
+      Parole Review Date is not ingested.
     task_eligibility_criteria_us_nd.incarceration_within_12_months_of_parole_review_date:
       |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Parole Review Date is not ingested.
+    task_eligibility_criteria_us_nd.incarceration_within_5_or_more_months_of_parole_review_date:
+      |-
+      Parole Review Date is not ingested.
     task_eligibility_criteria_us_nd.incarceration_within_6_months_of_parole_review_date:
       |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1287,10 +1293,15 @@ US_ND:
     task_eligibility_criteria_us_nd.has_an_aomms_sentence: |-
       There's no place to store MIN/MAN sentences.
     task_eligibility_criteria_us_nd.has_to_serve_85_percent_of_sentence: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      85% cases flag is not ingested.
+    task_eligibility_criteria_us_nd.incarceration_past_85_percent_of_sentence:
+      |-
+      85% cases flag is not ingested.
   elite_offense_in_custody_and_pos_report_data:
     task_eligibility_criteria_us_nd.no_level_2_or_3_infractions_for_6_months: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Infraction data is not yet ingested.
+    task_eligibility_criteria_us_nd.no_level_2_or_3_infractions_for_90_days: |-
+      Infraction data is not yet ingested.
     workflows_views.us_nd_transfer_to_atp_form_record: |-
       Alerts are flagged in the side panel of Workflows.
     workflows_views.us_nd_transfer_to_minimum_facility_form_record: |-

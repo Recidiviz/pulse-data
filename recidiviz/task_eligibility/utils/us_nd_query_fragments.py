@@ -26,9 +26,15 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_exclusive_clause,
     today_between_start_date_and_nullable_end_date_exclusive_clause,
 )
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -88,11 +94,12 @@ def parole_review_dates_query() -> str:
 """
 
 
-def parole_review_date_criteria_builder(
+def incarceration_within_parole_review_date_criteria_builder(
     criteria_name: str,
     description: str,
     date_part: str = "YEAR",
     date_interval: int = 1,
+    negate_criteria: bool = False,
 ) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
     """
     Returns a view builder for North Dakota that checks if someone is within certain
@@ -107,6 +114,9 @@ def parole_review_date_criteria_builder(
     Returns:
         StateSpecificTaskCriteriaBigQueryViewBuilder
     """
+    meets_criteria_default = False
+    if negate_criteria:
+        meets_criteria_default = True
 
     _QUERY_TEMPLATE = f"""
         WITH medical_screening AS (
@@ -114,20 +124,20 @@ def parole_review_date_criteria_builder(
         ),
 
         critical_date_spans AS (
-        SELECT 
-            iss.state_code,
-            iss.person_id,
-            iss.start_date AS start_datetime,
-            iss.end_date AS end_datetime,
-            DATE_SUB(MAX(ms.parole_review_date), INTERVAL {date_interval} {date_part}) AS critical_date,
-            MAX(ms.parole_review_date) AS parole_review_date
-        FROM `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
-        LEFT JOIN medical_screening ms
-            ON iss.state_code = ms.state_code
-            AND iss.person_id = ms.person_id
-            AND ms.parole_review_date BETWEEN iss.start_date AND {nonnull_end_date_exclusive_clause('iss.end_date')}
-        WHERE iss.state_code = 'US_ND'
-        GROUP BY 1,2,3,4
+            SELECT 
+                iss.state_code,
+                iss.person_id,
+                iss.start_date AS start_datetime,
+                iss.end_date AS end_datetime,
+                DATE_SUB(MAX(ms.parole_review_date), INTERVAL {date_interval} {date_part}) AS critical_date,
+                MAX(ms.parole_review_date) AS parole_review_date
+            FROM `{{project_id}}.{{sessions_dataset}}.incarceration_super_sessions_materialized` iss
+            LEFT JOIN medical_screening ms
+                ON iss.state_code = ms.state_code
+                AND iss.person_id = ms.person_id
+                AND ms.parole_review_date BETWEEN iss.start_date AND {nonnull_end_date_exclusive_clause('iss.end_date')}
+            WHERE iss.state_code = 'US_ND'
+            GROUP BY 1,2,3,4
         ),
         {critical_date_has_passed_spans_cte(attributes=['parole_review_date'])}
 
@@ -136,7 +146,7 @@ def parole_review_date_criteria_builder(
             person_id,
             start_date,
             end_date,
-            critical_date_has_passed AS meets_criteria,
+            {'NOT' if negate_criteria else ''} critical_date_has_passed AS meets_criteria,
             TO_JSON(STRUCT(parole_review_date AS parole_review_date)) AS reason,
             parole_review_date,
         FROM critical_date_has_passed_spans
@@ -152,7 +162,7 @@ def parole_review_date_criteria_builder(
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=False,
+        meets_criteria_default=meets_criteria_default,
         reasons_fields=[
             ReasonsField(
                 name="parole_review_date",
@@ -330,7 +340,9 @@ def get_program_assignments_as_case_notes(
     return base_query
 
 
-def get_infractions_query(additional_columns: str = "") -> str:
+def get_infractions_query(
+    date_interval: int, date_part: str, additional_columns: str = ""
+) -> str:
     """
     Returns a SQL query that retrieves infractions for North Dakota.
     """
@@ -341,7 +353,7 @@ def get_infractions_query(additional_columns: str = "") -> str:
         peid.state_code,
         peid.person_id,
         SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS start_date,
-        DATE_ADD(SAFE_CAST(LEFT(e.incident_date, 10) AS DATE), INTERVAL 6 MONTH) AS end_date,
+        DATE_ADD(SAFE_CAST(LEFT(e.incident_date, 10) AS DATE), INTERVAL {date_interval} {date_part}) AS end_date,
         FALSE AS meets_criteria,
         RESULT_OIC_OFFENCE_CATEGORY AS infraction_category,
         SAFE_CAST(LEFT(e.incident_date, 10) AS DATE) AS start_date_infraction,
@@ -362,6 +374,8 @@ def get_infractions_as_case_notes() -> str:
     return f"""
     WITH infractions AS (
         {get_infractions_query(
+            date_interval = 6,
+            date_part = 'MONTH',
             additional_columns = "e.INCIDENT_DETAILS, e.OIC_HEARING_TYPE_DESC, e.FINDING_DESCRIPTION, e.INCIDENT_TYPE_DESC, peid.external_id")}
     )
     SELECT 
@@ -584,3 +598,51 @@ def eligible_and_almost_eligible_minus_referrals() -> str:
             AND eae.state_code = nrr.state_code
             AND CURRENT_DATE("US/Pacific") BETWEEN nrr.start_date AND {nonnull_end_date_exclusive_clause('nrr.end_date')}
     WHERE IFNULL(nrr.meets_criteria, True)"""
+
+
+def get_infractions_criteria_builder(
+    date_interval: int, date_part: str, criteria_name: str, description: str
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    criteria_query = f"""WITH infractions AS (
+    {get_infractions_query(date_interval = date_interval, 
+                           date_part = date_part,)}
+                           ),
+    {create_sub_sessions_with_attributes(table_name='infractions')}
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        meets_criteria,
+        TO_JSON(STRUCT(
+            STRING_AGG(DISTINCT infraction_category, ', ' ORDER BY infraction_category) AS infraction_categories,
+            MAX(start_date_infraction) AS most_recent_infraction_date
+        )) AS reason,
+        STRING_AGG(DISTINCT infraction_category, ', ' ORDER BY infraction_category) AS infraction_categories,
+        MAX(start_date_infraction) AS most_recent_infraction_date,
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4,5"""
+
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        state_code=StateCode.US_ND,
+        criteria_spans_query_template=criteria_query,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+        ),
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="infraction_categories",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Categories of the infractions that led to the level 2 or 3 infraction.",
+            ),
+            ReasonsField(
+                name="most_recent_infraction_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date of the most recent level 2 or 3 infraction.",
+            ),
+        ],
+    )

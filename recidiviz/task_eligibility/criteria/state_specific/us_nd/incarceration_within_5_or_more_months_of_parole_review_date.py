@@ -15,29 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Defines a criteria view that shows spans of time for
-which residents are within 6 months or more of having received a level 2 or 3 
-infraction.
 """
-
+Defines a criteria view that shows spans of time for which residents
+are within 5 or more months of their Parole Review Date (PRD).
+"""
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
-    get_infractions_criteria_builder,
+    incarceration_within_parole_review_date_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_ND_NO_LEVEL_2_OR_3_INFRACTIONS_FOR_6_MONTHS"
-
+_CRITERIA_NAME = "US_ND_INCARCERATION_WITHIN_5_OR_MORE_MONTHS_OF_PAROLE_REVIEW_DATE"
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    get_infractions_criteria_builder(
-        description=__doc__,
+    incarceration_within_parole_review_date_criteria_builder(
         criteria_name=_CRITERIA_NAME,
+        description=__doc__,
+        date_interval=5,
         date_part="MONTH",
-        date_interval=6,
+        negate_criteria=True,
     )
 )
 

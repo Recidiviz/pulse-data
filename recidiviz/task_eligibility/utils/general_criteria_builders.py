@@ -979,6 +979,9 @@ def no_absconsion_within_time_interval_criteria_builder(
         date_part (str): Supports any of the BigQuery date_part values:
             "DAY", "WEEK", "MONTH", "QUARTER", or "YEAR".
     """
+
+    # TODO(#36981): This could be generalized further so it works with any CL2 or CL1
+
     criteria_query = f"""WITH absconded_sessions AS (
     SELECT 
         state_code,

@@ -29,11 +29,22 @@ from recidiviz.task_eligibility.completion_events.general import (
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum_or_medium,
     custody_level_is_minimum_or_medium_for_60_days,
+    incarceration_past_half_full_term_release_date,
     incarceration_within_30_months_of_full_term_completion_date,
     no_absconsion_within_1_year,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
+    incarceration_past_85_percent_of_sentence,
+    incarceration_past_parole_review_date_plus_one_month,
+    incarceration_within_5_or_more_months_of_parole_review_date,
+    no_escape_offense_within_1_year,
+    no_level_2_or_3_infractions_for_90_days,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -48,12 +59,27 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         custody_level_is_minimum_or_medium.VIEW_BUILDER,
         custody_level_is_minimum_or_medium_for_60_days.VIEW_BUILDER,
         # 2. Served more than 1/2 of sentence
+        incarceration_past_half_full_term_release_date.VIEW_BUILDER,
         # 3. 30 months before full term completion date
         incarceration_within_30_months_of_full_term_completion_date.VIEW_BUILDER,
         # 4. No Level II or III infractions in the past 90 days
+        no_level_2_or_3_infractions_for_90_days.VIEW_BUILDER,
         # 5. Reached their 85% release date (for applicable offenses)
+        incarceration_past_85_percent_of_sentence.VIEW_BUILDER,
         # 6. No history of escape of absconsion in the past year
         no_absconsion_within_1_year.VIEW_BUILDER,
+        no_escape_offense_within_1_year.VIEW_BUILDER,
+        # 7. Parole Review Date is at least 5 months in the future
+        OrTaskCriteriaGroup(
+            criteria_name="US_ND_INCARCERATION_WITHIN_5_OR_MORE_MONTHS_OF_PRD_OR_PAST_PRD_PLUS_ONE_MONTH",
+            sub_criteria_list=[
+                incarceration_within_5_or_more_months_of_parole_review_date.VIEW_BUILDER,
+                incarceration_past_parole_review_date_plus_one_month.VIEW_BUILDER,
+            ],
+            allowed_duplicate_reasons_keys=[
+                "parole_review_date",
+            ],
+        ),
     ],
     completion_event_builder=release_to_community_confinement_supervision.VIEW_BUILDER,
 )

@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that sowsn if an individual has been absconsion-free
+"""Defines a criteria span view that shows if an individual has been absconsion-free
 within the last 1 year.
 """
-
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,

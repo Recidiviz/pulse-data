@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
-    parole_review_date_criteria_builder,
+    incarceration_within_parole_review_date_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -36,7 +36,7 @@ are within 6 or less months of their parole review date.
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    parole_review_date_criteria_builder(
+    incarceration_within_parole_review_date_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
         date_interval=6,
