@@ -28,6 +28,12 @@ from more_itertools import one
 from recidiviz.utils.types import non_optional
 
 
+def convert_empty_string_to_none(value: str | None) -> str | None:
+    if value is None or (not value):
+        return None
+    return None if not value.strip() else value
+
+
 def is_forward_ref(attribute: attr.Attribute) -> bool:
     """Returns true if the attribute is a ForwardRef type."""
 

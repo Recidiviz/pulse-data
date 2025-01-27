@@ -4,16 +4,20 @@
 manifest_language: 1.0.0
 input_columns:
   ofndr_num: STRING
-  ofndr_addr_id: INTEGER
+  addr_typ_cd: STRING
   addr_strt_dt: DATE
   addr_end_dt: DATE
-  addr_typ_cd: STRING
-  concatted_address_1: STRING
-  concatted_address_2: STRING
+  psda_pre_dir: STRING
+  psda_street: STRING
+  psda_sfx_cd: STRING
+  psda_post_dir: STRING
+  pssa_unit_cd: STRING
+  pssa_range: STRING
   city: STRING
   # TODO(#37217)
   # st: STRING
   zip: STRING
+  ofndr_addr_id: INTEGER
   vrfy_dt: DATE
   vrfy_rslt_flg: STRING
 unused_columns: []
@@ -25,35 +29,46 @@ output:
           id_type: $literal("US_UT_DOC")
     address_periods:
       - StatePersonAddressPeriod:
-          address_line_1: concatted_address_1
-          address_line_2: concatted_address_2
+          address_line_1:
+            $custom:
+              $function: us_ut_custom_parsers.parse_address_line_1
+              $args:
+                ofndr_num: ofndr_num
+                psda_pre_dir: psda_pre_dir
+                psda_street: psda_street
+                psda_sfx_cd: psda_sfx_cd
+                psda_post_dir: psda_post_dir
+          address_line_2:
+            $custom:
+              $function: us_ut_custom_parsers.parse_address_line_2
+              $args:
+                pssa_unit_cd: pssa_unit_cd
+                pssa_range: pssa_range
           address_city: city
           address_zip: zip
           address_start_date: addr_strt_dt
           address_end_date: addr_end_dt
           address_is_verified:
-            $conditional:
-              - $if:
-                  $equal:
-                    - vrfy_rslt_flg
-                    - $literal("Y")
-                $then: $literal_bool(True)
-              - $else: $literal_bool(False)
+            $equal:
+              - vrfy_rslt_flg
+              - $literal("Y")
           address_type:
+            # Older historic values of this field are not super accurate.
+            # e.g. PO Boxes are often marked as H
             $enum_mapping:
               $raw_text: addr_typ_cd
               $mappings:
                 StatePersonAddressType.MAILING_ONLY:
-                  - M
+                  - M # Mailing Address
                 StatePersonAddressType.PHYSICAL_RESIDENCE:
-                  - H
-                  - F
-                  - P
-                  - J
-                  - I
-                  - C
-                  - T
-                  - S
+                  - H # House
+                  - F # Unknown
+                  - P # Prison
+                  - J # Jail
+                  - I # Prison (maybe interstate)
+                  - C # Correctional Facility
+                  - T # Transitional Program
+                  - S # Secondary Address (maybe)
           address_metadata:
             $json_dict:
               verify_date: vrfy_dt
