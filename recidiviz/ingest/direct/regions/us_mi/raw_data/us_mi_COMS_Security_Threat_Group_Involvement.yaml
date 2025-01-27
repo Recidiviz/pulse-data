@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: COMS_Security_Threat_Group_Involvement
+file_description: |-
+  This table includes data from the COMS system about security threat groups.
+data_classification: source
+separator: †
+custom_line_terminator: ‡
+encoding: WINDOWS-1252
+primary_key_cols: []
+columns:
+  - name: Offender_Number
+    description: >-
+      MDOC assigned person ID for JII in the MDOC system.  This is their publically
+      searchable JII id (same as offender_number in the OMNI system).
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_MI_DOC
+  - name: Security_Threat_Group
+    description: Security threat group
+  - name: Security_Threat_Group_Status
+    description: Security threat group status (excludes suspect status)
+  - name: Group_Leader
+    description: Group Leader
+  - name: STG_Level
+    description: STG level
+  - name: Start_Date
+    description: STG start date
+    field_type: datetime
+  - name: Review_Date
+    description: STG review date
+    field_type: datetime
+  - name: Entered_By
+    description: Staff member who entered the record
+    is_pii: True
+  - name: Entered_Date
+    description: Date assaultive risk assessment record was entered
+    field_type: datetime
+table_relationships:
+  - foreign_table: ADH_OFFENDER
+    join_logic:
+      - ADH_OFFENDER.offender_number = COMS_Security_Threat_Group_Involvement.Offender_Number
