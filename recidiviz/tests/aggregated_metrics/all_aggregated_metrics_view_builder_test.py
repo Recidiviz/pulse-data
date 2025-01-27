@@ -43,4 +43,6 @@ class GenerateAggregatedAllMetricsViewBuilderTest(unittest.TestCase):
                 ),
                 population_type=MetricPopulationType.JUSTICE_INVOLVED,
                 metrics=[],  # no metrics
+                dataset_id_override=None,
+                collection_tag=None,
             )

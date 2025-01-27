@@ -51,6 +51,8 @@ def collect_aggregated_metrics_collection_configs() -> list[
         attribute_type=AggregatedMetricsCollection,
         dir_module=collections_module,
         attribute_name_regex=r".*AGGREGATED_METRICS_COLLECTION_CONFIG",
+        collect_from_callables=True,
+        callable_name_regex=r"^get_aggregated_metrics_collections$",
         deduplicate_found_attributes=False,
     )
     if not collections:
@@ -79,13 +81,13 @@ def get_all_aggregated_metrics_collections_view_builders(
                 }
             )
         except KeyError as e:
-            # TODO(#29291): Once there is a way to add a tag to differentiate views in
-            #  collections, add hint about that here.
             raise ValueError(
                 f"Found AggregatedMetricsCollection in dataset "
                 f"[{collection.output_dataset_id}] that has views overlapping with "
                 f"another AggregatedMetricsCollection defined in the "
-                f"{collections_module.__name__} module."
+                f"{collections_module.__name__} module. You might want to add a "
+                f"collection_tag to one or more AggregatedMetricsCollection to avoid "
+                f"this overlap."
             ) from e
     return list(builders.values())
 

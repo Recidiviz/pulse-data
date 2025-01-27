@@ -74,11 +74,13 @@ def _build_time_periods_unioned_view_address(
     population_type: MetricPopulationType,
     unit_of_analysis_type: MetricUnitOfAnalysisType,
     metric_class: AggregatedMetricClassType,
+    collection_tag: str | None,
 ) -> BigQueryAddress:
+    collection_tag_part = "" if not collection_tag else f"{collection_tag}__"
     population_name = population_type.population_name_short
     unit_of_analysis_name = unit_of_analysis_type.short_name
     metric_class_name = metric_class.metric_class_name_lower()
-    view_id = f"{population_name}_{unit_of_analysis_name}_{metric_class_name}_aggregated_metrics"
+    view_id = f"{collection_tag_part}{population_name}_{unit_of_analysis_name}_{metric_class_name}_aggregated_metrics"
 
     return BigQueryAddress(dataset_id=dataset_id, table_id=view_id)
 
@@ -89,6 +91,7 @@ def _build_time_periods_unioned_view_builder(
     unit_of_analysis_type: MetricUnitOfAnalysisType,
     metric_class: AggregatedMetricClassType,
     parents: list[AggregatedMetricsBigQueryViewBuilder],
+    collection_tag: str | None,
 ) -> UnionAllBigQueryViewBuilder:
     """Returns a view builder for a view that unions together multiple aggregated
     metrics views that produce metrics for different time periods but otherwise the same
@@ -99,6 +102,7 @@ def _build_time_periods_unioned_view_builder(
         population_type=population_type,
         unit_of_analysis_type=unit_of_analysis_type,
         metric_class=metric_class,
+        collection_tag=collection_tag,
     )
 
     found_period_names = set()
@@ -258,6 +262,7 @@ def collect_aggregated_metric_view_builders_for_collection(
                         metric_class=metric_class,
                         metrics=metrics,
                         time_period=time_period,
+                        collection_tag=collection_config.collection_tag,
                     )
                     time_period_specific_builders[builder.address] = builder
                 builders.update(time_period_specific_builders)
@@ -268,6 +273,7 @@ def collect_aggregated_metric_view_builders_for_collection(
                     unit_of_analysis_type=unit_of_analysis_type,
                     metric_class=metric_class,
                     parents=list(time_period_specific_builders.values()),
+                    collection_tag=collection_config.collection_tag,
                 )
 
                 builders[unioned_builder.address] = unioned_builder
@@ -282,6 +288,7 @@ def collect_aggregated_metric_view_builders_for_collection(
                 population_type=population_type,
                 metrics=population_config.metrics,
                 dataset_id_override=population_config.output_dataset_id,
+                collection_tag=collection_config.collection_tag,
             )
 
             builders[all_metrics_builder.address] = all_metrics_builder

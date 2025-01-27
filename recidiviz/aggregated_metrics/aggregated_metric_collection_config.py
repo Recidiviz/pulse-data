@@ -77,6 +77,11 @@ class AggregatedMetricsCollection:
     # Which time periods to calculate the metrics for
     time_periods: list[MetricTimePeriodConfig]
 
+    # A tag that will be prepended to all view names for this metrics collection.
+    # This tag may be used when we want to store more than one collection in the same
+    # dataset and those collections have overlapping populations.
+    collection_tag: str | None = attr.ib(default=None)
+
     def __attrs_post_init__(self) -> None:
         time_periods_by_name: dict[str, MetricTimePeriodConfig] = {}
         for period in self.time_periods:

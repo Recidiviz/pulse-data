@@ -161,6 +161,7 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         metric_class: AggregatedMetricClassType,
         metrics: list[AggregatedMetric],
         time_period: MetricTimePeriodConfig,
+        collection_tag: str | None,
     ) -> None:
         self.dataset_id = dataset_id
         self.view_id = self._build_view_id(
@@ -168,6 +169,7 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             unit_of_analysis_type=unit_of_analysis_type,
             metric_class=metric_class,
             time_period=time_period,
+            collection_tag=collection_tag,
         )
         self.population_type = population_type
         self.unit_of_analysis_type = unit_of_analysis_type
@@ -196,11 +198,13 @@ class AggregatedMetricsBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         unit_of_analysis_type: MetricUnitOfAnalysisType,
         metric_class: AggregatedMetricClassType,
         time_period: MetricTimePeriodConfig,
+        collection_tag: str | None,
     ) -> str:
+        collection_tag_part = "" if not collection_tag else f"{collection_tag}__"
         population_name = population_type.population_name_short
         unit_of_analysis_name = unit_of_analysis_type.short_name
         metric_class_name = metric_class.metric_class_name_lower()
-        return f"{population_name}_{unit_of_analysis_name}_{metric_class_name}_aggregated_metrics__{assert_type(time_period.config_name, str)}"
+        return f"{collection_tag_part}{population_name}_{unit_of_analysis_name}_{metric_class_name}_aggregated_metrics__{assert_type(time_period.config_name, str)}"
 
     @property
     def output_columns(self) -> list[str]:

@@ -55,7 +55,8 @@ def generate_all_aggregated_metrics_view_builder(
     unit_of_analysis: MetricUnitOfAnalysis,
     population_type: MetricPopulationType,
     metrics: List[AggregatedMetric],
-    dataset_id_override: Optional[str] = None,
+    dataset_id_override: Optional[str],
+    collection_tag: str | None,
 ) -> SimpleBigQueryViewBuilder:
     """
     Returns a SimpleBigQueryViewBuilder that joins together all metric views for
@@ -78,7 +79,8 @@ def generate_all_aggregated_metrics_view_builder(
         )
 
     person_population_query = population_selector.generate_span_selector_query()
-    view_id = f"{population_name}_{unit_of_analysis_name}_aggregated_metrics"
+    collection_tag_part = "" if not collection_tag else f"{collection_tag}__"
+    view_id = f"{collection_tag_part}{population_name}_{unit_of_analysis_name}_aggregated_metrics"
     included_metrics = [
         metric
         for metric in metrics
@@ -178,7 +180,7 @@ Static attribute columns: `{unit_of_analysis.get_static_attribute_columns_query_
             table_name = metric_class.metric_class_name_lower()
 
             # Add table to the FROM clause
-            table_ref = f"`{{project_id}}.{dataset_id}.{population_name}_{unit_of_analysis_name}_{table_name}_aggregated_metrics_materialized` {table_name}"
+            table_ref = f"`{{project_id}}.{dataset_id}.{collection_tag_part}{population_name}_{unit_of_analysis_name}_{table_name}_aggregated_metrics_materialized` {table_name}"
             if not from_clause:
                 join_type = "FROM"
                 join_condition = ""

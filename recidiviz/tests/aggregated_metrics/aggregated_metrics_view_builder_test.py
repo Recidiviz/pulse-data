@@ -195,6 +195,7 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
                 MY_LOGINS_BY_PRIMARY_WORKFLOWS,
             ],
             time_period=MetricTimePeriodConfig.month_periods(lookback_months=12),
+            collection_tag=None,
         )
 
         self.assertEqual(
@@ -203,6 +204,47 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
         )
         self.assertEqual(
             "my_aggregated_metrics.supervision_officer_period_event_aggregated_metrics__last_12_months_materialized",
+            assert_type(builder.materialized_address, BigQueryAddress).to_str(),
+        )
+
+        self.assertTrue(MY_DRUG_SCREENS_METRIC.name in builder.description)
+        self.assertFalse(MY_DRUG_SCREENS_METRIC.name in builder.bq_description)
+
+        self.assertEqual(
+            [
+                "state_code",
+                "officer_id",
+                "start_date",
+                "end_date",
+                "period",
+                "my_contacts_completed",
+                "my_drug_screens",
+                "my_logins_primary_workflows_user",
+            ],
+            builder.output_columns,
+        )
+
+    def test_builder__period_event_with_collection_tag(self) -> None:
+        builder = AggregatedMetricsBigQueryViewBuilder(
+            dataset_id="my_aggregated_metrics",
+            population_type=MetricPopulationType.SUPERVISION,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            metric_class=PeriodEventAggregatedMetric,
+            metrics=[
+                MY_DRUG_SCREENS_METRIC,
+                MY_CONTACTS_COMPLETED_METRIC,
+                MY_LOGINS_BY_PRIMARY_WORKFLOWS,
+            ],
+            time_period=MetricTimePeriodConfig.month_periods(lookback_months=12),
+            collection_tag="my_tag",
+        )
+
+        self.assertEqual(
+            "my_aggregated_metrics.my_tag__supervision_officer_period_event_aggregated_metrics__last_12_months",
+            builder.address.to_str(),
+        )
+        self.assertEqual(
+            "my_aggregated_metrics.my_tag__supervision_officer_period_event_aggregated_metrics__last_12_months_materialized",
             assert_type(builder.materialized_address, BigQueryAddress).to_str(),
         )
 
