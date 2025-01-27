@@ -90,11 +90,7 @@ def generate_initial_text_messages_dict(
             )
             continue
 
-        text_body = """"""
-        text_body += StrictStringFormatter().format(
-            INITIAL_TEXT, given_name=given_name, po_name=po_name
-        )
-        text_body += ALL_CLOSER
+        text_body = construct_initial_text_body(given_name=given_name, po_name=po_name)
 
         initial_text_messages_dict["external_id"] = external_id
         initial_text_messages_dict["phone_num"] = phone_num
@@ -107,13 +103,25 @@ def generate_initial_text_messages_dict(
     return initial_text_messages_dicts
 
 
+def construct_initial_text_body(
+    given_name: str,
+    po_name: str,
+) -> str:
+    text_body = """"""
+    text_body += StrictStringFormatter().format(
+        INITIAL_TEXT, given_name=given_name, po_name=po_name
+    )
+    text_body += ALL_CLOSER
+    return text_body
+
+
 def generate_eligibility_text_messages_dict(
     bq_output: bigquery.QueryJob,
 ) -> List[Dict[str, str]]:
     """Iterates through the data (bigquery output). For each bigquery row (individual),
     we check if the individual is either fully eligible, missing ua, and or missing
     employment eligibility. Depending on these criteria, we then call
-    construct_text_body() to construct a text message body for that individual.
+    construct_eligibility_text_body() to construct a text message body for that individual.
 
     This function returns a list of dictionaries. Each dictionary contains an individual's
     external_id, phone number, the text body, their po name, and their district.
@@ -157,7 +165,7 @@ def generate_eligibility_text_messages_dict(
 
         po_name = individual["po_name"].title()
         district = individual["district"].lower().strip()
-        text_body = construct_text_body(
+        text_body = construct_eligibility_text_body(
             individual=individual,
             fully_eligible=fully_eligible,
             missing_negative_da_within_90_days=missing_negative_da_within_90_days,
@@ -187,7 +195,7 @@ def generate_eligibility_text_messages_dict(
     return eligibility_text_messages_dicts
 
 
-def construct_text_body(
+def construct_eligibility_text_body(
     individual: Dict[str, str],
     fully_eligible: bool,
     missing_negative_da_within_90_days: bool,

@@ -21,6 +21,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 import freezegun
+import pytest
 from twilio.rest.api.v2010.account.message import MessageInstance
 
 from recidiviz.case_triage.jii.send_jii_texts import (
@@ -29,6 +30,10 @@ from recidiviz.case_triage.jii.send_jii_texts import (
     get_opt_out_document_ids,
     store_batch_id,
     update_statuses_from_previous_batch,
+)
+from recidiviz.case_triage.jii.helpers import (
+    construct_eligibility_text_body,
+    construct_initial_text_body,
 )
 from recidiviz.case_triage.util import MessageType
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
@@ -285,3 +290,54 @@ class TestSendJIITexts(TestCase):
             },
             merge=True,
         )
+
+
+@pytest.mark.parametrize(
+    (
+        "fully_eligible",
+        "missing_negative_da_within_90_days",
+        "missing_income_verified_within_3_months",
+        "fines_n_fees_denials",
+    ),
+    [
+        pytest.param(True, False, False, False, id="Fully eligible text"),
+        pytest.param(
+            True,
+            False,
+            False,
+            True,
+            id="Fully eligible except missing fines/fees text",
+        ),
+        pytest.param(False, True, False, False, id="Missing DA text"),
+        pytest.param(False, False, True, False, id="Missing EV text"),
+        pytest.param(False, True, True, False, id="Missing DA and EV text"),
+    ],
+)
+def test_text_character_length(
+    fully_eligible: bool,
+    missing_negative_da_within_90_days: bool,
+    missing_income_verified_within_3_months: bool,
+    fines_n_fees_denials: bool,
+) -> None:
+    MAX_CHARACTER_LENGTH = 973
+    test_individual = {"person_name": '{"given_names": "Christopher"}'}
+    test_po_name = "VeryyLong TestPoName"
+    test_district = "district 7"
+
+    # Initial Text
+    initial_text_str = construct_initial_text_body(
+        given_name="TestGivenName", po_name=test_po_name
+    )
+    assert len(initial_text_str) < MAX_CHARACTER_LENGTH
+
+    # Eligibility Texts
+    eligibility_text_string = construct_eligibility_text_body(
+        individual=test_individual,
+        fully_eligible=fully_eligible,
+        missing_negative_da_within_90_days=missing_negative_da_within_90_days,
+        missing_income_verified_within_3_months=missing_income_verified_within_3_months,
+        fines_n_fees_denials=fines_n_fees_denials,
+        po_name=test_po_name,
+        district=test_district,
+    )
+    assert len(eligibility_text_string) < MAX_CHARACTER_LENGTH
