@@ -126,7 +126,12 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.common.date import DateOrDateTime, DateRange, DurationMixin
+from recidiviz.common.date import (
+    DateOrDateTime,
+    DateRange,
+    DurationMixin,
+    PotentiallyOpenDateRange,
+)
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
@@ -179,9 +184,7 @@ class StatePersonAddressPeriod(
     """
 
     # Attributes
-    address_line_1: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
+    address_line_1: str = attr.ib(validator=attr_validators.is_str)
 
     address_line_2: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
@@ -209,11 +212,11 @@ class StatePersonAddressPeriod(
     )
 
     address_start_date: datetime.date = attr.ib(
-        default=None, validator=attr_validators.is_date
+        default=None, validator=attr_validators.is_not_future_date
     )
 
     address_end_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None, validator=attr_validators.is_opt_not_future_date
     )
 
     address_is_verified: Optional[bool] = attr.ib(
@@ -240,6 +243,29 @@ class StatePersonAddressPeriod(
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
+
+    @property
+    def date_range(self) -> PotentiallyOpenDateRange:
+        return PotentiallyOpenDateRange(self.address_start_date, self.address_end_date)
+
+    @property
+    def full_address(self) -> str:
+        """
+        Returns a full address like so:
+            Required Line 1
+            Optional Line 2
+            Optional City
+            Optional ZIP Optional County
+        """
+        address = self.address_line_1
+        for addr_part in [
+            self.address_line_2,
+            self.address_city,
+            f"{self.address_zip or ''} {self.address_county or ''}".strip(),
+        ]:
+            if addr_part:
+                address += f"\n{addr_part}"
+        return address.strip()
 
 
 @attr.s(eq=False, kw_only=True)

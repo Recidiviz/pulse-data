@@ -50,6 +50,8 @@ def fake_isdir(filepath: str) -> bool:
 class FileDependenciesTest(unittest.TestCase):
     """Tests for file dependency utilities."""
 
+    maxDiff = None
+
     def test_get_correct_source_files(self) -> None:
         source_files = (
             EntrypointDependencies()
@@ -96,7 +98,7 @@ class FileDependenciesTest(unittest.TestCase):
                 },
                 "recidiviz.common.attr_validators": {
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=28, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=29, col_offset=0)
                     ]
                 },
                 "recidiviz.common": {
@@ -196,19 +198,19 @@ class FileDependenciesTest(unittest.TestCase):
                 },
                 "recidiviz.utils.types": {
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=29, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=30, col_offset=0)
                     ]
                 },
             },
             packages={
                 "abc": {
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=20, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=21, col_offset=0)
                     ]
                 },
                 "attr": {
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=24, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=25, col_offset=0)
                     ],
                     "recidiviz.utils.metadata": [
                         Callsite(
@@ -225,7 +227,7 @@ class FileDependenciesTest(unittest.TestCase):
                 },
                 "calendar": {
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=21, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=22, col_offset=0)
                     ]
                 },
                 "datetime": {
@@ -310,7 +312,7 @@ class FileDependenciesTest(unittest.TestCase):
                 },
                 "pandas": {
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=25, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=26, col_offset=0)
                     ]
                 },
                 "pathlib": {
@@ -320,7 +322,7 @@ class FileDependenciesTest(unittest.TestCase):
                 },
                 "re": {
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=19, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=20, col_offset=0)
                     ],
                     "recidiviz.common.attr_validators": [
                         Callsite(
@@ -369,7 +371,7 @@ class FileDependenciesTest(unittest.TestCase):
                         )
                     ],
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=22, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=23, col_offset=0)
                     ],
                     "recidiviz.utils.environment": [
                         Callsite(
@@ -397,8 +399,13 @@ class FileDependenciesTest(unittest.TestCase):
                         )
                     ],
                     "recidiviz.common.date": [
-                        Callsite(filepath="r/common/date.py", lineno=26, col_offset=0)
+                        Callsite(filepath="r/common/date.py", lineno=27, col_offset=0)
                     ],
+                },
+                "itertools": {
+                    "recidiviz.common.date": [
+                        Callsite(filepath="r/common/date.py", lineno=19, col_offset=0)
+                    ]
                 },
             },
         )
@@ -498,7 +505,7 @@ class FileDependenciesTest(unittest.TestCase):
             "recidiviz.tests.tools.fixtures.example_dependency_entrypoint"
         )
         assert deps.sample_call_chain_for_package("re") == [
-            ("recidiviz.common.date", Callsite("r/common/date.py", 19, 0)),
+            ("recidiviz.common.date", Callsite("r/common/date.py", 20, 0)),
             (
                 "recidiviz.tests.tools.fixtures.example_dependency_entrypoint",
                 Callsite(

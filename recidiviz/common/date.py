@@ -16,6 +16,7 @@
 # ============================================================================
 """Utils for parsing dates."""
 import datetime
+import itertools
 import re
 from abc import ABCMeta, abstractmethod
 from calendar import isleap
@@ -323,6 +324,39 @@ class PotentiallyOpenDateRange:
 
     lower_bound_inclusive_date: datetime.date = attr.ib()
     upper_bound_exclusive_date: Optional[datetime.date] = attr.ib()
+
+    # TODO(#37512) Consolidate properties and checks with other classes in this file, where appropriate
+
+    @property
+    def is_open(self) -> bool:
+        return self.upper_bound_exclusive_date is None
+
+    @property
+    def non_optional_upperbound_exclusive_date(self) -> datetime.date:
+        return assert_type(self.upper_bound_exclusive_date, datetime.date)
+
+    def _contains_other_range(self, other: "PotentiallyOpenDateRange") -> bool:
+        if self.is_open:
+            return self.lower_bound_inclusive_date <= other.lower_bound_inclusive_date
+        if other.is_open:
+            return False
+        return (
+            self.lower_bound_inclusive_date <= other.lower_bound_inclusive_date
+            and self.non_optional_upperbound_exclusive_date
+            > other.non_optional_upperbound_exclusive_date
+        )
+
+    def __contains__(
+        self,
+        value: Union[datetime.date, "PotentiallyOpenDateRange"],
+    ) -> bool:
+        if isinstance(value, PotentiallyOpenDateRange):
+            return self._contains_other_range(value)
+        if value < self.lower_bound_inclusive_date:
+            return False
+        if self.is_open:
+            return True
+        return value < self.non_optional_upperbound_exclusive_date
 
 
 @attr.s
@@ -851,3 +885,13 @@ def convert_critical_dates_to_time_spans(
                 )
             )
     return time_spans
+
+
+# TODO(#37512) Generalize or allow use for other range classes in this file
+def date_ranges_overlap(date_ranges: list[PotentiallyOpenDateRange]) -> bool:
+    """Returns True if any of the provided date ranges overlap."""
+    return any(
+        # Beginning within the other period makes an overlap
+        ((a.lower_bound_inclusive_date in b) or (b.lower_bound_inclusive_date in a))
+        for (a, b) in itertools.combinations(date_ranges, 2)
+    )

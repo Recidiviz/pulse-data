@@ -689,6 +689,7 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[Entity], List[Entity]] = {
         state_entities.StatePersonAddressPeriod(
             state_code=StateCode.US_XX.value,
             address_start_date=datetime.date(2020, 1, 1),
+            address_line_1="Person Address Line 1",
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
         ),
     ],

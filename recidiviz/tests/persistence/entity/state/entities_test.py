@@ -24,6 +24,9 @@ from more_itertools import one
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.attr_utils import is_non_optional_enum
+from recidiviz.common.constants.state.state_person_address_period import (
+    StatePersonAddressType,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -34,6 +37,7 @@ from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
+    StatePersonAddressPeriod,
     StateProgramAssignment,
     StateSupervisionContact,
     StateSupervisionPeriod,
@@ -265,3 +269,70 @@ class TestStateEntities(TestCase):
                 task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
                 sequence_num=None,
             )
+
+    def test_state_person_address_period_properties(self) -> None:
+        """Tests the computed properties of address periods work as expected."""
+        CITY = "Emerald City"
+        COUNTY = "Wiz County"
+
+        period = StatePersonAddressPeriod(
+            state_code="US_OZ",
+            address_line_1="14 Yellow Brick Road",
+            address_start_date=date(2001, 1, 1),
+            address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+        )
+        assert period.full_address == "14 Yellow Brick Road"
+        assert period.date_range.is_open
+
+        period = StatePersonAddressPeriod(
+            state_code="US_OZ",
+            address_line_1="14 Yellow Brick Road",
+            address_city=CITY,
+            address_start_date=date(2001, 1, 1),
+            address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+        )
+        assert period.full_address == f"14 Yellow Brick Road\n{CITY}"
+        assert period.date_range.is_open
+        assert period.date_range.lower_bound_inclusive_date == date(2001, 1, 1)
+
+        period = StatePersonAddressPeriod(
+            state_code="US_OZ",
+            address_line_1="14 Yellow Brick Road",
+            address_city=CITY,
+            address_county=COUNTY,
+            address_start_date=date(2001, 1, 1),
+            address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+        )
+        assert period.full_address == f"14 Yellow Brick Road\n{CITY}\n{COUNTY}"
+
+        period = StatePersonAddressPeriod(
+            state_code="US_OZ",
+            address_line_1="14 Yellow Brick Road",
+            address_city=CITY,
+            address_county=COUNTY,
+            address_zip="00001",
+            address_start_date=date(2001, 1, 1),
+            address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+        )
+        assert period.full_address == f"14 Yellow Brick Road\n{CITY}\n00001 {COUNTY}"
+
+        period = StatePersonAddressPeriod(
+            state_code="US_OZ",
+            address_line_1="14 Yellow Brick Road",
+            address_line_2="Attn: Mr. Lion",
+            address_city=CITY,
+            address_county=COUNTY,
+            address_zip="00001",
+            address_start_date=date(2001, 1, 1),
+            address_end_date=date(2021, 1, 1),
+            address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+        )
+        assert not period.date_range.is_open
+        assert period.full_address == "\n".join(
+            [
+                "14 Yellow Brick Road",
+                "Attn: Mr. Lion",
+                f"{CITY}",
+                f"00001 {COUNTY}",
+            ]
+        )

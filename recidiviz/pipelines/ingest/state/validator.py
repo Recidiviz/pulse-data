@@ -21,13 +21,20 @@ from typing import Dict, Iterable, List, Optional, Sequence, Type
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.constants.state.state_charge import StateChargeV2Status
+from recidiviz.common.constants.state.state_person_address_period import (
+    StatePersonAddressType,
+)
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
     StateSentencingAuthority,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.date import DurationMixin
+from recidiviz.common.date import (
+    DurationMixin,
+    PotentiallyOpenDateRange,
+    date_ranges_overlap,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.state import entities as state_entities
@@ -42,6 +49,13 @@ from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityM
 from recidiviz.persistence.persistence_utils import NormalizedRootEntityT, RootEntityT
 from recidiviz.pipelines.ingest.state.constants import EntityKey, Error
 from recidiviz.utils.types import assert_type
+
+STATES_EXEMPT_FROM_ADDRESS_PERIOD_CHECKS = {
+    # TODO(#37678): Remove overlapping periods
+    StateCode.US_UT.value,
+    # TODO(#37679): Remove overlapping periods
+    StateCode.US_ND.value,
+}
 
 
 def state_allows_multiple_ids_same_type_for_state_person(state_code: str) -> bool:
@@ -354,6 +368,46 @@ def duration_entity_checks(
     return None
 
 
+def _person_address_period_checks(
+    person: state_entities.StatePerson,
+) -> Iterable[Error]:
+    """
+    This function checks that:
+      - Addresses within a person's address periods have a distinct type.
+      - Periods within a person's address periods *of the same type* do not overlap.
+    For example in our state of OZ:
+      - "14 Yellow Brick Road" cannot be both PHYSICAL_RESIDENCE and MAILING
+      - "14 Yellow Brick Road" and "Room 205, Shiz University" cannot
+        both be the PHYSICAL_RESIDENCE address for a person *at the same time*
+
+    If these assumptions are too strict for your state (e.g. we need an address
+    to be both PHYSICAL_RESIDENCE and MAILING), ping #platform-channel to discuss!
+    """
+    by_address: dict[str, StatePersonAddressType] = {}
+    by_type: dict[StatePersonAddressType, list[PotentiallyOpenDateRange]] = defaultdict(
+        list
+    )
+    for period in person.address_periods:
+        if (
+            addr_type := by_address.get(period.full_address)
+        ) is not None and addr_type != period.address_type:
+            yield (
+                f"Found {person.limited_pii_repr()} with StateAddressPeriod address used with multiple StatePersonAddressType enums."
+                "If this assumption is too strict for your state (e.g. we need an address"
+                "to be both PHYSICAL_RESIDENCE and MAILING), ping #platform-channel to discuss!"
+            )
+        by_address[period.full_address] = period.address_type
+        by_type[period.address_type].append(period.date_range)
+
+    for period_type, date_ranges in by_type.items():
+        if date_ranges_overlap(date_ranges):
+            yield (
+                f"Found {person.limited_pii_repr()} with address periods of type {period_type} that overlap.\n"
+                f"Date Ranges: {date_ranges} "
+                "If this assumption is too strict for your state (e.g. we need multiple MAILING addresses), ping #platform-channel to discuss!"
+            )
+
+
 def validate_root_entity(
     root_entity: RootEntityT | NormalizedRootEntityT,
 ) -> List[Error]:
@@ -410,6 +464,9 @@ def _get_state_person_specific_errors(
     """Yields errors for entities related to StatePerson objects."""
     error_messages: list[str] = []
     error_messages.extend(_sentencing_entities_checks(root_entity))
+
+    if root_entity.state_code not in STATES_EXEMPT_FROM_ADDRESS_PERIOD_CHECKS:
+        error_messages.extend(_person_address_period_checks(root_entity))
 
     if err := duration_entity_checks(
         root_entity,

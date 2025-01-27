@@ -38,6 +38,7 @@ from recidiviz.common.date import (
     current_date_us_eastern,
     current_date_us_eastern_in_iso,
     current_date_utc,
+    date_ranges_overlap,
     first_day_of_month,
     first_day_of_next_month,
     first_day_of_next_year,
@@ -1336,3 +1337,48 @@ class TestFirstLastDayOfHelpers(unittest.TestCase):
         self.assertEqual(datetime.date(2024, 2, 29), last_day_of_month(d))
         self.assertEqual(datetime.date(2024, 3, 1), first_day_of_next_month(d))
         self.assertEqual(datetime.date(2025, 1, 1), first_day_of_next_year(d))
+
+
+def test_date_ranges_overlap() -> None:
+
+    jan_01_2000 = datetime.date(2000, 1, 1)
+    jan_01_2001 = datetime.date(2001, 1, 1)
+    jan_01_2002 = datetime.date(2002, 1, 1)
+    jan_01_2021 = datetime.date(2021, 1, 1)
+
+    first = PotentiallyOpenDateRange(
+        lower_bound_inclusive_date=jan_01_2000,
+        upper_bound_exclusive_date=jan_01_2002,
+    )
+    second = PotentiallyOpenDateRange(
+        lower_bound_inclusive_date=jan_01_2001,
+        upper_bound_exclusive_date=jan_01_2021,
+    )
+    assert date_ranges_overlap([first, second])
+    assert date_ranges_overlap([second, first])
+    assert date_ranges_overlap([first, first])
+    assert date_ranges_overlap([second, second])
+
+    first = PotentiallyOpenDateRange(
+        lower_bound_inclusive_date=jan_01_2000,
+        upper_bound_exclusive_date=jan_01_2001,
+    )
+    second = PotentiallyOpenDateRange(
+        lower_bound_inclusive_date=jan_01_2002,
+        upper_bound_exclusive_date=jan_01_2021,
+    )
+    assert not date_ranges_overlap([first, second])
+    assert not date_ranges_overlap([second, first])
+
+    # Upper bound is exclusive, so we do NOT
+    # want these to overlap. They are adjacent.
+    first = PotentiallyOpenDateRange(
+        lower_bound_inclusive_date=jan_01_2000,
+        upper_bound_exclusive_date=jan_01_2001,
+    )
+    second = PotentiallyOpenDateRange(
+        lower_bound_inclusive_date=jan_01_2001,
+        upper_bound_exclusive_date=jan_01_2021,
+    )
+    assert not date_ranges_overlap([first, second])
+    assert not date_ranges_overlap([second, first])

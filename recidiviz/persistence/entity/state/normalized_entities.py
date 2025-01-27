@@ -2601,9 +2601,7 @@ class NormalizedStatePersonAddressPeriod(NormalizedStateEntity, Entity):
     """
 
     # Attributes
-    address_line_1: str | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
+    address_line_1: str = attr.ib(validator=attr_validators.is_str)
 
     address_line_2: str | None = attr.ib(
         default=None, validator=attr_validators.is_opt_str
@@ -2629,10 +2627,10 @@ class NormalizedStatePersonAddressPeriod(NormalizedStateEntity, Entity):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    address_start_date: date = attr.ib(validator=attr_validators.is_date)
+    address_start_date: date = attr.ib(validator=attr_validators.is_not_future_date)
 
     address_end_date: date | None = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None, validator=attr_validators.is_opt_not_future_date
     )
 
     address_is_verified: bool | None = attr.ib(
