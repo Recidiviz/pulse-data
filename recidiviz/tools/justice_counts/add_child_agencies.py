@@ -30,6 +30,7 @@ python -m recidiviz.tools.justice_counts.add_child_agencies \
 """
 
 import argparse
+import datetime
 import logging
 from typing import Dict, List
 
@@ -173,6 +174,8 @@ def add_child_agencies(
                         systems=systems,
                         fips_county_code=child_agency_county_code,
                         custom_child_agency_name=custom_child_agency_name,
+                        created_at=datetime.datetime.now(tz=datetime.timezone.utc),
+                        is_dashboard_enabled=True,
                     )
                     msg += f"Adding Child Agency: {child_agency_name} with county {child_agency_county_code} and custom name {custom_child_agency_name}"
 
