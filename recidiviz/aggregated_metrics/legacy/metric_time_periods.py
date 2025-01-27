@@ -40,11 +40,11 @@ _VIEW_DESCRIPTION = (
 )
 
 
-_YEAR_PERIODS_QUERY = MetricTimePeriodConfig.monthly_year_periods(
+_YEAR_PERIODS_QUERY = MetricTimePeriodConfig.year_periods_rolling_monthly(
     lookback_months=_METRICS_YEARS_TRACKED * 12
 ).build_query()
 
-_QUARTER_PERIODS_QUERY = MetricTimePeriodConfig.monthly_quarter_periods(
+_QUARTER_PERIODS_QUERY = MetricTimePeriodConfig.quarter_periods_rolling_monthly(
     lookback_months=_METRICS_YEARS_TRACKED * 12
 ).build_query()
 

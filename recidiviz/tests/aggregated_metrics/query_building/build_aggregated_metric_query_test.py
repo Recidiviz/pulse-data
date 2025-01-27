@@ -650,7 +650,7 @@ USING (state_code, facility, metric_period_start_date, metric_period_end_date_ex
                 MY_ANY_INCARCERATION_365,
                 MY_DAYS_TO_FIRST_INCARCERATION_100,
             ],
-            time_period=MetricTimePeriodConfig.monthly_quarter_periods(
+            time_period=MetricTimePeriodConfig.quarter_periods_rolling_monthly(
                 lookback_months=12
             ),
         )
@@ -787,7 +787,7 @@ USING (state_code, district, metric_period_start_date, metric_period_end_date_ex
                 MY_DAYS_SUPERVISED_365,
                 MY_MAX_DAYS_STABLE_EMPLOYMENT_365,
             ],
-            time_period=MetricTimePeriodConfig.monthly_quarter_periods(
+            time_period=MetricTimePeriodConfig.quarter_periods_rolling_monthly(
                 lookback_months=12
             ),
         )

@@ -127,7 +127,9 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
                 MY_DAYS_TO_FIRST_INCARCERATION_100,
                 MY_EMPLOYER_CHANGES_365,
             ],
-            time_period=MetricTimePeriodConfig.monthly_year_periods(lookback_months=12),
+            time_period=MetricTimePeriodConfig.year_periods_rolling_monthly(
+                lookback_months=12
+            ),
         )
 
         expected_docstring = """
@@ -158,7 +160,9 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
                 MY_DAYS_AT_LIBERTY_365,
                 MY_MAX_DAYS_STABLE_EMPLOYMENT_365,
             ],
-            time_period=MetricTimePeriodConfig.monthly_year_periods(lookback_months=12),
+            time_period=MetricTimePeriodConfig.year_periods_rolling_monthly(
+                lookback_months=12
+            ),
         )
 
         expected_docstring = """

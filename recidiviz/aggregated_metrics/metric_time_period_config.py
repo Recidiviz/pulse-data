@@ -206,6 +206,36 @@ class MetricTimePeriodConfig:
         )
 
     @staticmethod
+    def week_periods_rolling_daily(lookback_days: int) -> "MetricTimePeriodConfig":
+        """Returns a MetricTimePeriodConfig that can be used to generate a query that
+        produces week-long time periods with one ending (exclusive) on every day in
+        the lookback window.
+        """
+        if lookback_days < 1:
+            raise ValueError(
+                "Must provide a lookback_days of at least 1 to produce any periods."
+            )
+
+        max_period_end_date = current_date_us_eastern()
+        min_period_end_date = max_period_end_date - relativedelta(
+            days=(lookback_days - 1)
+        )
+        return MetricTimePeriodConfig(
+            interval_length=1,
+            interval_unit=MetricTimePeriod.WEEK,
+            rolling_period_length=1,
+            rolling_period_unit=MetricTimePeriod.DAY,
+            min_period_end_date=min_period_end_date,
+            max_period_end_date=max_period_end_date,
+            period_name=MetricTimePeriod.WEEK.value,
+            description=(
+                f"Weekly metric periods ending on every day in the last "
+                f"{lookback_days} days."
+            ),
+            config_name=f"weeks_rolling_last_{lookback_days}_days",
+        )
+
+    @staticmethod
     def month_periods(lookback_months: int) -> "MetricTimePeriodConfig":
         """Returns a MetricTimePeriodConfig that can be used to generate a query that
         produces month-long time periods that start on the first of every month, with
@@ -235,7 +265,40 @@ class MetricTimePeriodConfig:
         )
 
     @staticmethod
-    def monthly_quarter_periods(lookback_months: int) -> "MetricTimePeriodConfig":
+    def month_periods_rolling_daily(lookback_days: int) -> "MetricTimePeriodConfig":
+        """Returns a MetricTimePeriodConfig that can be used to generate a query that
+        produces month-long time periods with one ending (exclusive) on every day in
+        the lookback window.
+        """
+        if lookback_days < 1:
+            raise ValueError(
+                "Must provide a lookback_days of at least 1 day to produce any "
+                "periods."
+            )
+
+        max_period_end_date = current_date_us_eastern()
+        min_period_end_date = max_period_end_date - relativedelta(
+            days=(lookback_days - 1)
+        )
+        return MetricTimePeriodConfig(
+            interval_length=1,
+            interval_unit=MetricTimePeriod.MONTH,
+            rolling_period_length=1,
+            rolling_period_unit=MetricTimePeriod.DAY,
+            min_period_end_date=min_period_end_date,
+            max_period_end_date=max_period_end_date,
+            period_name=MetricTimePeriod.MONTH.value,
+            description=(
+                f"Monthly metric periods ending on every day in the last "
+                f"{lookback_days} days."
+            ),
+            config_name=f"months_rolling_last_{lookback_days}_days",
+        )
+
+    @staticmethod
+    def quarter_periods_rolling_monthly(
+        lookback_months: int,
+    ) -> "MetricTimePeriodConfig":
         """Returns a MetricTimePeriodConfig that can be used to generate a query that
         produces quarter-long time periods that start on the first of every month, with
         periods starting up to |lookback_months| months ago.
@@ -267,7 +330,7 @@ class MetricTimePeriodConfig:
         )
 
     @staticmethod
-    def monthly_year_periods(lookback_months: int) -> "MetricTimePeriodConfig":
+    def year_periods_rolling_monthly(lookback_months: int) -> "MetricTimePeriodConfig":
         """Returns a MetricTimePeriodConfig that can be used to generate a query that
         produces year-long time periods that start on the first of every month, with
         periods starting up to |lookback_months| months ago.

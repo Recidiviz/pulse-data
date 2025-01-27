@@ -66,10 +66,10 @@ _OUTLIERS_METRICS_YEARS_TRACKED = 7
 OUTLIERS_AGGREGATED_METRICS_COLLECTION_CONFIG = AggregatedMetricsCollection.build(
     output_dataset_id=OUTLIERS_VIEWS_DATASET,
     time_periods=[
-        MetricTimePeriodConfig.monthly_year_periods(
+        MetricTimePeriodConfig.year_periods_rolling_monthly(
             lookback_months=_OUTLIERS_METRICS_YEARS_TRACKED * 12
         ),
-        MetricTimePeriodConfig.monthly_quarter_periods(
+        MetricTimePeriodConfig.quarter_periods_rolling_monthly(
             lookback_months=_OUTLIERS_METRICS_YEARS_TRACKED * 12
         ),
         MetricTimePeriodConfig.month_periods(

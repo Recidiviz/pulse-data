@@ -183,6 +183,48 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
             sorted(results[0].keys()),
         )
 
+    def test_week_periods_rolling_daily(self) -> None:
+        lookback_days = 3
+
+        # Tuesday, Nov 12, 2024 (US/Eastern time)
+        with freeze_time("2024-11-12 00:00:00-05:00"):
+            self.assertEqual("2024-11-12", current_date_us_eastern().isoformat())
+
+            metric_time_period_config = (
+                MetricTimePeriodConfig.week_periods_rolling_daily(
+                    lookback_days=lookback_days
+                )
+            )
+            query_str = metric_time_period_config.build_query()
+
+        expected_results = [
+            {
+                "period": "WEEK",
+                "metric_period_start_date": datetime.date(2024, 11, 3),
+                "metric_period_end_date_exclusive": datetime.date(2024, 11, 10),
+            },
+            {
+                "period": "WEEK",
+                "metric_period_start_date": datetime.date(2024, 11, 4),
+                "metric_period_end_date_exclusive": datetime.date(2024, 11, 11),
+            },
+            {
+                "period": "WEEK",
+                "metric_period_start_date": datetime.date(2024, 11, 5),
+                "metric_period_end_date_exclusive": datetime.date(2024, 11, 12),
+            },
+        ]
+
+        results = self.query(query_str).to_dict(orient="records")
+
+        # Should produce the same number of rows as specified in lookback_weeks
+        self.assertEqual(lookback_days, len(results))
+        self.assertEqual(expected_results, results)
+        self.assertEqual(
+            sorted(MetricTimePeriodConfig.query_output_columns()),
+            sorted(results[0].keys()),
+        )
+
     def test_month_periods(self) -> None:
         lookback_months = 3
 
@@ -223,6 +265,91 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
             sorted(results[0].keys()),
         )
 
+    def test_month_periods_rolling_daily(self) -> None:
+        lookback_days = 3
+
+        # Tuesday, Nov 12, 2024 (US/Eastern time)
+        with freeze_time("2024-11-12 00:00:00-05:00"):
+            self.assertEqual("2024-11-12", current_date_us_eastern().isoformat())
+
+            metric_time_period_config = (
+                MetricTimePeriodConfig.month_periods_rolling_daily(
+                    lookback_days=lookback_days
+                )
+            )
+            query_str = metric_time_period_config.build_query()
+
+        expected_results = [
+            {
+                "period": "MONTH",
+                "metric_period_start_date": datetime.date(2024, 10, 10),
+                "metric_period_end_date_exclusive": datetime.date(2024, 11, 10),
+            },
+            {
+                "period": "MONTH",
+                "metric_period_start_date": datetime.date(2024, 10, 11),
+                "metric_period_end_date_exclusive": datetime.date(2024, 11, 11),
+            },
+            {
+                "period": "MONTH",
+                "metric_period_start_date": datetime.date(2024, 10, 12),
+                "metric_period_end_date_exclusive": datetime.date(2024, 11, 12),
+            },
+        ]
+
+        results = self.query(query_str).to_dict(orient="records")
+
+        # Should produce the same number of rows as specified in lookback_weeks
+        self.assertEqual(lookback_days, len(results))
+        self.assertEqual(expected_results, results)
+        self.assertEqual(
+            sorted(MetricTimePeriodConfig.query_output_columns()),
+            sorted(results[0].keys()),
+        )
+
+    def test_month_periods_rolling_daily__february(self) -> None:
+        lookback_days = 3
+
+        # Saturday, Nov 12, 2024 (US/Eastern time)
+        with freeze_time("2024-03-02 00:00:00-05:00"):
+            self.assertEqual("2024-03-02", current_date_us_eastern().isoformat())
+
+            metric_time_period_config = (
+                MetricTimePeriodConfig.month_periods_rolling_daily(
+                    lookback_days=lookback_days
+                )
+            )
+            query_str = metric_time_period_config.build_query()
+
+        expected_results = [
+            {
+                "period": "MONTH",
+                "metric_period_start_date": datetime.date(2024, 1, 29),
+                # 2024 is a leap year so this is a valid date
+                "metric_period_end_date_exclusive": datetime.date(2024, 2, 29),
+            },
+            {
+                "period": "MONTH",
+                "metric_period_start_date": datetime.date(2024, 2, 1),
+                "metric_period_end_date_exclusive": datetime.date(2024, 3, 1),
+            },
+            {
+                "period": "MONTH",
+                "metric_period_start_date": datetime.date(2024, 2, 2),
+                "metric_period_end_date_exclusive": datetime.date(2024, 3, 2),
+            },
+        ]
+
+        results = self.query(query_str).to_dict(orient="records")
+
+        # Should produce the same number of rows as specified in lookback_weeks
+        self.assertEqual(lookback_days, len(results))
+        self.assertEqual(expected_results, results)
+        self.assertEqual(
+            sorted(MetricTimePeriodConfig.query_output_columns()),
+            sorted(results[0].keys()),
+        )
+
     def test_monthly_quarter_periods(self) -> None:
         lookback_months = 4
 
@@ -230,8 +357,10 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
         with freeze_time("2024-11-12 00:00:00-05:00"):
             self.assertEqual("2024-11-12", current_date_us_eastern().isoformat())
 
-            metric_time_period_config = MetricTimePeriodConfig.monthly_quarter_periods(
-                lookback_months=lookback_months
+            metric_time_period_config = (
+                MetricTimePeriodConfig.quarter_periods_rolling_monthly(
+                    lookback_months=lookback_months
+                )
             )
             query_str = metric_time_period_config.build_query()
 
@@ -262,8 +391,10 @@ class TestMetricTimePeriodConfig(BigQueryEmulatorTestCase):
         with freeze_time("2024-11-12 00:00:00-05:00"):
             self.assertEqual("2024-11-12", current_date_us_eastern().isoformat())
 
-            metric_time_period_config = MetricTimePeriodConfig.monthly_year_periods(
-                lookback_months=lookback_months
+            metric_time_period_config = (
+                MetricTimePeriodConfig.year_periods_rolling_monthly(
+                    lookback_months=lookback_months
+                )
             )
             query_str = metric_time_period_config.build_query()
 

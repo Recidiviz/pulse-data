@@ -410,10 +410,10 @@ _STANDARD_METRICS_YEARS_TRACKED = 7
 STANDARD_AGGREGATED_METRICS_COLLECTION_CONFIG = AggregatedMetricsCollection.build(
     output_dataset_id=AGGREGATED_METRICS_DATASET_ID,
     time_periods=[
-        MetricTimePeriodConfig.monthly_year_periods(
+        MetricTimePeriodConfig.year_periods_rolling_monthly(
             lookback_months=_STANDARD_METRICS_YEARS_TRACKED * 12
         ),
-        MetricTimePeriodConfig.monthly_quarter_periods(
+        MetricTimePeriodConfig.quarter_periods_rolling_monthly(
             lookback_months=_STANDARD_METRICS_YEARS_TRACKED * 12
         ),
         MetricTimePeriodConfig.month_periods(
