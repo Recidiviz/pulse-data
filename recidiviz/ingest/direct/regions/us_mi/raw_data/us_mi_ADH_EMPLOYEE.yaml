@@ -1204,17 +1204,19 @@ columns:
       - value: "20039"
         description: Phlebotomist
       - value: "20179"
-        description: TODO(#35219) Document this field.
+        description: Assistant Deputy Director
       - value: "20180"
-        description: TODO(#35219) Document this field.
+        description: Deputy Director
       - value: "20181"
-        description: TODO(#35219) Document this field.
+        description: Operations Administrator
       - value: "20182"
-        description: TODO(#35219) Document this field.
+        description: Region Manager
       - value: "20286"
-        description: TODO(#35219) Document this field.
+        description: Wellness Unit Employee Chaplain
       - value: "20321"
-        description: TODO(#35219) Document this field.
+        description: Corrections Medical Assistant
+      - value: "12423"
+        description: Public Information Specialist
   - name: funding_source_id
     description: |-
       reference code for funding source (links with ADH_REFERENCE_CODE)
