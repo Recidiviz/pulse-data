@@ -29,9 +29,6 @@ from recidiviz.aggregated_metrics.aggregated_metrics_view_builder import (
     AggregatedMetricsBigQueryViewBuilder,
 )
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
-from recidiviz.aggregated_metrics.impact_reports_aggregated_metrics_view_collector import (
-    get_impact_reports_aggregated_metrics_view_builders,
-)
 from recidiviz.aggregated_metrics.legacy.collect_standard_aggregated_metric_views import (
     collect_standard_legacy_aggregated_metric_views,
 )
@@ -388,9 +385,6 @@ class ViewDagInvariantTests(unittest.TestCase):
                     #  deployed views that use the standard collector have been migrated
                     #  over.
                     *collect_standard_legacy_aggregated_metric_views(),
-                    # TODO(#35911): We should be able to delete this entirely once we
-                    #  migrate impact reports metrics to the new format.
-                    *get_impact_reports_aggregated_metrics_view_builders(),
                 ]
                 if b.address
                 not in {

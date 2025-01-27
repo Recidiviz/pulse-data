@@ -35,17 +35,21 @@ function getMauByWeekData(
   const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
   const monthlyActiveUsers = "monthly_active_users";
 
-  const mauTable =
-    "justice_involved_state_month_rolling_weekly_aggregated_metrics_materialized";
+  const metricsTable =
+    "usage__justice_involved_state_aggregated_metrics_materialized";
 
   const queryString = `
     SELECT
       CONCAT(FORMAT_DATE('%m/%d/%y', start_date), " - ", FORMAT_DATE('%m/%d/%y', DATE_SUB(end_date, INTERVAL 1 DAY))) AS formatted_date,
       ${distinctActiveUsers}
-    FROM \`impact_reports.${mauTable}\`
+    FROM \`impact_reports.${metricsTable}\`
     WHERE state_code = '${stateCode}'
-    AND end_date >= '${startDatePlusWeekString}'
-    AND end_date < '${endDatePlusWeekString}'
+    AND period = 'MONTH'
+    AND end_date IN (
+      SELECT valid_end_date FROM UNNEST(
+        GENERATE_DATE_ARRAY('${startDatePlusWeekString}', DATE_SUB('${endDatePlusWeekString}', INTERVAL 1 DAY), INTERVAL 1 WEEK)
+      ) valid_end_date
+    )
     AND ${distinctActiveUsers} IS NOT NULL
     ORDER BY end_date ASC
   `;
@@ -76,17 +80,21 @@ function getWauByWeekData(
   const distinctActiveUsers = `distinct_active_users_${completionEventType.toLowerCase()}`;
   const weeklyActiveUsers = "weekly_active_users";
 
-  const wauTable =
-    "justice_involved_state_week_rolling_weekly_aggregated_metrics_materialized";
+  const metricsTable =
+    "usage__justice_involved_state_aggregated_metrics_materialized";
 
   const queryString = `
     SELECT
       CONCAT(FORMAT_DATE('%m/%d/%y', start_date), " - ", FORMAT_DATE('%m/%d/%y', DATE_SUB(end_date, INTERVAL 1 DAY))) AS formatted_date,
       ${distinctActiveUsers}
-    FROM \`impact_reports.${wauTable}\`
+    FROM \`impact_reports.${metricsTable}\`
     WHERE state_code = '${stateCode}'
-    AND start_date >= '${startDateString}'
-    AND start_date < '${endDateString}'
+    AND period = 'WEEK'
+    AND start_date IN (
+      SELECT valid_start_date FROM UNNEST(
+        GENERATE_DATE_ARRAY('${startDateString}', DATE_SUB('${endDateString}', INTERVAL 1 DAY), INTERVAL 1 WEEK)
+      ) valid_start_date
+    )
     AND ${distinctActiveUsers} IS NOT NULL
     ORDER BY end_date ASC
   `;
@@ -133,20 +141,27 @@ function getMauWauByLocation(
     );
   }
 
-  const mauTable = `justice_involved_${location}_month_aggregated_metrics_materialized`;
-  const wauTable = `justice_involved_${location}_week_aggregated_metrics_materialized`;
+  const metricsTable = `usage__justice_involved_${location}_aggregated_metrics_materialized`;
 
   const queryString = `
     SELECT
       ${location},
-      ${mauTable}.${distinctActiveUsers} AS ${mau},
-      ${wauTable}.${distinctActiveUsers} AS ${wau}
-    FROM \`impact_reports.${mauTable}\` ${mauTable}
-    INNER JOIN \`impact_reports.${wauTable}\` ${wauTable}
+      monthly_metrics.${distinctActiveUsers} AS ${mau},
+      weekly_metrics.${distinctActiveUsers} AS ${wau}
+    FROM (
+        SELECT *
+        FROM \`impact_reports.${metricsTable}\`
+        WHERE period = 'MONTH'
+    ) monthly_metrics
+    INNER JOIN (
+        SELECT *
+        FROM \`impact_reports.${metricsTable}\`
+        WHERE period = 'WEEK'
+    ) weekly_metrics
     USING (${location}, state_code, end_date)
-    WHERE ${mauTable}.state_code = '${stateCode}'
-    AND ${mauTable}.end_date = '${endDateString}'
-    AND NOT (${mauTable}.${distinctActiveUsers} IS NULL OR ${wauTable}.${distinctActiveUsers} IS NULL)`;
+    WHERE monthly_metrics.state_code = '${stateCode}'
+    AND monthly_metrics.end_date = '${endDateString}'
+    AND NOT (monthly_metrics.${distinctActiveUsers} IS NULL OR weekly_metrics.${distinctActiveUsers} IS NULL)`;
 
   const mauWauByLocationData = RecidivizHelpers.runQuery(queryString);
 
@@ -179,10 +194,12 @@ function getUsageAndImpactDistrictData(
 
   if (system === "SUPERVISION") {
     usageAndImpactXAxisColumn = "district_name";
-    tableName = "justice_involved_district_day_aggregated_metrics_materialized";
+    tableName =
+      "impact_funnel__justice_involved_district_aggregated_metrics_materialized";
   } else if (system === "INCARCERATION") {
     usageAndImpactXAxisColumn = "facility_name";
-    tableName = "justice_involved_facility_day_aggregated_metrics_materialized";
+    tableName =
+      "impact_funnel__justice_involved_facility_aggregated_metrics_materialized";
   } else {
     throw new Error(
       "Invalid system provided. Please check all Google Form Inputs."
@@ -202,6 +219,7 @@ function getUsageAndImpactDistrictData(
     FROM
     \`impact_reports.${tableName}\`
     WHERE state_code = '${stateCode}'
+    AND period = 'DAY'
     AND end_date = '${endDateString}';
   `;
 
@@ -229,8 +247,8 @@ function constructStatewideMauAndWauText(stateCode, endDateString) {
   const distinctRegisteredUsersSupervisionTotal = `distinct_registered_users_supervision`;
   const distinctActiveUsersFacilitiesTotal = `distinct_active_users_incarceration`;
   const distinctRegisteredUsersFacilitiesTotal = `distinct_registered_users_incarceration`;
-  const mauTable = `justice_involved_state_month_aggregated_metrics_materialized`;
-  const wauTable = `justice_involved_state_week_aggregated_metrics_materialized`;
+
+  const metricsTable = `usage__justice_involved_state_aggregated_metrics_materialized`;
 
   const queryStringMonthly = `
     SELECT
@@ -238,8 +256,9 @@ function constructStatewideMauAndWauText(stateCode, endDateString) {
       ${distinctRegisteredUsersSupervisionTotal},
       ${distinctActiveUsersFacilitiesTotal},
       ${distinctRegisteredUsersFacilitiesTotal}
-    FROM \`impact_reports.${mauTable}\`
+    FROM \`impact_reports.${metricsTable}\`
     WHERE state_code = '${stateCode}'
+    AND period = 'MONTH'
     AND end_date = '${endDateString}'`;
 
   const queryOutputMonthly = RecidivizHelpers.runQuery(queryStringMonthly)[0];
@@ -256,8 +275,9 @@ function constructStatewideMauAndWauText(stateCode, endDateString) {
       ${distinctRegisteredUsersSupervisionTotal},
       ${distinctActiveUsersFacilitiesTotal},
       ${distinctRegisteredUsersFacilitiesTotal}
-    FROM \`impact_reports.${wauTable}\`
+    FROM \`impact_reports.${metricsTable}\`
     WHERE state_code = '${stateCode}'
+    AND period = 'WEEK'
     AND end_date = '${endDateString}'`;
 
   const queryOutputWeekly = RecidivizHelpers.runQuery(queryStringWeekly)[0];
@@ -356,15 +376,15 @@ function constructMauAndWauByWorkflowText(
 ) {
   const distinctActiveUsersByWorkflow = `distinct_active_users_${completionEventType.toLowerCase()}`;
   const distinctRegisteredUsers = `distinct_registered_users_${system.toLowerCase()}`;
-  const mauTable = `justice_involved_state_month_aggregated_metrics_materialized`;
-  const wauTable = `justice_involved_state_week_aggregated_metrics_materialized`;
+  const metricsTable = `usage__justice_involved_state_aggregated_metrics_materialized`;
 
   const queryStringMonthly = `
     SELECT
       ${distinctActiveUsersByWorkflow},
       ${distinctRegisteredUsers}
-    FROM \`impact_reports.${mauTable}\`
+    FROM \`impact_reports.${metricsTable}\`
     WHERE state_code = '${stateCode}'
+    AND period = 'MONTH'
     AND end_date = '${endDateString}'`;
 
   const queryOutputMonthly = RecidivizHelpers.runQuery(queryStringMonthly)[0];
@@ -379,8 +399,9 @@ function constructMauAndWauByWorkflowText(
     SELECT
       ${distinctActiveUsersByWorkflow},
       ${distinctRegisteredUsers}
-    FROM \`impact_reports.${wauTable}\`
+    FROM \`impact_reports.${metricsTable}\`
     WHERE state_code = '${stateCode}'
+    AND period = 'WEEK'
     AND end_date = '${endDateString}'`;
 
   const queryOutputWeekly = RecidivizHelpers.runQuery(queryStringWeekly)[0];
@@ -424,17 +445,17 @@ function constructMauAndWauByWorkflowText(
 /**
  * Get start date
  * Query the Big Query database for the start_date.
- * @param {string} stateCode The state code passed in from the Google Form (ex: 'US_MI')
  * @param {string} timePeriod The time period passed in from the Google Form (ex: 'MONTH', 'QUARTER', or 'YEAR')
  * @param {string} endDateString The end date passed from the connected Google Form on form submit (ex: '2023-03-01')
  **/
-function getStartDate(stateCode, timePeriod, endDateString) {
-  const queryString = `
-    SELECT start_date
-    FROM aggregated_metrics.supervision_state_aggregated_metrics_materialized
-    WHERE state_code = '${stateCode}'
-    AND period = '${timePeriod}'
-    AND end_date = '${endDateString}'`;
+function getMetricPeriodStartDate(timePeriod, endDateString) {
+  if (timePeriod !== `MONTH` && timePeriod !== `WEEK`) {
+    throw new Error(
+      `Unexpected timePeriod [${timePeriod}]. Expected either MONTH or WEEK.`
+    );
+  }
+
+  const queryString = `SELECT DATE_SUB('${endDateString}', INTERVAL 1 ${timePeriod});`;
 
   const queryOutput = RecidivizHelpers.runQuery(queryString)[0];
   const queryOutputLength = queryOutput.length;
@@ -473,7 +494,7 @@ function constructUsageAndImpactText(
   const eligibleAndViewedColumn = `avg_daily_population_task_eligible_and_viewed_${completionEventType.toLowerCase()}`;
   const eligibleAndNotViewedColumn = `avg_daily_population_task_eligible_and_not_viewed_${completionEventType.toLowerCase()}`;
 
-  const usageTable = `justice_involved_state_day_aggregated_metrics_materialized`;
+  const metricsTable = `impact_funnel__justice_involved_state_aggregated_metrics_materialized`;
 
   const queryString = `
     SELECT
@@ -482,8 +503,9 @@ function constructUsageAndImpactText(
     ${markedIneligibleColumn},
     ${eligibleAndViewedColumn},
     ${eligibleAndNotViewedColumn}
-    FROM \`impact_reports.${usageTable}\`
+    FROM \`impact_reports.${metricsTable}\`
     WHERE state_code = '${stateCode}'
+    AND period = 'DAY'
     AND end_date = '${endDateString}'`;
 
   const queryOutput = RecidivizHelpers.runQuery(queryString)[0];

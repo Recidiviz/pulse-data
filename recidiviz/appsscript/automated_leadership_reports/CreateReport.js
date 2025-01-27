@@ -41,8 +41,7 @@ function main(e) {
   Logger.log("workflowsToInclude: %s", workflowsToInclude);
   Logger.log("isTestReport: %s", isTestReport);
 
-  const { startDate, startDateString } = getStartDate(
-    stateCode,
+  const { startDate, startDateString } = getMetricPeriodStartDate(
     timePeriod,
     endDateString
   );

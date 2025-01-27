@@ -18,7 +18,6 @@
 import itertools
 from typing import Sequence
 
-from recidiviz.aggregated_metrics.impact_reports_views import IMPACT_REPORTS_VIEWS
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.analyst_data_views import (
     ANALYST_DATA_VIEW_BUILDERS,
@@ -99,7 +98,6 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             CASE_INSIGHTS_VIEW_BUILDERS,
             SENTENCING_VIEW_BUILDERS,
             CASE_NOTE_SEARCH_VIEW_BUILDERS,
-            IMPACT_REPORTS_VIEWS,
             SENTENCE_SESSIONS_VIEW_BUILDERS,
             SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS,
             JII_TEXTING_VIEW_BUILDERS,

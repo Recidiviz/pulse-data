@@ -728,7 +728,6 @@ def main() -> int:
                 "recidiviz.pipelines",
                 "recidiviz.source_tables",
                 "recidiviz.task_eligibility",
-                "recidiviz.tools.analyst",
                 "recidiviz.utils",
                 "recidiviz.validation",
                 "recidiviz.workflows",

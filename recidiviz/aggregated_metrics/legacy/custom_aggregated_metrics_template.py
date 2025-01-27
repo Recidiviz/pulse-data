@@ -107,7 +107,7 @@ FROM (
 """
 
 
-# TODO(#35909), TODO(#35911): Delete this once all callers use an
+# TODO(#35909): Delete this once all callers use an
 #  optimized version of the template builder instead.
 def get_legacy_custom_aggregated_metrics_query_template(
     metrics: List[AggregatedMetric],
