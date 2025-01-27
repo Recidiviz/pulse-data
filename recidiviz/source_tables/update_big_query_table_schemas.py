@@ -211,8 +211,9 @@ def check_source_table_schemas(
                 "DAG, any manual changes should be applied right before the deploy "
                 "containing the relevant code changes that impacted the schema. If you "
                 "run any manual commands before the staging deploy, do not forget to "
-                "add the analogous commands to the next prod deploy checklist at "
-                "https://go/deploy-checklist. Tables with unsafe changes:",
+                "add the analogous commands to the next staging AND prod Pre-Deploy "
+                "Tasks checklists at https://go/platform-deploy-log/. Tables with "
+                "unsafe changes:",
                 width=88,
             )
         )

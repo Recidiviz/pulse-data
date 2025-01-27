@@ -85,6 +85,8 @@ if [[ -n ${DEBUG_BUILD_NAME} ]]; then
 fi
 DOCKER_IMAGE_TAG=${VERSION_TAG}
 
+script_prompt "Have you completed all Pre-Deploy tasks for this STAGING version in https://go/platform-deploy-log?"
+
 update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
 
 # app engine deploy paths
@@ -245,3 +247,5 @@ else
 fi
 
 update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
+
+script_prompt "Have you completed all Post-Deploy tasks for this STAGING version in https://go/platform-deploy-log?"

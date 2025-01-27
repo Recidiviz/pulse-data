@@ -279,7 +279,8 @@ def main(region_code: str) -> None:
         f"'[PRODUCTION] Airflow Tasks: {region_code.upper()}' and "
         f"'[STAGING] Airflow Tasks: {region_code.upper()}' services here: "
         f"https://recidiviz.pagerduty.com/accounts_addons/P68QE5Y. Please add a "
-        f"reminder to do this to https://go/deploy-checklist/.",
+        f"reminder to do this to the next prod version in "
+        f"https://go/platform-deploy-log/.",
         "I HAVE ADDED A REMINDER",
     )
 
