@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -90,7 +90,7 @@ SELECT
 FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Site_latest` site
 LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_supervision_locations_latest` sup_ref ON site_code = SiteID
 LEFT JOIN `{{project_id}}.{{external_reference_dataset}}.us_tn_incarceration_facility_map` inc_ref ON level_1_incarceration_location_external_id = SiteID 
--- checkinng for location to district mappings that are still active
+-- checking for location to district mappings that are still active
 WHERE SiteID IS NOT NULL AND sup_ref.end_date IS NULL
 """
 

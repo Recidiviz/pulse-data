@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -120,6 +120,11 @@ UNION ALL
 
 SELECT state_code, location_external_id, location_name, location_type, location_metadata
 FROM `{project_id}.{reference_views_dataset}.us_az_location_metadata_materialized`
+
+UNION ALL
+
+SELECT state_code, location_external_id, location_name, location_type, location_metadata
+FROM `{project_id}.{reference_views_dataset}.us_or_location_metadata_materialized`
 """
 
 LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(

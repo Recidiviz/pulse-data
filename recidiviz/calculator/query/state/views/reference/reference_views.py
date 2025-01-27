@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -54,6 +54,9 @@ from recidiviz.calculator.query.state.views.reference.location_metadata.us_mi_lo
 from recidiviz.calculator.query.state.views.reference.location_metadata.us_nd_location_metadata import (
     US_ND_LOCATION_METADATA_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.location_metadata.us_or_location_metadata import (
+    US_OR_LOCATION_METADATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.location_metadata.us_pa_location_metadata import (
     US_PA_LOCATION_METADATA_VIEW_BUILDER,
 )
@@ -104,4 +107,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_AZ_LOCATION_METADATA_VIEW_BUILDER,
     get_completion_event_metadata_view_builder(),
     PRODUCT_STAFF_VIEW_BUILDER,
+    US_OR_LOCATION_METADATA_VIEW_BUILDER,
 ]

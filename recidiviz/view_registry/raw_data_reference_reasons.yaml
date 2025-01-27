@@ -1330,11 +1330,17 @@ US_OR:
       Usage reason unknown. Grandfathered in 04/18/2024. TODO(#33043)
     workflows_views.us_or_earned_discharge_sentence_record: |-
       Sentence condition code and county for earned discharge opportunity metadata.
+  RCDVZ_DOCDTA_TBCNTY:
+    reference_views.us_or_location_metadata: |-
+      Needed for location information.
   RCDVZ_DOCDTA_TBCOND:
     workflows_views.us_or_earned_discharge_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024. TODO(#33043)
     workflows_views.us_or_earned_discharge_sentence_record: |-
       Sentence condition description for earned discharge opportunity metadata.
+  RCDVZ_DOCDTA_TBLOCA:
+    reference_views.us_or_location_metadata: |-
+      Needed for location information.
   RCDVZ_PRDDTA_OP013P:
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
