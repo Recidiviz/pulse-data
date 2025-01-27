@@ -91,6 +91,7 @@ def generate_fake_user_overrides(
     first_name: Optional[str] = None,
     last_name: Optional[str] = None,
     blocked: bool = False,
+    blocked_on: Optional[datetime] = None,
     pseudonymized_id: Optional[str] = None,
     created_datetime: Optional[datetime] = None,
 ) -> UserOverride:
@@ -103,6 +104,7 @@ def generate_fake_user_overrides(
         first_name=first_name,
         last_name=last_name,
         blocked=blocked,
+        blocked_on=blocked_on,
         user_hash=generate_user_hash(email.lower()),
         pseudonymized_id=pseudonymized_id,
         created_datetime=created_datetime,

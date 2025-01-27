@@ -18,12 +18,14 @@
 """Tests for auth/auth_endpoint.py."""
 import json
 import os
+from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 import flask
+import freezegun
 import pytest
 from flask import Flask
 from flask_smorest import Api
@@ -239,6 +241,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
+                    "blockedOn": None,
                     "district": None,
                     "emailAddress": "user@testdomain.com",
                     "externalId": None,
@@ -309,6 +312,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
+                    "blockedOn": None,
                     "district": None,
                     "emailAddress": "user@testdomain.com",
                     "externalId": None,
@@ -402,6 +406,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "D1",
                     "allowedSupervisionLocationLevel": "level_1_supervision_location",
                     "blocked": False,
+                    "blockedOn": None,
                     "district": "D1",
                     "emailAddress": "user@testdomain.com",
                     "externalId": None,
@@ -461,6 +466,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
+                    "blockedOn": None,
                     "district": None,
                     "emailAddress": "user@testdomain.com",
                     "externalId": None,
@@ -494,6 +500,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, delete_permissions.status_code)
 
+    @freezegun.freeze_time(datetime(2025, 1, 9, 0, 0, 0, 0))
     def test_delete_user_roster(self) -> None:
         user = generate_fake_rosters(
             email="parameter@testdomain.com",
@@ -522,6 +529,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": True,
+                    "blockedOn": "2025-01-09T00:00:00",
                     "district": None,
                     "emailAddress": "parameter@testdomain.com",
                     "externalId": None,
@@ -537,6 +545,7 @@ class AuthEndpointTests(TestCase):
             ]
             self.assertEqual(expected_response, json.loads(response.data))
 
+    @freezegun.freeze_time(datetime(2025, 1, 9, 0, 0, 0, 0))
     def test_delete_user_user_override(self) -> None:
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             self.client.post(
@@ -569,6 +578,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": True,
+                    "blockedOn": "2025-01-09T00:00:00",
                     "district": None,
                     "emailAddress": "parameter@testdomain.com",
                     "externalId": None,
@@ -909,12 +919,14 @@ class AuthEndpointTests(TestCase):
             email="parameter@testdomain.com",
             region_code="US_MO",
             blocked=True,
+            blocked_on=datetime.fromisoformat("2025-01-09"),
         )
         override_only_delete = generate_fake_user_overrides(
             email="user@testdomain.com",
             region_code="US_MO",
             roles=[LEADERSHIP_ROLE],
             blocked=True,
+            blocked_on=datetime.fromisoformat("2025-01-09"),
         )
         override_keep = generate_fake_user_overrides(
             email="supervision_staff_2@testdomain.com",
@@ -1140,6 +1152,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
+                    "blockedOn": None,
                     "district": None,
                     "emailAddress": "leadership@testdomain.com",
                     "externalId": None,
@@ -1156,6 +1169,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
+                    "blockedOn": None,
                     "district": "D1",
                     "emailAddress": "supervision_staff@testdomain.com",
                     "externalId": "3706",
@@ -1172,6 +1186,7 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
+                    "blockedOn": None,
                     "district": "D2",
                     "emailAddress": "user@testdomain.com",
                     "externalId": "98725",

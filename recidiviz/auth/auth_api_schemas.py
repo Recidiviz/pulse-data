@@ -43,6 +43,7 @@ class UserSchema(CamelCaseSchema):
     user_hash = fields.Str(allow_none=True)
     pseudonymized_id = fields.Str(allow_none=True)
     blocked = fields.Bool(allow_none=True)
+    blocked_on = fields.DateTime(allow_none=True)
 
     @post_load
     # pylint: disable=unused-argument

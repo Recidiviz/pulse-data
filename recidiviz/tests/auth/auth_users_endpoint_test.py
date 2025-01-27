@@ -19,6 +19,7 @@
 import json
 import os
 import tempfile
+from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 from unittest import TestCase, mock
@@ -205,6 +206,7 @@ class AuthUsersEndpointTestCase(TestCase):
             external_id="user_1_override.external_id",
             roles=["user_1_override.role"],
             blocked=True,
+            blocked_on=datetime.fromisoformat("2023-01-01"),
             pseudonymized_id="hashed-user_1_override",
         )
         default_1 = generate_fake_default_permissions(
@@ -280,6 +282,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_ME",
             external_id="A1B2",
             blocked=True,
+            blocked_on=datetime.fromisoformat("2023-01-01"),
         )
         default_1 = generate_fake_default_permissions(
             state="US_ME",
@@ -452,6 +455,7 @@ class AuthUsersEndpointTestCase(TestCase):
             roles=["leadership_role"],
             district="District",
             blocked=True,
+            blocked_on=datetime.fromisoformat("2023-01-01"),
         )
 
         add_entity_to_database_session(self.database_key, [user])

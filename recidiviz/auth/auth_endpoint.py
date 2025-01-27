@@ -20,6 +20,7 @@
 import json
 import logging
 import os
+from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Tuple, Type, Union
 
@@ -464,7 +465,11 @@ def get_auth_endpoint_blueprint(
                 users_with_access = [
                     (override_user or roster_user)
                     for (override_user, roster_user) in state_role_users
-                    if not (override_user and override_user.blocked)
+                    if not (
+                        override_user
+                        and override_user.blocked_on is not None
+                        and override_user.blocked_on < datetime.now()
+                    )
                 ]
                 if len(users_with_access) > 0:
                     return (
@@ -636,7 +641,7 @@ def get_auth_endpoint_blueprint(
     # "path" type annotation allows parameters containing slashes, which the user hash might
     @auth_endpoint_blueprint.route("/users/<path:user_hash>", methods=["DELETE"])
     def delete_user(user_hash: str) -> tuple[str, int]:
-        """Blocks a user by setting blocked=true in the corresponding Roster object."""
+        """Blocks a user by setting blocked_on=today's date in the corresponding UserOverride object."""
         database_key = SQLAlchemyDatabaseKey.for_schema(
             schema_type=SchemaType.CASE_TRIAGE
         )
@@ -652,7 +657,8 @@ def get_auth_endpoint_blueprint(
                 )
                 if value := existing_override.first():
                     existing_override.update(
-                        {"blocked": True}, synchronize_session=False
+                        {"blocked": True, "blocked_on": datetime.now()},
+                        synchronize_session=False,
                     )
                     email = value.email_address
                 else:
@@ -670,6 +676,7 @@ def get_auth_endpoint_blueprint(
                         state_code=roster_user.state_code,
                         email_address=roster_user.email_address,
                         blocked=True,
+                        blocked_on=datetime.now(),
                         user_hash=roster_user.user_hash,
                     )
                     session.add(user_override)

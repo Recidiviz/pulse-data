@@ -157,6 +157,7 @@ def get_users_blueprint(authentication_middleware: Callable | None) -> Blueprint
                     "last_name"
                 ),
                 func.coalesce(UserOverride.blocked, False).label("blocked"),
+                UserOverride.blocked_on.label("blocked_on"),
                 (
                     aggregated_permissions_cte.c.routes
                     + func.coalesce(PermissionsOverride.routes, cast({}, JSONB))
