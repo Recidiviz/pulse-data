@@ -112,14 +112,20 @@ select
         CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_OFFICE_NAME.value},
         IF(DistrictOfficeCode IS NOT NULL, UPPER(DistrictOfficeCode), NULL)
             AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
-        CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
+        IF(DistrictOfficeCode IS NOT NULL, UPPER(level_2_supervision_location_name), NULL) 
+            AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
         IF(DistrictOfficeCode IS NOT NULL, UPPER(Region_Code), NULL)
             AS {LocationMetadataKey.SUPERVISION_REGION_ID.value},
         IF(DistrictOfficeCode IS NOT NULL, UPPER(Region), NULL)
             AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value}
       )
     ) AS location_metadata,
-from `{{project_id}}.{{us_pa_raw_data_up_to_date_dataset}}.dbo_LU_PBPP_Organization_latest`
+FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_dataset}}.dbo_LU_PBPP_Organization_latest`
+-- Pull in district names based on district code
+LEFT JOIN (
+    SELECT DISTINCT level_2_supervision_location_external_id, level_2_supervision_location_name
+    FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
+) ON DistrictOfficeCode = level_2_supervision_location_external_id
 -- Do not duplicate entries
 where Org_cd NOT IN (
     SELECT DISTINCT location_external_id 
@@ -129,6 +135,46 @@ where Org_cd NOT IN (
     
     SELECT DISTINCT Org_cd
     FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_locations_from_supervision_contacts_latest`
+)
+
+UNION ALL
+
+-- For now, pull in all remaining locations that come in through the supervision staff roster so that every location we ingest from 
+-- the roster will have an entry in location metadata.  As of 1/27/25, this only pulls in 3 additional locations
+SELECT 
+    'US_PA' AS state_code,
+    DO_Orgcode AS location_external_id,
+    Org_Name AS location_name,
+    -- TODO(#19341) A few of these locations might actually be facilities locations despite being in the supervision staff roster, 
+    -- but we shall distinguish those in the future when we work on facilities tools
+    'SUPERVISION_LOCATION' AS location_type,
+    TO_JSON(
+      STRUCT(
+        CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_UNIT_ID.value},
+        CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_UNIT_NAME.value},
+        CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_OFFICE_ID.value},
+        CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_OFFICE_NAME.value},
+        CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
+        CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
+        CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_REGION_ID.value},
+        CAST(NULL AS STRING) AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value}
+      )
+    ) AS location_metadata,
+FROM (SELECT DISTINCT DO_Orgcode, Org_Name FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_staff_roster_latest`)
+-- Do not duplicate entries
+WHERE DO_Orgcode NOT IN (
+    SELECT DISTINCT location_external_id 
+    FROM supervision_location_ids_cte
+
+    UNION DISTINCT
+    
+    SELECT DISTINCT Org_cd
+    FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_locations_from_supervision_contacts_latest`
+
+    UNION DISTINCT
+
+    SELECT DISTINCT Org_cd
+    FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_dataset}}.dbo_LU_PBPP_Organization_latest`
 )
 """
 

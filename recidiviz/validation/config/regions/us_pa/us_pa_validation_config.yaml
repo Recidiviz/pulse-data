@@ -11,6 +11,9 @@ exclusions:
   - validation_name: sentence_comparison
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: TODO(#28868) Hydrate new sentencing entities
+  - validation_name: normalized_state_charge_missing_uniform_offense_labels
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: We currently don't use uniform charge descriptions for anything in PA. Fix when we do start using uniform descriptions. TODO(#37753)
 
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison

@@ -102,6 +102,8 @@ columns:
     description: |-
       The location code for the supervision district in which a given supervision office 
       is located.
+    null_values:
+      - "0"
   - name: AMU_Pos_No
     description: |-
       The number assigned to the position this person holds. This number stays with the 

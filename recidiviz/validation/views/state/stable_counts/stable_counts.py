@@ -189,6 +189,7 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         # We received a full historical transfer in Nov 2024, which caused ingest to artificially close and start a bunch of new periods
                         # due to the way ingest uses update_datetime from the @ALL version of the views
                         date(2024, 11, 1),
+                        date(2024, 12, 1),
                     ],
                     StateCode.US_ND: [
                         date(2023, 2, 1),
@@ -263,6 +264,7 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         # We received a full historical transfer in Nov, which caused ingest to artificially close and start a bunch of new periods
                         # due to the way ingest uses update_datetime from the @ALL version of the views
                         date(2024, 11, 1),
+                        date(2024, 12, 1),
                     ],
                     StateCode.US_TN: [
                         date(2023, 1, 1),

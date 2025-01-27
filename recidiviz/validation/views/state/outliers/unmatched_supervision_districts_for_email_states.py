@@ -48,11 +48,12 @@ officers_with_metrics AS (
     o.supervisor_external_id,
     supervision_district
   FROM `{project_id}.{outliers_dataset}.supervision_officers_materialized` o 
-  LEFT JOIN `{project_id}.{outliers_dataset}.supervision_officer_metrics_materialized` m
-    ON o.state_code = m.state_code AND o.external_id = m.officer_id
+  LEFT JOIN `{project_id}.{outliers_dataset}.supervision_officer_outlier_status_materialized` s
+    ON o.state_code = s.state_code AND o.external_id = s.officer_id
   WHERE\
-    m.period = 'YEAR'
-    AND m.end_date = DATE_TRUNC(CURRENT_DATE("US/Eastern"), MONTH)
+    s.period = 'YEAR'
+    AND s.end_date = DATE_TRUNC(CURRENT_DATE("US/Eastern"), MONTH)
+    AND s.status = 'FAR'
 )
 , supervisors_for_officers_with_metrics AS (    
   SELECT DISTINCT

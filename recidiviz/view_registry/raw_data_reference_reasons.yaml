@@ -1352,6 +1352,9 @@ US_PA:
   RECIDIVIZ_REFERENCE_locations_from_supervision_contacts:
     reference_views.us_pa_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  RECIDIVIZ_REFERENCE_staff_roster:
+    reference_views.us_pa_location_metadata: |-
+      We pull locations that appear in the staff roster into location metadata
   RECIDIVIZ_REFERENCE_supervision_location_ids:
     reference_views.us_pa_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
