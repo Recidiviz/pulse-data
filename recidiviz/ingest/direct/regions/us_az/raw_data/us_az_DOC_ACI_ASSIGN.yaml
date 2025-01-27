@@ -59,11 +59,10 @@ columns:
       Unknown.
   - name: ACI_JOB_ID
     description: |-
-      FK to DOC_PROGRAM_DETAIL. ACTIVITY_ID <> PR_DETAIL_ID. 
-      Linked table provides detailed job description.
+      No description available in AZ data dictionary as of 1/27/25.
   - name: CATEGORY_ID
     description: |-
-      FK to DOC_PROGRAM_DETAIL. ACTIVITY_ID <> PR_DETAIL_ID.
+      No description available in AZ data dictionary as of 1/27/25.
     known_values:
       - value: "3"
         description: TODO(#36177) Document this value.
