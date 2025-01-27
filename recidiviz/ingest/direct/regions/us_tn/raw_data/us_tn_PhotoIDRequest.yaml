@@ -54,6 +54,8 @@ columns:
         description: "TODO(#7424): Update with definition."
       - value: W
         description: "TODO(#7424): Update with definition."
+      - value: U
+        description: "TODO(#7424): Update with definition."
   - name: RequestGender
     description: |-
       An abbreviation that identifies the sex of an offender.
