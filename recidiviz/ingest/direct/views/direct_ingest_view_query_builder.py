@@ -339,9 +339,12 @@ class DirectIngestViewQueryBuilder:
                 self.build_query(
                     config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                         raw_data_source_instance=raw_data_source_instance,
+                        # TZ information was causing this to not work on BigQuery when printed here.
+                        # However, having no TZ information defaults to UTC.
+                        # https://cloud.google.com/bigquery/docs/reference/standard-sql/datetime_functions#datetime
                         raw_data_datetime_upper_bound=datetime.datetime.now(
                             tz=pytz.UTC
-                        ),
+                        ).replace(tzinfo=None),
                     )
                 )
             )
