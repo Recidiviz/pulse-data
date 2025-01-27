@@ -83,11 +83,16 @@ staff_ids AS (
 
 officer_assignments_with_staff_and_person_ids AS (
     SELECT 
-        peid2.*,
-        oa.* EXCEPT(external_id),
+        peid2.state_code,
+        peid2.person_id,
+        peid2.external_id,
+        oa.start_date,
+        oa.end_date,
         oa.start_date AS original_start_date,
-        si.*,
+        si.staff_id,
+        si.STATUS,
         sei.staff_id AS incarceration_staff_assignment_id,
+        'OFFICER' AS row_type,
     FROM officer_assignments oa
     LEFT JOIN staff_ids si
     # TODO(#31389) Find another way to join other than string matching, 
@@ -105,6 +110,37 @@ officer_assignments_with_staff_and_person_ids AS (
         AND sei.state_code = "US_ND"
         AND sei.id_type = 'US_ND_ELITE_OFFICER'
     WHERE si.staff_id IS NOT NULL
+
+    UNION ALL 
+
+    -- When someone is in a CJ, we should override the original assignment
+    SELECT 
+        hu.state_code,
+        hu.person_id,
+        peid.external_id,
+        hu.start_date,
+        hu.end_date_exclusive AS end_date,
+        hu.start_date AS original_start_date,
+        IF(
+            REGEXP_CONTAINS(hu.housing_unit, r'(CJ-LRJ|CJ-BAR|CJ-HACTC)'),
+            'CJ2', -- Lake Region, Barnes and Heart of America Correctional and Treatment Center in Rugby
+            'CJ1' -- Burleigh, Ward, and McKenzie
+        ) AS staff_id,
+        'ACTIVE' AS STATUS,
+        CAST(NULL AS INT64) AS incarceration_staff_assignment_id,
+        'COUNTY_JAIL' AS row_type,
+    FROM `{{project_id}}.sessions.housing_unit_sessions_materialized` hu
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+    ON hu.state_code = peid.state_code
+        AND hu.person_id = peid.person_id
+        AND peid.id_type = 'US_ND_ELITE'
+    WHERE hu.state_code = 'US_ND'
+    AND hu.facility = 'CJ'
+    AND REGEXP_CONTAINS(
+        hu.housing_unit,
+        r'(CJ-LRJ|CJ-BAR|CJ-HACTC|CJ-BUR|CJ-WAR|CJ-MCK)'
+    )
+
 ),
 {create_sub_sessions_with_attributes('officer_assignments_with_staff_and_person_ids')}
 
@@ -121,10 +157,12 @@ SELECT
     "COUNSELOR" AS incarceration_staff_assignment_role_subtype,
     ROW_NUMBER() OVER (PARTITION BY person_id, start_date, end_date
                 /* Prioritize cases in the following order 
-                        1) Staff is active (as opposed to inactive)
-                        2) NULL end_date 
-                        3) Later assignment dates */
+                        1) County Jail cases
+                        2) Staff is active (as opposed to inactive)
+                        3) NULL end_date 
+                        4) Later assignment dates */
                         ORDER BY
+                                IF(row_type = 'COUNTY_JAIL', 0, 1),
                                 IF(STATUS ='ACTIVE', 0, 1),
                                 IF(end_date IS NULL, 0, 1),
                                 original_start_date DESC

@@ -28,6 +28,30 @@ US_ND_INCARCERATION_STAFF_TEMPLATE = f"""
         FROM `{{project_id}}.{{workflows_dataset}}.resident_record_materialized`
         WHERE state_code = "US_ND"
         AND officer_id IS NOT NULL
+    ), 
+
+    state_table AS (
+        SELECT 
+            STAFF_ID,
+            FIRST_NAME,
+            LAST_NAME,
+        FROM `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.recidiviz_elite_staff_members_latest`
+        
+        UNION ALL 
+        
+        -- If STAFF_ID is CJ1 or CJ2, the residents are currently in a county jail and their
+        --  officer assignment should reflect that.
+        SELECT 
+            "CJ1" AS STAFF_ID,
+            '' AS FIRST_NAME,
+            'County Jail 1 (Burleigh, Ward and McKenzie)' AS LAST_NAME,
+
+        UNION ALL 
+
+        SELECT 
+            "CJ2" AS STAFF_ID,
+            '' AS FIRST_NAME,
+            'County Jail 2 (Lake, Barnes and HACTC)' AS LAST_NAME,
     )
     , caseload_staff AS (
         SELECT DISTINCT
@@ -40,7 +64,7 @@ US_ND_INCARCERATION_STAFF_TEMPLATE = f"""
             CAST(NULL AS STRING) AS role_subtype,
             {get_pseudonymized_id_query_str("IF(state_code = 'US_IX', 'US_ID', state_code) || id")} AS pseudonymized_id 
         FROM caseload_staff_ids ids
-        INNER JOIN `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.recidiviz_elite_staff_members_latest` state_table
+        INNER JOIN  state_table
             ON REPLACE(REPLACE(state_table.STAFF_ID, '.00',''), ',', '') = ids.id
     )
     SELECT 
