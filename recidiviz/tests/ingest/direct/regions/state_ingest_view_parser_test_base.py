@@ -50,7 +50,10 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
-from recidiviz.tests.ingest.direct.fixture_util import DirectIngestTestFixturePath
+from recidiviz.tests.ingest.direct.fixture_util import (
+    DirectIngestTestFixturePath,
+    enum_parsing_fixture_path,
+)
 from recidiviz.tests.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_test import (
     ingest_mappingest_json_schema_path,
 )
@@ -312,11 +315,7 @@ class EnumManifestParsingTestCase(unittest.TestCase):
     def run_enum_manifest_parsing_test(
         self, file_tag: str, enum_parser_manifest: EnumMappingManifest
     ) -> None:
-        fixture_path = DirectIngestTestFixturePath.for_enum_raw_text_fixture(
-            region_code=self.state_code.value,
-            file_name=f"{file_tag}.csv",
-        ).full_path()
-
+        fixture_path = enum_parsing_fixture_path(self.state_code, file_tag)
         contents_handle = LocalFileContentsHandle(fixture_path, cleanup_file=False)
         for row in csv.DictReader(contents_handle.get_contents_iterator()):
             _ = enum_parser_manifest.build_from_row(

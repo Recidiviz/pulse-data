@@ -26,6 +26,7 @@ import pandas as pd
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_path,
@@ -40,6 +41,14 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 )
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 from recidiviz.utils.types import assert_type
+
+DIRECT_INGEST_FIXTURES_ROOT = os.path.dirname(direct_ingest_fixtures.__file__)
+ENUM_PARSING_FIXTURES_ROOT = os.path.join(DIRECT_INGEST_FIXTURES_ROOT, "enum_parsing")
+
+
+def enum_parsing_fixture_path(state_code: StateCode, file_tag: str) -> str:
+    """Returns the fixture file path for the given StateCode and file tag."""
+    return os.path.join(ENUM_PARSING_FIXTURES_ROOT, state_code.value, f"{file_tag}.csv")
 
 
 def _direct_ingest_raw_file_path(
@@ -130,9 +139,6 @@ class DirectIngestFixtureDataFileType(Enum):
 
     # Fixture files that contain expected ingest view results for ingest view tests.
     INGEST_VIEW_RESULTS = "ingest_view"
-
-    # Fixture files that contain enum raw text values for use in enum mappings tests.
-    ENUM_RAW_TEXT = "enum_raw_text"
 
     # Fixture files that contain ingest view results in CSV form that are used as inputs
     # to parser and ingest pipeline integration tests.
@@ -309,20 +315,6 @@ class DirectIngestTestFixturePath:
         )
 
     @classmethod
-    def for_enum_raw_text_fixture(
-        cls,
-        *,
-        region_code: str,
-        file_name: str,
-    ) -> "DirectIngestTestFixturePath":
-        return cls(
-            region_code=region_code,
-            fixture_file_type=DirectIngestFixtureDataFileType.ENUM_RAW_TEXT,
-            subdir_name=None,
-            file_name=file_name,
-        )
-
-    @classmethod
     def for_extract_and_merge_fixture(
         cls,
         *,
@@ -371,18 +363,6 @@ class DirectIngestTestFixturePath:
             )
         fixture_file_type = DirectIngestFixtureDataFileType(parts[1])
 
-        if fixture_file_type is DirectIngestFixtureDataFileType.ENUM_RAW_TEXT:
-            if len(parts) != 3:
-                raise ValueError(
-                    f"Expected 4 parts in relative path {relative_path}, found "
-                    f"{len(parts)}: {parts}"
-                )
-            return cls(
-                region_code=region_code,
-                fixture_file_type=fixture_file_type,
-                subdir_name=None,
-                file_name=parts[2],
-            )
         if len(parts) != 4:
             raise ValueError(
                 f"Expected 4 parts in relative path {relative_path}, found "
@@ -430,11 +410,6 @@ class DirectIngestTestFixturePath:
                 region_fixtures_directory_path,
                 self.fixture_file_type.value,
                 assert_type(self.subdir_name, str),
-            )
-
-        if self.fixture_file_type is DirectIngestFixtureDataFileType.ENUM_RAW_TEXT:
-            return os.path.join(
-                region_fixtures_directory_path, self.fixture_file_type.value
             )
 
         raise ValueError(f"Unexpected fixture file type [{self}]")
