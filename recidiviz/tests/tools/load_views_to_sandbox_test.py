@@ -36,6 +36,7 @@ class TestSandboxChangedAddresses(unittest.TestCase):
             changed_datasets_to_ignore=None,
             state_code_filter=None,
             changed_source_table_addresses=set(),
+            force_include_addresses=None,
         )
 
         self.assertEqual(set(), info.changed_view_addresses_to_ignore)
@@ -53,6 +54,7 @@ class TestSandboxChangedAddresses(unittest.TestCase):
             changed_source_table_addresses={
                 BigQueryAddress.from_str("source_dataset.my_table")
             },
+            force_include_addresses=None,
         )
 
         self.assertEqual(set(), info.changed_view_addresses_to_ignore)
@@ -73,6 +75,7 @@ class TestSandboxChangedAddresses(unittest.TestCase):
             changed_datasets_to_ignore=None,
             state_code_filter=None,
             changed_source_table_addresses=set(),
+            force_include_addresses=None,
         )
 
         self.assertEqual(set(), info.changed_view_addresses_to_ignore)
@@ -110,6 +113,7 @@ class TestSandboxChangedAddresses(unittest.TestCase):
             changed_datasets_to_ignore=None,
             state_code_filter=None,
             changed_source_table_addresses=set(),
+            force_include_addresses=None,
         )
 
         self.assertEqual(
@@ -148,6 +152,7 @@ class TestSandboxChangedAddresses(unittest.TestCase):
             changed_datasets_to_ignore={"dataset_1"},
             state_code_filter=None,
             changed_source_table_addresses=set(),
+            force_include_addresses=None,
         )
         self.assertEqual(
             {
@@ -191,6 +196,7 @@ class TestSandboxChangedAddresses(unittest.TestCase):
             # This filter does not match any of the added/updated views
             state_code_filter=StateCode.US_WW,
             changed_source_table_addresses=set(),
+            force_include_addresses=None,
         )
 
         # Both state-specific views ignored because they don't match US_WW
@@ -241,6 +247,7 @@ class TestSandboxChangedAddresses(unittest.TestCase):
             # This filter matches one of the added/updated views
             state_code_filter=StateCode.US_XX,
             changed_source_table_addresses=set(),
+            force_include_addresses=None,
         )
 
         # US_YY views are ignored but US_XX are included
@@ -276,6 +283,55 @@ class TestSandboxChangedAddresses(unittest.TestCase):
         )
         self.assertTrue(info.has_changes_to_load)
 
+    def test_state_code_filter_force_include(self) -> None:
+        info = SandboxChangedAddresses(
+            view_address_to_change_type={
+                BigQueryAddress.from_str("dataset_1.my_view"): ViewChangeType.ADDED,
+                BigQueryAddress.from_str("dataset_2.my_view"): ViewChangeType.UPDATED,
+                BigQueryAddress.from_str("dataset_3.my_view"): ViewChangeType.UPDATED,
+                BigQueryAddress.from_str("us_xx_dataset.my_view"): ViewChangeType.ADDED,
+                BigQueryAddress.from_str(
+                    "dataset.us_yy_my_view"
+                ): ViewChangeType.UPDATED,
+            },
+            changed_datasets_to_include=None,
+            changed_datasets_to_ignore=None,
+            # This filter matches one of the added/updated views
+            state_code_filter=StateCode.US_YY,
+            changed_source_table_addresses=set(),
+            force_include_addresses={BigQueryAddress.from_str("us_xx_dataset.my_view")},
+        )
+
+        # US_XX view would be ignored, but it was force included
+        self.assertEqual(set(), info.changed_view_addresses_to_ignore)
+
+        self.assertEqual(
+            {
+                BigQueryAddress.from_str("dataset_1.my_view"),
+                BigQueryAddress.from_str("dataset_2.my_view"),
+                BigQueryAddress.from_str("dataset_3.my_view"),
+                BigQueryAddress.from_str("us_xx_dataset.my_view"),
+                BigQueryAddress.from_str("dataset.us_yy_my_view"),
+            },
+            info.changed_view_addresses_to_load,
+        )
+        self.assertEqual(
+            {
+                BigQueryAddress.from_str("dataset_1.my_view"),
+                BigQueryAddress.from_str("us_xx_dataset.my_view"),
+            },
+            info.added_views_to_load,
+        )
+        self.assertEqual(
+            {
+                BigQueryAddress.from_str("dataset_2.my_view"),
+                BigQueryAddress.from_str("dataset_3.my_view"),
+                BigQueryAddress.from_str("dataset.us_yy_my_view"),
+            },
+            info.updated_views_to_load,
+        )
+        self.assertTrue(info.has_changes_to_load)
+
     def test_disallow_changed_datasets_to_ignore_and_include(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -296,6 +352,7 @@ class TestSandboxChangedAddresses(unittest.TestCase):
                 changed_datasets_to_ignore={"dataset_1"},
                 state_code_filter=None,
                 changed_source_table_addresses=set(),
+                force_include_addresses=None,
             )
 
 
@@ -309,6 +366,7 @@ class TestSummaryForAutoSandbox(unittest.TestCase):
             changed_datasets_to_ignore=None,
             state_code_filter=None,
             changed_source_table_addresses=set(),
+            force_include_addresses=None,
         )
         summary = summary_for_auto_sandbox(
             changed_addresses=info, all_view_addresses_to_load=set()
@@ -371,6 +429,7 @@ class TestSummaryForAutoSandbox(unittest.TestCase):
                 BigQueryAddress.from_str("source_table_dataset.table_2"),
                 BigQueryAddress.from_str("source_table_dataset.table_3"),
             },
+            force_include_addresses=None,
         )
         summary = summary_for_auto_sandbox(
             changed_addresses=info,

@@ -418,63 +418,69 @@ def confirm_rebased_on_latest_deploy() -> None:
         sys.exit(1)
 
 
-def _check_for_invalid_ignores(
+def _find_invalid_ignores(
     full_dag_walker: BigQueryViewDagWalker,
     address_to_change_type: Dict[BigQueryAddress, ViewChangeType],
     addresses_to_load: Set[BigQueryAddress],
-) -> None:
-    """Exits if any views that will be loaded (in |addresses_to_load|) are downstream
-    of an ignored view that has not yet been deployed.
+) -> set[BigQueryAddress]:
+    """Returns the addresses of any views that weren't originally collected as views to
+    load to the sandbox, but which must be loaded because a) they were added since the
+    last deploy and b) there is a direct child view of this added view that *will* be
+    loaded into the sandbox.
+
+    We must add this list of newly added views to our sandbox otherwise the child views
+    will crash at load time.
     """
-    ignored_added_views = []
-    invalid_views_to_load = []
+    all_ignored_added_views = {
+        address
+        for address, view_change_type in address_to_change_type.items()
+        if view_change_type == ViewChangeType.ADDED and address not in addresses_to_load
+    }
+
+    ignored_added_views_with_children_in_sandbox = set()
+    invalid_views_to_load = set()
 
     def find_invalid_ignores(
         v: BigQueryView, parent_results: Dict[BigQueryView, bool]
     ) -> bool:
-        view_change_type = (
-            address_to_change_type[v.address]
-            if v.address in address_to_change_type
-            else None
-        )
+        direct_parent_added_views_that_are_ignored = {
+            parent_view.address
+            for parent_view, is_ignored_added_view in parent_results.items()
+            if is_ignored_added_view
+        }
 
-        is_downstream_of_new_ignored_view = any(parent_results.values())
+        if v.address in all_ignored_added_views:
+            return True
 
-        if v.address not in addresses_to_load:
-            if not view_change_type:
-                # All references to this downstream view will be to the normal version
-                # in BQ.
-                return False
+        if (
+            v.address in addresses_to_load
+            and direct_parent_added_views_that_are_ignored
+        ):
+            ignored_added_views_with_children_in_sandbox.update(
+                direct_parent_added_views_that_are_ignored
+            )
+            invalid_views_to_load.add(v.address)
 
-            if view_change_type == ViewChangeType.ADDED:
-                ignored_added_views.append(v.address)
-                return True
-            return is_downstream_of_new_ignored_view
-
-        if is_downstream_of_new_ignored_view:
-            # This is a view that will be loaded to the sandbox that is downstream of
-            # a new view that will NOT be loaded to the sandbox. This view (or any
-            # changed views upstream of this view) must be ignored as well.
-            invalid_views_to_load.append(v.address)
-        return is_downstream_of_new_ignored_view
+        # This view is not itself an ignored added view
+        return False
 
     full_dag_walker.process_dag(find_invalid_ignores, synchronous=True)
 
     if invalid_views_to_load:
-        logging.error(
-            "Attempting to load these views which are children of views that have been "
-            "added since the last deploy but were excluded from this sandbox run:\n%s",
+        logging.warning(
+            "Attempting to load these views which are direct children of views that "
+            "have been added since the last deploy but were excluded from this sandbox "
+            "run:\n%s",
             BigQueryAddress.addresses_to_str(invalid_views_to_load, indent_level=2),
         )
-        logging.error(
-            "New views excluded from this sandbox run:\n%s",
-            BigQueryAddress.addresses_to_str(ignored_added_views, indent_level=2),
+        logging.warning(
+            "Adding these new views above to the sandbox run to prevent the child views "
+            "from crashing:\n%s",
+            BigQueryAddress.addresses_to_str(
+                ignored_added_views_with_children_in_sandbox, indent_level=2
+            ),
         )
-        logging.error(
-            "You must include these new views in the sandbox load or ignore all "
-            "changed downstream parents as well."
-        )
-        sys.exit(1)
+    return ignored_added_views_with_children_in_sandbox
 
 
 @attr.define(kw_only=True)
@@ -493,6 +499,8 @@ class SandboxChangedAddresses:
 
     changed_source_table_addresses: set[BigQueryAddress]
 
+    force_include_addresses: set[BigQueryAddress] | None
+
     def __attrs_post_init__(self) -> None:
         if self.changed_datasets_to_include and self.changed_datasets_to_ignore:
             raise ValueError(
@@ -509,18 +517,23 @@ class SandboxChangedAddresses:
             address
             for address in self.view_address_to_change_type
             if (
-                self.changed_datasets_to_ignore
-                and address.dataset_id in self.changed_datasets_to_ignore
+                not self.force_include_addresses
+                or address not in self.force_include_addresses
             )
-            or (
-                self.changed_datasets_to_include
-                and address.dataset_id not in self.changed_datasets_to_include
-            )
-            or (
-                self.state_code_filter is not None
-                and address.state_code_for_address() is not None
-                and address.state_code_for_address() != self.state_code_filter
-                and address.table_id != "us_or_location_metadata"
+            and (
+                (
+                    self.changed_datasets_to_ignore
+                    and address.dataset_id in self.changed_datasets_to_ignore
+                )
+                or (
+                    self.changed_datasets_to_include
+                    and address.dataset_id not in self.changed_datasets_to_include
+                )
+                or (
+                    self.state_code_filter is not None
+                    and address.state_code_for_address() is not None
+                    and address.state_code_for_address() != self.state_code_filter
+                )
             )
         }
 
@@ -691,7 +704,40 @@ def get_sandbox_changed_addresses(
         ),
         state_code_filter=state_code_filter,
         changed_source_table_addresses=changed_source_table_addresses,
+        force_include_addresses=None,
     )
+
+
+def _get_sandbox_leaf_node_candidate_addresses(
+    view_addresses_in_full_dag: set[BigQueryAddress],
+    changed_addresses_info: SandboxChangedAddresses,
+    load_up_to_addresses: list[BigQueryAddress] | None,
+    load_up_to_datasets: list[str] | None,
+    load_changed_views_only: bool,
+) -> set[BigQueryAddress]:
+    """Returns the set of views that could be leaf nodes of the sandbox view graph, if
+    no other child views have also been specified as views to load.
+    """
+    if load_up_to_datasets or load_up_to_addresses:
+        end_addresses = set(load_up_to_addresses) if load_up_to_addresses else set()
+        end_addresses |= (
+            {
+                address
+                for address in view_addresses_in_full_dag
+                if address.dataset_id in load_up_to_datasets
+            }
+            if load_up_to_datasets
+            else set()
+        )
+    elif load_changed_views_only:
+        end_addresses = changed_addresses_info.changed_view_addresses_to_load
+    else:
+        raise ValueError(
+            "Expected one of load_changed_views_only, load_up_to_datasets or "
+            "load_up_to_addresses to be set."
+        )
+
+    return end_addresses
 
 
 def collect_changed_views_and_descendants_to_load(
@@ -734,6 +780,7 @@ def collect_changed_views_and_descendants_to_load(
     )
 
     full_dag_walker = BigQueryViewDagWalker(all_views)
+    logging.info("Gathering views to load to sandbox...")
     changed_addresses_info = get_sandbox_changed_addresses(
         full_dag_walker=full_dag_walker,
         input_source_table_dataset_overrides_dict=input_source_table_dataset_overrides_dict,
@@ -742,43 +789,54 @@ def collect_changed_views_and_descendants_to_load(
         state_code_filter=state_code_filter,
     )
 
-    if changed_addresses_info.has_changes_to_load:
-        logging.info("Gathering views to load to sandbox...")
-        if load_up_to_datasets or load_up_to_addresses:
-            end_addresses = set(load_up_to_addresses) if load_up_to_addresses else set()
-            end_addresses |= (
-                {
-                    vb.address
-                    for vb in view_builders_in_full_dag
-                    if vb.dataset_id in load_up_to_datasets
-                }
-                if load_up_to_datasets
-                else set()
+    if not changed_addresses_info.has_changes_to_load:
+        print(
+            summary_for_auto_sandbox(
+                changed_addresses=changed_addresses_info,
+                all_view_addresses_to_load=set(),
             )
-        elif load_changed_views_only:
-            end_addresses = changed_addresses_info.changed_view_addresses_to_load
-        else:
-            raise ValueError(
-                "Expected one of load_changed_views_only, load_up_to_datasets or "
-                "load_up_to_addresses to be set."
-            )
+        )
+        if prompt:
+            prompt_for_confirmation("Found no views to load - continue?")
+        return []
 
+    end_addresses = _get_sandbox_leaf_node_candidate_addresses(
+        view_addresses_in_full_dag=set(full_dag_walker.nodes_by_address),
+        changed_addresses_info=changed_addresses_info,
+        load_up_to_addresses=load_up_to_addresses,
+        load_up_to_datasets=load_up_to_datasets,
+        load_changed_views_only=load_changed_views_only,
+    )
+
+    force_include_addresses = set()
+    while True:
         addresses_to_load = full_dag_walker.get_all_node_addresses_between_start_and_end_collections(
             start_source_addresses=changed_addresses_info.changed_source_table_addresses,
             start_node_addresses=changed_addresses_info.changed_view_addresses_to_load,
             end_node_addresses=end_addresses,
         )
-        collected_builders = [
-            vb for vb in view_builders_in_full_dag if vb.address in addresses_to_load
-        ]
-    else:
-        collected_builders = []
+        invalid_ignored_addresses = _find_invalid_ignores(
+            full_dag_walker=full_dag_walker,
+            address_to_change_type=changed_addresses_info.view_address_to_change_type,
+            addresses_to_load=addresses_to_load,
+        )
 
-    _check_for_invalid_ignores(
-        full_dag_walker=full_dag_walker,
-        address_to_change_type=changed_addresses_info.view_address_to_change_type,
-        addresses_to_load={b.address for b in collected_builders},
-    )
+        if not invalid_ignored_addresses:
+            break
+
+        force_include_addresses.update(invalid_ignored_addresses)
+        changed_addresses_info = SandboxChangedAddresses(
+            view_address_to_change_type=changed_addresses_info.view_address_to_change_type,
+            changed_datasets_to_include=changed_addresses_info.changed_datasets_to_include,
+            changed_datasets_to_ignore=changed_addresses_info.changed_datasets_to_ignore,
+            state_code_filter=changed_addresses_info.state_code_filter,
+            changed_source_table_addresses=changed_addresses_info.changed_source_table_addresses,
+            force_include_addresses=force_include_addresses,
+        )
+
+    collected_builders = [
+        vb for vb in view_builders_in_full_dag if vb.address in addresses_to_load
+    ]
 
     print(
         summary_for_auto_sandbox(
