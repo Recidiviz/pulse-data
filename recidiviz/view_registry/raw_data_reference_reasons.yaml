@@ -1387,6 +1387,19 @@ US_PA:
   dbo_RelStatus:
     task_eligibility_criteria_us_pa.not_assigned_ineligible_stat_code: |-
       Some status codes do not fit within our existing mapping
+  dbo_Release:
+    task_eligibility_criteria_us_pa.meets_special_circumstances_criteria_for_time_served:
+      |-
+      Agents use release dates to determine start of supervision. TODO(#37715) to replace with sentence v2
+    task_eligibility_criteria_us_pa.on_supervision_at_least_one_year: |-
+      Agents use release dates to determine start of supervision. TODO(#37715) to replace with sentence v2
+    workflows_views.client_record: |-
+      Agents use release dates to determine start of supervision. TODO(#37715) to replace with sentence v2
+    workflows_views.us_pa_complete_transfer_to_special_circumstances_supervision_request_record:
+      |-
+      Agents use release dates to determine start of supervision. TODO(#37715) to replace with sentence v2
+    workflows_views.us_pa_transfer_to_administrative_supervision_form_record: |-
+      Agents use release dates to determine start of supervision. TODO(#37715) to replace with sentence v2
   dbo_Senrec:
     analyst_data.projected_discharges: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

@@ -17,8 +17,8 @@
 """Helper fragments to import data for case notes in PA"""
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     nonnull_end_date_exclusive_clause,
+    sessionize_ledger_data,
 )
 
 
@@ -137,34 +137,22 @@ def description_refers_to_serious_bodily_injury() -> str:
 
 
 def us_pa_supervision_super_sessions() -> str:
-    """Custom supervision logic for time served on supervision in PA
-    The supervision period stays open as long as the state says they're on supervision, unless they're simultaneously
-        in general incarceration.
-    In addition, we manually add shock incarceration and parole board holds since the state does not handle these consistently"""
-    # TODO(#31253) - Move this upstream of prioritized super sessions
+    """Custom logic for time served on supervision in PA. This fxn creates spans of time that a reentrant
+    has a given raw data release date, which is what agents use to determine time spent on supervision."""
+    # TODO(#37715) - Pull this from sentencing once sentencing v2 is implemented in PA
     return f"""
-        WITH supervision_periods AS (
-            SELECT 
-                state_code,
+        WITH release_dates AS (
+            SELECT state_code,
                 person_id,
-                start_date,
-                end_date_exclusive,
-            FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
-            WHERE (open_supervision_cl1 IS NOT NULL -- client has an open supervision period
-                    OR compartment_level_2 IN ('PAROLE_BOARD_HOLD', 'SHOCK_INCARCERATION')) -- or a PBH/shock inc. 
-                AND compartment_level_2 <> 'GENERAL' -- but not an actual prison term
-                AND state_code = 'US_PA'
+                DATE(update_datetime) AS update_date,
+                DATE(CAST(RelReleaseDateYear AS INT64), CAST(RelReleaseDateMonth AS INT64), CAST(RelReleaseDateDay AS INT64)) AS release_date,
+            FROM `{{project_id}}.{{us_pa_raw_data_dataset}}.dbo_Release` rel
+            LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei 
+              ON rel.ParoleNumber = pei.external_id
+              AND pei.id_type = 'US_PA_PBPP'
         )
-        /* this aggregates all of the above periods */
-            SELECT
-                person_id,
-                state_code,
-                super_session_id,
-                start_date,
-                end_date_exclusive,
-                FROM ({aggregate_adjacent_spans(table_name='supervision_periods',
-                                                session_id_output_name='super_session_id',
-                                                end_date_field_name='end_date_exclusive')})  
+        SELECT * 
+        FROM ({sessionize_ledger_data(table_name = 'release_dates', index_columns = ['state_code', 'person_id'], update_column_name = 'update_date', attribute_columns = ['release_date'])})
     """
 
 
@@ -517,7 +505,7 @@ def case_notes_helper() -> str:
     (
     WITH supervision_starts AS (
       SELECT person_id, 
-        start_date, 
+        release_date AS start_date, 
       FROM ({us_pa_supervision_super_sessions()})
       WHERE state_code = 'US_PA'
         AND end_date_exclusive IS NULL

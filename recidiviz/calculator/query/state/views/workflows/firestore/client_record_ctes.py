@@ -207,7 +207,7 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
         UNION ALL
         SELECT 
             person_id,
-            start_date
+            release_date AS start_date,
         FROM ({us_pa_supervision_super_sessions()})
         WHERE end_date_exclusive IS NULL
     ),
