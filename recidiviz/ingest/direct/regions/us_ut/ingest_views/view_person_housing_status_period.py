@@ -56,7 +56,7 @@ SELECT
         AND 
         DATE(addr_strt_dt) <= @update_timestamp
         AND 
-        DATE(addr_end_dt) <= @update_timestamp
+        (addr_end_dt IS NULL OR DATE(addr_end_dt) <= @update_timestamp)
     )
   AND
     (
@@ -64,8 +64,6 @@ SELECT
         AND 
         city NOT IN ('UNKNOWN', 'UNKOWN', 'MEXICO')
     )
-  AND
-        vrfy_rslt_flg IS NOT NULL
   AND
     (
         psda_street NOT LIKE '%DEPORTED%'
