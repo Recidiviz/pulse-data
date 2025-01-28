@@ -199,14 +199,13 @@ def _collect_cloudsql_mirror_source_table_collections() -> list[SourceTableColle
 
 @cache
 def build_source_table_repository_for_collected_schemata(
-    # We require project_id as an argument so that we don't return incorrect cached
-    # results when metadata.project_id() changes (e.g. in tests).
-    project_id: str,
+    project_id: str | None,
 ) -> SourceTableRepository:
     """Builds a source table repository for all source tables in a project's BigQuery graph
-    If the project is unspecified, source tables for all projects are collected.
+    If the project is unspecified, all defined source tables are collected, including
+    source tables that may only exist in one project.
     """
-    if project_id != metadata.project_id():
+    if project_id is not None and project_id != metadata.project_id():
         raise ValueError(
             f"Expected project_id [{project_id}] to match metadata.project_id() "
             f"[{metadata.project_id()}]"
@@ -214,12 +213,8 @@ def build_source_table_repository_for_collected_schemata(
 
     return SourceTableRepository(
         source_table_collections=[
-            *collect_externally_managed_source_table_collections(
-                project_id=metadata.project_id()
-            ),
-            *collect_yaml_managed_source_table_collections(
-                project_id=metadata.project_id()
-            ),
+            *collect_externally_managed_source_table_collections(project_id=project_id),
+            *collect_yaml_managed_source_table_collections(project_id=project_id),
             *collect_raw_data_source_table_collections(),
             *_collect_cloudsql_mirror_source_table_collections(),
             *collect_duplicative_us_mi_validation_oneoffs(),

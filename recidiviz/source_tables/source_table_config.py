@@ -101,6 +101,13 @@ class SourceTableConfig:
         return [f.name for f in self.schema_fields]
 
     @property
+    def all_schema_fields(self) -> list[SchemaField]:
+        """Returns all schema fields, both those explicitized in our source table configs,
+        as well as implicit psuedocolumns added by BigQuery.
+        """
+        return [*self.schema_fields, *self.pseudocolumns]
+
+    @property
     def pseudocolumns(self) -> list[SchemaField]:
         """Returns a list of pseudocolumns that are available for query on this table.
         These are columns that will not be returned by a SELECT * query on this table,
@@ -140,7 +147,7 @@ class SourceTableConfig:
             psuedocolumns.append(
                 SchemaField(
                     name=EXTERNAL_DATA_FILE_NAME_PSEUDOCOLUMN,
-                    field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,
+                    field_type=bigquery.enums.SqlTypeNames.STRING.value,
                     mode="REQUIRED",
                 )
             )

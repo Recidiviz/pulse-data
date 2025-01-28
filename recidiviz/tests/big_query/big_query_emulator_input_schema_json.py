@@ -35,6 +35,8 @@ SOURCE_TABLES_JSON_PATH = os.path.join(
     SOURCE_TABLES_FIXTURES_DIR, SOURCE_TABLES_FIXTURE_FILE_NAME
 )
 
+NESTED_TYPES = {"STRUCT", "RECORD"}
+
 
 # The JSON classes below are attrs-based dataclasses intended for serialization to the file-format used  by
 # the emulator to load initial data.
@@ -50,7 +52,7 @@ class ColumnJSON:
 
     @fields.validator
     def validate_is_struct_type(self, _attribute: str, value: list | None) -> None:
-        if self.type != "STRUCT" and value:
+        if self.type not in NESTED_TYPES and value:
             raise ValueError("Cannot set struct fields on non-struct type column")
 
 
@@ -73,7 +75,8 @@ class DatasetJSON:
 @attr.s(auto_attribs=True)
 class ProjectJSON:
     """Represents a single BQ project.
-    Can be transformed to a dictionary suitable for conversion to JSON via attrs.as_dict()"""
+    Can be transformed to a dictionary suitable for conversion to JSON via attrs.as_dict()
+    """
 
     id: str
     datasets: list[DatasetJSON]
@@ -122,22 +125,8 @@ def _update_with_all_source_table_schemas(
 
     for address, table in source_tables_by_address.items():
         columns = [
-            build_column_from_schema_field(column) for column in table.schema_fields
+            build_column_from_schema_field(column) for column in table.all_schema_fields
         ]
-
-        # Tables with `external_data_configuration` specified get a special _FILE_NAME meta column
-        if table.external_data_configuration is not None and any(
-            uri.startswith("gs://")
-            for uri in table.external_data_configuration.source_uris
-        ):
-            columns.append(
-                ColumnJSON(
-                    name="_FILE_NAME",
-                    type="STRING",
-                    mode="REQUIRED",
-                    fields=[],
-                ),
-            )
 
         project_json.add_table(
             address.dataset_id, TableJSON(id=address.table_id, columns=columns)

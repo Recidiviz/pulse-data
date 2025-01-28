@@ -946,10 +946,9 @@ class ViewQueryFormatTest(unittest.TestCase):
         self._run_query_format_test(_get_view_errors)
 
     def test_view_query_format__can_compute_complexity_score(self) -> None:
-        with local_project_id_override(GCP_PROJECT_STAGING):
-            repository = build_source_table_repository_for_collected_schemata(
-                project_id=metadata.project_id()
-            )
+        repository = build_source_table_repository_for_collected_schemata(
+            project_id=None
+        )
 
         address_to_table_complexity_score_mapper = ParentAddressComplexityScoreMapper(
             source_table_repository=repository,
