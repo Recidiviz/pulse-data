@@ -20,7 +20,6 @@ import logging
 from typing import List, Optional, Tuple
 
 from google.cloud import bigquery
-from google.cloud.bigquery.job import LoadJob
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
@@ -142,59 +141,35 @@ class DirectIngestRawFileLoadManager:
         be able to load ascii into BQ without doing any normalization of the csv data, and we can translate
         any values containing only ascii control characters to nulls in the transformation step.
         """
-        try:
-            load_job: LoadJob = (
-                self.big_query_client.load_table_from_cloud_storage_async(
-                    source_uris=[p.uri() for p in paths],
-                    destination_address=destination_address,
-                    destination_table_schema=table_schema,
-                    write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-                    skip_leading_rows=skip_leading_rows,
-                    preserve_ascii_control_characters=True,
-                    encoding=encoding,
-                    field_delimiter=separator,
-                    job_labels=[
-                        RawDataImportStepResourceLabel.RAW_DATA_TEMP_LOAD.value
-                    ],
-                )
-            )
-        except Exception as e:
-            logging.error(
-                "Failed to start load job for [%s] w/ paths: [%s]",
-                destination_address.to_str(),
-                paths,
-            )
-            raise e
-
-        try:
-            logging.info(
-                "[%s] Waiting for load of [%s] paths into [%s]",
-                datetime.datetime.now().isoformat(),
-                len(paths),
-                load_job.destination,
-            )
-            load_job.result()
-            logging.info(
-                "[%s] BigQuery load of [%s] paths complete",
-                datetime.datetime.now().isoformat(),
-                len(paths),
-            )
-            if should_delete_temp_files:
-                self._delete_temp_files(paths)
-        except Exception as e:
-            logging.error(
-                "Insert job [%s] failed with errors: [%s]",
-                load_job.job_id,
-                load_job.errors,
-            )
-            raise e
+        logging.info(
+            "[%s] Starting load of [%s] paths into [%s]",
+            datetime.datetime.now().isoformat(),
+            len(paths),
+            destination_address.to_str(),
+        )
+        load_job = self.big_query_client.load_table_from_cloud_storage(
+            source_uris=[p.uri() for p in paths],
+            destination_address=destination_address,
+            destination_table_schema=table_schema,
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+            skip_leading_rows=skip_leading_rows,
+            preserve_ascii_control_characters=True,
+            encoding=encoding,
+            field_delimiter=separator,
+            job_labels=[RawDataImportStepResourceLabel.RAW_DATA_TEMP_LOAD.value],
+        )
+        logging.info(
+            "[%s] BigQuery load of [%s] paths complete",
+            datetime.datetime.now().isoformat(),
+            len(paths),
+        )
+        if should_delete_temp_files:
+            self._delete_temp_files(paths)
 
         loaded_row_count = load_job.output_rows
 
         if loaded_row_count is None:
-            raise ValueError(
-                f"Insert job [{load_job.job_id}] row count indicates no rows were loaded"
-            )
+            raise ValueError("Insert job row count indicates no rows were loaded")
 
         return loaded_row_count
 

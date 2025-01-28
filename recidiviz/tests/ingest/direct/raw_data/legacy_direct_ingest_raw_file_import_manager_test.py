@@ -98,7 +98,7 @@ class LegacyDirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.mock_big_query_client = create_autospec(BigQueryClient)
         self.num_lines_uploaded = 0
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.side_effect = (
+        self.mock_big_query_client.load_table_from_cloud_storage.side_effect = (
             self.mock_import_raw_file_to_big_query
         )
 
@@ -232,7 +232,7 @@ class LegacyDirectIngestRawFileImportManagerTest(unittest.TestCase):
         # Delete should not be called since the table does not exist
         self.mock_big_query_client.delete_from_table_async.assert_not_called()
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_called_with(
             source_uris=[path.uri()],
             destination_address=BigQueryAddress(
                 dataset_id="us_xx_raw_data",
@@ -274,7 +274,7 @@ class LegacyDirectIngestRawFileImportManagerTest(unittest.TestCase):
             + str(self._metadata_for_unprocessed_file_path(file_path).file_id),
         )
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_called_with(
             source_uris=[path.uri()],
             destination_address=BigQueryAddress(
                 dataset_id="us_xx_raw_data",
@@ -447,7 +447,7 @@ FROM deleted_diff
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_called_with(
             source_uris=[path.uri()],
             destination_address=BigQueryAddress(
                 dataset_id="us_xx_raw_data",
@@ -481,7 +481,7 @@ FROM deleted_diff
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_called_with(
             source_uris=[path.uri()],
             destination_address=BigQueryAddress(
                 dataset_id="us_xx_raw_data",
@@ -516,7 +516,7 @@ FROM deleted_diff
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_called_with(
             source_uris=[path.uri()],
             destination_address=BigQueryAddress(
                 dataset_id="us_xx_raw_data",
@@ -551,7 +551,7 @@ FROM deleted_diff
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_called_with(
             source_uris=[path.uri()],
             destination_address=BigQueryAddress(
                 dataset_id="us_xx_raw_data",
@@ -598,7 +598,7 @@ FROM deleted_diff
 
         self.assertEqual(5, len(self.fs.gcs_file_system.uploaded_paths))
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_called_with(
             source_uris=sorted(
                 [p.uri() for p in self.fs.gcs_file_system.uploaded_paths]
             ),
@@ -647,7 +647,7 @@ FROM deleted_diff
 
         self.assertEqual(3, len(self.fs.gcs_file_system.uploaded_paths))
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_called_with(
             source_uris=sorted(
                 [p.uri() for p in self.fs.gcs_file_system.uploaded_paths]
             ),
@@ -682,7 +682,7 @@ FROM deleted_diff
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_called_with(
             source_uris=[path.uri()],
             destination_address=BigQueryAddress(
                 dataset_id="us_xx_raw_data",
@@ -712,7 +712,7 @@ FROM deleted_diff
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_called_with(
             source_uris=[path.uri()],
             destination_address=BigQueryAddress(
                 dataset_id="us_xx_raw_data",
@@ -779,7 +779,7 @@ FROM deleted_diff
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_called_with(
             source_uris=[path.uri()],
             destination_address=BigQueryAddress(
                 dataset_id="us_xx_raw_data",
@@ -806,7 +806,7 @@ FROM deleted_diff
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_called_with(
             source_uris=[path.uri()],
             destination_address=BigQueryAddress(
                 dataset_id="us_xx_raw_data",
@@ -833,7 +833,7 @@ FROM deleted_diff
 
         self.assertEqual(0, len(self.fs.gcs_file_system.uploaded_paths))
 
-        self.mock_big_query_client.load_table_from_cloud_storage_async.assert_not_called()
+        self.mock_big_query_client.load_table_from_cloud_storage.assert_not_called()
         self.assertEqual(0, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
 

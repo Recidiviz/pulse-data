@@ -27,7 +27,6 @@ from typing import Any, Dict, Iterator, List
 from unittest.mock import MagicMock, call, create_autospec, patch
 
 import __main__
-import pandas as pd
 from freezegun import freeze_time
 from google.api_core.future.polling import DEFAULT_RETRY, PollingFuture
 from google.api_core.retry import Retry
@@ -555,11 +554,11 @@ class BigQueryClientImplTest(unittest.TestCase):
             self.mock_client.extract_table.assert_not_called()
 
     def test_load_table_async_create_dataset(self) -> None:
-        """Test that load_table_from_cloud_storage_async tries to create a parent dataset."""
+        """Test that load_table_from_cloud_storage tries to create a parent dataset."""
 
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
-        self.bq_client.load_table_from_cloud_storage_async(
+        self.bq_client.load_table_from_cloud_storage(
             destination_address=self.mock_table_address,
             destination_table_schema=[
                 SchemaField(
@@ -577,10 +576,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.load_table_from_uri.assert_called()
 
     def test_load_table_async_dataset_exists(self) -> None:
-        """Test that load_table_from_cloud_storage_async does not try to create a
+        """Test that load_table_from_cloud_storage does not try to create a
         parent dataset if it already exists."""
 
-        self.bq_client.load_table_from_cloud_storage_async(
+        self.bq_client.load_table_from_cloud_storage(
             destination_address=self.mock_table_address,
             destination_table_schema=[
                 SchemaField(
@@ -596,37 +595,12 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.assert_not_called()
         self.mock_client.load_table_from_uri.assert_called()
 
-    def test_load_into_table_from_dataframe_async_create_dataset(self) -> None:
-        """Test that load_into_table_from_dataframe_async tries to create a parent dataset."""
+    def test_load_into_table_from_file_create_dataset(self) -> None:
+        """Test that load_into_table_from_file tries to create a parent dataset."""
 
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
-        self.bq_client.load_into_table_from_dataframe_async(
-            destination_address=self.mock_table_address,
-            source=pd.DataFrame({"a": [1, 2]}),
-        )
-
-        self.mock_client.create_dataset.assert_called()
-        self.mock_client.load_table_from_dataframe.assert_called()
-
-    def test_load_into_table_from_dataframe_async_dataset_exists(self) -> None:
-        """Test that load_into_table_from_dataframe_async does not try to create a
-        parent dataset if it already exists."""
-
-        self.bq_client.load_into_table_from_dataframe_async(
-            destination_address=self.mock_table_address,
-            source=pd.DataFrame({"a": [1, 2]}),
-        )
-
-        self.mock_client.create_dataset.assert_not_called()
-        self.mock_client.load_table_from_dataframe.assert_called()
-
-    def test_load_into_table_from_file_async_create_dataset(self) -> None:
-        """Test that load_into_table_from_file_async tries to create a parent dataset."""
-
-        self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
-
-        self.bq_client.load_into_table_from_file_async(
+        self.bq_client.load_into_table_from_file(
             destination_address=self.mock_table_address,
             source=io.StringIO("data"),
             schema=self.mock_schema,
@@ -635,11 +609,11 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.assert_called()
         self.mock_client.load_table_from_file.assert_called()
 
-    def test_load_into_table_from_file_async_dataset_exists(self) -> None:
-        """Test that load_into_table_from_file_async does not try to create a
+    def test_load_into_table_from_file_dataset_exists(self) -> None:
+        """Test that load_into_table_from_file does not try to create a
         parent dataset if it already exists."""
 
-        self.bq_client.load_into_table_from_file_async(
+        self.bq_client.load_into_table_from_file(
             destination_address=self.mock_table_address,
             source=io.StringIO("data"),
             schema=self.mock_schema,
@@ -1132,10 +1106,10 @@ class BigQueryClientImplTest(unittest.TestCase):
             job_config=job_config,
         )
 
-    def test_load_into_table_from_cloud_storage_async(self) -> None:
+    def test_load_into_table_from_cloud_storage(self) -> None:
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
-        self.bq_client.load_table_from_cloud_storage_async(
+        self.bq_client.load_table_from_cloud_storage(
             destination_address=self.mock_table_address,
             destination_table_schema=[SchemaField("my_column", "STRING", "NULLABLE")],
             source_uris=["gs://bucket/export-uri"],

@@ -372,23 +372,22 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             df.to_csv(fp, index=False, header=False)
             bq = BigQueryClientImpl()
             raw_data_config = RAW_FILES_CONFIG[state_code][upload_type]
-            insert_job = bq.load_into_table_from_file_async(
-                source=fp,
-                destination_address=BigQueryAddress(
-                    dataset_id=STATIC_REFERENCE_TABLES_DATASET,
-                    table_id=table_name,
-                ),
-                schema=[
-                    bigquery.SchemaField(
-                        name=schema_field_dict["name"],
-                        field_type=schema_field_dict["type"],
-                        mode=schema_field_dict["mode"],
-                    )
-                    for schema_field_dict in raw_data_config.schema.values()
-                ],
-            )
             try:
-                insert_job.result()
+                bq.load_into_table_from_file(
+                    source=fp,
+                    destination_address=BigQueryAddress(
+                        dataset_id=STATIC_REFERENCE_TABLES_DATASET,
+                        table_id=table_name,
+                    ),
+                    schema=[
+                        bigquery.SchemaField(
+                            name=schema_field_dict["name"],
+                            field_type=schema_field_dict["type"],
+                            mode=schema_field_dict["mode"],
+                        )
+                        for schema_field_dict in raw_data_config.schema.values()
+                    ],
+                )
             except exceptions.GoogleAPICallError as error:
                 if error.code:
                     return error.message, HTTPStatus(error.code)

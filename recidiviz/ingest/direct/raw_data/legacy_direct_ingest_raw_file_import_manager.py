@@ -421,7 +421,13 @@ class LegacyDirectIngestRawFileImportManager:
         logging.info("Starting chunked load of contents to BigQuery")
 
         try:
-            load_job = self.big_query_client.load_table_from_cloud_storage_async(
+            logging.info(
+                "[%s] Starting load of [%s] paths into [%s]",
+                datetime.datetime.now().isoformat(),
+                len(file_paths),
+                destination_address.to_str(),
+            )
+            self.big_query_client.load_table_from_cloud_storage(
                 source_uris=[p.uri() for p in file_paths],
                 destination_address=destination_address,
                 destination_table_schema=RawDataTableBigQuerySchemaBuilder.build_bq_schema_from_columns(
@@ -432,31 +438,11 @@ class LegacyDirectIngestRawFileImportManager:
                 ),
                 write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
             )
-        except Exception as e:
-            logging.error("Failed to start load job - cleaning up temp paths")
-            self._delete_temporary_file_paths(file_paths)
-            raise e
-
-        try:
-            logging.info(
-                "[%s] Waiting for load of [%s] paths into [%s]",
-                datetime.datetime.now().isoformat(),
-                len(file_paths),
-                load_job.destination,
-            )
-            load_job.result()
             logging.info(
                 "[%s] BigQuery load of [%s] paths complete",
                 datetime.datetime.now().isoformat(),
                 len(file_paths),
             )
-        except Exception as e:
-            logging.error(
-                "Insert job [%s] failed with errors: [%s]",
-                load_job.job_id,
-                load_job.errors,
-            )
-            raise e
         finally:
             self._delete_temporary_file_paths(file_paths)
 

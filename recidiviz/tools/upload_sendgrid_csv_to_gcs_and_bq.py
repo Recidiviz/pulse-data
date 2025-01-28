@@ -64,7 +64,6 @@ from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
-from recidiviz.persistence.database.bq_refresh.bq_refresh import wait_for_table_load
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -163,50 +162,55 @@ def load_from_gcs_to_temp_table(
 ) -> None:
     """Upload raw data from GCS to temporary BQ table"""
     bucket_name = f"{project_id}{BUCKET_SUFFIX}"
-    load_job = bq_client.load_table_from_cloud_storage_async(
-        source_uris=[f"gs://{bucket_name}/{blob_name}"],
-        destination_address=TEMP_DESTINATION_ADDRESS,
-        destination_table_schema=[
-            bigquery.SchemaField("processed", "TIMESTAMP", mode="NULLABLE"),
-            bigquery.SchemaField("message_id", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("event", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("api_key_id", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("recv_message_id", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("credential_id", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("subject", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("from", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("email", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("asm_group_id", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("template_id", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("originating_ip", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("reason", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("outbound_ip", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("outbound_ip_type", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("mx", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("url", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("attempt", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("user_agent", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("type", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("is_unique", "BOOLEAN", mode="NULLABLE"),
-            bigquery.SchemaField("username", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("categories", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("marketing_campaign_id", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField("marketing_campaign_name", "STRING", mode="NULLABLE"),
-            bigquery.SchemaField(
-                "marketing_campaign_split_id", "STRING", mode="NULLABLE"
-            ),
-            bigquery.SchemaField(
-                "marketing_campaign_version", "STRING", mode="NULLABLE"
-            ),
-            bigquery.SchemaField("unique_args", "STRING", mode="NULLABLE"),
-        ],
-        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-        skip_leading_rows=1,
-    )
-    table_load_success = wait_for_table_load(bq_client, load_job)
-
-    if not table_load_success:
-        logging.info("Copy from cloud storage to temporary table failed")
+    try:
+        bq_client.load_table_from_cloud_storage(
+            source_uris=[f"gs://{bucket_name}/{blob_name}"],
+            destination_address=TEMP_DESTINATION_ADDRESS,
+            destination_table_schema=[
+                bigquery.SchemaField("processed", "TIMESTAMP", mode="NULLABLE"),
+                bigquery.SchemaField("message_id", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("event", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("api_key_id", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("recv_message_id", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("credential_id", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("subject", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("from", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("email", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("asm_group_id", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("template_id", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("originating_ip", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("reason", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("outbound_ip", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("outbound_ip_type", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("mx", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("url", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("attempt", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("user_agent", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("type", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("is_unique", "BOOLEAN", mode="NULLABLE"),
+                bigquery.SchemaField("username", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("categories", "STRING", mode="NULLABLE"),
+                bigquery.SchemaField(
+                    "marketing_campaign_id", "STRING", mode="NULLABLE"
+                ),
+                bigquery.SchemaField(
+                    "marketing_campaign_name", "STRING", mode="NULLABLE"
+                ),
+                bigquery.SchemaField(
+                    "marketing_campaign_split_id", "STRING", mode="NULLABLE"
+                ),
+                bigquery.SchemaField(
+                    "marketing_campaign_version", "STRING", mode="NULLABLE"
+                ),
+                bigquery.SchemaField("unique_args", "STRING", mode="NULLABLE"),
+            ],
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+            skip_leading_rows=1,
+        )
+    except Exception as e:
+        logging.info(
+            "Copy from cloud storage to temporary table failed with error: %s", e
+        )
 
 
 def load_from_temp_to_permanent_table(

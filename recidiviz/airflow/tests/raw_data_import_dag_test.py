@@ -2365,7 +2365,7 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
             [[file.serialize()] for file in import_ready_files]
         )
 
-        self.bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.bq_mock().create_table_from_query().total_rows = 90
 
         original_paths, _ = self._register_files(import_ready_files)
@@ -2809,7 +2809,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "singlePrimaryKey",
         )
 
-        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
         with Session(bind=self.engine) as session:
@@ -2834,9 +2834,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             ]
 
             # (2) bq client has all the expected calls
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
@@ -2901,7 +2899,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "tagBasicData",
         )
 
-        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
         with Session(bind=self.engine) as session:
@@ -2929,9 +2927,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             ]
 
             # (2) bq client has all the expected calls
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
@@ -2999,7 +2995,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "tagMoreBasicData",
         )
 
-        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
         with Session(bind=self.engine) as session:
@@ -3032,9 +3028,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
@@ -3121,10 +3115,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count
-                == 1 + 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 2
             assert self.load_bq_mock().create_table_from_query.call_count == 1 + 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1 * 2
@@ -3204,7 +3195,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "tagChunkedFile",
         )
 
-        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
         with Session(bind=self.engine) as session:
@@ -3238,9 +3229,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
@@ -3317,7 +3306,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "tagBasicData",
         )
 
-        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
         with Session(bind=self.engine) as session:
@@ -3357,10 +3346,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count
-                == 1 + 3
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 3
             assert self.load_bq_mock().create_table_from_query.call_count == 1 + 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1 * 3
@@ -3434,7 +3420,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "singlePrimaryKey",
         )
 
-        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
         with Session(bind=self.engine) as session:
@@ -3470,9 +3456,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             ]
 
             # (2) bq client has all the expected calls
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
@@ -3545,7 +3529,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "customDatetimeSql",
         )
 
-        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
         with Session(bind=self.engine) as session:
@@ -3574,10 +3558,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count
-                == 1 + 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 2
             assert self.load_bq_mock().create_table_from_query.call_count == 1 + 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1 * 2
@@ -3658,7 +3639,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "tagCustomLineTerminatorNonUTF8",
         )
 
-        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
         def _fail_wrapper(original: Callable) -> Callable:
@@ -3706,9 +3687,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
@@ -3825,9 +3804,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls from last time
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
@@ -3923,10 +3900,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls from last time
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count
-                == 1 + 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 2
             assert self.load_bq_mock().create_table_from_query.call_count == 1 + 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2
@@ -4007,7 +3981,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             "tagCustomLineTerminatorNonUTF8",
         )
 
-        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
         def _fail_wrapper(original: Callable) -> Callable:
@@ -4055,9 +4029,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
@@ -4170,9 +4142,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls from last time
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
@@ -4268,10 +4238,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls from last time
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count
-                == 1 + 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 2
             assert self.load_bq_mock().create_table_from_query.call_count == 1 + 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2
@@ -4364,9 +4331,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             mock.output_rows = 100
             return mock
 
-        self.load_bq_mock().load_table_from_cloud_storage_async.side_effect = (
-            _fail_wrapper
-        )
+        self.load_bq_mock().load_table_from_cloud_storage.side_effect = _fail_wrapper
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
         with Session(bind=self.engine) as session:
@@ -4404,9 +4369,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
@@ -4525,9 +4488,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls from last time
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count == 3
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 3
             assert self.load_bq_mock().create_table_from_query.call_count == 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
@@ -4622,10 +4583,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls from last time
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count
-                == 1 + 3
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 3
             assert self.load_bq_mock().create_table_from_query.call_count == 3
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2
@@ -4725,7 +4683,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
         self.load_bq_mock().insert_into_table_from_table_async.side_effect = (
             _fail_wrapper
         )
-        self.load_bq_mock().load_table_from_cloud_storage_async().output_rows = 100
+        self.load_bq_mock().load_table_from_cloud_storage().output_rows = 100
         self.load_bq_mock().create_table_from_query().total_rows = 90
 
         with Session(bind=self.engine) as session:
@@ -4758,10 +4716,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             }
 
             # (2) bq client has all the expected calls
-            assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count
-                == 1 + 2
-            )
+            assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 1 + 2
             assert self.load_bq_mock().create_table_from_query.call_count == 1 + 2
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 2
@@ -4860,7 +4815,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count
+                self.load_bq_mock().load_table_from_cloud_storage.call_count
                 == 1 + 2 + 1
             )
             assert self.load_bq_mock().create_table_from_query.call_count == 1 + 2 + 1
@@ -4959,7 +4914,7 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
 
             # (2) bq client has all the expected calls
             assert (
-                self.load_bq_mock().load_table_from_cloud_storage_async.call_count
+                self.load_bq_mock().load_table_from_cloud_storage.call_count
                 == 1 + 2 + 1 + 1
             )
             assert (

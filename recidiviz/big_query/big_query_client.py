@@ -41,7 +41,6 @@ from typing import (
 import __main__
 import attr
 import google
-import pandas as pd
 import pytz
 import requests
 from google.api_core import retry
@@ -375,7 +374,7 @@ class BigQueryClient:
         """Applies the relevant row access policies to the table."""
 
     @abc.abstractmethod
-    def load_table_from_cloud_storage_async(
+    def load_table_from_cloud_storage(
         self,
         *,
         source_uris: List[str],
@@ -393,12 +392,10 @@ class BigQueryClient:
         Given a desired table name, source data URI(s) and destination schema, loads the
         table into BigQuery.
 
-        This starts the job, but does not wait until it completes.
-
         The table is created if it does not exist, and overwritten with the contents of
         the new data if they do exist and the write_disposition is WRITE_TRUNCATE. If
         the write_disposition is WRITE_APPEND, data will be added to the table if it
-        already exists.
+        already exists. Row-level permissions are applied to the table if applicable.
 
         Args:
             source_uris: The paths in Google Cloud Storage to read contents from (starts with 'gs://').
@@ -415,37 +412,11 @@ class BigQueryClient:
                 False. When disabled, we will fail the load if we encounter ASCII control characters in the data.
             job_labels: Metadata labels to attach to the BigQuery LoadJob, recorded in the JOBS view.
         Returns:
-            The LoadJob object containing job details.
+            The completed LoadJob object containing job details.
         """
 
     @abc.abstractmethod
-    def load_into_table_from_dataframe_async(
-        self,
-        *,
-        source: pd.DataFrame,
-        destination_address: BigQueryAddress,
-        job_labels: Optional[list[ResourceLabel]] = None,
-    ) -> bigquery.job.LoadJob:
-        """Loads a table from a pandas DataFrame to the given address in BigQuery.
-
-        The destination table will be created if it does not already exist. Schema
-        information will be inferred from the provided DataFrame.
-
-        The destination dataset will also be created if it does not already exist.
-
-        This starts the job, but does not wait until it completes.
-
-        Args:
-            source: A DataFrame containing the contents to load into the table.
-            destination_address: The BigQuery address to load the table into. Gets
-                created if it does not already exist.
-            job_labels: Metadata labels to attach to the BigQuery LoadJob, recorded in the JOBS view.
-        Returns:
-            The LoadJob object containing job details.
-        """
-
-    @abc.abstractmethod
-    def load_into_table_from_file_async(
+    def load_into_table_from_file(
         self,
         *,
         source: IO,
@@ -464,9 +435,8 @@ class BigQueryClient:
         removed from the destination table if they are not present in the provided
         schema.
 
-        This starts the job, but does not wait until it completes.
-
-        Tables are created if they do not exist.
+        Tables are created if they do not exist. Applies row-level permissions to the
+        table if applicable.
 
         Args:
             source: A file handle opened in binary mode for reading.
@@ -476,7 +446,7 @@ class BigQueryClient:
             job_labels: Metadata labels to attach to the BigQuery LoadJob, recorded in the JOBS view.
 
         Returns:
-            The LoadJob object containing job details.
+            The completed LoadJob object containing job details.
         """
 
     @abc.abstractmethod
@@ -1349,7 +1319,7 @@ class BigQueryClientImpl(BigQueryClient):
                 f"Cannot update view query for [{view.address.to_str()}]"
             ) from e
 
-    def load_table_from_cloud_storage_async(
+    def load_table_from_cloud_storage(
         self,
         *,
         source_uris: List[str],
@@ -1364,7 +1334,7 @@ class BigQueryClientImpl(BigQueryClient):
     ) -> bigquery.job.LoadJob:
         """Triggers a load job, i.e. a job that will copy all of the data from the given
         Cloud Storage source into the given BigQuery destination. Returns once the job
-        has been started.
+        completes and row-level permissions were applied to the created table, if applicable.
         """
         self._validate_schema(destination_address, destination_table_schema)
         self.create_dataset_if_necessary(destination_address.dataset_id)
@@ -1393,38 +1363,30 @@ class BigQueryClientImpl(BigQueryClient):
             str(destination_table_ref),
         )
 
-        return load_job
+        try:
+            load_job.result()
+        except Exception as e:
+            logging.error(
+                "Load job [%s] for table [%s] failed with errors: %s",
+                load_job.job_id,
+                destination_address.to_str(),
+                load_job.errors,
+            )
+            raise e
 
-    def load_into_table_from_dataframe_async(
-        self,
-        *,
-        source: pd.DataFrame,
-        destination_address: BigQueryAddress,
-        job_labels: Optional[list[ResourceLabel]] = None,
-    ) -> bigquery.job.LoadJob:
-
-        self.create_dataset_if_necessary(destination_address.dataset_id)
-        destination_table_ref = self._table_ref_for_address(destination_address)
-
-        job_config = bigquery.LoadJobConfig(
-            labels=self._build_labels(job_labels, address=destination_address)
-        )
-        job_config.allow_quoted_newlines = True
-        job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_APPEND
-
-        load_job = self.client.load_table_from_dataframe(
-            source, destination_table_ref, job_config=job_config
-        )
-
-        logging.info(
-            "Started load job [%s] for table [%s]",
-            load_job.job_id,
-            str(destination_table_ref),
-        )
+        try:
+            self.apply_row_level_permissions(self.get_table(destination_address))
+        except Exception as e:
+            logging.error(
+                "Failed to apply row-level permissions to table [%s]. "
+                "Load job was successful, but row-level permissions were not applied.",
+                destination_address.to_str(),
+            )
+            raise e
 
         return load_job
 
-    def load_into_table_from_file_async(
+    def load_into_table_from_file(
         self,
         *,
         source: IO,
@@ -1459,6 +1421,27 @@ class BigQueryClientImpl(BigQueryClient):
             load_job.job_id,
             str(destination_table_ref),
         )
+
+        try:
+            load_job.result()
+        except Exception as e:
+            logging.error(
+                "Load job [%s] for table [%s] failed with errors: %s",
+                load_job.job_id,
+                destination_address.to_str(),
+                load_job.errors,
+            )
+            raise e
+
+        try:
+            self.apply_row_level_permissions(self.get_table(destination_address))
+        except Exception as e:
+            logging.error(
+                "Failed to apply row-level permissions to table [%s]. "
+                "Load job was successful, but row-level permissions were not applied.",
+                destination_address.to_str(),
+            )
+            raise e
 
         return load_job
 
