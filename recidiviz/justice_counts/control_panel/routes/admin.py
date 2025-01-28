@@ -319,24 +319,21 @@ def get_admin_blueprint(
         )
 
         metrics = []
-        if agency.is_superagency is True:
-            # Pull the list of metrics that the agency has done configuration for
-            # This list will be shown on the frontend so the user can choose which
-            # metric settings to copy over to child agencies
-            metric_settings = MetricSettingInterface.get_agency_metric_interfaces(
-                session=current_session,
-                agency=agency,
+        # Pull the list of metrics that the agency has done configuration for
+        # This list will be shown on the frontend so the user can choose which
+        # metric settings to copy over to child agencies
+        metric_settings = MetricSettingInterface.get_agency_metric_interfaces(
+            session=current_session,
+            agency=agency,
+        )
+        for setting in metric_settings:
+            metrics.append(
+                {
+                    "key": setting.key,
+                    "name": setting.metric_definition.display_name,
+                    "sector": setting.metric_definition.system.name.replace("_", " "),
+                }
             )
-            for setting in metric_settings:
-                metrics.append(
-                    {
-                        "key": setting.key,
-                        "name": setting.metric_definition.display_name,
-                        "sector": setting.metric_definition.system.name.replace(
-                            "_", " "
-                        ),
-                    }
-                )
         agency_json = agency.to_json(with_team=False, with_settings=False)
 
         return jsonify(
