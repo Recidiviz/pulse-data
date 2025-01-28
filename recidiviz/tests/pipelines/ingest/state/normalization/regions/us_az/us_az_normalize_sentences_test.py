@@ -191,6 +191,7 @@ def test_sentencing_normalization() -> None:
         actual_normalized_sentences,
         actual_normalized_sentence_groups,
         actual_inferred_groups,
+        actual_imposed_groups,
     ) = get_normalized_sentencing_entities(
         StateCode.US_AZ,
         person.sentences,
@@ -201,12 +202,14 @@ def test_sentencing_normalization() -> None:
     expected_inferred_group = normalized_entities.NormalizedStateSentenceInferredGroup.from_sentence_external_ids(
         StateCode.US_AZ, ["SENTENCE-1", "SENTENCE-2"]
     )
+    assert len(actual_imposed_groups) == 2
     assert actual_inferred_groups == [expected_inferred_group]
     for sentence in actual_normalized_sentences:
         assert (
             sentence.sentence_inferred_group_id
             == expected_inferred_group.sentence_inferred_group_id
         )
+        assert sentence.sentence_imposed_group_id is not None
     for group in actual_normalized_sentence_groups:
         assert (
             group.sentence_inferred_group_id

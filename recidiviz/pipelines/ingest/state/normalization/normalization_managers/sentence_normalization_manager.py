@@ -19,6 +19,8 @@ of StateCharge entities in the calculation pipelines."""
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple, Type
 
+from more_itertools import first
+
 from recidiviz.common.ncic import get_description
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -34,6 +36,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateCharge,
+    NormalizedStateChargeV2,
     NormalizedStateIncarcerationSentence,
     NormalizedStateSentence,
     NormalizedStateSupervisionSentence,
@@ -44,9 +47,35 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.entit
 from recidiviz.pipelines.ingest.state.normalization.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
 )
+from recidiviz.pipelines.ingest.state.normalization.utils import get_min_max_fields
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
+from recidiviz.utils.types import assert_type
+
+
+def _sort_sentences_by_initial_sentence_length_desc(
+    sentences: list[NormalizedStateSentence],
+) -> list[NormalizedStateSentence]:
+    """
+    Sorts the list of sentences by their initial length (at imposition), with the longest sentences first.
+    Sentences with no NormalizedStateSentenceLength defined will be sorted amongst themselves by sentence_id.
+    """
+
+    def _sort_key(sentence: NormalizedStateSentence) -> tuple[int, int]:
+        first_sentence_length = first(
+            sorted(sentence.sentence_lengths, key=lambda l: l.length_update_datetime),
+            default=None,
+        )
+        if not first_sentence_length:
+            return -1, sentence.sentence_id
+        _, length_days = get_min_max_fields(
+            first_sentence_length.sentence_length_days_min,
+            first_sentence_length.sentence_length_days_max,
+        )
+        return (assert_type(length_days or -1, int), sentence.sentence_id)
+
+    return list(sorted(sentences, key=_sort_key))
 
 
 def sentences_overlap_serving(
@@ -95,7 +124,31 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
         """
         return False
 
-    # TODO(#36078) Make default method for imposed sentence groups
+    @staticmethod
+    def sentences_are_in_same_imposed_group(
+        s1: NormalizedStateSentence, s2: NormalizedStateSentence
+    ) -> bool:
+        """Returns True if the two given sentences are imposed together."""
+        return (s1.imposed_date == s2.imposed_date) and (
+            s1.sentencing_authority == s2.sentencing_authority
+        )
+
+    @staticmethod
+    def get_most_severe_charge(
+        sentences: list[NormalizedStateSentence],
+    ) -> NormalizedStateChargeV2:
+        """
+        Returns the most severe charge for this group of sentences.
+        By default, this will return the first charge (by charge_id) on the sentence with the
+        longest length at imposition time.
+        """
+        longest_sentence = first(
+            _sort_sentences_by_initial_sentence_length_desc(sentences)
+        )
+        # By default we arbitrarily pick the first charge by ID
+        # TODO(#37421) Handle default handling based on ingest
+        charges = list(sorted(longest_sentence.charges, key=lambda s: s.charge_v2_id))
+        return charges[0]
 
     @staticmethod
     def sentences_are_in_same_inferred_group(

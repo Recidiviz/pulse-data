@@ -67,6 +67,7 @@ NORMALIZED_PREFIX = "Normalized"
 
 NORMALIZATION_ONLY_ENTITIES = {
     normalized_entities.NormalizedStateSentenceInferredGroup.__name__,
+    normalized_entities.NormalizedStateSentenceImposedGroup.__name__,
 }
 
 
@@ -490,6 +491,7 @@ class TestSentencingEntities(unittest.TestCase):
             external_id="test",
             sentence_id=1,
             sentence_inferred_group_id=None,
+            sentence_imposed_group_id=None,
             state_code=StateCode.US_XX.value,
             imposed_date=first_dt.date(),
             sentencing_authority=StateSentencingAuthority.STATE,
@@ -525,6 +527,7 @@ class TestSentencingEntities(unittest.TestCase):
             external_id="test",
             sentence_id=1,
             sentence_inferred_group_id=None,
+            sentence_imposed_group_id=None,
             state_code=StateCode.US_XX.value,
             imposed_date=first_dt.date(),
             sentencing_authority=StateSentencingAuthority.STATE,
@@ -558,6 +561,7 @@ class TestSentencingEntities(unittest.TestCase):
             external_id="test",
             sentence_id=1,
             sentence_inferred_group_id=None,
+            sentence_imposed_group_id=None,
             state_code=StateCode.US_XX.value,
             imposed_date=first_dt.date(),
             sentencing_authority=StateSentencingAuthority.STATE,
@@ -594,6 +598,7 @@ class TestSentencingEntities(unittest.TestCase):
             external_id="test",
             sentence_id=1,
             sentence_inferred_group_id=None,
+            sentence_imposed_group_id=None,
             state_code=StateCode.US_XX.value,
             imposed_date=first_dt.date(),
             sentencing_authority=StateSentencingAuthority.STATE,
@@ -634,6 +639,7 @@ class TestSentencingEntities(unittest.TestCase):
             external_id="test",
             sentence_id=1,
             sentence_inferred_group_id=None,
+            sentence_imposed_group_id=None,
             state_code=StateCode.US_XX.value,
             imposed_date=datetime.date(2022, 1, 1),
             sentencing_authority=StateSentencingAuthority.STATE,

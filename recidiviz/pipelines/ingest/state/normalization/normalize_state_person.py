@@ -149,6 +149,7 @@ def build_normalized_state_person(
         normalized_sentences,
         normalized_sentence_groups,
         normalized_sentence_inferred_groups,
+        normalized_sentence_imposed_groups,
     ) = get_normalized_sentencing_entities(
         state_code=state_code,
         sentences=person.sentences,
@@ -187,6 +188,7 @@ def build_normalized_state_person(
         "sentences": normalized_sentences,
         "sentence_groups": normalized_sentence_groups,
         "sentence_inferred_groups": normalized_sentence_inferred_groups,
+        "sentence_imposed_groups": normalized_sentence_imposed_groups,
         "supervision_contacts": normalized_supervision_contacts,
         "supervision_periods": normalized_supervision_periods,
         "supervision_sentences": normalized_supervision_sentences,

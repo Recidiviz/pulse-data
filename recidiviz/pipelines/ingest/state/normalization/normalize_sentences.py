@@ -50,11 +50,13 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSentence,
     NormalizedStateSentenceGroup,
     NormalizedStateSentenceGroupLength,
+    NormalizedStateSentenceImposedGroup,
     NormalizedStateSentenceInferredGroup,
     NormalizedStateSentenceLength,
     NormalizedStateSentenceStatusSnapshot,
 )
 from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import (
+    get_normalized_imposed_sentence_groups,
     get_normalized_inferred_sentence_groups,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
@@ -237,6 +239,7 @@ def normalize_sentence(
         sentencing_authority_raw_text=sentence.sentencing_authority_raw_text,
         sentence_group_external_id=sentence.sentence_group_external_id,
         sentence_inferred_group_id=None,
+        sentence_imposed_group_id=None,
         imposed_date=sentence.imposed_date,
         initial_time_served_days=sentence.initial_time_served_days,
         is_life=sentence.is_life,
@@ -343,6 +346,7 @@ def get_normalized_sentencing_entities(
     list[NormalizedStateSentence],
     list[NormalizedStateSentenceGroup],
     list[NormalizedStateSentenceInferredGroup],
+    list[NormalizedStateSentenceImposedGroup],
 ]:
     """
     This top level function takes in sentences and sentence groups for a person and
@@ -359,6 +363,9 @@ def get_normalized_sentencing_entities(
     inferred_groups = get_normalized_inferred_sentence_groups(
         state_code, delegate, list(normalized_sentences_by_external_id.values())
     )
+    imposed_groups = get_normalized_imposed_sentence_groups(
+        state_code, delegate, list(normalized_sentences_by_external_id.values())
+    )
     for inferred_group in inferred_groups:
         inferred_id = inferred_group.sentence_inferred_group_id
         for sentence_external_id in inferred_group.sentence_external_ids:
@@ -368,8 +375,14 @@ def get_normalized_sentencing_entities(
                 normalized_sentence_groups_by_external_id[
                     sg_ex_id
                 ].sentence_inferred_group_id = inferred_id
+    for imposed_group in imposed_groups:
+        imposed_id = imposed_group.sentence_imposed_group_id
+        for sentence_external_id in imposed_group.sentence_external_ids:
+            sentence = normalized_sentences_by_external_id[sentence_external_id]
+            sentence.sentence_imposed_group_id = imposed_id
     return (
         list(normalized_sentences_by_external_id.values()),
         list(normalized_sentence_groups_by_external_id.values()),
         inferred_groups,
+        imposed_groups,
     )

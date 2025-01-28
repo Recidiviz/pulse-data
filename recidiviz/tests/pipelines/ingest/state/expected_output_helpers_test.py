@@ -199,6 +199,7 @@ class TestExpectedOutputHelpers(unittest.TestCase):
                 normalized_entities.NormalizedStatePersonExternalId,
                 normalized_entities.NormalizedStateSentence,
                 normalized_entities.NormalizedStateSentenceInferredGroup,
+                normalized_entities.NormalizedStateSentenceImposedGroup,
             },
             normalization_output_classes,
         )

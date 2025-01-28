@@ -232,6 +232,13 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     },
     BigQueryAddress(
         dataset_id=NORMALIZED_STATE_VIEWS_DATASET,
+        table_id="state_sentence_imposed_group_view",
+    ): (
+        "This is a new table in the normalized_state schema which will soon be used in "
+        "a sessions view (Nick Tallant, 2024-12-16)"
+    ),
+    BigQueryAddress(
+        dataset_id=NORMALIZED_STATE_VIEWS_DATASET,
         table_id="state_sentence_inferred_group_view",
     ): (
         "This is a new table in the normalized_state schema which will soon be used in "

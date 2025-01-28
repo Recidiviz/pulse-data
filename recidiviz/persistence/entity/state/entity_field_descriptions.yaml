@@ -393,6 +393,7 @@ state_sentence:
     sentencing_authority_raw_text: Raw text used to hydrate sentencing_authority.
   normalization_only_fields:
     sentence_inferred_group_id: The unique ID of the StateSentenceInferredGroup that this sentence belongs to.
+    sentence_imposed_group_id: The unique ID of the StateSentenceImposedGroup that this sentence belongs to if we know the sentence's imposed_date.
 
 state_sentence_group:
   fields: {}
@@ -725,3 +726,18 @@ state_task_deadline:
 state_sentence_inferred_group:
   fields: {}
   normalization_only_fields: {}
+
+state_sentence_imposed_group:
+  fields: {}
+  normalization_only_fields:
+    imposed_date: The date all sentences in this group were imposed together.
+    serving_start_date: >-
+      When this sentence group began being served. 
+      The earliest recorded date for a serving status for all sentences in the group.
+    most_severe_charge_v2_id: >-
+      The charge_v2_id of the StateChargeV2 entity we've determined is related the most severe offense in this group.
+      The most severe charge by default is a charge associated with the longest sentence. However, individual states
+      may have specific logic change this behavior in normalization.
+    sentencing_authority: >-
+      The class of authority that imposed all sentences in the group (COUNTY, STATE, etc.)
+      All sentences in the group must have the same sentencing authority.

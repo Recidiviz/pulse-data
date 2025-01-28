@@ -113,6 +113,7 @@ _NORMALIZED_STATE_CLASS_HIERARCHY = [
     normalized_entities.NormalizedStateSentenceStatusSnapshot.__name__,
     normalized_entities.NormalizedStateSentenceLength.__name__,
     normalized_entities.NormalizedStateSentenceInferredGroup.__name__,
+    normalized_entities.NormalizedStateSentenceImposedGroup.__name__,
     normalized_entities.NormalizedStateSentenceGroup.__name__,
     normalized_entities.NormalizedStateSentenceGroupLength.__name__,
     # StateStaff hierarchy

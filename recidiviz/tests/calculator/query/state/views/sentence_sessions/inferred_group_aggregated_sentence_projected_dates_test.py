@@ -126,6 +126,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             external_id="SENTENCE-1",
             sentence_id=id_,
             sentence_group_external_id=None,
+            sentence_imposed_group_id=None,
             sentence_inferred_group_id=self.inferred_group_id,
             sentence_type=StateSentenceType.STATE_PRISON,
             sentencing_authority=StateSentencingAuthority.STATE,

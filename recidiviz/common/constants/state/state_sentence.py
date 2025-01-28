@@ -239,6 +239,10 @@ class StateSentencingAuthority(StateEntityEnum):
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
 
+    @property
+    def is_out_of_state(self) -> bool:
+        return self in (self.OTHER_STATE, self.FEDERAL)
+
     @classmethod
     def get_enum_description(cls) -> str:
         return (

@@ -235,6 +235,11 @@ class IsNormalizedSentenceInferredGroupBackedgeValidator(EntityBackedgeValidator
         return NormalizedStateSentenceInferredGroup
 
 
+class IsNormalizedSentenceImposedGroupBackedgeValidator(EntityBackedgeValidator):
+    def get_backedge_type(self) -> Type:
+        return NormalizedStateSentenceImposedGroup
+
+
 class IsNormalizedIncarcerationSentenceBackedgeValidator(EntityBackedgeValidator):
     def get_backedge_type(self) -> Type:
         return NormalizedStateIncarcerationSentence
@@ -468,6 +473,9 @@ class NormalizedStateChargeV2(NormalizedStateEntity, HasExternalIdEntity):
       - `offense_date` can be null because of erroneous data from states
 
     TODO(#26240): Replace NormalizedStateCharge with this entity
+
+    TODO(#36539): Consider including uniform offense information from the
+    `cleaned_offense_description_to_labels` reference view
     """
 
     status: StateChargeV2Status = attr.ib(
@@ -873,6 +881,61 @@ class NormalizedStateSentenceInferredGroup(NormalizedStateEntity, HasExternalIdE
 
 
 @attr.s(eq=False, kw_only=True)
+class NormalizedStateSentenceImposedGroup(NormalizedStateEntity, HasExternalIdEntity):
+    """
+    This entity groups a set of sentences imposed on the same date together
+    and holds static information about that group's sentences and charges.
+
+    By default, the "most severe" charge is the first charge (by charge_id)
+    on the sentence with the longest length at imposition time.
+    """
+
+    sentence_imposed_group_id: int = attr.ib(
+        validator=attr_validators.is_int,
+        # TODO(#32690) Update this when PK PK generation is consistent across
+        # HasExternalId entities. This allows us to have a unique mandatory field for now
+        default=attr.Factory(
+            lambda s: generate_primary_key(s.external_id, StateCode(s.state_code)),
+            takes_self=True,
+        ),
+    )
+    # Only optional for StateSentencingAuthority.OTHER_STATE
+    imposed_date: date | None = attr.ib(validator=attr_validators.is_opt_date)
+    sentencing_authority: StateSentencingAuthority = attr.ib(
+        validator=attr.validators.instance_of(StateSentencingAuthority)
+    )
+    # Only optional for StateSentencingAuthority.OTHER_STATE
+    serving_start_date: date | None = attr.ib(validator=attr_validators.is_opt_date)
+    most_severe_charge_v2_id: int = attr.ib(validator=attr_validators.is_int)
+
+    person: Optional["NormalizedStatePerson"] = attr.ib(
+        default=None, validator=IsNormalizedPersonBackedgeValidator()
+    )
+
+    @classmethod
+    def external_id_delimiter(cls) -> str:
+        """This value separates sentence external IDs in this entity's external ID"""
+        return "@#@"
+
+    @property
+    def sentence_external_ids(self) -> list[str]:
+        """Returns the external ID for each sentence in this inferred group."""
+        return self.external_id.split(self.external_id_delimiter())
+
+    def __attrs_post_init__(self) -> None:
+        if not self.imposed_date and not self.sentencing_authority.is_out_of_state:
+            raise ValueError(
+                "Imposed groups composed of in-state sentences must have an imposed_date."
+            )
+        if (
+            not self.serving_start_date
+        ) and not self.sentencing_authority.is_out_of_state:
+            raise ValueError(
+                "Imposed groups composed of in-state sentences must have serving_start_date."
+            )
+
+
+@attr.s(eq=False, kw_only=True)
 class NormalizedStateSentenceGroup(NormalizedStateEntity, HasExternalIdEntity):
     """
     Represents a logical grouping of sentences that encompass an
@@ -918,6 +981,11 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
     )
     # A sentence is included in a single inferred sentence group
     sentence_inferred_group_id: int | None = attr.ib(
+        validator=attr_validators.is_opt_int
+    )
+    # A sentence is included in a single imposed sentence group
+    # if we know it's imposed_date
+    sentence_imposed_group_id: int | None = attr.ib(
         validator=attr_validators.is_opt_int
     )
 
@@ -2817,6 +2885,11 @@ class NormalizedStatePerson(
     sentence_inferred_groups: list["NormalizedStateSentenceInferredGroup"] = attr.ib(
         factory=list,
         validator=attr_validators.is_list_of(NormalizedStateSentenceInferredGroup),
+    )
+
+    sentence_imposed_groups: list["NormalizedStateSentenceImposedGroup"] = attr.ib(
+        factory=list,
+        validator=attr_validators.is_list_of(NormalizedStateSentenceImposedGroup),
     )
 
     def get_external_ids(self) -> list["NormalizedStatePersonExternalId"]:

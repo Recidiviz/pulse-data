@@ -20,28 +20,116 @@ from NormalizedStateSentence entities, and updates the
 sentence_inferred_group_id on related NormalizedStateSentence
 and NormalizedStateSentenceGroup entities.
 """
+import datetime
+
+from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.date import PotentiallyOpenDateTimeRange
 from recidiviz.persistence.entity.entity_utils import (
     group_has_external_id_entities_by_function,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateChargeV2,
     NormalizedStateSentence,
+    NormalizedStateSentenceImposedGroup,
     NormalizedStateSentenceInferredGroup,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )
+from recidiviz.utils.types import assert_type
 
 
-# TODO(#36078) Make imposed sentence groups
+# TODO(#37421) Handle default serving_start_date w/ ingest
+def build_imposed_group_from_sentences(
+    state_code: StateCode,
+    delegate: StateSpecificSentenceNormalizationDelegate,
+    sentences: list[NormalizedStateSentence],
+) -> NormalizedStateSentenceImposedGroup:
+    """
+    Builds ann imposed group from provided sentences.
+
+    Because state-specific logic in normalization may produce a group with
+    more than one imposed_date or serving_start_date (e.g. sharing a common charge),
+    we chose the minimum of each.
+    """
+    ids = NormalizedStateSentenceImposedGroup.external_id_delimiter().join(
+        sorted(s.external_id for s in sentences)
+    )
+
+    sentencing_authority = one({s.sentencing_authority for s in sentences})
+
+    # Out of state sentences may not have an imposed_date
+    try:
+        imposed_date = min(
+            assert_type(s.imposed_date, datetime.date) for s in sentences
+        )
+    except ValueError:
+        imposed_date = None
+
+    # TODO(#37421) Handle default serving_start_date exception handling based on ingest
+    serving_start_date: datetime.date | None = None
+    try:
+        serving_start_date = min(
+            assert_type(
+                sentence.first_serving_status_to_terminating_status_dt_range,
+                PotentiallyOpenDateTimeRange,
+            ).lower_bound_inclusive.date()
+            for sentence in sentences
+        )
+    except ValueError:
+        serving_start_date = imposed_date
+
+    most_severe_charge: NormalizedStateChargeV2 = delegate.get_most_severe_charge(
+        sentences
+    )
+
+    return NormalizedStateSentenceImposedGroup(
+        state_code=state_code.value,
+        external_id=ids,
+        imposed_date=imposed_date,
+        sentencing_authority=sentencing_authority,
+        serving_start_date=serving_start_date,
+        most_severe_charge_v2_id=most_severe_charge.charge_v2_id,
+    )
+
+
+def get_normalized_imposed_sentence_groups(
+    state_code: StateCode,
+    delegate: StateSpecificSentenceNormalizationDelegate,
+    normalized_sentences: list[NormalizedStateSentence],
+) -> list[NormalizedStateSentenceImposedGroup]:
+    """
+    Creates NormalizedStateSentenceImposedGroup entities.
+    Any NormalizedStateSentence associated with a NormalizedStateSentenceImposedGroup
+    will receive a sentence_group_imposed_id.
+    By default, a NormalizedStateSentenceImposedGroup is created when two sentences
+    have the same imposed_date. Check the normalization delegate for any state specific
+    grouping conditions.
+    """
+    sentence_map = {s.external_id: s for s in normalized_sentences}
+    grouped_ids = group_has_external_id_entities_by_function(
+        normalized_sentences, delegate.sentences_are_in_same_imposed_group
+    )
+    imposed_groups = []
+    for ids in grouped_ids:
+        # We pop so this breaks if a sentence appears twice.
+        sentences = [sentence_map.pop(external_id) for external_id in ids]
+        if sentences:
+            imposed_groups.append(
+                build_imposed_group_from_sentences(state_code, delegate, sentences)
+            )
+    return imposed_groups
+
+
 def get_normalized_inferred_sentence_groups(
     state_code: StateCode,
     delegate: StateSpecificSentenceNormalizationDelegate,
     normalized_sentences: list[NormalizedStateSentence],
 ) -> list[NormalizedStateSentenceInferredGroup]:
     """
-    Creates NormalizedStateSentenceGroupInferred entities.
+    Creates NormalizedStateSentenceInferredGroup entities.
     Any NormalizedStateSentenceGroup and NormalizedStateSentence
     associated with a NormalizedStateSentenceGroupInferred will
     receive a sentence_group_inferred_id.

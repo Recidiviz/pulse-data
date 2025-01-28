@@ -86,6 +86,9 @@ def get_expected_output_normalized_entity_classes(
         expected_normalized_entity_classes.add(
             normalized_entities.NormalizedStateSentenceInferredGroup
         )
+        expected_normalized_entity_classes.add(
+            normalized_entities.NormalizedStateSentenceImposedGroup
+        )
 
     return expected_normalized_entity_classes
 

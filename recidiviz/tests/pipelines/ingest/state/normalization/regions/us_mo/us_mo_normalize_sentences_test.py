@@ -40,6 +40,7 @@ from recidiviz.pipelines.ingest.state.generate_primary_keys import (
 )
 from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import (
     NormalizedStateSentenceInferredGroup,
+    build_imposed_group_from_sentences,
 )
 from recidiviz.pipelines.ingest.state.normalization.normalize_sentences import (
     get_normalized_sentencing_entities,
@@ -48,6 +49,8 @@ from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_normalization_de
     UsMoSentenceNormalizationDelegate,
 )
 from recidiviz.utils.types import assert_type
+
+MO_DELEGATE = UsMoSentenceNormalizationDelegate()
 
 
 def test_person_001_sentencing_normalization() -> None:
@@ -378,6 +381,7 @@ def test_person_001_sentencing_normalization() -> None:
         sentencing_authority=StateSentencingAuthority.COUNTY,
         sentence_group_external_id="TEST_001-19900117",
         sentence_inferred_group_id=None,
+        sentence_imposed_group_id=None,
         is_life=False,
         state_code="US_MO",
         county_code="US_MO_ST_LOUIS_COUNTY",
@@ -474,6 +478,7 @@ def test_person_001_sentencing_normalization() -> None:
         sentencing_authority=StateSentencingAuthority.COUNTY,
         sentence_group_external_id="TEST_001-20040224",
         sentence_inferred_group_id=None,
+        sentence_imposed_group_id=None,
         is_life=False,
         state_code="US_MO",
         county_code="US_MO_ST_LOUIS_COUNTY",
@@ -584,6 +589,7 @@ def test_person_001_sentencing_normalization() -> None:
         sentencing_authority=StateSentencingAuthority.COUNTY,
         sentence_group_external_id="TEST_001-20040224",
         sentence_inferred_group_id=None,
+        sentence_imposed_group_id=None,
         is_life=False,
         state_code="US_MO",
         county_code="US_MO_ST_LOUIS_COUNTY",
@@ -643,8 +649,21 @@ def test_person_001_sentencing_normalization() -> None:
             StateCode.US_MO, [NORMALIZED_SENTENCE_001_19900117_1.external_id]
         )
     )
+    IMPOSED_GROUP_FROM_19900117 = build_imposed_group_from_sentences(
+        StateCode.US_MO,
+        MO_DELEGATE,
+        [
+            assert_type(
+                set_backedges(NORMALIZED_SENTENCE_001_19900117_1),
+                normalized_entities.NormalizedStateSentence,
+            )
+        ],
+    )
     NORMALIZED_SENTENCE_001_19900117_1.sentence_inferred_group_id = (
         INFERRED_GROUP_FROM_19900117.sentence_inferred_group_id
+    )
+    NORMALIZED_SENTENCE_001_19900117_1.sentence_imposed_group_id = (
+        IMPOSED_GROUP_FROM_19900117.sentence_imposed_group_id
     )
     INFERRED_GROUP_FROM_20040224 = (
         NormalizedStateSentenceInferredGroup.from_sentence_external_ids(
@@ -655,11 +674,37 @@ def test_person_001_sentencing_normalization() -> None:
             ],
         )
     )
+    IMPOSED_GROUP_FROM_20040224_1 = build_imposed_group_from_sentences(
+        StateCode.US_MO,
+        MO_DELEGATE,
+        [
+            assert_type(
+                set_backedges(NORMALIZED_SENTENCE_001_20040224_1),
+                normalized_entities.NormalizedStateSentence,
+            )
+        ],
+    )
+    IMPOSED_GROUP_FROM_20040224_2 = build_imposed_group_from_sentences(
+        StateCode.US_MO,
+        MO_DELEGATE,
+        [
+            assert_type(
+                set_backedges(NORMALIZED_SENTENCE_001_20040224_2),
+                normalized_entities.NormalizedStateSentence,
+            )
+        ],
+    )
     NORMALIZED_SENTENCE_001_20040224_1.sentence_inferred_group_id = (
         INFERRED_GROUP_FROM_20040224.sentence_inferred_group_id
     )
     NORMALIZED_SENTENCE_001_20040224_2.sentence_inferred_group_id = (
         INFERRED_GROUP_FROM_20040224.sentence_inferred_group_id
+    )
+    NORMALIZED_SENTENCE_001_20040224_1.sentence_imposed_group_id = (
+        IMPOSED_GROUP_FROM_20040224_1.sentence_imposed_group_id
+    )
+    NORMALIZED_SENTENCE_001_20040224_2.sentence_imposed_group_id = (
+        IMPOSED_GROUP_FROM_20040224_2.sentence_imposed_group_id
     )
 
     expected_normalized_sentences = [
@@ -692,18 +737,28 @@ def test_person_001_sentencing_normalization() -> None:
         ],
         key=lambda g: g.external_id,  # type: ignore
     )
+    expected_imposed_groups = sorted(
+        [
+            set_backedges(IMPOSED_GROUP_FROM_19900117),
+            set_backedges(IMPOSED_GROUP_FROM_20040224_1),
+            set_backedges(IMPOSED_GROUP_FROM_20040224_2),
+        ],
+        key=lambda g: g.external_id,  # type: ignore
+    )
 
     (
         actual_normalized_sentences,
         actual_normalized_sentence_groups,
         actual_inferred_groups,
+        actual_imposed_groups,
     ) = get_normalized_sentencing_entities(
         StateCode.US_MO,
         person_001.sentences,
         person_001.sentence_groups,
-        UsMoSentenceNormalizationDelegate(),
+        MO_DELEGATE,
     )
 
     assert actual_normalized_sentences == expected_normalized_sentences
     assert actual_normalized_sentence_groups == expected_normalized_sentence_groups
     assert actual_inferred_groups == expected_inferred_groups
+    assert actual_imposed_groups == expected_imposed_groups
