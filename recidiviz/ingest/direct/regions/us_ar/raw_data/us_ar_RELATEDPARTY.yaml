@@ -991,6 +991,15 @@ columns:
         description: Officer
       - value: nan
         description: Not Applicable
+    import_blocking_column_validation_exemptions:
+      - validation_type: KNOWN_VALUES
+        exemption_reason: |-
+          As of Jan 2025, new WORKASSIGNMENT values are being added on a regular basis,
+          which so far all look like "AM_". This column is being exempted from the known
+          values validation to prevent import-blocking errors every time a new value is added. 
+          TODO(#37807): Remove this exemption once new values stop being added frequently.
+          When we do, we should address all the unknown AM_ values using an updated code value
+          reference table.
   - name: PARTYRELEND
     description: |-
       End of relationship
