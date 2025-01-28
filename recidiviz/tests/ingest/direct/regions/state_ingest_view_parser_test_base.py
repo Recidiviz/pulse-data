@@ -31,7 +31,7 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
     get_direct_ingest_region,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
@@ -157,7 +157,7 @@ class StateIngestViewParserTestBase:
                         row[field] = converter(row[field])
             parsed_output = manifest.parse_contents(
                 contents_iterator=fixture_content,
-                context=IngestViewContentsContextImpl.build_for_tests(),
+                context=IngestViewContentsContext.build_for_tests(),
             )
 
         if debug:
@@ -320,5 +320,5 @@ class EnumManifestParsingTestCase(unittest.TestCase):
         for row in csv.DictReader(contents_handle.get_contents_iterator()):
             _ = enum_parser_manifest.build_from_row(
                 row,
-                context=IngestViewContentsContextImpl.build_for_tests(),
+                context=IngestViewContentsContext.build_for_tests(),
             )

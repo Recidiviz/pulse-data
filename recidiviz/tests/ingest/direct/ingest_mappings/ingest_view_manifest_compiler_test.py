@@ -20,7 +20,7 @@ import datetime
 import os
 import unittest
 from enum import Enum
-from typing import Dict, List, Optional, Type, Union
+from typing import Dict, List, Optional, Type
 
 from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.states import StateCode
@@ -206,43 +206,11 @@ class FakeSchemaIngestViewManifestCompilerDelegate(IngestViewManifestCompilerDel
 
     def get_env_property_type(self, property_name: str) -> Type:
         if property_name in (
-            "test_is_local",
-            "test_is_staging",
-            "test_is_production",
+            "is_local",
+            "is_staging",
+            "is_production",
         ):
             return bool
-
-        if property_name == "test_results_update_datetime":
-            return str
-
-        raise ValueError(f"Unexpected test env property: {property_name}")
-
-
-class FakeIngestViewContentsContext(IngestViewContentsContext):
-    """Fake implementation of IngestViewContentsContext for unittests."""
-
-    def __init__(
-        self,
-        is_production: bool,
-        is_staging: bool,
-        is_local: bool,
-        results_update_datetime: datetime.datetime,
-    ):
-        self.is_production = is_production
-        self.is_staging = is_staging
-        self.is_local = is_local
-        self.results_update_datetime = results_update_datetime
-
-    def get_env_property(self, property_name: str) -> Union[bool, str]:
-        if property_name == "test_is_local":
-            return self.is_local
-        if property_name == "test_is_staging":
-            return self.is_staging
-        if property_name == "test_is_production":
-            return self.is_production
-
-        if property_name == "test_results_update_datetime":
-            return self.results_update_datetime.isoformat()
 
         raise ValueError(f"Unexpected test env property: {property_name}")
 
@@ -267,7 +235,6 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         is_production: bool = False,
         is_staging: bool = False,
         is_local: bool = False,
-        results_update_datetime: datetime.datetime = datetime.datetime.now(),
     ) -> List[Entity]:
         """Runs a single parsing test for a fixture ingest view with the given name,
         returning the parsed entities.
@@ -286,11 +253,10 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
             ingest_view_name=ingest_view_name
         ).parse_contents(
             contents_iterator=csv.DictReader(contents_handle.get_contents_iterator()),
-            context=FakeIngestViewContentsContext(
+            context=IngestViewContentsContext(
                 is_production=is_production,
                 is_staging=is_staging,
                 is_local=is_local,
-                results_update_datetime=results_update_datetime,
             ),
         )
 
@@ -1655,42 +1621,6 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
-    def test_string_datetime_env_property(self) -> None:
-        # Arrange
-        expected_output = [
-            FakePerson(
-                fake_state_code="US_XX",
-                name="ELAINE BENES",
-                task_deadlines=[
-                    FakeTaskDeadline(
-                        fake_state_code="US_XX",
-                        due_date=datetime.date(2022, 1, 1),
-                        update_datetime=datetime.datetime(2022, 4, 14, 1, 2, 3),
-                    )
-                ],
-            ),
-            FakePerson(
-                fake_state_code="US_XX",
-                name="JERRY SEINFELD",
-                task_deadlines=[
-                    FakeTaskDeadline(
-                        fake_state_code="US_XX",
-                        due_date=datetime.date(2022, 2, 2),
-                        update_datetime=datetime.datetime(2022, 4, 14, 1, 2, 3),
-                    )
-                ],
-            ),
-        ]
-
-        # Act
-        parsed_output = self._run_parse_for_ingest_view(
-            "string_datetime_env_property",
-            results_update_datetime=datetime.datetime(2022, 4, 14, 1, 2, 3),
-        )
-
-        # Assert
-        self.assertEqual(expected_output, parsed_output)
-
     def test_boolean_condition(self) -> None:
         # Arrange
         expected_output = [
@@ -2564,22 +2494,13 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
                 is_staging=True,
             )
 
-    def test_env_property_names_returned_string_env_property(self) -> None:
-        manifest = self.compiler.compile_manifest(
-            ingest_view_name="string_datetime_env_property"
-        )
-        self.assertSetEqual(
-            manifest.output.env_properties_referenced(),
-            {"test_results_update_datetime"},
-        )
-
     def test_env_property_names_returned_bool_env_property(self) -> None:
         manifest = self.compiler.compile_manifest(
             ingest_view_name="boolean_condition_env_property"
         )
         self.assertSetEqual(
             manifest.output.env_properties_referenced(),
-            {"test_is_production", "test_is_local"},
+            {"is_production", "is_local"},
         )
 
     def test_get_hydrated_entities(self) -> None:

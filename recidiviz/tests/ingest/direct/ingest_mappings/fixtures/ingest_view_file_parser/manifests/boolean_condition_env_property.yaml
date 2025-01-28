@@ -8,7 +8,7 @@ output:
     name:
       $conditional:
         - $if:
-            $env: test_is_production
+            $env: is_production
           $then:
             $concat:
               $separator: " "
@@ -20,7 +20,7 @@ output:
       $conditional:
         - $if:
             $and:
-              - $env: test_is_local
+              - $env: is_local
               - $not_in:
                   $value: DOB
                   $options:
@@ -31,7 +31,7 @@ output:
       $conditional:
         - $if:
             $and:
-              - $env: test_is_local
-              - $env: test_is_production
+              - $env: is_local
+              - $env: is_production
           $then: $literal_enum(FakeGender.MALE)
         - $else: $literal_enum(FakeGender.FEMALE)

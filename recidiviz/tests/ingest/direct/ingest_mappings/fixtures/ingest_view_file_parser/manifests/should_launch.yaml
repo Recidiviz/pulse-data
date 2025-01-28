@@ -7,8 +7,8 @@ unused_columns:
   - SSN
 launch_env:
   $and:
-    - $env: test_is_staging
-    - $env: test_is_local
+    - $env: is_staging
+    - $env: is_local
 output:
   FakePerson:
     name: PERSONNAME

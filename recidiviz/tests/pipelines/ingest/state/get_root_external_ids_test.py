@@ -24,7 +24,7 @@ from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.state import pipeline
@@ -75,7 +75,7 @@ class TestGetRootExternalIdClusterEdges(
             .ingest_view_to_manifest[ingest_view_name]
             .parse_contents(
                 contents_iterator=iter(rows),
-                context=IngestViewContentsContextImpl.build_for_tests(),
+                context=IngestViewContentsContext.build_for_tests(),
             )
         )
 

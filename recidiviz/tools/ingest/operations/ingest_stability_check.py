@@ -59,7 +59,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -261,9 +261,7 @@ def verify_ingest_view_determinism(
     launched_ingest_views = ingest_manifest_collector.launchable_ingest_views(
         # Since this is a script run locally, we use the context for the specified
         # project so that we don't include local-only views.
-        IngestViewContentsContextImpl.build_for_project(
-            project_id=metadata.project_id()
-        ),
+        IngestViewContentsContext.build_for_project(project_id=metadata.project_id()),
     )
 
     view_query_builders = DirectIngestViewQueryBuilderCollector(

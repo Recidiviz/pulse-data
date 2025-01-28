@@ -34,7 +34,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPPER_BOUND_DATETIME_COL_NAME,
@@ -86,7 +86,7 @@ class TestMergeIngestViewRootEntityTrees(
         provided |ingest_view_name| and |test_name|, then parses the rows into root
         entity trees, returning those along with their associated upper bound date.
         """
-        parser_context = IngestViewContentsContextImpl.build_for_tests()
+        parser_context = IngestViewContentsContext.build_for_tests()
         rows = list(
             self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view_name, test_name=test_name

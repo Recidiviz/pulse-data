@@ -44,7 +44,7 @@ from recidiviz.big_query.big_query_results_contents_handle import (
 from recidiviz.common.constants import states
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifestCompiler,
@@ -169,9 +169,7 @@ def parse_results(
         ).parse_contents(
             contents_iterator=contents_handle.get_contents_iterator(),
             result_callable=result_processor,
-            context=IngestViewContentsContextImpl.build_for_project(
-                metadata.project_id()
-            ),
+            context=IngestViewContentsContext.build_for_project(metadata.project_id()),
         )
 
         progress.close()

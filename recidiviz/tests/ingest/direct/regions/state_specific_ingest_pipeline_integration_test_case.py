@@ -23,7 +23,7 @@ from apache_beam.pvalue import PBegin
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
@@ -77,11 +77,11 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         self.mock_environment_fn.return_value = True
 
         self.context_patcher = patch(
-            "recidiviz.pipelines.ingest.state.pipeline.IngestViewContentsContextImpl.build_for_project"
+            "recidiviz.pipelines.ingest.state.pipeline.IngestViewContentsContext.build_for_project"
         )
         self.context_patcher_fn = self.context_patcher.start()
         self.context_patcher_fn.return_value = (
-            IngestViewContentsContextImpl.build_for_tests()
+            IngestViewContentsContext.build_for_tests()
         )
 
     def tearDown(self) -> None:

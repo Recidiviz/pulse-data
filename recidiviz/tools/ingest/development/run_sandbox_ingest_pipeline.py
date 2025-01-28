@@ -54,7 +54,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -158,7 +158,7 @@ def get_raw_data_upper_bound_dates_json_for_sandbox_pipeline(
         # Use the context for the project we will be running against, not the one that
         # corresponds to the local environment so that we don't identify local-only
         # views as launchable here.
-        IngestViewContentsContextImpl.build_for_project(project_id=project_id),
+        IngestViewContentsContext.build_for_project(project_id=project_id),
     )
     view_collector = DirectIngestViewQueryBuilderCollector(
         region,

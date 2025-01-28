@@ -22,7 +22,7 @@ from typing import Dict, Set
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -56,7 +56,7 @@ class TestExemptions(unittest.TestCase):
                 )
                 all_launchable_views = (
                     ingest_manifest_collector.launchable_ingest_views(
-                        IngestViewContentsContextImpl.build_for_project(project_id)
+                        IngestViewContentsContext.build_for_project(project_id)
                     )
                 )
                 state_code_to_launchable_views[state_code].update(

@@ -18,9 +18,6 @@
 logic from the IngestViewManifest. This class may contain context that differs
 between rows in the ingest view results.
 """
-import abc
-from typing import Union
-
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IS_LOCAL_PROPERTY_NAME,
     IS_PRODUCTION_PROPERTY_NAME,
@@ -31,22 +28,11 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 
 
 class IngestViewContentsContext:
-    """Interface for a class that abstracts state/schema specific logic from the
-    IngestViewManifest. This class may contain context that differs between rows in the
-    ingest view results.
     """
+    This class is used to gate parsing logic for parsing ingest view results by checking
+    the '$env: value' portion of an ingest mapping against local, staging, or production.
 
-    @abc.abstractmethod
-    def get_env_property(self, property_name: str) -> Union[bool, str]:
-        """Returns a value associated with an environment or other metadata property
-        associated with this parsing job. Throws ValueError for all unexpected
-        property names.
-        """
-
-
-class IngestViewContentsContextImpl(IngestViewContentsContext):
-    """Standard implementation of the IngestViewContentsContext, for use in
-    production code.
+    TODO(#37799) Update the use of this to only work with `should_launch`, rather than generally.
     """
 
     def __init__(self, is_local: bool, is_staging: bool, is_production: bool) -> None:
@@ -54,7 +40,12 @@ class IngestViewContentsContextImpl(IngestViewContentsContext):
         self.is_staging = is_staging
         self.is_production = is_production
 
-    def get_env_property(self, property_name: str) -> Union[bool, str]:
+    def get_env_property(self, property_name: str) -> bool:
+        """
+        Returns a value associated with an environment or other metadata property
+        associated with this parsing job.
+        Throws ValueError for all unexpected property names.
+        """
         if property_name == IS_LOCAL_PROPERTY_NAME:
             return self.is_local
         if property_name == IS_STAGING_PROPERTY_NAME:
@@ -66,10 +57,10 @@ class IngestViewContentsContextImpl(IngestViewContentsContext):
 
     @classmethod
     @environment.test_only
-    def build_for_tests(cls) -> "IngestViewContentsContextImpl":
+    def build_for_tests(cls) -> "IngestViewContentsContext":
         """Creates a context for use in tests. Ingest views gated with `is_local: True`
         will be run with this context"""
-        return IngestViewContentsContextImpl(
+        return IngestViewContentsContext(
             is_local=True,
             # We run all views gated to staging in tests
             is_staging=True,
@@ -77,11 +68,11 @@ class IngestViewContentsContextImpl(IngestViewContentsContext):
         )
 
     @classmethod
-    def build_for_project(cls, project_id: str) -> "IngestViewContentsContextImpl":
+    def build_for_project(cls, project_id: str) -> "IngestViewContentsContext":
         """Creates context for an ingest view that will be processed in an ingest
         pipeline running in the given project.
         """
-        return IngestViewContentsContextImpl(
+        return IngestViewContentsContext(
             is_local=False,
             is_staging=project_id == GCP_PROJECT_STAGING,
             is_production=project_id == GCP_PROJECT_PRODUCTION,

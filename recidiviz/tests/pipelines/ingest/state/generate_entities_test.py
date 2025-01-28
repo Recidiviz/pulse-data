@@ -25,7 +25,7 @@ from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifestCompiler,
@@ -112,7 +112,7 @@ class TestGenerateEntities(BigQueryEmulatorTestCase, IngestRegionTestMixin):
             | pipeline.GenerateEntities(
                 state_code=self.state_code(),
                 ingest_view_manifest=ingest_view_manifest,
-                ingest_view_context=IngestViewContentsContextImpl.build_for_tests(),
+                ingest_view_context=IngestViewContentsContext.build_for_tests(),
             )
         )
         assert_that(output, equal_to(expected_output))

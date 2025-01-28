@@ -18,7 +18,7 @@
 import unittest
 
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -67,7 +67,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
 
     def test_launchable_ingest_views(self) -> None:
         result = self.us_xx_ingest_view_manifest_collector.launchable_ingest_views(
-            IngestViewContentsContextImpl(
+            IngestViewContentsContext(
                 is_production=False,
                 is_staging=True,
                 is_local=False,
@@ -78,7 +78,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
             list(sorted(result)),
         )
         result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views(
-            IngestViewContentsContextImpl(
+            IngestViewContentsContext(
                 is_production=True,
                 is_staging=False,
                 is_local=False,
@@ -90,7 +90,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
         )
 
         result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views(
-            IngestViewContentsContextImpl(
+            IngestViewContentsContext(
                 is_production=False,
                 is_staging=True,
                 is_local=False,

@@ -19,7 +19,7 @@ import unittest
 
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -64,7 +64,7 @@ class TestStateSpecificNormalizationDelegate(unittest.TestCase):
                 delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
             )
             for project_id in DATA_PLATFORM_GCP_PROJECTS:
-                ingest_view_context = IngestViewContentsContextImpl.build_for_project(
+                ingest_view_context = IngestViewContentsContext.build_for_project(
                     project_id=project_id
                 )
                 # These are the entity types that are output from ingest mappings

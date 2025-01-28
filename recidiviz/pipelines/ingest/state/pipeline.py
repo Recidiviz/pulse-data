@@ -26,7 +26,7 @@ from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvi
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -119,7 +119,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         )
         state_code = StateCode(self.pipeline_parameters.state_code.upper())
         raw_data_upper_bound_dates = self.pipeline_parameters.raw_data_upper_bound_dates
-        ingest_view_context = IngestViewContentsContextImpl.build_for_project(
+        ingest_view_context = IngestViewContentsContext.build_for_project(
             project_id=self.pipeline_parameters.project
         )
 

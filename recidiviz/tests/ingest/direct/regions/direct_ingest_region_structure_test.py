@@ -56,7 +56,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
-    IngestViewContentsContextImpl,
+    IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -671,9 +671,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 related_ingest_view_pairs = self._get_related_ingest_view_pairs(
                     ingest_view_names
                 )
-                contents_context = IngestViewContentsContextImpl.build_for_project(
-                    project
-                )
+                contents_context = IngestViewContentsContext.build_for_project(project)
                 for ingest_view, ingest_view_2 in related_ingest_view_pairs:
                     manifest = ingest_view_manifest_collector.ingest_view_to_manifest[
                         ingest_view
