@@ -202,8 +202,8 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage()
 
         self.mock_client.list_tables.assert_called()
-        self.mock_client.insert_into_table_from_query_async.assert_called()
-        self.mock_client.create_table_from_query_async.assert_called()
+        self.mock_client.insert_into_table_from_query.assert_called()
+        self.mock_client.create_table_from_query.assert_called()
 
     @patch(
         "recidiviz.pipelines.calculation_data_storage_manager._get_month_range_for_metric_and_state"
@@ -227,8 +227,8 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage()
 
         self.mock_client.list_tables.assert_called()
-        self.mock_client.insert_into_table_from_query_async.assert_called()
-        self.mock_client.create_table_from_query_async.assert_called()
+        self.mock_client.insert_into_table_from_query.assert_called()
+        self.mock_client.create_table_from_query.assert_called()
         self.mock_client.delete_table.assert_called()
 
     @patch(
@@ -596,8 +596,8 @@ class CalculationDataStorageManagerTestRealConfig(unittest.TestCase):
         calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage()
 
         self.mock_client.list_tables.assert_called()
-        self.mock_client.insert_into_table_from_query_async.assert_called()
-        self.mock_client.create_table_from_query_async.assert_called()
+        self.mock_client.insert_into_table_from_query.assert_called()
+        self.mock_client.create_table_from_query.assert_called()
 
 
 class MockDataset:

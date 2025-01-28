@@ -215,7 +215,7 @@ def load_from_temp_to_permanent_table(
     """Query temporary table and persist view to permanent table"""
     num_rows_before = bq_client.get_table(FINAL_DESTINATION_ADDRESS).num_rows
 
-    insert_job = bq_client.insert_into_table_from_query_async(
+    insert_job_result = bq_client.insert_into_table_from_query(
         destination_address=FINAL_DESTINATION_ADDRESS,
         query=StrictStringFormatter().format(
             INSERT_QUERY_TEMPLATE,
@@ -226,8 +226,6 @@ def load_from_temp_to_permanent_table(
         ),
         use_query_cache=True,
     )
-
-    insert_job_result = insert_job.result()
 
     logging.info(
         "Loaded [%d] non-duplicate rows into table [%s]",

@@ -201,23 +201,20 @@ def _materialize_twice_and_return_num_different_rows(
         table_id=f"{ingest_view_query_builder.ingest_view_name}__2",
     ).to_project_specific_address(metadata.project_id())
 
-    query_jobs = [
-        bq_client.insert_into_table_from_query_async(
-            destination_address=BigQueryAddress(
-                dataset_id=address_1.dataset_id, table_id=address_1.table_id
-            ),
-            query=view_query,
-            use_query_cache=False,
+    bq_client.insert_into_table_from_query(
+        destination_address=BigQueryAddress(
+            dataset_id=address_1.dataset_id, table_id=address_1.table_id
         ),
-        bq_client.insert_into_table_from_query_async(
-            destination_address=BigQueryAddress(
-                dataset_id=address_2.dataset_id, table_id=address_2.table_id
-            ),
-            query=view_query,
-            use_query_cache=False,
+        query=view_query,
+        use_query_cache=False,
+    )
+    bq_client.insert_into_table_from_query(
+        destination_address=BigQueryAddress(
+            dataset_id=address_2.dataset_id, table_id=address_2.table_id
         ),
-    ]
-    bq_client.wait_for_big_query_jobs(query_jobs)
+        query=view_query,
+        use_query_cache=False,
+    )
 
     diff_address = BigQueryAddress(
         dataset_id=temp_results_dataset_id,
@@ -227,11 +224,11 @@ def _materialize_twice_and_return_num_different_rows(
         f"{address_1.select_query()} EXCEPT DISTINCT ({address_2.select_query()});"
     )
 
-    bq_client.insert_into_table_from_query_async(
+    bq_client.insert_into_table_from_query(
         destination_address=diff_address.to_project_agnostic_address(),
         query=diff_query,
         use_query_cache=False,
-    ).result()
+    )
 
     count_query = (
         f"""SELECT COUNT(*) AS cnt FROM {diff_address.format_address_for_query()};"""

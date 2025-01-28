@@ -340,13 +340,12 @@ def compare_table_or_view(
         table_id=f"{address_original.table_id}_full",
     )
 
-    insert_job = bq_client.create_table_from_query_async(
+    bq_client.create_table_from_query(
         address=full_comparison_address.to_project_agnostic_address(),
         query=query,
         overwrite=True,
         use_query_cache=True,
     )
-    insert_job.result()
 
     # Construct query to show only the actual differences between the two tables
     difference_query = get_difference_query(
@@ -362,13 +361,12 @@ def compare_table_or_view(
         dataset_id=comparison_output_dataset_id,
         table_id=f"{address_original.table_id}_differences",
     )
-    insert_job = bq_client.create_table_from_query_async(
+    bq_client.create_table_from_query(
         address=differences_output_address.to_project_agnostic_address(),
         query=difference_query,
         overwrite=True,
         use_query_cache=True,
     )
-    insert_job.result()
 
     stats_query = (
         StrictStringFormatter().format(

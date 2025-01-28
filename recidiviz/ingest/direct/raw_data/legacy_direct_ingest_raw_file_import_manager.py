@@ -538,13 +538,12 @@ class LegacyDirectIngestRawFileImportManager:
         raw_data_diff_query = self._build_raw_data_pruning_query(
             temp_new_raw_data_address, file_tag, file_id, update_datetime
         )
-        create_job = self.big_query_client.create_table_from_query_async(
+        self.big_query_client.create_table_from_query(
             address=temp_raw_data_diff_table_address,
             query=raw_data_diff_query,
             overwrite=True,
             use_query_cache=False,
         )
-        create_job.result()
 
         # Append the results of the raw data diff query to the original raw data table
         append_job = self.big_query_client.insert_into_table_from_table_async(

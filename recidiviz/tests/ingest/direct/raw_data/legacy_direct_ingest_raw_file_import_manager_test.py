@@ -315,7 +315,7 @@ class LegacyDirectIngestRawFileImportManagerTest(unittest.TestCase):
 
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
 
-        self.mock_big_query_client.create_table_from_query_async.assert_called_with(
+        self.mock_big_query_client.create_table_from_query.assert_called_with(
             address=BigQueryAddress(
                 dataset_id="pruning_us_xx_raw_data_diff_results_primary",
                 table_id="multipleColPrimaryKeyHistorical__123",

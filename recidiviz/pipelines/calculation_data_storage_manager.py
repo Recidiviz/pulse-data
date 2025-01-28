@@ -361,7 +361,7 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
             logging.info("%s;", insert_query)
         else:
             # Move data from the Dataflow metrics dataset into the cold storage table, creating the table if necessary
-            insert_job = bq_client.insert_into_table_from_query_async(
+            bq_client.insert_into_table_from_query(
                 destination_address=BigQueryAddress(
                     dataset_id=cold_storage_dataset, table_id=table_id
                 ),
@@ -369,9 +369,6 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
                 allow_field_additions=True,
                 use_query_cache=True,
             )
-
-            # Wait for the insert job to complete before running the replace job
-            insert_job.result()
 
         # This will return the rows that were not moved to cold storage and should remain in the table
         columns_to_exclude = ", ".join(columns_to_exclude_from_transfer)
@@ -387,7 +384,7 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
             logging.info("%s;", replace_query)
         else:
             # Replace the Dataflow table with only the rows that should remain
-            replace_job = bq_client.create_table_from_query_async(
+            bq_client.create_table_from_query(
                 address=BigQueryAddress(
                     dataset_id=dataflow_metrics_dataset, table_id=table_ref.table_id
                 ),
@@ -395,9 +392,6 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
                 overwrite=True,
                 use_query_cache=True,
             )
-
-            # Wait for the replace job to complete before moving on
-            replace_job.result()
 
 
 def _decommission_dataflow_metric_table(
@@ -420,7 +414,7 @@ def _decommission_dataflow_metric_table(
         logging.info("###DECOMMISION INSERT QUERY INTO COLD STORAGE TABLE###")
         logging.info("%s;", insert_query)
     else:
-        insert_job = bq_client.insert_into_table_from_query_async(
+        bq_client.insert_into_table_from_query(
             destination_address=BigQueryAddress(
                 dataset_id=cold_storage_dataset, table_id=table_id
             ),
@@ -428,9 +422,6 @@ def _decommission_dataflow_metric_table(
             allow_field_additions=True,
             use_query_cache=True,
         )
-
-        # Wait for the insert job to complete before deleting the table
-        insert_job.result()
 
         bq_client.delete_table(
             address=BigQueryAddress(

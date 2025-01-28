@@ -81,7 +81,7 @@ def main(dry_run: bool) -> None:
             )
         else:
             # Move data from the Dataflow metrics dataset into the cold storage table, creating the table if necessary
-            insert_job = bq_client.insert_into_table_from_query_async(
+            bq_client.insert_into_table_from_query(
                 destination_address=BigQueryAddress(
                     dataset_id=cold_storage_dataset,
                     table_id=table_id,
@@ -90,9 +90,6 @@ def main(dry_run: bool) -> None:
                 allow_field_additions=True,
                 use_query_cache=False,
             )
-
-            # Wait for the insert job to complete before running the delete job
-            insert_job.result()
 
         if dry_run:
             logging.info(

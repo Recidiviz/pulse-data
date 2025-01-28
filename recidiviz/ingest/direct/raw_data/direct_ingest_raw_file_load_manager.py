@@ -221,7 +221,7 @@ class DirectIngestRawFileLoadManager:
             )
         )
 
-        query_job = self.big_query_client.create_table_from_query_async(
+        query_result = self.big_query_client.create_table_from_query(
             address=destination_table,
             query=transformation_query,
             overwrite=True,
@@ -230,15 +230,6 @@ class DirectIngestRawFileLoadManager:
                 RawDataImportStepResourceLabel.RAW_DATA_PRE_IMPORT_TRANSFORMATIONS.value
             ],
         )
-        try:
-            query_result = query_job.result()
-        except Exception as e:
-            logging.error(
-                "Transformation query job [%s] failed with errors: [%s]",
-                query_job.job_id,
-                query_job.errors,
-            )
-            raise e
 
         return query_result.total_rows
 
@@ -407,23 +398,19 @@ class DirectIngestRawFileLoadManager:
             new_raw_data_dataset=temp_raw_file_address.dataset_id,
         ).build_query()
 
-        create_job = self.big_query_client.create_table_from_query_async(
-            address=temp_raw_data_diff_table_address,
-            query=raw_data_diff_query,
-            overwrite=True,
-            use_query_cache=False,
-            job_labels=[RawDataImportStepResourceLabel.RAW_DATA_PRUNING.value],
-        )
-
         try:
-            create_job.result()
+            self.big_query_client.create_table_from_query(
+                address=temp_raw_data_diff_table_address,
+                query=raw_data_diff_query,
+                overwrite=True,
+                use_query_cache=False,
+                job_labels=[RawDataImportStepResourceLabel.RAW_DATA_PRUNING.value],
+            )
         except Exception as e:
             logging.error(
-                "Create job [%s] for [%s] with id [%s] failed with errors: [%s]",
-                create_job.job_id,
+                "Create job for [%s] with id [%s] failed",
                 file_tag,
                 file_id,
-                create_job.errors,
             )
             raise e
 

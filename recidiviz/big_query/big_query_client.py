@@ -709,7 +709,9 @@ class BigQueryClient:
         """Inserts the results of the given query into the table at the given address.
         Creates a table if one does not yet exist. If |allow_field_additions| is set to
         False and the table exists, the schema of the query result must match the schema
-        of the destination table.
+        of the destination table. Note that if a table is created as a result of this query,
+        the caller is responsible for ensuring that the correct row-level permissions are
+        applied to the table.
 
         Args:
             destination_address: The address of the table where the result should be
@@ -728,6 +730,43 @@ class BigQueryClient:
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
+        """
+
+    @abc.abstractmethod
+    def insert_into_table_from_query(
+        self,
+        *,
+        destination_address: BigQueryAddress,
+        query: str,
+        use_query_cache: bool,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+        allow_field_additions: bool = False,
+        clustering_fields: Optional[List[str]] = None,
+        time_partitioning: bigquery.TimePartitioning | None = None,
+        job_labels: Optional[list[ResourceLabel]] = None,
+    ) -> bigquery.table.RowIterator:
+        """Inserts the results of the given query into the table at the given address.
+        Creates a table if one does not yet exist. If |allow_field_additions| is set to
+        False and the table exists, the schema of the query result must match the schema of
+        the destination table. If a table is created, applies row-level permissions if applicable.
+
+        Args:
+            destination_address: The address of the table where the result should be
+                inserted.
+            query: The query to run. The result will be loaded into the table.
+            query_parameters: Optional parameters for the query.
+            allow_field_additions: Whether or not to allow new columns to be created in
+                the destination table if the schema in the query result does not exactly
+                match the destination table. Defaults to False.
+            clustering_fields: Columns by which to cluster the table.
+            time_partitioning: Configuration for time period partitioning that should be
+                applied to the table.
+            use_query_cache: Whether to look for the result in the query cache. See:
+                https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
+            job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
+
+        Returns:
+            The result of the QueryJob.
         """
 
     @abc.abstractmethod
@@ -796,9 +835,9 @@ class BigQueryClient:
         use_query_cache: bool,
         job_labels: Optional[list[ResourceLabel]] = None,
     ) -> BigQueryViewMaterializationResult:
-        """Materializes the result of a view's view_query into a table. The view's
-        materialized_address must be set. The resulting table is put in the same
-        project as the view, and it overwrites any previous materialization of the view.
+        """Materializes the result of a view's view_query into a table and applies row-level permissions
+        to the resulting table. The view's materialized_address must be set. The resulting table is put
+        in the same project as the view, and it overwrites any previous materialization of the view.
 
         Returns a BigQueryViewMaterializationResult with information about the completed
         materialization job.
@@ -1186,7 +1225,7 @@ class BigQueryClientImpl(BigQueryClient):
         # level permissions cannot be applied to views.
         if table.view_query is not None:
             logging.info(
-                "Will not apply row_level_permissions to view [%s.%s] - returning.",
+                "Will not apply row-level permissions to view [%s.%s] - returning.",
                 table.dataset_id,
                 table.table_id,
             )
@@ -1198,14 +1237,14 @@ class BigQueryClientImpl(BigQueryClient):
             )
         ):
             logging.info(
-                "No row level permissions to apply to table [%s.%s] - returning.",
+                "No row-level permissions to apply to table [%s.%s] - returning.",
                 table.dataset_id,
                 table.table_id,
             )
             return
 
         logging.info(
-            "Applying row level permissions to table [%s.%s]",
+            "Applying row-level permissions to table [%s.%s]",
             table.dataset_id,
             table.table_id,
         )
@@ -1472,6 +1511,8 @@ class BigQueryClientImpl(BigQueryClient):
         try:
             query_jobs = []
             for export_config in export_configs:
+                # Because we delete the intermediate table after the export, we don't worry about
+                # applying row-level permissions.
                 query_job = self.create_table_from_query_async(
                     address=export_config.intermediate_table_address,
                     query=export_config.query,
@@ -1931,6 +1972,56 @@ class BigQueryClientImpl(BigQueryClient):
             job_labels=job_labels,
         )
 
+    def insert_into_table_from_query(
+        self,
+        *,
+        destination_address: BigQueryAddress,
+        query: str,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+        allow_field_additions: bool = False,
+        clustering_fields: Optional[List[str]] = None,
+        time_partitioning: bigquery.TimePartitioning | None = None,
+        use_query_cache: bool,
+        job_labels: Optional[list[ResourceLabel]] = None,
+    ) -> bigquery.table.RowIterator:
+        query_should_not_create_table = not self.table_exists(destination_address)
+        query_job = self._insert_into_table_from_query_async(
+            destination_address=destination_address,
+            query=query,
+            query_parameters=query_parameters,
+            allow_field_additions=allow_field_additions,
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+            clustering_fields=clustering_fields,
+            time_partitioning=time_partitioning,
+            use_query_cache=use_query_cache,
+            job_labels=job_labels,
+        )
+        try:
+            result = query_job.result()
+        except Exception as e:
+            logging.error(
+                "Insert into table job [%s] failed for table [%s] with errors: %s",
+                query_job.job_id,
+                destination_address.to_str(),
+                query_job.errors,
+            )
+            raise e
+
+        if query_should_not_create_table:
+            return result
+
+        try:
+            self.apply_row_level_permissions(self.get_table(destination_address))
+        except Exception as e:
+            logging.error(
+                "Failed to apply row-level permissions to table [%s]. "
+                "Insert query was successful, but row-level permissions were not applied.",
+                destination_address.to_str(),
+            )
+            raise e
+
+        return result
+
     def insert_into_table_from_table_async(
         self,
         *,
@@ -2051,8 +2142,10 @@ class BigQueryClientImpl(BigQueryClient):
         )
         create_job.result()
 
-        description = view.materialized_table_bq_description
         table = self.get_table(destination_address)
+        self.apply_row_level_permissions(table)
+
+        description = view.materialized_table_bq_description
         if description == table.description:
             return BigQueryViewMaterializationResult(
                 view_address=view.address,
