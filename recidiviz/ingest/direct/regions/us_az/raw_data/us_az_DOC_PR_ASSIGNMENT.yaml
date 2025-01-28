@@ -2,8 +2,9 @@
 file_tag: DOC_PR_ASSIGNMENT
 file_description: |-
   Contains information about work and non-work program assignments. Work programs can 
-  be linked to DOC_ACI_ASSIGN for more information. Non-work programs cannot be linked
-  to any table as of 9/12/24.
+  be linked to DOC_ACI_ASSIGN for more information. Non-work programs can be linked to 
+  DOC_PR_CYCLE -> DOC_PROGRAM_COMPLEX_UNIT -> DOC_PR_PROGRAM -> DOC_PROGRAM_DETAIL for
+  more information.
 data_classification: source
 primary_key_cols:
   - ASSIGNMENT_ID

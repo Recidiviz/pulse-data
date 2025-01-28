@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: DOC_PR_PROGRAM
+file_description: |-
+  Contains information about work and non-work program assignments.
+data_classification: source
+primary_key_cols:
+  - PROGRAM_ID
+columns:
+  - name: PROGRAM_ID
+    description: Primary key
+  - name: PR_DETAIL_ID
+    description: Foreign key to DOC_PROGRAM_DETAIL
+  - name: PAY_RATE_ID
+    description: ID for pay rate
+  - name: PAY_PROFILE_ID
+    description: Unknown
+  - name: STATUS_ID
+    description: FK to LOOKUPS
+  - name: EVALUATION_FREQUENCY_ID
+    description: Unknown
+  - name: PR_EFF_DATE
+    description: Date the program started
+    field_type: datetime
+  - name: PR_END_DATE
+    description: Date the program ended
+    field_type: datetime
+  - name: ROSTER_LIMIT
+    description: Limit to number of people who can enroll in the program
+  - name: HOLD_TYPE_ID
+    description: Unknown
+  - name: MAX_WORK_HOURS
+    description: Unknown
+  - name: CONTACT_CODES
+    description: Unknown
+  - name: ACTIVE_FLAG
+    description: Identifies if record is active
+  - name: CHANGE_ID
+    description: Change_id links to change_history for audit purposes

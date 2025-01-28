@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: AZ_CS_OMS_RSK_ASSESSMENT
+file_description: |-
+  Basic information about each ACIS Risk Release Assessment (RRA).
+data_classification: source
+primary_key_cols:
+  - RISK_ASSESSMENT_ID
+columns:
+  - name: RISK_ASSESSMENT_ID
+    description: Primary key
+  - name: DPP_ID
+    description: |-
+      ID unique to person & supervision stint. FK to DPP_EPISODE.
+  - name: DATE_ASSESSMENT
+    description: Date assessment was performed
+    field_type: datetime
+  - name: TOTAL_POINTS
+    description: Total number of points scored on the assessment
+  - name: STATUS_ID
+    description: Status of assessment. FK to LOOKUPS
+  - name: LEVEL_ID
+    description: Resulting supervision level. FK to LOOKUPS
+  - name: REQUESTED_LEVEL_ID
+    description: Supervision level requested as a result of this assessment. FK to LOOKUPS
+  - name: REQUESTED_REASON_ID
+    description: |-
+      Reason the REQUESTED_LEVEL_ID was requested. FK to LOOKUPS
+  - name: CREATE_USERID
+    description: |-
+      ID of the the person who created the record
+    is_pii: True
+  - name: CREATE_DTM
+    description: |-
+      Date the record was created
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: UPDT_USERID
+    description: |-
+      ID of the the person who last updated the record
+    is_pii: True
+  - name: UPDT_DTM
+    description: |-
+      Date the record was last updated
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: CHANGE_ID
+    description: |-
+      References CHANGE_HISTORY table
+  - name: ACTIVE_FLAG
+    description: |-
+      Is the row deleted Y/N

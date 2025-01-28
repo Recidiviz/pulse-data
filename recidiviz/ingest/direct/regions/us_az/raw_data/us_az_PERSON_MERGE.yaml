@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PERSON_MERGE
+file_description: |-
+  A table to track when PERSON_IDs have been merged with other PERSON_IDs over time.
+data_classification: source
+primary_key_cols:
+  - PERSON_MERGE_ID
+columns:
+  - name: PERSON_MERGE_ID
+    description: |-
+      Primary key
+  - name: MASTER_PERSON_ID
+    description: |-
+      The "original" PERSON_ID, or the one that should be maintained once the merge
+      is complete.
+  - name: SLAVE_PERSON_ID
+    description: |-
+      The PERSON_ID that is being merged into the MASTER_PERSON_ID. All references
+      to this PERSON_ID in the database can be replaced with references to the MASTER_PERSON_ID
+      after the MERGE_DATE.
+  - name: COMMENTS
+    description: |-
+      Free text comments on the merge.
+    is_pii: True
+  - name: MERGE_DATE
+    description: |-
+      The date the two PERSON_ID values were merged.
+    field_type: datetime
+  - name: SID
+    description: |-
+      An identifier, presumably for a person, that we do not see in any other table we receive.
+      Currently always NULL.
+    is_pii: True
+  - name: EMAIL_SENT_DATE
+    description: |-
+      Unknown.
+    field_type: datetime
+  - name: BUSINESS_UNIT_ID
+    description: |-
+      Unknown
+  - name: UNMERGE_DATE
+    description: |-
+      The date after which the two PERSON_ID values in MASTER_PERSON_ID and SLAVE_PERSON_ID
+      should no longer be considered equal, if applicable.
+  - name: CREATE_USERID
+    description: |-
+      ID of the the person who created the record
+    is_pii: True
+  - name: CREATE_DTM
+    description: |-
+      Date the record was created
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: UPDT_USERID
+    description: |-
+      ID of the the person who last updated the record
+    is_pii: True
+  - name: UPDT_DTM
+    description: |-
+      Date the record was last updated
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: CHANGE_ID
+    description: |-
+      References CHANGE_HISTORY table
+  - name: PERSON_ALIAS_ID
+    description: |-
+      ID of the person's alias, if one exists. Currently not joinable to any other table.

@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: DOC_PROGRAM_DETAIL
 file_description: |-
-  TODO(#25890): FILL IN
+  Contains details about each work and non-work program assignment included in DOC_PR_PROGRAM.
 data_classification: source
 primary_key_cols:
   - PR_DETAIL_ID
