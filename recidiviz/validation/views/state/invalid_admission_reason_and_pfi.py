@@ -42,10 +42,22 @@ invalid combinations of admission_reason and specialized_purpose_for_incarcerati
 
 INVALID_ROWS_FILTER_CLAUSE = f"""WHERE (admission_reason =
 '{StateIncarcerationPeriodAdmissionReason.REVOCATION.value}'
-    -- Any REVOCATION admission_reason should have a purpose of GENERAL
-        AND specialized_purpose_for_incarceration NOT IN (
-            '{StateSpecializedPurposeForIncarceration.GENERAL.value}'
-        ))
+    -- Any REVOCATION admission_reason should have a purpose of GENERAL, except for in US_AR,
+    -- where they should have a purpose of either GENERAL or SHOCK_INCARCERATION.
+        AND (
+                (
+                    state_code != 'US_AR' AND
+                    specialized_purpose_for_incarceration NOT IN (
+                        '{StateSpecializedPurposeForIncarceration.GENERAL.value}'
+                ))
+                OR (
+                    state_code = 'US_AR' AND
+                    specialized_purpose_for_incarceration NOT IN (
+                        '{StateSpecializedPurposeForIncarceration.GENERAL.value}',
+                        '{StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION.value}'
+                ))
+            )
+        )
     -- Any NEW_ADMISSION should have a purpose of GENERAL, TREATMENT_IN_PRISON, INTERNAL_UNKNOWN, or SHOCK_INCARCERATION
     OR (admission_reason = '{StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION.value}'
         AND specialized_purpose_for_incarceration NOT IN (

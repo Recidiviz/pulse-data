@@ -19,6 +19,7 @@ from typing import List
 
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
@@ -80,13 +81,43 @@ class UsArIncarcerationNormalizationDelegate(
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
     ) -> List[StateIncarcerationPeriod]:
-        """Standardizing PFI using the legacy _standardize_purpose_for_incarceration_values function
-        for US_AR since this was previously the default normalization behavior
-        and there hasn't been a use case for skipping this inferrence yet"""
+        """Standardizes PFI in 3 steps:
+        1. Set PFI to SHOCK_INCARCERATION for all periods with admission_reason = SANCTION_ADMISSION
+        2. Use the legacy _standardize_purpose_for_incarceration_values function to propagate PFIs
+        set in the previous step where relevant, and set PFI to GENERAL otherwise
+        3. Set PFI to SHOCK_INCARCERATION for all periods with specialized_purpose_for_incarceration_raw_text = '90_DAY'
 
-        return legacy_standardize_purpose_for_incarceration_values(
-            incarceration_periods
+        We need to handle SHOCK_INCARCERATION PFIs in this step of normalization, because this
+        function is called after admission reasons get standardized based on PFI in
+        _normalize_commitment_from_supervision_admission_periods, which can't be modified in
+        state-specific implementations of the incarceraation delegate. If incarceration periods
+        had their PFI set to SHOCK_INCARCERATION during ingest or at an earlier step of normalization,
+        then their admission reasons would be set to SANCTION_ADMISSION across the board,
+        even though we allow periods in AR to use the REVOCATION admission reason with the
+        SHOCK_INCARCERATION PFI.
+        """
+
+        ips_with_standardized_pfi = legacy_standardize_purpose_for_incarceration_values(
+            [
+                deep_entity_update(
+                    ip,
+                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+                )
+                if ip.admission_reason
+                == StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION
+                else ip
+                for ip in incarceration_periods
+            ]
         )
+
+        for ip in ips_with_standardized_pfi:
+            if ip.specialized_purpose_for_incarceration_raw_text == "90_DAY":
+                ip = deep_entity_update(
+                    ip,
+                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+                )
+
+        return ips_with_standardized_pfi
 
 
 def _is_revocation_admission(

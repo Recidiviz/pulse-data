@@ -115,4 +115,9 @@ output:
                   $enum_mapping:
                     $raw_text: special_admission_type
                     $mappings:
-                      StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION: "90_DAY"
+                      # 90 day revocations will have their PFI set to SHOCK_INCARCERATION in
+                      # normalization. We use GENERAL here because any period that goes thru
+                      # normalization with a PFI of SHOCK_INCARCERATION will have its admission
+                      # reason set to SANCTION_ADMISSION, and we don't want REVOCATION admission
+                      # reasons to be overridden.
+                      StateSpecializedPurposeForIncarceration.GENERAL: "90_DAY"
