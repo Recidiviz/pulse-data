@@ -378,10 +378,10 @@ function copyAndPopulateTemplateDoc(
   body.replaceText("{{today_date}}", today);
   body.replaceText("{{time_period}}", timePeriod.toLowerCase());
 
-  const exclusiveEndDate = new Date(endDateString);
-  exclusiveEndDate.setDate(exclusiveEndDate.getDate() - 1);
+  const exclusiveEndDateUTC = new Date(endDateString);
+  exclusiveEndDateUTC.setUTCDate(exclusiveEndDateUTC.getUTCDate() - 1);
   const endDateClean = cleanDate(
-    Utilities.formatDate(exclusiveEndDate, "GMT-5", "yyyy-MM-dd")
+    Utilities.formatDate(exclusiveEndDateUTC, "GMT", "yyyy-MM-dd")
   );
   const timeRange = `${startDate}-${endDateClean}`;
   body.replaceText("{{time_range}}", timeRange);
