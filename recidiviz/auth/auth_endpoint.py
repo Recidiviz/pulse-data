@@ -20,7 +20,7 @@
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Tuple, Type, Union
 
@@ -31,7 +31,7 @@ from psycopg2.errors import (  # pylint: disable=no-name-in-module
     NotNullViolation,
     UniqueViolation,
 )
-from sqlalchemy import delete, func, inspect
+from sqlalchemy import delete, func, inspect, select, update
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError, ProgrammingError, StatementError
 from sqlalchemy.sql import Update
@@ -111,6 +111,28 @@ def _lookup_user_attrs_from_hash(
     )
 
 
+def _upsert(
+    session: Session,
+    row: Dict[str, Any],
+    table: Type[Roster] | Type[UserOverride],
+    update_null_only: bool = False,
+) -> None:
+    existing = (
+        session.query(table)
+        .filter_by(
+            state_code=f"{row['state_code']}", email_address=f"{row['email_address']}"
+        )
+        .first()
+    )
+    if existing:
+        for key, value in row.items():
+            if not update_null_only or getattr(existing, key) is None:
+                setattr(existing, key, value)
+    else:
+        new_row = table(**row)
+        session.add(new_row)
+
+
 def _upsert_user_rows(
     session: Session,
     state_code: str,
@@ -161,17 +183,7 @@ def _upsert_user_rows(
         row["user_hash"] = generate_user_hash(row["email_address"])
 
         # update existing row or add new row
-        existing = (
-            session.query(table)
-            .filter_by(state_code=f"{state_code.upper()}", email_address=f"{email}")
-            .first()
-        )
-        if existing:
-            for key, value in row.items():
-                setattr(existing, key, value)
-        else:
-            new_row = table(**row)
-            session.add(new_row)
+        _upsert(session, row, table)
 
     session.commit()
 
@@ -803,11 +815,55 @@ def get_auth_endpoint_blueprint(
                     chunk_size=1000,
                     header=None,
                 )
-                delete_stmt = delete(Roster).where(
-                    Roster.state_code == state_code,
-                    Roster.email_address.not_in(reader_delegate.emails),
+                ingested_emails = reader_delegate.emails
+
+                # First remove any upcoming blocks for ingested users
+                session.execute(
+                    update(UserOverride)
+                    .where(
+                        UserOverride.state_code == state_code,
+                        UserOverride.email_address.in_(ingested_emails),
+                        UserOverride.blocked_on.isnot(None),
+                        UserOverride.blocked_on > func.now(),
+                    )
+                    .values(blocked_on=None),
+                    execution_options={"synchronize_session": False},
                 )
-                session.execute(delete_stmt)
+
+                # For each user in Roster who is not ingested, copy over their info
+                # to UserOverride so we don't lose anything by accident. At the same
+                # time, set their upcoming block date for one week in the future.
+                roster_users_to_be_deleted = (
+                    session.execute(
+                        select(Roster).where(
+                            Roster.state_code == state_code,
+                            Roster.email_address.not_in(ingested_emails),
+                        )
+                    )
+                    .scalars()
+                    .all()
+                )
+
+                roster_users_as_dicts = [
+                    {
+                        **user.to_dict(),
+                        "blocked_on": datetime.now() + timedelta(weeks=1),
+                    }
+                    for user in roster_users_to_be_deleted
+                ]
+
+                for user in roster_users_as_dicts:
+                    _upsert(session, user, UserOverride, update_null_only=True)
+
+                # Now we can delete the users not in the CSV file from Roster
+                session.execute(
+                    delete(Roster).where(
+                        Roster.state_code == state_code,
+                        Roster.email_address.not_in(ingested_emails),
+                    )
+                )
+
+                session.commit()
 
             logging.info(
                 "CSV (%s) successfully imported to Cloud SQL schema %s for region code %s",

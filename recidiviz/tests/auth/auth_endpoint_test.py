@@ -18,7 +18,7 @@
 """Tests for auth/auth_endpoint.py."""
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 from unittest import TestCase
@@ -60,6 +60,7 @@ _PARAMETER_USER_HASH = "Sb6c3tejhmTMDZ3RmPVuSz2pLS7Eo2H4i/zaMrYfEMU="
 _LEADERSHIP_USER_HASH = "AeGKHtfy90TZ9wS9PoC8jtJKT9RdfMm1GLn1YPVqqBM="
 _SUPERVISION_STAFF_HASH = "_uYmjI0oMriD8yRXsTt1quVrTkZZuRHJ35X+szGMHJQ="
 _USER_HASH = "U9/nAUB/dvfqwBERoVETtCxT66GclnELpsw9OPrE9Vk="
+_FACILITIES_USER_HASH = "hAYT6YqEQZ2nuvlMgfr523mO4YE05n3wPcTCh9I6QBo="
 
 LEADERSHIP_ROLE = "supervision_leadership"
 SUPERVISION_STAFF = "supervision_line_staff"
@@ -1077,10 +1078,11 @@ class AuthEndpointTests(TestCase):
 
             mock_task_manager.return_value.create_task.assert_not_called()
 
+    @freezegun.freeze_time(datetime.now())
     @patch(
         "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
     )
-    def test_import_ingested_users_successful(
+    def test_import_ingested_users_remove_upcoming_block(
         self, mock_generate_pseudonymized_id: MagicMock
     ) -> None:
         mock_generate_pseudonymized_id.side_effect = lambda state_code, external_id: (
@@ -1101,17 +1103,12 @@ class AuthEndpointTests(TestCase):
             external_id="0000",  # This should change with the new upload
             district="",
         )
-        roster_leadership_user_override = generate_fake_user_overrides(
+        user_override_leadership_user = generate_fake_user_overrides(
             email="leadership@testdomain.com",
             region_code="US_XX",
-            first_name="override",  # This should not change with the new upload
-        )
-        # This user will be deleted
-        roster_supervision_staff = generate_fake_rosters(
-            email="parameter@testdomain.com",
-            region_code="US_XX",
-            roles=[SUPERVISION_STAFF],
-            district="",
+            first_name="override",
+            blocked_on=datetime.now()
+            + timedelta(days=5),  # This should be set to null with the new upload
         )
         # Create associated default permissions by role
         leadership_default = generate_fake_default_permissions(
@@ -1126,8 +1123,7 @@ class AuthEndpointTests(TestCase):
             self.database_key,
             [
                 roster_leadership_user,
-                roster_leadership_user_override,
-                roster_supervision_staff,
+                user_override_leadership_user,
                 leadership_default,
                 supervision_staff_default,
             ],
@@ -1157,6 +1153,415 @@ class AuthEndpointTests(TestCase):
                     "emailAddress": "leadership@testdomain.com",
                     "externalId": None,
                     "firstName": "override",
+                    "lastName": "user",
+                    "roles": [LEADERSHIP_ROLE],
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _LEADERSHIP_USER_HASH,
+                    "pseudonymizedId": None,
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": None,
+                    "district": "D1",
+                    "emailAddress": "supervision_staff@testdomain.com",
+                    "externalId": "3706",
+                    "firstName": "supervision",
+                    "lastName": "user",
+                    "roles": [SUPERVISION_STAFF],
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _SUPERVISION_STAFF_HASH,
+                    "pseudonymizedId": "pseudo-3706",
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": None,
+                    "district": "D2",
+                    "emailAddress": "user@testdomain.com",
+                    "externalId": "98725",
+                    "firstName": "supervision2",
+                    "lastName": "user2",
+                    "roles": [SUPERVISION_STAFF],
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _USER_HASH,
+                    "pseudonymizedId": "hashed-98725",
+                },
+            ]
+            response = self.client.get(
+                self.users,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    @patch(
+        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+    )
+    def test_import_ingested_users_keep_existing_block(
+        self, mock_generate_pseudonymized_id: MagicMock
+    ) -> None:
+        mock_generate_pseudonymized_id.side_effect = lambda state_code, external_id: (
+            f"hashed-{external_id}" if external_id else None
+        )
+        self.fs.upload_from_contents_handle_stream(
+            self.ingested_users_gcs_csv_uri,
+            contents_handle=LocalFileContentsHandle(
+                local_file_path=os.path.join(_FIXTURE_PATH, "us_xx_ingested_users.csv"),
+                cleanup_file=False,
+            ),
+            content_type="text/csv",
+        )
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@testdomain.com",
+            region_code="US_XX",
+            roles=[LEADERSHIP_ROLE],
+            external_id="0000",
+            district="",
+        )
+        user_override_leadership_user = generate_fake_user_overrides(
+            email="leadership@testdomain.com",
+            region_code="US_XX",
+            first_name="override",
+            blocked_on=datetime.fromisoformat(
+                "2025-01-09"
+            ),  # This should stay the same with the new upload
+        )
+        # Create associated default permissions by role
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=LEADERSHIP_ROLE,
+        )
+        supervision_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=SUPERVISION_STAFF,
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                roster_leadership_user,
+                user_override_leadership_user,
+                leadership_default,
+                supervision_staff_default,
+            ],
+        )
+
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users,
+                headers=self.headers,
+                json={
+                    "state_code": "US_XX",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
+            self.assertEqual(
+                b"CSV US_XX/ingested_product_users.csv successfully imported to "
+                b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
+                response.data,
+            )
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": "2025-01-09T00:00:00",
+                    "district": None,
+                    "emailAddress": "leadership@testdomain.com",
+                    "externalId": None,
+                    "firstName": "override",
+                    "lastName": "user",
+                    "roles": [LEADERSHIP_ROLE],
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _LEADERSHIP_USER_HASH,
+                    "pseudonymizedId": None,
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": None,
+                    "district": "D1",
+                    "emailAddress": "supervision_staff@testdomain.com",
+                    "externalId": "3706",
+                    "firstName": "supervision",
+                    "lastName": "user",
+                    "roles": [SUPERVISION_STAFF],
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _SUPERVISION_STAFF_HASH,
+                    "pseudonymizedId": "pseudo-3706",
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": None,
+                    "district": "D2",
+                    "emailAddress": "user@testdomain.com",
+                    "externalId": "98725",
+                    "firstName": "supervision2",
+                    "lastName": "user2",
+                    "roles": [SUPERVISION_STAFF],
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _USER_HASH,
+                    "pseudonymizedId": "hashed-98725",
+                },
+            ]
+            response = self.client.get(
+                self.users,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    @freezegun.freeze_time(datetime.now())
+    @patch(
+        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+    )
+    def test_import_ingested_users_insert_user_override(
+        self, mock_generate_pseudonymized_id: MagicMock
+    ) -> None:
+        mock_generate_pseudonymized_id.side_effect = lambda state_code, external_id: (
+            f"hashed-{external_id}" if external_id else None
+        )
+        self.fs.upload_from_contents_handle_stream(
+            self.ingested_users_gcs_csv_uri,
+            contents_handle=LocalFileContentsHandle(
+                local_file_path=os.path.join(_FIXTURE_PATH, "us_xx_ingested_users.csv"),
+                cleanup_file=False,
+            ),
+            content_type="text/csv",
+        )
+        # User will be inserted in UserOverride with info from Roster and
+        # future block date added
+        roster_supervision_staff = generate_fake_rosters(
+            email="parameter@testdomain.com",
+            region_code="US_XX",
+            roles=[SUPERVISION_STAFF],
+            district="",
+        )
+        # Create associated default permissions by role
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=LEADERSHIP_ROLE,
+        )
+        supervision_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=SUPERVISION_STAFF,
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                roster_supervision_staff,
+                leadership_default,
+                supervision_staff_default,
+            ],
+        )
+
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users,
+                headers=self.headers,
+                json={
+                    "state_code": "US_XX",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
+            self.assertEqual(
+                b"CSV US_XX/ingested_product_users.csv successfully imported to "
+                b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
+                response.data,
+            )
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": None,
+                    "district": None,
+                    "emailAddress": "leadership@testdomain.com",
+                    "externalId": None,
+                    "firstName": "leadership",
+                    "lastName": "user",
+                    "roles": [LEADERSHIP_ROLE],
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _LEADERSHIP_USER_HASH,
+                    "pseudonymizedId": None,
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": datetime.isoformat(
+                        datetime.now() + timedelta(weeks=1)
+                    ),
+                    "district": "",
+                    "emailAddress": "parameter@testdomain.com",
+                    "externalId": None,
+                    "featureVariants": {},
+                    "firstName": None,
+                    "lastName": None,
+                    "pseudonymizedId": None,
+                    "roles": [SUPERVISION_STAFF],
+                    "routes": {},
+                    "stateCode": "US_XX",
+                    "userHash": _PARAMETER_USER_HASH,
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": None,
+                    "district": "D1",
+                    "emailAddress": "supervision_staff@testdomain.com",
+                    "externalId": "3706",
+                    "firstName": "supervision",
+                    "lastName": "user",
+                    "roles": [SUPERVISION_STAFF],
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _SUPERVISION_STAFF_HASH,
+                    "pseudonymizedId": "pseudo-3706",
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": None,
+                    "district": "D2",
+                    "emailAddress": "user@testdomain.com",
+                    "externalId": "98725",
+                    "firstName": "supervision2",
+                    "lastName": "user2",
+                    "roles": [SUPERVISION_STAFF],
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _USER_HASH,
+                    "pseudonymizedId": "hashed-98725",
+                },
+            ]
+            response = self.client.get(
+                self.users,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    @freezegun.freeze_time(datetime.now())
+    @patch(
+        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+    )
+    def test_import_ingested_users_update_user_override(
+        self, mock_generate_pseudonymized_id: MagicMock
+    ) -> None:
+        mock_generate_pseudonymized_id.side_effect = lambda state_code, external_id: (
+            f"hashed-{external_id}" if external_id else None
+        )
+        self.fs.upload_from_contents_handle_stream(
+            self.ingested_users_gcs_csv_uri,
+            contents_handle=LocalFileContentsHandle(
+                local_file_path=os.path.join(_FIXTURE_PATH, "us_xx_ingested_users.csv"),
+                cleanup_file=False,
+            ),
+            content_type="text/csv",
+        )
+        # Non-null fields will be updated in UserOverride with info from Roster and
+        # future block date added
+        roster_facilities_staff = generate_fake_rosters(
+            email="facilities_staff@testdomain.com",
+            region_code="US_XX",
+            roles=[FACILITIES_STAFF],
+            district="",
+            first_name="Facilities",
+            last_name="User",
+        )
+        user_override_facilities_staff = generate_fake_user_overrides(
+            email="facilities_staff@testdomain.com",
+            region_code="US_XX",
+            district="District A",
+        )
+        # Create associated default permissions by role
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=LEADERSHIP_ROLE,
+        )
+        supervision_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=SUPERVISION_STAFF,
+        )
+        facilities_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role=FACILITIES_STAFF,
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                roster_facilities_staff,
+                user_override_facilities_staff,
+                leadership_default,
+                supervision_staff_default,
+                facilities_staff_default,
+            ],
+        )
+
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users,
+                headers=self.headers,
+                json={
+                    "state_code": "US_XX",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
+            self.assertEqual(
+                b"CSV US_XX/ingested_product_users.csv successfully imported to "
+                b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
+                response.data,
+            )
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": datetime.isoformat(
+                        datetime.now() + timedelta(weeks=1)
+                    ),
+                    "district": "District A",
+                    "emailAddress": "facilities_staff@testdomain.com",
+                    "externalId": None,
+                    "featureVariants": {},
+                    "firstName": "Facilities",
+                    "lastName": "User",
+                    "pseudonymizedId": None,
+                    "roles": [FACILITIES_STAFF],
+                    "routes": {},
+                    "stateCode": "US_XX",
+                    "userHash": _FACILITIES_USER_HASH,
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "blockedOn": None,
+                    "district": None,
+                    "emailAddress": "leadership@testdomain.com",
+                    "externalId": None,
+                    "firstName": "leadership",
                     "lastName": "user",
                     "roles": [LEADERSHIP_ROLE],
                     "stateCode": "US_XX",
