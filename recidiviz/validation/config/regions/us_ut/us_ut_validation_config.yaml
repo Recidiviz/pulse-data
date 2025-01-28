@@ -3,6 +3,18 @@
 region_code: US_UT
 # TODO(#33488): Enable validations for US_UT.
 dev_mode: True
-exclusions: []
+exclusions:
+  - validation_name: session_new_admissions_with_no_sentence_date_imposed
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: UT is being hydrated only with v2 sentences
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: UT is being hydrated only with v2 sentences
+  - validation_name: session_liberty_releases_with_no_sentence_completion_date
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: UT is being hydrated only with v2 sentences
 max_allowed_error_overrides: []
-num_allowed_rows_overrides: []
+num_allowed_rows_overrides:
+  - validation_name: overlapping_supervision_periods
+    hard_num_allowed_rows_override: 12800
+    override_reason: To investigate (#37797)
