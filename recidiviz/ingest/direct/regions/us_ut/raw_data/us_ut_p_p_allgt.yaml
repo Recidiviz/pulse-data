@@ -1,7 +1,11 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: p_p_allgt
 file_description: |-
-  P P Allegation
+  P P = Parole and Probation (I think). I think this table describes violation allegations while
+  someone is on parole or probation. It doesn't map to a violation code table, but it
+  does have the p_p_agrmnt_cond_cd which can map to rim_violation_cd. It's possible that
+  this relationship reflects that a specific condition can be violated several specific
+  ways, but I'm not sure.
 data_classification: source
 primary_key_cols:
   - p_p_allgt_id

@@ -1,0 +1,130 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_employment_period` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  ofndr_num: STRING
+  violation_dt: DATETIME
+  violation_desc: STRING
+  sanction_desc: STRING
+  sanction_history_create_date: DATETIME
+  rim_level_id: INTEGER
+  sanction_level: INTEGER
+  rim_status_desc: STRING
+  rim_ofndr_violation_event_id: STRING
+  rim_violation_rove_id: STRING
+unused_columns:
+  - rim_ofndr_violation_event_id
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_UT_DOC")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id: rim_violation_rove_id
+          violation_date: violation_dt
+          violation_metadata:
+            $json_dict:
+              violation_level: rim_level_id
+              sanction_level: sanction_level
+              # TODO(#37772) -- this could possibly be parsed into violated conditions
+              violation_description: violation_desc
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id: rim_violation_rove_id
+                response_date: sanction_history_create_date
+                response_type:
+                  $enum_mapping:
+                    $raw_text: rim_status_desc
+                    $mappings:
+                      StateSupervisionViolationResponseType.PERMANENT_DECISION:
+                        - BOPP Denied
+                        - BOPP Returned
+                        - Court Denied
+                        - Supervisor Denied
+                        - Supervisor Approved
+                        - Board Approved/Amend
+                        - Retract Deleted
+                        - BOPP Approved
+                        - Court Approved
+                        - Agent Approved
+                        - BOPP Imposed
+                supervision_violation_response_decisions:
+                  - StateSupervisionViolationResponseDecisionEntry:
+                      decision:
+                        # If rim_status_desc suggests the violation was denied, we say
+                        # the decision was unfounded. Otherwise, we look at
+                        # sanction_desc to determine what the decision was.
+                        $conditional:
+                          - $if:
+                              $in:
+                                $value: rim_status_desc
+                                $options:
+                                  - $literal("BOPP Denied")
+                                  - $literal("BOPP Returned")
+                                  - $literal("Court Denied")
+                                  - $literal("Supervisor Denied")
+                            $then: $literal_enum(StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED)
+                          - $else:
+                              # TODO(#37739) These mappings are estimated. Likely want
+                              # to use another field to really confirm this response was
+                              # issued.
+                              $enum_mapping:
+                                $raw_text: sanction_desc
+                                $mappings:
+                                  StateSupervisionViolationResponseDecision.REVOCATION:
+                                    - Request Court/BOPP Hearing Only (3rd+ Revocation)
+                                    - Request Court/BOPP Hearing Only (2nd Revocation)
+                                    - Request Court/BOPP Hearing Only (1st Revocation)
+                                  StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
+                                    - Request Court/BOPP Warrant & Hearing (3rd+ Revocation)
+                                    - Request Court/BOPP Warrant & Hearing (2nd Revocation)
+                                    - Request Court/BOPP Warrant & Hearing (1st Revocation)
+                                    - Request Court/BOPP Warrant & Hearing (Public Safety Exception)
+                                  StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE:
+                                    - Up to 16 Hours Community Service
+                                  StateSupervisionViolationResponseDecision.WARNING:
+                                    - Verbal Warning
+                                  StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION:
+                                    - 3 Days Jail Sanction (max 5 days/30 days)
+                                    - 2 Days Jail Sanction (max 5 days/30 days)
+                                    - 1 Day Jail Sanction (max 5 days/30 days)
+                                  StateSupervisionViolationResponseDecision.SERVICE_TERMINATION:
+                                    - Termination
+                                  StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
+                                    - Increased Supervision
+                                    - GPS up to 90 Days (no offender cost)
+                                    - GPS more than 90 Days (or offender cost)
+                                    - Travel Restrictions
+                                    - Require Change in Residence
+                                    - Up to 90 Day Curfew
+                                    - Up to 72 Hours Home Restriction
+                                    - Up to 60 Day Curfew
+                                  StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                    - Payment Schedule Adjustment
+                                    - Mentoring Program
+                                    - Letter of Apology
+                                    - Warrant Denied, Request PVP
+                                    - Increased Reporting/Testing
+                                    - BOPP Ordered Sanction (Specify)
+                                    - Family Meeting
+                                    - Specialty Court Sanction (Specify)
+                                    - Request Other Court/BOPP Response (Specify)
+                                    - Notify compact state via ICOTS
+                                    - Request Court/BOPP Hearing (3rd+ Technical)
+                                    - Request Court/BOPP Hearing (2nd Technical)
+                                    - Request Court/BOPP Hearing (1st Technical)
+                                    - Develop Risk Avoidance Plan
+                                    - Hearing Before Court/BOPP
+                                    - Community Correctional Center
+                                    - Treatment Resource Center
+                                    - Community Accountability Board
+                                    - Request Other Court/BOPP Response / Without Hearing (Specify)
+                                    - Workshops
+                                    - Thinking Report
+                                    - Structured Living
+                                    - Revision of Case Action Plan
+                                    - Problem Solving Report
+                                    - Assignments

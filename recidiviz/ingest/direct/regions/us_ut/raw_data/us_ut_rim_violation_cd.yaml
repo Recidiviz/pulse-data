@@ -11,8 +11,7 @@ columns:
       TODO(#33372): Fill in column description
   - name: violation_desc
     description: |-
-      TODO(#33372): Fill in column description
-    is_pii: True
+      Description of the violation with placeholders for various values.
   - name: p_p_agrmnt_cond_cd
     description: |-
       TODO(#33372): Fill in column description

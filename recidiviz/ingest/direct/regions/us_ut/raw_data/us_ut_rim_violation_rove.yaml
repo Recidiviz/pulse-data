@@ -1,43 +1,50 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: rim_violation_rove
 file_description: |-
-  TODO(#33372): Fill in the file description
+  This table combines with rim_ofndr_violation_event by using the
+  rim_ofndr_violation_event_id. It includes slightly more information about the
+  violation, including the rim_violation_id which can then map to the rim_violation_cd
+  table to provide more information about the general category of violation.
 data_classification: source
 primary_key_cols:
   - rim_violation_rove_id
 columns:
   - name: rim_violation_rove_id
     description: |-
-      TODO(#33372): Fill in column description
+      Unique ID for this record
   - name: rim_violation_id
     description: |-
-      TODO(#33372): Fill in column description
+      ID of the violation, maps to rim_violation_cd.
   - name: rim_ofndr_violation_event_id
     description: |-
-      TODO(#33372): Fill in column description
+      Used to map to rim_ofndr_violation_event.
   - name: violation_desc
     description: |-
-      TODO(#33372): Fill in column description
+      The description of the violation with the specific details filled in. This
+      contrasts with violation_desc in rim_violation_cd, which contains placeholders.
     is_pii: True
   - name: violation_dt
     description: |-
-      TODO(#33372): Fill in column description
+      Date of the violation
+    field_type: datetime
   - name: sort_seq
     description: |-
       TODO(#33372): Fill in column description
   - name: created_by_usr_id
     description: |-
-      TODO(#33372): Fill in column description
+      The user who created this record
     is_pii: True
   - name: created_dt
     description: |-
-      TODO(#33372): Fill in column description
+      Date this record was created
+    field_type: datetime
   - name: stricken_dismissed_flg
     description: |-
-      TODO(#33372): Fill in column description
+      Whether or not the violation was dismissed by the Agent.
   - name: wrnt_accepted_flg
     description: |-
-      TODO(#33372): Fill in column description
+      Says if the warrant was accepted. Unsure of how this compares with other warrant
+      information in the warrant tables or in sanction_history tables.
   - name: amend_flg
     description: |-
       TODO(#33372): Fill in column description
@@ -52,3 +59,7 @@ columns:
     description: |-
       Timestamp of when this record was most recently updated
     field_type: datetime
+table_relationships:
+  - foreign_table: rim_violation_cd
+    join_logic:
+      - rim_violation_rove.rim_violation_id = rim_violation_cd.rim_violation_id

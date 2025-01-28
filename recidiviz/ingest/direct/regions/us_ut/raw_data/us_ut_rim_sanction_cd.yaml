@@ -1,20 +1,28 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: rim_sanction_cd
 file_description: |-
-  TODO(#33372): Fill in the file description
+  This table contains all possible sanctions and information about them.
 data_classification: source
 primary_key_cols:
   - rim_sanction_id
 columns:
   - name: rim_sanction_id
     description: |-
-      TODO(#33372): Fill in column description
+      Primary key of this table.
   - name: sanction_level
     description: |-
-      TODO(#33372): Fill in column description
+      The level of the sanction. This doesn't always match the RIM level, unsure how
+      they relate.
+    known_values:
+      - value: 1
+        description: Lowest level of sanction.
+      - value: 2
+        description: Mid level of sanction.
+      - value: 3
+        description: Third lowest level of sanction.
   - name: sanction_desc
     description: |-
-      TODO(#33372): Fill in column description
+      Description of the sanction with placeholder values.
   - name: jail_days_num
     description: |-
       TODO(#33372): Fill in column description

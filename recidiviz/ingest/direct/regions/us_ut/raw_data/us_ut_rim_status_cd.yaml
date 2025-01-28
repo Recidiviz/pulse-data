@@ -8,10 +8,11 @@ primary_key_cols:
 columns:
   - name: rim_status_id
     description: |-
-      TODO(#33372): Fill in column description
+      Primary key of this table.
   - name: rim_status_desc
     description: |-
-      TODO(#33372): Fill in column description
+      This status is a human readable description of what's in the final_state_flg,
+      pending_flg, and denied_flg.
     is_pii: True
   - name: condition_desc
     description: |-
@@ -19,13 +20,15 @@ columns:
     is_pii: True
   - name: final_state_flg
     description: |-
-      TODO(#33372): Fill in column description
+      Whether or not this state is final. It seems, however, that it's possible for this
+      to be false while denied is true, and the decision is final.
   - name: denied_flg
     description: |-
-      TODO(#33372): Fill in column description
+      If the sanction decision is denied or not. I think that if this is true, and
+      pending is false, the decision is final, but I'm not positive about this.
   - name: pending_flg
     description: |-
-      TODO(#33372): Fill in column description
+      Whether or not this decision is pending.
   - name: rim_agcy_id
     description: |-
       TODO(#33372): Fill in column description
