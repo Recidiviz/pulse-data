@@ -260,6 +260,9 @@ US_IX:
   bop_BOPVoteValue:
     sessions.us_ix_parole_board_hearing_sessions: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  clsf_OffenderSecurityLevelAct:
+    task_eligibility_criteria_us_ix.no_active_discretionary_override: |-
+      Needed to identify discretionary overrides. 01/23/2025
   com_PSIReport:
     sentencing_views.sentencing_case_record: |-
       Used to grab PSI information. 05/21/24
@@ -411,6 +414,9 @@ US_IX:
   ind_OffenderNoteStatus:
     case_notes_prototype_views.case_notes: |-
       Notes are not ingested and we surface them in the case notes prototypes.
+  ind_OffenderSecurityLevel:
+    task_eligibility_criteria_us_ix.no_active_discretionary_override: |-
+      Needed to identify discretionary overrides. 01/23/2025
   ind_Offender_Address:
     sentencing_views.sentencing_client_record: |-
       Used to grab JII address for PSI tool. 05/21/24
@@ -430,6 +436,12 @@ US_IX:
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_xcrc_request_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  ind_SecurityLevelOverride:
+    task_eligibility_criteria_us_ix.no_active_discretionary_override: |-
+      Needed to identify discretionary overrides. 01/23/2025
+  ind_SecurityLevelReviewType:
+    task_eligibility_criteria_us_ix.no_active_discretionary_override: |-
+      Needed to identify discretionary overrides. 01/23/2025
   prb_PBCase:
     sessions.us_ix_parole_board_hearing_sessions: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

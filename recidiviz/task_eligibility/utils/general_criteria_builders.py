@@ -424,27 +424,57 @@ def custody_level_compared_to_recommended(
             MAX(custody_level) AS custody_level,
             MAX(recommended_custody_level) AS recommended_custody_level,
         FROM
-            sub_sessions_with_attributes
+           sub_sessions_with_attributes
         GROUP BY
             1,2,3,4
+    ),
+    meets_criteria_spans AS (
+        SELECT 
+            dedup_cte.*,
+            {criteria} AS meets_criteria,
+        FROM dedup_cte
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` current_cl
+            ON dedup_cte.custody_level = current_cl.custody_level
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` recommended_cl
+            ON recommended_custody_level = recommended_cl.custody_level
+    ),
+    next_eligibility_spans AS (
+    /* This CTE aggregates meets_critera_spans for rows where custody_level, recommended_custody_level, 
+    and meets_criteria have the same value so that we can set the upcoming_eligibility_date as the start date for that
+    row if meets_criteria, and the start_date for the upcoming row, if the next row meets_criteria. In this way we 
+    get the date at which someone becomes eligible for rows where clients are eligible, or the next date at which
+    the client will become eligible */
+    SELECT 
+        *,
+        CASE
+            WHEN LEAD(meets_criteria) OVER (PARTITION BY person_id ORDER BY start_date) 
+                THEN LEAD(start_date) OVER (PARTITION BY person_id ORDER BY start_date)
+            WHEN meets_criteria THEN start_date
+            ELSE NULL
+        END AS upcoming_eligibility_date
+    FROM ({aggregate_adjacent_spans(table_name = 'meets_criteria_spans',
+                                      attribute=['custody_level', 'recommended_custody_level', 'meets_criteria'],
+                                    end_date_field_name='end_date_exclusive')})
     )
     SELECT
         state_code,
         person_id,
         start_date,
         end_date_exclusive AS end_date,
-        {criteria} AS meets_criteria,
+        meets_criteria,
         TO_JSON(STRUCT(
             recommended_custody_level AS recommended_custody_level,
-            dedup_cte.custody_level AS custody_level
+            n.custody_level AS custody_level,
+            n.upcoming_eligibility_date
         )) AS reason,
         recommended_custody_level,
-        dedup_cte.custody_level,
-    FROM dedup_cte
+        n.custody_level,
+        n.upcoming_eligibility_date
+    FROM next_eligibility_spans n
     LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` current_cl
-        ON dedup_cte.custody_level = current_cl.custody_level
+            ON n.custody_level = current_cl.custody_level
     LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` recommended_cl
-        ON recommended_custody_level = recommended_cl.custody_level
+            ON recommended_custody_level = recommended_cl.custody_level
     WHERE start_date <= CURRENT_DATE('US/Pacific')
     """
 

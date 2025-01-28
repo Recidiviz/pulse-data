@@ -239,6 +239,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         person_record_type=PersonRecordType.RESIDENT,
     ),
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_IX,
+        opportunity_type="usIdCustodyLevelDowngrade",
+        experiment_id="US_IX_CLASSIFICATION_WORKFLOWS",
+        opportunity_record_view_name="us_ix_custody_level_downgrade_record_materialized",
+        task_completion_event=TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
+        source_filename="us_ix_custody_level_downgrade_record.json",
+        export_collection_name="US_ID-custodyLevelDowngradeReferrals",
+        opportunity_type_path_str="custodyLevelDowngrade",
+        person_record_type=PersonRecordType.RESIDENT,
+    ),
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_ME,
         opportunity_type="usMeEarlyTermination",
         experiment_id="US_ME_EARLY_TERMINATION_WORKFLOWS",

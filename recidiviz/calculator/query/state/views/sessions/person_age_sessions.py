@@ -37,7 +37,7 @@ PERSON_AGE_SESSIONS_QUERY_TEMPLATE = """
         state_code,
         last_day_of_data,
         MIN(start_date) AS first_population_date,
-        MAX(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), last_day_of_data)) AS last_population_date,        
+        MAX(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), DATE_ADD(last_day_of_data, INTERVAL 1 YEAR))) AS last_population_date,        
     FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`
     GROUP BY 1,2,3
     )
@@ -51,9 +51,9 @@ PERSON_AGE_SESSIONS_QUERY_TEMPLATE = """
     FROM `{project_id}.{sessions_dataset}.person_demographics_materialized`
     JOIN start_end_date_per_person
         USING(person_id, state_code),
-    -- Generate an array for all days between a person's birthdate and the current date and these for all age sessions 
-    -- that start during or after a person first entering the system     
-    UNNEST(GENERATE_DATE_ARRAY(birthdate, last_day_of_data, INTERVAL 1 YEAR)) AS start_date
+    -- Generate an array for all days between a person's birthdate and year from the current date and these for all 
+    -- age sessions that start during or after a person first entering the system     
+    UNNEST(GENERATE_DATE_ARRAY(birthdate, DATE_ADD(last_day_of_data, INTERVAL 1 YEAR), INTERVAL 1 YEAR)) AS start_date
     WHERE DATE_ADD(start_date, INTERVAL 1 YEAR)>=first_population_date
         AND start_date<=last_population_date
 """

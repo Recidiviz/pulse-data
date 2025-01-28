@@ -47,18 +47,19 @@ DETAINER_TYPE_LST_CRC = ["59"]
 HOLD_TYPE_LST_CRC = ["84", "112", "85", "61", "87", "86", "62", "88", "67", "83", "113"]
 # detainer types related to felonies and immigration (https://docs.google.com/spreadsheets/d/1sV6BLWQQiQ4mrtzWJiooaHzO_sgk-bNkCMdwolQ8aVk/edit?usp=sharing)
 DETAINER_TYPE_LST_CLD = [
+    "2",
     "59",
+    "60",
+    "78",
     "84",
     "85",
-    "112",
     "87",
-    "2",
-    "60",
-    "108",
     "98",
-    "99",
+    "100",
     "101",
-    "78",
+    "102",
+    "108",
+    "112",
 ]
 
 IX_STATE_CODE_WHERE_CLAUSE = "WHERE state_code = 'US_IX'"

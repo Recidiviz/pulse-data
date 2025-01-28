@@ -64,6 +64,11 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="#TODO(#29059): Add reasons field description",
             ),
+            ReasonsField(
+                name="upcoming_eligibility_date",
+                type=bigquery.enums.StandardSqlTypeNames.DATE,
+                description="Date which client becomes eligible",
+            ),
         ],
     )
 )
