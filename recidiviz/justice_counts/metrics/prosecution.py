@@ -395,7 +395,7 @@ cases_referred = MetricDefinition(
             required=False,
             dimension_to_description={
                 ReferredCaseSeverityType.FELONY: "The number of criminal cases referred to the office in which the leading charge was for a felony offense.",
-                ReferredCaseSeverityType.MISDEMEANOR: "The number of criminal cases referred to the office in which the leading charge was for a felony offense.",
+                ReferredCaseSeverityType.MISDEMEANOR: "The number of criminal cases referred to the office in which the leading charge was for a misdemeanor offense.",
                 ReferredCaseSeverityType.OTHER: "The number of criminal cases referred to the office in which the leading charge was not for a felony or misdemeanor offense.",
                 ReferredCaseSeverityType.UNKNOWN: "The number of criminal cases referred to the office in which the leading charge was for an offense of unknown severity.",
             },

@@ -351,7 +351,7 @@ caseload_numerator = MetricDefinition(
                 CaseSeverityType.FELONY: "The number of people with open felony cases.",
                 CaseSeverityType.MISDEMEANOR: "The number of people with open misdemeanor cases.",
                 CaseSeverityType.MIXED: "The  number of people with open felony and misdemeanor cases.",
-                CaseSeverityType.OTHER: "The number of people with open criminal cases.",
+                CaseSeverityType.OTHER: "The number of people with open criminal cases that are not felony or misdemeanor cases.",
                 CaseSeverityType.UNKNOWN: "The number of people with open criminal cases of unknown severity.",
             },
             dimension_to_includes_excludes={

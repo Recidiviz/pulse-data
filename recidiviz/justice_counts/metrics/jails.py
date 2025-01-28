@@ -446,12 +446,12 @@ pre_adjudication_admissions = MetricDefinition(
                 ],
             },
             dimension_to_description={
-                OffenseType.PERSON: "The number of pre-adjudication admission events in which the most serious charge was for an offense against a person.",
-                OffenseType.PROPERTY: "The number of pre-adjudication admission events in which the most serious charge was for a property offense.",
-                OffenseType.PUBLIC_ORDER: "The number of pre-adjudication admission events in which the most serious charge was for a public order offense.",
-                OffenseType.DRUG: "The number of pre-adjudication admission events in which the most serious charge was for a drug offense.",
-                OffenseType.OTHER: "The number of pre-adjudication admission events in which the most serious charge was for another type of offense that was not a person, property, public order, or drug offense.",
-                OffenseType.UNKNOWN: "The number of pre-adjudication admission events in which the most serious offense charge type is not known.",
+                OffenseType.PERSON: "A single day count of the number of people incarcerated pre-adjudication whose most serious charge was an offense against a person.",
+                OffenseType.PROPERTY: "A single day count of the number of people incarcerated pre-adjudication whose most serious charge was a property offense.",
+                OffenseType.PUBLIC_ORDER: "A single day count of the number of people incarcerated pre-adjudication whose most serious charge was a public order offense.",
+                OffenseType.DRUG: "A single day count of the number of people incarcerated pre-adjudication whose most serious charge was a drug offense.",
+                OffenseType.OTHER: "A single day count of the number of people incarcerated pre-adjudication whose most serious charge was not a person, property, drug, or public order offense.",
+                OffenseType.UNKNOWN: "A single day count of the number of people incarcerated pre-adjudication whose most serious charge type is not known.",
             },
         )
     ],
@@ -533,8 +533,8 @@ post_adjudication_admissions = MetricDefinition(
                 ],
             },
             dimension_to_description={
-                OffenseType.PERSON: "The number of post-adjudication admission events in which the most serious offense was a crime against a person.",
-                OffenseType.PROPERTY: "The number of post-adjudication admission events in which the most serious offense was a property crime.",
+                OffenseType.PERSON: "The number of post-adjudication admission events in which the most serious offense was for an offense against a person.",
+                OffenseType.PROPERTY: "The number of post-adjudication admission events in which the most serious offense was for a property offense.",
                 OffenseType.PUBLIC_ORDER: "The number of post-adjudication admission events in which the most serious offense was a public order offense.",
                 OffenseType.DRUG: "The number of post-adjudication admission events in which the most serious offense was a drug offense.",
                 OffenseType.OTHER: "The number of post-adjudication admission events in which the most serious offense was for another type of offense that was not a person, property, drug, or public order offense.",
@@ -566,7 +566,7 @@ total_daily_population = MetricDefinition(
                 OffenseType.PERSON: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious charge was for an offense against a person.",
                 OffenseType.PROPERTY: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious charge was for a property offense.",
                 OffenseType.PUBLIC_ORDER: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious charge was for a public order offense.",
-                OffenseType.DRUG: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious charge was for a public order offense.",
+                OffenseType.DRUG: "A single day count of the total number of people incarcerated under the agency's jurisdiction in which the most serious charge was for a drug offense.",
                 OffenseType.OTHER: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious charge was for another type of offense that was not a person, property, public order, or drug offense.",
                 OffenseType.UNKNOWN: "A single day count of the total number of people incarcerated under the agency’s jurisdiction in which the most serious offense charge type is not known.",
             },
@@ -690,9 +690,9 @@ pre_adjudication_daily_population = MetricDefinition(
             dimension=BiologicalSex,
             required=True,
             dimension_to_description={
-                BiologicalSex.MALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is male.",
-                BiologicalSex.FEMALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is female.",
-                BiologicalSex.UNKNOWN: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is not known.",
+                BiologicalSex.MALE: "A single day count of the number of people incarcerated in the agency’s jurisdiction who have not been adjudicated whose biological sex is male.",
+                BiologicalSex.FEMALE: "A single day count of the number of people incarcerated in the agency’s jurisdiction who have not been adjudicated whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "A single day count of the number of people incarcerated in the agency’s jurisdiction who have not been adjudicated whose biological sex is not known.",
             },
             dimension_to_includes_excludes={
                 BiologicalSex.MALE: [
@@ -816,9 +816,9 @@ post_adjudication_daily_population = MetricDefinition(
             dimension=BiologicalSex,
             required=True,
             dimension_to_description={
-                BiologicalSex.MALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is male.",
-                BiologicalSex.FEMALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is female.",
-                BiologicalSex.UNKNOWN: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is not known.",
+                BiologicalSex.MALE: "A single day count of the number of people incarcerated in the agency’s jurisdiction who have been adjudicated whose biological sex is male.",
+                BiologicalSex.FEMALE: "A single day count of the number of people incarcerated in the agency’s jurisdiction who have been adjudicated whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "A single day count of the number of people incarcerated in the agency’s jurisdiction who have been adjudicated whose biological sex is not known.",
             },
             dimension_to_includes_excludes={
                 BiologicalSex.MALE: [
@@ -970,7 +970,7 @@ post_adjudication_releases = MetricDefinition(
                 PostAdjudicationReleaseType.COMMUNITY_SUPERVISION: "The number of post-adjudication release events from the agency’s jurisdiction to another form of community supervision that is not probation or parole.",
                 PostAdjudicationReleaseType.NO_ADDITIONAL_CONTROL: "The number of post-adjudication release events from the agency’s jurisdiction with no additional correctional control.",
                 PostAdjudicationReleaseType.DEATH: "The number of post-adjudication release events from the agency’s jurisdiction due to death of people in custody.",
-                PostAdjudicationReleaseType.AWOL: "The number of pre-adjudication release events due to escape from custody or assessment as AWOL for more than 30 days.",
+                PostAdjudicationReleaseType.AWOL: "The number of post-adjudication release events due to escape from custody or assessment as AWOL for more than 30 days.",
                 PostAdjudicationReleaseType.OTHER: "The number of post-adjudication release events from the agency’s jurisdiction that are not releases to probation supervision, to parole supervision, to other community supervision, to no additional correctional control, due to death, or due to escape or AWOL status.",
                 PostAdjudicationReleaseType.UNKNOWN: "The number of post-adjudication release events from the agency’s jurisdiction where the release type is not known.",
             },

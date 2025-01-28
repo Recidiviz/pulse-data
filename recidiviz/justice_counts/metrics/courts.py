@@ -480,9 +480,9 @@ sentences_imposed = MetricDefinition(
                 ],
             },
             dimension_to_description={
-                BiologicalSex.MALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is male.",
-                BiologicalSex.FEMALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is female.",
-                BiologicalSex.UNKNOWN: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is not known.",
+                BiologicalSex.MALE: "The number of cases in which the court imposed a sentence as a result of criminal conviction with a defendant whose biological sex is male.",
+                BiologicalSex.FEMALE: "The number of cases in which the court imposed a sentence as a result of criminal conviction with a defendant whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "The number of cases in which the court imposed a sentence as a result of criminal conviction with a defendant whose biological sex is not known.",
             },
         ),
     ],

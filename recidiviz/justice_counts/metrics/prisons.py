@@ -603,7 +603,7 @@ releases = MetricDefinition(
                 ReleaseType.TO_COMMUNITY_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to another form of community supervision that is not probation or parole.",
                 ReleaseType.NO_CONTROL: "The number of release events from the agency’s prison jurisdiction with no additional correctional control.",
                 ReleaseType.DEATH: "The number of release events from the agency’s prison jurisdiction due to death of people in its jurisdiction.",
-                ReleaseType.OTHER: "The number of release events from the agency’s prison jurisdiction that are not releases to probation supervision, to parole supervision, to other community supervision, to no additional correctional control, or due to death.",
+                ReleaseType.OTHER: "The number of release events from the agency’s prison jurisdiction that are not releases to probation supervision, to parole supervision, to other community supervision, with no additional correctional control, or due to death.",
                 ReleaseType.UNKNOWN: "The number of release events from the agency’s prison jurisdiction where the release type is not known.",
             },
             # TODO(#18071) Implement repeated/reused global includes/excludes
