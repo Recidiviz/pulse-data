@@ -14,7 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a client has a fines/fees balance of 500 or less."""
+"""Describes the spans of time when a client has a fines/fees balance of 0 or less.
+
+NB: this criterion strictly considers a person's outstanding fines/fees balance. If
+payment is not due until some time after an invoice is issued, even if a client pays
+their fines/fees in full and on time, they will still have a positive balance (and thus
+not meet this criterion) during the period of time between each invoice and the
+associated payment. We therefore expect that even clients who pay each invoice in full
+and on time will move in and out of eligibility for this criterion, becoming ineligible
+whenever a new invoice is issued and then eligible again once that invoice is paid off.
+"""
 
 from google.cloud import bigquery
 
@@ -29,12 +38,12 @@ from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import 
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "HAS_FINES_FEES_BALANCE_BELOW_500"
+_CRITERIA_NAME = "HAS_FINES_FEES_BALANCE_OF_0"
 
 _QUERY_TEMPLATE = f"""
     {has_unpaid_fines_fees_balance(
         fee_type="SUPERVISION_FEES",
-        unpaid_balance_criteria="<= 500",
+        unpaid_balance_criteria="<= 0",
         unpaid_balance_field="unpaid_balance_within_supervision_session")}
 """
 

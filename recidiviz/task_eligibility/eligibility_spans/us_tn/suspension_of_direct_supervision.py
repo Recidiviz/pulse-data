@@ -32,6 +32,8 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_tn import (
 from recidiviz.task_eligibility.criteria.general import (
     assessed_risk_low_at_least_2_years,
     at_least_12_months_since_most_recent_positive_drug_test,
+    has_fines_fees_balance_of_0,
+    has_permanent_fines_fees_exemption,
     latest_drug_test_is_negative,
     no_supervision_violation_report_within_2_years,
     on_supervision_at_least_2_years,
@@ -44,11 +46,24 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     not_on_community_supervision_for_life,
     special_conditions_are_current,
 )
+from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    OrTaskCriteriaGroup,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+FINES_FEES_CRITERIA_GROUP = OrTaskCriteriaGroup(
+    criteria_name="HAS_FINES_FEES_BALANCE_OF_0_OR_IS_EXEMPT",
+    sub_criteria_list=[
+        has_fines_fees_balance_of_0.VIEW_BUILDER,
+        has_permanent_fines_fees_exemption.VIEW_BUILDER,
+    ],
+    allowed_duplicate_reasons_keys=[],
+)
 
 # TODO(#34432): Figure out how to set up the tool for ISC-out cases, which can be
 # eligible for SDS. (This may involve updating the candidate population to include
@@ -60,9 +75,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=parole_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         assessed_risk_low_at_least_2_years.VIEW_BUILDER,
-        # TODO(#33636): Create additional criterion to assess whether individuals are
-        # meeting financial obligations as outlined in payment plan. May be able to
-        # reuse existing criterion/criteria, or may need to create a new criterion.
         at_least_12_months_since_most_recent_positive_drug_test.VIEW_BUILDER,
         latest_drug_test_is_negative.VIEW_BUILDER,
         no_supervision_violation_report_within_2_years.VIEW_BUILDER,
@@ -82,7 +94,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # correct for the specific SDS requirement that individuals must have completed
         # and/or complied with all special conditions.
         special_conditions_are_current.VIEW_BUILDER,
+        FINES_FEES_CRITERIA_GROUP,
     ],
+    # TODO(#33636): Refine this almost-eligible condition, likely by setting an upper
+    # limit on the balance a client can have to be considered almost eligible.
+    almost_eligible_condition=NotEligibleCriteriaCondition(
+        criteria=FINES_FEES_CRITERIA_GROUP,
+        description="Has unpaid fines/fees without a permanent exemption",
+    ),
     completion_event_builder=transfer_to_no_contact_parole.VIEW_BUILDER,
 )
 

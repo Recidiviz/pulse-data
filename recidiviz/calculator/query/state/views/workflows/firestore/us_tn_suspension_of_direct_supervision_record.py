@@ -40,7 +40,7 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
             state_code="'US_TN'",
             tes_task_query_view="suspension_of_direct_supervision_materialized",
             id_type="'US_TN_DOC'",
-            eligible_only=True,
+            eligible_and_almost_eligible_only=True,
         )}
     )
     SELECT
