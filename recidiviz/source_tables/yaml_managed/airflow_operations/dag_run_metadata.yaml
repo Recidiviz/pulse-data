@@ -1,0 +1,45 @@
+address:
+  dataset_id: airflow_operations
+  table_id: dag_run_metadata
+description: >-
+  Table that holds information summary information about airflow DAG runs. Each
+  row represents a single execution of an airflow DAG.
+schema:
+  - name: project_id
+    type: STRING
+    mode: REQUIRED
+    description: "GCP project id"
+  - name: dag_id
+    type: STRING
+    mode: REQUIRED
+    description: "The id of the DAG associated with this record"
+  - name: dag_run_id
+    type: STRING
+    mode: REQUIRED
+    description: "The unique DagRun id associated with this DagRun."
+  - name: execution_time
+    type: DATETIME
+    mode: REQUIRED
+    description: "The time at which the DagRun began."
+  - name: start_time
+    type: DATETIME
+    mode: REQUIRED
+    description: |
+      The time the DAG started, or the last time that a task was retried. n.b. If any 
+      task or portion of the DAG was retried, this value will differ from execution_time.
+  - name: end_time
+    type: DATETIME
+    mode: REQUIRED
+    description: "The time that the last task in the DAG finished"
+  - name: terminal_state
+    type: STRING
+    mode: NULLABLE
+    description: |
+      The last known state of the DAG. If the state is a failure, that does necessarily
+      mean that the DAG failed to run, but rather that the last top-level task or 
+      task grouped failed or had a failure in it.
+  - name: dag_run_config
+    type: JSON
+    mode: REQUIRED
+    description: "JSON-encoded config for this DAG run."
+clustering_fields: null

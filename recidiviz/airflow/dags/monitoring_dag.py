@@ -23,6 +23,10 @@ from airflow.decorators import dag
 from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
 
+from recidiviz.airflow.dags.monitoring.airflow_dag_run_history import (
+    DAG_RUN_HISTORY_LOOKBACK,
+    generate_airflow_dag_run_history,
+)
 from recidiviz.airflow.dags.monitoring.cleanup_exited_pods import cleanup_exited_pods
 from recidiviz.airflow.dags.monitoring.dag_registry import get_monitoring_dag_id
 from recidiviz.airflow.dags.monitoring.metadata import (
@@ -118,6 +122,12 @@ def create_monitoring_dag() -> None:
         arguments=[
             "--entrypoint=ReportAirflowEnvironmentAgeEntrypoint",
         ],
+    )
+
+    PythonOperator(
+        task_id="generate_airflow_dag_run_history",
+        python_callable=generate_airflow_dag_run_history,
+        op_kwargs={"lookback": DAG_RUN_HISTORY_LOOKBACK},
     )
 
 
