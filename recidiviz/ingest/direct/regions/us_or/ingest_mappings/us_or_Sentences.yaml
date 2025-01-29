@@ -45,6 +45,7 @@ input_columns:
   PPS_SENTENCE_DAYS: STRING
   FLAG_137635: STRING
   FMISD_FLAG: STRING
+  FELONY_IS_MISDEMEANOR: STRING
 unused_columns:
   - CURRENT_STATUS
 output:
@@ -123,6 +124,7 @@ output:
                     COURT_CASE_NUMBER: COURT_CASE_NUMBER
                     FLAG_137635: FLAG_137635
                     FMISD_FLAG: FMISD_FLAG
+                    FELONY_IS_MISDEMEANOR: FELONY_IS_MISDEMEANOR
                     CHARGE_ID:
                       $concat:
                         $values:
@@ -268,6 +270,7 @@ output:
                     COURT_CASE_NUMBER: COURT_CASE_NUMBER
                     FLAG_137635: FLAG_137635
                     FMISD_FLAG: FMISD_FLAG
+                    FELONY_IS_MISDEMEANOR: FELONY_IS_MISDEMEANOR
                     CHARGE_ID:
                       $concat:
                         $values:

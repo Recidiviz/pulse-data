@@ -135,7 +135,6 @@ SELECT
   LEFT JOIN arrest_codes ac
   ON fkOffenseArrestCode = ac.pkCode
 
-
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
