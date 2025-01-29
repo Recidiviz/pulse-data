@@ -27,4 +27,5 @@ PREDEFINED_ROLES = [
     "supervision_line_staff",
     "supervision_officer_supervisor",
     "supervision_regional_leadership",
+    "unknown",
 ]
