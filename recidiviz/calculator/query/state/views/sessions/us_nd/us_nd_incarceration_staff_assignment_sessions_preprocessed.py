@@ -16,6 +16,7 @@
 # =============================================================================
 """Sessions for incarceration staff caseloads in ND"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -46,25 +47,45 @@ elite_ProgramServices_generated_view AS (
 recidiviz_elite_CourseActivities_generated_view AS (
     SELECT * FROM `{{project_id}}.{{usnd_raw_data_up_to_date_dataset}}.recidiviz_elite_CourseActivities_latest`
 ),
+completed_sentences AS (
+    SELECT
+        SPLIT(s.external_id, '-')[OFFSET(0)] AS external_id,
+        ss.status,
+        SAFE_CAST(ss.status_update_datetime AS DATE) AS sentence_end_date,
+    FROM `{{project_id}}.normalized_state.state_sentence` s
+    LEFT JOIN `{{project_id}}.normalized_state.state_sentence_status_snapshot` ss
+        USING(sentence_id)
+    -- Filter to only join to incarceration sentences
+    WHERE s.external_id NOT LIKE "%|%"
+        AND s.state_code = 'US_ND'
+        AND ss.status = 'COMPLETED'
+    -- only pull the most recent status for a given sentence
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY external_id, sentence_id ORDER BY status_update_datetime DESC) = 1
+),
 officer_assignments AS (
   -- Combine all of the views above and get case manager assignments
-  SELECT
-      REPLACE(REPLACE(OFFENDER_BOOK_ID, '.00',''), ',', '') AS external_id,
-      SAFE_CAST(LEFT(OFFENDER_START_DATE, 10) AS DATE) AS start_date,
-      SAFE_CAST(LEFT(OFFENDER_END_DATE, 10) AS DATE) AS end_date,
-      SPLIT(ca.DESCRIPTION, ', ')[ORDINAL(2)] AS given_names,
-      SPLIT(ca.DESCRIPTION, ', ')[ORDINAL(1)] AS surname,
-  FROM
-    elite_OffenderProgramProfiles_generated_view opp
-  LEFT JOIN
-    elite_ProgramServices_generated_view ps
-  USING
-    (PROGRAM_ID)
-  LEFT JOIN
-    recidiviz_elite_CourseActivities_generated_view ca
-  USING
-    (CRS_ACTY_ID)
-  WHERE ps.DESCRIPTION = 'ASSIGNED CASE MANAGER'
+    SELECT
+        REPLACE(REPLACE(OFFENDER_BOOK_ID, '.00',''), ',', '') AS external_id,
+        SAFE_CAST(LEFT(OFFENDER_START_DATE, 10) AS DATE) AS start_date,
+        LEAST(
+            {nonnull_end_date_clause('SAFE_CAST(LEFT(OFFENDER_END_DATE, 10) AS DATE)')},
+            {nonnull_end_date_clause('cs.sentence_end_date')}
+        ) AS end_date,
+        SPLIT(ca.DESCRIPTION, ', ')[ORDINAL(2)] AS given_names,
+        SPLIT(ca.DESCRIPTION, ', ')[ORDINAL(1)] AS surname,
+    FROM
+        elite_OffenderProgramProfiles_generated_view opp
+    LEFT JOIN
+        elite_ProgramServices_generated_view ps
+    USING
+        (PROGRAM_ID)
+    LEFT JOIN
+        recidiviz_elite_CourseActivities_generated_view ca
+    USING
+        (CRS_ACTY_ID)
+    LEFT JOIN completed_sentences cs
+        ON REPLACE(REPLACE(OFFENDER_BOOK_ID, '.00',''), ',', '') = cs.external_id
+    WHERE ps.DESCRIPTION = 'ASSIGNED CASE MANAGER'
 ), 
 
 staff_ids AS (
