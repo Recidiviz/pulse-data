@@ -66,7 +66,11 @@ _QUERY_TEMPLATE = f"""
         ON
           ADC_NUMBER = external_id
         WHERE
-          status.DESCRIPTION = 'Detainer Saved'
+          status.DESCRIPTION IN (
+            'Detainer Saved',
+            -- This status has only appeared 25 times ever, but we got feedback that
+            -- it is enough to be disqualifying. 
+             'Awaiting Extradition')
           -- Time Comp told us these types of detainers are not disqualifying.
           AND TYPE_ID NOT IN (
             '1976', -- Notification Request
@@ -74,6 +78,9 @@ _QUERY_TEMPLATE = f"""
             '1972' -- Child Support
           )
           AND is_finalized = 'Y'
+          -- There are some cases where a detainer has been canceled but the status
+          -- doesn't update. This will catch those.
+          AND CANCEL_DTM IS NULL
           AND pei.state_code = 'US_AZ'
           AND pei.id_type = 'US_AZ_ADC_NUMBER'
     ),
