@@ -18,13 +18,13 @@ columns:
       Date fee was imposed.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S.%f', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d', {col_name})"
   - name: DATE_PAID
     description: |-
       Date fee was paid.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S.%f', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d', {col_name})"
   - name: STATUS
     description: |-
       Status of fee.

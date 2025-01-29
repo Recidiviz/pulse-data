@@ -30,5 +30,5 @@ columns:
     field_type: datetime
     update_history:
       - update_type: RENAME
-        update_datetime: 2025-01-16T00:00:00Z
+        update_datetime: 2025-01-14T00:00:00Z
         previous_value: Assessment_Approved_Date
