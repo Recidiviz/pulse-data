@@ -42,8 +42,8 @@ GCP_PROJECT_STAGING = "recidiviz-staging"
 GCP_PROJECT_PRODUCTION = "recidiviz-123"
 GCP_PROJECT_JUSTICE_COUNTS_STAGING = "justice-counts-staging"
 GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION = "justice-counts-production"
-GCP_PROJECT_DASHBOARDS_STAGING = "recidiviz-dashboards-staging"
-GCP_PROJECT_DASHBOARDS_PRODUCTION = "recidiviz-dashboards-production"
+GCP_PROJECT_DASHBOARDS_STAGING = "recidiviz-dashboard-staging"
+GCP_PROJECT_DASHBOARDS_PRODUCTION = "recidiviz-dashboard-production"
 # This is not a GCP environment. We use this flag when triggering local jobs.
 PROJECT_JUSTICE_COUNTS_LOCAL = "justice-counts-local"
 
