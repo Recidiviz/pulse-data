@@ -1,29 +1,53 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_addr_hist
 file_description: |-
-  Offender Addr History
+  Contains address information. We are missing the table that addr_id maps to, so we
+  don't know specific address information at the moment. TODO(#37812)
 data_classification: source
 primary_key_cols:
   - ofndr_addr_hist_id
 columns:
   - name: ofndr_addr_hist_id
     description: |-
-      TODO(#33372): Fill in column description
+      The primary key.
   - name: addr_id
     description: |-
-      TODO(#33372): Fill in column description
+      Identifies the specific address, but we're missing the table this maps to.
+      TODO(#37812).
   - name: agcy_id
     description: |-
       TODO(#33372): Fill in column description
   - name: ofndr_num
     description: |-
-      TODO(#33372): Fill in column description
+      Unique identifier of a person under UT supervision.
     field_type: person_external_id
     external_id_type: US_UT_DOC
     is_pii: True
   - name: addr_typ_cd
     description: |-
-      TODO(#33372): Fill in column description
+      Code describing the type of address associated with the person.
+    # TODO(#37852) These are all guesses -- need to confirm with UT
+    known_values:
+      - value: H
+        description: Based on the cmt field, seems to be "Prison / Jail".
+      - value: P
+        description: Permanent Address?
+      - value: J
+        description: Jail
+      - value: I
+        description: Interstate?
+      - value: T
+        description: Recidiviz is unsure what this means
+      - value: M
+        description: Mailing address
+      - value: C
+        description: Community programs?
+      - value: S
+        description: Secondary address / Temporary address
+      - value: F
+        description: Family address?
+      - value: N
+        description: Recidiviz is unsure what this means
   - name: assgn_zone
     description: |-
       TODO(#33372): Fill in column description

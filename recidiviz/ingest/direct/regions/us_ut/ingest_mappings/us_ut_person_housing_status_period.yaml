@@ -5,99 +5,59 @@ manifest_language: 1.0.0
 input_columns:
   ofndr_num: STRING
   addr_typ_cd: STRING
-  addr_strt_dt: DATE
-  addr_end_dt: DATE
-  psda_pre_dir: STRING
-  psda_street: STRING
-  psda_sfx_cd: STRING
-  psda_post_dir: STRING
-  pssa_unit_cd: STRING
-  pssa_range: STRING
-  city: STRING
-  # TODO(#37217)
-  # st: STRING
-  zip: STRING
-  ofndr_addr_id: INTEGER
-  vrfy_dt: DATE
-  vrfy_rslt_flg: STRING
-unused_columns: []
+  strt_dt: DATE
+  end_dt: DATE
+  unhoused: BOOLEAN
+  cmt: STRING
+  end_cmt: STRING
+  ofndr_addr_hist_id: STRING
+unused_columns:
+  - ofndr_addr_hist_id
+  - cmt
+  - end_cmt
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
           external_id: ofndr_num
           id_type: $literal("US_UT_DOC")
-    address_periods:
-      - StatePersonAddressPeriod:
-          address_line_1:
-            $custom:
-              $function: us_ut_custom_parsers.parse_address_line_1
-              $args:
-                ofndr_num: ofndr_num
-                psda_pre_dir: psda_pre_dir
-                psda_street: psda_street
-                psda_sfx_cd: psda_sfx_cd
-                psda_post_dir: psda_post_dir
-          address_line_2:
-            $custom:
-              $function: us_ut_custom_parsers.parse_address_line_2
-              $args:
-                pssa_unit_cd: pssa_unit_cd
-                pssa_range: pssa_range
-          address_city: city
-          address_zip: zip
-          address_start_date: addr_strt_dt
-          address_end_date: addr_end_dt
-          address_is_verified:
-            $equal:
-              - vrfy_rslt_flg
-              - $literal("Y")
-          address_type:
-            # Older historic values of this field are not super accurate.
-            # e.g. PO Boxes are often marked as H
-            $enum_mapping:
-              $raw_text: addr_typ_cd
-              $mappings:
-                StatePersonAddressType.MAILING_ONLY:
-                  - M # Mailing Address
-                StatePersonAddressType.PHYSICAL_RESIDENCE:
-                  - H # House
-                  - F # Unknown
-                  - P # Prison
-                  - J # Jail
-                  - I # Prison (maybe interstate)
-                  - C # Correctional Facility
-                  - T # Transitional Program
-                  - S # Secondary Address (maybe)
-          address_metadata:
-            $json_dict:
-              verify_date: vrfy_dt
-              addr_id_in_raw_data: ofndr_addr_id
     housing_status_periods:
       - $conditional:
           - $if:
               $not:
-                $equal:
-                  - addr_typ_cd
-                  - $literal("M")
+                $in:
+                  $value: addr_typ_cd
+                  $options:
+                    - $literal("M") # Mailing address
+                    - $literal("H") # Prison / Jail
             $then:
               StatePersonHousingStatusPeriod:
-                housing_status_start_date: addr_strt_dt
-                housing_status_end_date: addr_end_dt
+                housing_status_start_date: strt_dt
+                housing_status_end_date: end_dt
                 housing_status_type:
-                  $enum_mapping:
-                    $raw_text: addr_typ_cd
-                    $mappings:
-                      # These are all guesses, we need to hear back from UT. See
-                      # known_values on ofndr_addr_arch table for code descriptions.
-                      StatePersonHousingStatusType.PERMANENT_RESIDENCE:
-                        - H
-                        - F
-                      StatePersonHousingStatusType.FACILITY:
-                        - P
-                        - J
-                        - I
-                        - C
-                      StatePersonHousingStatusType.TEMPORARY_OR_SUPPORTIVE_HOUSING:
-                        - T
-                        - S
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - unhoused
+                          - $literal("True")
+                      $then: $literal_enum(StatePersonHousingStatusType.UNHOUSED)
+                    - $else:
+                        $enum_mapping:
+                          $raw_text: addr_typ_cd
+                          $mappings:
+                            # TODO(#37852) These are all guesses, we need to hear back
+                            # from UT. See known_values on ofndr_addr_hist table for
+                            # code descriptions.
+                            StatePersonHousingStatusType.PERMANENT_RESIDENCE:
+                              - P
+                              - F
+                            StatePersonHousingStatusType.FACILITY:
+                              - H
+                              - J
+                              - I
+                              - C
+                            StatePersonHousingStatusType.TEMPORARY_OR_SUPPORTIVE_HOUSING:
+                              - T
+                              - S
+                            StatePersonHousingStatusType.INTERNAL_UNKNOWN:
+                              - N

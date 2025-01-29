@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_addr_arch
 file_description: |-
-  Offender Addr Arch
+  This table contains address information but only until 2022. We should use
+  ofndr_addr_hist instead.
 data_classification: source
 primary_key_cols:
   - ofndr_addr_id
@@ -18,26 +19,26 @@ columns:
   - name: addr_typ_cd
     description: |-
       Code describing the type of address associated with the person.
-    # These are all guesses -- need to confirm with UT
+    # TODO(#37852) These are all guesses -- need to confirm with UT
     known_values:
       - value: H
-        description: House
+        description: Based on the cmt field, seems to be "Prison / Jail".
       - value: P
-        description: Prison
+        description: Permanent Address?
       - value: J
         description: Jail
       - value: I
-        description: Also prison -- not sure why I though. Perhaps interstate?
+        description: Interstate?
       - value: T
-        description: Transitional program
+        description: Unsure
       - value: M
         description: Mailing address
       - value: C
-        description: Correctional facility
+        description: Community programs?
       - value: S
-        description: Secondary address?
+        description: Secondary address / Temporary address
       - value: F
-        description: Unknown
+        description: Family address?
     null_values:
       - "(null)"
   - name: orig_addr_typ_cd
