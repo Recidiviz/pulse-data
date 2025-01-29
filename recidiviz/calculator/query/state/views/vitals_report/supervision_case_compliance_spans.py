@@ -83,6 +83,7 @@ WITH risk_assessment_eligibility_levels_by_state AS (
         -- avoid needing to do extra processing for data we aren't actually using
         date_of_supervision >= DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 6 MONTH)
         AND NOT (m.state_code="US_ND" AND IFNULL(l.supervision_office_name, "") LIKE "%PRETRIAL")
+        AND supervision_type != "INVESTIGATION"
     GROUP BY 1, 2, 3, 4, 5, 7
 )
 , aggregated_compliance_spans AS (
