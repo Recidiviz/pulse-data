@@ -95,6 +95,7 @@ columns:
         description: TODO(#35313) Document this value.
       - value: Change Type Of Supervision
         description: TODO(#35313) Document this value.
+      - value: Death
       - value: Discharge County Contract boarder
       - value: Discharged (from Parole)
       - value: Discharged by Court
@@ -135,6 +136,7 @@ columns:
       - value: Court Ordered Discharge
       - value: Court Ordered Release
       - value: Court Recalls per PC 1170(d)
+      - value: Death
       - value: Discharge a Parolee to Another Agency's Jurisdiction
       - value: Discharge at statutory maximum
       - value: Discharge Non-violent Offn During 13th Mon of Succ. Parole
@@ -207,6 +209,7 @@ columns:
         description: TODO(#35313) Document this value.
       - value: Closed ISC Case Interest
         description: TODO(#35313) Document this value.
+      - value: Death
       - value: Discharge County Contract boarder
       - value: Discharge Interstate Cooperative Case
       - value: Discharged
@@ -255,6 +258,7 @@ columns:
       - value: Court Ordered Discharge
       - value: Court Ordered Release
       - value: Court Recalls per PC 1170(d)
+      - value: Death
       - value: Diagnostic Commitment (Z Suffix)
       - value: Discharge a Parolee to Another Agency's Jurisdiction
       - value: Discharge at statutory maximum
