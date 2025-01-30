@@ -70,7 +70,15 @@ facility_locs AS (
     'C5', -- ACC Institu. Parole Services
     'U3', -- Immigration & Nat. Service
     'C3', -- ACC Residential Services
-    'B9' -- Arkansas Concurrent Sentences
+    'B9', -- Arkansas Concurrent Sentences
+    /*
+    E1 locations are a special case: any of these locations may or may not represent an 
+    actual facility location in the data, depending on the movement code associated with it.
+    That is, a given E1 location ID may be considered an actual facility location in one
+    case, and may be simply used to denote a shift in jurisdiction in another. This 
+    inconsistency is handled in the following CTE.
+    */
+    'E1'  -- County Jail/Sheriff
   )
 ),
 
@@ -98,8 +106,28 @@ external_movements AS (
     -- Movements with a non-null code but missing reason are rare (2 instances as of Dec. 2023), but they
     -- get set to 'Not Specified' here so that neither the code nor the reason can be null.
     COALESCE(REASONFORMOVEMENT,'99') AS REASONFORMOVEMENT,
-    LOCATIONREPORTMOVEMENT,
-    OTHERLOCATIONCODE,
+    /*
+    Organizations with an ORGANIZATIONTYPE of E1 ('County Jail/Sheriff') only represent
+    physical locations where someone can be detained in the EXTERNALMOVEMENT data if they
+    are the reporting location for a 42 ('Released Permanently (Jail Detainee)') movement 
+    or the other location for a 38 ('Supervision Violator (Arrested)') movement. In every
+    other case, these locations are included in the data to represent a change in jurisdiction
+    rather than a change in physical location (such as when someone goes on furlough).
+
+    By flagging when an E1 location is not used to denote a physical detention location 
+    using the location ID, we can ensure that these instances of the location don't have
+    any matches in the facility_locs CTE.
+    */
+    CASE 
+      WHEN op1.ORGANIZATIONTYPE = 'E1' AND EXTERNALMOVEMENTCODE != '42'
+      THEN CONCAT(LOCATIONREPORTMOVEMENT,'JURISDICTIONAL_ONLY')
+      ELSE LOCATIONREPORTMOVEMENT
+    END AS LOCATIONREPORTMOVEMENT,
+    CASE 
+      WHEN op2.ORGANIZATIONTYPE = 'E1' AND EXTERNALMOVEMENTCODE != '38'
+      THEN CONCAT(OTHERLOCATIONCODE,'JURISDICTIONAL_ONLY')
+      ELSE OTHERLOCATIONCODE
+    END AS OTHERLOCATIONCODE,
     CASE 
       WHEN 
         (EXTERNALMOVEMENTCODE < '40' OR EXTERNALMOVEMENTCODE IN ('2A','2B')) AND
@@ -109,7 +137,11 @@ external_movements AS (
       WHEN EXTERNALMOVEMENTCODE IS NULL THEN NULL 
       ELSE 'OUT' 
     END AS direction
-  FROM {EXTERNALMOVEMENT}
+  FROM {EXTERNALMOVEMENT} em
+  LEFT JOIN {ORGANIZATIONPROF} op1
+  ON LOCATIONREPORTMOVEMENT = op1.PARTYID
+  LEFT JOIN {ORGANIZATIONPROF} op2
+  ON OTHERLOCATIONCODE = op2.PARTYID
   WHERE 
     REGEXP_CONTAINS(OFFENDERID, r'^[[:digit:]]+$') AND
     EXTERNALMOVEMENTCODE IS NOT NULL 
