@@ -670,4 +670,30 @@ def get_admin_blueprint(
             }
         )
 
+    @admin_blueprint.route("/vendors", methods=["GET"])
+    @auth_decorator
+    def get_vendors() -> Response:
+        """
+        Fetch all vendors and CSG with their respective homepage URLs.
+
+        Returns:
+            A list of dictionaries with id, name, and URL for vendors and CSG.
+        """
+
+        vendors = AgencyInterface.get_vendors(session=current_session)
+
+        results = []
+        # Add vendors
+        for vendor in vendors:
+            agency_setting_type_to_value = {
+                setting.setting_type: setting.value
+                for setting in vendor.agency_settings
+            }
+            url = agency_setting_type_to_value.get(
+                schema.AgencySettingType.HOMEPAGE_URL.value
+            )
+            results.append({"id": vendor.id, "name": vendor.name, "url": url})
+
+        return jsonify(results)
+
     return admin_blueprint

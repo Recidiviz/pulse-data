@@ -206,6 +206,7 @@ class JusticeCountsSchemaTestObjects:
 
         # Vendors
         self.vendor_A = schema.Source(name="Vendor Alpha", type="vendor")
+        self.vendor_B = schema.Source(name="Vendor Beta", type="vendor")
 
         # CSG
         self.csg = schema.Source(name="Council of State Governmets", type="csg")

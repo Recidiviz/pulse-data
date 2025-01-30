@@ -1149,3 +1149,57 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             for opt in reporting_agency_options_json
         }
         self.assertEqual(expected_options, actual_options)
+
+    def test_get_vendors_with_csg(self) -> None:
+        """Test fetching vendor id, name, and URL for all vendors and CSG."""
+        self.load_users_and_agencies()
+
+        vendor_A = self.test_schema_objects.vendor_A
+        vendor_B = self.test_schema_objects.vendor_B
+
+        # Add vendors and CSG to the session and commit
+        self.session.add_all([vendor_A, vendor_B])
+        self.session.commit()
+        self.session.refresh(vendor_A)
+        self.session.refresh(vendor_B)
+        vendor_A_id = vendor_A.id
+        vendor_B_id = vendor_B.id
+
+        # Add homepage URLs for vendors and CSG as agency settings
+        AgencySettingInterface.create_or_update_agency_setting(
+            session=self.session,
+            agency_id=vendor_A_id,
+            setting_type=schema.AgencySettingType.HOMEPAGE_URL,
+            value="https://vendorA.example.com",
+        )
+
+        AgencySettingInterface.create_or_update_agency_setting(
+            session=self.session,
+            agency_id=vendor_B_id,
+            setting_type=schema.AgencySettingType.HOMEPAGE_URL,
+            value="https://vendorB.example.com",
+        )
+
+        self.session.commit()
+
+        # Make the GET request to the /vendors endpoint
+        response = self.client.get("/admin/vendors")
+
+        # Validate the response
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, list)
+
+        # Validate the structure and content of the response
+        expected_response = [
+            {
+                "id": vendor_A_id,
+                "name": vendor_A.name,
+                "url": "https://vendorA.example.com",
+            },
+            {
+                "id": vendor_B_id,
+                "name": vendor_B.name,
+                "url": "https://vendorB.example.com",
+            },
+        ]
+        self.assertEqual(response_json, expected_response)
