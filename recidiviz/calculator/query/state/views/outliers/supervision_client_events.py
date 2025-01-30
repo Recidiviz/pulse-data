@@ -71,7 +71,7 @@ events_with_metric_id AS (
 violations AS (
   SELECT DISTINCT
     "US_MI" as state_code,
-    "violations" AS metric_id,
+    "{VIOLATIONS.name}" AS metric_id,
     violation_date AS event_date,
     sv.person_id,
     TO_JSON_STRING(
@@ -88,9 +88,9 @@ violations AS (
     ) AS attributes
     FROM `{{project_id}}.normalized_state.state_supervision_violation` sv
     LEFT JOIN `{{project_id}}.normalized_state.state_supervision_violated_condition_entry` cond
-        ON sv.supervision_violation_id = cond.supervision_violation_id
+        USING(supervision_violation_id, state_code)
     LEFT JOIN `{{project_id}}.normalized_state.state_supervision_violation_type_entry` type
-        ON sv.supervision_violation_id = type.supervision_violation_id
+        USING(supervision_violation_id, state_code)
     WHERE
         sv.state_code = 'US_MI'
         AND violation_date IS NOT NULL
@@ -115,6 +115,25 @@ violations AS (
             sv.state_code = 'US_TN'
             AND violation_date IS NOT NULL 
             AND violation_type_raw_text != "INFERRED"
+
+    UNION ALL
+
+    SELECT
+        "US_IX" AS state_code,
+        "{VIOLATIONS.name}" AS metric_id,
+        violation_date as event_date,
+        sv.person_id,
+        TO_JSON_STRING( 
+            STRUCT(
+                UPPER(type.violation_type_raw_text)  as code,
+                NULL as description
+            )) AS attributes
+        FROM `{{project_id}}.normalized_state.state_supervision_violation` sv
+        LEFT JOIN `{{project_id}}.normalized_state.state_supervision_violation_type_entry` type
+            USING(supervision_violation_id, state_code)
+        WHERE
+            sv.state_code = 'US_IX'
+            AND violation_date IS NOT NULL 
     
 ),
 sanctions AS (
@@ -153,6 +172,23 @@ sanctions AS (
         LEFT JOIN `{{project_id}}.us_tn_raw_data_up_to_date_views.TOMIS_CODESTABLE_latest` tct ON resp.response_type_raw_text = tct.Code AND CodesTable = 'TDCD340'
         WHERE
             state_code = 'US_TN'
+            AND response_date IS NOT NULL
+
+    UNION ALL
+
+    SELECT
+        "US_IX" AS state_code,
+        "{VIOLATION_RESPONSES.name}" AS metric_id,
+        response_date as event_date,
+        person_id,
+        TO_JSON_STRING( 
+            STRUCT(
+                NULL as code,
+                NULL as description
+            )) AS attributes
+        FROM `{{project_id}}.normalized_state.state_supervision_violation_response` resp
+        WHERE
+            state_code = 'US_IX'
             AND response_date IS NOT NULL
     
 ),
