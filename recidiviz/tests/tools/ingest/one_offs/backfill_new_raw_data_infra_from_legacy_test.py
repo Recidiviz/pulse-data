@@ -18,9 +18,10 @@
 import os
 import unittest
 from typing import Optional
-from unittest.mock import patch
+from unittest.mock import ANY, call, patch
 
 import pytest
+import sqlalchemy
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager_v2 import (
@@ -32,6 +33,7 @@ from recidiviz.ingest.direct.metadata.legacy_direct_ingest_raw_file_metadata_man
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
@@ -41,8 +43,6 @@ from recidiviz.tools.ingest.one_offs.backfill_new_raw_data_infra_from_legacy imp
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.utils.fixture_helpers import reset_fixtures
-
-a = "recidiviz/tools/admin_panel/fixtures/operations_db/direct_ingest_raw_file_metadata.csv"
 
 
 @pytest.mark.uses_db
@@ -54,6 +54,7 @@ class BackfillNewRawDataInfraFromLegacyTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        super().setUpClass()
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
@@ -67,20 +68,30 @@ class BackfillNewRawDataInfraFromLegacyTest(unittest.TestCase):
             "recidiviz.tools.ingest.one_offs.backfill_new_raw_data_infra_from_legacy.prompt_for_confirmation",
             return_value=None,
         )
+
+        self.bq_patch = patch(
+            "recidiviz.tools.ingest.one_offs.backfill_new_raw_data_infra_from_legacy.BigQueryClientImpl",
+        )
+        self.bq_mock = self.bq_patch.start()
+
         self.prompt_for_confirmation_patcher.start()
+        super().setUp()
 
     def tearDown(self) -> None:
         self.prompt_for_confirmation_patcher.stop()
         self.is_enabled_patcher.stop()
+        self.bq_patch.stop()
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.database_key
         )
+        super().tearDown()
 
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
             cls.temp_db_dir
         )
+        super().tearDownClass()
 
     def test_valid(self) -> None:
         reset_fixtures(
@@ -103,7 +114,7 @@ class BackfillNewRawDataInfraFromLegacyTest(unittest.TestCase):
             with_proxy=False,  # let's us connect to local db
         )
 
-        manager.backfill(dry_run=False)
+        manager.backfill(dry_run=False, should_replace_file_ids=False)
 
         v2 = DirectIngestRawFileMetadataManagerV2(
             StateCode.US_CO.value, DirectIngestInstance.PRIMARY
@@ -152,6 +163,9 @@ class BackfillNewRawDataInfraFromLegacyTest(unittest.TestCase):
             assert legacy_metadata.file_discovery_time == gcs_file.file_discovery_time
             assert legacy_metadata.normalized_file_name == gcs_file.normalized_file_name
 
+        self.bq_mock.assert_not_called()
+        self.bq_mock().assert_not_called()
+
     def test_conflicts(self) -> None:
         reset_fixtures(
             engine=SQLAlchemyEngineManager.get_engine_for_database(
@@ -169,6 +183,23 @@ class BackfillNewRawDataInfraFromLegacyTest(unittest.TestCase):
             csv_headers=True,
         )
 
+        # reset pg's internal counter to make sure we don't try to start at 1 (taken)
+        with SessionFactory.using_database(
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS),
+            autocommit=True,
+        ) as session:
+            update_pks = """
+            SELECT 
+                setval('direct_ingest_raw_big_query_file_metadata_file_id_seq', max(file_id))
+            FROM direct_ingest_raw_big_query_file_metadata
+            UNION ALL
+            SELECT 
+                setval('direct_ingest_raw_file_metadata_file_id_seq', max(file_id))
+            FROM direct_ingest_raw_file_metadata
+            """
+
+            session.execute(sqlalchemy.text(update_pks))
+
         manager = BackfillNewRawDataInfraFromLegacy(
             state_code=StateCode.US_CO,
             raw_data_instance=DirectIngestInstance.PRIMARY,
@@ -177,4 +208,23 @@ class BackfillNewRawDataInfraFromLegacyTest(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(ValueError, r"Found \[\d+\] conflicting ids"):
-            manager.backfill(dry_run=False)
+            manager.backfill(dry_run=False, should_replace_file_ids=False)
+
+        manager.backfill(dry_run=False, should_replace_file_ids=True)
+
+        expected_q = """
+            UPDATE `recidiviz-testing.us_co_raw_data.informix_incarcer` SET file_id = new_file_id
+            FROM (
+                SELECT * FROM UNNEST([
+                    STRUCT<`old_file_id` INT64, `new_file_id` INT64>
+                    (115513, 9133148),(116316, 9133149),(119189, 9133150),(119427, 9133151),(122051, 9133152),(128204, 9133153),(130382, 9133154)
+                ])
+            ) n
+            WHERE old_file_id = file_id;"""
+
+        self.bq_mock().run_query_async.assert_has_calls(
+            [call(query_str=ANY, use_query_cache=False) for _ in range(21)]
+            + [call().result() for _ in range(22)]
+            + [call(query_str=expected_q, use_query_cache=False)],
+            any_order=True,
+        )
