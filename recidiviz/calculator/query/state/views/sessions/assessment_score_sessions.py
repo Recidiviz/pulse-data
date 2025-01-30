@@ -78,6 +78,14 @@ WITH state_assessment AS (
                 AND assessment_type = 'INTERNAL_UNKNOWN' 
                 AND assessment_class = 'MENTAL_HEALTH'
                 )
+            -- TODO(#37900) Once LS/RNR is added to our StateAssessmentType, we will not need this chunk anymore
+            OR (
+                state_code = 'US_UT'
+                AND assessment_type_raw_text = 'LS/RNR RISK-NEED-RESPONSIVITY'
+                AND assessment_type = 'INTERNAL_UNKNOWN' 
+                AND assessment_class = 'RISK'
+            )
+            
         )
         AND assessment_date IS NOT NULL
         AND assessment_date > '1900-01-01'

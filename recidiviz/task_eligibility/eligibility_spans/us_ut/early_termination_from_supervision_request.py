@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,8 +27,16 @@ from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     supervision_or_supervision_out_of_state_past_half_full_term_release_date,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_ut import (
+    risk_level_reduction_of_one_or_more,
+    risk_level_stayed_moderate_or_low,
+    risk_score_reduction_5_percent_or_more,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -39,6 +47,19 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
+        # Risk reduction criteria
+        OrTaskCriteriaGroup(
+            criteria_name="US_UT_RISK_REDUCTION_FOR_ET",
+            sub_criteria_list=[
+                risk_level_reduction_of_one_or_more.VIEW_BUILDER,
+                risk_level_stayed_moderate_or_low.VIEW_BUILDER,
+                risk_score_reduction_5_percent_or_more.VIEW_BUILDER,
+            ],
+            allowed_duplicate_reasons_keys=[
+                "assessment_level_raw_text",
+                "first_assessment_level_raw_text",
+            ],
+        ),
         # Past ET Review date/ half-time date
         supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
     ],
