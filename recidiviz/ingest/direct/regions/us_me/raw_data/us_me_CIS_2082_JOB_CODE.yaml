@@ -39,3 +39,4 @@ columns:
   - name: MODIFIED_ON_DATE
     description: The last time the row was modified.
     field_type: datetime
+update_cadence: IRREGULAR
