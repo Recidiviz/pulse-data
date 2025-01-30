@@ -56,6 +56,17 @@ class RecidivizPagerDutyService(RecidivzAlertingService):
         )
 
     @classmethod
+    def polaris_airflow_service(cls, project_id: str) -> "RecidivizPagerDutyService":
+        """Returns the service for alerts related to product-specific Airflow task failures."""
+        return RecidivizPagerDutyService(
+            name="Polaris Airflow Service",
+            project_id=project_id,
+            service_integration_email=cls._build_integration_email(
+                "polaris-airflow", project_id=project_id
+            ),
+        )
+
+    @classmethod
     def monitoring_airflow_service(cls, project_id: str) -> "RecidivizPagerDutyService":
         """Returns the service for alerts related to Airflow monitoring infrastructure
         failures.

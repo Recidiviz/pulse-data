@@ -15,41 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-// These import blocks can be deleted once this code has been deployed to production
-import {
-  to = module.data-platform-airflow-pagerduty-service.pagerduty_service.service
-  id = "P1A7TVN"
-  # Only import if project is staging, otherwise create a new service.
-  for_each = var.project_id == "recidiviz-staging" ? [0] : []
-}
-
-import {
-  to = module.data-platform-airflow-pagerduty-service.pagerduty_service_integration.airflow_monitoring_email_integration
-  id = "P1A7TVN.PFGP7NF"
-  # Only import if project is staging, otherwise create a new integration.
-  for_each = var.project_id == "recidiviz-staging" ? [0] : []
-}
-
-import {
-  to = module.monitoring-airflow-pagerduty-service.pagerduty_service.service
-  id = "P279952"
-  # Only import if project is staging, otherwise create a new service.
-  for_each = var.project_id == "recidiviz-staging" ? [0] : []
-}
-
-import {
-  to = module.monitoring-airflow-pagerduty-service.pagerduty_service_integration.airflow_monitoring_email_integration
-  id = "P279952.PF953FR"
-  # Only import if project is staging, otherwise create a new integration.
-  for_each = var.project_id == "recidiviz-staging" ? [0] : []
-}
-
 locals {
   # See: https://recidiviz.pagerduty.com/escalation_policies#PGUQH2D
   infrastructure_escalation_policy_id = "PGUQH2D"
 
   # See: https://recidiviz.pagerduty.com/escalation_policies#P6NIPW8
   reliability_escalation_policy_id = "P6NIPW8"
+
+  # See: https://recidiviz.pagerduty.com/escalation_policies/P8VK0OC
+  polaris_escalation_policy_id = "P8VK0OC"
 }
 
 module "data-platform-airflow-pagerduty-service" {
@@ -77,4 +51,17 @@ module "monitoring-airflow-pagerduty-service" {
   escalation_policy_id            = local.reliability_escalation_policy_id
   integration_email_base_username = "monitoring-airflow"
   is_monitoring_service           = true
+}
+
+module "polaris-airflow-pagerduty-service" {
+  source = "./modules/pagerduty-service"
+  providers = {
+    pagerduty = pagerduty
+  }
+
+  project_id                      = var.project_id
+  service_base_name               = "Airflow Tasks: Polaris"
+  service_description             = "Product-specific Polaris Airflow tasks"
+  escalation_policy_id            = local.polaris_escalation_policy_id
+  integration_email_base_username = "polaris-airflow"
 }

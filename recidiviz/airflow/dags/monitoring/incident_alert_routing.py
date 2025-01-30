@@ -186,11 +186,8 @@ def get_alerting_services_for_incident(
     if _job_is_in_group(
         job_id=job_id, group_id=STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID
     ) and not _job_is_task_branching_start_or_end(job_id):
-        state_code = assert_type(_state_code_from_job_id(job_id), StateCode)
         return [
-            RecidivizPagerDutyService.airflow_service_for_state_code(
-                project_id=project_id, state_code=state_code
-            )
+            RecidivizPagerDutyService.polaris_airflow_service(project_id=project_id)
         ]
 
     return [
