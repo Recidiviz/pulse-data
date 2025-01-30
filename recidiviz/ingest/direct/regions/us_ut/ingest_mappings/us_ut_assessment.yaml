@@ -227,6 +227,8 @@ output:
                         - "MAXIMUM (LEVEL 1)"
                         - "MAXIMUM (HIGH)"
                         - "EXTREME"
+                      StateAssessmentLevel.INTENSE:
+                        - "INTENSIVE"
                       StateAssessmentLevel.INTERNAL_UNKNOWN:
                         - "REFERRAL NOT RECOMMENDED"
                         - ". . ."
@@ -239,5 +241,4 @@ output:
                         - "LEVEL III - RSUT"
                         - "REFERRAL RECOMMENDED"
                         - "ACE SCORE"
-                        - "INTENSIVE"
                         - "FULLMER"
