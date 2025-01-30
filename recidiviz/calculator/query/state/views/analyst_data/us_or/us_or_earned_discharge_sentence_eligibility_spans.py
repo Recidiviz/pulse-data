@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             NULL AS no_convictions_since_sentence_start_date,
             NULL AS in_state_sentence,
             NULL AS funded_sentence,
+            NULL AS not_conditional_discharge_or_diversion_sentence,
             CAST(NULL AS DATE) AS sentence_critical_date,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_sentence_imposition_date_eligible`
         UNION ALL
@@ -59,6 +60,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             NULL AS no_convictions_since_sentence_start_date,
             NULL AS in_state_sentence,
             NULL AS funded_sentence,
+            NULL AS not_conditional_discharge_or_diversion_sentence,
             sentence_critical_date,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_served_6_months_supervision`
         UNION ALL
@@ -70,6 +72,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             NULL AS no_convictions_since_sentence_start_date,
             NULL AS in_state_sentence,
             NULL AS funded_sentence,
+            NULL AS not_conditional_discharge_or_diversion_sentence,
             sentence_critical_date,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_served_half_sentence`
         UNION ALL
@@ -81,6 +84,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             NULL AS no_convictions_since_sentence_start_date,
             NULL AS in_state_sentence,
             NULL AS funded_sentence,
+            NULL AS not_conditional_discharge_or_diversion_sentence,
             CAST(NULL AS DATE) AS sentence_critical_date,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_statute_eligible`
         UNION ALL
@@ -92,6 +96,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             meets_criteria AS no_convictions_since_sentence_start_date,
             NULL AS in_state_sentence,
             NULL AS funded_sentence,
+            NULL AS not_conditional_discharge_or_diversion_sentence,
             CAST(NULL AS DATE) AS sentence_critical_date,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_no_convictions_since_sentence_start`
         UNION ALL
@@ -103,6 +108,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             NULL AS no_convictions_since_sentence_start_date,
             meets_criteria AS in_state_sentence,
             NULL AS funded_sentence,
+            NULL AS not_conditional_discharge_or_diversion_sentence,
             CAST(NULL AS DATE) AS sentence_critical_date,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_in_state_sentence`
         UNION ALL
@@ -114,8 +120,21 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             NULL AS no_convictions_since_sentence_start_date,
             NULL AS in_state_sentence,
             meets_criteria AS funded_sentence,
+            NULL AS not_conditional_discharge_or_diversion_sentence,
             CAST(NULL AS DATE) AS sentence_critical_date,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_funded_sentence`
+        UNION ALL
+        SELECT * EXCEPT(meets_criteria),
+            NULL AS sentence_date,
+            NULL AS served_6_months,
+            NULL AS served_half_of_sentence,
+            NULL AS statute,
+            NULL AS no_convictions_since_sentence_start_date,
+            NULL AS in_state_sentence,
+            NULL AS funded_sentence,
+            meets_criteria AS not_conditional_discharge_or_diversion_sentence,
+            CAST(NULL AS DATE) AS sentence_critical_date,
+        FROM `{{project_id}}.{{analyst_dataset}}.us_or_not_conditional_discharge_or_diversion_sentence`
     ),
     {create_sub_sessions_with_attributes(
         "sentence_subcriteria_eligibility_spans",
@@ -135,6 +154,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             LOGICAL_AND(no_convictions_since_sentence_start_date) AS meets_criteria_no_convictions_since_sentence_start_date,
             LOGICAL_AND(in_state_sentence) AS meets_criteria_in_state_sentence,
             LOGICAL_AND(funded_sentence) AS meets_criteria_funded_sentence,
+            LOGICAL_AND(not_conditional_discharge_or_diversion_sentence) AS meets_criteria_not_conditional_discharge_or_diversion_sentence,
             /* Use the greatest critical date per sentence across all date-based
             sentence criteria to determine when the sentence could become eligible. */
             MAX(sentence_critical_date) AS sentence_eligibility_date,
@@ -155,6 +175,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
                 AND meets_criteria_no_convictions_since_sentence_start_date
                 AND meets_criteria_in_state_sentence
                 AND meets_criteria_funded_sentence
+                AND meets_criteria_not_conditional_discharge_or_diversion_sentence
             ) AS is_eligible,
             /* Only set the critical date (i.e., when the sentence will become eligible)
             if the static sentence criteria are met. */
@@ -163,7 +184,8 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
                     AND meets_criteria_statute
                     AND meets_criteria_no_convictions_since_sentence_start_date
                     AND meets_criteria_in_state_sentence
-                    AND meets_criteria_funded_sentence,
+                    AND meets_criteria_funded_sentence
+                    AND meets_criteria_not_conditional_discharge_or_diversion_sentence,
                 sentence_eligibility_date,
                 NULL
             ) AS critical_date,
@@ -174,6 +196,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             meets_criteria_no_convictions_since_sentence_start_date,
             meets_criteria_in_state_sentence,
             meets_criteria_funded_sentence,
+            meets_criteria_not_conditional_discharge_or_diversion_sentence,
         FROM sub_sessions_with_attributes_condensed
     ),
     {critical_date_has_passed_spans_cte(
@@ -185,6 +208,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             'meets_criteria_statute',
             'meets_criteria_no_convictions_since_sentence_start_date',
             'meets_criteria_in_state_sentence', 'meets_criteria_funded_sentence',
+            'meets_criteria_not_conditional_discharge_or_diversion_sentence',
         ],
     )},
     sentence_eligibility_spans_aggregated AS (
@@ -196,7 +220,8 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
                 'meets_criteria_sentence_date', 'meets_criteria_served_6_months',
                 'meets_criteria_served_half_of_sentence', 'meets_criteria_statute',
                 'meets_criteria_no_convictions_since_sentence_start_date',
-                'meets_criteria_in_state_sentence', 'meets_criteria_funded_sentence'
+                'meets_criteria_in_state_sentence', 'meets_criteria_funded_sentence',
+                'meets_criteria_not_conditional_discharge_or_diversion_sentence',
             ],
         )}
     )

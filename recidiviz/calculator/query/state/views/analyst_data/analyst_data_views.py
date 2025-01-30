@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -240,6 +240,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_in_state_se
 from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_no_convictions_since_sentence_start import (
     US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_not_conditional_discharge_or_diversion_sentence import (
+    US_OR_NOT_CONDITIONAL_DISCHARGE_OR_DIVERSION_SENTENCE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_sentence_imposition_date_eligible import (
     US_OR_SENTENCE_IMPOSITION_DATE_ELIGIBLE_VIEW_BUILDER,
 )
@@ -390,6 +393,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_OR_FUNDED_SENTENCE_VIEW_BUILDER,
     US_OR_IN_STATE_SENTENCE_VIEW_BUILDER,
     US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_VIEW_BUILDER,
+    US_OR_NOT_CONDITIONAL_DISCHARGE_OR_DIVERSION_SENTENCE_VIEW_BUILDER,
     US_OR_SENTENCE_IMPOSITION_DATE_ELIGIBLE_VIEW_BUILDER,
     US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_BUILDER,
     US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER,
