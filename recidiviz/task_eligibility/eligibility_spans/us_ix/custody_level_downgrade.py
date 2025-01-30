@@ -20,7 +20,7 @@ someone in Idaho is eligible for a custody level downgrade.
 from recidiviz.big_query.big_query_utils import BigQueryDateInterval
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    general_incarceration_population,
+    general_incarceration_population_state_prison,
 )
 from recidiviz.task_eligibility.completion_events.general import custody_level_downgrade
 from recidiviz.task_eligibility.criteria.general import (
@@ -44,7 +44,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="CUSTODY_LEVEL_DOWNGRADE",
     description=_DESCRIPTION,
-    candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
+    candidate_population_view_builder=general_incarceration_population_state_prison.VIEW_BUILDER,
     criteria_spans_view_builders=[
         custody_level_higher_than_recommended.VIEW_BUILDER,
         no_active_discretionary_override.VIEW_BUILDER,
