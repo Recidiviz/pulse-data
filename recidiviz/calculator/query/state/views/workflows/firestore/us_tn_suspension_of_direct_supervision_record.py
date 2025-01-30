@@ -50,6 +50,17 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
         base.ineligible_criteria,
         base.is_eligible,
         base.is_almost_eligible,
+        -- form information
+        CAST(NULL AS ARRAY<STRING>) AS form_information_conviction_counties,
+        CAST(NULL AS STRING) AS form_information_conviction_charge,
+        CAST(NULL AS DATE) AS form_information_sentence_date,
+        CAST(NULL AS STRING) AS form_information_supervision_duration,
+        CAST(NULL AS STRING) AS form_information_supervision_office_location,
+        STRUCT(
+            CAST(NULL AS DATE) AS contact_date,
+            CAST(NULL AS STRING) AS contact_type,
+            CAST(NULL AS STRING) AS contact_comment
+        ) AS form_information_latest_ncic,
     FROM base
 """
 
