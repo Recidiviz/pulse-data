@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -65,6 +65,7 @@ agg_sentences AS (
     deadTimeDays, 
     paroleEligibilityDate,
     tentativeReleaseDate,
+    determinantSentence,
     CASE
       WHEN 
         paroleEligibilityDate is NULL
@@ -98,7 +99,9 @@ arrest_codes AS (
     pkCode,
     description
   FROM {LKOffenseArrest}
-)
+), 
+-- joining all tables, getting degree, and getting non null sentence admission and begin date
+joined_tables AS (
 SELECT 
     pkOffenseId,
     inmateNumber,
@@ -120,20 +123,26 @@ SELECT
     offenseCommittedDate, -- offense_date
     statute, -- statute
     pkAggregateSentenceId,
-    IFNULL(a.description, ac.description) AS sentence_admission,
+    a.description AS sentence_admission,
     IFNULL(s.beginDate, o.beginDate) AS beginDate,
     minimumTerm, -- to determine life, death, etc
     jailTimeDays, --initial_time_served_days
-    parole_possible
+    IFNULL(determinantSentence, "0") AS determinantSentence,
   FROM agg_sentences s
+  -- using inner join because we have a number of AggSentences without charges which our schema doesn't allow
   INNER JOIN offenses o
   USING (inmateNumber)
   LEFT JOIN county_codes c
   ON fkCountyCode = c.pkCode
-  LEFT JOIN admission_status a -- confirm this is the right lookup with NE
+  LEFT JOIN admission_status a 
   ON adminStatusCd = a.pkCode 
   LEFT JOIN arrest_codes ac
   ON fkOffenseArrestCode = ac.pkCode
+)
+SELECT * 
+FROM joined_tables
+WHERE beginDate IS NOT NULL
+AND sentence_admission NOT IN ("NINETY DAY EVALUATOR", "WORK ETHIC CAMP ADMISSION","INS DETAINEE"," KANSAS JUVENILES", "SARPY COUNTY WORK RELEASE")
 
 """
 

@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  inmateNumber: STRING
+  sentenceGroupId: STRING
+  sequenceNum: INTEGER
+  paroleEligibilityDate: DATE
+  tentativeReleaseDate: DATE
+  paroleEarnedDischargeDate: DATE
+  modifiedDate: DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    sentence_groups:
+      - StateSentenceGroup:
+          external_id: sentenceGroupId
+          sentence_group_lengths:
+            - StateSentenceGroupLength:
+                sequence_num: sequenceNum
+                group_update_datetime: modifiedDate
+                parole_eligibility_date_external: paroleEligibilityDate
+                projected_full_term_release_date_min_external: paroleEarnedDischargeDate
+                projected_full_term_release_date_max_external: tentativeReleaseDate
+                projected_parole_release_date_external: paroleEarnedDischargeDate

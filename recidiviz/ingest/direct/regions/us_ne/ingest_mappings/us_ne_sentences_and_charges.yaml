@@ -1,8 +1,6 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 # This file associates the columns outputted from the query in `view_sentences_and_charges` to
 #  corresponding Ingest Object fields.
-# launch_env:
-#   $env: is_local
 manifest_language: 1.0.0
 input_columns:
   pkOffenseId: STRING
@@ -24,9 +22,11 @@ input_columns:
   beginDate: STRING
   minimumTerm: STRING
   jailTimeDays: STRING
-  parole_possible: STRING
+  determinantSentence: STRING
 unused_columns: []
 variables:
+  # county is in the offense table so we must use offenseid for extneral ID to avoid entity merging errors
+  # since the county is used to determine the sentencing authority
   - sentence_external_id:
       $concat:
         $values:
@@ -87,8 +87,8 @@ output:
               - $literal("DTH") # Death
           parole_possible:
             $equal:
-              - parole_possible
-              - $literal("Y")
+              - determinantSentence
+              - $literal("0")
           sentencing_authority:
             $conditional:
               - $if:
@@ -108,6 +108,7 @@ output:
                   $concat:
                     $values:
                       - inmateNumber
+                      - pkAggregateSentenceId
                       - pkOffenseId
                 status: $literal_enum(StateChargeV2Status.CONVICTED) # only have data for convictions
                 offense_date: offenseCommittedDate

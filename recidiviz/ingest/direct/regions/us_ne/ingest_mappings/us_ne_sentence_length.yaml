@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  inmateNumber: STRING
+  sentenceId: STRING
+  sequenceNum: INTEGER
+  minimumYear: INTEGER
+  minimumMonth: INTEGER
+  minimumDay: INTEGER
+  maximumYear: INTEGER
+  maximumMonth: INTEGER
+  maximumDay: INTEGER
+  paroleEligibilityDate: DATE
+  tentativeReleaseDate: DATE
+  paroleEarnedDischargeDate: DATE
+  beginDate: DATE
+  modifiedDate: DATETIME
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: inmateNumber
+          id_type: $literal("US_NE_ID_NBR")
+    sentences:
+      - StateSentence:
+          external_id: sentenceId
+          sentence_lengths:
+            - StateSentenceLength:
+                sequence_num: sequenceNum
+                length_update_datetime: modifiedDate
+                projected_completion_date_max_external: tentativeReleaseDate
+                projected_completion_date_min_external: paroleEarnedDischargeDate
+                parole_eligibility_date_external: paroleEligibilityDate
+                sentence_length_days_min:
+                  $custom:
+                    $function: us_ne_custom_parsers.get_length_in_days
+                    $args:
+                      years: minimumYear
+                      months: minimumMonth
+                      days: minimumDay
+                      effective_date: beginDate
+                sentence_length_days_max:
+                  $custom:
+                    $function: us_ne_custom_parsers.get_length_in_days
+                    $args:
+                      years: maximumYear
+                      months: maximumMonth
+                      days: maximumDay
+                      effective_date: beginDate
