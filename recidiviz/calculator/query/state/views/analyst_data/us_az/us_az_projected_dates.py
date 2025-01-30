@@ -55,8 +55,8 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
           SELECT
             state_code,
             person_id,
-            CAST(FORMAT_DATETIME('%Y-%m-%d', update_datetime) AS DATE) AS start_date,
-            CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(update_datetime) OVER (PARTITION BY state_code, person_id, JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') ORDER BY update_datetime)) AS DATE) AS end_date,
+            DATE_ADD(CAST(FORMAT_DATETIME('%Y-%m-%d', update_datetime) AS DATE), INTERVAL 1 DAY) AS start_date,
+            DATE_ADD(CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(update_datetime) OVER (PARTITION BY state_code, person_id, JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') ORDER BY update_datetime)) AS DATE), INTERVAL 1 DAY) AS end_date,
             CAST(NULL AS DATE) AS csbd_date,
             CAST(NULL AS DATE) AS ercd_date,
             CASE WHEN JSON_EXTRACT(task_metadata, '$.status') != '"DENIED"'
@@ -75,8 +75,8 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
           SELECT
             state_code,
             person_id,
-            CAST(FORMAT_DATETIME('%Y-%m-%d', update_datetime) AS DATE) AS start_date,
-            CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(update_datetime) OVER (PARTITION BY state_code, person_id, JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') ORDER BY update_datetime)) AS DATE) AS end_date,
+            DATE_ADD(CAST(FORMAT_DATETIME('%Y-%m-%d', update_datetime) AS DATE), INTERVAL 1 DAY) AS start_date,
+            DATE_ADD(CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(update_datetime) OVER (PARTITION BY state_code, person_id, JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') ORDER BY update_datetime)) AS DATE), INTERVAL 1 DAY) AS end_date,
             CAST(NULL AS DATE) AS csbd_date,
             CAST(NULL AS DATE) AS ercd_date,
             CAST(NULL AS DATE) AS acis_tpr_date,

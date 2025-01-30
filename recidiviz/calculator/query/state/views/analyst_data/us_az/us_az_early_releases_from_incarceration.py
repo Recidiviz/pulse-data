@@ -36,8 +36,8 @@ projected_release_date_spans AS (
         person_id,
         task_subtype,
         eligible_date AS eligible_release_date,
-        CAST(update_datetime AS DATE) AS start_date,
-        LEAD(CAST(update_datetime AS DATE)) OVER (
+        CAST(DATE_ADD(update_datetime, INTERVAL 1 DAY) AS DATE) AS start_date,
+        LEAD(CAST(DATE_ADD(update_datetime, INTERVAL 1 DAY) AS DATE)) OVER (
             PARTITION BY state_code, person_id, task_subtype
             ORDER BY update_datetime
         ) AS end_date_exclusive,

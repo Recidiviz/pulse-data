@@ -39,6 +39,7 @@ def task_deadline_critical_date_update_datetimes_cte(
     task_type: StateTaskType,
     critical_date_column: str,
     additional_where_clause: str = "",
+    round_up_datetime: Optional[bool] = True,
 ) -> str:
     """Returns a CTE that selects all StateTaskDeadline rows with the provided
     |task_type] and renames the |critical_date_column| to `critical_date` for standard
@@ -46,12 +47,20 @@ def task_deadline_critical_date_update_datetimes_cte(
     """
     if critical_date_column not in {"eligible_date", "due_date"}:
         raise ValueError(f"Unsupported critical date column {critical_date_column}")
+
+    if round_up_datetime:
+        datetime_str = (
+            "CAST(DATE_ADD(update_datetime, INTERVAL 1 DAY) AS DATE) AS update_datetime"
+        )
+    else:
+        datetime_str = "CAST(update_datetime AS DATE) AS update_datetime"
+
     return f"""critical_date_update_datetimes AS (
         SELECT
             state_code,
             person_id,
             {critical_date_column} AS critical_date,
-            update_datetime
+            {datetime_str}
         FROM `{{project_id}}.{{normalized_state_dataset}}.state_task_deadline`
         WHERE task_type = '{task_type.value}' {additional_where_clause}
     )"""

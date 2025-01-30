@@ -252,7 +252,7 @@ def acis_date_not_set_criteria_builder(
             state_code,
             person_id,
             JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') AS sentence_group_external_id,
-            SAFE_CAST(MIN(update_datetime) AS DATE) AS acis_set_date,
+            DATE_ADD(SAFE_CAST(MIN(update_datetime) AS DATE), INTERVAL 1 DAY) AS acis_set_date,
         FROM `{{project_id}}.normalized_state.state_task_deadline`
         WHERE task_type = 'DISCHARGE_FROM_INCARCERATION' 
             AND task_subtype = '{task_subtype}'
@@ -527,9 +527,9 @@ def no_denial_in_current_incarceration(opp_name: str) -> str:
             SELECT 
                 peid.state_code,
                 peid.person_id,
-                IFNULL(
+                DATE_ADD(IFNULL(
                 SAFE_CAST(SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', dtp.CREATE_DTM) AS DATE),
-                SAFE_CAST(LEFT(dtp.CREATE_DTM, 10) AS DATE))
+                SAFE_CAST(LEFT(dtp.CREATE_DTM, 10) AS DATE)), INTERVAL 1 DAY)
                 AS start_date,
                 denial.description AS denied_reason,
                 dtp.DENIED_OTHER_COMMENT AS denied_comment,
@@ -551,7 +551,7 @@ def no_denial_in_current_incarceration(opp_name: str) -> str:
             SELECT
                 state_code,
                 person_id,
-                CAST(FORMAT_DATETIME('%Y-%m-%d', update_datetime) AS DATE) AS start_date,
+                DATE_ADD(CAST(FORMAT_DATETIME('%Y-%m-%d', update_datetime) AS DATE), INTERVAL 1 DAY) AS start_date,
                 "Denied ACIS TPR" AS denied_reason,
                 "No TPR Date" AS denied_comment,
             FROM
