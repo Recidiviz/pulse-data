@@ -390,13 +390,7 @@ def get_infractions_as_case_notes() -> str:
             end_date_column="i.end_date")}"""
 
 
-def get_minimum_housing_referals_query() -> str:
-    """
-    Returns a SQL query that retrieves minimum housing referrals data.
-    """
-    return """
-WITH min_referrals AS (
-    SELECT 
+MINIMUM_HOUSING_REFERRAL_QUERY = f"""SELECT
         SAFE_CAST(REGEXP_REPLACE(OFFENDER_BOOK_ID, r',|.00', '') AS STRING) AS external_id,
         SAFE_CAST(REGEXP_REPLACE(ASSESSMENT_TYPE_ID, r',', '')  AS NUMERIC) AS assess_type,
         rea.DESCRIPTION AS assess_type_desc,
@@ -413,11 +407,19 @@ WITH min_referrals AS (
         reoa.COMMITTE_COMMENT_TEXT AS committee_comment_text,
         SAFE_CAST(LEFT(COALESCE(reoa.EVALUATION_DATE, reoa.ASSESSMENT_DATE), 10) AS DATE) AS evaluation_date,
         SAFE_CAST(LEFT(reoa.NEXT_REVIEW_DATE, 10) AS DATE) AS next_review_date,
-    FROM `{project_id}.{raw_data_up_to_date_views_dataset}.recidiviz_elite_OffenderAssessments_latest` reoa
-    LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.recidiviz_elite_Assessments_latest` rea
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_OffenderAssessments_latest` reoa
+    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_Assessments_latest` rea
     ON reoa.ASSESSMENT_TYPE_ID = rea.ASSESSMENT_ID
     -- We only care about MINIMUM HOUSING REQUESTS
-    WHERE rea.DESCRIPTION = 'MINIMUM HOUSING REQUEST'
+    WHERE rea.DESCRIPTION = '{'MINIMUM HOUSING REQUEST'}'"""
+
+
+def get_minimum_housing_referals_query() -> str:
+    """
+    Returns a SQL query that retrieves minimum housing referrals data.
+    """
+    return f"""WITH min_referrals AS (
+    {MINIMUM_HOUSING_REFERRAL_QUERY}
 ),
 
 min_referrals_with_external_id AS (
@@ -433,7 +435,7 @@ min_referrals_with_external_id AS (
         mr.evaluation_date AS start_date,
         mr.next_review_date,
     FROM min_referrals mr
-    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
         ON mr.external_id = peid.external_id
             AND peid.state_code = 'US_ND'
             AND peid.id_type = 'US_ND_ELITE_BOOKING'
@@ -442,12 +444,12 @@ min_referrals_with_external_id AS (
 completion_events AS (
     -- Completion events for both ATP and transfer to min
     SELECT *
-    FROM `{project_id}.{general_task_eligibility_completion_events_dataset}.granted_work_release_materialized`
+    FROM `{{project_id}}.{{general_task_eligibility_completion_events_dataset}}.granted_work_release_materialized`
 
     UNION ALL
 
     SELECT *
-    FROM `{project_id}.{us_nd_task_eligibility_completion_events_dataset}.transfer_to_minimum_facility_materialized`
+    FROM `{{project_id}}.{{us_nd_task_eligibility_completion_events_dataset}}.transfer_to_minimum_facility_materialized`
 ),
 
 min_referrals_with_external_id_and_ce AS (

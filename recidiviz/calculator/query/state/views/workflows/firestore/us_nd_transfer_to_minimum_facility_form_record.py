@@ -35,6 +35,7 @@ from recidiviz.task_eligibility.dataset_config import (
 )
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     HEALTH_NOTE_TEXT_REGEX,
+    MINIMUM_HOUSING_REFERRAL_QUERY,
     SSI_NOTE_WHERE_CLAUSE,
     TRAINING_PROGRAMMING_NOTE_TEXT_REGEX,
     WORK_NOTE_TEXT_REGEX,
@@ -67,6 +68,10 @@ WITH eligible_and_almost_eligible AS (
 
 eligible_and_almost_eligible_minus_referrals AS (
     {eligible_and_almost_eligible_minus_referrals()}
+),
+
+min_housing_referrals AS (
+{MINIMUM_HOUSING_REFERRAL_QUERY}
 ),
 
 case_notes_cte AS (
@@ -166,6 +171,26 @@ case_notes_cte AS (
         AND eor.CATEGORY_TYPE = 'LSI-R'
         AND REGEXP_CONTAINS(eor.CATEGORY_TEXT, r'STATIC')
         AND peid2.id_type = 'US_ND_ELITE'
+
+    UNION ALL
+
+    -- Minimum Housing Referrals in the past 2 years
+    SELECT 
+        peid2.external_id,
+        'Minimum Housing Referrals (in the past 2 years)' AS criteria,
+        evaluation_result AS note_title,
+        IFNULL(committee_comment_text, '') AS note_body,
+        evaluation_date AS event_date
+    FROM min_housing_referrals mr
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+    ON mr.external_id = peid.external_id
+        AND peid.state_code = 'US_ND'
+        AND peid.id_type = 'US_ND_ELITE_BOOKING'
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid2
+    ON peid.person_id = peid2.person_id
+        AND peid.state_code = peid2.state_code
+        AND peid2.id_type = 'US_ND_ELITE'
+    WHERE evaluation_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 2 YEAR)
 ), 
 
 array_case_notes_cte AS (
