@@ -14,19 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Views related to platform KPIs"""
+"""View config for platform kpi cost views."""
+
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.monitoring.platform_kpis.cost.cost_views import (
-    get_platform_cost_kpi_views_to_update,
-)
-from recidiviz.monitoring.platform_kpis.reliability.reliability_views import (
-    get_platform_reliability_kpi_views_to_update,
+from recidiviz.monitoring.platform_kpis.cost.bq_monthly_costs_by_dataset import (
+    BQ_MONTHLY_COSTS_BY_DATASET_VIEW_BUILDER,
 )
 
 
-def get_platform_kpi_views_to_update() -> list[BigQueryViewBuilder]:
+def get_platform_cost_kpi_views_to_update() -> list[BigQueryViewBuilder]:
     return [
-        *get_platform_reliability_kpi_views_to_update(),
-        *get_platform_cost_kpi_views_to_update(),
+        BQ_MONTHLY_COSTS_BY_DATASET_VIEW_BUILDER,
     ]

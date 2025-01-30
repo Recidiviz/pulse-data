@@ -128,6 +128,9 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewBuilder,
     DirectIngestRawDataTableLatestViewCollector,
 )
+from recidiviz.monitoring.platform_kpis.cost.bq_monthly_costs_by_dataset import (
+    BQ_MONTHLY_COSTS_BY_DATASET_VIEW_BUILDER,
+)
 from recidiviz.monitoring.platform_kpis.reliability.stale_metric_exports import (
     STALE_METRIC_EXPORTS_VIEW_BUILDER,
 )
@@ -245,6 +248,7 @@ def state_agnostic_deployed_views_without_state_code_column(
         CASE_NOTES_DATA_STORE_VIEW_BUILDER.address,
         # These views look at the platform as a whole, not breaking data down by state.
         STALE_METRIC_EXPORTS_VIEW_BUILDER.address,
+        BQ_MONTHLY_COSTS_BY_DATASET_VIEW_BUILDER.address,
     }
 
     return {
