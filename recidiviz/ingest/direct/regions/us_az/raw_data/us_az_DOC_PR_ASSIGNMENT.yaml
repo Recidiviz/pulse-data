@@ -136,6 +136,8 @@ columns:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
       - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+    null_values:
+      - "NULL"
   - name: UPDT_USERID
     description: |-
       No description available in AZ data dictionary as of 10/31/23.
@@ -149,3 +151,5 @@ columns:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
       - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+    null_values:
+      - "NULL"

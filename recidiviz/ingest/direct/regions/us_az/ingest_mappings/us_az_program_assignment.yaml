@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  cycle_name: STRING
+  program_name: STRING
+  CODE: STRING
   PERSON_ID: STRING
   DOC_ID: STRING
   COMPLETION_PR_FLAG: STRING
@@ -26,44 +27,39 @@ output:
           external_id:
             $concat:
               $values:
-                - PERSON_ID
                 - DOC_ID
-                - cycle_name
+                - CODE
+                - program_name
                 - ASSIGNMENT_DATE
-                - EXEMPTION_REMOVED_DATE
           program_id:
             $concat:
               $values:
-                - $literal("Mandatory Literacy")
-                - cycle_name
+                - CODE
+                - program_name
           participation_status:
-            $conditional:
-              - $if:
-                  $is_null: ENROLL_STATUS
-                # This will only be true for people who are exempt from this requirement
-                $then: $literal_enum(StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO)
-              - $else:
-                  $enum_mapping:
-                    $raw_text: ENROLL_STATUS
-                    $mappings:
-                      StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
-                        - Completed But Failed
-                        - Removed-Roster
-                      StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
-                        - Completed
-                      StateProgramAssignmentParticipationStatus.IN_PROGRESS:
-                        - Participating
-                      StateProgramAssignmentParticipationStatus.REFUSED:
-                        - Refused Program
-                      StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
-                        - Not Participating - Cycle Cancelled
-                        - Not-Participating - Transfer
-                        - Not Participating - Released
-                        - Not Participating
-                      StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN:
-                        # Sometimes people have completed the program when they have this enrollment
-                        # status, and sometimes they have not.
-                        - Administrative Discharge from Program
+            $enum_mapping:
+              $raw_text: ENROLL_STATUS
+              $mappings:
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNSUCCESSFUL:
+                  - Completed But Failed
+                  - Removed-Roster
+                  - Did Not Complete
+                StateProgramAssignmentParticipationStatus.DISCHARGED_SUCCESSFUL:
+                  - Completed
+                StateProgramAssignmentParticipationStatus.IN_PROGRESS:
+                  - Participating
+                  - Enrolled
+                StateProgramAssignmentParticipationStatus.REFUSED:
+                  - Refused Program
+                StateProgramAssignmentParticipationStatus.DISCHARGED_OTHER:
+                  - Not Participating - Cycle Cancelled
+                  - Not-Participating - Transfer
+                  - Not Participating - Released
+                  - Not Participating
+                StateProgramAssignmentParticipationStatus.DISCHARGED_UNKNOWN:
+                  # Sometimes people have completed the program when they have this enrollment
+                  # status, and sometimes they have not.
+                  - Administrative Discharge from Program
           referral_date: ASSIGNMENT_DATE
           start_date: PARTICIPATION_START_DATE
           discharge_date:

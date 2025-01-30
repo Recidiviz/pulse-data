@@ -40,6 +40,8 @@ columns:
   - name: COMMENTS
     description: Inmate education achievement comments
     is_pii: True
+    null_values:
+      - "NULL"
   - name: EXEMPTION_REMOVED_DATE
     description: Exemption_Removed_date is used in Transition Release Program Eligibility
     field_type: datetime
@@ -49,6 +51,8 @@ columns:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
       - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+    null_values:
+      - "NULL"
 table_relationships:
   - foreign_table: DOC_EPISODE
     join_logic:
