@@ -132,6 +132,15 @@ class AgencyInterface:
         return q.one()
 
     @staticmethod
+    def get_vendor_by_id(
+        session: Session,
+        vendor_id: int,
+    ) -> Optional[schema.Agency]:
+        q = session.query(schema.Vendor).filter(schema.Vendor.id == vendor_id)
+        q = q.options(joinedload(schema.Vendor.agency_settings))
+        return q.one_or_none()
+
+    @staticmethod
     def get_agency_dropdown_names(
         session: Session, agency_ids: List[int]
     ) -> Dict[int, str]:

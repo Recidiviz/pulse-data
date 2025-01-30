@@ -1295,3 +1295,47 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             },
         ]
         self.assertEqual(response_json, expected_response)
+
+    def test_add_and_update_vendor(self) -> None:
+        """Test adding a new vendor and then editing its name and URL."""
+        self.load_users_and_agencies()
+
+        # Step 1: Add a vendor
+        add_payload = {"name": "Vendor A", "url": "https://vendor-a.com"}
+        response = self.client.put("/admin/vendors", json=add_payload)
+
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        self.assertIn("id", response_json)
+        self.assertEqual(response_json["name"], "Vendor A")
+        self.assertEqual(response_json["url"], "https://vendor-a.com")
+
+        # Step 2: Update the vendor's name and URL
+        vendor_id = response_json["id"]
+        update_payload = {
+            "id": vendor_id,
+            "name": "Updated Vendor A",
+            "url": "https://updated-vendor-a.com",
+        }
+
+        response = self.client.put("/admin/vendors", json=update_payload)
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        self.assertEqual(response_json["id"], vendor_id)
+        self.assertEqual(response_json["name"], "Updated Vendor A")
+        self.assertEqual(response_json["url"], "https://updated-vendor-a.com")
+
+        # Step 3: Validate that the database reflects the updated vendor information
+        vendor = assert_type(
+            AgencyInterface.get_vendor_by_id(session=self.session, vendor_id=vendor_id),
+            schema.Vendor,
+        )
+
+        self.assertEqual(vendor.name, "Updated Vendor A")
+
+        agency_settings = {
+            setting.setting_type: setting.value for setting in vendor.agency_settings
+        }
+        self.assertEqual(
+            agency_settings["HOMEPAGE_URL"], "https://updated-vendor-a.com"
+        )

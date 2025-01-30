@@ -17,7 +17,7 @@
 """Implements api routes for the Justice Counts Publisher Admin Panel."""
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from flask import Blueprint, Response, jsonify, make_response, request
 from google.cloud import run_v2
@@ -742,5 +742,77 @@ def get_admin_blueprint(
             results.append({"id": vendor.id, "name": vendor.name, "url": url})
 
         return jsonify(results)
+
+    @admin_blueprint.route("/vendors", methods=["PUT"])
+    @auth_decorator
+    def add_or_update_vendor() -> Tuple[Response, int]:
+        """
+        Add a new vendor or update an existing one.
+
+        Request Payload:
+        {
+            "id": Optional[int],  # ID of the vendor to update (required for updates)
+            "name": str,          # Name of the vendor (required)
+            "url": str            # URL of the vendor (required)
+        }
+
+        Response:
+        {
+            "id": int,            # ID of the vendor
+            "name": str,          # Name of the vendor
+            "url": str            # URL of the vendor
+        }
+        """
+        request_json = assert_type(request.json, dict)
+        vendor_name = assert_type(request_json.get("name"), str)
+        vendor_url = assert_type(request_json.get("url"), str)
+        vendor_id = request_json.get("id")  # Optional field for updates
+
+        if vendor_id is not None:
+            existing_vendor = AgencyInterface.get_vendor_by_id(
+                session=current_session, vendor_id=vendor_id
+            )
+
+            if existing_vendor is None:
+                return jsonify({"error": "Vendor not found"}), HTTPStatus.NOT_FOUND
+
+            existing_vendor.name = vendor_name
+
+            # Update vendor URL in the agency settings
+            AgencySettingInterface.create_or_update_agency_setting(
+                session=current_session,
+                agency_id=vendor_id,
+                setting_type=schema.AgencySettingType.HOMEPAGE_URL,
+                value=vendor_url,
+            )
+
+            current_session.commit()
+
+            # Return the updated vendor details
+            return (
+                jsonify({"id": vendor_id, "name": vendor_name, "url": vendor_url}),
+                HTTPStatus.OK,
+            )
+
+        # Add a new vendor
+        vendor = schema.Vendor(name=vendor_name)
+        current_session.add(vendor)
+        current_session.commit()  # Commit to generate an ID for the new vendor
+
+        # Add vendor URL to the agency settings
+        AgencySettingInterface.create_or_update_agency_setting(
+            session=current_session,
+            agency_id=vendor.id,
+            setting_type=schema.AgencySettingType.HOMEPAGE_URL,
+            value=vendor_url,
+        )
+
+        current_session.commit()
+
+        # Return the new vendor details
+        return (
+            jsonify({"id": vendor.id, "name": vendor.name, "url": vendor_url}),
+            HTTPStatus.OK,
+        )
 
     return admin_blueprint
