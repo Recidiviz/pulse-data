@@ -231,6 +231,16 @@ output:
           custodial_authority:
             $conditional:
               - $if:
+                  $equal:
+                    - RequestedSupervisionAssignmentLevel
+                    - $literal("Expanded CRC")
+                $then:
+                  $enum_mapping:
+                    $raw_text: RequestedSupervisionAssignmentLevel
+                    $mappings:
+                      StateCustodialAuthority.STATE_PRISON:
+                        - "Expanded CRC"
+              - $else_if:
                   $in:
                     $value: DOCLocationToName
                     $options:
