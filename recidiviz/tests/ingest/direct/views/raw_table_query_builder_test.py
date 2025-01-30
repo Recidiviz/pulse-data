@@ -60,18 +60,21 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
             columns=[
                 RawTableColumnInfo(
                     name="col1",
+                    state_code=self.state_code,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col1 description",
                 ),
                 RawTableColumnInfo(
                     name="col2",
+                    state_code=self.state_code,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="col2 description",
                 ),
                 RawTableColumnInfo(
                     name="col3",
+                    state_code=self.state_code,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="col3 description",
@@ -81,18 +84,21 @@ class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
                 ),
                 RawTableColumnInfo(
                     name="undocumented_column",
+                    state_code=self.state_code,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description=None,
                 ),
                 RawTableColumnInfo(
                     name="undocumented_column_2",
+                    state_code=self.state_code,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,
                 ),
                 RawTableColumnInfo(
                     name="col6",
+                    state_code=self.state_code,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="deleted column should have no effect",
@@ -575,6 +581,7 @@ FROM filtered_rows
             columns=[
                 RawTableColumnInfo(
                     name="datetime_col",
+                    state_code=self.state_code,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="col3 description",
@@ -584,12 +591,14 @@ FROM filtered_rows
                 ),
                 RawTableColumnInfo(
                     name="undocumented_column",
+                    state_code=self.state_code,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description=None,
                 ),
                 RawTableColumnInfo(
                     name="undocumented_column_2",
+                    state_code=self.state_code,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,
@@ -643,6 +652,7 @@ FROM filtered_rows
             columns=[
                 RawTableColumnInfo(
                     name="datetime_col",
+                    state_code=self.state_code,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="description",
@@ -653,6 +663,7 @@ FROM filtered_rows
                 ),
                 RawTableColumnInfo(
                     name="documented_column",
+                    state_code=self.state_code,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="description",
@@ -660,6 +671,7 @@ FROM filtered_rows
                 ),
                 RawTableColumnInfo(
                     name="undocumented_column",
+                    state_code=self.state_code,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description=None,

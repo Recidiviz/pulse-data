@@ -127,18 +127,21 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="col1",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col1 description",
                 ),
                 RawTableColumnInfo(
                     name="col2",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col2 description",
                 ),
                 RawTableColumnInfo(
                     name="undocumented_col",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,
@@ -287,12 +290,14 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="col1",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,
                 ),
                 RawTableColumnInfo(
                     name="col2",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,

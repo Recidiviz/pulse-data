@@ -105,6 +105,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
     def test_simple(self) -> None:
         column_info = RawTableColumnInfo(
             name="COL1",
+            state_code=StateCode.US_XX,
             field_type=RawTableColumnFieldType.STRING,
             is_pii=False,
             description=None,
@@ -124,6 +125,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         ):
             _ = RawTableColumnInfo(
                 name="COL1",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.DATETIME,
                 is_pii=False,
                 description=None,
@@ -134,6 +136,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         # Valid config, should not crash
         datetime_column_info = RawTableColumnInfo(
             name="COL2",
+            state_code=StateCode.US_XX,
             field_type=RawTableColumnFieldType.DATETIME,
             is_pii=False,
             description=None,
@@ -158,6 +161,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         # External id primary column
         _ = RawTableColumnInfo(
             name="COL1",
+            state_code=StateCode.US_XX,
             field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
             is_pii=True,
             description=None,
@@ -169,6 +173,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         # Non-primary column but has an external id type
         _ = RawTableColumnInfo(
             name="COL1",
+            state_code=StateCode.US_XX,
             field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
             is_pii=True,
             description=None,
@@ -184,6 +189,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         ):
             _ = RawTableColumnInfo(
                 name="COL2",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=None,
@@ -199,6 +205,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         ):
             _ = RawTableColumnInfo(
                 name="COL2",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.DATETIME,
                 is_pii=False,
                 description=None,
@@ -214,6 +221,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         ):
             _ = RawTableColumnInfo(
                 name="COL2",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.DATETIME,
                 is_pii=False,
                 description=None,
@@ -230,6 +238,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         ):
             _ = RawTableColumnInfo(
                 name="COL1",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=None,
@@ -243,6 +252,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         ):
             _ = RawTableColumnInfo(
                 name="COL1",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=None,
@@ -256,6 +266,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         ):
             _ = RawTableColumnInfo(
                 name="COL1",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
                 is_pii=False,
                 description=None,
@@ -271,6 +282,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         ):
             _ = RawTableColumnInfo(
                 name="COL1",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
                 is_pii=False,
                 description=None,
@@ -285,6 +297,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         )
         exempt_column = RawTableColumnInfo(
             name="COL1",
+            state_code=StateCode.US_XX,
             field_type=RawTableColumnFieldType.STRING,
             is_pii=False,
             description=None,
@@ -302,6 +315,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
     def test_nonnull_value_validation_not_exempt(self) -> None:
         non_exempt_column_default = RawTableColumnInfo(
             name="COL1",
+            state_code=StateCode.US_XX,
             field_type=RawTableColumnFieldType.STRING,
             is_pii=False,
             description=None,
@@ -313,6 +327,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         )
         non_exempt_column = RawTableColumnInfo(
             name="COL1",
+            state_code=StateCode.US_XX,
             field_type=RawTableColumnFieldType.DATETIME,
             is_pii=False,
             description=None,
@@ -337,6 +352,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
     def test_column_multiple_renames(self) -> None:
         column_info = RawTableColumnInfo(
             name="COL1",
+            state_code=StateCode.US_XX,
             field_type=RawTableColumnFieldType.STRING,
             is_pii=False,
             description=None,
@@ -378,6 +394,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
     def test_column_exists_at_datetime(self) -> None:
         column_info = RawTableColumnInfo(
             name="COL1",
+            state_code=StateCode.US_XX,
             field_type=RawTableColumnFieldType.STRING,
             is_pii=False,
             description=None,
@@ -430,6 +447,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         # Should not raise an error
         _column_info = RawTableColumnInfo(
             name="COL1",
+            state_code=StateCode.US_XX,
             field_type=RawTableColumnFieldType.STRING,
             is_pii=False,
             description=None,
@@ -448,6 +466,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         )
         _column_info = RawTableColumnInfo(
             name="COL1",
+            state_code=StateCode.US_XX,
             field_type=RawTableColumnFieldType.STRING,
             is_pii=False,
             description=None,
@@ -469,6 +488,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _column_info = RawTableColumnInfo(
                 name="COL1",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=None,
@@ -492,6 +512,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _column_info = RawTableColumnInfo(
                 name="COL1",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=None,
@@ -515,6 +536,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _column_info = RawTableColumnInfo(
                 name="COL1",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=None,
@@ -540,6 +562,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _column_info = RawTableColumnInfo(
                 name="COL1",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=None,
@@ -565,6 +588,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _column_info = RawTableColumnInfo(
                 name="COL1",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=None,
@@ -631,24 +655,28 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="Col1",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
                 ),
                 RawTableColumnInfo(
                     name="Col2",
+                    state_code=StateCode.US_XX,
                     is_pii=False,
                     description="",
                     field_type=RawTableColumnFieldType.STRING,
                 ),
                 RawTableColumnInfo(
                     name="Col3",
+                    state_code=StateCode.US_XX,
                     description="description 3",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.DATETIME,
                 ),
                 RawTableColumnInfo(
                     name="Col4",
+                    state_code=StateCode.US_XX,
                     description="",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.DATETIME,
@@ -677,6 +705,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 *config.columns,
                 RawTableColumnInfo(
                     name="Col5",
+                    state_code=StateCode.US_XX,
                     description="description 5",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -713,6 +742,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="Col1",
+                        state_code=StateCode.US_XX,
                         description="description",
                         is_pii=False,
                         field_type=RawTableColumnFieldType.STRING,
@@ -728,6 +758,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="Col1",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -748,6 +779,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="Col1",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -769,6 +801,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="Col1",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -791,6 +824,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="Col1",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -813,6 +847,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="Col1",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -833,6 +868,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="Col1",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -854,6 +890,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="Col1",
+                        state_code=StateCode.US_XX,
                         description="description",
                         is_pii=False,
                         field_type=RawTableColumnFieldType.STRING,
@@ -872,12 +909,14 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="Col1",
+                        state_code=StateCode.US_XX,
                         description="description",
                         is_pii=False,
                         field_type=RawTableColumnFieldType.STRING,
                     ),
                     RawTableColumnInfo(
                         name="Col1",
+                        state_code=StateCode.US_XX,
                         description="some other description",
                         is_pii=False,
                         field_type=RawTableColumnFieldType.STRING,
@@ -899,12 +938,14 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="col1",
+                        state_code=StateCode.US_XX,
                         field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
                         description="col1 description",
                     ),
                     RawTableColumnInfo(
                         name="col2",
+                        state_code=StateCode.US_XX,
                         field_type=RawTableColumnFieldType.DATETIME,
                         is_pii=False,
                         description="col2 description",
@@ -948,6 +989,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="Col1",
+                        state_code=StateCode.US_XX,
                         description="description",
                         is_pii=False,
                         field_type=RawTableColumnFieldType.STRING,
@@ -969,6 +1011,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="col1",
+                        state_code=StateCode.US_XX,
                         field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
                         description="col1 description",
@@ -1000,6 +1043,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="Col1",
+                        state_code=StateCode.US_XX,
                         description="description",
                         is_pii=True,
                         field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
@@ -1007,6 +1051,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     ),
                     RawTableColumnInfo(
                         name="Col2",
+                        state_code=StateCode.US_XX,
                         description="some other description",
                         is_pii=True,
                         field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
@@ -1031,6 +1076,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="Col1",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -1045,6 +1091,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 RawTableColumnInfo(
                     name="Col2",
                     description=None,
+                    state_code=StateCode.US_XX,
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
                     update_history=[
@@ -1056,6 +1103,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 ),
                 RawTableColumnInfo(
                     name="Col3",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -1098,6 +1146,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 # Should include column renamed after file_upload_datetime
                 RawTableColumnInfo(
                     name="Col1",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -1112,6 +1161,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 # Should include columns with no update history
                 RawTableColumnInfo(
                     name="Col2",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -1119,6 +1169,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 # Should ignore added columns
                 RawTableColumnInfo(
                     name="Col3",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -1132,6 +1183,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 # Should ignore deleted columns
                 RawTableColumnInfo(
                     name="Col4",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -1145,6 +1197,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 # Should ignore column rename before file_upload_datetime
                 RawTableColumnInfo(
                     name="Col5",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
@@ -1226,6 +1279,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="Col1",
+                        state_code=StateCode.US_XX,
                         description="description",
                         is_pii=True,
                         field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
@@ -1241,6 +1295,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="Col1",
+                        state_code=StateCode.US_XX,
                         description="description",
                         is_pii=True,
                         field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
@@ -1268,6 +1323,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="Col1",
+                        state_code=StateCode.US_XX,
                         description="description",
                         is_pii=True,
                         field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
@@ -1282,6 +1338,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="Col1",
+                        state_code=StateCode.US_XX,
                         description="description",
                         is_pii=True,
                         field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
@@ -1320,6 +1377,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="Col1",
+                        state_code=StateCode.US_XX,
                         description="description",
                         is_pii=True,
                         field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
@@ -1340,6 +1398,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="Col1",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=True,
                     field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
@@ -1406,6 +1465,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         expected_columns_config_1 = [
             RawTableColumnInfo(
                 name="col_name_1a",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description="First column.",
@@ -1422,12 +1482,14 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             ),
             RawTableColumnInfo(
                 name="col_name_1b",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=expected_column2_description,
             ),
             RawTableColumnInfo(
                 name="undocumented_column",
+                state_code=StateCode.US_XX,
                 field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=None,
@@ -1506,6 +1568,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             [
                 RawTableColumnInfo(
                     name="col_name_2a",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="column description",
@@ -1531,6 +1594,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             [
                 RawTableColumnInfo(
                     name="COL1",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="column 1 description",
@@ -1538,6 +1602,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 ),
                 RawTableColumnInfo(
                     name="COL2",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="column 2 description",
@@ -1545,6 +1610,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 ),
                 RawTableColumnInfo(
                     name="COL3",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="column 3 description",
@@ -1701,12 +1767,14 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="col1",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col1 description",
                 ),
                 RawTableColumnInfo(
                     name="col2",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="col2 description",
@@ -1735,6 +1803,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="col1",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col1 description",
@@ -1766,12 +1835,14 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="col1",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col1 description",
                 ),
                 RawTableColumnInfo(
                     name="col2",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="col2 description",
@@ -1799,6 +1870,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="col1",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col1 description",
@@ -1848,6 +1920,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="date",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="test",
@@ -1862,6 +1935,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="date",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="test",
@@ -2085,6 +2159,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name=column_name,
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.INTEGER,

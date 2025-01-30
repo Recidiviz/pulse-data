@@ -76,24 +76,28 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="Primary_Key_Col",
+                    state_code=StateCode.US_XX,
                     description="primary key description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
                 ),
                 RawTableColumnInfo(
                     name="External_Id_Col",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
                 ),
                 RawTableColumnInfo(
                     name="External_Id_Col_2",
+                    state_code=StateCode.US_XX,
                     description="description 2",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,
                 ),
                 RawTableColumnInfo(
                     name="External_Id_Col_3",
+                    state_code=StateCode.US_XX,
                     description="description 3",
                     is_pii=False,
                     field_type=RawTableColumnFieldType.STRING,

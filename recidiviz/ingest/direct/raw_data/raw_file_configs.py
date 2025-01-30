@@ -39,6 +39,7 @@ from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
 from recidiviz.ingest.direct.types.raw_data_import_blocking_validation_type import (
     RawDataImportBlockingValidationType,
 )
+from recidiviz.utils import environment
 from recidiviz.utils.encoding import to_python_standard
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -191,6 +192,11 @@ class ColumnUpdateInfo:
 class RawTableColumnInfo:
     """Stores information about a single raw data table column."""
 
+    # The state code is in the format of "US_XX" for each state
+    state_code: StateCode = attr.ib(
+        validator=attr.validators.instance_of(StateCode),
+    )
+
     # The column name in BigQuery-compatible, normalized form (e.g. punctuation stripped)
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # Designates the type of data that this column contains
@@ -237,6 +243,57 @@ class RawTableColumnInfo:
     null_values: Optional[List[str]] = attr.ib(
         default=None, validator=attr_validators.is_opt_list
     )
+
+    DATETIME_PARSER_EXEMPTIONS: Set[StateCode] = {
+        # TODO(#12174): Hydrate datetime_parsers for US_AR then remove this exemption
+        StateCode.US_AR,
+        # TODO(#12174): Hydrate datetime_parsers for US_AZ then remove this exemption
+        StateCode.US_AZ,
+        # TODO(#12174): Hydrate datetime_parsers for US_CA then remove this exemption
+        StateCode.US_CA,
+        # TODO(#12174): Hydrate datetime_parsers for US_CO then remove this exemption
+        StateCode.US_CO,
+        # TODO(#12174): Hydrate datetime_parsers for US_ID and US_IX then remove this exemption
+        StateCode.US_ID,
+        StateCode.US_IX,
+        # TODO(#12174): Hydrate datetime_parsers for US_IA then remove this exemption
+        StateCode.US_IA,
+        # TODO(#12174): Hydrate datetime_parsers for US_ME then remove this exemption
+        StateCode.US_ME,
+        # TODO(#12174): Hydrate datetime_parsers for US_MA then remove this exemption
+        StateCode.US_MA,
+        # TODO(#12174): Hydrate datetime_parsers for US_MI then remove this exemption
+        StateCode.US_MI,
+        # TODO(#12174): Hydrate datetime_parsers for US_MO then remove this exemption
+        StateCode.US_MO,
+        # TODO(#12174): Hydrate datetime_parsers for US_NE then remove this exemption
+        StateCode.US_NE,
+        # TODO(#12174): Hydrate datetime_parsers for US_NC then remove this exemption
+        StateCode.US_NC,
+        # TODO(#12174): Hydrate datetime_parsers for US_ND then remove this exemption
+        StateCode.US_ND,
+        # TODO(#12174): Hydrate datetime_parsers for US_OR then remove this exemption
+        StateCode.US_OR,
+        # TODO(#12174): Hydrate datetime_parsers for US_OZ then remove this exemption
+        StateCode.US_OZ,
+        # TODO(#12174): Hydrate datetime_parsers for US_PA then remove this exemption
+        StateCode.US_PA,
+        # TODO(#12174): Hydrate datetime_parsers for US_TN then remove this exemption
+        StateCode.US_TN,
+        # TODO(#12174): Hydrate datetime_parsers for US_TX then remove this exemption
+        StateCode.US_TX,
+        # TODO(#12174): Hydrate datetime_parsers for US_UT then remove this exemption
+        StateCode.US_UT,
+    }
+
+    if environment.in_test():
+        # TODO(#12174): Fix test raw data config fixture files to include datetime parsers for datetime columns,
+        # then remove these exemptions
+        DATETIME_PARSER_EXEMPTIONS.add(StateCode.US_DD)
+        DATETIME_PARSER_EXEMPTIONS.add(StateCode.US_LL)
+        DATETIME_PARSER_EXEMPTIONS.add(StateCode.US_XX)
+        DATETIME_PARSER_EXEMPTIONS.add(StateCode.US_YY)
+        DATETIME_PARSER_EXEMPTIONS.add(StateCode.US_WW)
 
     def __attrs_post_init__(self) -> None:
         # Known values should not be present unless this is a string field
@@ -347,9 +404,14 @@ class RawTableColumnInfo:
             raise ValueError(
                 f"Expected datetime_sql_parsers to be null if is_datetime is False for {self.name}"
             )
-        # TODO(#12174) Enforce that is self.is_datetime is True, that datetime_sql_parsers exist.
+
         if not self.datetime_sql_parsers:
-            return
+            # TODO(#12174): Remove this if-check once DATETIME_PARSER_EXEMPTIONS is empty.
+            if self.state_code in self.DATETIME_PARSER_EXEMPTIONS:
+                return
+            raise ValueError(
+                f"State {self.state_code}: Expected datetime_sql_parsers to be set for datetime field {self.name}"
+            )
 
         for parser in self.datetime_sql_parsers:
             if not (
@@ -985,6 +1047,7 @@ class DirectIngestRawFileConfig:
                 ]
             column_infos.append(
                 RawTableColumnInfo(
+                    state_code=state_code,
                     name=column_name,
                     field_type=(
                         RawTableColumnFieldType(field_type_str)

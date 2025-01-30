@@ -21,6 +21,7 @@ from typing import Dict, List, Optional, Type
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawTableColumnFieldType,
     RawTableColumnInfo,
@@ -47,6 +48,7 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
         self.sad_col_name = "sad_col"
         self.happy_col = RawTableColumnInfo(
             name=self.happy_col_name,
+            state_code=StateCode.US_XX,
             description="description",
             is_pii=True,
             field_type=RawTableColumnFieldType.STRING,
@@ -54,6 +56,7 @@ class ColumnValidationTestCase(BigQueryEmulatorTestCase):
         )
         self.sad_col = RawTableColumnInfo(
             name=self.sad_col_name,
+            state_code=StateCode.US_XX,
             description="description",
             is_pii=True,
             field_type=RawTableColumnFieldType.STRING,

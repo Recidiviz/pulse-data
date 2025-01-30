@@ -84,7 +84,11 @@ ORDER BY
             columns_by_file[file_name] = []
 
         column_info = RawTableColumnInfo(
-            name=column_name, field_type=field_type, is_pii=False, description="TKTK"
+            name=column_name,
+            field_type=field_type,
+            is_pii=False,
+            description="TKTK",
+            state_code=StateCode(state_code),
         )
         columns_by_file[file_name].append(column_info)
 

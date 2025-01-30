@@ -23,6 +23,7 @@ from unittest.mock import MagicMock, patch
 import attr
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -218,6 +219,7 @@ class ValidateRawFileColumnHeadersTest(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="COL1",
+                    state_code=StateCode.US_XX,
                     description="is primary key",
                     field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,

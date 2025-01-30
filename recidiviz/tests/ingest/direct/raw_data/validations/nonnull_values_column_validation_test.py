@@ -68,12 +68,14 @@ class TestNonNullValuesColumnValidation(ColumnValidationTestCase):
     def test_validation_applies_to_column(self) -> None:
         col1 = RawTableColumnInfo(
             name="Col1",
+            state_code=StateCode.US_XX,
             description="description",
             is_pii=True,
             field_type=RawTableColumnFieldType.STRING,
         )
         col2 = RawTableColumnInfo(
             name="Col2",
+            state_code=StateCode.US_XX,
             description="description",
             is_pii=True,
             field_type=RawTableColumnFieldType.STRING,

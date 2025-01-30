@@ -104,6 +104,7 @@ ORDER BY
     )
     return RawTableColumnInfo(
         name=column.name,
+        state_code=state_code,
         description=column.description,
         field_type=column.field_type,
         is_pii=False,

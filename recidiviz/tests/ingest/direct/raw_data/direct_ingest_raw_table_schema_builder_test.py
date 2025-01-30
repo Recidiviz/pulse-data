@@ -21,6 +21,7 @@ import attr
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_schema_builder import (
     RawDataTableBigQuerySchemaBuilder,
 )
@@ -154,6 +155,7 @@ class TestRawDataTableBigQuerySchemaBuilder(TestCase):
                 columns=[
                     RawTableColumnInfo(
                         name="COL1",
+                        state_code=StateCode.US_XX,
                         # Long description does not crash
                         description=("a" * length),
                         is_pii=False,

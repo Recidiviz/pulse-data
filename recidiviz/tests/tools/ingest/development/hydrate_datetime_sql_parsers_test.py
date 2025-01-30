@@ -71,12 +71,14 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="dateCol1",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="test",
                 ),
                 RawTableColumnInfo(
                     name="dateCol2",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="test",
@@ -172,6 +174,7 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="dateCol1",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="test",
@@ -179,6 +182,7 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
                 ),
                 RawTableColumnInfo(
                     name="dateCol2",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="test",

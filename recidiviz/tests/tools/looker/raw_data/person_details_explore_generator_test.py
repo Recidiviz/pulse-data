@@ -76,6 +76,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="COL1",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.STRING,
                     description="test description",
                     is_pii=False,
@@ -101,6 +102,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="primary column",
+                    state_code=StateCode.US_XX,
                     field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
                     is_pii=True,
                     description="test description",

@@ -107,6 +107,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 columns=[
                     RawTableColumnInfo(
                         name="mockKey",
+                        state_code=StateCode.US_XX,
                         description="mockKey description",
                         field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
@@ -135,6 +136,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 columns=[
                     RawTableColumnInfo(
                         name="mockKey",
+                        state_code=StateCode.US_XX,
                         description="mockKey description",
                         field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
@@ -163,6 +165,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 columns=[
                     RawTableColumnInfo(
                         name="mockKey",
+                        state_code=StateCode.US_XX,
                         description="mockKey description",
                         field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
@@ -191,6 +194,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 columns=[
                     RawTableColumnInfo(
                         name="mockKey",
+                        state_code=StateCode.US_XX,
                         description="mockKey description",
                         field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,

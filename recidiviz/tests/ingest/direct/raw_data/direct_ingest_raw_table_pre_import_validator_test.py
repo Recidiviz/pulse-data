@@ -75,6 +75,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name=self.column_name,
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=True,
                     field_type=RawTableColumnFieldType.STRING,
@@ -83,6 +84,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
                 # because we don't want to block import for issues with data that is no longer being used
                 RawTableColumnInfo(
                     name="Col2",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=True,
                     field_type=RawTableColumnFieldType.STRING,
@@ -97,6 +99,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
                 # because it won't exist in the temp table
                 RawTableColumnInfo(
                     name="Col3",
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=True,
                     field_type=RawTableColumnFieldType.STRING,
@@ -171,6 +174,7 @@ class TestDirectIngestRawTablePreImportValidator(unittest.TestCase):
                 # Since column was renamed after the file upload datetime, we should query for the old column name
                 RawTableColumnInfo(
                     name=self.column_name,
+                    state_code=StateCode.US_XX,
                     description="description",
                     is_pii=True,
                     field_type=RawTableColumnFieldType.STRING,
