@@ -47,6 +47,9 @@ output:
             $enum_mapping:
               $raw_text: tst_title
               $mappings:
+                # Note: If you update what maps to LSIR, also update the list in the
+                # $conditinal on assessment_level below so we can infer correct scores
+                # for new mappings as well
                 StateAssessmentType.LSIR:
                   - "LSI-R:SV SCREENING VERSION"
                 StateAssessmentType.INTERNAL_UNKNOWN:
@@ -151,65 +154,90 @@ output:
           assessment_date: tst_dt
           assessment_score: tot_score
           assessment_level:
-            $enum_mapping:
-              # TODO(#37453) We can probably filter out some of these assessments
-              $raw_text: eval_desc
-              $mappings:
-                StateAssessmentLevel.MINIMUM:
-                  - "MINIMUM (LOW)"
-                  - "MINIMUM (LEVEL 4)"
-                  - "BEGINNING LITERACY: (K - 1ST)"
-                  - "BEGINNING LITERACY (K - 1ST)"
-                  - "LOW BEGINNING (ESL)"
-                StateAssessmentLevel.LOW:
-                  - "LOW"
-                  - "LOW RISK"
-                  - "BEGINNING LITERACY (ESL)"
-                  - "BEGINNING BASIC (2ND - 3RD)"
-                  - "BEGINNING BASIC: (2ND - 3RD)"
-                  - "LOW INTERMEDIATE (4TH - 5TH)"
-                  - "LOW INTERMEDIATE: (4TH - 5TH)"
-                  - "HIGH BEGINNING (ESL)"
-                  - "LOW INTERMEDIATE (ESL)"
-                StateAssessmentLevel.MODERATE:
-                  - "MEDIUM"
-                  - "MODERATE"
-                  - "MODERATE LOW"
-                  - "MEDIUM (MOD)"
-                  - "MIDDLE INTERMEDIATE (6TH - 7TH)"
-                  - "HIGH INTERMEDIATE: (6TH - 8TH)"
-                  - "HIGH INTERMEDIATE (7TH - 8TH)"
-                  - "HIGH INTERMEDIATE (ESL)"
-                  - "MODERATE RISK"
-                  - "MODERATE HIGH"
-                  - "MEDIUM (LEVEL 3)"
-                StateAssessmentLevel.HIGH:
-                  - "HIGH"
-                  - "HIGH RISK"
-                  - "LOW ADULT SECONDARY: (9TH - 10TH)"
-                  - "ADULT SECONDARY (9TH - 12TH)"
-                  - "HIGH ADULT SECONDARY: (11TH - 12TH)"
-                  - "HIGH (LEVEL 2)"
-                  - "`HIGH"
-                StateAssessmentLevel.VERY_HIGH:
-                  - "VERY HIGH"
-                  - "ADVANCED (ESL)"
-                StateAssessmentLevel.MAXIMUM:
-                  - "MAXIMUM"
-                  - "MAXIMUM (LEVEL 1)"
-                  - "MAXIMUM (HIGH)"
-                  - "EXTREME"
-                StateAssessmentLevel.INTERNAL_UNKNOWN:
-                  - "REFERRAL NOT RECOMMENDED"
-                  - ". . ."
-                  - "LEVEL I - GOP"
-                  - "LEVEL II - IOP"
-                  - "LEVEL II - IOP (SPANISH)"
-                  - "ACCEPTED TO SOTP TRACKING LIST"
-                  - "NOT ACCEPTED TO SOTP TRACKING LIST"
-                  - "LEVEL II - IOP (OTHER)"
-                  - "LEVEL III - RSUT"
-                  - "REFERRAL RECOMMENDED"
-                  - "ACE SCORE"
-                  - "INTENSIVE"
-                  - "FULLMER"
+            # Infer the level for LSIR assessments where eval_desc is null
+            $conditional:
+              - $if:
+                  $and:
+                    - $is_null: eval_desc
+                    - $equal:
+                        - tst_title
+                        - $literal("LSI-R:SV SCREENING VERSION")
+                $then:
+                  $enum_mapping:
+                    $raw_text: tot_score
+                    $mappings:
+                      StateAssessmentLevel.MINIMUM:
+                        - "0"
+                        - "1"
+                        - "2"
+                      StateAssessmentLevel.MODERATE:
+                        - "3"
+                        - "4"
+                        - "5"
+                      StateAssessmentLevel.MAXIMUM:
+                        - "6"
+                        - "8"
+                        - "7"
+              - $else:
+                  $enum_mapping:
+                    # TODO(#37453) We can probably filter out some of these assessments
+                    $raw_text: eval_desc
+                    $mappings:
+                      StateAssessmentLevel.MINIMUM:
+                        - "MINIMUM (LOW)"
+                        - "MINIMUM (LEVEL 4)"
+                        - "BEGINNING LITERACY: (K - 1ST)"
+                        - "BEGINNING LITERACY (K - 1ST)"
+                        - "LOW BEGINNING (ESL)"
+                      StateAssessmentLevel.LOW:
+                        - "LOW"
+                        - "LOW RISK"
+                        - "BEGINNING LITERACY (ESL)"
+                        - "BEGINNING BASIC (2ND - 3RD)"
+                        - "BEGINNING BASIC: (2ND - 3RD)"
+                        - "LOW INTERMEDIATE (4TH - 5TH)"
+                        - "LOW INTERMEDIATE: (4TH - 5TH)"
+                        - "HIGH BEGINNING (ESL)"
+                        - "LOW INTERMEDIATE (ESL)"
+                      StateAssessmentLevel.MODERATE:
+                        - "MEDIUM"
+                        - "MODERATE"
+                        - "MODERATE LOW"
+                        - "MEDIUM (MOD)"
+                        - "MIDDLE INTERMEDIATE (6TH - 7TH)"
+                        - "HIGH INTERMEDIATE: (6TH - 8TH)"
+                        - "HIGH INTERMEDIATE (7TH - 8TH)"
+                        - "HIGH INTERMEDIATE (ESL)"
+                        - "MODERATE RISK"
+                        - "MODERATE HIGH"
+                        - "MEDIUM (LEVEL 3)"
+                      StateAssessmentLevel.HIGH:
+                        - "HIGH"
+                        - "HIGH RISK"
+                        - "LOW ADULT SECONDARY: (9TH - 10TH)"
+                        - "ADULT SECONDARY (9TH - 12TH)"
+                        - "HIGH ADULT SECONDARY: (11TH - 12TH)"
+                        - "HIGH (LEVEL 2)"
+                        - "`HIGH"
+                      StateAssessmentLevel.VERY_HIGH:
+                        - "VERY HIGH"
+                        - "ADVANCED (ESL)"
+                      StateAssessmentLevel.MAXIMUM:
+                        - "MAXIMUM"
+                        - "MAXIMUM (LEVEL 1)"
+                        - "MAXIMUM (HIGH)"
+                        - "EXTREME"
+                      StateAssessmentLevel.INTERNAL_UNKNOWN:
+                        - "REFERRAL NOT RECOMMENDED"
+                        - ". . ."
+                        - "LEVEL I - GOP"
+                        - "LEVEL II - IOP"
+                        - "LEVEL II - IOP (SPANISH)"
+                        - "ACCEPTED TO SOTP TRACKING LIST"
+                        - "NOT ACCEPTED TO SOTP TRACKING LIST"
+                        - "LEVEL II - IOP (OTHER)"
+                        - "LEVEL III - RSUT"
+                        - "REFERRAL RECOMMENDED"
+                        - "ACE SCORE"
+                        - "INTENSIVE"
+                        - "FULLMER"
