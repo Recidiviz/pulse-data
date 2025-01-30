@@ -20,6 +20,7 @@ from typing import Any, Dict
 
 import mock
 import pytest
+from flask import g
 from mock import patch
 from sqlalchemy.engine import Engine
 
@@ -27,6 +28,7 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
+from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics import law_enforcement, prisons
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
@@ -1149,6 +1151,96 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             for opt in reporting_agency_options_json
         }
         self.assertEqual(expected_options, actual_options)
+
+    def test_update_agency_reporting_agencies(self) -> None:
+        """Test updating reporting agencies for metrics of a specific agency."""
+        self.load_users_and_agencies()
+
+        agency = self.test_schema_objects.test_prison_child_agency_A
+        super_agency = self.test_schema_objects.test_prison_super_agency
+        vendor_A = self.test_schema_objects.vendor_A
+        user_A = self.test_schema_objects.test_user_A
+        self.session.add_all([agency, super_agency, vendor_A, user_A])
+        self.session.commit()
+        self.session.refresh(agency)
+        self.session.refresh(super_agency)
+        self.session.refresh(vendor_A)
+
+        agency_id = agency.id
+        super_agency_id = super_agency.id
+        vendor_A_id = vendor_A.id
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=agency,
+            agency_metric_updates=MetricInterface(
+                key=prisons.funding.key, is_self_reported=True
+            ),
+        )
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=agency,
+            agency_metric_updates=MetricInterface(
+                key=prisons.expenses.key, reporting_agency_id=None
+            ),
+        )
+        MetricSettingInterface.add_or_update_agency_metric_setting(
+            session=self.session,
+            agency=agency,
+            agency_metric_updates=MetricInterface(
+                key=prisons.staff.key, reporting_agency_id=None
+            ),
+        )
+        self.session.commit()
+
+        payload = {
+            "reporting_agencies": [
+                {
+                    "metric_key": prisons.funding.key,
+                    "reporting_agency_id": super_agency_id,
+                    "is_self_reported": False,
+                },
+                {
+                    "metric_key": prisons.expenses.key,
+                    "reporting_agency_id": vendor_A_id,
+                    "is_self_reported": False,
+                },
+                {
+                    "metric_key": prisons.staff.key,
+                    "reporting_agency_id": None,
+                    "is_self_reported": True,
+                },
+            ]
+        }
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
+            response = self.client.put(
+                f"/admin/agency/{agency.id}/reporting-agency",
+                json=payload,
+            )
+
+        # Validate the response
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        self.assertEqual(response_json["status"], "ok")
+        self.assertEqual(response_json["status_code"], 200)
+
+        # Validate the updates in the database
+        agency = self.session.query(schema.Agency).filter_by(id=agency_id).one()
+        metric_settings = MetricSettingInterface.get_metric_key_to_metric_interface(
+            session=self.session, agency=agency
+        )
+        funding_metric = metric_settings[prisons.funding.key]
+        expenses_metric = metric_settings[prisons.expenses.key]
+        staff_metric = metric_settings[prisons.staff.key]
+
+        self.assertEqual(funding_metric.reporting_agency_id, super_agency_id)
+        self.assertFalse(funding_metric.is_self_reported)
+
+        self.assertEqual(expenses_metric.reporting_agency_id, vendor_A_id)
+        self.assertFalse(expenses_metric.is_self_reported)
+
+        self.assertEqual(staff_metric.reporting_agency_id, None)
+        self.assertTrue(staff_metric.is_self_reported)
 
     def test_get_vendors_with_csg(self) -> None:
         """Test fetching vendor id, name, and URL for all vendors and CSG."""

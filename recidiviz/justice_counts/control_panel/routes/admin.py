@@ -30,6 +30,7 @@ from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
+from recidiviz.justice_counts.control_panel.utils import get_auth0_user_id
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
@@ -669,6 +670,52 @@ def get_admin_blueprint(
                 "metrics": metric_json,
             }
         )
+
+    @admin_blueprint.route("/agency/<agency_id>/reporting-agency", methods=["PUT"])
+    @auth_decorator
+    def update_agency_reporting_agencies(agency_id: int) -> Response:
+        """Fetch reporting agency options, agencies reporting metrics, and metric details for a specified agency."""
+
+        request_json = assert_type(request.json, dict)
+        user = UserAccountInterface.get_user_by_auth0_user_id(
+            session=current_session,
+            auth0_user_id=get_auth0_user_id(request_dict=request_json),
+        )
+
+        reporting_agency_jsons = assert_type(
+            request_json.get("reporting_agencies"), list
+        )
+
+        agency = AgencyInterface.get_agency_by_id(
+            session=current_session, agency_id=agency_id
+        )
+
+        metric_key_to_metric_interface = (
+            MetricSettingInterface.get_metric_key_to_metric_interface(
+                session=current_session, agency=agency
+            )
+        )
+
+        for reporting_agency_json in reporting_agency_jsons:
+            metric_interface = metric_key_to_metric_interface[
+                reporting_agency_json["metric_key"]
+            ]
+
+            metric_interface.reporting_agency_id = reporting_agency_json.get(
+                "reporting_agency_id"
+            )
+            metric_interface.is_self_reported = reporting_agency_json.get(
+                "is_self_reported"
+            )
+            MetricSettingInterface.add_or_update_agency_metric_setting(
+                session=current_session,
+                agency=agency,
+                agency_metric_updates=metric_interface,
+                user_account=user,
+            )
+
+        current_session.commit()
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
     @admin_blueprint.route("/vendors", methods=["GET"])
     @auth_decorator
