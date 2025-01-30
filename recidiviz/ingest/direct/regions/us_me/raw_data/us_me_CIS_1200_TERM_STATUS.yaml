@@ -11,11 +11,6 @@ columns:
   - name: Created_On_Date
   - name: E_Term_Status_Desc
     description: The description of the status.
-    known_values:
-      - value: "1"
-        description: Active - This sentencing term is still in progress.
-      - value: "2"
-        description: Complete - This sentencing term is completed and the client has been discharged from incarceration and/or supervision.
   - name: Logical_Delete_Ind
   - name: Modified_By_Tx
     is_pii: True
@@ -26,4 +21,9 @@ columns:
     is_pii: True
   - name: Term_Status_Cd
     description: The primary key for the table and the code used in the CIS_319_TERM table.
+    known_values:
+      - value: "1"
+        description: Active - This sentencing term is still in progress.
+      - value: "2"
+        description: Complete - This sentencing term is completed and the client has been discharged from incarceration and/or supervision.
 is_code_file: True

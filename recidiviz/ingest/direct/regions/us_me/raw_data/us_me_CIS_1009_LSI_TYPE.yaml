@@ -15,6 +15,22 @@ columns:
       The date that this assessment record was created.
   - name: E_Lsi_Type_Desc
     description: The description of the LSI questionnaire type
+  - name: Logical_Delete_Ind
+  - name: Lsi_Interface_Ind
+  - name: Modified_By_Tx
+    description: |-
+      Notes about the modification of this assessment record.
+    is_pii: True
+  - name: Modified_On_Date
+    field_type: datetime
+    description: |-
+      The date that this assessment record was last modified.
+  - name: System_Ref_Comments_Tx
+    is_pii: True
+  - name: System_Ref_Tx
+    is_pii: True
+  - name: Lsi_Type_Cd
+    description: The primary key of the code table and the LSI type code referenced in other raw tables.
     known_values:
       - value: 1
         description: Adult, Male, Community
@@ -32,20 +48,4 @@ columns:
         description: Juvenile, Female, Community
       - value: 8
         description: Juvenile, Female, Facility
-  - name: Logical_Delete_Ind
-  - name: Lsi_Interface_Ind
-  - name: Modified_By_Tx
-    description: |-
-      Notes about the modification of this assessment record.
-    is_pii: True
-  - name: Modified_On_Date
-    field_type: datetime
-    description: |-
-      The date that this assessment record was last modified.
-  - name: System_Ref_Comments_Tx
-    is_pii: True
-  - name: System_Ref_Tx
-    is_pii: True
-  - name: Lsi_Type_Cd
-    description: The primary key of the code table and the LSI type code referenced in other raw tables.
 is_code_file: True

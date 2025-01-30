@@ -59,4 +59,6 @@ columns:
         description: OYAS
       - value: 9
         description: STABLE
+      - value: 10
+        description: SRV
 is_code_file: True

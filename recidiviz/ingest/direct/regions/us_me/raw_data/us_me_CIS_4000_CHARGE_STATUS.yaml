@@ -29,9 +29,9 @@ columns:
         description: Charge Dropped
       - value: 9
         description: NCR - Not Criminally Responsible
-      - value: A
+      - value: 11
         description: Deferred Disposition
-      - value: 0
+      - value: 12
         description: Incompetent
   - name: Created_By_Tx
     is_pii: True

@@ -38,6 +38,8 @@ columns:
     known_values:
       - value: "Y"
         description: "Yes"
+      - value: "y"
+        description: "Yes"
       - value: "N"
         description: "No"
   - name: Logical_Delete_Ind

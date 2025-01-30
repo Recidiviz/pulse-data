@@ -70,4 +70,6 @@ columns:
         description: "ICOTS Transfer Application"
       - value: "21"
         description: "Program Non-Compliance"
+      - value: "22"
+        description: "FIAT - Confidential"
 is_code_file: True
