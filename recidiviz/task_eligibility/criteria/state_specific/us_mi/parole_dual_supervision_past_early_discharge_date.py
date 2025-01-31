@@ -20,9 +20,6 @@ their parole/dual supervision early discharge date, computed using US_MI specifi
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
-from recidiviz.calculator.query.sessions_query_fragments import (
-    create_sub_sessions_with_attributes,
-)
 from recidiviz.calculator.query.state.dataset_config import (
     SENTENCE_SESSIONS_DATASET,
     SESSIONS_DATASET,
@@ -82,21 +79,18 @@ sentences_preprocessed AS (
       sentence_id,
       statute,
       is_life AS life_sentence,
-      GREATEST(DATE_DIFF(projected_full_term_release_date_max,effective_date,DAY), 
+      GREATEST(DATE_DIFF(sentence_projected_full_term_release_date_max,effective_date,DAY), 
                         sentence_length_days_max)/365 AS term_length_years
-  FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_period_projected_dates_materialized` span
+  FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized` span,
+  UNNEST(sentence_array)
   INNER JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sent
     USING (state_code, person_id, sentence_id)
   INNER JOIN sentence_serving_starts
     USING (state_code, person_id, sentence_id)
   WHERE state_code = "US_MI"
-),
-{create_sub_sessions_with_attributes(
-    table_name="sentences_preprocessed",
-    index_columns=['state_code','person_id']
-)}
+)
 ,
-sentences AS (
+sentence_agg AS (
   SELECT
       state_code,
       person_id,
@@ -107,7 +101,7 @@ sentences AS (
       --checks for whether 750.110 and 750.110a are accompanied by a 15 year term 
       LOGICAL_OR(IF((statute LIKE "750.110" OR statute LIKE "750.110A%") AND (term_length_years >= 15),
                   true, false)) AS any_qualifying_statute_term
-  FROM sub_sessions_with_attributes
+  FROM sentences_preprocessed
   GROUP BY 1, 2, 3, 4
 ),
 sentence_statutes_preprocessed AS (
@@ -124,7 +118,7 @@ sentence_statutes_preprocessed AS (
                         x LIKE "750.349" OR 
                         x LIKE "750.3491%" OR 
                         x LIKE "750.213" )) AS any_qualifying_statute,
- FROM sentences
+ FROM sentence_agg
  --only select parole sessions where life sentences or qualifying statutes are being served
  WHERE EXISTS(SELECT * FROM UNNEST(statutes_being_served) AS x  
                 WHERE (x LIKE  "750.317" OR 

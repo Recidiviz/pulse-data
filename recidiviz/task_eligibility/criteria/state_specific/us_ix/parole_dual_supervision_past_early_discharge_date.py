@@ -63,11 +63,11 @@ sentences AS (
       span.person_id,
       span.start_date,
       span.end_date_exclusive AS end_date,
-      span.projected_full_term_release_date_max AS projected_completion_date,
+      span.group_projected_full_term_release_date_max AS projected_completion_date,
       LOGICAL_OR(sent.is_violent OR sent.is_sex_offense) AS any_violent_or_sex_offense,
       LOGICAL_OR(sent.is_life) AS any_life_sentence,
-  FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_inferred_group_serving_period_projected_dates_materialized` span,
-  UNNEST (sentence_id_array) AS sentence_id
+  FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized` span,
+  UNNEST (sentence_array)
   INNER JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sent
     USING (state_code, person_id, sentence_id)
   WHERE state_code = "US_IX"

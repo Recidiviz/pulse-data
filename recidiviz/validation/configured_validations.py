@@ -194,6 +194,9 @@ from recidiviz.validation.views.state.revocation_matrix_distribution_by_gender_c
 from recidiviz.validation.views.state.revocation_matrix_distribution_by_race_comparison import (
     REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sentence_sessions.overlapping_sentence_inferred_group_serving_periods import (
+    OVERLAPPING_SENTENCE_INFERRED_GROUP_SERVING_PERIODS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import (
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -471,6 +474,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=OVERLAPPING_SENTENCE_INFERRED_GROUP_SERVING_PERIODS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(

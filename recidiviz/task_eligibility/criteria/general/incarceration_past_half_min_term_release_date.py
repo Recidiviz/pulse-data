@@ -19,9 +19,6 @@ has completed half their minimum term incarceration sentence.
 """
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.sessions_query_fragments import (
-    create_sub_sessions_with_attributes,
-)
 from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -40,20 +37,7 @@ has completed half their minimum term incarceration sentence."""
 
 _QUERY_TEMPLATE = f"""
 --TODO(#37417): Consider refactoring to use sentence imposed groups
-WITH _spans AS
-(
-SELECT 
-    *
-FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_period_projected_dates_materialized`
-) 
-,
-{create_sub_sessions_with_attributes(
-    table_name="_spans",
-    index_columns=['state_code','person_id'],
-    end_date_field_name='end_date_exclusive'
-)}
-,
-sentence_serving_starts AS
+WITH sentence_serving_starts AS
 (
 SELECT 
   state_code,
@@ -72,8 +56,9 @@ SELECT
     start_date AS start_datetime,
     end_date_exclusive AS end_datetime,
     (DATE_ADD(MAX(effective_date),INTERVAL
-        CAST(CEILING(DATE_DIFF(MAX(projected_full_term_release_date_min),MAX(effective_date),DAY))/2 AS INT64) DAY)) AS critical_date
-FROM sub_sessions_with_attributes
+        CAST(CEILING(DATE_DIFF(MAX(sentence_projected_full_term_release_date_min),MAX(effective_date),DAY))/2 AS INT64) DAY)) AS critical_date
+FROM `{{project_id}}.{{sentence_sessions_dataset}}.person_projected_date_sessions_materialized`,
+UNNEST(sentence_array)
 JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized`
     USING(person_id, state_code, sentence_id)
 JOIN sentence_serving_starts
