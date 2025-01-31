@@ -185,7 +185,7 @@ output:
                   - PROG
                   - RB
                   - SUPL
-                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE: # Temporary static adm/rel reason for internal movements from elite_bedassignmenthistory
+                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                   # Temporary static adm/rel reason for internal movements from elite_bedassignmenthistory
                   - STATUS_CHANGE
                   - BED_ASSIGNMENT_CHANGE

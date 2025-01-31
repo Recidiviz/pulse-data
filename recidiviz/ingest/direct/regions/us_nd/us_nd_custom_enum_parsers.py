@@ -58,22 +58,16 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 )
 from recidiviz.common.str_field_utils import parse_datetime
 
-# TODO(#18625): Clarify that these assumptions are correct with ND.
 SOLITARY_UNIT_CODES = list(
     [
-        "AS",
-        "BIU",
-        "BTC",
-        "ADMIN",
-        "SECURE",
-        "NDSH",
-        "HOLD",
-        "JRMUHOLD",
-        "HOLDJRMU",
-        "SU",
+        "NDSP-BIU-A",
+        "NDSP-BIU-ATU",
+        "NDSP-BIU-B",
+        "NDSP-BIU-C",
+        "NDSP-BIU-D",
     ]
 )
-HOSPITAL_UNIT_CODES = list(["HOSP", "INF", "TU", "MTU", "HSU"])
+HOSPITAL_UNIT_CODES = list(["HOSP", "TU", "MTU", "HSU", "INF"])
 STATE_CODES = list(
     [
         "AL",
@@ -470,19 +464,13 @@ def parse_housing_unit_category(
 ) -> StateIncarcerationPeriodHousingUnitCategory:
     """Parses the category of a housing unit given a bed assignment."""
     if raw_text:
-        codes = raw_text.split("-")
-        # TODO(#18625): Clarify whether or not infirmary/treatment units should be classified
-        # as solitary confinement with ND.
-        if codes[1] in SOLITARY_UNIT_CODES:
+        unit = raw_text.split("-")
+        if any(code in raw_text for code in SOLITARY_UNIT_CODES):
             return StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT
-        if codes[1] in STATE_CODES or codes[1] in OTHER_STATE_FACILITY:
-            # Housing location provided is an unspecified out-of-state facility.
+        if unit[1] in STATE_CODES or unit[1] in OTHER_STATE_FACILITY:
+            # We do not have specific information about housing units for people
+            # who are incarcerated outside of North Dakota.
             return StateIncarcerationPeriodHousingUnitCategory.INTERNAL_UNKNOWN
-        if len(codes) > 2:
-            if codes[2] in SOLITARY_UNIT_CODES:
-                return StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT
-            if codes[2] in STATE_CODES:
-                return StateIncarcerationPeriodHousingUnitCategory.INTERNAL_UNKNOWN
         return StateIncarcerationPeriodHousingUnitCategory.GENERAL
     return StateIncarcerationPeriodHousingUnitCategory.EXTERNAL_UNKNOWN
 
@@ -494,23 +482,26 @@ def parse_housing_unit_type(
     TODO(#26928): Add granularity to these housing types using assessments data
     if and when it becomes necessary."""
     if raw_text:
-        codes = raw_text.split("-")
-        if codes[1] in HOSPITAL_UNIT_CODES:
+        unit = raw_text.split("-")
+        if any((code in raw_text) for code in HOSPITAL_UNIT_CODES):
             return StateIncarcerationPeriodHousingUnitType.HOSPITAL
-        if codes[1] in ("AS", "ADMIN"):
-            return (
-                StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT
-            )
-        if codes[1] in ("HOLD", "JMRUHOLD", "HOLDJMRU"):
-            return (
-                StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT
-            )
-        if any((code in SOLITARY_UNIT_CODES) for code in codes):
+        if any((code in raw_text) for code in SOLITARY_UNIT_CODES):
             # Temporarily map all remaining bed assignments that indicate a person is in solitary
             # to OTHER_SOLITARY_CONFINEMENT until we can clarify with ND how to join the
             # elite_offenderprogramprofiles table to this view to get more information
             # about the nature of the assignment.
-            return StateIncarcerationPeriodHousingUnitType.OTHER_SOLITARY_CONFINEMENT
+            return (
+                StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT
+            )
+        if unit[1] in STATE_CODES or unit[1] in OTHER_STATE_FACILITY:
+            # We do not have specific information about housing units for people
+            # who are incarcerated outside of North Dakota.
+            return StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN
+        if len(unit) > 2:
+            if unit[2] in STATE_CODES or unit[2] in OTHER_STATE_FACILITY:
+                # We do not have specific information about housing units for people
+                # who are incarcerated outside of North Dakota.
+                return StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN
         return StateIncarcerationPeriodHousingUnitType.GENERAL
     return StateIncarcerationPeriodHousingUnitType.EXTERNAL_UNKNOWN
 
