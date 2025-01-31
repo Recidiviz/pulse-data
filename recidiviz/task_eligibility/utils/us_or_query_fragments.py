@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,23 +16,22 @@
 # =============================================================================
 """Create query fragments for OR."""
 
-
 # ineligible statutes - both probation & post-prison
 OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES = [
     "163.095",
-    # according to ODOC: 163.095(X) is a Measure 11 crime that should never actually
-    # result in probation (however, leaving it as a universal exclusion here to be
-    # consistent with how the agency rule is written)
+    # According to ODOC: 163.095(X) is a Measure 11 crime that should never actually
+    # result in probation. (However, we're leaving it as a universal exclusion here to
+    # be consistent with how ORS 137.633 is written.)
     "163.095(X)",
     "163.107",
-    # according to ODOC: 163.107(X) is a Measure 11 crime that should never actually
-    # result in probation (however, leaving it as a universal exclusion here to be
-    # consistent with how the agency rule is written)
+    # According to ODOC: 163.107(X) is a Measure 11 crime that should never actually
+    # result in probation. (However, we're leaving it as a universal exclusion here to
+    # be consistent with how ORS 137.633 is written.)
     "163.107(X)",
     "163.115",
-    # according to ODOC: 163.115(X) is a Measure 11 crime that should never actually
-    # result in probation (however, leaving it as a universal exclusion here to be
-    # consistent with how the agency rule is written)
+    # According to ODOC: 163.115(X) is a Measure 11 crime that should never actually
+    # result in probation. (However, we're leaving it as a universal exclusion here to
+    # be consistent with how ORS 137.633 is written.)
     "163.115(X)",
     "163.118",
     "163.125",
@@ -46,19 +45,20 @@ OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES = [
     "163.405",
     "163.408",
     "163.411",
-    # according to ODOC: 163.425/163.425(NEW) are not specifically excluded by statute
-    # for probation cases (only for post-prison cases, due to 144.103), but an agency
-    # decision was made to exclude that crime for probation as well
+    # Per ODOC: 163.425(NEW) is included, but 163.425 is excluded from eligibility.
+    # For reference: 163.425(NEW) has defined second-degree sexual abuse since 1991.
+    # 163.425 (without the 'NEW') refers to the previous version of the statute, which
+    # defined the crime of first-degree sexual abuse until the 1991 legislative changes.
+    # 163.427(NEW), which has defined first-degree sexual abuse since those 1991
+    # legislative changes, is excluded from EDIS.
     "163.425",
-    "163.425(NEW)",
-    "163.427",
-    "163.427(NEW)",
+    "163.427(NEW)",  # no version of 163.427 exists without the 'NEW' label
     "163.670",
     "164.325",
     "164.415",
     "167.017",
-    # the following statutes are disqualifying enhancements to crimes of conviction and
-    # may or may not actually show up in the statute field
+    # The following statutes are disqualifying enhancements to crimes of conviction and
+    # may or may not actually show up in the statute field.
     "161.610",
     "161.725",
     "161.735",
@@ -68,10 +68,10 @@ OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES = [
     "475.907",
     "475.925",
     "475.930",
-    # according to ODOC: 813.010(5) is a felony DUI, and even though it's not explicitly
+    # According to ODOC: 813.010(5) is a felony DUI, and even though it's not explicitly
     # referenced by ORS number in the rule, the agency decided that they'd exclude all
     # felony DUIs to align with legislative intent (rather than having POs check each
-    # judgment manually)
+    # judgment manually).
     "813.010(5)",
     "813.011",
     "144.103",
@@ -86,11 +86,11 @@ OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES_POST_PRISON = [
     "163.405(X)",
     "163.408(X)",
     "163.411(X)",
-    # "163.425",  # commenting out b/c already in universal exclusion list due to ODOC decision (see above comment)
-    # "163.425(NEW)",  # commenting out b/c already in universal exclusion list due to ODOC decision (see above comment)
+    "163.425",
+    "163.425(NEW)",
     "163.425(X)",
     "163.425(NEWX)",
-    "163.427(X)",
+    "163.427(NEW)",
     "163.427(NEWX)",
 ]
 
@@ -204,6 +204,14 @@ OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2025_01_01 = (
     OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2024_09_01
 )
 
+# This is the list of "designated person misdemeanors" (per ORS 423.478) that are
+# typically felony offenses but are considered misdemeanors when given up-front
+# misdemeanor treatment. These misdemeanors are only SOMETIMES funded, as originally
+# established by Senate Bill 497 (2021), which was effective 2022-01-01.
+OR_EARNED_DISCHARGE_DESIGNATED_PERSON_FELONY_IS_MISDEMEANORS_2022_01_01_SOMETIMES_FUNDED = [
+    "163.160(03)",  # only funded if constituting domestic violence
+]
+
 # This is the list of "designated person misdemeanors" (per ORS 423.478) that are ALWAYS
 # funded, as originally created by Senate Bill 497 (2021), which was effective
 # 2022-01-01. The list below contains the correct ORS subclasses to reference the
@@ -218,6 +226,8 @@ OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_ALWAYS_FUNDED = [
 # specific offenses that this bill deemed eligible.
 OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_SOMETIMES_FUNDED = [
     "163.160",  # only funded if constituting domestic violence
+    # misdemeanor because the offense attempted is a Class C felony (per ORS 161.405)
+    "163.160(03X)",  # only funded if constituting domestic violence
     "163.190",  # only funded if constituting domestic violence
 ]
 

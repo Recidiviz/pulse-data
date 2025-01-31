@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ from recidiviz.task_eligibility.utils.us_or_query_fragments import (
     OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2023_07_27,
     OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2024_09_01,
     OR_EARNED_DISCHARGE_DESIGNATED_DRUG_RELATED_MISDEMEANORS_2025_01_01,
+    OR_EARNED_DISCHARGE_DESIGNATED_PERSON_FELONY_IS_MISDEMEANORS_2022_01_01_SOMETIMES_FUNDED,
     OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_ALWAYS_FUNDED,
     OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_SOMETIMES_FUNDED,
 )
@@ -77,6 +78,9 @@ US_OR_FUNDED_SENTENCE_QUERY_TEMPLATE = f"""
             /* The statement below will return FALSE if the funded-misdemeanor flag is
             empty or NULL. */
             COALESCE(JSON_VALUE(sentence_metadata, '$.FMISD_FLAG'), 'UNKNOWN')='Y' AS funded_misdemeanor,
+            /* The statement below will return FALSE if the "felony is misdemeanor" flag
+            is empty or NULL. */
+            COALESCE(JSON_VALUE(sentence_metadata, '$.FELONY_IS_MISDEMEANOR'), 'UNKNOWN')='Y' AS felony_is_misdemeanor,
         FROM ({sentence_attributes()})
         WHERE state_code='US_OR'
             AND sentence_type='SUPERVISION'
@@ -91,7 +95,11 @@ US_OR_FUNDED_SENTENCE_QUERY_TEMPLATE = f"""
             /* The original bill (House Bill 3194 [2013]) that established EDIS was
             effective 2013-07-25 and made eligible any sentences for felony
             convictions. */
-            WHEN (classification_type='FELONY') THEN TRUE
+            WHEN (
+                (classification_type='FELONY')
+                -- felonies treated as misdemeanors aren't funded
+                AND NOT felony_is_misdemeanor
+            ) THEN TRUE
             /* Identify designated drug-related misdemeanors as established by House
             Bill 2355 (2017), which took effect on 2017-08-15. */
             WHEN (
@@ -148,15 +156,24 @@ US_OR_FUNDED_SENTENCE_QUERY_TEMPLATE = f"""
             /* Identify designated person misdemeanors as defined by Senate Bill 497
             (2021), which was effective on 2022-01-01. */
             WHEN (
-                (classification_type='MISDEMEANOR')
-                AND (
-                    -- funded misdemeanors from always-funded statutes
-                    (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_ALWAYS_FUNDED, quoted=True)}))
-                    OR (
-                        -- funded misdemeanors from sometimes-funded statutes
-                        (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_SOMETIMES_FUNDED, quoted=True)}))
-                        AND funded_misdemeanor
+                (
+                    (classification_type='MISDEMEANOR')
+                    AND (
+                        -- funded misdemeanors from always-funded statutes
+                        (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_ALWAYS_FUNDED, quoted=True)}))
+                        OR (
+                            -- funded misdemeanors from sometimes-funded statutes
+                            (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_PERSON_MISDEMEANORS_2022_01_01_SOMETIMES_FUNDED, quoted=True)}))
+                            AND funded_misdemeanor
+                        )
                     )
+                )
+                OR (
+                    -- funded felonies-as-misdemeanors from sometimes-funded statutes
+                    (classification_type='FELONY')
+                    AND felony_is_misdemeanor
+                    AND (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_DESIGNATED_PERSON_FELONY_IS_MISDEMEANORS_2022_01_01_SOMETIMES_FUNDED, quoted=True)}))
+                    AND funded_misdemeanor
                 )
                 /* NB: we're using the sentence start date here to identify funded
                 sentences for designated person misdemeanors, which is what OR has been
