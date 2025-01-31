@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,8 @@
 # =============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone is within 5 years of their parole hearing date.
+someone's parole hearing date is greater than 5 years away. If there is no
+parole hearing date, meets_criteria = FALSE
 """
 from google.cloud import bigquery
 
@@ -41,11 +42,12 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_IX_PAROLE_HEARING_DATE_WITHIN_5_YEARS"
+_CRITERIA_NAME = "US_IX_PAROLE_HEARING_DATE_GREATER_THAN_5_YEARS_AWAY"
 
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
-someone is within 5 years of their parole hearing date.
+someone's parole hearing date is greater than 5 years away. If there is no
+parole hearing date, meets_criteria = FALSE
 """
 
 _QUERY_TEMPLATE = f"""
@@ -124,7 +126,9 @@ SELECT
     person_id,
     start_date,
     end_date,
-    LOGICAL_OR(critical_date_has_passed) AS meets_criteria,
+    -- meets_criteria = FALSE if any start_date/end_date span has critical_date_has_passed = TRUE,
+    -- otherwise, it is TRUE.
+    NOT LOGICAL_OR(critical_date_has_passed) AS meets_criteria,
     TO_JSON(STRUCT(MIN(critical_date) AS next_parole_hearing_date)) AS reason,
     MIN(critical_date) AS next_parole_hearing_date,
 FROM sub_sessions_with_attributes

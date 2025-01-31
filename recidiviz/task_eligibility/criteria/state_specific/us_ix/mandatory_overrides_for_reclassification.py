@@ -25,7 +25,7 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     detainers_for_reclassification,
-    not_parole_hearing_date_within_5_years,
+    parole_hearing_date_greater_than_5_years_away,
     serving_a_life_sentence_and_not_tpd_within_3_years,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
@@ -45,7 +45,7 @@ VIEW_BUILDER = OrTaskCriteriaGroup(
     criteria_name="US_IX_MANDATORY_OVERRIDES_FOR_RECLASSIFICATION",
     sub_criteria_list=[
         serving_a_life_sentence_and_not_tpd_within_3_years.VIEW_BUILDER,
-        not_parole_hearing_date_within_5_years.VIEW_BUILDER,
+        parole_hearing_date_greater_than_5_years_away.VIEW_BUILDER,
         not_incarceration_within_20_years_of_full_term_completion_date.VIEW_BUILDER,
         detainers_for_reclassification.VIEW_BUILDER,
     ],
