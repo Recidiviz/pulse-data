@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_FieldRuleViolationIncidents
+file_description: |-
+  This table contains feild rule violation incident records
+data_classification: source
+primary_key_cols:
+  - FieldRuleViolationIncidentId
+columns:
+  - name: FieldRuleViolationIncidentId
+    description: ICON-generated record id for this field rule violation incident
+  - name: OffenderCd
+    description: |-
+      Offender code
+    is_pii: True
+  - name: IncidentSource
+    description: Incident source
+  - name: IncidentSourceId
+    description: Incident source id
+  - name: IncidentDt
+    description: Incident date
+    field_type: datetime
+  - name: Active
+    description: Flag for whether this violation is active
+  - name: EnteredDt
+    description: Entered date
+    field_type: datetime
