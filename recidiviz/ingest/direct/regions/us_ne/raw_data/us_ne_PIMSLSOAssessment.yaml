@@ -4,11 +4,16 @@ file_description: |-
   This table contains assessment information about adults on lifetime supervision for sex offenses
 data_classification: source
 primary_key_cols:
-  - pk_reviewId_inmateId
+  - pk_reviewId
+  - inmateId
 columns:
-  - name: pk_reviewId_inmateId
+  - name: pk_reviewId
     description: |-
-      Primary key for table
+      Composite primary key for table
+  - name: inmateId
+    description: |-
+      Unique ID for each person
+    is_pii: True
   - name: assessmentDate
     field_type: datetime
     description: |-
