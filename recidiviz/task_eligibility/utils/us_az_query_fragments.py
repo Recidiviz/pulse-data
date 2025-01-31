@@ -446,7 +446,7 @@ def meets_mandatory_literacy(opp_name: str) -> str:
         AND (participation_status_raw_text IN ('COMPLETED')
             -- This catches cases where a resident has been exempted from Mandatory Literacy for any reason
             OR JSON_EXTRACT(referral_metadata, '$.EXEMPTION') != '""')
-        AND program_id LIKE '%MAN%LIT%'
+        AND program_id LIKE '%LITERACY%'
         #TODO(#33737): Look into multiple span cases for residents who have completed in MAN-LIT programs
         QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY start_date ASC) = 1
     ),
