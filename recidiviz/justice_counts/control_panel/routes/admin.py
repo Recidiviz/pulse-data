@@ -815,4 +815,36 @@ def get_admin_blueprint(
             HTTPStatus.OK,
         )
 
+    @admin_blueprint.route("/vendors/<vendor_id>", methods=["DELETE"])
+    @auth_decorator
+    def delete_vendor(vendor_id: int) -> Tuple[Response, int]:
+        """
+        Delete a vendor and associated agency settings.
+
+        Args:
+            vendor_id (int): The ID of the vendor to delete.
+
+        Returns:
+            Response: JSON response indicating success or failure.
+        """
+
+        vendor = AgencyInterface.get_vendor_by_id(
+            session=current_session, vendor_id=vendor_id
+        )
+
+        # If vendor doesn't exist, return a 404 error
+        if vendor is None:
+            return jsonify({"error": "Vendor not found"}), HTTPStatus.NOT_FOUND
+
+        # Delete associated agency settings (e.g., vendor's homepage URL)
+        for agency_setting in vendor.agency_settings or []:
+            current_session.delete(agency_setting)
+
+        # Delete the vendor record itself
+        current_session.delete(vendor)
+
+        current_session.commit()
+
+        return jsonify({"status": "ok"}), HTTPStatus.OK
+
     return admin_blueprint
