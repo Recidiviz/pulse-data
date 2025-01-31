@@ -56,7 +56,6 @@ LEFT JOIN {clsf_ClassificationType} b
     USING (ClassificationTypeId) 
 LEFT JOIN {clsf_ClassificationScoreSheet} c 
     USING (ClassificationId)
-WHERE Approved = "1"
 -- As of 11/27/24 there are two classification assessments with a single ClassificationId
 QUALIFY ROW_NUMBER()OVER(PARTITION BY ClassificationId ORDER BY AssessmentDate DESC) = 1
 """
