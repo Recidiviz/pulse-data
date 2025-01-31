@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -53,12 +53,30 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
         to rely upon `sentence_spans`. */
         SELECT
             *,
-            /* The statement below will return FALSE if the 137.635 flag is empty or
-            NULL. */
-            COALESCE(JSON_VALUE(sentence_metadata, '$.FLAG_137635'), 'UNKNOWN')='Y' AS sentenced_under_137635,
+            /* Truncate `external_id` so that we can use it to identify sentences that
+            have the same underlying charge. The `external_id` in OR is composed of five
+            numbers separated by hyphens (see OR ingest mappings for more info re: how
+            `external_id` is constructed); for sentences for the same underlying charge,
+            the first four numbers of the `external_id` will be the same across
+            sentences. The `REGEXP_EXTRACT` statement below pulls out the first four
+            numbers from the `external_id` (preserving the hyphenation between them). */
+            REGEXP_EXTRACT(external_id, '^[0-9]*-[0-9]*-[0-9]*-[0-9]*') AS external_id_truncated,
+            JSON_VALUE(sentence_metadata, '$.FLAG_137635') AS FLAG_137635,
         FROM ({sentence_attributes()})
         WHERE state_code='US_OR'
-            AND sentence_type='SUPERVISION'
+    ),
+    sentence_137635_enhancements AS (
+        /* Group sentences with the same underlying charge and check whether any
+        sentences in the group have the flag for the 137.635 sentencing enhancement,
+        which typically is only present in the data for incarceration sentences but
+        applies to associated supervision sentences too. */
+        SELECT
+            state_code,
+            person_id,
+            external_id_truncated,
+            LOGICAL_OR(FLAG_137635='Y') AS sentenced_under_137635,
+        FROM sentences
+        GROUP BY 1, 2, 3
     ),
     sentence_supervision_types AS (
         SELECT
@@ -74,21 +92,33 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
         to the policy outlined in ORS 137.633, as of early 2024). We explicitly handle
         cases where the statute is missing, allowing these cases to pass through as
         eligible. */
-        SELECT DISTINCT
+        SELECT
             state_code,
             person_id,
             sentence_id,
+            sentences.start_date,
+            sentences.end_date,
+            sentences.date_imposed,
             (
-            -- check that statute isn't universally ineligible
-            IFNULL((statute NOT IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES, quoted=True)})), TRUE)
-            -- exclude sentences imposed under ORS 137.635 (a sentencing enhancement)
-            AND (NOT sentenced_under_137635)
-            -- check that if post-prison, statute isn't ineligible for post-prison cases
-            AND NOT ((supervision_type_raw_text='O') AND IFNULL(statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES_POST_PRISON, quoted=True)}), FALSE))
+                -- check that statute isn't universally ineligible
+                IFNULL((sentences.statute NOT IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES, quoted=True)})), TRUE)
+                -- exclude sentences imposed under ORS 137.635
+                AND (NOT e.sentenced_under_137635)
+                -- check that if post-prison, statute isn't ineligible for post-prison cases
+                AND NOT (
+                    (sst.supervision_type_raw_text='O')
+                    AND IFNULL(sentences.statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES_POST_PRISON, quoted=True)}), FALSE)
+                )
             ) AS sentenced_under_eligible_statute,
         FROM sentences
-        LEFT JOIN sentence_supervision_types
+        LEFT JOIN sentence_137635_enhancements e
+            USING (state_code, person_id, external_id_truncated)
+        LEFT JOIN sentence_supervision_types sst
             USING (state_code, person_id, sentence_id)
+        /* Filter back down to supervision sentences, because incarceration sentences
+        are not EDIS-eligible but were included in the initial `sentences` CTE (so that
+        we'd be able to get information about 137.635 enhancements). */
+        WHERE sentences.sentence_type='SUPERVISION'
     ),
     critical_date_spans AS (
         /* While the statute exclusions list has been constant (as far as we know) since
@@ -125,10 +155,9 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
                 (and that sentence was imposed before 2022-01-01), they became
                 ineligible starting on 2024-01-01. */
                 WHEN ((NOT sentenced_under_eligible_statute) AND (date_imposed<'2022-01-01')) THEN DATE('2024-01-01')
-            END AS critical_date,
-        FROM sentences
-        LEFT JOIN sentence_statute_eligibility
-            USING (state_code, person_id, sentence_id)
+                END
+                AS critical_date,
+        FROM sentence_statute_eligibility
     ),
     {critical_date_has_passed_spans_cte(attributes=['sentence_id'])}
     SELECT
