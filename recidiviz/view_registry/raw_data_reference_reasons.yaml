@@ -1587,6 +1587,12 @@ US_TN:
   SupervisionPlan:
     dashboard_views.supervision_to_prison_population_snapshot_by_officer: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_completion_events_us_tn.supervision_level_downgrade: |-
+      Used to infer more accurate task completion dates by working around TN's practice
+      of backdating changes to supervision levels.
+    task_eligibility_completion_events_us_tn.transfer_to_limited_supervision: |-
+      Used to infer more accurate task completion dates by working around TN's practice
+      of backdating changes to supervision levels.
   TDPOP:
     us_tn_validation.incarceration_population_person_level: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
