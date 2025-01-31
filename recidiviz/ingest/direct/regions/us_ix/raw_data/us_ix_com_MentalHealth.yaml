@@ -54,3 +54,4 @@ columns:
   - name: ApprovalStaffId
     description: Approval staff id
     is_pii: true
+update_cadence: IRREGULAR

@@ -84,3 +84,4 @@ columns:
   - name: UpdateDate
     description: Date record updated
     field_type: datetime
+update_cadence: IRREGULAR

@@ -32,3 +32,5 @@ columns:
     description: Flag for whether record is inactive
   - name: IsCustom
     description: Flag for whether record is custom
+is_code_file: true
+update_cadence: IRREGULAR
