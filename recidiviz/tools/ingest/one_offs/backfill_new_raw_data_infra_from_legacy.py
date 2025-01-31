@@ -407,10 +407,10 @@ def _create_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--replace-file-ids",
+        "--should_replace_file_ids",
         default=False,
         type=str_to_bool,
-        help="Replaces file_ids in legacy operations that conflict with new file_ids",
+        help="Replaces file_ids in legacy operations that conflict with new file_ids.",
     )
 
     return parser
