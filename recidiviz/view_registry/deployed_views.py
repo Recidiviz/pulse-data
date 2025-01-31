@@ -46,6 +46,9 @@ from recidiviz.monitoring.platform_kpis.view_config import (
 from recidiviz.observations.view_config import (
     get_view_builders_for_views_to_update as get_observations_view_builders,
 )
+from recidiviz.outcome_metrics.view_config import (
+    get_transitions_view_builders_for_views_to_update as get_transitions_view_builders,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.task_eligibility.view_config import (
     get_view_builders_for_views_to_update as get_task_eligibility_view_builders,
@@ -74,6 +77,7 @@ def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
             get_validation_view_builders(),
             VALIDATION_METADATA_VIEW_BUILDERS,
             get_platform_kpi_views_to_update(),
+            get_transitions_view_builders(),
         )
     )
 
@@ -208,6 +212,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "task_eligibility_spans_us_tx",
     "task_eligibility_spans_us_ut",
     "unit_of_analysis_assignments_by_time_period",
+    "transitions",
     "us_ar_raw_data_up_to_date_views",
     "us_ar_raw_data_up_to_date_views_secondary",
     "us_ca_raw_data_up_to_date_views",

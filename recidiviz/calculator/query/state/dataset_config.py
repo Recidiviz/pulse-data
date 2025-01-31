@@ -107,3 +107,5 @@ IMPACT_REPORTS_DATASET_ID = "impact_reports"
 
 # Views that are used to text JII
 JII_TEXTING_DATASET_ID = "jii_texting"
+# Views that contain observations and metrics related to org-wide transitions
+TRANSITIONS_DATASET_ID = "transitions"

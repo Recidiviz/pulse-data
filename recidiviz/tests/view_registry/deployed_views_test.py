@@ -431,6 +431,9 @@ class ViewDagInvariantTests(unittest.TestCase):
             #  remove all downstream direct usages.
             ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER.address,
             ALL_TASK_TYPE_INELIGIBLE_CRITERIA_SESSIONS_VIEW_BUILDER.address,
+            BigQueryAddress(
+                dataset_id="observations__person_event", table_id="impact_transition"
+            ),
         }
 
         for exempt_child_address in allowed_union_all_view_children:

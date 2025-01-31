@@ -748,6 +748,7 @@ def main() -> int:
                 "recidiviz.metrics",
                 "recidiviz.monitoring",
                 "recidiviz.observations",
+                "recidiviz.outcome_metrics",
                 "recidiviz.outliers",
                 "recidiviz.persistence",
                 "recidiviz.pipelines",
