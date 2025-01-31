@@ -20,7 +20,10 @@ their parole/dual supervision early discharge date, computed using US_ID specifi
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    SENTENCE_SESSIONS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -59,16 +62,16 @@ sentences AS (
       span.state_code,
       span.person_id,
       span.start_date,
-      span.end_date,
+      span.end_date_exclusive AS end_date,
+      span.projected_full_term_release_date_max AS projected_completion_date,
       LOGICAL_OR(sent.is_violent OR sent.is_sex_offense) AS any_violent_or_sex_offense,
-      LOGICAL_OR(sent.life_sentence) AS any_life_sentence,
-      MAX(sent.projected_completion_date_max) AS projected_completion_date,
-  FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-  UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-  INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
-    USING (state_code, person_id, sentences_preprocessed_id)
+      LOGICAL_OR(sent.is_life) AS any_life_sentence,
+  FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_inferred_group_serving_period_projected_dates_materialized` span,
+  UNNEST (sentence_id_array) AS sentence_id
+  INNER JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sent
+    USING (state_code, person_id, sentence_id)
   WHERE state_code = "US_IX"
-  GROUP BY 1, 2, 3, 4
+  GROUP BY 1, 2, 3, 4, 5
 ),
 parole_starts_with_sentences AS (
   SELECT
@@ -135,6 +138,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     criteria_spans_query_template=_QUERY_TEMPLATE,
     state_code=StateCode.US_IX,
     sessions_dataset=SESSIONS_DATASET,
+    sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
     reasons_fields=[
         ReasonsField(
             name="sentence_type",

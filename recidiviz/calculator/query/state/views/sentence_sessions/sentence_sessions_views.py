@@ -37,6 +37,9 @@ from recidiviz.calculator.query.state.views.sentence_sessions.sentence_inferred_
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_serving_period import (
     SENTENCE_SERVING_PERIOD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_serving_period_projected_dates import (
+    SENTENCE_SERVING_PERIOD_PROJECTED_DATES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_status_raw_text_sessions import (
     SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER,
 )
@@ -66,4 +69,6 @@ SENTENCE_SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SENTENCE_STATUS_RAW_TEXT_SESSIONS_VIEW_BUILDER,
     # Sentence group serving periods with projected dates
     SENTENCE_INFERRED_GROUP_SERVING_PERIOD_PROJECTED_DATES_VIEW_BUILDER,
+    # Sentence serving periods with projected dates
+    SENTENCE_SERVING_PERIOD_PROJECTED_DATES_VIEW_BUILDER,
 ]

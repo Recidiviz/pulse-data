@@ -17,11 +17,7 @@
 """Describes the spans of time when a client has past their parole eligibility date."""
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
-from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_sessions,
-)
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import SENTENCE_SESSIONS_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -37,19 +33,18 @@ _CRITERIA_NAME = "INCARCERATION_PAST_PAROLE_ELIGIBILITY_DATE"
 _DESCRIPTION = """Describes the spans of time when a client has past their parole eligibility date."""
 
 _REASON_QUERY = f"""
-WITH critical_date_spans AS (
-    SELECT
-        span.state_code,
-        span.person_id,
-        span.start_date AS start_datetime,
-        span.end_date AS end_datetime,
-        MAX(sent.parole_eligibility_date) AS critical_date,
-    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap='INCARCERATION')}
-    WHERE
-        sent.effective_date < {nonnull_end_date_clause('sent.projected_completion_date_max')}
-        AND sent.sentence_type = 'INCARCERATION'
-        AND sent.parole_eligibility_date IS NOT NULL
-    GROUP BY 1, 2, 3, 4
+WITH critical_date_spans AS
+(
+SELECT
+    state_code,
+    person_id,
+    start_date AS start_datetime,
+    end_date_exclusive AS end_datetime,
+    parole_eligibility_date as critical_date
+FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_period_projected_dates_materialized`
+JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized`
+    USING(person_id, state_code, sentence_id)
+WHERE parole_eligibility_date IS NOT NULL AND sentence_type = 'STATE_PRISON'
 ),
 {critical_date_has_passed_spans_cte()}
 SELECT
@@ -68,7 +63,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
         criteria_spans_query_template=_REASON_QUERY,
-        sessions_dataset=SESSIONS_DATASET,
+        sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
         reasons_fields=[
             ReasonsField(
                 name="parole_eligibility_date",

@@ -20,7 +20,13 @@ their parole/dual supervision early discharge date, computed using US_MI specifi
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
+from recidiviz.calculator.query.state.dataset_config import (
+    SENTENCE_SESSIONS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -54,22 +60,42 @@ WITH parole_starts AS (
     AND compartment_level_2 IN ("PAROLE", "DUAL")
     AND inflow_from_level_2 NOT IN ("PAROLE", "DUAL")
 ),
+sentence_serving_starts AS
+(
+SELECT 
+  state_code,
+  person_id,
+  sentence_id,
+  MIN(start_date) AS effective_date
+FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_period_materialized`
+WHERE state_code = 'US_MI'
+GROUP BY 1,2,3
+)
+,
 sentences_preprocessed AS (
+--TODO(#37417): Consider refactoring to use sentence imposed groups
   SELECT
       span.state_code,
       span.person_id,
       span.start_date,
-      span.end_date,
+      span.end_date_exclusive AS end_date,
+      sentence_id,
       statute,
-      life_sentence,
-      GREATEST(DATE_DIFF(projected_completion_date_max,effective_date,DAY), 
-                        max_sentence_length_days_calculated)/365 AS term_length_years
-  FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-  UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-  INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
-    USING (state_code, person_id, sentences_preprocessed_id)
+      is_life AS life_sentence,
+      GREATEST(DATE_DIFF(projected_full_term_release_date_max,effective_date,DAY), 
+                        sentence_length_days_max)/365 AS term_length_years
+  FROM `{{project_id}}.{{sentence_sessions_dataset}}.sentence_serving_period_projected_dates_materialized` span
+  INNER JOIN `{{project_id}}.{{sentence_sessions_dataset}}.sentences_and_charges_materialized` sent
+    USING (state_code, person_id, sentence_id)
+  INNER JOIN sentence_serving_starts
+    USING (state_code, person_id, sentence_id)
   WHERE state_code = "US_MI"
 ),
+{create_sub_sessions_with_attributes(
+    table_name="sentences_preprocessed",
+    index_columns=['state_code','person_id']
+)}
+,
 sentences AS (
   SELECT
       state_code,
@@ -81,7 +107,7 @@ sentences AS (
       --checks for whether 750.110 and 750.110a are accompanied by a 15 year term 
       LOGICAL_OR(IF((statute LIKE "750.110" OR statute LIKE "750.110A%") AND (term_length_years >= 15),
                   true, false)) AS any_qualifying_statute_term
-  FROM sentences_preprocessed
+  FROM sub_sessions_with_attributes
   GROUP BY 1, 2, 3, 4
 ),
 sentence_statutes_preprocessed AS (
@@ -174,6 +200,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         meets_criteria_default=True,
         sessions_dataset=SESSIONS_DATASET,
+        sentence_sessions_dataset=SENTENCE_SESSIONS_DATASET,
         reasons_fields=[
             ReasonsField(
                 name="sentence_type",
