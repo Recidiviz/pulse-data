@@ -1292,7 +1292,6 @@ US_ND:
   elite_offenderchargestable:
     task_eligibility_criteria_us_nd.has_an_aomms_sentence: |-
       We needed this to connect to sentences_preprocessed.
-
   elite_offendersentenceaggs:
     sessions.us_nd_incarceration_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1643,3 +1642,7 @@ US_TX:
   RECIDIVIZ_REFERENCE_ContactCadenceAgnostic:
     task_eligibility_criteria_us_tx.meets_type_agnostic_contact_standards: |-
       Used as a reference table to indicate agnostic contact type cadences. 12/30/2024.
+US_UT:
+  sprvsn_cntc:
+    task_eligibility_criteria_us_ut.has_completed_ordered_assessments: |-
+      Created a criteria to find out if someone has completed ordered assessments.

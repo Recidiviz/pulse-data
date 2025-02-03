@@ -28,10 +28,12 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_or_supervision_out_of_state_past_half_full_term_release_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ut import (
+    has_completed_ordered_assessments,
     risk_level_reduction_of_one_or_more,
     risk_level_stayed_moderate_or_low,
     risk_score_reduction_5_percent_or_more,
 )
+from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -47,6 +49,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=__doc__,
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
+        # Completion of ordered assessments and any recommended treatment or programming
+        has_completed_ordered_assessments.VIEW_BUILDER,
         # Risk reduction criteria
         OrTaskCriteriaGroup(
             criteria_name="US_UT_RISK_REDUCTION_FOR_ET",
@@ -63,6 +67,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # Past ET Review date/ half-time date
         supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
     ],
+    almost_eligible_condition=NotEligibleCriteriaCondition(
+        criteria=has_completed_ordered_assessments.VIEW_BUILDER,
+        description="Only missing the completion of ordered assessments/treatment/programming criteria",
+    ),
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )
 
