@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSResidenceContact
+file_description: |-
+  This table contains residence contact information for adults on Parole.
+data_classification: source
+primary_key_cols:
+  - associateID
+  - residenceContactId
+columns:
+  - name: associateID
+    description: |-
+      ID for table
+  - name: residenceContactId
+    description: |-
+      Residence contact ID
+  - name: lName
+    description: |-
+      Last name
+    is_pii: True
+  - name: minor
+    description: |-
+      Contact with minor
+  - name: relationship
+    description: |-
+      Relationship to parolee
+  - name: creationDateTime
+    field_type: datetime
+    description: |-
+      Date created
+  - name: createdByUserid
+    description: |-
+      Created by User
+    is_pii: True
+  - name: lastUpdatedDateTime
+    field_type: datetime
+    description: |-
+      Field last updated when
+  - name: lastUpdatedByUserid
+    description: |-
+      Record last updated by
+    is_pii: True
+  - name: fName
+    description: |-
+      First name
+    is_pii: True
+  - name: primaryContact
+    description: |-
+      Indicates primary contact
+    is_pii: True
+  - name: phoneNumber
+    description: |-
+      Phone number
+    is_pii: True

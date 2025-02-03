@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSReviewHearingAllegation
+file_description: |-
+  This table contains information about the PIMS Review hearing allegation
+data_classification: source
+primary_key_cols:
+  - pkAllegationID
+columns:
+  - name: pkAllegationID
+    description: |-
+      Primary key for this allegation table
+  - name: fkReviewHearingDetail
+    description: |-
+      Foreign key to review hearing detail
+  - name: charges
+    description: |-
+      Potential charges
+  - name: narcoticType
+    description: |-
+      Narcotic type
+  - name: pleaCode
+    description: |-
+      Plea code
+  - name: lostofGoodTime
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: cccsCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: rNRCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: allegationDaId
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: allegationType
+    description: |-
+      Type of allegation
+  - name: createdBy
+    description: |-
+      User who created record
+    is_pii: True
+  - name: createdDateTime
+    field_type: datetime
+    description: |-
+      Date record created
+  - name: modifiedBy
+    description: |-
+      Record modified by
+    is_pii: True
+  - name: modifiedDateTime
+    description: |-
+      Date record modified
+  - name: causeCode
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: orderNum
+    description: |-
+      TODO(#31972): Fill in with answers from NE

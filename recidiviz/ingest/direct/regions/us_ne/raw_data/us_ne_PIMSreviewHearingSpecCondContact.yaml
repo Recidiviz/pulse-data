@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSreviewHearingSpecCondContact
+file_description: |-
+  Special condition contact information for adults on Parole.
+data_classification: source
+primary_key_cols:
+  - spCondContactId
+columns:
+  - name: spCondContactId
+    description: |-
+      Condition contact id
+  - name: fkreviewHearingSpecialConditionId
+    description: |-
+      Foreign key to PIMSreviewHearingSpecialCondition table
+  - name: spcondContactIdActual
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: lastName
+    description: |-
+      Last name
+    is_pii: True
+  - name: firstName
+    description: |-
+      First name
+    is_pii: True
+  - name: relationshipCode
+    description: |-
+      Relationship code
+  - name: minor
+    description: |-
+      Indicates if contact person is a minor
+  - name: endDate
+    field_type: datetime
+    description: |-
+      End date of condition contact
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date record created
+  - name: createdBy
+    description: |-
+      Record created by user
+    is_pii: True
+  - name: lastUpdated
+    description: |-
+      Record last updated by
+    is_pii: True
+  - name: lastUpdatedDateTime
+    field_type: datetime
+    description: |-
+      Record last updated when

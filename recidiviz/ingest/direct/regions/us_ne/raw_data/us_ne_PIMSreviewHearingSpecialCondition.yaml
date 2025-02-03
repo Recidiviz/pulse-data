@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSreviewHearingSpecialCondition
+file_description: |-
+  This table contains special conditions associated with PIMSReviewHearing table.
+data_classification: source
+primary_key_cols:
+  - reviewHearingSpecialConditionId
+columns:
+  - name: reviewHearingSpecialConditionId
+    description: |-
+      Review hearing special condition id
+  - name: fkReviewHearingID
+    description: |-
+      Foreign key to PIMSReviewHearing
+  - name: fkSpecialConditionId
+    description: |-
+      Foreign key to PIMSSpecialCondition table
+  - name: specialConditionCode
+    description: |-
+      Special condition code
+  - name: specialConditionDesc
+    description: |-
+      Special condition description
+  - name: createdBy
+    description: |-
+      Record created by
+    is_pii: True
+  - name: createdDateTime
+    field_type: datetime
+    description: |-
+      Record created when
+  - name: lastUpdatedBy
+    description: |-
+      Record last updated by
+    is_pii: True
+  - name: lastUpdatedDateTime
+    field_type: datetime
+    description: |-
+      Record last updated when

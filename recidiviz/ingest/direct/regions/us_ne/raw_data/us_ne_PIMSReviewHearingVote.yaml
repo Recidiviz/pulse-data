@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSReviewHearingVote
+file_description: |-
+  This table contains information about votes for the PIMSReviewHearing table and decision.
+data_classification: source
+primary_key_cols:
+  - pkPIMSReviewHearingVoteId
+columns:
+  - name: pkPIMSReviewHearingVoteId
+    description: |-
+      Primary key for the table
+  - name: fkPIMSReviewHearingId
+    description: |-
+      Foreign key to PIMSReviewHearing table id.
+  - name: fkBoardMemberId
+    description: |-
+      Foreign key to board member id
+  - name: vote
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: createdDate
+    field_type: datetime
+    description: |-
+      Date record created
+  - name: createdBy
+    description: |-
+      Record created by
+    is_pii: True
+  - name: modifiedBy
+    description: |-
+      Record modified by
+    is_pii: True
+  - name: modifiedDate
+    field_type: datetime
+    description: |-
+      Date record modified

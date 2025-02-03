@@ -1,0 +1,228 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: PIMSContactDashboard
+file_description: |-
+  This table tracks PO to client contact information.
+data_classification: source
+primary_key_cols:
+  - contactDashboardId
+columns:
+  - name: contactDashboardId
+    description: |-
+      Id for records
+  - name: inmateNumber
+    description: |-
+      Unique id for each person
+    is_pii: True
+  - name: dateOfContact
+    field_type: datetime
+    description: |-
+      Date of contact
+  - name: timeOfContact
+    description: |-
+      Time of contact
+  - name: contactMadeBy
+    description: |-
+      Contact made by
+    is_pii: True
+  - name: contactEnteredBy
+    description: |-
+      Contact entered by
+    is_pii: True
+  - name: contactType
+    description: |-
+      Type of contact
+  - name: contactLocation
+    description: |-
+      Location of contact
+  - name: reportingIn
+    description: |-
+      Reporting in
+  - name: lawEnforcement
+    description: |-
+      Law enforcement
+  - name: vehicle
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: familyAndAssociates
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: anonymous
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: otherCategory
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: otherSpecify
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: employmentInformation
+    description: |-
+      Employment information
+    is_pii: True
+  - name: residenceContactInformation
+    description: |-
+      Residence contact information
+    is_pii: True
+  - name: specialConditions
+    description: |-
+      Special conditions
+  - name: directives
+    description: |-
+      Directives
+    is_pii: True
+  - name: drugTest
+    description: |-
+      Drug test
+  - name: disciplinaryActions
+    description: |-
+      Disciplinary actions
+  - name: electronicMonitoring
+    description: |-
+      Flag for electronic monitoring
+  - name: eduction
+    description: |-
+      Education
+  - name: personalizedPlan
+    description: |-
+      Personalized plan
+  - name: assessments
+    description: |-
+      Assessments information
+  - name: progressReport
+    description: |-
+      Progress report
+    is_pii: True
+  - name: treatmentPrograms
+    description: |-
+      Treatment programs
+  - name: dischargeTermination
+    description: |-
+      Discharge information
+  - name: communityService
+    description: |-
+      Community service information
+  - name: communityServiceNumberOfHours
+    description: |-
+      Number of community service hours
+  - name: houseParole
+    description: |-
+      House parole
+  - name: houseParoleStartDate
+    field_type: datetime
+    description: |-
+      House parole start date
+  - name: houseParoleEndDate
+    field_type: datetime
+    description: |-
+      House parole end date
+  - name: programmingFees
+    description: |-
+      Programming fees
+  - name: programmingFeesAmountOwed
+    description: |-
+      Programming fees amount owed
+  - name: programmingFeesWaived
+    description: |-
+      Programming fees waived
+  - name: programmingFeesMadePayment
+    description: |-
+      Program fees paid
+  - name: finesCosts
+    description: |-
+      Cost of fines
+  - name: finesCostsAmountPaid
+    description: |-
+      Fine costs paid
+  - name: finesCostsJailDays
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: paymentObligation
+    description: |-
+      Payment obligations
+  - name: restitutionAmountPaid
+    description: |-
+      Restitution amount paid
+  - name: restitutionAmountOwed
+    description: |-
+      Restitution amount owed
+  - name: restitutionAmountRemaining
+    description: |-
+      Restitution amount remaining
+  - name: contactNotes
+    description: |-
+      Additional contact notes
+    is_pii: True
+  - name: createdDateTime
+    field_type: datetime
+    description: |-
+      Created date time
+  - name: createdByUserid
+    description: |-
+      Created by user
+    is_pii: True
+  - name: lastUpdatedDateTime
+    field_type: datetime
+    description: |-
+      Last updated when
+  - name: lastUpdatedUserid
+    description: |-
+      Last updated by
+    is_pii: True
+  - name: status
+    description: |-
+      Status
+    is_pii: True
+  - name: attemptedContact
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: communityProvider
+    description: |-
+      Community provider
+  - name: nonCjsGovernmentAgencies
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: travelPermit
+    description: |-
+      Indicates if travel permit
+  - name: orientation
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: waivedHearingOrReview
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: abscond
+    description: |-
+      Abscond indicator
+  - name: programming
+    description: |-
+      Programming information
+  - name: eventDrivenSession
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: epicsSession
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: lsoSession
+    description: |-
+      Lifetime Sex Offense session
+  - name: lowRiskClientSession
+    description: |-
+      Low risk client session
+  - name: transferOfSupervision
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: nCICHits
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: feesAndParoleAccount
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: vouchers
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: version
+    description: |-
+      TODO(#31972): Fill in with answers from NE
+  - name: cBI4NE1
+    description: |-
+      TODO(#31972): Fill in with answers from NE
