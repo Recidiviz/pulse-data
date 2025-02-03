@@ -106,6 +106,25 @@ EOT
   }
 }
 
+resource "google_bigquery_data_transfer_config" "normalized_state_hydration_archive" {
+  display_name           = "normalized_state_hydration_archive"
+  location               = "US"
+  data_source_id         = "scheduled_query"
+  schedule               = "every day 03:00" # In UTC, gives us end of day in US
+  service_account_name   = google_service_account.bigquery_scheduled_queries.email
+  destination_dataset_id = "hydration_archive"
+
+  params = {
+    destination_table_name_template = "normalized_state_hydration_archive"
+    write_disposition               = "WRITE_APPEND"
+    query                           = <<-EOT
+SELECT CURRENT_DATE("US/Eastern") AS export_date, *
+FROM `${var.project_id}.platform_kpis.normalized_state_hydration_live_snapshot`
+EOT
+  }
+}
+
+
 
 resource "google_monitoring_alert_policy" "scheduled_query_monitoring" {
   display_name          = "BQ Scheduled Query Monitoring"

@@ -1,0 +1,28 @@
+address:
+  dataset_id: hydration_archive
+  table_id: normalized_state_hydration_archive
+description: Tracks hydration of fields in the normalized state dataset overtime.
+schema:
+  - name: hydration_date
+    type: DATE
+    mode: REQUIRED
+  - name: state_code
+    type: STRING
+    mode: REQUIRED
+  - name: table_name
+    type: STRING
+    mode: REQUIRED
+  - name: entity_count
+    type: INTEGER
+    mode: REQUIRED
+  - name: column_hydration
+    type: RECORD
+    mode: REPEATED
+    fields:
+      - name: column_name
+        type: STRING
+        mode: NULLABLE
+      - name: hydrated_count
+        type: INTEGER
+        mode: NULLABLE
+clustering_fields: null

@@ -152,10 +152,7 @@ from recidiviz.calculator.query.state.views.workflows.workflows_usage import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.views.dataset_config import (
-    NORMALIZED_STATE_VIEWS_DATASET,
-    STATE_BASE_VIEWS_DATASET,
-)
+from recidiviz.ingest.views.dataset_config import STATE_BASE_VIEWS_DATASET
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
 from recidiviz.persistence.entity.entities_bq_schema import (
@@ -227,20 +224,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         )
         for VIEW_BUILDER in SENTENCE_SESSIONS_V2_ALL_VIEW_BUILDERS
     },
-    BigQueryAddress(
-        dataset_id=NORMALIZED_STATE_VIEWS_DATASET,
-        table_id="state_sentence_imposed_group_view",
-    ): (
-        "This is a new table in the normalized_state schema which will soon be used in "
-        "a sessions view (Nick Tallant, 2024-12-16)"
-    ),
-    BigQueryAddress(
-        dataset_id=NORMALIZED_STATE_VIEWS_DATASET,
-        table_id="state_sentence_inferred_group_view",
-    ): (
-        "This is a new table in the normalized_state schema which will soon be used in "
-        "a sessions view (Anna Geiduschek, 2024-09-19)"
-    ),
     CONSECUTIVE_SENTENCES_VIEW_BUILDER.address: (
         "This is going to be used in revamped sessions views that referenced the sentencing v2 schema "
         "(Nick Tallant, 2024-09-11)"

@@ -29,6 +29,10 @@ VIEW_UPDATE_METADATA_DATASET: str = "view_update_metadata"
 
 AIRFLOW_OPERATIONS: str = "airflow_operations"
 
+# Archival views that track hydration of various parts of our platform overtime
+HYDRATION_ARCHIVE: str = "hydration_archive"
+
+
 YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
     POPULATION_PROJECTION_OUTPUT_DATASET: (
         "Stores output of the population projection simulations."
@@ -41,4 +45,5 @@ YAML_MANAGED_DATASETS_TO_DESCRIPTIONS = {
         "Stores metadata about the performance of our view update process"
     ),
     AIRFLOW_OPERATIONS: ("Stores metadata about our airflow processes."),
+    HYDRATION_ARCHIVE: "Archival views that track hydration of various parts of our platform overtime",
 }

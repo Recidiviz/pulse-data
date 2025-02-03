@@ -40,6 +40,7 @@ COMMON_VESTIGES = [
     "all_billing_data.gcp_billing_export_v1_01338E_BE3FD6_363B4C",
     "all_billing_data.gcp_billing_export_resource_v1_01338E_BE3FD6_363B4C",
     "airflow_operations.dag_run_metadata",
+    "hydration_archive.normalized_state_hydration_archive",
     # Validation results are referenced outside the view graph via the Admin Panel
     "validation_results.validation_results",
     # It is Polaris-convention to archive all exports for historical reference, even when the archive isn't used

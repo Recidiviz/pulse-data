@@ -14,23 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Views related to platform KPIs"""
-
+"""View config for velocity KPIs"""
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.monitoring.platform_kpis.cost.cost_views import (
-    get_platform_cost_kpi_views_to_update,
-)
-from recidiviz.monitoring.platform_kpis.reliability.reliability_views import (
-    get_platform_reliability_kpi_views_to_update,
-)
-from recidiviz.monitoring.platform_kpis.velocity.velocity_views import (
-    get_platform_velocity_kpi_views_to_update,
+from recidiviz.monitoring.platform_kpis.velocity.normalized_state_hydration_live_snapshot import (
+    get_normalized_state_hydration_live_snapshot_view_builder,
 )
 
 
-def get_platform_kpi_views_to_update() -> list[BigQueryViewBuilder]:
-    return [
-        *get_platform_reliability_kpi_views_to_update(),
-        *get_platform_cost_kpi_views_to_update(),
-        *get_platform_velocity_kpi_views_to_update(),
-    ]
+def get_platform_velocity_kpi_views_to_update() -> list[BigQueryViewBuilder]:
+    return [get_normalized_state_hydration_live_snapshot_view_builder()]
