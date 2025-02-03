@@ -123,10 +123,18 @@ class TestGenerateAirflowDAGMetrics(AirflowIntegrationTest):
             "recidiviz.airflow.dags.monitoring.airflow_dag_run_history.BigQueryClientImpl"
         )
         self.bq_mock = self.bq_patch.start()
+
+        # compatibility issues w/ freezegun, see https://github.com/apache/airflow/pull/25511#issuecomment-1204297524
+        self.frozen_time = datetime.datetime(2024, 1, 26, 3, 4, 6, tzinfo=datetime.UTC)
+        self.write_datetime_patcher = patch(
+            "recidiviz.airflow.dags.monitoring.airflow_dag_run_history.datetime",
+        )
+        self.write_datetime_patcher.start().datetime.now.return_value = self.frozen_time
         return super().setUp()
 
     def tearDown(self) -> None:
         self.bq_patch.stop()
+        self.write_datetime_patcher.stop()
         return super().tearDown()
 
     @contextlib.contextmanager
@@ -202,6 +210,7 @@ class TestGenerateAirflowDAGMetrics(AirflowIntegrationTest):
 
         expected_results = [
             {
+                "write_time": self.frozen_time,
                 "project_id": _PROJECT_ID,
                 "dag_id": _TEST_DAG_ID,
                 "dag_run_id": "2023-07-06-00:00",
@@ -212,6 +221,7 @@ class TestGenerateAirflowDAGMetrics(AirflowIntegrationTest):
                 "terminal_state": "failed",
             },
             {
+                "write_time": self.frozen_time,
                 "project_id": _PROJECT_ID,
                 "dag_id": _TEST_DAG_ID,
                 "dag_run_id": "2023-07-07-00:00",

@@ -5,6 +5,10 @@ description: >-
   Table that holds information summary information about airflow DAG runs. Each
   row represents a single execution of an airflow DAG.
 schema:
+  - name: write_time
+    type: DATETIME
+    mode: REQUIRED
+    description: "The time that this row was written to BigQuery."
   - name: project_id
     type: STRING
     mode: REQUIRED

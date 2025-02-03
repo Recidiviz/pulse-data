@@ -35,6 +35,7 @@ DAG_RUN_METADATA_TABLE_ADDRESS = BigQueryAddress(
 # recidiviz/source_tables/yaml_managed/airflow_operations/dag_run_metadata.yaml
 # to avoid pulling in source table apparatus into airflow, for now.
 DAG_RUN_METADATA_TABLE_SCHEMA = [
+    bigquery.SchemaField(mode="REQUIRED", field_type="DATETIME", name="write_time"),
     bigquery.SchemaField(mode="REQUIRED", field_type="STRING", name="project_id"),
     bigquery.SchemaField(mode="REQUIRED", field_type="STRING", name="dag_id"),
     bigquery.SchemaField(mode="REQUIRED", field_type="STRING", name="dag_run_id"),
@@ -45,9 +46,9 @@ DAG_RUN_METADATA_TABLE_SCHEMA = [
     bigquery.SchemaField(mode="REQUIRED", field_type="JSON", name="dag_run_config"),
 ]
 # we are streaming the past 14 days of data even though most of that data will be duplicative.
-# because (1) tasks can be retried retroactively and (2) the monitoring DAG failing, the 14
+# because (1) tasks can be retried retroactively and (2) the monitoring DAG failing, the 7
 # day window gives us some extra buffer.
-DAG_RUN_HISTORY_LOOKBACK = datetime.timedelta(days=14)
+DAG_RUN_HISTORY_LOOKBACK = datetime.timedelta(days=7)
 
 
 def build_dag_run_history(*, lookback: datetime.timedelta) -> list[dict]:
@@ -55,6 +56,7 @@ def build_dag_run_history(*, lookback: datetime.timedelta) -> list[dict]:
     days.
     """
     project_id = get_project_id()
+    write_datetime = datetime.datetime.now(tz=datetime.UTC)
     with create_session() as session:
         latest_dag_runs = (
             session.query(
@@ -76,7 +78,11 @@ def build_dag_run_history(*, lookback: datetime.timedelta) -> list[dict]:
         )
 
         return [
-            {"project_id": project_id, **dict(dag_run)}
+            {
+                "project_id": project_id,
+                "write_time": write_datetime,
+                **dict(dag_run),
+            }
             for dag_run in latest_dag_runs.all()
         ]
 
