@@ -135,6 +135,7 @@ class MetricPipeline(
                 reference_data_queries_by_name={},
                 root_entity_cls=NormalizedStatePerson,
                 root_entity_id_filter_set=person_id_filter_set,
+                resource_labels=self.pipeline_parameters.resource_labels,
             )
         )
 

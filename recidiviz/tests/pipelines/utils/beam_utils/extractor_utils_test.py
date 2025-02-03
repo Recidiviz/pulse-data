@@ -227,6 +227,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
+                resource_labels={},
             )
 
             assert_that(
@@ -394,6 +395,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
+                resource_labels={},
             )
 
             assert_that(
@@ -532,6 +534,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
+                resource_labels={},
             )
 
             assert_that(
@@ -662,6 +665,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
+                resource_labels={},
             )
 
             assert_that(
@@ -809,6 +813,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
+                resource_labels={},
             )
 
             print(
@@ -1011,6 +1016,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 },
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
+                resource_labels={},
             )
 
             assert_that(
@@ -1182,6 +1188,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set={person_id_1},
+                resource_labels={},
             )
 
             assert_that(
@@ -1242,6 +1249,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 },
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
+                resource_labels={},
             )
 
             assert_that(
@@ -1427,6 +1435,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 reference_data_queries_by_name={},
                 root_entity_cls=normalized_entities.NormalizedStatePerson,
                 root_entity_id_filter_set=None,
+                resource_labels={},
             )
 
             assert_that(
@@ -1572,6 +1581,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 reference_data_queries_by_name={},
                 root_entity_cls=normalized_entities.NormalizedStatePerson,
                 root_entity_id_filter_set=None,
+                resource_labels={},
             )
 
             assert_that(
@@ -1766,6 +1776,7 @@ class TestExtractAssociationValues(unittest.TestCase):
                     association_table=association_table_name,
                     root_entity_id_filter_set=None,
                     state_code=charge.state_code,
+                    resource_labels={},
                 )
             )
 
@@ -1836,6 +1847,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
                     root_entity_id_field=entity_class.get_class_id_name(),
                     root_entity_id_filter_set=None,
                     state_code=person.state_code,
+                    resource_labels={},
                 )
             )
 

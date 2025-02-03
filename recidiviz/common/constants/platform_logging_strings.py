@@ -67,8 +67,11 @@ METRIC_EXPORTS: str = "metric_exports"
 STATE_CODE = "state_code"
 INGEST_INSTANCE = "ingest_instance"
 
+SANDBOX_PREFIX = "sandbox_prefix"
+
 DATAFLOW_PIPELINE_TYPE: str = "dataflow_pipeline_type"
 DATAFLOW_PIPELINE_NAME: str = "dataflow_pipeline_name"
+DATAFLOW_PIPELINE_JOB: str = "dataflow_pipeline_job"
 
 LOCAL_SCRIPT_NAME: str = "local_script_name"
 LOCAL_SCRIPT_USER: str = "local_script_user"

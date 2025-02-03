@@ -75,7 +75,8 @@ def run_test_pipeline(
     state_code: str,
     project_id: str,
     read_from_bq_constructor: Callable[
-        [str, bool, bool], FakeReadFromBigQuery | FakeReadFromBigQueryWithEmulator
+        [str, bool, bool, dict[str, str]],
+        FakeReadFromBigQuery | FakeReadFromBigQueryWithEmulator,
     ],
     write_to_bq_constructor: Callable[
         [str, str, apache_beam.io.BigQueryDisposition],
@@ -177,9 +178,11 @@ def default_data_dict_for_pipeline_class(
     empty lists.
     """
     required_base_entity_class_names = [
-        entity_class.base_class_name()
-        if issubclass(entity_class, NormalizedStateEntity)
-        else entity_class.__name__
+        (
+            entity_class.base_class_name()
+            if issubclass(entity_class, NormalizedStateEntity)
+            else entity_class.__name__
+        )
         for entity_class in pipeline_class.required_entities()
     ]
 
@@ -209,7 +212,7 @@ def default_arg_list_for_pipeline(
         "--state_code",
         state_code,
         "--pipeline",
-        "pipeline",
+        pipeline.pipeline_name().lower(),
         "--output_sandbox_prefix",
         DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
     ]

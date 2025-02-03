@@ -202,6 +202,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     for file_tag in query_builder.raw_data_table_dependency_file_tags
                 },
                 raw_data_source_instance=raw_data_source_instance,
+                resource_labels=self.pipeline_parameters.resource_labels,
             )
 
             _ = (

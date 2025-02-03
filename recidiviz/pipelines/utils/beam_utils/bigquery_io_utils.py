@@ -48,16 +48,22 @@ class ConvertDictToKVTuple(beam.DoFn):
         yield element[self.key_name], element
 
 
+# TODO(apache/beam#20297): remove resource_labels kwarg once the labels applied to a
+# dataflow job are automatically added to bq jobs.
 class ReadFromBigQuery(beam.PTransform):
     """Reads query results from BigQuery."""
 
-    def __init__(self, query: str):
+    def __init__(self, query: str, resource_labels: dict[str, str]):
         super().__init__()
         self._query = query
+        self._resource_labels = resource_labels
 
     def expand(self, input_or_inputs: PBegin) -> beam.PCollection[Dict[str, Any]]:
         return input_or_inputs | "Read from BigQuery" >> beam.io.ReadFromBigQuery(
-            query=self._query, use_standard_sql=True, validate=True
+            query=self._query,
+            use_standard_sql=True,
+            validate=True,
+            bigquery_job_labels=self._resource_labels,
         )
 
 

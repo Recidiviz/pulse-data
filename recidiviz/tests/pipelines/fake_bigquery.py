@@ -152,7 +152,11 @@ class FakeReadFromBigQueryWithEmulator(apache_beam.PTransform):
     PCollection of query results. Mocks ReadFromBigQuery PTransform.
     """
 
-    def __init__(self, query: str, test_case: BigQueryEmulatorTestCase) -> None:
+    def __init__(
+        self,
+        query: str,
+        test_case: BigQueryEmulatorTestCase,
+    ) -> None:
         super().__init__()
         self._query = query
         self._test_case = test_case
@@ -189,7 +193,7 @@ class FakeReadFromBigQueryFactory:
         data_dict: DataTablesDict,
         root_entity_id_field: str = "person_id",
         state_code: StateCode = StateCode.US_XX,
-    ) -> Callable[[QueryStr, bool, bool], FakeReadFromBigQuery]:
+    ) -> Callable[[QueryStr, bool, bool, dict[str, str]], FakeReadFromBigQuery]:
         """Returns a constructors function that can mock the ReadFromBigQuery class and will return a
         FakeReadFromBigQuery instead.
         """
@@ -199,6 +203,7 @@ class FakeReadFromBigQueryFactory:
             # pylint: disable=unused-argument
             use_standard_sql: bool,
             validate: bool,
+            bigquery_job_labels: dict[str, str],
         ) -> FakeReadFromBigQuery:
             table_values = self._extractor_utils_data_dict_query_fn(
                 expected_entities_dataset=expected_entities_dataset,
@@ -328,9 +333,11 @@ class FakeReadFromBigQueryFactory:
             # This query selected for certain columns from the entity table. Filter
             # output to just those columns.
             col_entity_name_to_query_name_pairs = [
-                (col, col)
-                if " as " not in col
-                else (col.split(" as ")[0], col.split(" as ")[1])
+                (
+                    (col, col)
+                    if " as " not in col
+                    else (col.split(" as ")[0], col.split(" as ")[1])
+                )
                 for col in selected_columns_str.split(",")
             ]
 

@@ -61,6 +61,7 @@ class TestLoadQueryResultsKeyedByColumn(BigQueryEmulatorTestCase):
         # pylint: disable=unused-argument
         use_standard_sql: bool,
         validate: bool,
+        bigquery_job_labels: dict[str, str],
     ) -> FakeReadFromBigQueryWithEmulator:
         return FakeReadFromBigQueryWithEmulator(query=query, test_case=self)
 
@@ -104,6 +105,7 @@ class TestLoadQueryResultsKeyedByColumn(BigQueryEmulatorTestCase):
             key_column_name="primary_key",
             query_name="my_query",
             query_provider=query_provider,
+            resource_labels={},
         )
 
         expected_output: List[TransformOutputType] = [

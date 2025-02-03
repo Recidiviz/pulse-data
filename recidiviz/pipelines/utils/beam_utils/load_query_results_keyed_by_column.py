@@ -43,11 +43,13 @@ class LoadQueryResultsKeyedByColumn(beam.PTransform):
         key_column_name: str,
         query_name: str,
         query_provider: BigQueryQueryProvider,
+        resource_labels: dict[str, str],
     ) -> None:
         super().__init__()
         self.key_column_name = key_column_name
         self.query_name = query_name
         self.query = query_provider.get_query()
+        self._resource_labels = resource_labels
 
     def expand(
         self, input_or_inputs: beam.pvalue.PBegin
@@ -55,7 +57,7 @@ class LoadQueryResultsKeyedByColumn(beam.PTransform):
         reference_view_data = (
             input_or_inputs
             | f"Load [{self.query_name}] query results"
-            >> ReadFromBigQuery(query=self.query)
+            >> ReadFromBigQuery(query=self.query, resource_labels=self._resource_labels)
             | f"Make [{self.query_name}] ({self.key_column_name}, row) tuples"
             >> beam.ParDo(ConvertDictToKVTuple(self.key_column_name))
         )

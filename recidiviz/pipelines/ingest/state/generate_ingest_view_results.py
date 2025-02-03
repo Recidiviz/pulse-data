@@ -79,6 +79,7 @@ class GenerateIngestViewResults(beam.PTransform):
         ingest_view_name: str,
         raw_data_tables_to_upperbound_dates: Dict[str, str],
         raw_data_source_instance: DirectIngestInstance,
+        resource_labels: dict[str, str] | None = None,
     ) -> None:
         super().__init__()
 
@@ -107,6 +108,7 @@ class GenerateIngestViewResults(beam.PTransform):
             parsed_upperbound_dates
         )
         self.raw_data_source_instance = raw_data_source_instance
+        self.resource_labels = resource_labels or {}
 
     def expand(self, input_or_inputs: PBegin) -> beam.PCollection[Dict[str, Any]]:
         # If upper_bound_datetime_inclusive is None, that means that none of the raw table dependencies of this view
@@ -129,7 +131,10 @@ class GenerateIngestViewResults(beam.PTransform):
         return (
             input_or_inputs
             | f"Read {self.ingest_view_name} ingest view results from BigQuery."
-            >> ReadFromBigQuery(query=query)
+            >> ReadFromBigQuery(
+                query=query,
+                resource_labels=self.resource_labels,
+            )
         )
 
     @staticmethod

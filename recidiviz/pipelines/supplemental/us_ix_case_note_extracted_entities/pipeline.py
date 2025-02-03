@@ -181,7 +181,10 @@ class UsIxCaseNoteExtractedEntitiesPipeline(SupplementalDatasetPipeline):
         _ = (
             p
             | f"Load [{query_name}] query results"
-            >> ReadFromBigQuery(query=query_provider.get_query())
+            >> ReadFromBigQuery(
+                query=query_provider.get_query(),
+                resource_labels=self.pipeline_parameters.resource_labels,
+            )
             | "Extract text entities" >> beam.Map(self.extract_text_entities)
             | f"Write extracted text entities to {self.pipeline_parameters.output}.{self.table_id()}"
             >> WriteToBigQuery(

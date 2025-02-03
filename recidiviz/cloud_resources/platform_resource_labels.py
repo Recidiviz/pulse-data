@@ -176,3 +176,23 @@ class StateAgnosticResourceLabel(ResourceLabel):
 @attrs.define(kw_only=True)
 class IngestInstanceResourceLabel(ResourceLabel):
     key: str = attrs.field(default=platform_logging_strings.INGEST_INSTANCE)
+
+
+@attrs.define(kw_only=True)
+class SandboxPrefixResourceLabel(ResourceLabel):
+    key: str = attrs.field(default=platform_logging_strings.SANDBOX_PREFIX)
+
+
+@attrs.define(kw_only=True)
+class DataflowPipelineTypeResourceLabel(ResourceLabel):
+    key: str = attrs.field(default=platform_logging_strings.DATAFLOW_PIPELINE_TYPE)
+
+
+@attrs.define(kw_only=True)
+class DataflowPipelineNameResourceLabel(ResourceLabel):
+    key: str = attrs.field(default=platform_logging_strings.DATAFLOW_PIPELINE_NAME)
+
+
+@attrs.define(kw_only=True)
+class DataflowPipelineJobResourceLabel(ResourceLabel):
+    key: str = attrs.field(default=platform_logging_strings.DATAFLOW_PIPELINE_JOB)

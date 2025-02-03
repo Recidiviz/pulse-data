@@ -120,6 +120,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
             | Type[NormalizedStatePerson]
             | Type[NormalizedStateStaff]
         ),
+        resource_labels: dict[str, str],
         root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
     ):
         """Initializes the PTransform with the required arguments.
@@ -192,6 +193,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         self._root_entity_cls = root_entity_cls
         self._root_entity_id_field = root_entity_cls.get_class_id_name()
         self._root_entity_id_field_filter_set = root_entity_id_filter_set
+        self._resource_labels = resource_labels
 
     def _get_relationship_details_for_classes(
         self, parent_cls: Type[Entity], parent_field: str, child_cls: Type[Entity]
@@ -369,6 +371,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
                     related_id_field=relationship_property.association_table_entity_id_field,
                     root_entity_id_filter_set=self._root_entity_id_field_filter_set,
                     state_code=self._state_code.value,
+                    resource_labels=self._resource_labels,
                 )
             )
 
@@ -392,6 +395,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
                 root_entity_id_field=self._root_entity_id_field,
                 root_entity_id_filter_set=self._root_entity_id_field_filter_set,
                 state_code=self._state_code.value,
+                resource_labels=self._resource_labels,
             )
         )
 
@@ -460,6 +464,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
                 key_column_name=self._root_entity_id_field,
                 query_name=query_name,
                 query_provider=query_provider,
+                resource_labels=self._resource_labels,
             )
 
         entities_and_associations: Dict[
@@ -792,12 +797,14 @@ class _ExtractValuesFromEntityBase(beam.PTransform):
 
     def __init__(
         self,
+        *,
         project_id: str,
         entities_dataset: str,
         entity_class: Type[Entity],
         root_entity_id_field: str,
         root_entity_id_filter_set: Optional[Set[RootEntityId]],
         state_code: str,
+        resource_labels: dict[str, str],
     ):
         super().__init__()
         self._project_id = project_id
@@ -810,6 +817,7 @@ class _ExtractValuesFromEntityBase(beam.PTransform):
             self._entity_to_hydrate_class.get_class_id_name()
         )
         self._state_code = state_code
+        self._resource_labels = resource_labels
 
     def _get_entities_table_sql_query(
         self, columns_to_include: Optional[List[str]] = None
@@ -836,24 +844,6 @@ class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
     then hydrates individual entity instances.
     """
 
-    def __init__(
-        self,
-        project_id: str,
-        entities_dataset: str,
-        entity_class: Type[Entity],
-        root_entity_id_field: str,
-        root_entity_id_filter_set: Optional[Set[RootEntityId]],
-        state_code: str,
-    ) -> None:
-        super().__init__(
-            project_id,
-            entities_dataset,
-            entity_class,
-            root_entity_id_field,
-            root_entity_id_filter_set,
-            state_code,
-        )
-
     def _get_entities_raw_pcollection(
         self, input_or_inputs: PBegin
     ) -> PCollection[Dict[str, Any]]:
@@ -863,7 +853,9 @@ class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
         entities_raw = (
             input_or_inputs
             | f"Read {self._entity_to_hydrate_class.get_table_id()} from BigQuery"
-            >> ReadFromBigQuery(query=entity_query)
+            >> ReadFromBigQuery(
+                query=entity_query, resource_labels=self._resource_labels
+            )
         )
 
         return entities_raw
@@ -899,6 +891,7 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
         root_entity_id_field: str,
         root_entity_id_filter_set: Optional[Set[RootEntityId]],
         state_code: str,
+        resource_labels: dict[str, str],
     ):
         self._association_table = association_table
 
@@ -914,12 +907,13 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
         self._related_entity_id_field = related_id_field
 
         super().__init__(
-            project_id,
-            entities_dataset,
-            self._entity_class_for_query,
-            root_entity_id_field,
-            root_entity_id_filter_set,
-            state_code,
+            project_id=project_id,
+            entities_dataset=entities_dataset,
+            entity_class=self._entity_class_for_query,
+            root_entity_id_field=root_entity_id_field,
+            root_entity_id_filter_set=root_entity_id_filter_set,
+            state_code=state_code,
+            resource_labels=resource_labels,
         )
 
     def _get_association_values_raw_pcollection(
@@ -967,7 +961,9 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
         association_values_raw = (
             pipeline
             | f"Read {self._association_table} from BigQuery"
-            >> ReadFromBigQuery(query=association_view_query)
+            >> ReadFromBigQuery(
+                query=association_view_query, resource_labels=self._resource_labels
+            )
         )
 
         return association_values_raw

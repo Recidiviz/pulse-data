@@ -35,9 +35,22 @@ from attr import Attribute
 from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.cloud_resources.platform_resource_labels import (
+    DataflowPipelineJobResourceLabel,
+    DataflowPipelineNameResourceLabel,
+    DataflowPipelineTypeResourceLabel,
+    PlatformEnvironmentResourceLabel,
+    SandboxPrefixResourceLabel,
+    StateCodeResourceLabel,
+)
+from recidiviz.cloud_resources.resource_label import (
+    ResourceLabel,
+    coalesce_resource_labels,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_converters import optional_json_str_to_dict
+from recidiviz.common.google_cloud.utils import format_resource_label
 from recidiviz.utils.environment import DATA_PLATFORM_GCP_PROJECTS, in_test
 from recidiviz.utils.params import str_matches_regex_type
 from recidiviz.utils.types import assert_type
@@ -149,6 +162,10 @@ class PipelineParameters:
     )
     staging_only: bool = attr.ib(
         default=False, validator=attr_validators.is_bool, converter=bool
+    )
+
+    additional_resource_labels: list[ResourceLabel] = attr.ib(
+        validator=attr_validators.is_list_of(ResourceLabel), factory=list
     )
 
     @property
@@ -435,6 +452,30 @@ class PipelineParameters:
                 )
         return parser.parse_known_args(argv)
 
+    def _build_default_labels(self) -> list[ResourceLabel]:
+        return [
+            PlatformEnvironmentResourceLabel.DATAFLOW.value,
+            StateCodeResourceLabel(value=self.state_code.lower()),
+            SandboxPrefixResourceLabel(value=self.output_sandbox_prefix or ""),
+            DataflowPipelineTypeResourceLabel(value=self.flex_template_name),
+            DataflowPipelineNameResourceLabel(value=self.pipeline),
+            # pass to format_resource_label in case it gets longer than 63 chars
+            DataflowPipelineJobResourceLabel(
+                value=format_resource_label(self.job_name)
+            ),
+        ]
+
+    @property
+    def resource_labels(self) -> dict[str, str]:
+        """Returns a JSON string of resource label k/v pairs. These labels *should* also
+        permeate to any BQ jobs that the dataflow pipeline creates.
+        """
+        return coalesce_resource_labels(
+            *self._build_default_labels(),
+            *self.additional_resource_labels,
+            should_throw_on_conflict=True,
+        )
+
     @property
     def template_parameters(self) -> Dict[str, Any]:
         with open(
@@ -481,6 +522,7 @@ class PipelineParameters:
                 "parameters": self.template_parameters,
                 # DEFAULTS
                 "environment": {
+                    "additionalUserLabels": self.resource_labels,
                     "machineType": self.machine_type,
                     "diskSizeGb": self.disk_gb_size,
                     "tempLocation": f"gs://{project_id}-dataflow-templates-scratch/temp/",

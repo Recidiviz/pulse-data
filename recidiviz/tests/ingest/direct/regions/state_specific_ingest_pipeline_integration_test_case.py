@@ -96,6 +96,8 @@ class StateSpecificIngestPipelineIntegrationTestCase(StateIngestPipelineTestCase
         ingest_view_name: str,
         raw_data_tables_to_upperbound_dates: dict[str, str],
         raw_data_source_instance: DirectIngestInstance,
+        # pylint: disable=unused-argument
+        resource_labels: dict[str, str],
     ) -> FakeGenerateIngestViewResults:
         """Returns a constructor that generates ingest view results for a given ingest view assuming a single date."""
         return FakeGenerateIngestViewResults(

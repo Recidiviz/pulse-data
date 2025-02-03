@@ -187,6 +187,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase, IngestRegionTestMixi
         # pylint: disable=unused-argument
         use_standard_sql: bool,
         validate: bool,
+        bigquery_job_labels: dict[str, str],
     ) -> FakeReadFromBigQueryWithEmulator:
         return FakeReadFromBigQueryWithEmulator(query=query, test_case=self)
 
