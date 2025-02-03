@@ -16,11 +16,12 @@
 # =============================================================================
 """Tests for validation distinct hard failures """
 import os
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from typing import Any
 
 import pandas as pd
 from google.cloud import bigquery
+from pytz import timezone
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -234,13 +235,15 @@ class TestDistinctHardFailuresViewBuilder(SimpleBigQueryViewBuilderTestCase):
             {
                 "state_code": "US_XX",
                 "failure_month": month_with_zero.date(),
-                "distinct_failures": 2
-                if month_with_zero.date() > date(2024, 1, 1)
-                else 0,
+                "distinct_failures": (
+                    2 if month_with_zero.date() > date(2024, 1, 1) else 0
+                ),
             }
             for month_with_zero in pd.date_range(
                 start=date(2021, 6, 1),
-                end=date.fromtimestamp(datetime.now(tz=UTC).timestamp()),
+                end=date.fromtimestamp(
+                    datetime.now(tz=timezone("US/Eastern")).timestamp()
+                ),
                 freq="MS",
             )
             if month_with_zero.date() != date(2024, 1, 1)

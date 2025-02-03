@@ -15,10 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for ongoing validation hard failures."""
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 
 import pandas as pd
 from google.cloud import bigquery
+from pytz import timezone
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -194,7 +195,9 @@ class TestOngoingValidationHardFailures(SimpleBigQueryViewBuilderTestCase):
             }
             for month_with_zero in pd.date_range(
                 start=date(2024, 1, 1),
-                end=date.fromtimestamp(datetime.now(tz=UTC).timestamp()),
+                end=date.fromtimestamp(
+                    datetime.now(tz=timezone("US/Eastern")).timestamp()
+                ),
                 freq="MS",
             )
             if month_with_zero.date() not in months_with_failures
