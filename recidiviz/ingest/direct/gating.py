@@ -32,6 +32,7 @@ PRODUCTION_PRIMARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_MI,
     StateCode.US_MO,
     StateCode.US_ND,
+    StateCode.US_OR,
     StateCode.US_PA,
     StateCode.US_TN,
     # states we "rolled" out to prod that aren't enabled in prod but we un-gate them
@@ -52,7 +53,6 @@ PRODUCTION_SECONDARY_ENABLED_STATES: Set[StateCode] = {
 # all states in any version of prod must able be enabled in staging primary, plus
 STAGING_PRIMARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_ME,
-    StateCode.US_OR,
     StateCode.US_TX,
     StateCode.US_AZ,
     *PRODUCTION_SECONDARY_ENABLED_STATES,
