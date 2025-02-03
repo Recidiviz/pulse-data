@@ -31,7 +31,7 @@ from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_PA_MARKED_INELIGIBLE_FOR_ADMIN_SUPERVISION"
@@ -64,6 +64,7 @@ WHERE a.state_code = 'US_PA'
     AND opportunity_type = 'usPaAdminSupervision'
     AND 'FINES & FEES' NOT IN UNNEST(denial_reasons) 
     AND 'SPECIAL CONDITIONS' NOT IN UNNEST(denial_reasons)
+    AND 'SEX' NOT IN UNNEST(denial_reasons)
 GROUP BY 1, 2, 3
 """
 
@@ -84,5 +85,5 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
 )
 
 if __name__ == "__main__":
-    with local_project_id_override(GCP_PROJECT_STAGING):
+    with local_project_id_override(GCP_PROJECT_PRODUCTION):
         VIEW_BUILDER.build_and_print()
