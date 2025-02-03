@@ -77,6 +77,11 @@ def _generate_markdown_table_of_package_group_difference(
         new_pipfile_lock_json, group
     )
 
+    # Ensure dataframes are identically labeled by merging their indices
+    all_package_names = {*old_pipfile_lock.index.values, *new_pipfile_lock.index.values}
+    old_pipfile_lock = old_pipfile_lock.reindex(all_package_names).sort_index()
+    new_pipfile_lock = new_pipfile_lock.reindex(all_package_names).sort_index()
+
     changes = old_pipfile_lock.compare(new_pipfile_lock).fillna("—")
 
     rows = "\n".join(
