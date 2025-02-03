@@ -58,6 +58,8 @@ COMMON_VESTIGES = [
     "external_reference.county_resident_populations",
     "external_reference.us_tn_incarceration_facility_names",
     "external_reference.us_tn_supervision_facility_names",
+    # TODO(#16661): Remove this section once US_ID fully deprecated
+    "static_reference_tables.state_incarceration_facilities",
 ]
 
 # these are source tables which are in use, but not necessarily used by the main view graph

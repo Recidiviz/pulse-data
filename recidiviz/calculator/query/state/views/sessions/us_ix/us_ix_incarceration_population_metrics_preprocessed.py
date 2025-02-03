@@ -21,20 +21,19 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_NAME = (
-    "us_id_incarceration_population_metrics_preprocessed"
+US_IX_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_NAME = (
+    "us_ix_incarceration_population_metrics_preprocessed"
 )
 
-US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = (
+US_IX_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = (
     """State-specific preprocessing for joining with dataflow sessions"""
 )
 
-US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
+US_IX_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
     -- TODO(#15610): Remove preprocessing file when out of state facilities are flagged in sessions
     WITH incarceration_population_cte AS (
         SELECT
@@ -66,7 +65,7 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             custodial_authority,
         FROM
             `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_metrics_materialized`
-        WHERE state_code IN ('US_ID', 'US_IX')
+        WHERE state_code IN ('US_IX')
     )
     SELECT
         pop.person_id,
@@ -75,7 +74,7 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.metric_source,
         pop.state_code,
         CASE
-            WHEN COALESCE(us_ix_facilities.location_name, us_id_facilities.facility) IS NULL THEN 'INCARCERATION_OUT_OF_STATE'
+            WHEN us_ix_facilities.location_name IS NULL THEN 'INCARCERATION_OUT_OF_STATE'
             ELSE pop.compartment_level_1
         END AS compartment_level_1,
         pop.compartment_level_2,
@@ -101,25 +100,18 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         AND pop.compartment_level_1 = 'INCARCERATION'
         AND us_ix_facilities.location_type in ('STATE_PRISON', 'MEDICAL_FACILITY', 'COUNTY_JAIL')
         AND pop.state_code = 'US_IX'
-    # TODO(#16661): Remove this section once US_ID fully deprecated
-    LEFT JOIN `{project_id}.{static_reference_dataset}.state_incarceration_facilities` us_id_facilities
-        ON pop.state_code = us_id_facilities.state_code
-        AND pop.compartment_location = us_id_facilities.facility
-        AND pop.compartment_level_1 = 'INCARCERATION'
-        AND pop.state_code = 'US_ID'
 """
 
-US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_IX_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
-    view_id=US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_NAME,
-    view_query_template=US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE,
-    description=US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION,
+    view_id=US_IX_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_NAME,
+    view_query_template=US_IX_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE,
+    description=US_IX_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
-    static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER.build_and_print()
+        US_IX_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER.build_and_print()

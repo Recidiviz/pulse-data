@@ -30,7 +30,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 DATAFLOW_SESSIONS_VIEW_NAME = "dataflow_sessions"
 
-INCARCERATION_POPULATION_SPECIAL_STATES = ("US_CO", "US_ID", "US_IX")
+INCARCERATION_POPULATION_SPECIAL_STATES = ("US_CO", "US_IX")
 SUPERVISION_POPULATION_SPECIAL_STATES = ("US_PA", "US_TN")
 
 DATAFLOW_SESSIONS_VIEW_DESCRIPTION = """
@@ -120,7 +120,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     UNION ALL
     -- TODO(#15610): Remove ID preprocessing file when out of state facilities are flagged in sessions
     SELECT *
-    FROM `{{project_id}}.{{sessions_dataset}}.us_id_incarceration_population_metrics_preprocessed_materialized`
+    FROM `{{project_id}}.{{sessions_dataset}}.us_ix_incarceration_population_metrics_preprocessed_materialized`
 
     UNION ALL
     -- TODO(#15610): Remove CO preprocessing file when out of state facilities are flagged in sessions
