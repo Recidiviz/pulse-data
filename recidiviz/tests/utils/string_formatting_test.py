@@ -17,7 +17,7 @@
 """Tests for string_formatting.py"""
 import unittest
 
-from recidiviz.utils.string_formatting import fix_indent
+from recidiviz.utils.string_formatting import fix_indent, truncate_string_if_necessary
 
 
 class TestFixIndent(unittest.TestCase):
@@ -82,3 +82,33 @@ FROM (
     SELECT * FROM table
 )"""
         self.assertEqual(expected_s, fix_indent(s, indent_level=0))
+
+
+class TestTruncateString(unittest.TestCase):
+    def test_no_truncation(self) -> None:
+        self.assertEqual("abc123", truncate_string_if_necessary("abc123", max_length=6))
+        self.assertEqual(
+            "abc123", truncate_string_if_necessary("abc123", max_length=10)
+        )
+
+    def test_truncate(self) -> None:
+        s = (
+            "99 bottles of beer on the wall, 99 bottles of beer. Take one down pass it "
+            "around, 98 bottles of beer on the wall."
+        )
+
+        truncated_s = truncate_string_if_necessary(s, max_length=45)
+        self.assertEqual(45, len(truncated_s))
+        self.assertEqual("99 bottles of beer on the wal ... (truncated)", truncated_s)
+
+    def test_truncate_custom(self) -> None:
+        s = (
+            "99 bottles of beer on the wall, 99 bottles of beer. Take one down pass it "
+            "around, 98 bottles of beer on the wall."
+        )
+
+        truncated_s = truncate_string_if_necessary(
+            s, max_length=45, truncation_message="[TRUNCATED]"
+        )
+        self.assertEqual(45, len(truncated_s))
+        self.assertEqual("99 bottles of beer on the wall, 99[TRUNCATED]", truncated_s)

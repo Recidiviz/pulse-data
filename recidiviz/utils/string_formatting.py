@@ -26,3 +26,24 @@ def fix_indent(s: str, *, indent_level: int) -> str:
     Also strips leading and trailing whitespace.
     """
     return indent(dedent(s).strip(), prefix=" " * indent_level)
+
+
+def truncate_string_if_necessary(
+    s: str, *, max_length: int, truncation_message: str | None = None
+) -> str:
+    """Truncates the provided string |s| so that it is no longer than the provided
+    |max_length|. A message indicating that the string was truncated will be added to
+    the end of the string (included in the max length).
+    """
+    if len(s) <= max_length:
+        return s
+
+    if truncation_message is None:
+        truncation_message = " ... (truncated)"
+
+    if max_length < len(truncation_message):
+        raise ValueError(
+            "Cannot specify a max length that is less than the truncation message "
+            "itself."
+        )
+    return s[: max_length - len(truncation_message)] + truncation_message

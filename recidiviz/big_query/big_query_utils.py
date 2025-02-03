@@ -49,6 +49,7 @@ from recidiviz.common.constants.encoding import (
 )
 from recidiviz.persistence.database.reserved_words import BIGQUERY_RESERVED_WORDS
 from recidiviz.utils.encoding import to_python_standard
+from recidiviz.utils.string_formatting import truncate_string_if_necessary
 
 # Maximum value of an integer stored in BigQuery
 MAX_BQ_INT = (2**63) - 1
@@ -244,13 +245,9 @@ def format_description_for_big_query(description: Optional[str]) -> str:
     if not description:
         return ""
 
-    if len(description) > BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH:
-        truncated_str = " ... (truncated)"
-        description = (
-            description[: BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH - len(truncated_str)]
-            + truncated_str
-        )
-    return description
+    return truncate_string_if_necessary(
+        description, max_length=BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
+    )
 
 
 def transform_dict_to_bigquery_row(data_point: Dict[str, Any]) -> bigquery.table.Row:

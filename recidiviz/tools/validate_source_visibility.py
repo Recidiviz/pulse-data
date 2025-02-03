@@ -444,6 +444,7 @@ def main() -> int:
         "recidiviz.utils.environment",
         "recidiviz.utils.types",
         "recidiviz.utils.string",
+        "recidiviz.utils.string_formatting",
         "recidiviz.utils.airflow_types",
         "recidiviz.utils.encoding",
         "recidiviz.utils.metadata",
@@ -486,6 +487,7 @@ def main() -> int:
         "recidiviz.utils.environment",
         "recidiviz.utils.metadata",
         "recidiviz.utils.string",
+        "recidiviz.utils.string_formatting",
         "recidiviz.utils.yaml_dict",
         "recidiviz.utils.types",
     }

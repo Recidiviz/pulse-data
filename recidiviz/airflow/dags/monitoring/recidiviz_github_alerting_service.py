@@ -30,8 +30,11 @@ from recidiviz.airflow.dags.monitoring.recidiviz_alerting_service import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
+from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.string_formatting import truncate_string_if_necessary
 from recidiviz.utils.types import assert_type
 
+GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH = 65536
 RECIDIVIZ_DATA_REPO = "Recidiviz/pulse-data"
 HELPERBOT_USER_NAME = "helperbot-recidiviz"
 
@@ -120,23 +123,51 @@ class RecidivizGitHubService(RecidivzAlertingService):
         return f"Failed run of [`{incident.job_id}`] on the following dates: [ {date_strs} ]."
 
     @classmethod
-    def _format_incident_issue_description(
-        cls, incident: AirflowAlertingIncident
+    def _format_incident_error_message(
+        cls, incident: AirflowAlertingIncident, *, message_header: str, max_length: int
     ) -> str:
+        """Returns a formatted string with the error message from the provided incident.
+        If the full formatted message is longer than |max_length|, the incident error
+        message will be truncated.
+        """
+        max_incident_error_message_length = max_length - len(message_header)
+
+        error_message_template = " Most recent error message:\n```{error_message}```"
+        max_incident_error_message_length -= len(error_message_template)
+
         error_message = (
-            f" Most recent error message:\n```{incident.error_message}```"
+            truncate_string_if_necessary(
+                incident.error_message, max_length=max_incident_error_message_length
+            )
             if incident.error_message
             else ""
         )
-        return (
-            f"{cls._format_incident_issue_description_header(incident)}{error_message}"
+
+        formatted_error_message = (
+            StrictStringFormatter().format(
+                error_message_template, error_message=error_message
+            )
+            if error_message
+            else ""
         )
 
+        full_message = f"{message_header}{formatted_error_message}"
+        if len(full_message) > max_length:
+            raise ValueError(
+                f"Expected issue/comment body to be [{max_length}] chars or less. Body "
+                f"is [{len(full_message)}] chars - cannot create issue."
+            )
+        return full_message
+
     def _open_new_issue(self, incident: AirflowAlertingIncident) -> None:
+        body = self._format_incident_error_message(
+            incident,
+            message_header=self._format_incident_issue_description_header(incident),
+            max_length=GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
+        )
+
         issue = self._repo.create_issue(
-            title=incident.unique_incident_id,
-            body=self._format_incident_issue_description(incident),
-            labels=self.issue_labels,
+            title=incident.unique_incident_id, body=body, labels=self.issue_labels
         )
         logging.info(
             "Created new issue [#%s] for [%s]",
@@ -147,15 +178,6 @@ class RecidivizGitHubService(RecidivzAlertingService):
     @staticmethod
     def _format_incident_issue_comment_header(incident: AirflowAlertingIncident) -> str:
         return f"Failure for [`{incident.job_id}`] on [ `{incident.most_recent_failure.isoformat()}` ]"
-
-    @classmethod
-    def _format_incident_issue_comment(cls, incident: AirflowAlertingIncident) -> str:
-        error_message = (
-            f" Most recent error message:\n```{incident.error_message}```"
-            if incident.error_message
-            else ""
-        )
-        return f"{cls._format_incident_issue_comment_header(incident)}{error_message}"
 
     def _update_existing_issue_for_ongoing_incident(
         self, issue: Issue, incident: AirflowAlertingIncident
@@ -203,8 +225,14 @@ class RecidivizGitHubService(RecidivzAlertingService):
             if issue.state == "closed":
                 issue.edit(state="open")
 
+            body = self._format_incident_error_message(
+                incident,
+                message_header=self._format_incident_issue_comment_header(incident),
+                max_length=GITHUB_ISSUE_OR_COMMENT_BODY_MAX_LENGTH,
+            )
+
             # add a our new comment
-            issue.create_comment(body=self._format_incident_issue_comment(incident))
+            issue.create_comment(body=body)
 
     def handle_incident(self, incident: AirflowAlertingIncident) -> None:
 
