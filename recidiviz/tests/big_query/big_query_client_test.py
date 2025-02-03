@@ -442,12 +442,18 @@ class BigQueryClientImplTest(unittest.TestCase):
     @patch("google.cloud.bigquery.QueryJobConfig")
     def test_get_row_counts_for_tables(self, mock_job_config: MagicMock) -> None:
         # Arrange
-        self.mock_client.query.return_value = [
-            {"table_id": "foo", "num_rows": 120},
-            {"table_id": "bar", "num_rows": 0},
+        self.mock_client.query.side_effect = [
+            [{"num_rows": 120}],
+            [{"num_rows": 0}],
         ]
-        # list_tables should return a non empty value so the dataset is not considered empty
-        self.mock_client.list_tables.return_value = ["table1"]
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem.from_string(
+                "fake-recidiviz-project.fake-dataset.foo"
+            ),
+            bigquery.table.TableListItem.from_string(
+                "fake-recidiviz-project.fake-dataset.bar"
+            ),
+        ]
 
         # Act
         results = self.bq_client.get_row_counts_for_tables(
@@ -457,16 +463,27 @@ class BigQueryClientImplTest(unittest.TestCase):
         # Assert
         self.assertEqual(results, {"foo": 120, "bar": 0})
         self.mock_client.get_dataset.assert_called()
-        self.mock_client.query.assert_called_with(
-            query="""
-                SELECT _TABLE_SUFFIX as table_id, COUNT(*) as num_rows
-                FROM `fake-recidiviz-project.fake-dataset.*`
-                GROUP BY _TABLE_SUFFIX
-                """,
-            location=BigQueryClient.DEFAULT_REGION,
-            job_config=mock_job_config.return_value,
-            timeout=None,
-        )
+        expected_calls = [
+            call(
+                query="""
+                SELECT COUNT(*) as num_rows
+                FROM `fake-recidiviz-project.fake-dataset.foo`
+            """,
+                location=BigQueryClient.DEFAULT_REGION,
+                job_config=mock_job_config.return_value,
+                timeout=None,
+            ),
+            call(
+                query="""
+                SELECT COUNT(*) as num_rows
+                FROM `fake-recidiviz-project.fake-dataset.bar`
+            """,
+                location=BigQueryClient.DEFAULT_REGION,
+                job_config=mock_job_config.return_value,
+                timeout=None,
+            ),
+        ]
+        self.mock_client.query.assert_has_calls(expected_calls)
         mock_job_config.assert_called_with(
             use_query_cache=False,
             labels={

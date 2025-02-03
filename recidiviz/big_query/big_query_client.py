@@ -1254,16 +1254,19 @@ class BigQueryClientImpl(BigQueryClient):
 
         job_labels = [*job_labels, BigQueryDatasetIdJobLabel(value=dataset_id.lower())]
 
-        results = self.run_query_async(
-            query_str=f"""
-                SELECT _TABLE_SUFFIX as table_id, COUNT(*) as num_rows
-                FROM `{self.project_id}.{dataset_id}.*`
-                GROUP BY _TABLE_SUFFIX
-                """,
-            use_query_cache=False,
-            job_labels=job_labels,
-        )
-        return {row["table_id"]: row["num_rows"] for row in results}
+        query_jobs = {}
+        for table in self.list_tables(dataset_id):
+            query_str = f"""
+                SELECT COUNT(*) as num_rows
+                FROM `{self.project_id}.{dataset_id}.{table.table_id}`
+            """
+            query_jobs[table.table_id] = self.run_query_async(
+                query_str=query_str,
+                use_query_cache=False,
+                job_labels=job_labels,
+            )
+
+        return {table_id: one(job)["num_rows"] for table_id, job in query_jobs.items()}
 
     def get_table(self, address: BigQueryAddress) -> bigquery.Table:
         table_ref = self._table_ref_for_address(address)
