@@ -18,7 +18,10 @@ import logging
 from datetime import timedelta
 from pprint import pprint
 
-from recidiviz.airflow.dags.monitoring.dag_registry import get_all_dag_ids
+from recidiviz.airflow.dags.monitoring.dag_registry import (
+    get_all_dag_ids,
+    get_raw_data_import_dag_id,
+)
 from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
     get_alerting_services_for_incident,
 )
@@ -39,6 +42,19 @@ INCIDENT_START_DATE_LOOKBACK = timedelta(days=21)
 RAW_DATA_INCIDENT_START_DATE_LOOKBACK = timedelta(days=42)
 
 
+def get_default_lookback_for_dag(*, dag_id: str) -> timedelta:
+    """Returns the lookback configured for the provided |dag_id|. If an incident is open
+    for more than the lookback period, it will generate duplicate alerts for the same
+    underlying incident. Thus, for certain DAGs that we expect incidents to be open for
+    a longer duration of time, we set the lookback to a longer period of time to avoid
+    this alert duplication issue.
+    """
+    project_id = get_project_id()
+    if dag_id == get_raw_data_import_dag_id(project_id):
+        return RAW_DATA_INCIDENT_START_DATE_LOOKBACK
+    return INCIDENT_START_DATE_LOOKBACK
+
+
 def report_failed_tasks() -> None:
     """Reports unique task failure incidents to PagerDuty.
     If the task has succeeded since the incident was opened, we send with the subject `Task success: `
@@ -49,7 +65,7 @@ def report_failed_tasks() -> None:
         logging.info("Building task history for DAG: %s", dag_id)
 
         incident_history = IncidentHistoryBuilder(dag_id=dag_id).build(
-            lookback=INCIDENT_START_DATE_LOOKBACK
+            lookback=get_default_lookback_for_dag(dag_id=dag_id)
         )
 
         # Print the incident history for use when reviewing task logs

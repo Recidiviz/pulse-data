@@ -30,6 +30,14 @@ from recidiviz.common import attr_validators
 class AirflowAlertingIncident:
     """Representation of something distinct that went wrong during a series of
     consecutive DAG runs.
+
+
+    The |previous_success_date| and |failed_execution_dates| will never be older than the
+    lookback period provided to the incident history builder, even if the incident started
+    failing  before then. If an incident's "true" |start_date| is older than the lookback,
+    the same incident's unique_incident_id will change based on the run frequency of the
+    DAG that is failing, as the lookback window will truncate the chain of failed tasks
+    to the first one inside the lookback window.
     """
 
     dag_id: str = attr.ib(validator=attr_validators.is_str)
@@ -39,8 +47,6 @@ class AirflowAlertingIncident:
     failed_execution_dates: List[datetime] = attr.ib(
         validator=attr_validators.is_list_of(datetime)
     )
-    # This value will never be more than INCIDENT_START_DATE_LOOKBACK ago,
-    # even if it started failing before then.
     previous_success_date: Optional[datetime] = attr.ib(
         default=None, validator=attr_validators.is_opt_datetime
     )
