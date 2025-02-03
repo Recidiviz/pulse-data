@@ -28,31 +28,60 @@ US_ND_SENTENCING_STAFF_TEMPLATE = """
 WITH
   psi AS (
   SELECT
-    -- TODO(#35882): Use real external ids once available
-    UPPER(NAME) AS external_id,
+    DISTINCT UPPER(TRIM(SPLIT(NAME, ',')[
+      OFFSET
+        (0)])) AS surname,
+    UPPER(TRIM(SPLIT(NAME, ',')[SAFE_OFFSET(1)])) AS given_names,
     STRING_AGG(CONCAT('"',REPLACE(RecId, ',', ''),'"'), ','
     ORDER BY
-      LAST_UPDATE) AS case_ids
+      CAST(RecDate AS DATETIME)) AS case_ids,
   FROM
     `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_psi_latest`
-  WHERE NAME IS NOT NULL
+  WHERE
+    -- Only pick cases that have been completed in the last three months or are not yet completed
+    -- AND were ordered within the past year (there are some very old cases that were never completed)
+    (DATE(DATE_COM) > DATE_SUB(CURRENT_DATE, INTERVAL 3 MONTH)
+      OR DATE_COM IS NULL)
+    AND (DATE(DATE_DUE) > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR))
   GROUP BY
-    UPPER(NAME))
+    surname,
+    given_names),
+  staff AS (
+  SELECT
+    *
+  FROM (
+    SELECT
+      full_name,
+      JSON_EXTRACT_SCALAR(s.full_name, '$.surname') AS surname,
+      JSON_EXTRACT_SCALAR(s.full_name, '$.given_names') AS given_names,
+      external_id,
+      email,
+      ROW_NUMBER() OVER(PARTITION BY email ORDER BY external_id ASC) AS rn
+    FROM
+      `{project_id}.{normalized_state_dataset}.state_staff` s
+    JOIN
+      `{project_id}.{normalized_state_dataset}.state_staff_external_id` sei
+    ON
+      (s.staff_id = sei.staff_id
+        AND sei.state_code = "US_ND"
+        AND sei.id_type = "US_ND_DOCSTARS_OFFICER") )
+  WHERE
+    rn = 1)
 SELECT
   "US_ND" AS state_code,
-  psi.external_id,
+  external_id,
   s.full_name,
   s.email,
-  CONCAT('[', case_ids,']') AS case_ids,
+  case_ids
 FROM
   psi
 LEFT JOIN
-  `{project_id}.{normalized_state_dataset}.state_staff_external_id` sei
+  staff s
 ON
-  (psi.external_id = sei.external_id
-    AND id_type = 'US_ND_DOCSTARS_OFFICER')
-LEFT JOIN
-  `{project_id}.{normalized_state_dataset}.state_staff` s
-USING
-  (staff_id)
+  ( psi.surname = s.surname
+    -- This catches instances where PSI full name = MITCH and ingested full name = MITCHEL
+    -- as well as instances where PSI full name = VALERIE and ingested full name = VAL
+    -- We may want to work in similar protections for surname?
+    AND( psi.given_names LIKE CONCAT(UPPER(s.given_names), '%')
+      OR UPPER(s.given_names) LIKE CONCAT(psi.given_names, '%')))
 """

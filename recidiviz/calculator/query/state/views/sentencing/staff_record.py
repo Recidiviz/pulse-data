@@ -47,9 +47,8 @@ SENTENCING_STAFF_RECORD_QUERY_TEMPLATE = f"""
         full_query AS 
         (
             SELECT * FROM ix_staff
-            -- TODO(#35882): Add back in ND staff once external ids have been fixed
-            -- UNION ALL
-            -- SELECT * FROM nd_staff
+            UNION ALL
+            SELECT * FROM nd_staff
         ),
         -- add pseudonymized Ids to all staff records
         full_query_with_pseudo AS
