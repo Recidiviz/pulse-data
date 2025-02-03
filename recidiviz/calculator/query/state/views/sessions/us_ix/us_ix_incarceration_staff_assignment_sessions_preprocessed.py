@@ -36,13 +36,13 @@ US_IX_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
   pei.person_id,
   pei.external_id AS person_external_id,
   DATE(FromDate) AS start_date,
-  DATE(ToDate) AS end_date_exclusive,
+  IF(ToDate = "9999-12-31 00:00:00", NULL, DATE(ToDate)) AS end_date_exclusive,
   sei.staff_id AS incarceration_staff_assignment_id,
   EmployeeId AS incarceration_staff_assignment_external_id,
   "INCARCERATION_STAFF" AS incarceration_staff_assignment_role_type,
   --everyone in this view is by necessity a case manager and so should have "COUNSELOR" role subtype
   "COUNSELOR" AS incarceration_staff_assignment_role_subtype,
-    NULL AS case_priority,
+  ROW_NUMBER() OVER (PARTITION BY person_id, FromDate, ToDate ORDER BY IF(ToDate IS NULL, 0, 1), FromDate DESC) AS case_priority,
 FROM `{project_id}.us_ix_raw_data_up_to_date_views.hsn_CounselorAssignment_latest` 
 LEFT JOIN `{project_id}.us_ix_raw_data_up_to_date_views.hsn_CounselorAssignmentType_latest` 
     USING (CounselorAssignmentTypeId)
