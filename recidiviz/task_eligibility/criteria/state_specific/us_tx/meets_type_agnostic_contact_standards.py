@@ -50,9 +50,10 @@ person_info AS (
       case_type_start AS case_type,
       "US_TX" as state_code,
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` 
-    WHERE state_code = "US_TX" AND
-    -- Make sure that we have enough info to create span
-    correctional_level_start IS NOT NULL AND case_type_start IS NOT NULL
+    WHERE state_code = "US_TX"
+        -- Make sure that we have enough info to create span
+        AND correctional_level_start IS NOT NULL 
+        AND case_type_start IS NOT NULL
 ),
 -- Aggregate above periods by supervision_level and case_type
 person_info_agg AS (
@@ -63,7 +64,9 @@ person_info_agg AS (
         end_date_field_name='end_date'
     )}
 ),
--- Create list of types and amounts required
+-- Create list of contact types and amounts required, this is only used to add to the 
+-- reasons JSON column at the end so we are able to surface how many contacts are 
+-- required at the start of each contact period.
 contact_required AS (
   SELECT
         supervision_level,
@@ -71,38 +74,39 @@ contact_required AS (
         CONCAT(
             CASE 
                 WHEN CAST(SCHEDULED_HOME_REQ AS INT64) != 0 
-                    THEN CONCAT("Scheduled home: ", SCHEDULED_HOME_REQ, " ")
+                    THEN CONCAT("SCHEDULED HOME: ", SCHEDULED_HOME_REQ, " ")
                 ELSE ""
             END,
             CASE
                 WHEN CAST(SCHEDULED_FIELD_REQ AS INT64) != 0 
-                    THEN CONCAT("Scheduled field: ", SCHEDULED_FIELD_REQ, " ")
+                    THEN CONCAT("SCHEDULED FIELD: ", SCHEDULED_FIELD_REQ, " ")
                 ELSE ""
             END,
             CASE
                 WHEN CAST(UNSCHEDULED_FIELD_REQ AS INT64) != 0 
-                    THEN CONCAT("Unscheduled field: ", UNSCHEDULED_FIELD_REQ, " ")
+                    THEN CONCAT("UNSCHEDULED FIELD: ", UNSCHEDULED_FIELD_REQ, " ")
                 ELSE ""
             END,
             CASE
                 WHEN CAST(UNSCHEDULED_HOME_REQ AS INT64) != 0 
-                    THEN CONCAT("Unscheduled home: ", UNSCHEDULED_HOME_REQ, " ")
+                    THEN CONCAT("UNSCHEDULED HOME: ", UNSCHEDULED_HOME_REQ, " ")
                 ELSE ""
             END,
             CASE
                 WHEN CAST(SCHEDULED_ELECTRONIC_REQ AS INT64) != 0 
-                    THEN CONCAT("Scheduled electronic: ", SCHEDULED_ELECTRONIC_REQ, " ")
+                    THEN CONCAT("SCHEDULED ELECTRONIC: ", SCHEDULED_ELECTRONIC_REQ, " ")
                 ELSE ""
             END,
             CASE
                 WHEN CAST(SCHEDULED_OFFICE_REQ AS INT64) != 0 
-                    THEN CONCAT("Scheduled office: ", SCHEDULED_OFFICE_REQ, " ")
+                    THEN CONCAT("SCHEDULED OFFICE: ", SCHEDULED_OFFICE_REQ, " ")
                 ELSE ""
             END
         ) AS types_and_amounts_due,
+        frequency_in_months,
     FROM `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_ContactCadenceAgnostic_latest`
 ),
--- Create contacts table by adding scheduled prefix
+-- Creates table of all contacts and adds scheduled/unscheculed prefix
 contact_info AS (
     SELECT 
         person_id,
@@ -114,9 +118,12 @@ contact_info AS (
                 ELSE "UNSCHEDULED " 
             END 
         || contact_method_raw_text ) AS contact_type,
+        external_id,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_contact` 
 ),
--- Creates a record of contact types that can be accepted for a given supervision period
+-- Creates a record of what contact types can be accepted for a given supervision period
+-- and calculates how long the person has been in supervision, and thus how many contact
+-- periods should have occured. 
 person_info_with_contact_types_accepted AS (
     SELECT 
         pia.supervision_level,
@@ -125,169 +132,203 @@ person_info_with_contact_types_accepted AS (
         contact_types_accepted,
         pia.start_date,
         pia.end_date,
-        frequency_in_months,
+        DATE_TRUNC(start_date, MONTH) AS month_start,
+        CAST(frequency_in_months AS INT64) AS frequency_in_months,
+        DATE_DIFF(COALESCE(end_date, CURRENT_DATE), start_date, MONTH) + 1 AS total_months,
+        FLOOR ((DATE_DIFF(COALESCE(end_date, CURRENT_DATE), start_date, MONTH) + 1)/CAST(cca.frequency_in_months AS INT64)) as num_periods 
     FROM person_info_agg pia
     LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_ContactCadenceAgnostic_latest` cca
-        ON cca.supervision_level = pia.supervision_level AND  cca.case_type = pia.case_type
+        ON cca.supervision_level = pia.supervision_level 
+        AND  cca.case_type = pia.case_type
+    -- Check to see if this supervision level and case type has any agnostic contacts
+    WHERE cca.frequency_in_months IS NOT NULL
 ),
--- Creates a table that counts contacts by distinct types in the last x months
-contacts_compliance AS (
+-- Creates sets of empty periods that are the duration of the contact frequency
+empty_periods AS (
+    Select 
+        person_id,
+        contact_types_accepted,
+        supervision_level,
+        case_type,
+        -- For each span, calculate the starting month and ending month
+        month_start + INTERVAL period_index * frequency_in_months MONTH AS month_start,
+        -- Calculate the end of the span (last day of the month)
+        LAST_DAY(month_start + INTERVAL (period_index + 1) * frequency_in_months - 1 MONTH) AS month_end
+    from person_info_with_contact_types_accepted,
+    UNNEST(GENERATE_ARRAY(0, CAST(num_periods AS INT64))) AS period_index
+),
+-- Looks back to connect contacts to a given contact period they were completed in
+lookback_cte AS
+(
+ SELECT
+        p.person_id,
+        p.case_type,
+        p.contact_types_accepted,
+        p.supervision_level,
+        ci.contact_date,
+        month_start,
+        month_end,
+        ci.contact_type,
+    FROM empty_periods p
+    LEFT JOIN contact_info ci
+        ON p.person_id = ci.person_id
+        AND p.contact_types_accepted LIKE CONCAT("%",ci.contact_type,"%") 
+        AND ci.contact_date BETWEEN p.month_start and p.month_end 
+),
+-- Union all critical dates (start date, end date, contact dates)
+critical_dates as (
+   SELECT 
+        person_id,
+        contact_types_accepted,
+        month_start,
+        month_end,
+        null as contact_type,
+        month_start as critical_date,
+        case_type,
+        supervision_level,
+        "START" as period_type,
+    FROM lookback_cte
+    UNION ALL 
+    SELECT 
+        person_id,
+        contact_types_accepted,
+        month_start,
+        month_end,
+        null as contact_type,
+        month_end as critical_date,
+        case_type,
+        supervision_level,
+        "END" as period_type,
+    FROM lookback_cte
+    UNION ALL
+    SELECT 
+        person_id,
+        contact_types_accepted,
+        month_start,
+        month_end,
+        contact_type,
+        contact_date as critical_date,
+        case_type,
+        supervision_level,
+        "CONTACT" as period_type,
+    FROM lookback_cte
+    WHERE contact_date IS NOT NULL
+), 
+-- Creates smaller periods divided by contact dates.
+divided_periods AS (
+    SELECT
+        month_start,
+        month_end,
+        person_id,
+        contact_type,
+        contact_types_accepted,
+        critical_date as period_start,
+        LEAD (critical_date) OVER(PARTITION BY month_start,person_id ORDER BY critical_date)AS period_end,
+        case_type,
+        supervision_level,
+        period_type,
+    FROM (SELECT DISTINCT * FROM critical_dates)
+),
+-- Divided periods with the associated contacts connected
+divided_periods_with_contacts as (
     SELECT
         p.person_id,
-        p.supervision_level,
-        p.case_type,
-        start_date,
-        end_date,
-        c.contact_date as eval_date,
-        c.contact_type,
-        p.contact_types_accepted,
-        COUNT(cc.contact_date) AS contact_count,
-    FROM person_info_with_contact_types_accepted p
-    JOIN contact_info c
-        ON c.person_id = p.person_id 
-        AND c.contact_date BETWEEN start_date AND COALESCE(end_date, DATE("9999-12-31"))
-    JOIN contact_info cc ON
-        c.person_id = cc.person_id 
-    AND p.contact_types_accepted LIKE concat("%",cc.contact_type,"%")
-    AND cc.contact_type IS NOT NULL AND cc.contact_date BETWEEN DATE_SUB(c.contact_date, INTERVAL CAST(frequency_in_months AS INT64) MONTH) 
-        AND c.contact_date AND c.contact_type = cc.contact_type
-    GROUP BY person_id,supervision_level,case_type,start_date,end_date, contact_types_accepted,c.contact_date,c.contact_type
+        period_start,
+        period_end,
+        month_start,
+        p.contact_type,
+        month_end,
+        case_type,
+        supervision_level,
+        contact_types_accepted,
+        period_type,
+    FROM divided_periods p
+    LEFT JOIN contact_info ci
+        ON p.person_id = ci.person_id
+        AND ci.contact_date BETWEEN p.month_start and p.period_end 
+        AND p.contact_types_accepted LIKE CONCAT("%",ci.contact_type,"%") 
+    WHERE period_end IS NOT NULL
+),
+-- CTE that counts the contacts by type up to a certain date
+contact_count AS (
+    SELECT
+        *,
+        SUM (case when contact_type = "SCHEDULED HOME" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as scheduled_home_count,
+        SUM (case when contact_type = "SCHEDULED OFFICE" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as scheduled_office_count,
+        SUM (case when contact_type = "SCHEDULED FIELD" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as scheduled_field_count,
+        SUM (case when contact_type = "UNSCHEDULED HOME" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as unscheduled_home_count,
+        SUM (case when contact_type = "SCHEDULED ELECTRONIC" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as scheduled_electronic_count,
+        SUM (case when contact_type = "UNSCHEDULED FIELD" THEN 1 ELSE 0 END) OVER (PARTITION BY person_id, month_start ORDER BY period_start asc) as unscheduled_field_count,
+    FROM divided_periods_with_contacts
 ),
 -- Check for compliance based on contact standards for that given supervision level and case type
 compliance_check AS (
     SELECT 
+        "US_TX" AS state_code,
         person_id,
-        cc.supervision_level,
-        cc.case_type,
-        cc.contact_types_accepted,
+        period_start as start_date,
+        period_end as end_date,
+        month_start,
+        month_end as contact_due_date,
+        CASE
+            WHEN CAST(SCHEDULED_HOME_REQ AS INT64) <= scheduled_home_count AND CAST(SCHEDULED_HOME_REQ AS INT64) != 0
+                THEN TRUE
+            WHEN CAST(SCHEDULED_FIELD_REQ AS INT64) <= scheduled_field_count AND CAST(SCHEDULED_FIELD_REQ AS INT64) != 0
+                THEN TRUE
+            WHEN CAST(UNSCHEDULED_FIELD_REQ AS INT64) <= unscheduled_field_count AND CAST(UNSCHEDULED_FIELD_REQ AS INT64) != 0 
+                THEN TRUE
+            WHEN CAST(UNSCHEDULED_HOME_REQ AS INT64) <= unscheduled_home_count AND CAST(UNSCHEDULED_HOME_REQ AS INT64) != 0
+                THEN TRUE
+            WHEN CAST(SCHEDULED_ELECTRONIC_REQ AS INT64) <= scheduled_electronic_count AND CAST(SCHEDULED_ELECTRONIC_REQ AS INT64) != 0 
+                THEN TRUE
+            WHEN CAST(SCHEDULED_OFFICE_REQ AS INT64) <= scheduled_office_count AND CAST(SCHEDULED_OFFICE_REQ AS INT64) != 0  
+                THEN TRUE
+            ELSE FALSE
+        END AS meets_criteria,
+        TO_JSON(STRUCT(
+            CONCAT("SCHEDULED HOME: ", scheduled_home_count, " ") AS scheduled_home_done,
+            CONCAT("SCHEDULED FIELD: ", scheduled_field_count, " ") AS scheduled_field_done,
+            CONCAT("UNSCHEDULED FIELD: ", unscheduled_field_count, " ") AS unscheduled_field_done,
+            CONCAT("UNSCHEDULED HOME: ", unscheduled_home_count, " ") AS unscheduled_home_done,
+            CONCAT("SCHEDULED ELECTRONIC: ", scheduled_electronic_count, " ") AS scheduled_electronic_done,
+            CONCAT("SCHEDULED OFFICE: ", scheduled_office_count, " ") AS scheduled_office_done
+        )) AS types_and_amounts_done,
+        types_and_amounts_due,
+        period_type,
+    FROM contact_count cc
+        LEFT JOIN contact_required
+        USING (supervision_level, case_type)
+    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_ContactCadenceAgnostic_latest` caa
+         USING(supervision_level, case_type)
+),
+-- Finalize periods
+finalized_periods AS (
+    SELECT
+        cc.person_id,
+        state_code,
         start_date,
         end_date,
-        eval_date,
-        DATE_ADD(date(eval_date), INTERVAL CAST(caa.frequency_in_months AS INT64) MONTH) as eval_end_date,
-        CASE
-            WHEN CAST(SCHEDULED_HOME_REQ AS INT64) <= contact_count AND CAST(SCHEDULED_HOME_REQ AS INT64) != 0 AND contact_type = "SCHEDULED HOME"
-                THEN "COMPLIANT"
-            WHEN CAST(SCHEDULED_FIELD_REQ AS INT64) <= contact_count AND CAST(SCHEDULED_FIELD_REQ AS INT64) != 0 AND contact_type = "SCHEDULED FIELD"
-                THEN "COMPLIANT"
-            WHEN CAST(UNSCHEDULED_FIELD_REQ AS INT64) <= contact_count AND CAST(UNSCHEDULED_FIELD_REQ AS INT64) != 0 AND contact_type = "UNSCHEDULED FIELD"
-                THEN "COMPLIANT"
-            WHEN CAST(UNSCHEDULED_HOME_REQ AS INT64) <= contact_count AND CAST(UNSCHEDULED_HOME_REQ AS INT64) != 0 AND contact_type = "UNSCHEDULED HOME"
-                THEN "COMPLIANT"
-            WHEN CAST(SCHEDULED_ELECTRONIC_REQ AS INT64) <= contact_count AND CAST(SCHEDULED_ELECTRONIC_REQ AS INT64) != 0 AND contact_type = "SCHEDULED ELECTRONIC"
-                THEN "COMPLIANT"
-            WHEN CAST(SCHEDULED_OFFICE_REQ AS INT64) <= contact_count AND CAST(SCHEDULED_OFFICE_REQ AS INT64) != 0 AND contact_type = "SCHEDULED OFFICE"
-                THEN "COMPLIANT"
-            ELSE "NON-COMPLIANT"
-        END AS compliance,
-        LEAD(eval_date) OVER (PARTITION BY person_id, start_date, cc.case_type, cc.contact_types_accepted, cc.supervision_level ORDER BY eval_date) AS next_eval_date,
-    FROM contacts_compliance cc
-    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_ContactCadenceAgnostic_latest` caa
-         USING(supervision_level, case_type, contact_types_accepted)
-),
--- Create a list of critical dates
-event_boundaries AS (
-    SELECT
-        person_id,
-        start_date AS eval_date,
-        start_date AS start_date,
-        "NON-COMPLIANT" AS compliance,   
-        contact_types_accepted,
-    FROM person_info_with_contact_types_accepted
-
-    UNION ALL
-
-    SELECT
-        person_id,
-        end_date AS eval_date,
-        start_date AS start_date,
-        "NON-COMPLIANT" AS compliance,   
-        contact_types_accepted,
-    FROM person_info_with_contact_types_accepted
-    
-    UNION ALL
-
-    SELECT
-        person_id,
-        eval_date,
-        start_date,
-        compliance,
-        contact_types_accepted,
-    FROM compliance_check
-    WHERE compliance = "COMPLIANT"
-
-    UNION ALL
-
-    SELECT
-        person_id,
-        eval_end_date as eval_date,
-        start_date,
-        CASE 
-            WHEN eval_end_date < next_eval_date 
-                THEN "NON-COMPLIANT" 
-            ELSE 
-                COALESCE(LEAD(compliance) OVER(PARTITION BY person_id, start_date, contact_types_accepted order by   eval_date), "NON-COMPLIANT") end as compliance,
-        contact_types_accepted,
-    FROM compliance_check
-    WHERE compliance = "COMPLIANT"
-),
--- Orders critical dates
- ordered_dates AS (
-    SELECT 
-        eb.person_id,
-        eval_date AS start_date,
-        compliance,
-        eb.contact_types_accepted,
-        pi.supervision_level,
-        pi.case_type,
-        "US_TX" AS state_code,
-        LEAD(eval_date) OVER (PARTITION BY eb.person_id,eb.start_date,eb.contact_types_accepted ORDER BY eval_date) AS end_date,
-    FROM event_boundaries eb 
-    LEFT JOIN person_info_with_contact_types_accepted pi
-        USING (person_id,contact_types_accepted, start_date) 
-    WHERE eval_date IS NOT NULL
-
-),
--- Aggregate above periods by supervision_level and case_type
-comp_agg AS (
-    {aggregate_adjacent_spans(
-        table_name='ordered_dates',
-        attribute=['supervision_level','case_type','contact_types_accepted','compliance'],
-        session_id_output_name='comp_agg',
-        end_date_field_name='end_date'
-    )}
-),
--- Creates final periods of compliance
-periods AS (
-  SELECT 
-    "US_TX" as state_code,
-    person_id,
-    start_date,
-    end_date,
-    compliance,
-    contact_types_accepted,
-    CASE WHEN 
-        compliance = "COMPLIANT"
-            THEN TRUE 
-        ELSE FALSE
-    END AS meets_criteria,
-    TO_JSON(STRUCT(compliance AS compliance)) AS reason,
-    CASE WHEN 
-        compliance = "COMPLIANT"
-            THEN start_date
-        ELSE LAG(start_date) OVER (PARTITION BY person_id, contact_types_accepted ORDER BY start_date)
-    END AS last_contact_date,
-    CASE WHEN 
-        compliance = "COMPLIANT"
-            THEN end_date
-        ELSE start_date
-    END AS contact_due_date,
-    types_and_amounts_due,
-  FROM comp_agg
-  LEFT JOIN contact_required USING (supervision_level, case_type)
+        meets_criteria,
+        TO_JSON(STRUCT(meets_criteria AS compliance)) AS reason,
+        contact_due_date,
+        types_and_amounts_done,
+        types_and_amounts_due,
+        period_type,
+        MAX(contact_date) OVER (PARTITION BY cc.person_id,types_and_amounts_due) as last_contact_date,
+        CASE WHEN
+            meets_criteria IS FALSE AND CURRENT_DATE > end_date
+            THEN TRUE
+            ELSE FALSE
+        END AS overdue_flag,
+    FROM compliance_check cc
+    LEFT JOIN contact_info ci
+      ON cc.person_id = ci.person_id
+        AND cc.types_and_amounts_due LIKE CONCAT("%",ci.contact_type,"%") 
+        AND ci.contact_date < end_date
 )
 SELECT 
   *
-FROM periods
+FROM finalized_periods
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -316,6 +357,21 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
                 name="types_and_amounts_due",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="The type and amount due.",
+            ),
+            ReasonsField(
+                name="types_and_amounts_done",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="The type and amount due.",
+            ),
+            ReasonsField(
+                name="period_type",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="The type of period.",
+            ),
+            ReasonsField(
+                name="overdue_flag",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Flag that indicates whether contact was missed.",
             ),
         ],
     )

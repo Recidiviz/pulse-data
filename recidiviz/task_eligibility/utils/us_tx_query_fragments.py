@@ -20,10 +20,7 @@ Helper SQL queries for Texas
 
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
-    create_sub_sessions_with_attributes,
-)
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -74,7 +71,7 @@ person_info_agg AS (
         end_date_field_name='end_date'
     )}
 ),
--- Create contacts table by adding scheduled prefix and filtering to a single type
+-- Create contacts table by adding scheduled/unscheduled prefix
 contact_info AS (
     SELECT 
         person_id,
@@ -86,148 +83,165 @@ contact_info AS (
                 ELSE "UNSCHEDULED " 
             END 
         || contact_method_raw_text ) AS contact_type,
+        external_id,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_contact` 
+    WHERE state_code = "US_TX"
 ),
--- Create a table where each contact is associated with the appropriate cadence
+-- Create a table where each contact is associated with the appropriate cadence and we 
+-- begin to count the months the client has been on supervision and the number of 
+-- periods they'll have given the contact frequency
 contacts_compliance AS (
-    SELECT DISTINCT
+        SELECT DISTINCT
         p.person_id,
-        c.contact_date,
-        c.contact_type,
-        CAST(ca.frequency_in_months AS INT64) AS frequency_in_months,
+        p.start_date,
+        ca.contact_type,
         p.supervision_level,
+        DATE_TRUNC(start_date, MONTH) AS month_start,
         p.case_type, 
+        CAST(ca.frequency_in_months AS INT64) AS frequency_in_months,
         CAST(ca.quantity AS INT64) AS quantity,
+        DATE_DIFF(COALESCE(end_date, CURRENT_DATE), start_date, MONTH) + 1 AS total_months,
+        FLOOR ((DATE_DIFF(COALESCE(end_date, CURRENT_DATE), start_date, MONTH) + 1)/CAST(ca.frequency_in_months AS INT64)) as num_periods 
     FROM person_info_agg p
-    LEFT JOIN contact_info c
-        USING (person_id)
     LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_ContactCadence_latest` ca
-        ON c.contact_type = ca.contact_type
+        ON "{contact_type}" = ca.contact_type
         AND p.case_type = ca.case_type
+        AND p.supervision_level = ca.supervision_level
     -- Remove rows with no contact requirements
-    WHERE ca.contact_type IS NOT NULL 
-        AND c.contact_type = "{contact_type}"
-        -- We only want to keep the non-optional contacts
-        AND ca.replacement IS NULL
+    WHERE ca.contact_type IS NOT NULL
 ),
--- Looks back to see how many contacts were completed in a given time frame
+-- Creates sets of empty periods that are the duration of the contact frequency
+empty_periods as (
+    SELECT 
+        person_id,
+        contact_type,
+        supervision_level,
+        case_type,
+        quantity,
+        -- For each span, calculate the starting month and ending month
+        month_start + INTERVAL x * frequency_in_months MONTH AS month_start,
+        -- Calculate the end of the span (last day of the month)
+        LAST_DAY(month_start + INTERVAL (x + 1) * frequency_in_months - 1 MONTH) AS month_end
+    FROM contacts_compliance,
+    UNNEST(GENERATE_ARRAY(0, CAST(num_periods AS INT64))) AS x
+),
+-- Looks back to connect contacts to a given contact period they were completed in
 lookback_cte AS
 (
-    SELECT
-        cc.person_id,
-        cc.case_type,
-        cc.contact_type,
-        cc.supervision_level,
-        COUNT(*) AS contact_count,
-        cc.contact_date,
-    FROM contacts_compliance cc
+ SELECT
+        p.person_id,
+        p.case_type,
+        p.contact_type,
+        p.supervision_level,
+        ci.contact_date,
+        month_start,
+        month_end,
+        quantity,
+    FROM empty_periods p
     LEFT JOIN contact_info ci
-        ON cc.person_id = ci.person_id
-        AND ci.contact_type = cc.contact_type
-    WHERE ci.contact_date BETWEEN DATE_SUB(cc.contact_date, INTERVAL cc.frequency_in_months MONTH) AND cc.contact_date
-    GROUP BY cc.person_id, cc.case_type, cc.contact_type, cc.contact_date, cc.supervision_level
+        ON p.person_id = ci.person_id
+        AND ci.contact_type = p.contact_type
+        AND ci.contact_date BETWEEN p.month_start and p.month_end 
+),
+-- Union all critical dates (start date, end date, contact dates)
+critical_dates as (
+    SELECT 
+        person_id,
+        month_start,
+        month_end,
+        contact_type,
+        quantity,
+        month_start as critical_date,
+    FROM lookback_cte
+    UNION ALL 
+    SELECT 
+        person_id,
+        month_start,
+        month_end,
+        contact_type,
+        quantity,
+        month_end as critical_date,
+    FROM lookback_cte
+    UNION ALL
+    SELECT 
+        person_id,
+        month_start,
+        month_end,
+        contact_type,
+        quantity,
+        contact_date as critical_date,
+    FROM lookback_cte
+    WHERE contact_date IS NOT NULL
+), 
+divided_periods as (
+    SELECT
+        month_start,
+        month_end,
+        person_id,
+        contact_type,
+        quantity,
+        critical_date as period_start,
+        LEAD (critical_date) OVER(PARTITION BY month_start,person_id ORDER BY critical_date)AS period_end,
+    FROM (SELECT DISTINCT * FROM critical_dates)
+),
+divided_periods_with_contacts as (
+    SELECT
+        p.person_id,
+        COUNT(ci.external_id) AS contact_count,
+        period_start,
+        period_end,
+        month_start,
+        p.contact_type,
+        month_end,
+        quantity,
+    FROM divided_periods p
+    LEFT JOIN contact_info ci
+        ON p.person_id = ci.person_id
+        AND ci.contact_date BETWEEN p.month_start and p.period_end 
+        AND ci.contact_type = "{contact_type}"
+    WHERE period_end is not null
+    GROUP BY p.person_id, month_start, month_end, period_start, period_end, contact_type, quantity
 ),
 -- Creates periods of time in which a person is compliance given a contact and it's cadence
 compliance_periods as (
     SELECT 
-        cc.person_id,
-        cc.contact_type,
-        cc.case_type,
-        cc.supervision_level,
-        cc.contact_date AS compliant_from,
-        DATE_ADD(cc.contact_date, INTERVAL cast(frequency_in_months AS INT64) MONTH) AS compliant_until,
-    FROM contacts_compliance cc
-    LEFT JOIN lookback_cte USING (person_id,case_type,supervision_level,contact_date)
-    WHERE contact_count >= quantity
-),
--- Generate compliant periods based on overlapping compliance of the same case type
-compliant_segments AS (
-  SELECT 
-    mt.person_id,
-    GREATEST(mt.Start_Date, c.compliant_from) AS start_date,
-    CASE 
-      WHEN mt.End_Date IS NULL THEN c.compliant_until
-      ELSE LEAST(mt.End_Date, c.compliant_until)
-    END AS end_date,
-    "Compliant" AS Compliance,
-    contact_type,
-    "US_TX" as state_code,
-  FROM person_info mt
-  JOIN compliance_periods c
-    ON mt.person_id = c.person_id
-    AND (c.compliant_from < mt.End_Date OR mt.End_Date is null)
-    AND c.compliant_until >= mt.Start_Date
-),
--- Create subsessions with attributes of compliance segments
-    {create_sub_sessions_with_attributes(table_name='compliant_segments',
-        index_columns=['person_id'],
-        use_magic_date_end_dates=False,
-        end_date_field_name='end_date')}
-,
--- Groups sub-sessions
-sub_sessions_deduped AS (
-    SELECT 
-        *
-    FROM sub_sessions_with_attributes
-        GROUP BY 1,2,3,4,5,6
-),
--- Agregates the compliance periods
-agg AS ({aggregate_adjacent_spans(
-    table_name='sub_sessions_deduped',
-    attribute=['contact_type','compliance'],
-    session_id_output_name='task_type_eligibility_span_id',
-    end_date_field_name='end_date')}
-),
--- Creates a table of critical dates and their respective compliance 
-event_boundaries AS (
-    SELECT person_id, start_date AS event_date, "Non-Compliant" AS compliance
-    FROM person_info
-    UNION ALL
-    SELECT person_id, end_date AS event_date, "Non-Compliant" AS compliance
-    FROM person_info
-    UNION ALL
-    SELECT person_id, start_date AS event_date, "Compliant" AS compliance
-    FROM agg
-    UNION ALL
-    SELECT person_id, end_Date AS event_date, "Non-Compliant" AS compliance
-    FROM agg
-),
--- Orders critical dates
- ordered_dates AS (
-  SELECT 
-    person_id,
-    event_date,
-    compliance,
-    LEAD(event_date) OVER (PARTITION BY person_id ORDER BY event_date) AS next_date,
-    LAG(event_date) OVER (PARTITION BY person_id ORDER BY event_date) AS prev_date,
-  FROM event_boundaries
+        person_id,
+        contact_type,
+        contact_count,
+        period_start,
+        period_end,
+        month_start,
+        month_end,
+        quantity,
+    FROM divided_periods_with_contacts
 ),
 -- Creates final periods of compliance
 periods AS (
-  SELECT 
-    "US_TX" as state_code,
-    person_id,
-    event_date AS start_date,
-    next_date AS end_date,
-    CASE WHEN 
-        compliance = "Compliant"
-            THEN TRUE
-        ELSE FALSE
-    end as meets_criteria,
-    TO_JSON(STRUCT(compliance AS compliance)) AS reason,
-    CASE WHEN 
-        compliance = "Compliant"
-            THEN event_date
-        ELSE prev_date
-    end as last_contact_date,
-    CASE WHEN 
-        compliance = "Compliant"
-            THEN next_date
-        ELSE event_date
-    end as contact_due_date,
-    "{contact_type}" AS type_of_contact,
-  FROM ordered_dates
-  WHERE event_date IS NOT NULL
+    SELECT 
+        lc.person_id,
+        "US_TX" as state_code,
+        lc.contact_type as type_of_contact,
+        contact_count >= quantity AS meets_criteria,
+        contact_count < quantity AND CURRENT_DATE > month_end AS overdue_flag,
+        CASE
+            WHEN period_start = month_start
+                THEN "start"
+            WHEN period_end = month_end
+                THEN "end"
+            ELSE "contact"
+        END AS period_type,
+        month_end AS contact_due_date,
+        contact_count,
+        period_start as start_date,
+        period_end as end_date,
+        max(contact_date) as last_contact_date,
+        TO_JSON(STRUCT(contact_count >= quantity AS compliance)) AS reason,
+    FROM compliance_periods lc
+    LEFT JOIN contact_info ci
+        ON lc.person_id = ci.person_id
+        AND ci.contact_type = lc.contact_type
+        AND ci.contact_date <= period_end
+    GROUP BY person_id,month_start,month_end,lc.contact_type,contact_count,quantity, period_start, period_end
 )
 SELECT 
   *
@@ -259,6 +273,21 @@ FROM periods
                 name="type_of_contact",
                 type=bigquery.enums.StandardSqlTypeNames.STRING,
                 description="Type of contact due.",
+            ),
+            ReasonsField(
+                name="overdue_flag",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Flag that indicates whether contact was missed.",
+            ),
+            ReasonsField(
+                name="contact_count",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Number of contacts done within the overall period.",
+            ),
+            ReasonsField(
+                name="period_type",
+                type=bigquery.enums.StandardSqlTypeNames.STRING,
+                description="Type of period.",
             ),
         ],
     )
