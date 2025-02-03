@@ -21,14 +21,17 @@ import { MultiEntryChild } from "../../formUtils/MultiEntry";
 import { StaticValue } from "../../formUtils/StaticValue";
 
 const sidebarComponentNames = [
+  // Opportunity-related components
   "CaseNotes",
   "EligibilityDate",
+  "SentenceDates",
   "UsMiEarlyDischargeIcDetails",
   "UsMiRecommendedSupervisionLevel",
   "UsMoRestrictiveHousing",
   "UsTnCommonlyUsedOverrideCodes",
   "UsMiRestrictiveHousing",
 
+  // Resident-related components
   "Incarceration",
   "ResidentHousing",
   "UsMoIncarceration",
@@ -36,6 +39,7 @@ const sidebarComponentNames = [
   "UsIdParoleDates",
   "UsAzDates",
 
+  // Client-related components
   "Supervision",
   "Contact",
   "ClientHousing",
