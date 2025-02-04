@@ -15,27 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """"Configured validations related to raw data tables."""
-from typing import Dict, List
+from typing import List
 
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
-from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck
-from recidiviz.validation.validation_config import ValidationRegionConfig
 from recidiviz.validation.validation_models import (
     DataValidationCheck,
     ValidationCategory,
-)
-from recidiviz.validation.views.state.raw_data.stable_historical_raw_data_counts_validation import (
-    collect_stable_historical_raw_data_counts_view_builders,
 )
 from recidiviz.validation.views.state.raw_data.stale_raw_data_validation import (
     collect_stale_raw_data_view_builders,
 )
 
 
-def get_all_raw_data_validations(
-    region_configs: Dict[str, ValidationRegionConfig]
-) -> List[DataValidationCheck]:
+def get_all_raw_data_validations() -> List[DataValidationCheck]:
     return [
         *[
             ExistenceDataValidationCheck(
@@ -44,15 +37,5 @@ def get_all_raw_data_validations(
                 projects_to_deploy={GCP_PROJECT_PRODUCTION},
             )
             for builder in collect_stale_raw_data_view_builders()
-        ],
-        *[
-            SamenessDataValidationCheck(
-                view_builder=builder,
-                comparison_columns=["row_count", "prev_row_count"],
-                region_configs=region_configs,
-                validation_category=ValidationCategory.CONSISTENCY,
-                projects_to_deploy={GCP_PROJECT_PRODUCTION},
-            )
-            for builder in collect_stable_historical_raw_data_counts_view_builders()
         ],
     ]

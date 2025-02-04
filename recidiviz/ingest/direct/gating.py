@@ -25,6 +25,7 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 # states that are enabled in prod for primary
 PRODUCTION_PRIMARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_AR,
+    StateCode.US_AZ,
     StateCode.US_CA,
     StateCode.US_CO,
     StateCode.US_ID,
@@ -41,6 +42,7 @@ PRODUCTION_PRIMARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_MA,
     StateCode.US_NE,
     StateCode.US_IA,
+    StateCode.US_TX,
 }
 # all states enabled in prod primary must also be enabled in prod secondary, plus
 # the states we just want to be enabled in prod secondary
@@ -53,8 +55,6 @@ PRODUCTION_SECONDARY_ENABLED_STATES: Set[StateCode] = {
 # all states in any version of prod must able be enabled in staging primary, plus
 STAGING_PRIMARY_ENABLED_STATES: Set[StateCode] = {
     StateCode.US_ME,
-    StateCode.US_TX,
-    StateCode.US_AZ,
     *PRODUCTION_SECONDARY_ENABLED_STATES,
 }
 # all states enabled in staging primary must be enabled in staging secondary, plus the

@@ -366,7 +366,7 @@ def get_all_validations() -> List[DataValidationCheck]:
     all_data_validations: List[DataValidationCheck] = [
         *get_all_task_eligibility_validations(),
         *get_all_dataflow_metrics_validations(),
-        *get_all_raw_data_validations(region_configs),
+        *get_all_raw_data_validations(),
         *get_all_location_metadata_validations(),
         *get_all_stable_counts_validations(region_configs),
         *get_all_outliers_validations(region_configs),
