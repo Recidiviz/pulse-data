@@ -30,7 +30,8 @@ SELECT
     e.state_code,
     e.email AS email_address,
     e.event_ts,
-    s.has_outlier_officers
+    s.has_outlier_officers,
+    e.event
 FROM
     `{project_id}.analyst_data.insights_segment_events_materialized` e
 -- Join on funnel status sessions to get outlier status at time of usage event
@@ -53,7 +54,7 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
     event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
     description=_VIEW_DESCRIPTION,
     sql_source=_QUERY_TEMPLATE,
-    attribute_cols=["has_outlier_officers"],
+    attribute_cols=["has_outlier_officers", "event"],
     event_date_col="event_ts",
 )
 

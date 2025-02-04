@@ -79,7 +79,7 @@ DISTINCT_LOGGED_IN_PRIMARY_INSIGHTS_USERS_LOOKER = EventDistinctUnitCountMetric(
 DISTINCT_ACTIVE_PRIMARY_INSIGHTS_USERS_LOOKER = EventDistinctUnitCountMetric(
     name="distinct_active_primary_insights_users",
     display_name="Distinct Active Primary Supervisor Homepage Users",
-    description="Number of distinct primary (supervisor) Supervisor Homepage users having at least one active usage event for the "
+    description="Number of distinct primary (supervisor) Supervisor Homepage users having at least one active usage event "
     "during the time period",
     event_selector=EventSelector(
         event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
@@ -113,6 +113,120 @@ LOGINS_PRIMARY_INSIGHTS_USERS_LOOKER = EventCountMetric(
     event_selector=EventSelector(
         event_type=EventType.INSIGHTS_USER_LOGIN,
         event_conditions_dict={},
+    ),
+)
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_LOGGED_IN_LOOKER = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool_logged_in",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool - Logged In",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool and logged in",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "has_outlier_officers": ["true"],
+            "viewed_supervisor_page": ["true"],
+        },
+    ),
+)
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITHOUT_OUTLIERS_VISIBLE_IN_TOOL_LOGGED_IN_LOOKER = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_without_outliers_visible_in_tool_logged_in",
+    display_name="Distinct Primary Supervisor Homepage Users without Outliers Visible in Tool - Logged In",
+    description="Number of primary supervisor homepage users who did not have outliers visible in the tool and logged in",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "has_outlier_officers": ["false"],
+            "viewed_supervisor_page": ["true"],
+        },
+    ),
+)
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_LOOKER = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={"has_outlier_officers": ["true"]},
+    ),
+)
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITHOUT_OUTLIERS_VISIBLE_IN_TOOL_LOOKER = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_without_outliers_visible_in_tool",
+    display_name="Distinct Primary Supervisor Homepage Users without Outliers Visible in Tool",
+    description="Number of primary supervisor homepage users who did not have outliers visible in the tool",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={"has_outlier_officers": ["false"]},
+    ),
+)
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_VIEWED_STAFF_MEMBER_PAGE_LOOKER = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool_viewed_staff_member_page",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool - Viewed a Staff Member Page",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool and viewed a staff member page",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "has_outlier_officers": ["true"],
+            "viewed_staff_page": ["true"],
+        },
+    ),
+)
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_VIEWED_STAFF_MEMBER_METRIC_PAGE_LOOKER = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool_viewed_staff_member_metric_page",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool - Viewed a Staff Member Metric Page",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool and viewed a staff member metric page",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "has_outlier_officers": ["true"],
+            "viewed_staff_metric": ["true"],
+        },
+    ),
+)
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_VIEWED_CLIENT_PAGE_LOOKER = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool_viewed_client_page",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool - Viewed a Client Page",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool and viewed a client page from the "
+    "list of revocations or the list of incarcerations",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "has_outlier_officers": ["true"],
+            "viewed_client_page": ["true"],
+        },
+    ),
+)
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_VIEWED_ACTION_STRATEGY_POP_UP_LOOKER = SpanDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool_viewed_action_strategy_pop_up",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool - Viewed Action Strategy Pop-up",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool and viewed the action strategy pop-up",
+    span_selector=SpanSelector(
+        span_type=SpanType.INSIGHTS_PRIMARY_USER_IMPACT_FUNNEL_STATUS_SESSION,
+        span_conditions_dict={
+            "has_outlier_officers": ["true"],
+            "viewed_staff_action_strategy_popup": ["true"],
+        },
+    ),
+)
+DISTINCT_PRIMARY_INSIGHTS_USERS_WITH_OUTLIERS_VISIBLE_IN_TOOL_VIEWED_ANY_PAGE_FOR_30_SECONDS_LOOKER = EventDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_with_outliers_visible_in_tool_viewed_any_page_for_30_seconds",
+    display_name="Distinct Primary Supervisor Homepage Users with Outliers Visible in Tool - Viewed Any Page for 30 Seconds",
+    description="Number of primary supervisor homepage users who had outliers visible in the tool and viewed any page for 30 seconds",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "has_outlier_officers": ["true"],
+            "event": ["VIEWED_PAGE_30_SECONDS"],
+        },
+    ),
+)
+DISTINCT_PRIMARY_INSIGHTS_USERS_VIEWED_ANY_PAGE_FOR_30_SECONDS_LOOKER = EventDistinctUnitCountMetric(
+    name="distinct_primary_insights_users_viewed_any_page_for_30_seconds",
+    display_name="Distinct Primary Supervisor Homepage Users Who Viewed Any Page for 30 Seconds",
+    description="Number of primary supervisor homepage users who viewed any page for 30 seconds",
+    event_selector=EventSelector(
+        event_type=EventType.INSIGHTS_ACTIVE_USAGE_EVENT,
+        event_conditions_dict={
+            "event": ["VIEWED_PAGE_30_SECONDS"],
+        },
     ),
 )
 
