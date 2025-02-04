@@ -33,6 +33,7 @@ import logging
 import os
 import tempfile
 import traceback
+from datetime import datetime
 from typing import Dict, Union
 
 from tqdm import tqdm
@@ -96,7 +97,7 @@ def query_ingest_view(
 
     query = ingest_view.build_query(
         config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-            raw_data_datetime_upper_bound=None,
+            raw_data_datetime_upper_bound=datetime.now(),
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
         )
     )
