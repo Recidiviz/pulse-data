@@ -189,6 +189,10 @@ LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     ),
     # TODO(#35917): Remove once Looker queries from observation-specific tables
     BigQueryAddress(
+        dataset_id="observations__officer_event", table_id="all_officer_events"
+    ),
+    # TODO(#29291): Remove once Looker queries from observation-specific tables
+    BigQueryAddress(
         dataset_id="observations__person_event", table_id="all_person_events"
     ),
     # TODO(#35917): Remove once Looker queries from observation-specific tables

@@ -279,3 +279,106 @@ TASK_ELIGIBILITY_STARTS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER = EventCo
     ),
     event_segmentation_columns=["task_type"],
 )
+
+# Officer Opportunities metrics
+DISTINCT_OFFICERS_WITH_CANDIDATE_CASELOAD = SpanDistinctUnitCountMetric(
+    name="distinct_officers_with_candidate_caseload",
+    display_name="Distinct Officers With Candidate Caseload",
+    description="Number of distinct officers with a client/resident considered a potential candidate for an opportunity",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_OFFICER_ELIGIBILITY_SESSIONS,
+        span_conditions_dict={},
+    ),
+)
+DISTINCT_OFFICERS_WITH_ELIGIBLE_OR_ALMOST_ELIGIBLE_CASELOAD = SpanDistinctUnitCountMetric(
+    name="distinct_officers_with_eligible_or_almost_eligible_caseload",
+    display_name="Distinct Officers With Eligible Or Almost Eligible Caseload",
+    description="Number of distinct officers with a client/resident eligible or almost eligible for an opportunity",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_OFFICER_ELIGIBILITY_SESSIONS,
+        span_conditions_dict={
+            "is_eligible_or_almost_eligible": ["true"],
+        },
+    ),
+)
+DISTINCT_OFFICERS_WITH_ELIGIBLE_CASELOAD = SpanDistinctUnitCountMetric(
+    name="distinct_officers_with_eligible_caseload",
+    display_name="Distinct Officers With Eligible Caseload",
+    description="Number of distinct officers with a client/resident eligible for an opportunity",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_OFFICER_ELIGIBILITY_SESSIONS,
+        span_conditions_dict={
+            "is_eligible": ["true"],
+        },
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_ALMOST_ELIGIBLE_CASELOAD = SpanDistinctUnitCountMetric(
+    name="distinct_officers_with_almost_eligible_caseload",
+    display_name="Distinct Officers With Almost Eligible Caseload",
+    description="Number of distinct officers with a client/resident almost eligible for an opportunity",
+    span_selector=SpanSelector(
+        span_type=SpanType.SUPERVISION_OFFICER_ELIGIBILITY_SESSIONS,
+        span_conditions_dict={
+            "is_almost_eligible": ["true"],
+        },
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_TASKS_COMPLETED = EventDistinctUnitCountMetric(
+    name="distinct_officers_with_tasks_completed",
+    display_name="Distinct Officers With Tasks Completed",
+    description="Number of distinct officers that completed at least one task for an opportunity",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_OFFICER_TASK_COMPLETED,
+        event_conditions_dict={},
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_TASKS_COMPLETED_WHILE_ELIGIBLE_OR_ALMOST_ELIGIBLE = EventDistinctUnitCountMetric(
+    name="distinct_officers_with_tasks_completed_while_eligible_or_almost_eligible",
+    display_name="Distinct Officers With Tasks Completed While Eligible Or Almost Eligible",
+    description="Number of distinct officers that completed at least one task for an opportunity while the client was eligible or almost eligible",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_OFFICER_TASK_COMPLETED,
+        event_conditions_dict={
+            "is_eligible_or_almost_eligible": ["true"],
+        },
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_TASKS_COMPLETED_WHILE_ELIGIBLE = EventDistinctUnitCountMetric(
+    name="distinct_officers_with_tasks_completed_while_eligible",
+    display_name="Distinct Officers With Tasks Completed While Eligible",
+    description="Number of distinct officers that completed at least one task for an opportunity while the client was eligible",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_OFFICER_TASK_COMPLETED,
+        event_conditions_dict={
+            "is_eligible": ["true"],
+        },
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_TASKS_COMPLETED_WHILE_ALMOST_ELIGIBLE = EventDistinctUnitCountMetric(
+    name="distinct_officers_with_tasks_completed_while_almost_eligible",
+    display_name="Distinct Officers With Tasks Completed While Almost Eligible",
+    description="Number of distinct officers that completed at least one task for an opportunity while the client was almost eligible",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_OFFICER_TASK_COMPLETED,
+        event_conditions_dict={
+            "is_almost_eligible": ["true"],
+        },
+    ),
+)
+
+DISTINCT_OFFICERS_WITH_TASKS_COMPLETED_AFTER_TOOL_ACTION = EventDistinctUnitCountMetric(
+    name="distinct_officers_with_tasks_completed_after_tool_action",
+    display_name="Distinct Officers With Tasks Completed After Tool Action",
+    description="Number of distinct officers that completed at least one task after a corresponding tool action",
+    event_selector=EventSelector(
+        event_type=EventType.SUPERVISION_OFFICER_TASK_COMPLETED,
+        event_conditions_dict={
+            "after_tool_action": ["true"],
+        },
+    ),
+)

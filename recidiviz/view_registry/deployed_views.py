@@ -140,6 +140,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "workflows_views",
     "public_dashboard_views",
     "reference_views",
+    "observations__officer_event",
     "observations__officer_span",
     "observations__person_event",
     "observations__person_span",
