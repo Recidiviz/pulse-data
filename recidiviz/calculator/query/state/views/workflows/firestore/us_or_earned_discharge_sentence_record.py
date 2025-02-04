@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,10 +40,6 @@ from recidiviz.utils.metadata import local_project_id_override
 US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_VIEW_NAME = (
     "us_or_earned_discharge_sentence_record"
 )
-
-US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_DESCRIPTION = """
-    Query for relevant sentence metadata needed to support Earned Discharge in Oregon
-    """
 
 US_OR_EARNED_DISCHARGE_SANCTIONS_CRITERIA = (
     no_supervision_sanctions_within_6_months.VIEW_BUILDER.criteria_name
@@ -197,10 +193,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
                 sp.sentence_sub_type,
                 sp.date_imposed AS sentence_imposed_date,
                 sp.effective_date AS sentence_start_date,
-                DATE_ADD(
-                    sp.effective_date,
-                    INTERVAL sp.max_sentence_length_days_calculated DAY
-                ) AS sentence_end_date,
+                sp.projected_completion_date_max AS sentence_end_date,
                 sp.county_code AS sentence_county,
                 sc.county_code AS charge_county,
                 JSON_EXTRACT_SCALAR(sc.judge_full_name, "$.full_name") AS judge_full_name,
@@ -223,7 +216,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE = f"""
         INNER JOIN `{{project_id}}.sessions.sentences_preprocessed_materialized` sp
             USING (state_code, person_id, sentence_id)
         LEFT JOIN `{{project_id}}.normalized_state.state_charge` sc
-            USING(charge_id)
+            USING (charge_id)
         LEFT JOIN current_conditions cc
         ON
             JSON_EXTRACT_SCALAR(sp.sentence_metadata, "$.COURT_CASE_NUMBER") = cc.court_case_number
@@ -294,7 +287,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
     view_id=US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_VIEW_NAME,
     view_query_template=US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_QUERY_TEMPLATE,
-    description=US_OR_EARNED_DISCHARGE_SENTENCE_RECORD_DESCRIPTION,
+    description=__doc__,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_OR
