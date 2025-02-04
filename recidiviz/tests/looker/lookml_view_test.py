@@ -219,3 +219,25 @@ class LookMLViewTest(unittest.TestCase):
                     ),
                 ],
             )
+
+    def test_view_for_big_query_table(self) -> None:
+        view = LookMLView.for_big_query_table(
+            dataset_id="my_dataset",
+            table_id="my_table",
+            fields=[
+                DimensionLookMLViewField(
+                    field_name="my_field",
+                    parameters=[
+                        LookMLFieldParameter.description("Field description"),
+                    ],
+                )
+            ],
+        ).build()
+        expected_view = """view: my_table {
+  sql_table_name: my_dataset.my_table ;;
+
+  dimension: my_field {
+    description: "Field description"
+  }
+}"""
+        self.assertEqual(view, expected_view)

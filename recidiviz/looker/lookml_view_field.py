@@ -31,6 +31,7 @@ from recidiviz.looker.lookml_view_field_parameter import (
     LookMLFieldDatatype,
     LookMLFieldParameter,
     LookMLFieldType,
+    LookMLTimeframesOption,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -250,3 +251,64 @@ class DimensionGroupLookMLViewField(LookMLViewField):
         enforce_has_datatype_if_date_field(self.parameters)
 
     field_category = LookMLFieldCategory.DIMENSION_GROUP
+
+    @classmethod
+    def for_datetime_column(
+        cls,
+        column_name: str,
+        custom_params: List[LookMLFieldParameter] | None = None,
+    ) -> "DimensionGroupLookMLViewField":
+        """
+        Generates a dimension group for a datetime column.
+        """
+        return DimensionGroupLookMLViewField(
+            field_name=column_name,
+            parameters=[
+                LookMLFieldParameter.type(LookMLFieldType.TIME),
+                LookMLFieldParameter.timeframes(
+                    [
+                        LookMLTimeframesOption.RAW,
+                        LookMLTimeframesOption.TIME,
+                        LookMLTimeframesOption.DATE,
+                        LookMLTimeframesOption.WEEK,
+                        LookMLTimeframesOption.MONTH,
+                        LookMLTimeframesOption.QUARTER,
+                        LookMLTimeframesOption.YEAR,
+                    ]
+                ),
+                LookMLFieldParameter.convert_tz(False),
+                LookMLFieldParameter.datatype(LookMLFieldDatatype.DATETIME),
+                LookMLFieldParameter.sql(f"${{TABLE}}.{column_name}"),
+            ]
+            + (custom_params or []),
+        )
+
+    @classmethod
+    def for_date_column(
+        cls,
+        column_name: str,
+        custom_params: List[LookMLFieldParameter] | None = None,
+    ) -> "DimensionGroupLookMLViewField":
+        """
+        Generates a dimension group for a date column.
+        """
+        return DimensionGroupLookMLViewField(
+            field_name=column_name,
+            parameters=[
+                LookMLFieldParameter.type(LookMLFieldType.TIME),
+                LookMLFieldParameter.timeframes(
+                    [
+                        LookMLTimeframesOption.RAW,
+                        LookMLTimeframesOption.DATE,
+                        LookMLTimeframesOption.WEEK,
+                        LookMLTimeframesOption.MONTH,
+                        LookMLTimeframesOption.QUARTER,
+                        LookMLTimeframesOption.YEAR,
+                    ]
+                ),
+                LookMLFieldParameter.convert_tz(False),
+                LookMLFieldParameter.datatype(LookMLFieldDatatype.DATE),
+                LookMLFieldParameter.sql(f"${{TABLE}}.{column_name}"),
+            ]
+            + (custom_params or []),
+        )

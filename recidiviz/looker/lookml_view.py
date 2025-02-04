@@ -19,6 +19,7 @@ from typing import List, Optional
 
 import attr
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.looker.lookml_utils import write_lookml_file
 from recidiviz.looker.lookml_view_field import DimensionLookMLViewField, LookMLViewField
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
@@ -47,6 +48,19 @@ class LookMLView:
         field_names = [field.field_name for field in self.fields]
         if len(set(field_names)) != len(field_names):
             raise ValueError(f"Duplicate field names found in {field_names}")
+
+    @classmethod
+    def for_big_query_table(
+        cls, dataset_id: str, table_id: str, fields: List[LookMLViewField]
+    ) -> "LookMLView":
+        """Create a LookMLView object for a BigQuery table"""
+        return cls(
+            view_name=table_id,
+            table=LookMLViewSourceTable.sql_table_address(
+                BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
+            ),
+            fields=fields,
+        )
 
     def qualified_name_for_field(self, field_name: str) -> str:
         """Return a string with the format view_name.field_name

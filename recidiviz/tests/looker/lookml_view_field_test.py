@@ -257,3 +257,46 @@ class LookMLViewTest(unittest.TestCase):
     suggestions: ["option1", "option2", "option3"]
   }"""
         self.assertEqual(view_field, expected_view_field)
+
+    def test_datetime_view_field(self) -> None:
+        view_field = DimensionGroupLookMLViewField.for_datetime_column(
+            column_name="my_datetime"
+        ).build()
+        expected_view_field = """
+  dimension_group: my_datetime {
+    type: time
+    timeframes: [
+      raw,
+      time,
+      date,
+      week,
+      month,
+      quarter,
+      year
+    ]
+    convert_tz: no
+    datatype: datetime
+    sql: ${TABLE}.my_datetime ;;
+  }"""
+        self.assertEqual(view_field, expected_view_field)
+
+    def test_date_view_field(self) -> None:
+        view_field = DimensionGroupLookMLViewField.for_date_column(
+            column_name="my_date"
+        ).build()
+        expected_view_field = """
+  dimension_group: my_date {
+    type: time
+    timeframes: [
+      raw,
+      date,
+      week,
+      month,
+      quarter,
+      year
+    ]
+    convert_tz: no
+    datatype: date
+    sql: ${TABLE}.my_date ;;
+  }"""
+        self.assertEqual(view_field, expected_view_field)
