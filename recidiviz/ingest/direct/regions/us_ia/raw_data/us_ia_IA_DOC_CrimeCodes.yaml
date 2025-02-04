@@ -30,15 +30,23 @@ columns:
   - name: CrimeCdOffenseTypeId
     description: |-
       Crime code offense type id
+    null_values:
+      - "NULL"
   - name: CrimeCdOffenseType
     description: |-
       Crime code offense type
+    null_values:
+      - "NULL"
   - name: CrimeCdOffenseSubTypeId
     description: |-
       Crime code offense subtype id
+    null_values:
+      - "NULL"
   - name: CrimeCdOffenseSubType
     description: |-
       Crime code offense sub type
+    null_values:
+      - "NULL"
   - name: Priority
     description: |-
       TODO(#33241): Fill in with information from IA

@@ -17,80 +17,128 @@ columns:
     field_type: datetime
     description: |-
       Date of offense
+    null_values:
+      - "NULL"
   - name: ArrestDt
     field_type: datetime
     description: |-
       Date of arrest
+    null_values:
+      - "NULL"
   - name: TDD
-    description: |-
-      TODO(#33241): Fill in with information from IA
+    description: Tentative Discharge Date
+    field_type: datetime
+    null_values:
+      - "NULL"
   - name: TDDDisplay
-    description: |-
-      TODO(#33241): Fill in with information from IA
+    description: Tentative Discharge Date display
+    null_values:
+      - "NULL"
   - name: MPD
-    description: |-
-      TODO(#33241): Fill in with information from IA
+    description: Minimum Parole Date
+    field_type: datetime
+    null_values:
+      - "NULL"
   - name: MPDDisplay
-    description: |-
-      TODO(#33241): Fill in with information from IA
+    description: Minimum Parole Date Display
+    null_values:
+      - "NULL"
   - name: OpenSDD
     description: |-
       TODO(#33241): Fill in with information from IA
   - name: SDD
-    description: |-
-      TODO(#33241): Fill in with information from IA
+    description: Supervision Discharge Date
+    field_type: datetime
+    null_values:
+      - "NULL"
   - name: JurisdictionType
     description: |-
       Type of jurisdiction
+    null_values:
+      - "NULL"
   - name: JurisdictionId
     description: |-
       Jurisdiction Id
+    null_values:
+      - "NULL"
   - name: Jurisdiction
     description: |-
       Jurisdiction
+    null_values:
+      - "NULL"
   - name: CauseNumber
     description: |-
       TODO(#33241): Fill in with information from IA
+    null_values:
+      - "NULL"
   - name: ChargeCount
     description: |-
       Charge count
+    null_values:
+      - "NULL"
   - name: OriginalCrimeCdId
     description: |-
       Original crime code id
+    null_values:
+      - "NULL"
   - name: ConvictingCrimeCdId
     description: |-
       convicting crime code id
+    null_values:
+      - "NULL"
   - name: DnaApplicable
     description: |-
       DNA applicable
+    null_values:
+      - "NULL"
   - name: DnaApplicableChangeReason
     description: |-
       DNA applicable change reason
+    null_values:
+      - "NULL"
   - name: EnhancedCrimeCdId
     description: |-
       Enhanced crime code id
+    null_values:
+      - "NULL"
   - name: WaivedMandatoryMinimum
     description: |-
       Waived mandatory minimum
+    null_values:
+      - "NULL"
   - name: MandatoryMinimumCrimeCdId
     description: |-
       Mandatory minimum crime code id
+    null_values:
+      - "NULL"
   - name: EndReasonId
     description: |-
       End reason id
+    null_values:
+      - "NULL"
   - name: EndReason
     description: |-
       End reason
+    null_values:
+      - "NULL"
   - name: MostSeriousCharge
     description: |-
       Most serious charge
+    null_values:
+      - "NULL"
   - name: LeadCharge
     description: |-
       Lead charge
+    null_values:
+      - "NULL"
   - name: Active
     description: |-
       active
+    null_values:
+      - "NULL"
   - name: EnteredDt
     field_type: datetime
     description: |-
       Date entered
+    null_values:
+      - "NULL"

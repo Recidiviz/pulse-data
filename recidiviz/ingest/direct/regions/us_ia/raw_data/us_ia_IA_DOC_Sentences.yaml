@@ -19,41 +19,63 @@ columns:
   - name: SentenceDispositionStatusId
     description: |-
       Sentence disposition status id
+    null_values:
+      - "NULL"
   - name: SentenceDispositionStatus
     description: |-
       Sentence disposition status
+    null_values:
+      - "NULL"
   - name: JudgeLegalPeopleId
     description: |-
       TODO(#33241): Fill in with information from IA
+    null_values:
+      - "NULL"
   - name: JudgeFirstNm
     description: |-
       Judge first name
     is_pii: True
+    null_values:
+      - "NULL"
   - name: JudgeMiddleNm
     description: |-
       Judge middle name
     is_pii: True
+    null_values:
+      - "NULL"
   - name: JudgeLastNm
     description: |-
       Judge last name
     is_pii: True
+    null_values:
+      - "NULL"
   - name: DefenseAttorneys
     description: |-
       Defense Attorney
     is_pii: True
+    null_values:
+      - "NULL"
   - name: ProsecutingAttorneys
     description: |-
       Prosecuting attorneys
     is_pii: True
+    null_values:
+      - "NULL"
   - name: SentenceDt
     field_type: datetime
     description: |-
       Sentence date
+    null_values:
+      - "NULL"
   - name: SentenceEndDt
     field_type: datetime
     description: |-
       Senence end date
+    null_values:
+      - "NULL"
   - name: EnteredDt
     field_type: datetime
     description: |-
       Date entered
+    null_values:
+      - "NULL"
