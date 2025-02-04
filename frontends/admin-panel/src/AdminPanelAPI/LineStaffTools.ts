@@ -123,6 +123,7 @@ type UserUpdate = {
   firstName?: string;
   lastName?: string;
   blocked?: boolean;
+  blockedOn?: string | null;
   reason: string;
 };
 

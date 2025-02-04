@@ -411,32 +411,67 @@ export const getUserPermissionsTableColumns = (
       },
     },
     {
-      title: "Blocked",
-      dataIndex: "blocked",
-      key: "blocked",
+      title: "Block Status",
+      dataIndex: "blockedOn",
+      key: "blockedOn",
       width: 150,
       filters: [
         {
-          value: true,
-          text: "true",
+          value: "active",
+          text: "Active",
         },
         {
-          value: false,
-          text: "false",
+          value: "blocked",
+          text: "Blocked",
+        },
+        {
+          value: "upcomingBlock",
+          text: "Upcoming block",
         },
       ],
       onFilter: (
         value: boolean | string | number,
         record: StateUserPermissionsResponse
       ) => {
-        return record.blocked === value;
+        const now = new Date();
+        const blockedOn = record.blockedOn ? new Date(record.blockedOn) : null;
+        switch (value) {
+          case "active":
+            return !blockedOn;
+          case "blocked":
+            return !!blockedOn && blockedOn <= now;
+          case "upcomingBlock":
+            return !!blockedOn && blockedOn > now;
+          default:
+            return false;
+        }
       },
       sorter: (
         a: StateUserPermissionsResponse,
         b: StateUserPermissionsResponse
-      ) => Number(a.blocked) - Number(b.blocked),
-      render: (isBlocked, record) => {
-        if (!isBlocked) {
+      ) => {
+        const blockStatusA = sortOnBlockStatus(a);
+        const blockStatusB = sortOnBlockStatus(b);
+
+        // If multiple users have an upcoming block, sort within them by block date
+        if (blockStatusA === 3 && blockStatusB === 3) {
+          const blockedOnA = a.blockedOn
+            ? new Date(a.blockedOn).getTime()
+            : Infinity;
+          const blockedOnB = b.blockedOn
+            ? new Date(b.blockedOn).getTime()
+            : Infinity;
+
+          return blockedOnA - blockedOnB;
+        }
+
+        return blockStatusB - blockStatusA;
+      },
+      render: (value: string | null, record: StateUserPermissionsResponse) => {
+        const now = new Date();
+        const blockedOn = value ? new Date(value) : null;
+
+        if (!blockedOn) {
           return undefined;
         }
         return (
@@ -445,8 +480,17 @@ export const getUserPermissionsTableColumns = (
               onClick={() => {
                 setUserToEnable(record);
               }}
+              style={{ height: "100%" }}
             >
-              Enable user
+              {blockedOn <= now ? (
+                "Enable user"
+              ) : (
+                <>
+                  Remove upcoming block:
+                  <br />
+                  {moment(blockedOn).format("lll")}
+                </>
+              )}
             </Button>
           )
         );
@@ -630,4 +674,13 @@ export const getStateDistricts = (
     .filter((v, i, a) => a.indexOf(v) === i && v);
 
   return districtsForState;
+};
+
+const sortOnBlockStatus = (record: StateUserPermissionsResponse) => {
+  const now = new Date();
+  const blockedOn = record.blockedOn ? new Date(record.blockedOn) : null;
+
+  if (!blockedOn) return 1;
+  if (blockedOn <= now) return 2;
+  return 3;
 };

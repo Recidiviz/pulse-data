@@ -157,6 +157,7 @@ const StateUserPermissionsView = (): JSX.Element => {
       stateCode: userToEnable.stateCode,
       reason,
       blocked: false,
+      blockedOn: null,
     });
     finishPromises([checkResponse(updatedUser)], "Enabled");
     setUserToEnable(undefined);

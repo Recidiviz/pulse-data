@@ -81,6 +81,7 @@ export interface StateUserPermissionsResponse {
   allowedSupervisionLocationLevel: string;
   routes: Partial<Routes> | null;
   blocked: boolean;
+  blockedOn: string | null;
   firstName: string;
   lastName: string;
   externalId: string;

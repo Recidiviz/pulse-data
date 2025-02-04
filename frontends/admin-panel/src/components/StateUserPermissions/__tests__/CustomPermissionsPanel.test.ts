@@ -22,6 +22,7 @@ const baseUser: Omit<StateUserPermissionsResponse, "routes"> = {
   allowedSupervisionLocationIds: "test",
   allowedSupervisionLocationLevel: "test",
   blocked: false,
+  blockedOn: null,
   district: "test",
   emailAddress: "test",
   externalId: "test",
