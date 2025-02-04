@@ -1925,6 +1925,7 @@ EXPECTED_DATAFLOW_OUTPUT_TABLES = [
     "us_ut_ingest_view_results.person_housing_status_period",
     "us_ut_ingest_view_results.sentence",
     "us_ut_ingest_view_results.sentence_length",
+    "us_ut_ingest_view_results.sentence_status",
     "us_ut_ingest_view_results.state_person",
     "us_ut_ingest_view_results.state_staff",
     "us_ut_ingest_view_results.supervision_period",
