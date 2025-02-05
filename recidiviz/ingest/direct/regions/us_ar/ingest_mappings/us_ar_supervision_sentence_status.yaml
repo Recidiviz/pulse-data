@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_sentence_status` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  COMMITMENTPREFIX: STRING
+  SENTENCECOMPONENT: STRING
+  sentence_type: STRING
+  SUPVPERIODBEGINDATE: DATETIME
+  SUPVTIMESTATUSFLAG: STRING
+  seq_num: INTEGER
+unused_columns: []
+variables:
+  - sentence_external_id:
+      $concat:
+        $values:
+          - OFFENDERID
+          - COMMITMENTPREFIX
+          - SENTENCECOMPONENT
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    sentences:
+      - StateSentence:
+          external_id:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: sentence_type
+                    $options:
+                      - $literal("PROBPLUS")
+                      - $literal("PAROLE")
+                $then:
+                  $concat:
+                    $values:
+                      - $variable(sentence_external_id)
+                      - sentence_type
+              - $else: $variable(sentence_external_id)
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                sequence_num: seq_num
+                status_update_datetime: SUPVPERIODBEGINDATE
+                status:
+                  $enum_mapping:
+                    $raw_text: SUPVTIMESTATUSFLAG
+                    $mappings:
+                      StateSentenceStatus.SERVING:
+                        - "2" # Active
+                      StateSentenceStatus.PENDING:
+                        - "1" # Future
+                      StateSentenceStatus.COMPLETED:
+                        - "9" # Complete
+                      StateSentenceStatus.VACATED:
+                        - V # Vacated

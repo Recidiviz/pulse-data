@@ -34,6 +34,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity
+from recidiviz.common.constants.state.state_sentence import StateSentenceType
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
@@ -54,6 +55,31 @@ GENERAL_BED_USES: List[str] = [
     "L",  # Medium Custody
     "M",  # Minimum Custody
 ]
+
+
+def parse_incarceration_sentence_type_v2(
+    raw_text: str,
+) -> Optional[StateSentenceType]:
+    # Incarceration sentences usually just have 1 sentence type; however, since they can
+    # potentially have multiple, we prioritize them to pick the most relevant.
+    sentence_types = raw_text.split("-")
+    if "FS" in sentence_types:  # Federal Custody
+        return StateSentenceType.FEDERAL_PRISON
+    if "SP" in sentence_types:  # State Prison
+        return StateSentenceType.STATE_PRISON
+    if any(
+        sentence_type
+        in [
+            "CJ",  # County Jail
+            "JU",  # Judicial Transfer to CCC
+            "PT",  # Pre-Trial
+            "RP",  # Probation Plus (at CCC)
+            "SA",  # Supervision Sanction Program (SSP)
+        ]
+        for sentence_type in sentence_types
+    ):
+        return StateSentenceType.COUNTY_JAIL
+    return StateSentenceType.INTERNAL_UNKNOWN
 
 
 def parse_arora_score(raw_text: str) -> Optional[StateAssessmentLevel]:

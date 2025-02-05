@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_sentence_status` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  COMMITMENTPREFIX: STRING
+  SENTENCECOUNT: STRING
+  rd_update_datetime: DATETIME
+  SENTENCESTATUSFLAG: STRING
+  seq_num: INTEGER
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - COMMITMENTPREFIX
+                - SENTENCECOUNT
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                sequence_num: seq_num
+                status_update_datetime: rd_update_datetime
+                status:
+                  $enum_mapping:
+                    $raw_text: SENTENCESTATUSFLAG
+                    $mappings:
+                      StateSentenceStatus.PENDING:
+                        - "0" # Future
+                      StateSentenceStatus.SERVING:
+                        - "1" # Active
+                        - "4" # Paroled
+                        - "6" # Comm Svs
+                        - SENTENCECOMPONENT_BEGIN # Only used on the specific date someone
+                        # started serving a sentence.
+                      StateSentenceStatus.COMPLETED:
+                        - "2" # Expired
+                        - "8" # Ear.Term
+                        - SUPVTIMELINE_9 # Used when the accompanying supervision term for
+                        # an incarceration sentence has a status of 9 ("Complete")
+                      StateSentenceStatus.VACATED:
+                        - "7" # Expunged
+                        - "9" # Vacated
+                        - SUPVTIMELINE_V # Used when the accompanying supervision term for
+                        # an incarceration sentence has a status of V ("Vacated")
+                      StateSentenceStatus.PRESENT_WITHOUT_INFO:
+                        - SENTENCECOMPONENT_IMPOSED # Only used on the specific date a sentence
+                        # was imposed. If the imposition date occurs before the sentence
+                        # actually started being served, the sentence's status is PRESENT_WITHOUT_INFO
+                        # until the sentence starts being served.
