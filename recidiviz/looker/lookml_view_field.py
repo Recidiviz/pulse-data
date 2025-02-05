@@ -149,6 +149,8 @@ class DimensionLookMLViewField(LookMLViewField):
             additional_params.append(
                 LookMLFieldParameter.datatype(LookMLFieldDatatype.DATE)
             )
+        if field_type is LookMLFieldType.NUMBER:
+            additional_params.append(LookMLFieldParameter.value_format("0"))
 
         return DimensionLookMLViewField(
             field_name=column_name,
