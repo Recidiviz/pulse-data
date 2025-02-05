@@ -9,12 +9,12 @@ test_update_all_managed_views_endpoint_sandbox_prefix:
 
 test_refresh_bq_dataset_task:
   - --entrypoint=BigQueryRefreshEntrypoint
-  - --schema_type=STATE
+  - --schema_type=OPERATIONS
   - --ingest_instance=PRIMARY
 
 test_refresh_bq_dataset_task_secondary:
   - --entrypoint=BigQueryRefreshEntrypoint
-  - --schema_type=STATE
+  - --schema_type=OPERATIONS
   - --ingest_instance=SECONDARY
   - --sandbox_prefix=test_prefix
 

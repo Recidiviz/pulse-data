@@ -49,8 +49,10 @@ from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entities_module,
+)
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.pipelines.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetricType
 from recidiviz.pipelines.utils.beam_utils.extractor_utils import ROOT_ENTITY_ID_KEY
@@ -783,17 +785,13 @@ def _check_field_exists_in_table(table_name: str, field_name: str) -> None:
     }:
         return
 
-    matching_tables = {
-        table
-        for table in get_all_table_classes_in_schema(SchemaType.STATE)
-        if table.name == table_name
-    }
-    if not matching_tables:
+    bq_schema = get_bq_schema_for_entities_module(state_entities)
+
+    if table_name not in bq_schema:
         raise ValueError(f"No valid table with name: [{table_name}]")
 
-    table = one(matching_tables)
-
-    column_names = {sqlalchemy_column.name for sqlalchemy_column in table.columns}
+    table_schema = bq_schema[table_name]
+    column_names = {f.name for f in table_schema}
 
     if field_name not in column_names:
         raise ValueError(f"Column {field_name} does not exist in table {table_name}.")

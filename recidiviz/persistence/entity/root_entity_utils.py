@@ -21,37 +21,19 @@ from typing import Dict, Set, Type
 
 from more_itertools import one
 
-from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_class_mapper import (
-    SchemaToEntityClassMapper,
-)
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     module_for_module_name,
 )
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.utils.types import assert_subclass
-
-
-def is_root_entity(entity_cls: Type[Entity]) -> bool:
-    """Returns whether the provided class is a root entity type."""
-    if issubclass(entity_cls, DatabaseEntity):
-        class_mapper = SchemaToEntityClassMapper.get(
-            schema_module=state_schema, entities_module=state_entities
-        )
-        return issubclass(
-            class_mapper.entity_cls_for_schema_cls(entity_cls), RootEntity
-        )
-    return issubclass(entity_cls, RootEntity)
 
 
 def get_root_entity_id(entity: Entity) -> int:
     """Returns the id of the root entity the entity is associated with."""
 
     entity_cls = type(entity)
-    if is_root_entity(entity_cls):
+    if issubclass(entity_cls, RootEntity):
         return entity.get_id()
 
     root_entity_cls = get_root_entity_class_for_entity(entity_cls)

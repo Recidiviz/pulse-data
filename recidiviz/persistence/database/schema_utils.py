@@ -25,7 +25,6 @@ from typing import Any, Iterator, List, Optional, Type
 
 from sqlalchemy import Table
 from sqlalchemy.ext.declarative import DeclarativeMeta
-from sqlalchemy.orm import RelationshipProperty
 
 from recidiviz.persistence.database.base_schema import (
     CaseTriageBase,
@@ -164,28 +163,6 @@ def get_state_database_entity_with_name(class_name: str) -> Type[StateBase]:
 
     raise LookupError(
         f"Entity class {class_name} does not exist in " f"{state_schema.__name__}."
-    )
-
-
-@lru_cache(maxsize=None)
-def get_state_database_association_with_names(
-    child_class_name: str, parent_class_name: str
-) -> Table:
-    parent_entity = get_state_database_entity_with_name(parent_class_name)
-    parent_relationships: List[
-        RelationshipProperty
-    ] = parent_entity.get_relationship_property_names_and_properties().values()
-
-    for relationship in parent_relationships:
-        if (
-            relationship.secondary is not None
-            and relationship.argument == child_class_name
-        ):
-            return relationship.secondary
-
-    raise LookupError(
-        f"Association table with {child_class_name} and {parent_class_name} does not in exist in "
-        f"{state_schema.__name__}"
     )
 
 

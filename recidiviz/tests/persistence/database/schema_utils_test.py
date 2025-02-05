@@ -31,7 +31,6 @@ from recidiviz.persistence.database.schema_utils import (
     get_all_database_entities_in_module,
     get_all_table_classes,
     get_database_entity_by_table_name,
-    get_state_database_association_with_names,
     get_state_database_entities,
     get_state_database_entity_with_name,
     schema_type_to_schema_base,
@@ -344,14 +343,3 @@ class TestSchemaUtils(unittest.TestCase):
             ValueError, ".*Could not find model with table named foo.*"
         ):
             get_database_entity_by_table_name(case_triage_schema, "foo")
-
-    def test_get_state_database_association_with_names(self) -> None:
-        charge_incarceration_sentence_association = (
-            get_state_database_association_with_names(
-                "StateCharge", "StateIncarcerationSentence"
-            )
-        )
-        self.assertEqual(
-            charge_incarceration_sentence_association,
-            state_schema.state_charge_incarceration_sentence_association_table,
-        )

@@ -31,9 +31,16 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.persistence.database.schema_utils import is_association_table
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entities_module,
+)
+from recidiviz.persistence.entity.entity_utils import (
+    get_all_entity_classes_in_module,
+    get_entity_class_in_module_with_table_id,
+)
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
@@ -336,3 +343,18 @@ class TestStateEntities(TestCase):
                 f"00001 {COUNTY}",
             ]
         )
+
+
+class TestStateSchemaNamingConsistency(TestCase):
+    """Test class for validating state schema tables are defined correctly"""
+
+    def testAllTableNamesPrefixedWithState(self) -> None:
+        for table_id in get_bq_schema_for_entities_module(entities):
+            self.assertTrue(table_id.startswith("state_"))
+
+    def testAllDatabaseEntityNamesPrefixedWithState(self) -> None:
+        for table_id in get_bq_schema_for_entities_module(entities):
+            if is_association_table(table_id):
+                continue
+            entity_cls = get_entity_class_in_module_with_table_id(entities, table_id)
+            self.assertTrue(entity_cls.__name__.startswith("State"))

@@ -323,10 +323,10 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         """Tests that refresh_bq_dataset_task triggers the proper script."""
         from recidiviz.airflow.dags.calculation_dag import refresh_bq_dataset_operator
 
-        task = refresh_bq_dataset_operator(SchemaType.STATE)
+        task = refresh_bq_dataset_operator(SchemaType.OPERATIONS)
         task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
-        self.assertEqual(task.task_id, "refresh_bq_dataset_STATE")
+        self.assertEqual(task.task_id, "refresh_bq_dataset_OPERATIONS")
         self.assertEqual(
             task.arguments[4:],
             self.entrypoint_args_fixture["test_refresh_bq_dataset_task"],
@@ -336,9 +336,9 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         """Tests that refresh_bq_dataset_task triggers the proper script."""
         from recidiviz.airflow.dags.calculation_dag import refresh_bq_dataset_operator
 
-        task = refresh_bq_dataset_operator(SchemaType.STATE)
+        task = refresh_bq_dataset_operator(SchemaType.OPERATIONS)
 
-        self.assertEqual(task.task_id, "refresh_bq_dataset_STATE")
+        self.assertEqual(task.task_id, "refresh_bq_dataset_OPERATIONS")
 
         task.render_template_fields({"dag_run": SECONDARY_DAG_RUN})
 

@@ -80,13 +80,12 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import (
-    get_all_table_classes_in_schema,
-    is_association_table,
-)
+from recidiviz.persistence.database.schema_utils import is_association_table
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.base_entity import Entity, HasExternalIdEntity
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entities_module,
+)
 from recidiviz.persistence.entity.entity_utils import (
     EntityFieldIndex,
     EntityFieldType,
@@ -1262,10 +1261,14 @@ class TestEntityUtils(TestCase):
             ),
         )
 
-    def test_get_association_table_id_agrees_with_schema(self) -> None:
-        state_tables = get_all_table_classes_in_schema(SchemaType.STATE)
+    def test_get_association_table_id_agrees_with_is_association_table(self) -> None:
+        state_table_names = list(
+            get_bq_schema_for_entities_module(state_entities).keys()
+        )
         schema_association_tables = {
-            table.name for table in state_tables if is_association_table(table.name)
+            table_name
+            for table_name in state_table_names
+            if is_association_table(table_name)
         }
 
         association_tables = set()
@@ -1285,10 +1288,16 @@ class TestEntityUtils(TestCase):
         #  of association tables defined in state_entities.py
         self.assertEqual(schema_association_tables, association_tables)
 
-    def test_get_association_table_id_agrees_with_schema_normalized(self) -> None:
-        state_tables = get_all_table_classes_in_schema(SchemaType.STATE)
+    def test_get_association_table_id_agrees_with_is_association_table__normalized(
+        self,
+    ) -> None:
+        state_table_names = list(
+            get_bq_schema_for_entities_module(normalized_entities).keys()
+        )
         schema_association_tables = {
-            table.name for table in state_tables if is_association_table(table.name)
+            table_name
+            for table_name in state_table_names
+            if is_association_table(table_name)
         }
 
         association_tables = set()
@@ -1354,9 +1363,10 @@ class TestEntityUtils(TestCase):
     def test_get_entities_by_association_table_id_works_for_all_schema_tables(
         self,
     ) -> None:
-        state_tables = get_all_table_classes_in_schema(SchemaType.STATE)
         schema_association_tables = {
-            table.name for table in state_tables if is_association_table(table.name)
+            table_name
+            for table_name in get_bq_schema_for_entities_module(state_entities)
+            if is_association_table(table_name)
         }
 
         for table_id in schema_association_tables:

@@ -20,6 +20,7 @@ import enum
 
 @enum.unique
 class SchemaType(enum.Enum):
+    # TODO(#32860): Delete STATE when we delete state/schema.py
     STATE = "STATE"
     OPERATIONS = "OPERATIONS"
     JUSTICE_COUNTS = "JUSTICE_COUNTS"
