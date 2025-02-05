@@ -253,20 +253,22 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
             ),
         )
-        append_ready_file = self.manager.load_and_prep_paths(irf)
+        append_ready_file = self.manager.load_and_prep_paths(
+            irf, temp_table_prefix="test"
+        )
 
         assert append_ready_file.import_ready_file == irf
         assert append_ready_file.raw_rows_count == 2
         assert (
             append_ready_file.append_ready_table_address.to_str()
-            == "us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"
+            == "us_xx_primary_raw_data_temp_load.test__singlePrimaryKey__1__transformed"
         )
 
         self.assertFalse(
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1",
+                    table_id="test__singlePrimaryKey__1",
                 )
             )
         )
@@ -287,7 +289,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1__transformed",
+                    table_id="test__singlePrimaryKey__1__transformed",
                 )
             )
         )
@@ -327,21 +329,21 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             ),
         )
         append_ready_file = self.manager.load_and_prep_paths(
-            irf, skip_blocking_validations=True
+            irf, temp_table_prefix="test", skip_blocking_validations=True
         )
 
         assert append_ready_file.import_ready_file == irf
         assert append_ready_file.raw_rows_count == 2
         assert (
             append_ready_file.append_ready_table_address.to_str()
-            == "us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"
+            == "us_xx_primary_raw_data_temp_load.test__singlePrimaryKey__1__transformed"
         )
 
         self.assertFalse(
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1",
+                    table_id="test__singlePrimaryKey__1",
                 )
             )
         )
@@ -376,21 +378,21 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             ),
         )
         append_ready_file = self.manager.load_and_prep_paths(
-            irf, skip_blocking_validations=True
+            irf, temp_table_prefix="test", skip_blocking_validations=True
         )
 
         assert append_ready_file.import_ready_file == irf
         assert append_ready_file.raw_rows_count == 2
         assert (
             append_ready_file.append_ready_table_address.to_str()
-            == "us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"
+            == "us_xx_primary_raw_data_temp_load.test__singlePrimaryKey__1__transformed"
         )
 
         self.assertFalse(
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1",
+                    table_id="test__singlePrimaryKey__1",
                 )
             )
         )
@@ -422,21 +424,21 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             ),
         )
         append_ready_file = self.manager.load_and_prep_paths(
-            irf, persist_intermediary_tables=True
+            irf, temp_table_prefix="test", persist_intermediary_tables=True
         )
 
         assert append_ready_file.import_ready_file == irf
         assert append_ready_file.raw_rows_count == 2
         assert (
             append_ready_file.append_ready_table_address.to_str()
-            == "us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"
+            == "us_xx_primary_raw_data_temp_load.test__singlePrimaryKey__1__transformed"
         )
 
         self.assertTrue(
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1",
+                    table_id="test__singlePrimaryKey__1",
                 )
             )
         )
@@ -453,13 +455,13 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
 
         self.compare_output_against_expected(raw_data_table, append_output)
 
-        # make sure we didnt clean up
+        # make sure we didn't clean up
 
         self.assertTrue(
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1",
+                    table_id="test__singlePrimaryKey__1",
                 )
             )
         )
@@ -468,7 +470,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1__transformed",
+                    table_id="test__singlePrimaryKey__1__transformed",
                 )
             )
         )
@@ -497,20 +499,22 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
             ),
         )
-        append_ready_file = self.manager.load_and_prep_paths(irf)
+        append_ready_file = self.manager.load_and_prep_paths(
+            irf, temp_table_prefix="test"
+        )
 
         assert append_ready_file.import_ready_file == irf
         assert append_ready_file.raw_rows_count == 2
         assert (
             append_ready_file.append_ready_table_address.to_str()
-            == "us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"
+            == "us_xx_primary_raw_data_temp_load.test__singlePrimaryKey__1__transformed"
         )
 
         self.assertFalse(
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1",
+                    table_id="test__singlePrimaryKey__1",
                 )
             )
         )
@@ -553,7 +557,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1__transformed",
+                    table_id="test__singlePrimaryKey__1__transformed",
                 )
             )
         )
@@ -586,7 +590,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
             ),
         )
-        append_ready_file = self.manager.load_and_prep_paths(irf)
+        append_ready_file = self.manager.load_and_prep_paths(
+            irf, temp_table_prefix="test"
+        )
 
         assert append_ready_file.import_ready_file == irf
 
@@ -613,7 +619,9 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
             ),
         )
-        append_ready_file = self.manager.load_and_prep_paths(irf)
+        append_ready_file = self.manager.load_and_prep_paths(
+            irf, temp_table_prefix="test"
+        )
 
         assert append_ready_file.import_ready_file == irf
         self.compare_output_against_expected(
@@ -646,7 +654,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                             file_tag
                         ],
                     ),
-                )
+                ),
+                temp_table_prefix="test",
             )
 
         self.assertTrue(len(self.fs.all_paths) == 1)
@@ -654,7 +663,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1",
+                    table_id="test__singlePrimaryKey__1",
                 )
             )
         )
@@ -662,7 +671,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1__transformed",
+                    table_id="test__singlePrimaryKey__1__transformed",
                 )
             )
         )
@@ -689,7 +698,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                             file_tag
                         ],
                     ),
-                )
+                ),
+                temp_table_prefix="test",
             )
 
         self.assertTrue(len(self.fs.all_paths) == 1)
@@ -697,7 +707,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1",
+                    table_id="test__singlePrimaryKey__1",
                 )
             )
         )
@@ -705,7 +715,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1__transformed",
+                    table_id="test__singlePrimaryKey__1__transformed",
                 )
             )
         )
@@ -732,7 +742,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                             file_tag
                         ],
                     ),
-                )
+                ),
+                temp_table_prefix="test",
             )
 
         self.assertTrue(len(self.fs.all_paths) == 1)
@@ -740,7 +751,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1",
+                    table_id="test__singlePrimaryKey__1",
                 )
             )
         )
@@ -748,7 +759,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1__transformed",
+                    table_id="test__singlePrimaryKey__1__transformed",
                 )
             )
         )
@@ -779,7 +790,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                                 file_tag
                             ],
                         ),
-                    )
+                    ),
+                    temp_table_prefix="test",
                 )
 
         self.assertTrue(len(self.fs.all_paths) == 1)
@@ -787,7 +799,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1",
+                    table_id="test__singlePrimaryKey__1",
                 )
             )
         )
@@ -796,7 +808,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1__transformed",
+                    table_id="test__singlePrimaryKey__1__transformed",
                 )
             )
         )
@@ -825,7 +837,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                                 file_tag
                             ],
                         ),
-                    )
+                    ),
+                    temp_table_prefix="test",
                 )
 
         self.assertTrue(len(self.fs.all_paths) == 1)
@@ -833,7 +846,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1",
+                    table_id="test__singlePrimaryKey__1",
                 )
             )
         )
@@ -842,7 +855,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1__transformed",
+                    table_id="test__singlePrimaryKey__1__transformed",
                 )
             )
         )
@@ -873,7 +886,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                             ),
                         ),
                         append_ready_table_address=BigQueryAddress.from_str(
-                            '"us_xx_primary_raw_data_temp_load.singlePrimaryKey__1__transformed"'
+                            '"us_xx_primary_raw_data_temp_load.test__singlePrimaryKey__1__transformed"'
                         ),
                         raw_rows_count=0,
                     ),
@@ -893,7 +906,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1__transformed",
+                    table_id="test__singlePrimaryKey__1__transformed",
                 )
             )
         )
@@ -923,7 +936,8 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                                 file_tag
                             ],
                         ),
-                    )
+                    ),
+                    temp_table_prefix="test",
                 )
 
         self.assertTrue(len(self.fs.all_paths) == 1)
@@ -931,7 +945,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1",
+                    table_id="test__singlePrimaryKey__1",
                 )
             )
         )
@@ -940,7 +954,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="singlePrimaryKey__1__transformed",
+                    table_id="test__singlePrimaryKey__1__transformed",
                 )
             )
         )
@@ -968,20 +982,23 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
             ),
         )
-        append_ready_file = self.manager.load_and_prep_paths(irf)
+        append_ready_file = self.manager.load_and_prep_paths(
+            irf,
+            temp_table_prefix="test",
+        )
 
         assert append_ready_file.import_ready_file == irf
         assert append_ready_file.raw_rows_count == 2
         assert (
             append_ready_file.append_ready_table_address.to_str()
-            == "us_xx_primary_raw_data_temp_load.tagPipeSeparatedNonUTF8__1__transformed"
+            == "us_xx_primary_raw_data_temp_load.test__tagPipeSeparatedNonUTF8__1__transformed"
         )
 
         self.assertFalse(
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="tagPipeSeparatedNonUTF8__1",
+                    table_id="test__tagPipeSeparatedNonUTF8__1",
                 )
             )
         )
@@ -1002,7 +1019,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="tagPipeSeparatedNonUTF8__1__transformed",
+                    table_id="test__tagPipeSeparatedNonUTF8__1__transformed",
                 )
             )
         )
@@ -1041,20 +1058,23 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
                 raw_file_config=self.region_raw_file_config.raw_file_configs[file_tag],
             ),
         )
-        append_ready_file = self.manager.load_and_prep_paths(irf)
+        append_ready_file = self.manager.load_and_prep_paths(
+            irf,
+            temp_table_prefix="test",
+        )
 
         assert append_ready_file.import_ready_file == irf
         assert append_ready_file.raw_rows_count == 2
         assert (
             append_ready_file.append_ready_table_address.to_str()
-            == "us_xx_primary_raw_data_temp_load.tagPipeSeparatedWindows__1__transformed"
+            == "us_xx_primary_raw_data_temp_load.test__tagPipeSeparatedWindows__1__transformed"
         )
 
         self.assertFalse(
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="tagPipeSeparatedWindows__1",
+                    table_id="test__tagPipeSeparatedWindows__1",
                 )
             )
         )
@@ -1075,7 +1095,7 @@ class TestDirectIngestRawFileLoadManager(BigQueryEmulatorTestCase):
             self.bq_client.table_exists(
                 BigQueryAddress(
                     dataset_id="us_xx_primary_raw_data_temp_load",
-                    table_id="tagPipeSeparatedWindows__1__transformed",
+                    table_id="test__tagPipeSeparatedWindows__1__transformed",
                 )
             )
         )

@@ -40,3 +40,6 @@ DIRECT_INGEST_PROCESSED_PREFIX = "processed"
 
 # expected size of each raw data file chunk
 RAW_DATA_EXPECTED_CHUNK_SIZE_IN_BYTES = 100 * 1024 * 1024
+
+# Suffix for raw data's transformed table.
+RAW_DATA_TRANSFORMED_TEMP_TABLE_SUFFIX = "transformed"

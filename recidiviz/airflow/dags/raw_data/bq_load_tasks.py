@@ -32,6 +32,7 @@ from recidiviz.airflow.dags.raw_data.concurrency_utils import (
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
     APPEND_READY_FILE_BATCHES,
+    IMPORT_RUN_ID,
     SKIPPED_FILE_ERRORS,
 )
 from recidiviz.airflow.dags.raw_data.utils import (
@@ -78,6 +79,7 @@ from recidiviz.utils.airflow_types import (
 def load_and_prep_paths_for_batch(
     region_code: str,
     raw_data_instance: DirectIngestInstance,
+    import_run_id_dict: dict[str, int],
     serialized_import_ready_files: List[str],
 ) -> str:
     """Given a batch of |serialized_import_ready_files|, asynchronously loads
@@ -86,12 +88,22 @@ def load_and_prep_paths_for_batch(
 
     Batches files together within a single process to restrain parallelism across
     shared airflow workers; see go/raw-data-batches for more detailed info.
+
+    The |import_run_id_dict| arg is the serialized xcom output of the "write_import_start"
+    task.
     """
 
     import_ready_files = [
         ImportReadyFile.deserialize(serialized_file)
         for serialized_file in serialized_import_ready_files
     ]
+
+    if not import_run_id_dict or not isinstance(
+        import_run_id := import_run_id_dict.get(IMPORT_RUN_ID), int
+    ):
+        raise ValueError(
+            f"Could not retrieve import_run_id from upstream; found: [{import_run_id_dict}]"
+        )
 
     fs = GcsfsFactory.build()
     bq_client = BigQueryClientImpl(
@@ -116,7 +128,9 @@ def load_and_prep_paths_for_batch(
     ) as executor:
         future_to_metadata = {
             executor.submit(
-                manager.load_and_prep_paths, import_ready_file
+                manager.load_and_prep_paths,
+                import_ready_file,
+                temp_table_prefix=str(import_run_id),
             ): import_ready_file
             for import_ready_file in import_ready_files
         }
