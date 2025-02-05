@@ -360,7 +360,9 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         with TaskGroup("big_query_load") as big_query_load:
             # load paths into temp table
             load_and_prep_results = load_and_prep_paths_for_batch.partial(
-                raw_data_instance=raw_data_instance, region_code=state_code.value
+                raw_data_instance=raw_data_instance,
+                region_code=state_code.value,
+                import_run_id_dict=write_import_start.output,
             ).expand(serialized_import_ready_files=serialized_import_ready_files)
 
             # batch tasks for next step and raise errors

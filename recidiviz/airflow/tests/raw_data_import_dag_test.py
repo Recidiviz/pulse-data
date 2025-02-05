@@ -19,7 +19,7 @@ import datetime
 import json
 import os
 from typing import Any, Callable, Dict, Iterator, List, Tuple
-from unittest.mock import MagicMock, create_autospec, patch
+from unittest.mock import ANY, MagicMock, call, create_autospec, patch
 
 import attr
 from airflow.models import DAG, DagBag
@@ -228,6 +228,7 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
             ],
             [
                 "write_import_completions",
+                "load_and_prep_paths_for_batch",
                 "read_and_verify_column_headers",
             ],
             [
@@ -2405,7 +2406,7 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
                     import_ready_file=import_ready_files[0],
                     append_ready_table_address=BigQueryAddress(
                         dataset_id="us_xx_primary_raw_data_temp_load",
-                        table_id="singlePrimaryKey__2__transformed",
+                        table_id="test__singlePrimaryKey__2__transformed",
                     ),
                     raw_rows_count=100,
                 ),
@@ -2413,7 +2414,7 @@ class RawDataImportDagBigQueryLoadIntegrationTest(AirflowIntegrationTest):
                     import_ready_file=import_ready_files[1],
                     append_ready_table_address=BigQueryAddress(
                         dataset_id="us_xx_primary_raw_data_temp_load",
-                        table_id="singlePrimaryKey__3__transformed",
+                        table_id="test__singlePrimaryKey__3__transformed",
                     ),
                     raw_rows_count=100,
                 ),
@@ -4371,6 +4372,21 @@ class RawDataImportDagE2ETest(AirflowIntegrationTest):
             # (2) bq client has all the expected calls
             assert self.load_bq_mock().load_table_from_cloud_storage.call_count == 2
             assert self.load_bq_mock().create_table_from_query.call_count == 2
+            self.load_bq_mock().create_table_from_query.assert_has_calls(
+                [
+                    call(),
+                    call(
+                        address=BigQueryAddress(
+                            dataset_id="us_xx_primary_raw_data_temp_load",
+                            table_id="1__singlePrimaryKey__2__transformed",
+                        ),
+                        query=ANY,
+                        overwrite=True,
+                        use_query_cache=False,
+                        job_labels=ANY,
+                    ),
+                ]
+            )
 
             assert self.load_bq_mock().delete_from_table_async.call_count == 1
             # we shouldn't delete the tables for the failed files

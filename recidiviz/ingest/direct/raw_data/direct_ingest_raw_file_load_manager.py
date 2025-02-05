@@ -52,6 +52,9 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    RAW_DATA_TRANSFORMED_TEMP_TABLE_SUFFIX,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.raw_data_import_types import (
     AppendReadyFile,
@@ -267,6 +270,7 @@ class DirectIngestRawFileLoadManager:
         self,
         file: ImportReadyFile,
         *,
+        temp_table_prefix: str,
         skip_raw_data_migrations: bool = False,
         skip_blocking_validations: bool = False,
         persist_intermediary_tables: bool = False,
@@ -287,16 +291,19 @@ class DirectIngestRawFileLoadManager:
         After this step, we should be ready to perform raw data pruning and append to
         the current raw data table.
 
+        We use |temp_table_prefix| to prefix the temporary load tables to ensure that
+        tables between runs can be made unique.
         """
 
+        table_base_name = f"{temp_table_prefix}__{file.file_tag}__{file.file_id}"
+
         temp_raw_file_address = BigQueryAddress(
-            dataset_id=self.raw_data_temp_load_dataset,
-            table_id=f"{file.file_tag}__{file.file_id}",
+            dataset_id=self.raw_data_temp_load_dataset, table_id=table_base_name
         )
 
         temp_raw_file_with_transformations_address = BigQueryAddress(
             dataset_id=self.raw_data_temp_load_dataset,
-            table_id=f"{file.file_tag}__{file.file_id}__transformed",
+            table_id=f"{table_base_name}__{RAW_DATA_TRANSFORMED_TEMP_TABLE_SUFFIX}",
         )
 
         encoding, separator = self._get_encoding_and_separator(

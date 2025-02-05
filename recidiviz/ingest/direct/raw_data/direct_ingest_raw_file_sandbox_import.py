@@ -417,6 +417,7 @@ def _import_bq_metadata_to_sandbox(
 
     append_ready = loader.load_and_prep_paths(
         import_ready_file,
+        temp_table_prefix=sandbox_dataset_prefix,
         skip_blocking_validations=skip_blocking_validations,
         skip_raw_data_migrations=skip_raw_data_migrations,
         persist_intermediary_tables=persist_intermediary_tables,

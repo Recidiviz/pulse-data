@@ -30,6 +30,7 @@ from recidiviz.airflow.dags.raw_data.bq_load_tasks import (
 )
 from recidiviz.airflow.dags.raw_data.metadata import (
     APPEND_READY_FILE_BATCHES,
+    IMPORT_RUN_ID,
     SKIPPED_FILE_ERRORS,
 )
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -121,7 +122,7 @@ class LoadAndPrepForRegionTest(TestCase):
 
     def test_no_files(self) -> None:
         result_str = load_and_prep_paths_for_batch.function(
-            "US_XX", DirectIngestInstance.PRIMARY, []
+            "US_XX", DirectIngestInstance.PRIMARY, {IMPORT_RUN_ID: 1}, []
         )
 
         result = BatchedTaskInstanceOutput.deserialize(
@@ -140,13 +141,28 @@ class LoadAndPrepForRegionTest(TestCase):
             _ = load_and_prep_paths_for_batch.function(
                 "US_XX",
                 DirectIngestInstance.PRIMARY,
+                {IMPORT_RUN_ID: 1},
                 ['{"this": "will-fail"}'],
+            )
+
+        with self.assertRaisesRegex(
+            ValueError, "Could not retrieve import_run_id from upstream.*"
+        ):
+            _ = load_and_prep_paths_for_batch.function(
+                "US_XX",
+                DirectIngestInstance.PRIMARY,
+                {},
+                [],
             )
 
     def test_all_succeed(self) -> None:
         expected_results = []
 
-        def return_success(irf: ImportReadyFile) -> AppendReadyFile:
+        def return_success(
+            irf: ImportReadyFile,
+            *,
+            temp_table_prefix: str  # pylint: disable=unused-argument
+        ) -> AppendReadyFile:
             lps = AppendReadyFile(
                 import_ready_file=irf,
                 append_ready_table_address=BigQueryAddress(
@@ -162,6 +178,7 @@ class LoadAndPrepForRegionTest(TestCase):
         result_str = load_and_prep_paths_for_batch.function(
             "US_XX",
             DirectIngestInstance.PRIMARY,
+            {IMPORT_RUN_ID: 1},
             [file.serialize() for file in self.mock_files],
         )
 
@@ -177,7 +194,11 @@ class LoadAndPrepForRegionTest(TestCase):
         expected_results = []
         expected_errors = []
 
-        def return_mixed(irf: ImportReadyFile) -> AppendReadyFile:
+        def return_mixed(
+            irf: ImportReadyFile,
+            *,
+            temp_table_prefix: str  # pylint: disable=unused-argument
+        ) -> AppendReadyFile:
             if irf.file_id == 2:
                 expected_errors.append(irf)
                 raise ValueError("We hit an error")
@@ -196,6 +217,7 @@ class LoadAndPrepForRegionTest(TestCase):
         result_str = load_and_prep_paths_for_batch.function(
             "US_XX",
             DirectIngestInstance.PRIMARY,
+            {IMPORT_RUN_ID: 1},
             [file.serialize() for file in self.mock_files],
         )
 

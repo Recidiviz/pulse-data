@@ -574,6 +574,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             [
                 call(
                     ANY,
+                    temp_table_prefix="test",
                     skip_blocking_validations=False,
                     persist_intermediary_tables=True,
                     skip_raw_data_migrations=False,
@@ -639,6 +640,7 @@ class ImportRawFilesToBQSandboxTest(TestCase):
             [
                 call(
                     ANY,
+                    temp_table_prefix="test",
                     skip_blocking_validations=False,
                     persist_intermediary_tables=False,
                     skip_raw_data_migrations=True,
