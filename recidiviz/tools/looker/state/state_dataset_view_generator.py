@@ -14,211 +14,64 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A script for generating one LookML view for each state schema table
-Used within state_dataset_lookml_writer
-"""
-import os
+"""A script for generating one LookML view for each state schema table"""
 from typing import List
 
-import sqlalchemy
 from google.cloud import bigquery
-from sqlalchemy import Table
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_utils import (
-    bq_schema_column_type_for_sqlalchemy_column,
-)
 from recidiviz.ingest.views.dataset_config import STATE_BASE_DATASET
 from recidiviz.looker.lookml_view import LookMLView
-from recidiviz.looker.lookml_view_field import (
-    DimensionGroupLookMLViewField,
-    DimensionLookMLViewField,
-    LookMLFieldParameter,
-    LookMLViewField,
-    MeasureLookMLViewField,
+from recidiviz.persistence.database.schema_utils import is_association_table
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entities_module,
 )
-from recidiviz.looker.lookml_view_field_parameter import (
-    LookMLFieldDatatype,
-    LookMLFieldType,
-    LookMLTimeframesOption,
+from recidiviz.persistence.entity.entity_metadata_helper import (
+    AssociationTableMetadataHelper,
+    EntityMetadataHelper,
 )
-from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
-from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import (
-    get_all_table_classes_in_schema,
-    get_primary_key_column_name,
+from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.tools.looker.entity.entity_field_builders import (
+    AssociationTableLookMLFieldBuilder,
+    EntityLookMLFieldBuilder,
+    LookMLFieldBuilder,
 )
-from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
+
+ENTITIES_MODULE = state_entities
 
 
-def _field_type_for_column(column: sqlalchemy.Column) -> LookMLFieldType:
-    """
-    Convert the provided column's field type into a LookMLFieldType.
-    """
-    column_type = bq_schema_column_type_for_sqlalchemy_column(column)
-    if column_type in (
-        bigquery.enums.SqlTypeNames.DATE,
-        bigquery.enums.SqlTypeNames.DATETIME,
-    ):
-        return LookMLFieldType.TIME
-    if column_type == bigquery.enums.SqlTypeNames.STRING:
-        return LookMLFieldType.STRING
-    if column_type == bigquery.enums.SqlTypeNames.BOOLEAN:
-        return LookMLFieldType.YESNO
-    if column_type == bigquery.enums.SqlTypeNames.INTEGER:
-        return LookMLFieldType.NUMBER
-
-    raise NotImplementedError(
-        f"Could not convert {column.name} into Looker: LookML data type equivalent to {column_type} has not been implemented"
-    )
-
-
-def _non_time_field_type_for_column(column: sqlalchemy.Column) -> LookMLFieldType:
-    """Convert the provided column's field type into a LookMLFieldType, excluding TIME types."""
-    field_type = _field_type_for_column(column)
-    if field_type == LookMLFieldType.TIME:
-        raise ValueError(f"Column {column.name} is a TIME type column")
-
-    return field_type
-
-
-def _build_time_column_dimension_group(
-    column_name: str,
-    time_frame_options: List[LookMLTimeframesOption],
-    field_data_type: LookMLFieldDatatype,
-) -> DimensionGroupLookMLViewField:
-    """
-    Return a DimensionGroupLookMLField corresponding to the given column,
-    which should be of type TIME. Dates, datetimes, and timestamps can be represented
-    in Looker using a dimension group of type: time.
-    """
-    field_name = column_name
-    return DimensionGroupLookMLViewField(
-        field_name=field_name,
-        parameters=[
-            LookMLFieldParameter.type(LookMLFieldType.TIME),
-            LookMLFieldParameter.timeframes(time_frame_options),
-            LookMLFieldParameter.convert_tz(False),
-            LookMLFieldParameter.datatype(field_data_type),
-            LookMLFieldParameter.sql(f"${{TABLE}}.{column_name}"),
-        ],
-    )
-
-
-def _build_datetime_column_dimension_group(
-    column_name: str,
-) -> DimensionGroupLookMLViewField:
-    return _build_time_column_dimension_group(
-        column_name=column_name,
-        time_frame_options=[
-            LookMLTimeframesOption.RAW,
-            LookMLTimeframesOption.TIME,
-            LookMLTimeframesOption.DATE,
-            LookMLTimeframesOption.WEEK,
-            LookMLTimeframesOption.MONTH,
-            LookMLTimeframesOption.QUARTER,
-            LookMLTimeframesOption.YEAR,
-        ],
-        field_data_type=LookMLFieldDatatype.DATETIME,
-    )
-
-
-def _build_date_column_dimension_group(
-    column_name: str,
-) -> DimensionGroupLookMLViewField:
-    return _build_time_column_dimension_group(
-        column_name=column_name,
-        time_frame_options=[
-            LookMLTimeframesOption.RAW,
-            LookMLTimeframesOption.DATE,
-            LookMLTimeframesOption.WEEK,
-            LookMLTimeframesOption.MONTH,
-            LookMLTimeframesOption.QUARTER,
-            LookMLTimeframesOption.YEAR,
-        ],
-        field_data_type=LookMLFieldDatatype.DATE,
-    )
-
-
-def _build_column_dimension(
-    table_name: str, column_name: str, field_type: LookMLFieldType
-) -> DimensionLookMLViewField:
-    """
-    Return a DimensionLookMLField corresponding to the given column, which should not be a TIME Type
-    """
-    primary_key_col_name = get_primary_key_column_name(state_schema, table_name)
-    custom_params = []
-    if column_name == primary_key_col_name:
-        custom_params.append(LookMLFieldParameter.primary_key(True))
-    elif column_name in ("person_id", "staff_id"):
-        custom_params.extend(
-            [
-                LookMLFieldParameter.hidden(True),
-                LookMLFieldParameter.value_format("0"),
-            ]
-        )
-    return DimensionLookMLViewField.for_column(
-        column_name, field_type=field_type, custom_params=custom_params
-    )
-
-
-def get_lookml_view_table(
-    table: Table,
-) -> LookMLView:
-    """
-    Returns a LookML View object corresponding to the given Table
-    """
-    table_name = table.name
-
-    fields: List[LookMLViewField] = []
-    for column in sorted(table.columns, key=lambda c: c.name):
-        column_type = bq_schema_column_type_for_sqlalchemy_column(column)
-        if column_type == bigquery.enums.SqlTypeNames.DATETIME:
-            fields.append(_build_datetime_column_dimension_group(column.name))
-        elif column_type == bigquery.enums.SqlTypeNames.DATE:
-            fields.append(_build_date_column_dimension_group(column.name))
-        else:
-            fields.append(
-                _build_column_dimension(
-                    table.name, column.name, _non_time_field_type_for_column(column)
-                )
-            )
-
-    fields.append(
-        MeasureLookMLViewField(
-            field_name="count",
-            parameters=[
-                LookMLFieldParameter.type(LookMLFieldType.COUNT),
-                LookMLFieldParameter.drill_fields(
-                    []
-                    # TODO(#23292): Drilled fields may not be empty, depending on the view
-                ),
-            ],
-        )
-    )
-
-    return LookMLView(
-        view_name=table_name,
-        table=LookMLViewSourceTable.sql_table_address(
-            BigQueryAddress(dataset_id=STATE_BASE_DATASET, table_id=table_name)
-        ),
-        fields=fields,
-    )
-
-
-def generate_state_views(looker_dir: str) -> None:
-    """Produce LookML View files for the state dataset, writing up-to-date
-    .view.lkml files in looker_dir/views/state/
-
-    looker_dir: Local path to root directory of the Looker repo
-    """
-    state_dir = os.path.join(looker_dir, "views", "state")
-    remove_lookml_files_from(state_dir)
+def generate_state_views() -> List[LookMLView]:
+    """Generates LookML views for all state entities and association tables."""
     # TODO(#23292): Either auto-generate or don't delete the person_periods view
-
-    for table in get_all_table_classes_in_schema(SchemaType.STATE):
-        lookml_view = get_lookml_view_table(table=table)
-        lookml_view.write(state_dir, source_script_path=__file__)
     # TODO(#23292): Add `actions` dimension to state_person view
     # TODO(#23292): Custom formatting for open (null end date) supervision / incarceration periods
+    schema_map = get_bq_schema_for_entities_module(ENTITIES_MODULE)
+
+    def build_lookml_view(
+        table_id: str, schema_fields: List[bigquery.SchemaField]
+    ) -> LookMLView:
+        """Constructs a LookML view for a given table."""
+        if is_association_table(table_id):
+            builder: LookMLFieldBuilder = AssociationTableLookMLFieldBuilder(
+                metadata=AssociationTableMetadataHelper.for_table_id(
+                    entities_module=ENTITIES_MODULE, table_id=table_id
+                ),
+                schema_fields=schema_fields,
+            )
+        else:
+            builder = EntityLookMLFieldBuilder(
+                metadata=EntityMetadataHelper.for_table_id(
+                    entities_module=ENTITIES_MODULE, table_id=table_id
+                ),
+                schema_fields=schema_fields,
+            )
+
+        return LookMLView.for_big_query_table(
+            dataset_id=STATE_BASE_DATASET,
+            table_id=table_id,
+            fields=builder.build_view_fields(),
+        )
+
+    return [
+        build_lookml_view(table_id, schema_fields)
+        for table_id, schema_fields in schema_map.items()
+    ]

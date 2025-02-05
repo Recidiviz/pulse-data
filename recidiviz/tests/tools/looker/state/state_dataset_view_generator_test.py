@@ -14,83 +14,242 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Unit tests for person details LookML View generation"""
-import filecmp
-import inspect
-import os
-import tempfile
+"""Unit tests for state entity LookML View generation"""
 import unittest
-from typing import Any
 
-from freezegun import freeze_time
-from mock import Mock, patch
+from mock import MagicMock, patch
 
-from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.tests.persistence.database.schema_entity_converter import fake_schema
-from recidiviz.tests.persistence.database.schema_entity_converter.fake_base_schema import (
-    FakeBase,
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.looker.lookml_view import LookMLView
+from recidiviz.looker.lookml_view_field import (
+    DimensionLookMLViewField,
+    LookMLFieldType,
+    MeasureLookMLViewField,
 )
+from recidiviz.looker.lookml_view_field_parameter import (
+    FieldParameterDrillFields,
+    FieldParameterHidden,
+    FieldParameterPrimaryKey,
+    FieldParameterSql,
+    FieldParameterType,
+    FieldParameterValueFormat,
+)
+from recidiviz.looker.lookml_view_source_table import SqlTableAddress
+from recidiviz.tests.persistence.entity import fake_entities
 from recidiviz.tools.looker.state.state_dataset_view_generator import (
     generate_state_views,
 )
+
+# TODO(#23292) Remove fixture files from old tests
 
 
 class StateViewGenerator(unittest.TestCase):
     """Tests LookML view generation functions for states"""
 
     @patch(
-        "recidiviz.tools.looker.state.state_dataset_view_generator.state_schema",
-        new=fake_schema,
+        "recidiviz.tools.looker.state.state_dataset_view_generator.ENTITIES_MODULE",
+        fake_entities,
     )
     @patch(
-        "recidiviz.tools.looker.state.state_dataset_view_generator.get_all_table_classes_in_schema"
+        "recidiviz.persistence.entity.entity_metadata_helper.get_entities_by_association_table_id",
+        return_value=(fake_entities.FakeAnotherEntity, fake_entities.FakeEntity),
     )
-    @patch("recidiviz.persistence.database.schema_utils._is_database_entity_subclass")
-    @freeze_time("2000-06-30")
-    def test_generate_lookml_views(
-        self,
-        mock_is_database_entity_subclass: Mock,
-        mock_get_all_table_classes_in_schema: Mock,
-    ) -> None:
-        """
-        Calls the function under test on a temporary directory and compares the
-        result with the fixtures directory, filtering by names ending with
-        "view.lkml"
-        """
-
-        # We need to make an exception in _is_database_entity_subclass for FakeBase
-        def is_database_entity_subclass_for_testing(member: Any) -> bool:
-            return (
-                inspect.isclass(member)
-                and issubclass(member, DatabaseEntity)
-                and member is not DatabaseEntity
-                and member is not FakeBase
-            )
-
-        mock_is_database_entity_subclass.side_effect = (
-            is_database_entity_subclass_for_testing
-        )
-
-        mock_get_all_table_classes_in_schema.return_value = list(
-            fake_schema.FakeBase.metadata.sorted_tables
-        )
-
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            generate_state_views(tmp_dir)
-            fixtures_dir = os.path.join(os.path.dirname(__file__), "fixtures")
-
-            for fixtures_path, _, filenames in os.walk(fixtures_dir):
-                # Get the fixtures inner directory corresponding to the temp inner directory
-                relpath = os.path.relpath(fixtures_path, start=fixtures_dir)
-                tmp_path = os.path.join(tmp_dir, relpath)
-
-                # Ensure every .lkml file in the fixture directory is equal
-                # byte-by-byte to the one in the temp directory
-                lkml_filenames = filter(
-                    lambda name: name.endswith(".view.lkml"), filenames
-                )
-                _, mismatch, errors = filecmp.cmpfiles(
-                    tmp_path, fixtures_path, lkml_filenames, shallow=False
-                )
-                self.assertFalse(mismatch)
-                self.assertFalse(errors)
+    def test_generate_lookml_views(self, _mock_get_entities: MagicMock) -> None:
+        expected_views = [
+            LookMLView(
+                view_name="fake_another_entity",
+                table=SqlTableAddress(
+                    address=BigQueryAddress(
+                        dataset_id="state", table_id="fake_another_entity"
+                    )
+                ),
+                fields=[
+                    DimensionLookMLViewField(
+                        field_name="another_entity_id",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.NUMBER),
+                            FieldParameterValueFormat(value="0"),
+                            FieldParameterSql(sql_text="${TABLE}.another_entity_id"),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="another_name",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.STRING),
+                            FieldParameterSql(sql_text="${TABLE}.another_name"),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="fake_person_id",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.NUMBER),
+                            FieldParameterHidden(is_hidden=True),
+                            FieldParameterValueFormat(value="0"),
+                            FieldParameterSql(sql_text="${TABLE}.fake_person_id"),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="state_code",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.STRING),
+                            FieldParameterSql(sql_text="${TABLE}.state_code"),
+                        ],
+                    ),
+                    MeasureLookMLViewField(
+                        field_name="count",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.COUNT),
+                            FieldParameterDrillFields(fields=[]),
+                        ],
+                    ),
+                ],
+            ),
+            LookMLView(
+                view_name="fake_another_entity_fake_entity_association",
+                table=SqlTableAddress(
+                    address=BigQueryAddress(
+                        dataset_id="state",
+                        table_id="fake_another_entity_fake_entity_association",
+                    )
+                ),
+                fields=[
+                    DimensionLookMLViewField(
+                        field_name="fake_another_entity_id",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.NUMBER),
+                            FieldParameterValueFormat(value="0"),
+                            FieldParameterSql(
+                                sql_text="${TABLE}.fake_another_entity_id"
+                            ),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="fake_entity_id",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.NUMBER),
+                            FieldParameterValueFormat(value="0"),
+                            FieldParameterSql(sql_text="${TABLE}.fake_entity_id"),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="primary_key",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.STRING),
+                            FieldParameterPrimaryKey(is_primary_key=True),
+                            FieldParameterSql(
+                                sql_text='CONCAT(${TABLE}.fake_another_entity_id, "_", ${TABLE}.fake_entity_id)'
+                            ),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="state_code",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.STRING),
+                            FieldParameterSql(sql_text="${TABLE}.state_code"),
+                        ],
+                    ),
+                    MeasureLookMLViewField(
+                        field_name="count",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.COUNT),
+                            FieldParameterDrillFields(fields=[]),
+                        ],
+                    ),
+                ],
+            ),
+            LookMLView(
+                view_name="fake_entity",
+                table=SqlTableAddress(
+                    address=BigQueryAddress(dataset_id="state", table_id="fake_entity")
+                ),
+                fields=[
+                    DimensionLookMLViewField(
+                        field_name="entity_id",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.NUMBER),
+                            FieldParameterValueFormat(value="0"),
+                            FieldParameterSql(sql_text="${TABLE}.entity_id"),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="fake_person_id",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.NUMBER),
+                            FieldParameterHidden(is_hidden=True),
+                            FieldParameterValueFormat(value="0"),
+                            FieldParameterSql(sql_text="${TABLE}.fake_person_id"),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="name",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.STRING),
+                            FieldParameterSql(sql_text="${TABLE}.name"),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="state_code",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.STRING),
+                            FieldParameterSql(sql_text="${TABLE}.state_code"),
+                        ],
+                    ),
+                    MeasureLookMLViewField(
+                        field_name="count",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.COUNT),
+                            FieldParameterDrillFields(fields=[]),
+                        ],
+                    ),
+                ],
+            ),
+            LookMLView(
+                view_name="fake_person",
+                table=SqlTableAddress(
+                    address=BigQueryAddress(dataset_id="state", table_id="fake_person")
+                ),
+                fields=[
+                    DimensionLookMLViewField(
+                        field_name="fake_person_id",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.NUMBER),
+                            FieldParameterPrimaryKey(is_primary_key=True),
+                            FieldParameterValueFormat(value="0"),
+                            FieldParameterSql(sql_text="${TABLE}.fake_person_id"),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="full_name",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.STRING),
+                            FieldParameterSql(sql_text="${TABLE}.full_name"),
+                        ],
+                    ),
+                    DimensionLookMLViewField(
+                        field_name="state_code",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.STRING),
+                            FieldParameterSql(sql_text="${TABLE}.state_code"),
+                        ],
+                    ),
+                    MeasureLookMLViewField(
+                        field_name="count",
+                        parameters=[
+                            FieldParameterType(field_type=LookMLFieldType.COUNT),
+                            FieldParameterDrillFields(fields=[]),
+                        ],
+                    ),
+                ],
+            ),
+        ]
+        for i, view in enumerate(
+            sorted(generate_state_views(), key=lambda v: v.view_name)
+        ):
+            expected_view = expected_views[i]
+            self.assertEqual(view.table, expected_view.table)
+            self.assertEqual(view.view_name, expected_view.view_name)
+            self.assertEqual(len(view.fields), len(expected_view.fields))
+            for j, field in enumerate(view.fields):
+                expected_field = expected_view.fields[j]
+                self.assertEqual(field.field_name, expected_field.field_name)
+                self.assertEqual(field.parameters, expected_field.parameters)

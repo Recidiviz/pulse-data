@@ -24,6 +24,7 @@ python -m recidiviz.tools.looker.state.state_dataset_lookml_writer --looker_repo
 import argparse
 import os
 
+from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 from recidiviz.tools.looker.state.state_dataset_view_generator import (
     generate_state_views,
 )
@@ -45,6 +46,19 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _write_state_views(looker_dir: str) -> None:
+    """
+    Write LookML View files for the state dataset to .view.lkml files in looker_dir/views/state/
+
+    looker_dir: Local path to root directory of the Looker repo
+    """
+    state_dir = os.path.join(looker_dir, "views", "state")
+    remove_lookml_files_from(state_dir)
+
+    for lookml_view in generate_state_views():
+        lookml_view.write(state_dir, source_script_path=__file__)
+
+
 def write_lookml_files(looker_dir: str) -> None:
     """
     Write state raw data LookML views, explores and dashboards to the given directory,
@@ -56,7 +70,7 @@ def write_lookml_files(looker_dir: str) -> None:
         return
     # TODO(#23292): Generate explores and dashboard files
     # TODO(#23292): Generate normalized state views
-    generate_state_views(looker_dir)
+    _write_state_views(looker_dir)
 
 
 if __name__ == "__main__":
