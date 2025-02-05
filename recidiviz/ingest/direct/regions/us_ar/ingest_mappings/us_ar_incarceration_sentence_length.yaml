@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_sentence_length` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  COMMITMENTPREFIX: STRING
+  SENTENCECOUNT: STRING
+  rd_update_datetime: DATETIME
+  NETGTBEFOREPE: STRING
+  CREDITSPROJECTED: STRING
+  MINIMUMRELEASEDATE: DATETIME
+  MAXRELEASEDATE: DATETIME
+  PAROLEELIGIBILITYDATE: DATETIME
+  TIMESTARTDATE: DATETIME
+  seq_num: INTEGER
+  TIMECOMPFLAG: STRING
+  PAROLEREVOKEDFLAG: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    sentences:
+      - StateSentence:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - COMMITMENTPREFIX
+                - SENTENCECOUNT
+          sentence_lengths:
+            - StateSentenceLength:
+                length_update_datetime: rd_update_datetime
+                good_time_days: NETGTBEFOREPE
+                earned_time_days: CREDITSPROJECTED
+                parole_eligibility_date_external:
+                  $conditional:
+                    - $if:
+                        $and:
+                          - $not_in:
+                              $value: TIMECOMPFLAG
+                              $options:
+                                - $literal("G") # No GT or Parole (1805
+                                - $literal("N") # N/E - Not Eligible For Parole
+                                - $literal("X") # Life Without Parole
+                                - $literal("Z") # Death
+                          - $not_in:
+                              $value: PAROLEREVOKEDFLAG
+                              $options:
+                                - $literal("Y")
+                      $then: PAROLEELIGIBILITYDATE
+                projected_completion_date_min_external: MINIMUMRELEASEDATE
+                projected_completion_date_max_external: MAXRELEASEDATE
+                sentence_length_days_min:
+                  $custom:
+                    $function: us_ar_custom_parsers.date_diff_in_days
+                    $args:
+                      start: TIMESTARTDATE
+                      end: MINIMUMRELEASEDATE
+                sentence_length_days_max:
+                  $custom:
+                    $function: us_ar_custom_parsers.date_diff_in_days
+                    $args:
+                      start: TIMESTARTDATE
+                      end: MAXRELEASEDATE
+                sequence_num: seq_num

@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence_group` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  COMMITMENTPREFIX: STRING
+  sentence_category: STRING
+unused_columns: []
+variables:
+  - sentence_group_external_id:
+      $concat:
+        $values:
+          - OFFENDERID
+          - COMMITMENTPREFIX
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    sentence_groups:
+      - StateSentenceGroup:
+          external_id:
+            $conditional:
+              - $if:
+                  $not_null: sentence_category
+                $then:
+                  $concat:
+                    $values:
+                      - $variable(sentence_group_external_id)
+                      - sentence_category
+              - $else: $variable(sentence_group_external_id)

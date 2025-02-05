@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_sentence_length` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  COMMITMENTPREFIX: STRING
+  SENTENCECOMPONENT: STRING
+  SUPVPERIODBEGINDATE: DATETIME
+  SUPVSTARTDATE: DATETIME
+  sentence_type: STRING
+  sentence_length: STRING
+  max_end_date: DATETIME
+  min_end_date: DATETIME
+  seq_num: INTEGER
+unused_columns: []
+variables:
+  - sentence_external_id:
+      $concat:
+        $values:
+          - OFFENDERID
+          - COMMITMENTPREFIX
+          - SENTENCECOMPONENT
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    sentences:
+      - StateSentence:
+          external_id:
+            $conditional:
+              - $if:
+                  $in:
+                    $value: sentence_type
+                    $options:
+                      - $literal("PROBPLUS")
+                      - $literal("PAROLE")
+                $then:
+                  $concat:
+                    $values:
+                      - $variable(sentence_external_id)
+                      - sentence_type
+              - $else: $variable(sentence_external_id)
+          sentence_lengths:
+            - $conditional:
+                - $if:
+                    $not_null: SUPVPERIODBEGINDATE
+                  $then:
+                    StateSentenceLength:
+                      length_update_datetime: SUPVPERIODBEGINDATE
+                      projected_completion_date_min_external:
+                        $custom:
+                          $function: us_ar_custom_parsers.null_far_future_date
+                          $args:
+                            date: min_end_date
+                      projected_completion_date_max_external:
+                        $custom:
+                          $function: us_ar_custom_parsers.null_far_future_date
+                          $args:
+                            date: max_end_date
+                      sentence_length_days_min:
+                        $conditional:
+                          - $if:
+                              $and:
+                                - $not_null: SUPVSTARTDATE
+                                - $not_null: min_end_date
+                            $then:
+                              $custom:
+                                $function: us_ar_custom_parsers.date_diff_in_days
+                                $args:
+                                  start: SUPVSTARTDATE
+                                  end: min_end_date
+                          - $else: sentence_length
+                      sentence_length_days_max: sentence_length
+                      sequence_num: seq_num

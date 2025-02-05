@@ -1,0 +1,240 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentence` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  OFFENDERID: STRING
+  COMMITMENTPREFIX: STRING
+  SENTENCECOMPONENT: STRING
+  SENTENCEIMPOSEDDATE: DATETIME
+  JAILCREDITS: STRING
+  SENTENCETYPE: STRING
+  SENTENCETYPE2: STRING
+  SENTENCETYPE3: STRING
+  SENTENCETYPE4: STRING
+  TIMECOMPFLAG: STRING
+  COMPSTATUSCODE: STRING
+  OFFENSEDATE: DATETIME
+  STATUTE1: STRING
+  STATUTE2: STRING
+  STATUTE3: STRING
+  STATUTE4: STRING
+  FELONYCLASS: STRING
+  SERIOUSNESSLEVEL: STRING
+  NUMBERCOUNTS: STRING
+  PAROLEREVOKEDFLAG: STRING
+  MRRULINGINDICATOR: STRING
+  TYPEORDER: STRING
+  COUNTYOFCONVICTION: STRING
+  JUDGEPARTYID: STRING
+  COURTID: STRING
+  parole_imposed_date: DATETIME
+  prob_plus_imposed_date: DATETIME
+  sentence_category: STRING
+  CS_ID_ARRAY: STRING
+unused_columns: []
+variables:
+  - sentence_external_id:
+      $concat:
+        $values:
+          - OFFENDERID
+          - COMMITMENTPREFIX
+          - SENTENCECOMPONENT
+  - sentence_types:
+      $concat:
+        $values:
+          - SENTENCETYPE
+          - SENTENCETYPE2
+          - SENTENCETYPE3
+          - SENTENCETYPE4
+        $include_nulls: False
+  - offense_type_str:
+      $custom:
+        $function: us_ar_custom_parsers.parse_offense_types
+        $args:
+          statute1: STATUTE1
+          statute2: STATUTE2
+          statute3: STATUTE3
+          statute4: STATUTE4
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    sentences:
+      - $conditional:
+          - $if:
+              $not_null: SENTENCEIMPOSEDDATE
+            $then:
+              StateSentence:
+                external_id:
+                  $conditional:
+                    - $if:
+                        $not_null: sentence_category
+                      $then:
+                        $concat:
+                          $values:
+                            - $variable(sentence_external_id)
+                            - sentence_category
+                    - $else: $variable(sentence_external_id)
+                sentencing_authority: $literal_enum(StateSentencingAuthority.STATE)
+                sentence_group_external_id:
+                  $conditional:
+                    - $if:
+                        $not_null: sentence_category
+                      $then:
+                        $concat:
+                          $values:
+                            - OFFENDERID
+                            - COMMITMENTPREFIX
+                            - sentence_category
+                    - $else:
+                        $concat:
+                          $values:
+                            - OFFENDERID
+                            - COMMITMENTPREFIX
+                parent_sentence_external_id_array: CS_ID_ARRAY
+                sentence_type:
+                  $conditional:
+                    - $if:
+                        $equal: [sentence_category, $literal("PROBPLUS")]
+                      $then: $literal_enum(StateSentenceType.PROBATION)
+                    - $else_if:
+                        $equal: [sentence_category, $literal("PAROLE")]
+                      $then: $literal_enum(StateSentenceType.PAROLE)
+                    - $else_if:
+                        $or:
+                          - $not_null: SENTENCETYPE
+                          - $not_null: SENTENCETYPE2
+                          - $not_null: SENTENCETYPE3
+                          - $not_null: SENTENCETYPE4
+                      $then:
+                        $enum_mapping:
+                          $raw_text: $variable(sentence_types)
+                          $custom_parser: us_ar_custom_enum_parsers.parse_incarceration_sentence_type_v2
+                    - $else: $literal_enum(StateSentenceType.EXTERNAL_UNKNOWN)
+                imposed_date:
+                  $conditional:
+                    - $if:
+                        $equal: [sentence_category, $literal("PAROLE")]
+                      $then: parole_imposed_date
+                    - $else_if:
+                        $equal: [sentence_category, $literal("PROBPLUS")]
+                      $then: prob_plus_imposed_date
+                    - $else: SENTENCEIMPOSEDDATE
+                initial_time_served_days: JAILCREDITS
+                county_code: COUNTYOFCONVICTION
+                parole_possible:
+                  $and:
+                    - $not_in:
+                        $value: TIMECOMPFLAG
+                        $options:
+                          - $literal("G") # No GT or Parole (1805
+                          - $literal("N") # N/E - Not Eligible For Parole
+                          - $literal("X") # Life Without Parole
+                          - $literal("Z") # Death
+                    - $not_in:
+                        $value: PAROLEREVOKEDFLAG
+                        $options:
+                          - $literal("Y")
+                is_life:
+                  $conditional:
+                    - $if:
+                        $not_in:
+                          $value: sentence_category
+                          $options:
+                            - $literal("PAROLE")
+                      $then:
+                        $in:
+                          $value: TIMECOMPFLAG
+                          $options:
+                            - $literal("X") # Life Without Parole
+                            - $literal("Y") # Life With Parole
+                is_capital_punishment:
+                  $equal: [TIMECOMPFLAG, $literal("Z")] # Death
+                charges:
+                  - StateChargeV2:
+                      external_id: $variable(sentence_external_id)
+                      status:
+                        $conditional:
+                          - $if:
+                              $in:
+                                $value: COMPSTATUSCODE
+                                $options:
+                                  - $literal("7") # Expunged
+                                  - $literal("9") # Vacated
+                            $then: $literal_enum(StateChargeV2Status.DROPPED)
+                          - $else_if:
+                              # Sentences are classified as commitment or disposition judgements.
+                              # Disposition judgements still result in the imposition of a sentence,
+                              # usually involving probation or community corrections, but don't
+                              # entail a conviction.
+                              $equal: [TYPEORDER, $literal("2")]
+                            $then: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
+                          - $else: $literal_enum(StateChargeV2Status.CONVICTED)
+                      offense_date: OFFENSEDATE
+                      county_code: COUNTYOFCONVICTION
+                      statute:
+                        $concat:
+                          $separator: "@@"
+                          $values:
+                            - STATUTE1
+                            - STATUTE2
+                            - STATUTE3
+                            - STATUTE4
+                          $include_nulls: False
+                      classification_type:
+                        $conditional:
+                          - $if:
+                              $not_in:
+                                $value: FELONYCLASS
+                                $options:
+                                  - $literal("Z") # None
+                                  - $literal("U") # Unclassified
+                            $then:
+                              $enum_mapping:
+                                $raw_text: FELONYCLASS
+                                $mappings:
+                                  StateChargeV2ClassificationType.FELONY:
+                                    - A # A Felony
+                                    - B # B Felony
+                                    - C # C Felony
+                                    - D # D Felony
+                                    - "Y" # Y Felony
+                                  StateChargeV2ClassificationType.MISDEMEANOR:
+                                    - M # Misdemeanor
+                                  StateChargeV2ClassificationType.EXTERNAL_UNKNOWN:
+                                    - X # Unknown
+                      classification_subtype:
+                        $concat:
+                          $separator: "@@"
+                          $values:
+                            - FELONYCLASS
+                            - SERIOUSNESSLEVEL
+                          $include_nulls: False
+                      counts: NUMBERCOUNTS
+                      is_controlling:
+                        # Controlling sentences are flagged with an X if the sentence controls
+                        # via maximum release date, and M if it controls via the minimum release
+                        # date; only one sentence in a commitment group will have one of these flags
+                        # set. An "L" flag indicates a consecutive sentence on the ruling path, and
+                        # MRRULINGINDICATOR is left as null if none of these 3 flags are set.
+                        $conditional:
+                          - $if:
+                              $not_null: MRRULINGINDICATOR
+                            $then:
+                              $in:
+                                $value: MRRULINGINDICATOR
+                                $options:
+                                  - $literal("X")
+                                  - $literal("M")
+                          - $else: $literal_bool(False)
+                      judge_external_id: JUDGEPARTYID
+                      judicial_district_code: COURTID
+                      offense_type: $variable(offense_type_str)
+                      attempted:
+                        $custom:
+                          $function: us_ar_custom_parsers.is_attempted
+                          $args:
+                            offense_types: $variable(offense_type_str)
