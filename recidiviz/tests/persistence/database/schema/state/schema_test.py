@@ -62,11 +62,6 @@ from recidiviz.common.constants.state.state_person import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import (
-    get_all_database_entities_in_module,
-    get_all_table_classes_in_schema,
-)
 from recidiviz.tests.persistence.database.schema.schema_test import TestSchemaEnums
 
 
@@ -170,15 +165,3 @@ class TestStateSchemaEnums(TestSchemaEnums):
             self.assertIn(enum_canonical_strings.internal_unknown, enum.enums)
             if enum.name not in external_unknown_exceptions:
                 self.assertIn(enum_canonical_strings.external_unknown, enum.enums)
-
-
-class TestStateSchemaTableConsistency(unittest.TestCase):
-    """Test class for validating state schema tables are defined correctly"""
-
-    def testAllTableNamesPrefixedWithState(self) -> None:
-        for cls in get_all_table_classes_in_schema(SchemaType.STATE):
-            self.assertTrue(cls.name.startswith("state_"))
-
-    def testAllDatabaseEntityNamesPrefixedWithState(self) -> None:
-        for cls in get_all_database_entities_in_module(schema):
-            self.assertTrue(cls.__name__.startswith("State"))

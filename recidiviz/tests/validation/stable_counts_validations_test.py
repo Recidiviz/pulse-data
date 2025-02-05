@@ -18,13 +18,13 @@
 import unittest
 from datetime import date
 
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import (
-    get_all_table_classes_in_schema,
-    get_database_entity_by_table_name,
+from recidiviz.persistence.entity.entities_bq_schema import (
+    get_bq_schema_for_entities_module,
 )
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.validation.views.state.stable_counts.entity_by_column_count_stable_counts import (
     exemptions_string_builder,
 )
@@ -38,20 +38,28 @@ class TestStableCountsValidations(unittest.TestCase):
     are valid"""
 
     def test_valid_expected_entities(self) -> None:
-        found_tables = [
-            key.name for key in get_all_table_classes_in_schema(SchemaType.STATE)
-        ]
+        found_tables = list(get_bq_schema_for_entities_module(normalized_entities))
         for entity, _ in ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME.items():
             self.assertIn(entity, found_tables)
 
     def test_valid_date_columns(self) -> None:
+        bq_schema = get_bq_schema_for_entities_module(normalized_entities)
         for (
-            entity_name,
+            entity_table_name,
             config,
         ) in ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME.items():
-            entity = get_database_entity_by_table_name(schema, entity_name)
+            entity_table_bq_schema = bq_schema[entity_table_name]
+            entity_table_schema_by_column = {
+                col_schema.name: col_schema for col_schema in entity_table_bq_schema
+            }
             for date_col in config.date_columns_to_check:
-                self.assertTrue(hasattr(entity, date_col.date_column_name))
+                self.assertTrue(
+                    date_col.date_column_name in entity_table_schema_by_column
+                )
+                schema_field = entity_table_schema_by_column[date_col.date_column_name]
+                self.assertEqual(
+                    bigquery.enums.SqlTypeNames.DATE.value, schema_field.field_type
+                )
 
 
 class TestStableCountsExemptions(unittest.TestCase):
