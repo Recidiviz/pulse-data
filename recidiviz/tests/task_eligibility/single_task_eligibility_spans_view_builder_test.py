@@ -52,6 +52,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     TaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    AndTaskCriteriaGroup,
     InvertedTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaGroupBigQueryViewBuilder,
 )
@@ -250,6 +251,34 @@ class TestSingleTaskEligibilitySpansBigQueryViewBuilder(BigQueryEmulatorTestCase
                 state_code=TES_QUERY_BUILDER.state_code,
             ),
         )
+
+    def test_almost_eligible_condition_nested_in_criteria_list(self) -> None:
+        """
+        Verify an error is raised if the almost eligible condition is applied to a criteria that is not in the
+        top-level criteria list
+        """
+        with self.assertRaises(ValueError):
+            SingleTaskEligibilitySpansBigQueryViewBuilder(
+                state_code=StateCode.US_XX,
+                task_name="my_task_name",
+                description="my_task_description",
+                candidate_population_view_builder=TEST_POPULATION_BUILDER,
+                criteria_spans_view_builders=[
+                    AndTaskCriteriaGroup(
+                        sub_criteria_list=[
+                            TEST_CRITERIA_BUILDER_1,
+                            TEST_CRITERIA_BUILDER_2,
+                        ],
+                        criteria_name="AND_TASK_CRITERIA_GROUP",
+                        allowed_duplicate_reasons_keys=[],
+                    ),
+                ],
+                completion_event_builder=TEST_COMPLETION_EVENT_BUILDER,
+                almost_eligible_condition=NotEligibleCriteriaCondition(
+                    criteria=TEST_CRITERIA_BUILDER_1,
+                    description="Criteria 1 is not met",
+                ),
+            )
 
     def test_simple_tes_query(self) -> None:
         """

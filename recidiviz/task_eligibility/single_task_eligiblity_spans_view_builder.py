@@ -34,6 +34,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.criteria_condition import (
+    AnyTaskCriteriaViewBuilder,
     ComparatorCriteriaCondition,
     CriteriaCondition,
     DateComparatorCriteriaCondition,
@@ -53,7 +54,6 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 )
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-    TaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
     InvertedTaskCriteriaBigQueryViewBuilder,
@@ -124,20 +124,8 @@ TASK_COMPLETION_EVENT_CTE = """task_completion_events AS (
 
 
 def get_all_descendant_criteria_builders(
-    criteria_builders: List[
-        Union[
-            TaskCriteriaBigQueryViewBuilder,
-            TaskCriteriaGroupBigQueryViewBuilder,
-            InvertedTaskCriteriaBigQueryViewBuilder,
-        ]
-    ]
-) -> List[
-    Union[
-        TaskCriteriaBigQueryViewBuilder,
-        TaskCriteriaGroupBigQueryViewBuilder,
-        InvertedTaskCriteriaBigQueryViewBuilder,
-    ]
-]:
+    criteria_builders: List[AnyTaskCriteriaViewBuilder],
+) -> List[AnyTaskCriteriaViewBuilder]:
     """Recursive function to collect all view builders representing task
     criteria at all levels of criteria dependency tree.
     """
@@ -358,13 +346,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         task_name: str,
         description: str,
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
-        criteria_spans_view_builders: List[
-            Union[
-                TaskCriteriaBigQueryViewBuilder,
-                TaskCriteriaGroupBigQueryViewBuilder,
-                InvertedTaskCriteriaBigQueryViewBuilder,
-            ]
-        ],
+        criteria_spans_view_builders: List[AnyTaskCriteriaViewBuilder],
         completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
         almost_eligible_condition: Optional[CriteriaCondition] = None,
     ) -> None:
@@ -372,6 +354,12 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             state_code,
             candidate_population_view_builder,
             criteria_spans_view_builders,
+        )
+        self._validate_almost_eligible_condition(
+            state_code,
+            task_name,
+            criteria_spans_view_builders,
+            almost_eligible_condition,
         )
         view_query_template = self._build_query_template(
             state_code=state_code,
@@ -436,13 +424,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         state_code: StateCode,
         task_name: str,
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
-        criteria_spans_view_builders: List[
-            Union[
-                TaskCriteriaBigQueryViewBuilder,
-                TaskCriteriaGroupBigQueryViewBuilder,
-                InvertedTaskCriteriaBigQueryViewBuilder,
-            ]
-        ],
+        criteria_spans_view_builders: List[AnyTaskCriteriaViewBuilder],
         completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
         almost_eligible_criteria_condition: Optional[CriteriaCondition],
     ) -> str:
@@ -850,28 +832,16 @@ WINDOW w AS (PARTITION BY state_code, person_id ORDER BY start_date ASC)
 
     def all_descendant_criteria_builders(
         self,
-    ) -> Sequence[
-        Union[
-            TaskCriteriaBigQueryViewBuilder,
-            TaskCriteriaGroupBigQueryViewBuilder,
-            InvertedTaskCriteriaBigQueryViewBuilder,
-        ]
-    ]:
+    ) -> Sequence[AnyTaskCriteriaViewBuilder]:
         return get_all_descendant_criteria_builders(self.criteria_spans_view_builders)
 
     @staticmethod
     def _validate_builder_state_codes(
         task_state_code: StateCode,
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
-        criteria_spans_view_builders: List[
-            Union[
-                TaskCriteriaBigQueryViewBuilder,
-                TaskCriteriaGroupBigQueryViewBuilder,
-                InvertedTaskCriteriaBigQueryViewBuilder,
-            ]
-        ],
+        criteria_spans_view_builders: List[AnyTaskCriteriaViewBuilder],
     ) -> None:
-        """Validates that the state code for this task eligiblity view matches the
+        """Validates that the state code for this task eligibility view matches the
         state codes on all component criteria / population view builders (if one
         exists).
         """
@@ -898,3 +868,35 @@ WINDOW w AS (PARTITION BY state_code, person_id ORDER BY start_date ASC)
                         f"state_code [{criteria_view_builder.state_code}] which does "
                         f"not match the task state_code [{task_state_code}]"
                     )
+
+    @staticmethod
+    def _validate_almost_eligible_condition(
+        state_code: StateCode,
+        task_name: str,
+        criteria_spans_view_builders: List[AnyTaskCriteriaViewBuilder],
+        almost_eligible_condition: Optional[CriteriaCondition],
+    ) -> None:
+        """Validate the almost eligible condition is only applied to criteria in the top-level of the
+        criteria spans view builders list, and do not reference a criteria within a task criteria group.
+        """
+        if almost_eligible_condition is None:
+            return
+
+        unsupported_almost_eligible_conditions = set()
+        for (
+            almost_eligible_related_criteria
+        ) in almost_eligible_condition.get_criteria_builders():
+            if almost_eligible_related_criteria not in criteria_spans_view_builders:
+                unsupported_almost_eligible_conditions.add(
+                    almost_eligible_related_criteria.criteria_name
+                )
+
+        if len(unsupported_almost_eligible_conditions) > 0:
+            eligibility_criteria_name_string = ", ".join(
+                [criteria.criteria_name for criteria in criteria_spans_view_builders]
+            )
+            raise ValueError(
+                f"Cannot create task eligibility spans for {state_code.value}-{task_name} with an almost eligible"
+                f" condition for criteria [{', '.join(unsupported_almost_eligible_conditions)}] as it is not in the"
+                f" top-level of eligibility criteria: [{eligibility_criteria_name_string}]"
+            )
