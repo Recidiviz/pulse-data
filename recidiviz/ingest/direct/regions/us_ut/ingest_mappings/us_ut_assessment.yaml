@@ -52,6 +52,16 @@ output:
                 # for new mappings as well
                 StateAssessmentType.LSIR:
                   - "LSI-R:SV SCREENING VERSION"
+                StateAssessmentType.LS_RNR:
+                  - "COPY OF COPY OF COPY OF LS/RNR"
+                  - "COPY OF COPY OF LS/RNR RISK-NE"
+                  - "COPY OF COPY OF WRNA INSTITUTI"
+                  - "COPY OF LS/RNR RISK-NEED-RESPO"
+                  - "LS/RNR RISK-NEED-RESPONSIVITY"
+                  # TODO(#38087) Unsure if these are actually LS/RNR assessments
+                  - "CONVERTED LS/RNR RISK-NEED-RES"
+                  - "COPY OF CONVERTED LS/RNR RISK-"
+                  - "COPY OF COPY OF CONVERTED LS/R"
                 StateAssessmentType.INTERNAL_UNKNOWN:
                   # TODO(#37453) We can probably filter out some of these assessments
                   - "TO BE DELETED"
@@ -85,10 +95,6 @@ output:
                   - "COPY OF WRNA INSTITUTION"
                   - "COPY OF WRNA PRE-RELEASE"
                   - "COPY OF COPY OF COPY OF COPY O"
-                  - "COPY OF COPY OF COPY OF LS/RNR"
-                  - "COPY OF COPY OF LS/RNR RISK-NE"
-                  - "COPY OF COPY OF WRNA INSTITUTI"
-                  - "COPY OF LS/RNR RISK-NEED-RESPO"
                   - "ADMISSION - SATP NOTE"
                   - "LSI-R LVL OF SERVICE INVENTORY"
                   - "TCUDS-V DRUG SCREEN"
@@ -109,12 +115,8 @@ output:
                   - "FEMALE CUSTODY ASSESSMENT"
                   - "MALE CUSTODY RE-ASSESSMENT"
                   - "FEMALE CUSTODY RE-ASSESSMENT"
-                  - "LS/RNR RISK-NEED-RESPONSIVITY"
                   - "COPY OF AP&P CLINICAL SA/MH AS"
                   - "DOC CLINICAL SA/MH ASSESSMENT"
-                  - "CONVERTED LS/RNR RISK-NEED-RES"
-                  - "COPY OF CONVERTED LS/RNR RISK-"
-                  - "COPY OF COPY OF CONVERTED LS/R"
                   - "SOTP STATIC 99R - ON HOLD"
                   - "SOTP STATIC 2002R - ON HOLD"
                   - "AP&P TX DISCHARGE/TRANSFER"

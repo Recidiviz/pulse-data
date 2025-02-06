@@ -34,7 +34,7 @@ _CRITERIA_NAME = "US_UT_RISK_SCORE_REDUCTION_5_PERCENT_OR_MORE"
 
 _QUERY_TEMPLATE = f"""
 # TODO(#37900) - Change after schema change request is approved
-WITH {assessment_scores_with_first_score_ctes(assessment_types_list = ["INTERNAL_UNKNOWN"])}
+WITH {assessment_scores_with_first_score_ctes(assessment_types_list = ["LS_RNR"])}
 
 SELECT 
     state_code,
