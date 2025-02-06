@@ -134,6 +134,9 @@ from recidiviz.monitoring.platform_kpis.cost.bq_monthly_costs_by_dataset import 
 from recidiviz.monitoring.platform_kpis.reliability.stale_metric_exports import (
     STALE_METRIC_EXPORTS_VIEW_BUILDER,
 )
+from recidiviz.monitoring.platform_kpis.velocity.dag_runtimes import (
+    DAG_RUNTIMES_VIEW_BUILDER,
+)
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
@@ -249,6 +252,7 @@ def state_agnostic_deployed_views_without_state_code_column(
         # These views look at the platform as a whole, not breaking data down by state.
         STALE_METRIC_EXPORTS_VIEW_BUILDER.address,
         BQ_MONTHLY_COSTS_BY_DATASET_VIEW_BUILDER.address,
+        DAG_RUNTIMES_VIEW_BUILDER.address,
     }
 
     return {

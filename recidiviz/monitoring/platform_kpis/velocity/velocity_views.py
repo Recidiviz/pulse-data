@@ -16,10 +16,16 @@
 # =============================================================================
 """View config for velocity KPIs"""
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.monitoring.platform_kpis.velocity.dag_runtimes import (
+    DAG_RUNTIMES_VIEW_BUILDER,
+)
 from recidiviz.monitoring.platform_kpis.velocity.normalized_state_hydration_live_snapshot import (
     get_normalized_state_hydration_live_snapshot_view_builder,
 )
 
 
 def get_platform_velocity_kpi_views_to_update() -> list[BigQueryViewBuilder]:
-    return [get_normalized_state_hydration_live_snapshot_view_builder()]
+    return [
+        get_normalized_state_hydration_live_snapshot_view_builder(),
+        DAG_RUNTIMES_VIEW_BUILDER,
+    ]
