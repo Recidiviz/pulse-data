@@ -118,7 +118,7 @@ resource "google_bigquery_data_transfer_config" "normalized_state_hydration_arch
     destination_table_name_template = "normalized_state_hydration_archive"
     write_disposition               = "WRITE_APPEND"
     query                           = <<-EOT
-SELECT CURRENT_DATE("US/Eastern") AS export_date, *
+SELECT CURRENT_DATE("US/Eastern") AS hydration_date, *
 FROM `${var.project_id}.platform_kpis.normalized_state_hydration_live_snapshot`
 EOT
   }
