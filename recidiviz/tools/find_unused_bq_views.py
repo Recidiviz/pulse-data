@@ -98,6 +98,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics i
 from recidiviz.calculator.query.state.views.prototypes.case_note_search.case_notes_data_store import (
     CASE_NOTES_DATA_STORE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
+    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_to_consecutive_parent_sentence import (
     CONSECUTIVE_SENTENCES_VIEW_BUILDER,
 )
@@ -221,6 +224,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         )
         for table_id in get_bq_schema_for_entities_module(state_entities)
     },
+    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER.address: (
+        "This is a new table in the sentence_sessions dataset which will soon be used in "
+        "PSI work (Nick Tallant, 2025-01-30)"
+    ),
     **{
         VIEW_BUILDER.address: (
             "These views mirror the views in the `sentence_sessions` dataset, but without any exclusion of states based on migration status. They will be used for validation and development work but"

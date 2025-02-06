@@ -31,6 +31,9 @@ from recidiviz.calculator.query.state.views.sentence_sessions.overlapping_senten
 from recidiviz.calculator.query.state.views.sentence_sessions.person_projected_date_sessions import (
     PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentence_sessions.sentence_imposed_group_summary import (
+    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentence_sessions.sentence_inferred_group_projected_date_sessions import (
     SENTENCE_INFERRED_GROUP_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
 )
@@ -71,4 +74,6 @@ SENTENCE_SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     PERSON_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
     # Sentence serving periods with projected dates
     SENTENCE_PROJECTED_DATE_SESSIONS_VIEW_BUILDER,
+    # Characteristics of sentence imposed groups and their most severe charge
+    SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
 ]
