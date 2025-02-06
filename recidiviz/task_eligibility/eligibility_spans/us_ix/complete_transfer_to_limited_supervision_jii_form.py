@@ -22,10 +22,10 @@ from recidiviz.task_eligibility.criteria.general import (
     negative_da_within_90_days,
     not_serving_a_life_sentence_on_supervision,
     not_serving_for_sexual_offense_on_supervision,
-    on_supervision_at_least_one_year,
     supervision_level_is_not_diversion,
     supervision_level_is_not_limited,
     supervision_not_past_full_term_completion_date,
+    under_supervision_custodial_authority_at_least_one_year,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     income_verified_within_3_months,
@@ -66,7 +66,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         lsir_level_low_for_90_days.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
         income_verified_within_3_months.VIEW_BUILDER,
-        on_supervision_at_least_one_year.VIEW_BUILDER,
+        under_supervision_custodial_authority_at_least_one_year.VIEW_BUILDER,
         no_active_nco.VIEW_BUILDER,
         supervision_level_is_not_limited.VIEW_BUILDER,
         supervision_level_raw_text_is_not_so_or_soto.VIEW_BUILDER,

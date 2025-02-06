@@ -150,6 +150,7 @@ def get_minimum_age_criteria(
 
 
 def get_minimum_time_served_criteria_query(
+    *,
     criteria_name: str,
     description: str,
     minimum_time_served: int,
@@ -159,6 +160,7 @@ def get_minimum_time_served_criteria_query(
     supervision_levels: Optional[List[str]] = None,
     custody_levels: Optional[List[str]] = None,
     housing_unit_types: Optional[List[str]] = None,
+    custodial_authority_types: Optional[List[str]] = None,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """Returns a state-agnostic criterion view builder indicating spans of time when a
     person has served at least some minimum period of time, as determined by
@@ -201,6 +203,9 @@ def get_minimum_time_served_criteria_query(
 
     housing_unit_types : Optional[List[str]], optional
         A list of housing-unit types by which to filter sessions. Defaults to None.
+
+    custodial_authority_types : Optional[List[str]], optional
+        A list of custodial authority types by which to filter sessions. Defaults to None.
     """
 
     # Default to `system_sessions` if no filters are specified
@@ -254,6 +259,11 @@ def get_minimum_time_served_criteria_query(
         sessions_table = "housing_unit_type_sessions_materialized"
         formatted_values = "', '".join(housing_unit_types)
         sessions_conditions.append(f"housing_unit_type IN ('{formatted_values}')")
+
+    if custodial_authority_types is not None:
+        sessions_table = "custodial_authority_sessions_materialized"
+        formatted_values = "', '".join(custodial_authority_types)
+        sessions_conditions.append(f"custodial_authority IN ('{formatted_values}')")
 
     if len(sessions_conditions) > 0:
         condition_string = "WHERE " + "\n\t\tAND ".join(sessions_conditions)

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criterion span view that shows spans of time during which someone has
-served at least one year on supervision, regardless of the supervision type.
+served at least one year under the supervision authority custodial type. This will exclude
+folks under home confinement that have compartment_level_1 = SUPERVISION and custodial_authority = STATE_PRISON
 """
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -27,14 +28,14 @@ from recidiviz.task_eligibility.utils.general_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "ON_SUPERVISION_AT_LEAST_ONE_YEAR"
+_CRITERIA_NAME = "UNDER_SUPERVISION_CUSTODIAL_AUTHORITY_AT_LEAST_ONE_YEAR"
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     get_minimum_time_served_criteria_query(
         criteria_name=_CRITERIA_NAME,
         description=__doc__,
         minimum_time_served=1,
-        compartment_level_1_types=["SUPERVISION"],
+        custodial_authority_types=["SUPERVISION_AUTHORITY"],
     )
 )
 
