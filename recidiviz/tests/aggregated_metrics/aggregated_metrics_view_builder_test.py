@@ -60,7 +60,7 @@ class TestAggregatedMetricViewDescription(unittest.TestCase):
     def test_aggregated_metric_view_description__period_event(self) -> None:
         docstring = aggregated_metric_view_description(
             population_type=MetricPopulationType.SUPERVISION,
-            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=PeriodEventAggregatedMetric,
             metrics=[
                 MY_DRUG_SCREENS_METRIC,
@@ -72,7 +72,7 @@ class TestAggregatedMetricViewDescription(unittest.TestCase):
 
         expected_docstring = """
 Metrics for the supervision population calculated using
-event observations across an entire analysis period, disaggregated by officer.
+event observations across an entire analysis period, disaggregated by officer_or_previous_if_transitional.
 
 Contains metrics only for: Monthly metric periods for the last 12 months.
 
@@ -120,7 +120,7 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
     def test_aggregated_metric_view_description__assignment_event(self) -> None:
         docstring = aggregated_metric_view_description(
             population_type=MetricPopulationType.SUPERVISION,
-            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=AssignmentEventAggregatedMetric,
             metrics=[
                 MY_ANY_INCARCERATION_365,
@@ -135,7 +135,7 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
         expected_docstring = """
 Metrics for the supervision population calculated using
 events over some window following assignment, for all assignments
-during an analysis period, disaggregated by officer.
+during an analysis period, disaggregated by officer_or_previous_if_transitional.
 
 Contains metrics only for: Year-long metric periods, ending (exclusive) on the first of every month, for the last 12 months.
 
@@ -153,7 +153,7 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
     def test_aggregated_metric_view_description__assignment_span(self) -> None:
         docstring = aggregated_metric_view_description(
             population_type=MetricPopulationType.SUPERVISION,
-            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=AssignmentSpanAggregatedMetric,
             metrics=[
                 MY_DAYS_SUPERVISED_365,
@@ -168,7 +168,7 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
         expected_docstring = """
 Metrics for the supervision population calculated using
 spans over some window following assignment, for all assignments
-during an analysis period, disaggregated by officer.
+during an analysis period, disaggregated by officer_or_previous_if_transitional.
 
 Contains metrics only for: Year-long metric periods, ending (exclusive) on the first of every month, for the last 12 months.
 
@@ -191,7 +191,7 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
         builder = AggregatedMetricsBigQueryViewBuilder(
             dataset_id="my_aggregated_metrics",
             population_type=MetricPopulationType.SUPERVISION,
-            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=PeriodEventAggregatedMetric,
             metrics=[
                 MY_DRUG_SCREENS_METRIC,
@@ -203,11 +203,11 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
         )
 
         self.assertEqual(
-            "my_aggregated_metrics.supervision_officer_period_event_aggregated_metrics__last_12_months",
+            "my_aggregated_metrics.supervision_officer_or_previous_if_transitional_period_event_aggregated_metrics__last_12_months",
             builder.address.to_str(),
         )
         self.assertEqual(
-            "my_aggregated_metrics.supervision_officer_period_event_aggregated_metrics__last_12_months_materialized",
+            "my_aggregated_metrics.supervision_officer_or_previous_if_transitional_period_event_aggregated_metrics__last_12_months_materialized",
             assert_type(builder.materialized_address, BigQueryAddress).to_str(),
         )
 
@@ -232,7 +232,7 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
         builder = AggregatedMetricsBigQueryViewBuilder(
             dataset_id="my_aggregated_metrics",
             population_type=MetricPopulationType.SUPERVISION,
-            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=PeriodEventAggregatedMetric,
             metrics=[
                 MY_DRUG_SCREENS_METRIC,
@@ -244,11 +244,11 @@ class TestAggregatedMetricsBigQueryViewBuilder(unittest.TestCase):
         )
 
         self.assertEqual(
-            "my_aggregated_metrics.my_tag__supervision_officer_period_event_aggregated_metrics__last_12_months",
+            "my_aggregated_metrics.my_tag__supervision_officer_or_previous_if_transitional_period_event_aggregated_metrics__last_12_months",
             builder.address.to_str(),
         )
         self.assertEqual(
-            "my_aggregated_metrics.my_tag__supervision_officer_period_event_aggregated_metrics__last_12_months_materialized",
+            "my_aggregated_metrics.my_tag__supervision_officer_or_previous_if_transitional_period_event_aggregated_metrics__last_12_months_materialized",
             assert_type(builder.materialized_address, BigQueryAddress).to_str(),
         )
 

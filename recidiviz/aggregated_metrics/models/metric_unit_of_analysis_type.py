@@ -36,7 +36,9 @@ class MetricUnitOfAnalysisType(Enum):
     INSIGHTS_CASELOAD_CATEGORY = "INSIGHTS_CASELOAD_CATEGORY"
     SUPERVISION_DISTRICT = "DISTRICT"
     SUPERVISION_OFFICE = "OFFICE"
-    SUPERVISION_OFFICER = "OFFICER"
+    SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL = (
+        "OFFICER_OR_PREVIOUS_IF_TRANSITIONAL"
+    )
     SUPERVISION_UNIT = "UNIT"
     WORKFLOWS_CASELOAD = "WORKFLOWS_CASELOAD"
     LOCATION = "LOCATION"
@@ -152,9 +154,11 @@ class MetricUnitOfAnalysis:
                     primary_key_columns=["state_code", "unit_supervisor"],
                     static_attribute_columns=["unit_supervisor_name"],
                 )
-            case MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
+            case (
+                MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL
+            ):
                 return MetricUnitOfAnalysis(
-                    type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+                    type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
                     primary_key_columns=["state_code", "officer_id"],
                     static_attribute_columns=["officer_name"],
                 )
@@ -262,7 +266,7 @@ SELECT DISTINCT
 FROM
     `{project_id}.sessions.session_location_names_materialized`
 """,
-    MetricUnitOfAnalysisType.SUPERVISION_OFFICER: """
+    MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL: """
 SELECT
     a.state_code,
     b.external_id AS officer_id,

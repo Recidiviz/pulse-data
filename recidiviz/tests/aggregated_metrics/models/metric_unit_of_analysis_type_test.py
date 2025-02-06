@@ -50,7 +50,7 @@ class MetricUnitOfAnalysisByTypeTest(unittest.TestCase):
 class MetricUnitOfAnalysisTest(unittest.TestCase):
     def test_get_index_columns_query_string(self) -> None:
         my_metric_aggregation_level = MetricUnitOfAnalysis(
-            type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             primary_key_columns=["region_code", "my_officer_id"],
             static_attribute_columns=["my_officer_attribute"],
         )

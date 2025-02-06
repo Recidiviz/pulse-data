@@ -47,7 +47,10 @@ def supervision_metric_query_template(
         "period",
         "end_date",
     ]
-    if unit_of_analysis.type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
+    if (
+        unit_of_analysis.type
+        == MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL
+    ):
         shared_subquery_columns.append("include_in_outcomes")
 
     source_table = (
@@ -87,7 +90,7 @@ AND period = "YEAR"
 -- Limit the events lookback to only the necessary periods to minimize the size of the subqueries
 AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
 -- For officers, we only need these metrics if this officer is included in outcomes
-{"AND include_in_outcomes" if unit_of_analysis.type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER else ""}
+{"AND include_in_outcomes" if unit_of_analysis.type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL else ""}
 """
 
             rate_subquery = f"""
@@ -102,13 +105,16 @@ AND period = "YEAR"
 -- Limit the events lookback to only the necessary periods to minimize the size of the subqueries
 AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
 -- For officers, we only need these metrics if this officer is included in outcomes
-{"AND include_in_outcomes" if unit_of_analysis.type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER else ""}
+{"AND include_in_outcomes" if unit_of_analysis.type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL else ""}
 """
 
             subqueries.extend([rate_subquery, count_subquery])
         # If we're building an officer query, append subqueries for officer task
         # completions (metrics that are unrelated to outlier outcomes)
-        if unit_of_analysis.type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
+        if (
+            unit_of_analysis.type
+            == MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL
+        ):
             for opp_config in [
                 c
                 for c in WORKFLOWS_OPPORTUNITY_CONFIGS

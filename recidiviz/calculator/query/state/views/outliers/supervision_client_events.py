@@ -262,7 +262,7 @@ treatment_referrals AS (
                 NULL  as code,
                 "No treatment start within the past year"  as description
             )) AS attributes
-    FROM `{{project_id}}.aggregated_metrics.supervision_officer_metrics_person_assignment_sessions_materialized` a
+    FROM `{{project_id}}.aggregated_metrics.supervision_officer_or_previous_if_transitional_metrics_person_assignment_sessions_materialized` a
     CROSS JOIN
         latest_year_time_period period
     LEFT JOIN `{{project_id}}.normalized_state.state_program_assignment` spa
@@ -391,7 +391,7 @@ treatment_referrals AS (
         latest_year_time_period period
     INNER JOIN `{{project_id}}.normalized_state.state_person` p 
         USING (person_id)
-    LEFT JOIN `{{project_id}}.aggregated_metrics.supervision_officer_metrics_person_assignment_sessions_materialized` a
+    LEFT JOIN `{{project_id}}.aggregated_metrics.supervision_officer_or_previous_if_transitional_metrics_person_assignment_sessions_materialized` a
         ON a.person_id = e.person_id
         -- Get the officer assignment information for the session leading up to the event
         AND event_date BETWEEN a.assignment_date AND {nonnull_end_date_clause('a.end_date')}

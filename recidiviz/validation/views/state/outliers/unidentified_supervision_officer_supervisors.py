@@ -17,7 +17,7 @@
 """
 View that returns information for supervision officer supervisors who do not have a corresponding record in
 the outliers supervision_officer_supervisor product view, but are supervisors for officer with metrics in the current
-12-month reporting period (via supervision_officer_aggregated_metrics).
+12-month reporting period (via supervision_officer_or_previous_if_transitional_aggregated_metrics).
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder

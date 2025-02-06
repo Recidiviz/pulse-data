@@ -36,7 +36,7 @@ WITH assignment_spans AS (
         assignment_date AS start_date,
         end_date
     FROM
-        `{project_id}.{aggregated_metrics_dataset}.supervision_officer_metrics_person_assignment_sessions_materialized`
+        `{project_id}.{aggregated_metrics_dataset}.supervision_officer_or_previous_if_transitional_metrics_person_assignment_sessions_materialized`
 )
 ,
 population_change_dates AS (
