@@ -36,6 +36,7 @@ class MetricUnitOfAnalysisType(Enum):
     INSIGHTS_CASELOAD_CATEGORY = "INSIGHTS_CASELOAD_CATEGORY"
     SUPERVISION_DISTRICT = "DISTRICT"
     SUPERVISION_OFFICE = "OFFICE"
+    SUPERVISION_OFFICER = "OFFICER"
     SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL = (
         "OFFICER_OR_PREVIOUS_IF_TRANSITIONAL"
     )
@@ -154,6 +155,12 @@ class MetricUnitOfAnalysis:
                     primary_key_columns=["state_code", "unit_supervisor"],
                     static_attribute_columns=["unit_supervisor_name"],
                 )
+            case MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
+                return MetricUnitOfAnalysis(
+                    type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+                    primary_key_columns=["state_code", "officer_id"],
+                    static_attribute_columns=["officer_name"],
+                )
             case (
                 MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL
             ):
@@ -265,6 +272,18 @@ SELECT DISTINCT
     supervision_office_name AS office_name,
 FROM
     `{project_id}.sessions.session_location_names_materialized`
+""",
+    MetricUnitOfAnalysisType.SUPERVISION_OFFICER: """
+SELECT
+    a.state_code,
+    b.external_id AS officer_id,
+    a.full_name_clean AS officer_name,
+FROM
+    `{project_id}.reference_views.state_staff_with_names` a
+INNER JOIN
+    `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` b
+USING
+    (staff_id)
 """,
     MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL: """
 SELECT
