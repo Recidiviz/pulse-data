@@ -73,6 +73,7 @@ class StateAssessmentType(StateEntityEnum):
     ICASA = state_enum_strings.state_assessment_type_icasa
     J_SOAP = state_enum_strings.state_assessment_type_j_soap
     LSIR = state_enum_strings.state_assessment_type_lsir
+    LS_RNR = state_enum_strings.state_assessment_type_ls_rnr
     ODARA = state_enum_strings.state_assessment_type_odara
     ORAS_COMMUNITY_SUPERVISION = (
         state_enum_strings.state_assessment_type_oras_community_supervision
@@ -135,6 +136,7 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.J_SOAP: "Juvenile Sex Offender Assessment Protocol-II "
     "(J-SOAP-II)",
     StateAssessmentType.LSIR: "Level of Service Inventory - Revised (LSI-R)",
+    StateAssessmentType.LS_RNR: "Level of Service/Risk, Need, Responsivity",
     StateAssessmentType.ODARA: "Ontario Domestic Assault Risk Assessment",
     StateAssessmentType.ORAS_COMMUNITY_SUPERVISION: "Ohio Risk Assessment System - "
     "Community Supervision Tool (ORAS-CST)",

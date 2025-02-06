@@ -155,6 +155,7 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_icasa,
     state_enum_strings.state_assessment_type_j_soap,
     state_enum_strings.state_assessment_type_lsir,
+    state_enum_strings.state_assessment_type_ls_rnr,
     state_enum_strings.state_assessment_type_odara,
     state_enum_strings.state_assessment_type_oyas,
     state_enum_strings.state_assessment_type_pa_rst,

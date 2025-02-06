@@ -203,6 +203,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.HIQ,
                 StateAssessmentType.ICASA,
                 StateAssessmentType.J_SOAP,
+                StateAssessmentType.LS_RNR,
                 StateAssessmentType.ODARA,
                 StateAssessmentType.OYAS,
                 StateAssessmentType.PA_RST,

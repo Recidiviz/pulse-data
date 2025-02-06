@@ -70,6 +70,7 @@ state_assessment_type_hiq = "HIQ"
 state_assessment_type_icasa = "ICASA"
 state_assessment_type_j_soap = "J_SOAP"
 state_assessment_type_lsir = "LSIR"
+state_assessment_type_ls_rnr = "LS_RNR"
 state_assessment_type_odara = "ODARA"
 state_assessment_type_oras_community_supervision = "ORAS_COMMUNITY_SUPERVISION"
 state_assessment_type_oras_community_supervision_screening = (
