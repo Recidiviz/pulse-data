@@ -21,7 +21,7 @@ import inspect
 import sys
 from functools import lru_cache
 from types import ModuleType
-from typing import Any, Iterator, List, Optional, Type
+from typing import Any, Iterator, List, Type
 
 from sqlalchemy import Table
 from sqlalchemy.ext.declarative import DeclarativeMeta
@@ -125,18 +125,6 @@ def get_database_entity_by_table_name(
             return member
 
     raise ValueError(f"Could not find model with table named {table_name}")
-
-
-def get_primary_key_column_name(
-    schema_module: ModuleType, table_name: str
-) -> Optional[str]:
-    """Return the column name of the primary key associated with the given table name"""
-    if is_association_table(table_name):
-        # Association tables don't have primary keys
-        return None
-
-    database_entity = get_database_entity_by_table_name(schema_module, table_name)
-    return database_entity.get_primary_key_column_name()
 
 
 def _is_database_entity_subclass(member: Any) -> bool:
