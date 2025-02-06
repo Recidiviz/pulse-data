@@ -50,6 +50,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateTaskDeadline,
 )
 from recidiviz.pipelines.ingest.state.validator import validate_root_entity
+from recidiviz.utils.types import assert_type
 
 
 class TestEntityValidations(unittest.TestCase):
@@ -585,7 +586,7 @@ class TestUniqueConstraintValid(unittest.TestCase):
             ]
         }
         all_entities = get_all_entity_classes_in_module(entities_schema)
-        for entity in all_entities:
+        for entity in sorted(all_entities, key=lambda e: e.__name__):
             constraints = (
                 entity.global_unique_constraints()
                 + entity.entity_tree_unique_constraints()
@@ -596,11 +597,16 @@ class TestUniqueConstraintValid(unittest.TestCase):
             constraint_names = [constraint.name for constraint in constraints]
 
             expected_missing = expected_missing_schema_constraints.get(entity) or []
-            schema_constraint_names = [
-                arg.name
-                for arg in schema_entity.__table_args__
-                if isinstance(arg, sqlalchemy.UniqueConstraint)
-            ] + expected_missing
+
+            schema_constraint_names = (
+                [
+                    arg.name
+                    for arg in assert_type(schema_entity.__table_args__, tuple)
+                    if isinstance(arg, sqlalchemy.UniqueConstraint)
+                ]
+                if hasattr(schema_entity, "__table_args__")
+                else []
+            ) + expected_missing
             self.assertListEqual(constraint_names, schema_constraint_names)
 
 
