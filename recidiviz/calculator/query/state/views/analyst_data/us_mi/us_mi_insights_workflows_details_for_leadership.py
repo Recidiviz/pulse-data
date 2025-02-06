@@ -264,7 +264,7 @@ LEFT JOIN logins
   USING(officer_id, state_code)
 LEFT JOIN outlier_status_flag flag
   USING(officer_id, state_code, period, end_date)
-INNER JOIN `{project_id}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized` agg
+INNER JOIN `{project_id}.aggregated_metrics.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized` agg
   USING(state_code, officer_id, period, end_date)
 LEFT JOIN (SELECT * FROM outlier_rates WHERE metric_id = 'absconsions_bench_warrants') ab_rates
   USING(state_code, officer_id, period, end_date)

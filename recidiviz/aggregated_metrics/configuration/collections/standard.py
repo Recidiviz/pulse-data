@@ -177,7 +177,7 @@ UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: dict[
         MetricUnitOfAnalysisType.STATE_CODE,
     ],
     MetricPopulationType.SUPERVISION: [
-        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
         MetricUnitOfAnalysisType.SUPERVISION_UNIT,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,

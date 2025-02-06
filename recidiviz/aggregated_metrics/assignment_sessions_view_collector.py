@@ -60,7 +60,7 @@ def relevant_units_of_analysis_for_population_type(
         case MetricPopulationType.SUPERVISION:
             return [
                 MetricUnitOfAnalysisType.INSIGHTS_CASELOAD_CATEGORY,
-                MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+                MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
                 MetricUnitOfAnalysisType.SUPERVISION_UNIT,
                 MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
                 MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,

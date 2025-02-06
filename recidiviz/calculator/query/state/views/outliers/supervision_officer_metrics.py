@@ -84,7 +84,7 @@ _OFFICER_CASELOAD_CATEGORIES_CTE = "\n    UNION ALL\n".join(
         "{category_type.name}" AS category_type,
         {_get_caseload_category_criteria_for_comparison(category_type)} AS caseload_category,
     FROM
-        `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
+        `{{project_id}}.aggregated_metrics.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized`
 """
         for category_type in InsightsCaseloadCategoryType
     ]
@@ -155,7 +155,7 @@ def _supervision_vitals_metric_query_template() -> str:
             avg_population_contact_required,
             avg_population_assessment_overdue,
             avg_population_assessment_required
-        FROM `{{project_id}}.vitals_report_views.supervision_officer_aggregated_metrics_materialized`
+        FROM `{{project_id}}.vitals_report_views.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized`
         WHERE state_code IN ({list_to_query_string(vitals_states, quoted=True)}) AND DATE_DIFF(end_date, start_date, DAY) = 1
     )\n{unioned_state_queries}
     """
@@ -168,11 +168,11 @@ _OFFICER_VITALS_METRICS: LiteralString | Literal[
 
 _QUERY_TEMPLATE = f"""
 WITH 
-filtered_supervision_officer_aggregated_metrics AS (
+filtered_supervision_officer_or_previous_if_transitional_aggregated_metrics AS (
   {format_state_specific_officer_aggregated_metric_filters()}
 ),
 supervision_officer_metrics AS (
-    {supervision_metric_query_template(unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER, cte_source="filtered_supervision_officer_aggregated_metrics")}
+    {supervision_metric_query_template(unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL, cte_source="filtered_supervision_officer_or_previous_if_transitional_aggregated_metrics")}
 ),
 officer_caseload_categories AS (
     {_OFFICER_CASELOAD_CATEGORIES_CTE}

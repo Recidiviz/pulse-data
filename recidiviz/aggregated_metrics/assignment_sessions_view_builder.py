@@ -53,7 +53,7 @@ _UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT: dict[
     ): "SELECT * FROM `{project_id}.sessions.system_sessions_materialized`",
     (
         MetricUnitOfObservationType.PERSON_ID,
-        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
     ): """
 SELECT *, supervising_officer_external_id AS officer_id
 FROM `{project_id}.sessions.supervision_officer_transitional_caseload_type_sessions_materialized`
@@ -122,7 +122,7 @@ SELECT *, TRUE AS in_signed_state FROM `{project_id}.sessions.system_sessions_ma
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
-        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
     ): """
 SELECT * FROM `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
 WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
@@ -248,7 +248,7 @@ WHERE
     AND is_primary_user""",
     (
         MetricUnitOfObservationType.WORKFLOWS_PRIMARY_USER,
-        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
     ): """SELECT
     state_code,
     workflows_user_email_address AS email_address,

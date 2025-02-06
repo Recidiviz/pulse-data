@@ -43,7 +43,10 @@ from recidiviz.calculator.query.bq_utils import (
 _MISC_METRICS_SUPPORTED_POPULATIONS_UNIT_OF_ANALYSIS_TYPES: List[
     Tuple[MetricPopulationType, MetricUnitOfAnalysisType]
 ] = [
-    (MetricPopulationType.SUPERVISION, MetricUnitOfAnalysisType.SUPERVISION_OFFICER),
+    (
+        MetricPopulationType.SUPERVISION,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
+    ),
     (MetricPopulationType.SUPERVISION, MetricUnitOfAnalysisType.SUPERVISION_UNIT),
     (MetricPopulationType.SUPERVISION, MetricUnitOfAnalysisType.SUPERVISION_OFFICE),
     (MetricPopulationType.SUPERVISION, MetricUnitOfAnalysisType.SUPERVISION_DISTRICT),
@@ -61,7 +64,10 @@ def _query_template_and_format_args(
     that template) for the provided population and unit of analysis.
     """
     if population_type == MetricPopulationType.SUPERVISION:
-        if unit_of_analysis.type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
+        if (
+            unit_of_analysis.type
+            == MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL
+        ):
             group_by_range = range(1, len(unit_of_analysis.primary_key_columns) + 4)
             group_by_range_str = ", ".join(list(map(str, group_by_range)))
             cte = f"""
@@ -139,7 +145,7 @@ def _query_template_and_format_args(
             IFNULL(b.supervision_office_id, b.supervision_office_id_inferred) AS office,
             supervisor_staff_id AS unit_supervisor,
         FROM
-            `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized` a
+            `{{project_id}}.aggregated_metrics.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized` a
         INNER JOIN
             `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` b
         ON

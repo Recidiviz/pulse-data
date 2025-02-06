@@ -136,7 +136,9 @@ AVG_CRITICAL_CASELOAD_SIZE = MiscAggregatedMetric(
     description="Average count of clients in the officer's caseload among days when "
     "officer has critical caseload size",
     populations=[MetricPopulationType.SUPERVISION],
-    unit_of_analysis_types=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
+    unit_of_analysis_types=[
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL
+    ],
 )
 
 AVG_DAILY_CASELOAD_OFFICER = MiscAggregatedMetric(
@@ -1828,7 +1830,9 @@ PROP_PERIOD_WITH_CRITICAL_CASELOAD = MiscAggregatedMetric(
     description="Proportion of the analysis period for which an officer has a critical "
     "caseload size",
     populations=[MetricPopulationType.SUPERVISION],
-    unit_of_analysis_types=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
+    unit_of_analysis_types=[
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL
+    ],
 )
 
 # This exists to support PROP_SENTENCE_ metrics

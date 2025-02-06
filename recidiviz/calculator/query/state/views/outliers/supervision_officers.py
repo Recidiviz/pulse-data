@@ -80,7 +80,7 @@ def query_template() -> str:
         ON attrs.staff_id = staff.staff_id AND attrs.state_code = staff.state_code
     LEFT JOIN (
         SELECT state_code, officer_id, MIN(assignment_date) AS earliest_person_assignment_date
-        FROM `{{project_id}}.aggregated_metrics.supervision_officer_metrics_person_assignment_sessions_materialized`
+        FROM `{{project_id}}.aggregated_metrics.supervision_officer_or_previous_if_transitional_metrics_person_assignment_sessions_materialized`
         GROUP BY 1,2
     ) assignment
         ON attrs.officer_id = assignment.officer_id AND attrs.state_code = assignment.state_code

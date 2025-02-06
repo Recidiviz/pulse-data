@@ -199,7 +199,7 @@ GROUP BY state_code, unit_supervisor, metric_period_start_date, metric_period_en
     def test_build_period_span_metric__single(self) -> None:
         result = build_single_observation_type_aggregated_metric_query_template(
             observation_type=SpanType.ASSESSMENT_SCORE_SESSION,
-            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=PeriodSpanAggregatedMetric,
             single_observation_type_metrics=[
                 MY_AVG_LSIR_SCORE,
@@ -298,7 +298,7 @@ GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_dat
     def test_build_period_span_metric__multiple(self) -> None:
         result = build_single_observation_type_aggregated_metric_query_template(
             observation_type=SpanType.COMPARTMENT_SESSION,
-            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=PeriodSpanAggregatedMetric,
             single_observation_type_metrics=[
                 MY_AVG_DAILY_POPULATION,
@@ -396,7 +396,7 @@ GROUP BY state_code, officer_id, metric_period_start_date, metric_period_end_dat
     def test_build_assignment_event_metric__single(self) -> None:
         result = build_single_observation_type_aggregated_metric_query_template(
             observation_type=EventType.INCARCERATION_START,
-            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=AssignmentEventAggregatedMetric,
             single_observation_type_metrics=[
                 MY_ANY_INCARCERATION_365,
@@ -682,7 +682,7 @@ GROUP BY state_code, district, office, metric_period_start_date, metric_period_e
     def test_build_assignment_span_metric__multiple(self) -> None:
         result = build_single_observation_type_aggregated_metric_query_template(
             observation_type=SpanType.COMPARTMENT_SESSION,
-            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=AssignmentSpanAggregatedMetric,
             single_observation_type_metrics=[
                 MY_DAYS_SUPERVISED_365,

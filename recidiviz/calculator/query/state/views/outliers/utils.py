@@ -47,7 +47,7 @@ def format_state_specific_officer_aggregated_metric_filters() -> str:
         -- and outlier calculations
         include_in_outcomes {config.supervision_officer_metric_exclusions if config.supervision_officer_metric_exclusions else ""} 
         as include_in_outcomes
-    FROM `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized` m
+    FROM `{{project_id}}.aggregated_metrics.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized` m
     -- Join on staff product view to ensure staff exclusions are applied
     INNER JOIN `{{project_id}}.outliers_views.supervision_officers_materialized` o
         ON m.state_code = o.state_code AND m.officer_id = o.external_id

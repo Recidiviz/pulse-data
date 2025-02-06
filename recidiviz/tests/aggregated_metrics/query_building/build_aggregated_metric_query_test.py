@@ -58,7 +58,7 @@ class TestBuildSingleObservationTypeAggregatedMetricQueryTemplate(unittest.TestC
 
         result = build_aggregated_metric_query_template(
             population_type=MetricPopulationType.SUPERVISION,
-            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=PeriodEventAggregatedMetric,
             metrics=[
                 MY_DRUG_SCREENS_METRIC,
@@ -69,7 +69,7 @@ class TestBuildSingleObservationTypeAggregatedMetricQueryTemplate(unittest.TestC
         expected_result = """
 WITH 
 person_assignments_by_time_period AS (
-    SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_officer__by_intersection_extended__last_12_months_materialized`
+    SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_officer_or_previous_if_transitional__by_intersection_extended__last_12_months_materialized`
 ),
 output_row_keys AS (
     SELECT DISTINCT state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period
@@ -781,7 +781,7 @@ USING (state_code, district, metric_period_start_date, metric_period_end_date_ex
     def test_build__assignment_span__single_unit_of_observation(self) -> None:
         result = build_aggregated_metric_query_template(
             population_type=MetricPopulationType.SUPERVISION,
-            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+            unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
             metric_class=AssignmentSpanAggregatedMetric,
             metrics=[
                 MY_DAYS_SUPERVISED_365,
@@ -794,7 +794,7 @@ USING (state_code, district, metric_period_start_date, metric_period_end_date_ex
         expected_result = """
 WITH 
 person_assignments_by_time_period AS (
-    SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_officer__by_assignment__quarters_rolling_last_12_months_materialized`
+    SELECT * FROM `{project_id}.unit_of_analysis_assignments_by_time_period.supervision__person_to_officer_or_previous_if_transitional__by_assignment__quarters_rolling_last_12_months_materialized`
 ),
 output_row_keys AS (
     SELECT DISTINCT state_code, officer_id, metric_period_start_date, metric_period_end_date_exclusive, period

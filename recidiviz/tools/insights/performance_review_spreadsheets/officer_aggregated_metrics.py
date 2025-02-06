@@ -28,7 +28,7 @@ SELECT
     officer_id,
     end_date,
     avg_daily_population,
-FROM `recidiviz-123.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
+FROM `recidiviz-123.aggregated_metrics.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized`
 WHERE
     state_code = "US_IX"
     AND period = "MONTH"
@@ -43,7 +43,7 @@ SELECT
     avg_daily_population,
     violations_absconsion,
     incarceration_starts_most_severe_violation_type_not_absconsion
-FROM `recidiviz-123.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
+FROM `recidiviz-123.aggregated_metrics.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized`
 WHERE
     state_code = "US_IX"
     AND period = "YEAR"
