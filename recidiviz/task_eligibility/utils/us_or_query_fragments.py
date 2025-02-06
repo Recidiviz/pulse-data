@@ -72,7 +72,7 @@ OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES = [
     # referenced by ORS number in the rule, the agency decided that they'd exclude all
     # felony DUIs to align with legislative intent (rather than having POs check each
     # judgment manually).
-    "813.010(5)",
+    "813.010(05)",
     "813.011",
     "144.103",
 ]
