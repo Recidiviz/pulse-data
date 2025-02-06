@@ -69,9 +69,10 @@ class RowHeadingEnum(Enum):
     USAGE = auto()
     NUM_LOGINS = auto()
     NUM_MONTHS_LOGGED_IN = auto()
+    CASELOAD_INFO = auto()
+    AVG_DAILY_CASELOAD = auto()
     CASELOAD_TYPE = auto()
     OUTCOMES_METRICS = auto()
-    AVG_DAILY_CASELOAD = auto()
     HIGH_ABSCONSION_RATE = auto()
     HIGH_INCARCERATION_RATE = auto()
     TIMELY_RISK_ASSESSMENTS = auto()
@@ -105,11 +106,12 @@ class ColumnHeadingEnum(Enum):
 
 _ROW_HEADING_LABELS = {
     RowHeadingEnum.USAGE: "Usage",
-    RowHeadingEnum.NUM_LOGINS: "# Total Logins each month",
+    RowHeadingEnum.NUM_LOGINS: "# Total Logins",
     RowHeadingEnum.NUM_MONTHS_LOGGED_IN: "# of Months in 2024 where they logged in at least once",
+    RowHeadingEnum.CASELOAD_INFO: "Caseload Information",
+    RowHeadingEnum.AVG_DAILY_CASELOAD: "# Average Daily Caseload",
     RowHeadingEnum.CASELOAD_TYPE: "Caseload Type",
     RowHeadingEnum.OUTCOMES_METRICS: "Outcomes Metrics",
-    RowHeadingEnum.AVG_DAILY_CASELOAD: "# Average Daily Caseload",
     RowHeadingEnum.HIGH_ABSCONSION_RATE: "Months flagged as having a high absconsion rate",
     RowHeadingEnum.HIGH_INCARCERATION_RATE: "Months flagged as having a high incarceration rate",
     RowHeadingEnum.EARLY_DISCHARGE: "Early Discharge",
@@ -127,10 +129,10 @@ _ROW_HEADING_LABELS = {
     RowHeadingEnum.SLD: "Supervision Level Downgrade",
     RowHeadingEnum.SLD_GRANTS: "Grants during time period",
     RowHeadingEnum.SLD_ELIGIBLE: "Eligible as of end of time period",
-    RowHeadingEnum.FT_DISCHARGE: "Past FTRD",
-    RowHeadingEnum.FT_DISCHARGE_GRANTS: "Grants during time period",
-    RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
-    RowHeadingEnum.FT_DISCHARGE_ELIGIBLE: "Eligible as of end of time period",
+    RowHeadingEnum.FT_DISCHARGE: "Discharges",
+    RowHeadingEnum.FT_DISCHARGE_GRANTS: "Successful full term discharges during time period",
+    RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE: "Successful Discharge Rate (# full term discharges / avg daily caseload)",
+    RowHeadingEnum.FT_DISCHARGE_ELIGIBLE: "Clients past full term release date as of end of time period",
     RowHeadingEnum.OPERATIONS_METRICS: "Operations Metrics",
     RowHeadingEnum.TIMELY_RISK_ASSESSMENTS: "Timely Risk Assessments",
     RowHeadingEnum.TIMELY_F2F_CONTACTS: "Timely F2F Contacts",
@@ -139,12 +141,14 @@ _ROW_HEADING_LABELS = {
 
 _ROW_HEADINGS: list[RowHeadingEnum | str | None] = [
     RowHeadingEnum.USAGE,
-    RowHeadingEnum.NUM_LOGINS,
     RowHeadingEnum.NUM_MONTHS_LOGGED_IN,
+    RowHeadingEnum.NUM_LOGINS,
+    None,
+    RowHeadingEnum.CASELOAD_INFO,
+    RowHeadingEnum.AVG_DAILY_CASELOAD,
     RowHeadingEnum.CASELOAD_TYPE,
     None,
     RowHeadingEnum.OUTCOMES_METRICS,
-    RowHeadingEnum.AVG_DAILY_CASELOAD,
     RowHeadingEnum.HIGH_ABSCONSION_RATE,
     RowHeadingEnum.HIGH_INCARCERATION_RATE,
     None,
@@ -162,14 +166,14 @@ _ROW_HEADINGS: list[RowHeadingEnum | str | None] = [
     RowHeadingEnum.LSU_MONTHLY_GRANT_RATE,
     RowHeadingEnum.LSU_MARKED_INELIGIBLE_REASON,
     None,
-    RowHeadingEnum.SLD,
-    RowHeadingEnum.SLD_ELIGIBLE,
-    RowHeadingEnum.SLD_GRANTS,
-    None,
     RowHeadingEnum.FT_DISCHARGE,
     RowHeadingEnum.FT_DISCHARGE_ELIGIBLE,
     RowHeadingEnum.FT_DISCHARGE_GRANTS,
     RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE,
+    None,
+    RowHeadingEnum.SLD,
+    RowHeadingEnum.SLD_ELIGIBLE,
+    RowHeadingEnum.SLD_GRANTS,
     None,
     RowHeadingEnum.OPERATIONS_METRICS,
     RowHeadingEnum.TIMELY_RISK_ASSESSMENTS,
@@ -188,6 +192,7 @@ _COLUMN_HEADINGS = [
 # Rows that represent a section header and need different formatting
 _ROW_SECTION_HEADERS = [
     RowHeadingEnum.USAGE,
+    RowHeadingEnum.CASELOAD_INFO,
     RowHeadingEnum.OUTCOMES_METRICS,
     RowHeadingEnum.EARLY_DISCHARGE,
     RowHeadingEnum.LSU,
