@@ -1217,6 +1217,8 @@ columns:
         description: Corrections Medical Assistant
       - value: "12423"
         description: Public Information Specialist
+      - value: "12424"
+        description: Quartermaster
   - name: funding_source_id
     description: |-
       reference code for funding source (links with ADH_REFERENCE_CODE)
