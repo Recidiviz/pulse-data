@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Aggregated metrics at the officer-level for supervision-related metrics"""
-from typing import List, Literal, LiteralString
+from typing import List
 
 from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
@@ -32,13 +32,18 @@ from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states imp
     get_outliers_enabled_states_for_bigquery,
 )
 from recidiviz.calculator.query.state.views.outliers.supervision_metrics_helpers import (
+    columns_for_unit_of_analysis,
     supervision_metric_query_template,
 )
 from recidiviz.calculator.query.state.views.outliers.utils import (
     format_state_specific_officer_aggregated_metric_filters,
 )
+from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
+    WORKFLOWS_OPPORTUNITY_CONFIGS,
+    PersonRecordType,
+)
 from recidiviz.outliers.outliers_configs import get_outliers_backend_config
-from recidiviz.outliers.types import OutliersVitalsMetricConfig
+from recidiviz.outliers.types import OutliersMetricValueType, OutliersVitalsMetricConfig
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string_formatting import fix_indent
@@ -161,10 +166,38 @@ def _supervision_vitals_metric_query_template() -> str:
     """
 
 
-_OFFICER_VITALS_METRICS: LiteralString | Literal[
-    ""
-] = _supervision_vitals_metric_query_template()
+_OFFICER_VITALS_METRICS = _supervision_vitals_metric_query_template()
 
+_ZERO_GRANTS_METRICS = "\nUNION ALL\n".join(
+    f"""
+SELECT
+    {list_to_query_string(columns_for_unit_of_analysis(MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL))},
+    "task_completions_{opp_config.opportunity_type}" AS metric_id,
+    task_completions_{opp_config.task_completion_event.value} AS metric_value,
+    "{OutliersMetricValueType.COUNT.value}" AS value_type
+FROM filtered_supervision_officer_or_previous_if_transitional_aggregated_metrics
+WHERE state_code = '{opp_config.state_code.value}'
+AND period = "YEAR"
+-- For opportunity completions, we only need the most recent month's data.
+AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)
+"""
+    for opp_config in WORKFLOWS_OPPORTUNITY_CONFIGS
+    if opp_config.state_code.value in get_outliers_enabled_states_for_bigquery()
+    and opp_config.person_record_type == PersonRecordType.CLIENT
+)
+
+_PROP_PERIOD_WITH_CRITICAL_CASELOAD_METRICS = f"""
+SELECT
+    {list_to_query_string(columns_for_unit_of_analysis(MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL))},
+    "prop_period_with_critical_caseload" AS metric_id,
+    prop_period_with_critical_caseload AS metric_value,
+    "{OutliersMetricValueType.PROPORTION.value}" AS value_type
+FROM filtered_supervision_officer_or_previous_if_transitional_aggregated_metrics
+WHERE state_code IN ({list_to_query_string(get_outliers_enabled_states_for_bigquery(), quoted=True)})
+AND period = "YEAR"
+-- This will be used in tandem with opportunity completions, so we only need the most recent month's data.
+AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)
+"""
 
 _QUERY_TEMPLATE = f"""
 WITH 
@@ -173,6 +206,10 @@ filtered_supervision_officer_or_previous_if_transitional_aggregated_metrics AS (
 ),
 supervision_officer_metrics AS (
     {supervision_metric_query_template(unit_of_analysis_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL, cte_source="filtered_supervision_officer_or_previous_if_transitional_aggregated_metrics")}
+    UNION ALL
+    {_ZERO_GRANTS_METRICS}
+    UNION ALL
+    {_PROP_PERIOD_WITH_CRITICAL_CASELOAD_METRICS}
 ),
 officer_caseload_categories AS (
     {_OFFICER_CASELOAD_CATEGORIES_CTE}
