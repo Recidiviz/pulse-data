@@ -72,9 +72,7 @@ class RowHeadingEnum(Enum):
     CASELOAD_TYPE = auto()
     OUTCOMES_METRICS = auto()
     AVG_DAILY_CASELOAD = auto()
-    NUM_ABSCONSIONS = auto()
     HIGH_ABSCONSION_RATE = auto()
-    NUM_INCARCERATIONS = auto()
     HIGH_INCARCERATION_RATE = auto()
     TIMELY_RISK_ASSESSMENTS = auto()
     TIMELY_F2F_CONTACTS = auto()
@@ -93,16 +91,11 @@ class RowHeadingEnum(Enum):
     LSU_MARKED_INELIGIBLE_REASON = auto()
     SLD = auto()
     SLD_GRANTS = auto()
-    SLD_MONTHLY_GRANT_RATE = auto()
     SLD_ELIGIBLE = auto()
-    SLD_MARKED_INELIGIBLE = auto()
-    SLD_MARKED_INELIGIBLE_REASON = auto()
     FT_DISCHARGE = auto()
     FT_DISCHARGE_GRANTS = auto()
     FT_DISCHARGE_MONTHLY_GRANT_RATE = auto()
     FT_DISCHARGE_ELIGIBLE = auto()
-    FT_DISCHARGE_MARKED_INELIGIBLE = auto()
-    FT_DISCHARGE_MARKED_INELIGIBLE_REASON = auto()
     OPERATIONS_METRICS = auto()
 
 
@@ -117,9 +110,7 @@ _ROW_HEADING_LABELS = {
     RowHeadingEnum.CASELOAD_TYPE: "Caseload Type",
     RowHeadingEnum.OUTCOMES_METRICS: "Outcomes Metrics",
     RowHeadingEnum.AVG_DAILY_CASELOAD: "# Average Daily Caseload",
-    RowHeadingEnum.NUM_ABSCONSIONS: "# Absconsions",
     RowHeadingEnum.HIGH_ABSCONSION_RATE: "Months flagged as having a high absconsion rate",
-    RowHeadingEnum.NUM_INCARCERATIONS: "# Incarcerations",
     RowHeadingEnum.HIGH_INCARCERATION_RATE: "Months flagged as having a high incarceration rate",
     RowHeadingEnum.EARLY_DISCHARGE: "Early Discharge",
     RowHeadingEnum.EARLY_DISCHARGE_GRANTS: "Grants during time period",
@@ -135,16 +126,11 @@ _ROW_HEADING_LABELS = {
     RowHeadingEnum.LSU_MARKED_INELIGIBLE_REASON: 'Most often used "Ineligible Reason"',
     RowHeadingEnum.SLD: "Supervision Level Downgrade",
     RowHeadingEnum.SLD_GRANTS: "Grants during time period",
-    RowHeadingEnum.SLD_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.SLD_ELIGIBLE: "Eligible as of end of time period",
-    RowHeadingEnum.SLD_MARKED_INELIGIBLE: "Overridden (Marked Ineligible) as of end of time period",
-    RowHeadingEnum.SLD_MARKED_INELIGIBLE_REASON: 'Most often used "Ineligible Reason"',
     RowHeadingEnum.FT_DISCHARGE: "Past FTRD",
     RowHeadingEnum.FT_DISCHARGE_GRANTS: "Grants during time period",
     RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE: "Monthly grant rate: (# grants that month / avg daily caseload that month) or average of monthly grant rate ",
     RowHeadingEnum.FT_DISCHARGE_ELIGIBLE: "Eligible as of end of time period",
-    RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE: "Overridden (Marked Ineligible) as of end of time period",
-    RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE_REASON: 'Most often used "Ineligible Reason"',
     RowHeadingEnum.OPERATIONS_METRICS: "Operations Metrics",
     RowHeadingEnum.TIMELY_RISK_ASSESSMENTS: "Timely Risk Assessments",
     RowHeadingEnum.TIMELY_F2F_CONTACTS: "Timely F2F Contacts",
@@ -159,9 +145,7 @@ _ROW_HEADINGS: list[RowHeadingEnum | str | None] = [
     None,
     RowHeadingEnum.OUTCOMES_METRICS,
     RowHeadingEnum.AVG_DAILY_CASELOAD,
-    RowHeadingEnum.NUM_ABSCONSIONS,
     RowHeadingEnum.HIGH_ABSCONSION_RATE,
-    RowHeadingEnum.NUM_INCARCERATIONS,
     RowHeadingEnum.HIGH_INCARCERATION_RATE,
     None,
     RowHeadingEnum.EARLY_DISCHARGE,
@@ -180,17 +164,12 @@ _ROW_HEADINGS: list[RowHeadingEnum | str | None] = [
     None,
     RowHeadingEnum.SLD,
     RowHeadingEnum.SLD_ELIGIBLE,
-    RowHeadingEnum.SLD_MARKED_INELIGIBLE,
     RowHeadingEnum.SLD_GRANTS,
-    RowHeadingEnum.SLD_MONTHLY_GRANT_RATE,
-    RowHeadingEnum.SLD_MARKED_INELIGIBLE_REASON,
     None,
     RowHeadingEnum.FT_DISCHARGE,
     RowHeadingEnum.FT_DISCHARGE_ELIGIBLE,
-    RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE,
     RowHeadingEnum.FT_DISCHARGE_GRANTS,
     RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE,
-    RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE_REASON,
     None,
     RowHeadingEnum.OPERATIONS_METRICS,
     RowHeadingEnum.TIMELY_RISK_ASSESSMENTS,
@@ -301,8 +280,6 @@ def write_metrics(
 ) -> None:
     """Write aggregated metrics to the appropriate cells in the sheet"""
     avg_daily_caseload_row = get_row_index(RowHeadingEnum.AVG_DAILY_CASELOAD)
-    num_absconsions_row = get_row_index(RowHeadingEnum.NUM_ABSCONSIONS)
-    num_incarcerations_row = get_row_index(RowHeadingEnum.NUM_INCARCERATIONS)
     for metric in officer_aggregated_metrics.monthly_data[officer_id]:
         parsed_date = (metric.end_date_exclusive - relativedelta(days=1)).strftime(
             _COLUMN_DATE_FORMAT
@@ -319,15 +296,6 @@ def write_metrics(
             yearly_data.avg_daily_population,
             yearly_col_idx,
             avg_daily_caseload_row,
-        )
-        try_set_metric_cell(
-            sheet, yearly_data.num_absconsions, yearly_col_idx, num_absconsions_row
-        )
-        try_set_metric_cell(
-            sheet,
-            yearly_data.num_incarcerations,
-            yearly_col_idx,
-            num_incarcerations_row,
         )
 
 
@@ -462,11 +430,11 @@ def write_impact_funnel_metrics(
         ),
         "SUPERVISION_LEVEL_DOWNGRADE": (
             RowHeadingEnum.SLD_ELIGIBLE,
-            RowHeadingEnum.SLD_MARKED_INELIGIBLE,
+            None,
         ),
         "FULL_TERM_DISCHARGE": (
             RowHeadingEnum.FT_DISCHARGE_ELIGIBLE,
-            RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE,
+            None,
         ),
     }
 
@@ -481,12 +449,13 @@ def write_impact_funnel_metrics(
         try_set_metric_cell(
             sheet, metric.eligible, col_idx, get_row_index(eligible_row)
         )
-        try_set_metric_cell(
-            sheet,
-            metric.marked_ineligible,
-            col_idx,
-            get_row_index(marked_ineligible_row),
-        )
+        if marked_ineligible_row:
+            try_set_metric_cell(
+                sheet,
+                metric.marked_ineligible,
+                col_idx,
+                get_row_index(marked_ineligible_row),
+            )
         if metric.date == date(2025, 1, 1):
             try_set_metric_cell(
                 sheet,
@@ -494,12 +463,13 @@ def write_impact_funnel_metrics(
                 get_column_index(ColumnHeadingEnum.YEARLY.value),
                 get_row_index(eligible_row),
             )
-            try_set_metric_cell(
-                sheet,
-                metric.marked_ineligible,
-                get_column_index(ColumnHeadingEnum.YEARLY.value),
-                get_row_index(marked_ineligible_row),
-            )
+            if marked_ineligible_row:
+                try_set_metric_cell(
+                    sheet,
+                    metric.marked_ineligible,
+                    get_column_index(ColumnHeadingEnum.YEARLY.value),
+                    get_row_index(marked_ineligible_row),
+                )
 
 
 def write_grant_rate_formulas(sheet: Worksheet) -> None:
@@ -516,10 +486,6 @@ def write_grant_rate_formulas(sheet: Worksheet) -> None:
             (
                 RowHeadingEnum.LSU_MONTHLY_GRANT_RATE,
                 RowHeadingEnum.LSU_GRANTS,
-            ),
-            (
-                RowHeadingEnum.SLD_MONTHLY_GRANT_RATE,
-                RowHeadingEnum.SLD_GRANTS,
             ),
             (
                 RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE,
@@ -539,7 +505,6 @@ def write_grant_rate_formulas(sheet: Worksheet) -> None:
     for grant_rate_row in [
         RowHeadingEnum.EARLY_DISCHARGE_MONTHLY_GRANT_RATE,
         RowHeadingEnum.LSU_MONTHLY_GRANT_RATE,
-        RowHeadingEnum.SLD_MONTHLY_GRANT_RATE,
         RowHeadingEnum.FT_DISCHARGE_MONTHLY_GRANT_RATE,
     ]:
         grant_rate_row_idx = get_row_index(grant_rate_row)
@@ -621,8 +586,6 @@ def write_snooze_metrics(
     opportunity_type_to_row_heading = {
         "earnedDischarge": RowHeadingEnum.EARLY_DISCHARGE_MARKED_INELIGIBLE_REASON,
         "LSU": RowHeadingEnum.LSU_MARKED_INELIGIBLE_REASON,
-        "usIdSupervisionLevelDowngrade": RowHeadingEnum.SLD_MARKED_INELIGIBLE_REASON,
-        "pastFTRD": RowHeadingEnum.FT_DISCHARGE_MARKED_INELIGIBLE_REASON,
     }
 
     yearly_col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
