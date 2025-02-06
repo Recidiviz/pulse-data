@@ -26,6 +26,12 @@ max_allowed_error_overrides:
       between 20-30% when new data comes in, so we bump this threshold to 40% in order to capture when the percent change
       is significantly larger than that which likely indicates something unusual is happening and should be investigated.
 num_allowed_rows_overrides:
+  - validation_name: active_in_population_after_death_date
+    hard_num_allowed_rows_override: 11
+    override_reason:
+      All the errors for this validation are old and caused by irregularities in raw data
+      which don't appear to happen anymore. Setting the threshold to exactly the current
+      error level (as of 2/6/25) ensures that we'll be alerted if this error ever occurs in new, relevant data.
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 100000
     override_reason:
@@ -82,5 +88,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 75000
     override_reason: Current failing level as of 4/20/23 is 61,378 rows (5%). Error increased to 71,241 as of 11/29/23. #TODO(#20402)
   - validation_name: in_custody_sps_have_associated_ip
-    hard_num_allowed_rows_override: 300000
-    override_reason: We have not implemented this change in MO normalization yet. Once we do, this override should not be needed.
+    hard_num_allowed_rows_override: 310000
+    override_reason:
+      We have not implemented this change in MO normalization yet. Once we do, this override should not be needed.
+      Bumped from 300000 to 310000 on 2/6/25.
