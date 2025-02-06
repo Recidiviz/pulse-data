@@ -215,7 +215,6 @@ ALL_SENTENCES_FRAGMENT = f"""
             compute.PAROLEREVOKEDFLAG,
             compute.MRRULINGINDICATOR,
 
-            commitment.TYPEORDER,
             commitment.COUNTYOFCONVICTION,
             commitment.JUDGEPARTYID,
             commitment.COURTID

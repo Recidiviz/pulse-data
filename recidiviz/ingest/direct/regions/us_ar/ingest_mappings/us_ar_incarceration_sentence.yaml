@@ -32,7 +32,6 @@ input_columns:
   SENTENCETYPE4: STRING
   SENTENCEBEGINDATE: STRING
   OFFENSEDATE: STRING
-  TYPEORDER: STRING
   COUNTYOFCONVICTION: STRING
   COURTID: STRING
   OTHSTATE: STRING
@@ -172,13 +171,6 @@ output:
                             - $literal("7")
                             - $literal("9")
                       $then: $literal_enum(StateChargeStatus.DROPPED)
-                    - $else_if:
-                        # Sentences are classified as commitment or disposition judgements.
-                        # Disposition judgements still result in the imposition of a sentence,
-                        # usually involving probation or community corrections, but don't
-                        # entail a conviction.
-                        $equal: [TYPEORDER, $literal("2")]
-                      $then: $literal_enum(StateChargeStatus.ADJUDICATED)
                     - $else: $literal_enum(StateChargeStatus.CONVICTED)
                 offense_date: OFFENSEDATE
                 county_code: COUNTYOFCONVICTION
