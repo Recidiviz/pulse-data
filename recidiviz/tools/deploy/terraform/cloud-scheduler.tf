@@ -17,7 +17,7 @@
 
 resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline_topic" {
   name        = "schedule_calculation_dag_run_cloud_function"
-  schedule    = "0 3 * * *" # Every day at 3 am
+  schedule    = "0 3 * * *" # Every day at 3 am Pacific
   description = "Triggers the calculation DAG via pubsub"
   time_zone   = "America/Los_Angeles"
 
@@ -56,7 +56,7 @@ resource "google_cloud_scheduler_job" "schedule_sftp_dag_run_topic" {
 #  right before the calculation DAG.
 resource "google_cloud_scheduler_job" "schedule_raw_data_import_dag_run_topic" {
   name        = "schedule_raw_data_import_dag_run_cloud_function"
-  schedule    = "0 0 * * *" # Every day at 12 am Pacific
+  schedule    = "0 2 * * *" # Every day at 2 am Pacific
   description = "Triggers the raw data import DAG via pubsub"
   time_zone   = "America/Los_Angeles"
 
