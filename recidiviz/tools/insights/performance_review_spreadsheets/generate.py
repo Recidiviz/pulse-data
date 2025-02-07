@@ -35,6 +35,7 @@ from dateutil.relativedelta import relativedelta
 from openpyxl import Workbook
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.styles.borders import Border, Side
 from openpyxl.styles.numbers import FORMAT_NUMBER, FORMAT_PERCENTAGE_00
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -207,13 +208,35 @@ _GRAY_BACKGROUND = PatternFill(
 _RED_BACKGROUND = PatternFill(
     start_color="ea9999", end_color="ea9999", fill_type="solid"
 )
+_GREEN_BACKGROUND = PatternFill(
+    start_color="9edbbe", end_color="9edbbe", fill_type="solid"
+)
 _BOLD_FONT = Font(bold=True)
+_BOLD_12_FONT = Font(size=12, bold=True)
+_BOLD_13_FONT = Font(size=13, bold=True)
 
+_RIGHT_BORDER = Border(right=Side(style="medium", color="999999"))
+_THIN_RIGHT_BORDER = Border(right=Side(style="thin", color="999999"))
+_THIN_BOTTOM_BORDER = Border(bottom=Side(style="thin", color="999999"))
 
-CONDITIONAL_FORMAT_THRESHOLDS = {
-    RowHeadingEnum.TIMELY_RISK_ASSESSMENTS: 0.9,
-    RowHeadingEnum.TIMELY_F2F_CONTACTS: 0.9,
-    RowHeadingEnum.SUPERVISION_LEVEL_MISMATCH: 0.98,
+NEG_CONDITIONAL_FORMAT_THRESHOLDS = {
+    RowHeadingEnum.TIMELY_RISK_ASSESSMENTS: (0.8, "<"),
+    RowHeadingEnum.TIMELY_F2F_CONTACTS: (0.8, "<"),
+    RowHeadingEnum.SUPERVISION_LEVEL_MISMATCH: (0.8, "<"),
+    RowHeadingEnum.NUM_MONTHS_LOGGED_IN: (10, "<"),
+    RowHeadingEnum.HIGH_ABSCONSION_RATE: (0, ">"),
+    RowHeadingEnum.HIGH_INCARCERATION_RATE: (0, ">"),
+    RowHeadingEnum.EARLY_DISCHARGE_MONTHLY_GRANT_RATE: (0.005, "<"),
+    RowHeadingEnum.LSU_MONTHLY_GRANT_RATE: (0.01, "<"),
+}
+
+POS_CONDITIONAL_FORMAT_THRESHOLDS = {
+    RowHeadingEnum.TIMELY_RISK_ASSESSMENTS: (0.9, ">="),
+    RowHeadingEnum.TIMELY_F2F_CONTACTS: (0.9, ">="),
+    RowHeadingEnum.SUPERVISION_LEVEL_MISMATCH: (0.9, ">="),
+    RowHeadingEnum.NUM_MONTHS_LOGGED_IN: (12, "="),
+    RowHeadingEnum.EARLY_DISCHARGE_MONTHLY_GRANT_RATE: (0.005, ">="),
+    RowHeadingEnum.LSU_MONTHLY_GRANT_RATE: (0.01, ">="),
 }
 
 
@@ -240,11 +263,22 @@ def create_headers(
         sheet[f"A{index+1}"].alignment = Alignment(wrap_text=True)
 
     sheet.column_dimensions["A"].width = 48
+    sheet.column_dimensions["B"].width = 28
     for header in _ROW_SECTION_HEADERS:
         index = get_row_index(header)
         sheet[f"A{index}"].font = _BOLD_FONT
-        sheet[f"A{index}"].fill = _GRAY_BACKGROUND
-    sheet["B1"].font = _BOLD_FONT
+        for c in range(1, 15):
+            sheet.cell(row=index, column=c).fill = _GRAY_BACKGROUND
+    for cell in sheet["B3:B42"]:
+        cell[0].font = _BOLD_12_FONT
+        cell[0].border = _RIGHT_BORDER
+    sheet["A1"].font = _BOLD_13_FONT
+    sheet["A2"].font = _BOLD_FONT
+    for c in range(1, 15):
+        sheet.cell(row=2, column=c).border = _THIN_BOTTOM_BORDER
+        sheet.cell(row=42, column=c).border = _THIN_BOTTOM_BORDER
+    for cell in sheet["N3:N42"]:
+        cell[0].border = _THIN_RIGHT_BORDER
 
 
 def get_row_index(heading: RowHeadingEnum) -> int:
@@ -259,7 +293,10 @@ def get_column_index(heading: str) -> str:
 
 
 def apply_conditional_formatting(sheet: Worksheet) -> None:
-    for row_heading, threshold in CONDITIONAL_FORMAT_THRESHOLDS.items():
+    for row_heading, (
+        threshold,
+        operator,
+    ) in NEG_CONDITIONAL_FORMAT_THRESHOLDS.items():
         row_idx = get_row_index(row_heading)
         col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
 
@@ -268,8 +305,24 @@ def apply_conditional_formatting(sheet: Worksheet) -> None:
         sheet.conditional_formatting.add(
             cell,
             FormulaRule(
-                formula=[f"AND(NOT(ISBLANK({cell})), {cell}<{threshold})"],
+                formula=[f"AND(NOT(ISBLANK({cell})), {cell}{operator}{threshold})"],
                 fill=_RED_BACKGROUND,
+            ),
+        )
+    for row_heading, (
+        threshold,
+        operator,
+    ) in POS_CONDITIONAL_FORMAT_THRESHOLDS.items():
+        row_idx = get_row_index(row_heading)
+        col_idx = get_column_index(ColumnHeadingEnum.YEARLY.value)
+
+        cell = f"{col_idx}{row_idx}"
+
+        sheet.conditional_formatting.add(
+            cell,
+            FormulaRule(
+                formula=[f"AND(NOT(ISBLANK({cell})), {cell}{operator}{threshold})"],
+                fill=_GREEN_BACKGROUND,
             ),
         )
 
