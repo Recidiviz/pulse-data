@@ -29,7 +29,10 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentencingAuthority,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.entity_utils import set_backedges
+from recidiviz.persistence.entity.entity_utils import (
+    get_all_entity_classes_in_module,
+    set_backedges,
+)
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.pipelines.ingest.state.generate_primary_keys import (
@@ -197,6 +200,7 @@ def test_sentencing_normalization() -> None:
         person.sentences,
         person.sentence_groups,
         UsAzSentenceNormalizationDelegate(),
+        expected_output_entities=get_all_entity_classes_in_module(normalized_entities),
     )
 
     expected_inferred_group = normalized_entities.NormalizedStateSentenceInferredGroup.from_sentence_external_ids(

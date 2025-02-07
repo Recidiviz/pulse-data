@@ -658,7 +658,16 @@ class TestImposedSentenceGroups(unittest.TestCase):
             imposed_date=self.JAN_01,
             sentencing_authority=StateSentencingAuthority.STATE,
             sentence_type=StateSentenceType.PROBATION,
-            sentence_status_snapshots=[],
+            sentence_status_snapshots=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE.value,
+                    status_update_datetime=as_datetime(self.JAN_01),
+                    status_end_datetime=None,
+                    sequence_num=1,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=1,
+                ),
+            ],
             charges=[self.CHARGE_1],
         )
         sentence_2 = NormalizedStateSentence(
@@ -671,7 +680,16 @@ class TestImposedSentenceGroups(unittest.TestCase):
             imposed_date=self.JAN_01,
             sentencing_authority=StateSentencingAuthority.STATE,
             sentence_type=StateSentenceType.PROBATION,
-            sentence_status_snapshots=[],
+            sentence_status_snapshots=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE.value,
+                    status_update_datetime=as_datetime(self.JAN_01),
+                    status_end_datetime=None,
+                    sequence_num=1,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=1,
+                ),
+            ],
             charges=[self.CHARGE_1],
         )
         sentence_3 = NormalizedStateSentence(
@@ -684,7 +702,16 @@ class TestImposedSentenceGroups(unittest.TestCase):
             imposed_date=self.JAN_01,
             sentencing_authority=StateSentencingAuthority.STATE,
             sentence_type=StateSentenceType.PROBATION,
-            sentence_status_snapshots=[],
+            sentence_status_snapshots=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE.value,
+                    status_update_datetime=as_datetime(self.JAN_01),
+                    status_end_datetime=None,
+                    sequence_num=1,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=1,
+                ),
+            ],
             charges=[self.CHARGE_1],
         )
         actual_imposed_groups = get_normalized_imposed_sentence_groups(
@@ -715,7 +742,16 @@ class TestImposedSentenceGroups(unittest.TestCase):
             imposed_date=self.JAN_01,
             sentencing_authority=StateSentencingAuthority.STATE,
             sentence_type=StateSentenceType.PROBATION,
-            sentence_status_snapshots=[],
+            sentence_status_snapshots=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE.value,
+                    status_update_datetime=as_datetime(self.JAN_01),
+                    status_end_datetime=None,
+                    sequence_num=1,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=1,
+                ),
+            ],
             charges=[self.CHARGE_1],
         )
         sentence_2 = NormalizedStateSentence(
@@ -728,7 +764,16 @@ class TestImposedSentenceGroups(unittest.TestCase):
             imposed_date=self.JAN_01,
             sentencing_authority=StateSentencingAuthority.STATE,
             sentence_type=StateSentenceType.PROBATION,
-            sentence_status_snapshots=[],
+            sentence_status_snapshots=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE.value,
+                    status_update_datetime=as_datetime(self.JAN_01),
+                    status_end_datetime=None,
+                    sequence_num=1,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=1,
+                ),
+            ],
             charges=[self.CHARGE_1],
         )
         sentence_3 = NormalizedStateSentence(
@@ -741,7 +786,16 @@ class TestImposedSentenceGroups(unittest.TestCase):
             imposed_date=self.FEB_01,
             sentencing_authority=StateSentencingAuthority.STATE,
             sentence_type=StateSentenceType.PROBATION,
-            sentence_status_snapshots=[],
+            sentence_status_snapshots=[
+                NormalizedStateSentenceStatusSnapshot(
+                    state_code=self.STATE_CODE.value,
+                    status_update_datetime=as_datetime(self.FEB_01),
+                    status_end_datetime=None,
+                    sequence_num=1,
+                    status=StateSentenceStatus.SERVING,
+                    sentence_status_snapshot_id=1,
+                ),
+            ],
             charges=[self.CHARGE_2],
         )
         actual_imposed_groups = get_normalized_imposed_sentence_groups(
@@ -777,7 +831,16 @@ class TestImposedSentenceGroups(unittest.TestCase):
                 imposed_date=self.JAN_01,
                 sentencing_authority=StateSentencingAuthority.STATE,
                 sentence_type=StateSentenceType.PROBATION,
-                sentence_status_snapshots=[],
+                sentence_status_snapshots=[
+                    NormalizedStateSentenceStatusSnapshot(
+                        state_code=self.STATE_CODE.value,
+                        status_update_datetime=as_datetime(self.JAN_01),
+                        status_end_datetime=None,
+                        sequence_num=1,
+                        status=StateSentenceStatus.SERVING,
+                        sentence_status_snapshot_id=1,
+                    ),
+                ],
                 sentence_lengths=[
                     NormalizedStateSentenceLength(
                         state_code=self.STATE_CODE_VALUE,
@@ -800,7 +863,16 @@ class TestImposedSentenceGroups(unittest.TestCase):
                 imposed_date=self.JAN_01,
                 sentencing_authority=StateSentencingAuthority.STATE,
                 sentence_type=StateSentenceType.PROBATION,
-                sentence_status_snapshots=[],
+                sentence_status_snapshots=[
+                    NormalizedStateSentenceStatusSnapshot(
+                        state_code=self.STATE_CODE.value,
+                        status_update_datetime=as_datetime(self.JAN_01),
+                        status_end_datetime=None,
+                        sequence_num=1,
+                        status=StateSentenceStatus.SERVING,
+                        sentence_status_snapshot_id=1,
+                    ),
+                ],
                 charges=[self.CHARGE_1],
                 sentence_lengths=[
                     NormalizedStateSentenceLength(
@@ -823,7 +895,16 @@ class TestImposedSentenceGroups(unittest.TestCase):
                 imposed_date=self.JAN_01,
                 sentencing_authority=StateSentencingAuthority.STATE,
                 sentence_type=StateSentenceType.PROBATION,
-                sentence_status_snapshots=[],
+                sentence_status_snapshots=[
+                    NormalizedStateSentenceStatusSnapshot(
+                        state_code=self.STATE_CODE.value,
+                        status_update_datetime=as_datetime(self.JAN_01),
+                        status_end_datetime=None,
+                        sequence_num=1,
+                        status=StateSentenceStatus.SERVING,
+                        sentence_status_snapshot_id=1,
+                    ),
+                ],
                 sentence_lengths=[
                     NormalizedStateSentenceLength(
                         state_code=self.STATE_CODE_VALUE,
@@ -864,7 +945,16 @@ class TestImposedSentenceGroups(unittest.TestCase):
                         imposed_date=self.JAN_01,
                         sentencing_authority=StateSentencingAuthority.COUNTY,
                         sentence_type=StateSentenceType.PROBATION,
-                        sentence_status_snapshots=[],
+                        sentence_status_snapshots=[
+                            NormalizedStateSentenceStatusSnapshot(
+                                state_code=self.STATE_CODE.value,
+                                status_update_datetime=as_datetime(self.FEB_01),
+                                status_end_datetime=None,
+                                sequence_num=1,
+                                status=StateSentenceStatus.SERVING,
+                                sentence_status_snapshot_id=1,
+                            ),
+                        ],
                         charges=[self.CHARGE_1],
                         sentence_lengths=[
                             NormalizedStateSentenceLength(
@@ -887,7 +977,16 @@ class TestImposedSentenceGroups(unittest.TestCase):
                         imposed_date=self.JAN_01,
                         sentencing_authority=StateSentencingAuthority.FEDERAL,
                         sentence_type=StateSentenceType.PROBATION,
-                        sentence_status_snapshots=[],
+                        sentence_status_snapshots=[
+                            NormalizedStateSentenceStatusSnapshot(
+                                state_code=self.STATE_CODE.value,
+                                status_update_datetime=as_datetime(self.FEB_01),
+                                status_end_datetime=None,
+                                sequence_num=1,
+                                status=StateSentenceStatus.SERVING,
+                                sentence_status_snapshot_id=1,
+                            ),
+                        ],
                         charges=[self.CHARGE_1],
                         sentence_lengths=[
                             NormalizedStateSentenceLength(
@@ -910,7 +1009,16 @@ class TestImposedSentenceGroups(unittest.TestCase):
                         imposed_date=self.JAN_01,
                         sentencing_authority=StateSentencingAuthority.OTHER_STATE,
                         sentence_type=StateSentenceType.PROBATION,
-                        sentence_status_snapshots=[],
+                        sentence_status_snapshots=[
+                            NormalizedStateSentenceStatusSnapshot(
+                                state_code=self.STATE_CODE.value,
+                                status_update_datetime=as_datetime(self.FEB_01),
+                                status_end_datetime=None,
+                                sequence_num=1,
+                                status=StateSentenceStatus.SERVING,
+                                sentence_status_snapshot_id=1,
+                            ),
+                        ],
                         charges=[self.CHARGE_1],
                         sentence_lengths=[
                             NormalizedStateSentenceLength(

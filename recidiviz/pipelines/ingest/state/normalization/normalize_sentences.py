@@ -36,6 +36,7 @@ from recidiviz.common.constants.state.state_sentence import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ncic import get_description
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.state.entities import (
     StateChargeV2,
@@ -342,6 +343,7 @@ def get_normalized_sentencing_entities(
     sentences: List[StateSentence],
     sentence_groups: List[StateSentenceGroup],
     delegate: StateSpecificSentenceNormalizationDelegate,
+    expected_output_entities: set[type[Entity]],
 ) -> tuple[
     list[NormalizedStateSentence],
     list[NormalizedStateSentenceGroup],
@@ -360,26 +362,34 @@ def get_normalized_sentencing_entities(
     normalized_sentence_groups_by_external_id = {
         g.external_id: g for g in get_normalized_sentence_groups(sentence_groups)
     }
-    inferred_groups = get_normalized_inferred_sentence_groups(
-        state_code, delegate, list(normalized_sentences_by_external_id.values())
-    )
-    imposed_groups = get_normalized_imposed_sentence_groups(
-        state_code, delegate, list(normalized_sentences_by_external_id.values())
-    )
-    for inferred_group in inferred_groups:
-        inferred_id = inferred_group.sentence_inferred_group_id
-        for sentence_external_id in inferred_group.sentence_external_ids:
-            sentence = normalized_sentences_by_external_id[sentence_external_id]
-            sentence.sentence_inferred_group_id = inferred_id
-            if sg_ex_id := sentence.sentence_group_external_id:
-                normalized_sentence_groups_by_external_id[
-                    sg_ex_id
-                ].sentence_inferred_group_id = inferred_id
-    for imposed_group in imposed_groups:
-        imposed_id = imposed_group.sentence_imposed_group_id
-        for sentence_external_id in imposed_group.sentence_external_ids:
-            sentence = normalized_sentences_by_external_id[sentence_external_id]
-            sentence.sentence_imposed_group_id = imposed_id
+
+    if NormalizedStateSentenceInferredGroup in expected_output_entities:
+        inferred_groups = get_normalized_inferred_sentence_groups(
+            state_code, delegate, list(normalized_sentences_by_external_id.values())
+        )
+        for inferred_group in inferred_groups:
+            inferred_id = inferred_group.sentence_inferred_group_id
+            for sentence_external_id in inferred_group.sentence_external_ids:
+                sentence = normalized_sentences_by_external_id[sentence_external_id]
+                sentence.sentence_inferred_group_id = inferred_id
+                if sg_ex_id := sentence.sentence_group_external_id:
+                    normalized_sentence_groups_by_external_id[
+                        sg_ex_id
+                    ].sentence_inferred_group_id = inferred_id
+    else:
+        inferred_groups = []
+
+    if NormalizedStateSentenceImposedGroup in expected_output_entities:
+        imposed_groups = get_normalized_imposed_sentence_groups(
+            state_code, delegate, list(normalized_sentences_by_external_id.values())
+        )
+        for imposed_group in imposed_groups:
+            imposed_id = imposed_group.sentence_imposed_group_id
+            for sentence_external_id in imposed_group.sentence_external_ids:
+                sentence = normalized_sentences_by_external_id[sentence_external_id]
+                sentence.sentence_imposed_group_id = imposed_id
+    else:
+        imposed_groups = []
     return (
         list(normalized_sentences_by_external_id.values()),
         list(normalized_sentence_groups_by_external_id.values()),

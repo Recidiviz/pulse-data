@@ -19,10 +19,10 @@ has been run through the normalization portions of our pipelines.
 """
 import abc
 from datetime import date, datetime
-from functools import cached_property
 from typing import Any, Optional, Type
 
 import attr
+from more_itertools import first, last
 
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_utils import is_list
@@ -150,6 +150,7 @@ from recidiviz.persistence.entity.state.state_entity_mixins import (
     LedgerEntityMixin,
     SequencedEntityMixin,
 )
+from recidiviz.utils.types import assert_type
 
 
 ##### VALIDATORS #####
@@ -844,6 +845,8 @@ class NormalizedStateSentenceInferredGroup(NormalizedStateEntity, HasExternalIdE
       - not all states necessarily have a StateSentenceGroup
       - all hydrated NormalizedStateSentenceGroup entities must have an
         associated NormalizedStateSentence entity
+
+    THIS ENTITY WILL NOT BE CREATED IF StateSentenceStatusSnapshot IS NOT HYDRATED.
     """
 
     sentence_inferred_group_id: int = attr.ib(
@@ -888,6 +891,8 @@ class NormalizedStateSentenceImposedGroup(NormalizedStateEntity, HasExternalIdEn
 
     By default, the "most severe" charge is the first charge (by charge_id)
     on the sentence with the longest length at imposition time.
+
+    THIS ENTITY WILL NOT BE CREATED IF StateSentenceStatusSnapshot IS NOT HYDRATED.
     """
 
     sentence_imposed_group_id: int = attr.ib(
@@ -904,7 +909,8 @@ class NormalizedStateSentenceImposedGroup(NormalizedStateEntity, HasExternalIdEn
     sentencing_authority: StateSentencingAuthority = attr.ib(
         validator=attr.validators.instance_of(StateSentencingAuthority)
     )
-    # Only optional for StateSentencingAuthority.OTHER_STATE
+    # This can be None if all sentences have been imposed and not served yet,
+    # or all sentences do not have a serving component (all fines, etc.)
     serving_start_date: date | None = attr.ib(validator=attr_validators.is_opt_date)
     most_severe_charge_v2_id: int = attr.ib(validator=attr_validators.is_int)
 
@@ -926,12 +932,6 @@ class NormalizedStateSentenceImposedGroup(NormalizedStateEntity, HasExternalIdEn
         if not self.imposed_date and not self.sentencing_authority.is_out_of_state:
             raise ValueError(
                 "Imposed groups composed of in-state sentences must have an imposed_date."
-            )
-        if (
-            not self.serving_start_date
-        ) and not self.sentencing_authority.is_out_of_state:
-            raise ValueError(
-                "Imposed groups composed of in-state sentences must have serving_start_date."
             )
 
 
@@ -1084,31 +1084,40 @@ class NormalizedStateSentence(NormalizedStateEntity, HasExternalIdEntity):
         validator=attr_validators.is_list_of(NormalizedStateSentenceLength),
     )
 
-    @cached_property
+    @property
     def first_serving_status_to_terminating_status_dt_range(
         self,
     ) -> PotentiallyOpenDateTimeRange | None:
-        if not self.sentence_status_snapshots:
-            return None
-        snapshots = sorted(
-            self.sentence_status_snapshots, key=lambda s: s.partition_key
-        )
-        # Give no range if there is not a SERVING status
-        try:
-            first_serving_snapshot = [
-                s for s in snapshots if s.status == StateSentenceStatus.SERVING
-            ][0]
-        except IndexError:
-            return None
+        """
+        Returns the datetime range from a sentence's first serving status to
+        its completion (if it is completed).
 
-        final_snapshot = snapshots[-1]
+        Some sentences may not have any serving statuses (e.g. consecutive sentences
+        that have been imposed and not started yet). These sentences will return None.
+        """
+        serving_snapshots = [
+            s
+            for s in self.sentence_status_snapshots
+            if s.status.is_considered_serving_status
+        ]
+        if not serving_snapshots:
+            return None
+        first_serving = first(
+            sorted(serving_snapshots, key=lambda s: assert_type(s.sequence_num, int))
+        )
+        final_snapshot = last(
+            sorted(
+                self.sentence_status_snapshots,
+                key=lambda s: assert_type(s.sequence_num, int),
+            )
+        )
         end_dt = (
             final_snapshot.status_update_datetime
             if final_snapshot.status.is_terminating_status
             else None
         )
         return PotentiallyOpenDateTimeRange(
-            lower_bound_inclusive=first_serving_snapshot.status_update_datetime,
+            lower_bound_inclusive=first_serving.status_update_datetime,
             upper_bound_exclusive=end_dt,
         )
 

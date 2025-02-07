@@ -26,6 +26,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactType,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStatePerson
 from recidiviz.pipelines.ingest.state.normalization import normalize_state_person
@@ -65,6 +66,9 @@ class TestNormalizeStatePerson(unittest.TestCase):
                 ("EMP2", "US_XX_STAFF_ID"): 2000,
                 ("EMP3", "US_XX_STAFF_ID"): 3000,
             },
+            expected_output_entities=get_all_entity_classes_in_module(
+                normalized_entities
+            ),
         )
 
         self.assertIsInstance(normalized_person, NormalizedStatePerson)
@@ -155,6 +159,9 @@ class TestNormalizeStatePerson(unittest.TestCase):
             staff_external_id_to_staff_id={
                 ("EMP2", "US_XX_STAFF_ID"): 2000,
             },
+            expected_output_entities=get_all_entity_classes_in_module(
+                normalized_entities
+            ),
         )
 
         self.assertEqual(expected_normalized_person, normalized_person)

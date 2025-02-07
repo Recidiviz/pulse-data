@@ -189,6 +189,7 @@ class TestExpectedOutputHelpers(unittest.TestCase):
                 entities.StatePerson,
                 entities.StatePersonExternalId,
                 entities.StateSentence,
+                entities.StateSentenceStatusSnapshot,
             },
             delegate=StateSpecificNormalizationDelegate(),
         )
@@ -198,6 +199,7 @@ class TestExpectedOutputHelpers(unittest.TestCase):
                 normalized_entities.NormalizedStatePerson,
                 normalized_entities.NormalizedStatePersonExternalId,
                 normalized_entities.NormalizedStateSentence,
+                normalized_entities.NormalizedStateSentenceStatusSnapshot,
                 normalized_entities.NormalizedStateSentenceInferredGroup,
                 normalized_entities.NormalizedStateSentenceImposedGroup,
             },

@@ -21,6 +21,7 @@ import datetime
 from typing import Mapping, Sequence
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateSupervisionViolationResponse,
@@ -84,6 +85,7 @@ from recidiviz.utils.types import assert_type
 def build_normalized_state_person(
     person: StatePerson,
     staff_external_id_to_staff_id: StaffExternalIdToIdMap,
+    expected_output_entities: set[type[Entity]],
 ) -> NormalizedStatePerson:
     """Normalizes the given StatePerson root entity into a NormalizedStatePerson."""
     person_id = assert_type(person.person_id, int)
@@ -155,6 +157,7 @@ def build_normalized_state_person(
         sentences=person.sentences,
         sentence_groups=person.sentence_groups,
         delegate=sentencing_delegate,
+        expected_output_entities=expected_output_entities,
     )
 
     normalized_incarceration_periods = IncarcerationPeriodNormalizationManager(

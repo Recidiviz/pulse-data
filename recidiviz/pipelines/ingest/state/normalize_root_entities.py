@@ -96,7 +96,7 @@ class NormalizeRootEntities(beam.PTransform):
         )
 
         persons_with_staff_id_mappings: beam.PCollection[
-            tuple[state_entities.StatePerson, StaffExternalIdToIdMap]
+            tuple[state_entities.StatePerson, StaffExternalIdToIdMap, set[type[Entity]]]
         ] = (
             {
                 PERSON_ID_TO_STAFF_EXTERNAL_IDS_MAP_KEY: person_id_to_staff_external_ids_map,
@@ -116,6 +116,7 @@ class NormalizeRootEntities(beam.PTransform):
                         )
                         else {}
                     ),
+                    self.expected_output_entity_classes,
                 )
             )
         )

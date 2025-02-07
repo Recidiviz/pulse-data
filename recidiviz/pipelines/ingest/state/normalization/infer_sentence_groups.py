@@ -25,7 +25,6 @@ import datetime
 from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.date import PotentiallyOpenDateTimeRange
 from recidiviz.persistence.entity.entity_utils import (
     group_has_external_id_entities_by_function,
 )
@@ -41,14 +40,13 @@ from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sente
 from recidiviz.utils.types import assert_type
 
 
-# TODO(#37421) Handle default serving_start_date w/ ingest
 def build_imposed_group_from_sentences(
     state_code: StateCode,
     delegate: StateSpecificSentenceNormalizationDelegate,
     sentences: list[NormalizedStateSentence],
 ) -> NormalizedStateSentenceImposedGroup:
     """
-    Builds ann imposed group from provided sentences.
+    Builds an imposed group from provided sentences.
 
     Because state-specific logic in normalization may produce a group with
     more than one imposed_date or serving_start_date (e.g. sharing a common charge),
@@ -68,18 +66,12 @@ def build_imposed_group_from_sentences(
     except ValueError:
         imposed_date = None
 
-    # TODO(#37421) Handle default serving_start_date exception handling based on ingest
-    serving_start_date: datetime.date | None = None
-    try:
-        serving_start_date = min(
-            assert_type(
-                sentence.first_serving_status_to_terminating_status_dt_range,
-                PotentiallyOpenDateTimeRange,
-            ).lower_bound_inclusive.date()
-            for sentence in sentences
-        )
-    except ValueError:
-        serving_start_date = imposed_date
+    serving_starts = []
+    for sentence in sentences:
+        serving = sentence.first_serving_status_to_terminating_status_dt_range
+        if serving:
+            serving_starts.append(serving.lower_bound_inclusive.date())
+    serving_start_date = min(serving_starts) if serving_starts else None
 
     most_severe_charge: NormalizedStateChargeV2 = delegate.get_most_severe_charge(
         sentences
