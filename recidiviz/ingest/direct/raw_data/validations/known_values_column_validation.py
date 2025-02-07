@@ -117,7 +117,8 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
         self, results: List[Dict[str, Any]]
     ) -> RawDataImportBlockingValidationFailure | None:
         if results:
-            missing_values = [result[self.column_name] for result in results]
+            missing_values = [f'"{result[self.column_name]}"' for result in results]
+            quoted_known_values = [f'"{v}"' for v in self.known_values]
             # At least one row found with a value not in the known_values set
             return RawDataImportBlockingValidationFailure(
                 validation_type=self.validation_type(),
@@ -125,7 +126,7 @@ class KnownValuesColumnValidation(RawDataColumnImportBlockingValidation):
                 error_msg=(
                     f"Found column [{self.column_name}] on raw file [{self.file_tag}] "
                     f"not matching any of the known_values defined in its configuration YAML."
-                    f"\nDefined known values: [{', '.join(self.known_values)}]."
+                    f"\nDefined known values: [{', '.join(quoted_known_values)}]."
                     f"\nValues that did not parse: [{', '.join(missing_values)}]."
                 ),
             )
