@@ -97,6 +97,15 @@ columns:
   - name: FELONY_IS_MISDEMEANOR
     description: |-
       Indicated if crime is a misdemeanor or not.
+    known_values:
+      - value: "Y"
+        description: Yes, felony is considered misdemeanor.
+      - value: "N"
+        description: No, felony is not considered misdemeanor.
+      - value: "C"
+        description: (Successful Completion) is used when the crime is reduced to a misdemeanor after the case terminates.
+      - value: "E"
+        description: (Earned Misdemeanor) is used during the course of supervision.
   - name: CRIME_ABBREVIATION
     description: |-
       Abbreviation of crime.
