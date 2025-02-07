@@ -87,9 +87,14 @@ columns:
   - name: pickedUpByProbation
     description: |-
       Picked up by probation
-  - name: Unnamed__20
+  - name: pickedUpByProbationOn
+    field_type: datetime
     description: |-
-      TODO(#31972): Fill in with answers from NE
+      Date picked up by probation
+    update_history:
+      - update_type: RENAME
+        update_datetime: 2025-01-15T00:00:00Z
+        previous_value: Unnamed__20
   - name: createdBy
     description: |-
       Record created by
