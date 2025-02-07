@@ -146,7 +146,6 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
             _sort_sentences_by_initial_sentence_length_desc(sentences)
         )
         # By default we arbitrarily pick the first charge by ID
-        # TODO(#37421) Handle default handling based on ingest
         charges = list(sorted(longest_sentence.charges, key=lambda s: s.charge_v2_id))
         return charges[0]
 

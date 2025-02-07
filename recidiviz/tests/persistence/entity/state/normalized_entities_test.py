@@ -503,6 +503,7 @@ class TestSentencingEntities(unittest.TestCase):
                     status_end_datetime=final_dt,
                     status=StateSentenceStatus.SERVING,
                     sentence_status_snapshot_id=11,
+                    sequence_num=1,
                 ),
                 normalized_entities.NormalizedStateSentenceStatusSnapshot(
                     state_code=StateCode.US_XX.value,
@@ -510,6 +511,7 @@ class TestSentencingEntities(unittest.TestCase):
                     status_end_datetime=None,
                     status=StateSentenceStatus.COMPLETED,
                     sentence_status_snapshot_id=12,
+                    sequence_num=2,
                 ),
             ],
         )
@@ -539,6 +541,7 @@ class TestSentencingEntities(unittest.TestCase):
                     status_end_datetime=final_dt,
                     status=StateSentenceStatus.SUSPENDED,
                     sentence_status_snapshot_id=11,
+                    sequence_num=1,
                 ),
                 normalized_entities.NormalizedStateSentenceStatusSnapshot(
                     state_code=StateCode.US_XX.value,
@@ -546,6 +549,7 @@ class TestSentencingEntities(unittest.TestCase):
                     status_end_datetime=None,
                     status=StateSentenceStatus.COMPLETED,
                     sentence_status_snapshot_id=12,
+                    sequence_num=2,
                 ),
             ],
         )
@@ -573,6 +577,7 @@ class TestSentencingEntities(unittest.TestCase):
                     status_end_datetime=final_dt,
                     status=StateSentenceStatus.SERVING,
                     sentence_status_snapshot_id=11,
+                    sequence_num=1,
                 ),
                 normalized_entities.NormalizedStateSentenceStatusSnapshot(
                     state_code=StateCode.US_XX.value,
@@ -580,6 +585,7 @@ class TestSentencingEntities(unittest.TestCase):
                     status_end_datetime=None,
                     status=StateSentenceStatus.SUSPENDED,
                     sentence_status_snapshot_id=12,
+                    sequence_num=2,
                 ),
             ],
         )
@@ -610,6 +616,7 @@ class TestSentencingEntities(unittest.TestCase):
                     status_end_datetime=middle_dt,
                     status=StateSentenceStatus.SERVING,
                     sentence_status_snapshot_id=11,
+                    sequence_num=1,
                 ),
                 normalized_entities.NormalizedStateSentenceStatusSnapshot(
                     state_code=StateCode.US_XX.value,
@@ -617,6 +624,7 @@ class TestSentencingEntities(unittest.TestCase):
                     status_end_datetime=final_dt,
                     status=StateSentenceStatus.SERVING,
                     sentence_status_snapshot_id=12,
+                    sequence_num=2,
                 ),
                 normalized_entities.NormalizedStateSentenceStatusSnapshot(
                     state_code=StateCode.US_XX.value,
@@ -624,6 +632,7 @@ class TestSentencingEntities(unittest.TestCase):
                     status_end_datetime=None,
                     status=StateSentenceStatus.SERVING,
                     sentence_status_snapshot_id=13,
+                    sequence_num=3,
                 ),
             ],
         )

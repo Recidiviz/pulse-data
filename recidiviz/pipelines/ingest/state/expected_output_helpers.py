@@ -82,6 +82,8 @@ def get_expected_output_normalized_entity_classes(
     if (
         normalized_entities.NormalizedStateSentence
         in expected_normalized_entity_classes
+        and normalized_entities.NormalizedStateSentenceStatusSnapshot
+        in expected_normalized_entity_classes
     ):
         expected_normalized_entity_classes.add(
             normalized_entities.NormalizedStateSentenceInferredGroup

@@ -297,6 +297,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                     status_update_datetime=self.critical_date_1,
                     status_end_datetime=None,
                     status=StateSentenceStatus.SERVING,
+                    sequence_num=1,
                 ),
             ],
         )
@@ -316,10 +317,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 "any_is_life": False,
                 "projected_completion_date_min": self.big_projected_date_min,
                 "projected_completion_date_max": None,
-                "sentence_length_days_min": (
-                    self.big_projected_date_min
-                    - assert_type(imposed_group.serving_start_date, datetime.date)
-                ).days,
+                "sentence_length_days_min": 1096,
                 "sentence_length_days_max": None,
                 "most_severe_charge_classification_subtype": None,
                 "most_severe_charge_classification_type": None,
@@ -457,10 +455,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 "any_is_life": False,
                 "projected_completion_date_min": self.big_projected_date_min,
                 "projected_completion_date_max": None,
-                "sentence_length_days_min": (
-                    self.big_projected_date_min
-                    - assert_type(imposed_group.serving_start_date, datetime.date)
-                ).days,
+                "sentence_length_days_min": None,
                 "sentence_length_days_max": None,
                 "most_severe_charge_classification_subtype": None,
                 "most_severe_charge_classification_type": None,
@@ -560,10 +555,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 "any_is_life": False,
                 "projected_completion_date_min": self.big_projected_date_min,
                 "projected_completion_date_max": None,
-                "sentence_length_days_min": (
-                    self.big_projected_date_min
-                    - assert_type(imposed_group.serving_start_date, datetime.date)
-                ).days,
+                "sentence_length_days_min": None,
                 "sentence_length_days_max": None,
                 "most_severe_charge_classification_subtype": None,
                 "most_severe_charge_classification_type": None,
@@ -653,10 +645,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 "any_is_life": False,
                 "projected_completion_date_min": self.big_projected_date_min,
                 "projected_completion_date_max": None,
-                "sentence_length_days_min": (
-                    self.big_projected_date_min
-                    - assert_type(imposed_group.serving_start_date, datetime.date)
-                ).days,
+                "sentence_length_days_min": None,
                 "sentence_length_days_max": None,
                 "most_severe_charge_classification_subtype": None,
                 "most_severe_charge_classification_type": None,
@@ -748,10 +737,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
                 "any_is_life": True,
                 "projected_completion_date_min": self.big_projected_date_min,
                 "projected_completion_date_max": None,
-                "sentence_length_days_min": (
-                    self.big_projected_date_min
-                    - assert_type(imposed_group.serving_start_date, datetime.date)
-                ).days,
+                "sentence_length_days_min": None,
                 "sentence_length_days_max": None,
                 "most_severe_charge_classification_subtype": None,
                 "most_severe_charge_classification_type": None,
