@@ -249,8 +249,11 @@ def create_headers(
 ) -> None:
     """Adds header rows + columns to the spreadsheet. This must be run before other data is added to
     the spreadsheet, because it just appends full rows."""
+    name_and_maybe_email = (
+        f"{officer_name}\n{officer_email}" if officer_email else officer_name
+    )
     data: list[list] = [
-        [f"{officer_name}\n{officer_email}"],
+        [name_and_maybe_email],
         [f"SUPERVISOR: {supervisor_name}\nDISTRICT: {officer_district}"],
         _COLUMN_HEADINGS,
         *[

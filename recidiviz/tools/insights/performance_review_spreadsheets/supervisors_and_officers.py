@@ -24,6 +24,19 @@ import attr
 from recidiviz.big_query.big_query_client import BigQueryClient
 
 _SUPERVISORS_AND_OFFICERS_QUERY = """
+WITH current_ix_officers as (
+    SELECT external_id, state_code, full_name, supervision_district, supervisor_external_ids, email, from `recidiviz-123.outliers_views.supervision_officers_materialized` where state_code="US_IX" and ARRAY_LENGTH(supervisor_external_ids)!=0
+),
+midyear_officers as(
+  Select soa.external_id, soa.state_code, soa.full_name, soa.supervision_district, soa.supervisor_external_ids, string(NULL) as email from `recidiviz-123.outliers_views.supervision_officers_archive_materialized` soa left join current_ix_officers c on c.external_id=soa.external_id where soa.state_code="US_IX" and export_date="2024-07-01" and c.external_id is NULL and ARRAY_LENGTH(soa.supervisor_external_ids)!=0
+),
+september_officers as(
+    Select soa.external_id, soa.state_code, soa.full_name, soa.supervision_district, soa.supervisor_external_ids, string(NULL) as email from `recidiviz-123.outliers_views.supervision_officers_archive_materialized` soa left join current_ix_officers c on c.external_id=soa.external_id 
+    left join midyear_officers mid on soa.external_id=mid.external_id
+    where soa.state_code="US_IX" and export_date="2024-09-01" and c.external_id is NULL and mid.external_id is NULL and ARRAY_LENGTH(soa.supervisor_external_ids)!=0
+),
+officers as (select * from current_ix_officers c union all select * from midyear_officers union all select * from september_officers)
+
 SELECT
     supervisors.full_name AS supervisor_name,
     supervisors.supervision_district AS supervisor_district,
@@ -32,7 +45,7 @@ SELECT
     officers.supervision_district AS officer_district,
     officers.email AS officer_email
 FROM `recidiviz-123.outliers_views.supervision_officer_supervisors_materialized` supervisors
-INNER JOIN `recidiviz-123.outliers_views.supervision_officers_materialized` officers
+INNER JOIN officers
 ON
     supervisors.external_id IN UNNEST(officers.supervisor_external_ids)
     AND supervisors.state_code = officers.state_code
