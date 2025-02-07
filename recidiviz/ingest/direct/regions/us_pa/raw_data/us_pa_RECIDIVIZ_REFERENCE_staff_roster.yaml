@@ -159,6 +159,31 @@ columns:
       - value: Probation and Parole District Director 2
       - value: Regional Institutional Parole Director
       - value: Regional Probation and Parole Director
+      - value: Corrections Community Center Monitor
+      - value: Registered Nurse
+      - value: Member Board or Commission
+      - value: Fiscal Management Specialist 2
+      - value: Victim Assistance Coordinator
+      - value: Parole Hearing Officer
+      - value: Safe Schools Advocate PCCD
+      - value: Program Analyst 2
+      - value: Criminal Justice System Specialist 1
+      - value: Human Resource Analyst 3
+      - value: Administrative Officer 3
+      - value: Corrections Officer 3
+      - value: Corrections Health Care Administrator
+      - value: Hearing Examiner, Corrections
+      - value: Accountant 2
+      - value: Criminal Justice System Specialist 2
+      - value: Sexual Offenders Assessment Board Investigator
+      - value: Corrections Officer 1
+      - value: Network Administrator 1
+      - value: Legal Analyst, OGC
+      - value: Information Technology Manager 1
+      - value: Member Board Commission
+      - value: Program Analyst 3
+      - value: Director, Bureau of Central Services, Corrections
+      - value: Network Specialist 2
   - name: Supervisor_EmpNum
     is_pii: True
     description: |-

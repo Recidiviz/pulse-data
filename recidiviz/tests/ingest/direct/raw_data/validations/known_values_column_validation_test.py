@@ -91,13 +91,14 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
         self.validation_success_test()
 
     def test_validation_failure(self) -> None:
+        quoted_known_values = [f'"{v}"' for v in self.known_values]
         expected_error = RawDataImportBlockingValidationFailure(
             validation_type=RawDataImportBlockingValidationType.KNOWN_VALUES,
             validation_query=self.create_validation(self.sad_col).query,
             error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] "
             f"not matching any of the known_values defined in its configuration YAML."
-            f"\nDefined known values: [{', '.join(self.known_values)}]."
-            f"\nValues that did not parse: [z].",
+            f"\nDefined known values: [{', '.join(quoted_known_values)}]."
+            f'\nValues that did not parse: ["z"].',
         )
 
         self.validation_failure_test(expected_error)
@@ -124,8 +125,8 @@ class TestKnownValuesColumnValidation(ColumnValidationTestCase):
             validation_query=self.create_validation(self.sad_col).query,
             error_msg=f"Found column [{self.sad_col_name}] on raw file [{self.file_tag}] "
             f"not matching any of the known_values defined in its configuration YAML."
-            f"\nDefined known values: [z]."
-            f"\nValues that did not parse: [a, b].",
+            f'\nDefined known values: ["z"].'
+            f'\nValues that did not parse: ["a", "b"].',
         )
 
         self.validation_failure_test(expected_error)
