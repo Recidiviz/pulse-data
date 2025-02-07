@@ -99,6 +99,17 @@ class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
     """Interface for state-specific decisions involved in normalizing sentences
     for calculations."""
 
+    @property
+    def override_projected_completion_dates_using_sentence_length_days(self) -> bool:
+        """
+        If True, we'll calculate projected_completion_date_min/max_external
+        from <the serving start date> + <sentence_length_days_min/max>
+
+        Note if your state provides completion dates and this is True,
+        we will override that data!
+        """
+        return False
+
     def update_incarceration_sentence(
         self, incarceration_sentence: StateIncarcerationSentence
     ) -> StateIncarcerationSentence:

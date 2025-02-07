@@ -14,8 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Python representations of the tables in our state schema which represent data once it
+"""
+Python representations of the tables in our state schema which represent data once it
 has been run through the normalization portions of our pipelines.
+
+
+TODO(#34048): Consider disallowing default values in normalized entities.
 """
 import abc
 from datetime import date, datetime
