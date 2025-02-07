@@ -27,6 +27,7 @@ It also produces ingerred sentence groups that only exist in normalized_state:
   - StateSentenceGroupInferred
   - StateSentenceGroupInferredLength
 """
+import datetime
 from typing import Dict, List
 
 from recidiviz.common.constants.state.state_sentence import (
@@ -43,7 +44,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSentence,
     StateSentenceGroup,
     StateSentenceGroupLength,
-    StateSentenceLength,
     StateSentenceStatusSnapshot,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -116,7 +116,8 @@ def normalize_charge_v2(charge: StateChargeV2) -> NormalizedStateChargeV2:
 
 
 def normalize_sentence_lengths(
-    sentence_lengths: List[StateSentenceLength],
+    sentence: StateSentence,
+    delegate: StateSpecificSentenceNormalizationDelegate,
 ) -> List[NormalizedStateSentenceLength]:
     """
     Normalizes StateSentenceLength, with two updates:
@@ -128,8 +129,18 @@ def normalize_sentence_lengths(
           __attrs_post_init__ of StateSentenceLength
     """
     normalized_lengths = []
+    serving_status_datetimes = [
+        snapshot.status_update_datetime
+        for snapshot in sentence.sentence_status_snapshots
+        if snapshot.status.is_considered_serving_status
+    ]
+    serving_start = (
+        sorted(serving_status_datetimes)[0].date()
+        if any(serving_status_datetimes)
+        else None
+    )
     for idx, length in enumerate(
-        sorted(sentence_lengths, key=lambda s: s.partition_key)
+        sorted(sentence.sentence_lengths, key=lambda s: s.partition_key)
     ):
         # If the sentence length projected min/max fields are not
         # consistent in "state" such that min is always < max, we ensure that
@@ -139,12 +150,29 @@ def normalize_sentence_lengths(
         days_min, days_max = get_min_max_fields(
             length.sentence_length_days_min, length.sentence_length_days_max
         )
-        comp_date_min, comp_date_max = get_min_max_fields(
-            length.projected_completion_date_min_external,
-            length.projected_completion_date_max_external,
-        )
+        # Projected completion dates are either provided through state provided data,
+        # or calculated from sentence length days + serving start.
+        # We do not allow a mixture. Note that if a sentence hasn't begun serving,
+        # we cannot calculate a projected completion date.
+        comp_date_min, comp_date_max = None, None
+        if delegate.override_projected_completion_dates_using_sentence_length_days:
+            if serving_start is not None:
+                comp_date_min = (
+                    serving_start + datetime.timedelta(days=days_min)
+                    if days_min
+                    else None
+                )
+                comp_date_max = (
+                    serving_start + datetime.timedelta(days=days_max)
+                    if days_max
+                    else None
+                )
+        else:
+            comp_date_min, comp_date_max = get_min_max_fields(
+                length.projected_completion_date_min_external,
+                length.projected_completion_date_max_external,
+            )
 
-        # TODO(#34048): Consider disallowing default values in normalized entities.
         normalized_lengths.append(
             NormalizedStateSentenceLength(
                 sequence_num=idx + 1,
@@ -252,7 +280,7 @@ def normalize_sentence(
         sentence_metadata=sentence.sentence_metadata,
         # Relationships
         charges=normalized_charges,
-        sentence_lengths=normalize_sentence_lengths(sentence.sentence_lengths),
+        sentence_lengths=normalize_sentence_lengths(sentence, delegate),
         sentence_status_snapshots=normalized_snapshots,
     )
 
