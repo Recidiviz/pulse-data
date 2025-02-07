@@ -6,6 +6,7 @@ input_columns:
   hearing_date: STRING
   UpdateDate: DATETIME
   type: STRING
+  rownum: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -27,4 +28,5 @@ output:
                     - OffenderId
                     - TermId
                     - type
+                    - rownum
               sentence_group_external_id: TermId
