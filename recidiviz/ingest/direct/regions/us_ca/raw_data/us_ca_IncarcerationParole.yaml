@@ -60,6 +60,7 @@ columns:
       - value: LPU Family Foundation Program
       - value: New Civil Addict Commitment
       - value: New Felony Commitment
+      - value: Other (Boarder, Safekeeper/Other)
       - value: Other (Boarder, Safe Keeper/Other)
       - value: Paper Commit Direct to Parole
       - value: PC3000(b)(4)  Parolee - With New Term
@@ -140,6 +141,7 @@ columns:
       - value: Discharge a Parolee to Another Agency's Jurisdiction
       - value: Discharge at statutory maximum
       - value: Discharge Non-violent Offn During 13th Mon of Succ. Parole
+      - value: Discharge of Safekeeper, YA, OSP, or FEDC
       - value: Discharge of SafeKeepers, YA, OSP, or FEDC
       - value: Discharge per Court Decision
       - value: Discharge prior to Statutory Maximum
@@ -265,6 +267,7 @@ columns:
       - value: Discharge from drug treatment program per PC 2933.4(b)
       - value: Discharge interstate cooperative case
       - value: Discharge Non-violent Offn During 13th Mon of Succ. Parole
+      - value: Discharge of Safekeeper, YA, OSP, or FEDC
       - value: Discharge of SafeKeepers, YA, OSP, or FEDC
       - value: Discharge parolee on PAL Status
       - value: Discharge per Court Decision
@@ -295,6 +298,7 @@ columns:
       - value: Offender Who Has Been Deported
       - value: Other
         description: TODO(#35313) Document this value.
+      - value: Other (Boarder, Safekeeper/Other)
       - value: Other (Boarder, Safe Keeper/Other)
       - value: Paper Commit Direct to Parole
       - value: Parole Waived - Discharged Directly from Institution
