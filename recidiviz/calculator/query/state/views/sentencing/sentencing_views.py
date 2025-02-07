@@ -33,6 +33,9 @@ from recidiviz.calculator.query.state.views.sentencing.client_record import (
 from recidiviz.calculator.query.state.views.sentencing.community_opportunity_record import (
     SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentencing.counties_and_districts import (
+    SENTENCING_COUNTIES_AND_DISTRICTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sentencing.recidivism_event import (
     RECIDIVISM_EVENT_VIEW_BUILDER,
 )
@@ -55,4 +58,5 @@ SENTENCING_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SENTENCING_COMMUNITY_OPPORTUNITY_RECORD_VIEW_BUILDER,
     SENTENCING_CHARGE_RECORD_VIEW_BUILDER,
     SENTENCING_CASE_INSIGHTS_RECORD_VIEW_BUILDER,
+    SENTENCING_COUNTIES_AND_DISTRICTS_VIEW_BUILDER,
 ]
