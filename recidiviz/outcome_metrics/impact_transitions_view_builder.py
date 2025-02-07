@@ -68,7 +68,7 @@ SELECT
     system_type,
     CAST(has_mandatory_due_date AS BOOL) AS has_mandatory_due_date,
     CAST(is_jii_transition AS BOOL) AS is_jii_transition,
-    event_date >= DATE_TRUNC(full_state_launch_date, MONTH) AS is_after_full_state_launch_month,
+    event_date >= DATE_TRUNC(full_state_launch_date, MONTH) AS is_during_or_after_full_state_launch_month,
     event_date
         BETWEEN DATE_SUB(DATE_TRUNC(full_state_launch_date, MONTH), INTERVAL 1 YEAR)
         AND DATE_SUB(DATE_TRUNC(full_state_launch_date, MONTH), INTERVAL 1 DAY)

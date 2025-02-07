@@ -137,6 +137,9 @@ from recidiviz.monitoring.platform_kpis.reliability.stale_metric_exports import 
 from recidiviz.monitoring.platform_kpis.velocity.dag_runtimes import (
     DAG_RUNTIMES_VIEW_BUILDER,
 )
+from recidiviz.outcome_metrics.views.transitions_metric_utils import (
+    collect_view_builders_for_breadth_depth_metrics,
+)
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
@@ -253,6 +256,41 @@ def state_agnostic_deployed_views_without_state_code_column(
         STALE_METRIC_EXPORTS_VIEW_BUILDER.address,
         BQ_MONTHLY_COSTS_BY_DATASET_VIEW_BUILDER.address,
         DAG_RUNTIMES_VIEW_BUILDER.address,
+        # These views calculate cross-state metrics for orgwide impact tracking
+        *[
+            builder.address
+            for builder in collect_view_builders_for_breadth_depth_metrics(
+                metric_year=2024, attribute_cols=["product_transition_type"]
+            )
+        ],
+        *[
+            builder.address
+            for builder in collect_view_builders_for_breadth_depth_metrics(
+                metric_year=2024,
+                attribute_cols=[
+                    "decarceral_impact_type",
+                    "has_mandatory_due_date",
+                    "is_jii_transition",
+                ],
+            )
+        ],
+        *[
+            builder.address
+            for builder in collect_view_builders_for_breadth_depth_metrics(
+                metric_year=2025, attribute_cols=["product_transition_type"]
+            )
+        ],
+        *[
+            builder.address
+            for builder in collect_view_builders_for_breadth_depth_metrics(
+                metric_year=2025,
+                attribute_cols=[
+                    "decarceral_impact_type",
+                    "has_mandatory_due_date",
+                    "is_jii_transition",
+                ],
+            )
+        ],
     }
 
     return {

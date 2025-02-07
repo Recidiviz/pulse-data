@@ -32,6 +32,9 @@ from recidiviz.outcome_metrics.impact_transitions_view_collector import (
 from recidiviz.outcome_metrics.views.all_full_state_launch_dates import (
     ALL_FULL_STATE_LAUNCH_DATES_VIEW_BUILDER,
 )
+from recidiviz.outcome_metrics.views.transitions_metric_utils import (
+    collect_view_builders_for_breadth_depth_metrics,
+)
 
 
 def get_unioned_transitions_view_builder() -> UnionAllBigQueryViewBuilder:
@@ -58,4 +61,32 @@ def get_transitions_view_builders_for_views_to_update() -> Sequence[
         *ImpactTransitionsBigQueryViewCollector().collect_view_builders(),
         get_unioned_transitions_view_builder(),
         ALL_FULL_STATE_LAUNCH_DATES_VIEW_BUILDER,
+        *collect_view_builders_for_breadth_depth_metrics(
+            metric_year=2024, attribute_cols=["state_code"]
+        ),
+        *collect_view_builders_for_breadth_depth_metrics(
+            metric_year=2024, attribute_cols=["product_transition_type"]
+        ),
+        *collect_view_builders_for_breadth_depth_metrics(
+            metric_year=2024,
+            attribute_cols=[
+                "decarceral_impact_type",
+                "has_mandatory_due_date",
+                "is_jii_transition",
+            ],
+        ),
+        *collect_view_builders_for_breadth_depth_metrics(
+            metric_year=2025, attribute_cols=["state_code"]
+        ),
+        *collect_view_builders_for_breadth_depth_metrics(
+            metric_year=2025, attribute_cols=["product_transition_type"]
+        ),
+        *collect_view_builders_for_breadth_depth_metrics(
+            metric_year=2025,
+            attribute_cols=[
+                "decarceral_impact_type",
+                "has_mandatory_due_date",
+                "is_jii_transition",
+            ],
+        ),
     ]

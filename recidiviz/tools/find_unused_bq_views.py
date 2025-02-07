@@ -158,6 +158,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.views.dataset_config import STATE_BASE_VIEWS_DATASET
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.monitoring.platform_kpis.dataset_config import PLATFORM_KPIS_DATASET
+from recidiviz.outcome_metrics.dataset_config import TRANSITIONS_DATASET
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
@@ -505,6 +506,8 @@ DATASETS_REFERENCED_BY_MISC_PROCESSES = {
     IMPACT_REPORTS_DATASET_ID,
     # Views in this dataset are used by platform kpi dashboards
     PLATFORM_KPIS_DATASET,
+    # Views in the dataset are used for org-wide impact tracking
+    TRANSITIONS_DATASET,
 }
 
 

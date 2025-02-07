@@ -16,9 +16,18 @@
 # =============================================================================
 """Contains helpers for calculating metrics using transitions observations"""
 
+from typing import Optional
 
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.observations.event_selector import EventSelector
 from recidiviz.observations.observation_selector import ObservationSelector
+from recidiviz.outcome_metrics.views.transitions_breadth_metric import (
+    get_transitions_breadth_metric_for_year,
+)
+from recidiviz.outcome_metrics.views.transitions_depth_metric import (
+    get_transitions_baseline_metric_for_year,
+    get_transitions_depth_metric_for_year,
+)
 
 
 def get_workflows_transitions_query_template_for_observations(
@@ -66,3 +75,13 @@ transitions_with_experiment_assignments AS (
 )
 SELECT * FROM transitions_with_experiment_assignments"""
     return query_template
+
+
+def collect_view_builders_for_breadth_depth_metrics(
+    metric_year: int = 2024, attribute_cols: Optional[list[str]] = None
+) -> list[SimpleBigQueryViewBuilder]:
+    return [
+        get_transitions_breadth_metric_for_year(metric_year, attribute_cols),
+        get_transitions_baseline_metric_for_year(metric_year, attribute_cols),
+        get_transitions_depth_metric_for_year(metric_year, attribute_cols),
+    ]
