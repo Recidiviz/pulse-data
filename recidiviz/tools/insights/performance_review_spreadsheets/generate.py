@@ -217,10 +217,18 @@ CONDITIONAL_FORMAT_THRESHOLDS = {
 }
 
 
-def create_headers(sheet: Worksheet) -> None:
+def create_headers(
+    sheet: Worksheet,
+    officer_name: str,
+    officer_email: str,
+    officer_district: str,
+    supervisor_name: str,
+) -> None:
     """Adds header rows + columns to the spreadsheet. This must be run before other data is added to
     the spreadsheet, because it just appends full rows."""
-    data = [
+    data: list[list] = [
+        [f"{officer_name}\n{officer_email}"],
+        [f"SUPERVISOR: {supervisor_name}\nDISTRICT: {officer_district}"],
         _COLUMN_HEADINGS,
         *[
             [_ROW_HEADING_LABELS[row] if isinstance(row, RowHeadingEnum) else row]
@@ -241,7 +249,8 @@ def create_headers(sheet: Worksheet) -> None:
 
 def get_row_index(heading: RowHeadingEnum) -> int:
     return (
-        _ROW_HEADINGS.index(heading) + 2  # 1-indexed + additional 1 for empty first row
+        _ROW_HEADINGS.index(heading)
+        + 4  # 1-indexed + additional 3 for empty first 3 rows
     )
 
 
@@ -628,8 +637,14 @@ def generate_sheets(
     for supervisor, officers in supervisors_to_officers.items():
         wb = Workbook()
         for officer in officers:
-            sheet = wb.create_sheet(title=officer.officer_name.formatted())
-            create_headers(sheet)
+            sheet = wb.create_sheet(title=f"{officer.officer_name.formatted()}")
+            create_headers(
+                sheet,
+                officer.officer_name.formatted(),
+                officer.officer_email,
+                officer.officer_district,
+                supervisor.supervisor_name.formatted(),
+            )
             apply_conditional_formatting(sheet)
             write_metrics(sheet, officer.officer_id, officer_aggregated_metrics)
             write_metrics_from_sandbox(
@@ -645,7 +660,9 @@ def generate_sheets(
 
         # Remove the default sheet, since we created new sheets for our data.
         wb.remove(wb.worksheets[0])
-        wb.save(f"{output_dir}/{supervisor.formatted()}.xlsx")
+        wb.save(
+            f"{output_dir}/{supervisor.supervisor_district} - {supervisor.supervisor_name.formatted()}.xlsx"
+        )
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:

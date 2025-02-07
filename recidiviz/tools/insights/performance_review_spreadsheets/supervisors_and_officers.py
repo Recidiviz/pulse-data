@@ -26,8 +26,11 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 _SUPERVISORS_AND_OFFICERS_QUERY = """
 SELECT
     supervisors.full_name AS supervisor_name,
+    supervisors.supervision_district AS supervisor_district,
     officers.external_id AS officer_id,
-    officers.full_name AS officer_name
+    officers.full_name AS officer_name,
+    officers.supervision_district AS officer_district,
+    officers.email AS officer_email
 FROM `recidiviz-123.outliers_views.supervision_officer_supervisors_materialized` supervisors
 INNER JOIN `recidiviz-123.outliers_views.supervision_officers_materialized` officers
 ON
@@ -58,11 +61,19 @@ class Name:
 class Officer:
     officer_id: str
     officer_name: Name
+    officer_email: str
+    officer_district: str
+
+
+@attr.define(frozen=True)
+class Supervisor:
+    supervisor_name: Name
+    supervisor_district: str
 
 
 @attr.define(frozen=True)
 class SupervisorsAndOfficers:
-    data: dict[Name, list[Officer]]
+    data: dict[Supervisor, list[Officer]]
 
     @classmethod
     def from_bigquery(cls, bq_client: BigQueryClient) -> "SupervisorsAndOfficers":
@@ -73,8 +84,13 @@ class SupervisorsAndOfficers:
 
         for row in results:
             supervisor_name = Name.from_json_string(row["supervisor_name"])
+            supervisor_district = row["supervisor_district"]
             officer_name = Name.from_json_string(row["officer_name"])
-            grouped_data[supervisor_name].append(
-                Officer(row["officer_id"], officer_name)
+            officer_email = row["officer_email"]
+            officer_district = row["officer_district"]
+            grouped_data[Supervisor(supervisor_name, supervisor_district)].append(
+                Officer(
+                    row["officer_id"], officer_name, officer_email, officer_district
+                )
             )
         return cls(grouped_data)
