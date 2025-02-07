@@ -17,6 +17,8 @@
 """View for an event that has some impact (positive or negative) on a JII's status 
 in the corrections system, which we can link (correlationally) with a launched product 
 and want to roll up to our org-wide transitions KPI"""
+
+
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
@@ -39,7 +41,7 @@ VIEW_BUILDER: EventObservationBigQueryViewBuilder = EventObservationBigQueryView
         "system_type",
         "has_mandatory_due_date",
         "is_jii_transition",
-        "is_after_full_state_launch_month",
+        "is_during_or_after_full_state_launch_month",
         "is_within_one_year_before_full_state_launch_month",
         "full_state_launch_date",
         "weight_factor",

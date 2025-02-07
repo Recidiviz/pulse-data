@@ -66,9 +66,9 @@ transitions_with_experiment_assignments AS (
         launches.experiment_id,
         -- The flags below are only relevant to the Workflows product, so we leave them
         -- as null.
-        CAST(NULL AS STRING) AS decarceral_impact_type,
-        CAST(NULL AS STRING) AS has_mandatory_due_date,
-        CAST(NULL AS STRING) AS is_jii_transition,
+        "NOT_APPLICABLE" AS decarceral_impact_type,
+        FALSE AS has_mandatory_due_date,
+        FALSE AS is_jii_transition,
         "SUPERVISION" AS system_type,
         launches.launch_date AS full_state_launch_date,
     FROM
