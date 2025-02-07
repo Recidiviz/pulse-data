@@ -1,9 +1,22 @@
 address:
   dataset_id: external_reference
   table_id: state_resident_populations
-description:
-  "TODO(#29155): Add a description as to what this is used for and why
-  it isn't managed in code"
+description: >-
+  Produced by the U.S. Census Bureau, this data has postcensal estimates of the 
+  July 1 resident population with six "single-race" race categories as specified 
+  in the 1997 Office of Management and Budget (OMB) standards for the collection 
+  of data on race and ethnicity: American Indian or Alaska Native, Asian, 
+  Black or African American, Native Hawaiian or Pacific Islander, White, 
+  More than one race.
+
+  A single row has the number of people that are of the age group, race, ethnicity,
+  and gender within that state. This data is transformed by us to fit into our
+  StateRace enum.
+
+  The data source can be explored at https://wonder.cdc.gov/single-race-population.html
+
+  We download this data with recidiviz/tools/datasets/refresh_state_resident_populations.py
+
 schema:
   - name: state
     type: STRING
