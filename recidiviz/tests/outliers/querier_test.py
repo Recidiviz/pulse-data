@@ -585,11 +585,10 @@ class TestOutliersQuerier(InsightsDbTestCase):
                 "status": "FAR",
                 "category_type": "SEX_OFFENSE_BINARY",
                 "caseload_category": "SEX_OFFENSE",
-                "caseload_type": "SEX_OFFENSE",
             }
             new_outlier_status_dict_conflicting_category = new_outlier_status_dict | {
                 "metric_id": "absconsions_bench_warrants",
-                "caseload_type": "NOT_SEX_OFFENSE",
+                "caseload_category": "NOT_SEX_OFFENSE",
             }
             session.add(
                 SupervisionOfficerOutlierStatus(**new_outlier_status_dict),

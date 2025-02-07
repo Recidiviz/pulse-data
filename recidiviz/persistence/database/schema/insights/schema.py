@@ -198,8 +198,6 @@ class MetricBenchmark(InsightsBase):
     # The threshold for the given metric, specifically the IQR
     threshold = Column(Float, nullable=False)
     # Caseload category, if applicable. 'ALL' indicates the metric benchmark is statewide.
-    # TODO(#31634): Rename to caseload_category.
-    caseload_type = Column(String, primary_key=True)
     caseload_category = Column(String, primary_key=True)
     # Category this caseload type is part of, e.g. SEX_OFFENSE_BINARY. 'ALL' indicates the metric
     # benchmark is statewide.
@@ -219,8 +217,6 @@ class SupervisionOfficerOutlierStatus(InsightsBase):
     # The id of the officer the metric is measured for
     officer_id = Column(String, primary_key=True)
     # Caseload category within the category_type. 'ALL' value indicates the status is compared to a statewide metric.
-    # TODO(#31634): Rename to caseload_category.
-    caseload_type = Column(String, primary_key=True)
     caseload_category = Column(String, primary_key=True)
     # Category this caseload type is part of, e.g. SEX_OFFENSE_BINARY. 'ALL' indicates the status
     # is compared to a statewide metric.
