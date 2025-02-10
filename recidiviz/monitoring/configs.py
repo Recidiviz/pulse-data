@@ -89,11 +89,11 @@ class InstrumentConfig:
     views: List[ViewConfig] = attr.ib(factory=dict)
 
     @property
-    def common_kwargs(self) -> dict[str, Optional[str]]:
+    def common_kwargs(self) -> dict[str, str]:
         return {
             "name": self.instrument_key.value,
-            "description": self.description,
-            "unit": self.unit,
+            "description": self.description or "",
+            "unit": self.unit or "",
         }
 
     @abstractmethod
@@ -180,7 +180,10 @@ class HistogramInstrumentConfig(InstrumentConfig):
     instrument_key: HistogramInstrumentKey = attr.ib()
 
     def create_instrument(self, meter: Meter) -> Histogram:
-        return meter.create_histogram(**self.common_kwargs)
+        args = self.common_kwargs
+        return meter.create_histogram(
+            name=args["name"], description=args["description"], unit=args["unit"]
+        )
 
 
 INSTRUMENT_KEY_TO_CONFIG = {

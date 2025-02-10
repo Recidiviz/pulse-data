@@ -830,9 +830,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 ):
                     continue
 
-                if (
-                    not latest_supervision_period
-                    or latest_supervision_period.termination_date < termination_date
+                if not latest_supervision_period or (
+                    latest_supervision_period.termination_date
+                    and latest_supervision_period.termination_date < termination_date
                 ):
                     latest_supervision_period = supervision_period
 
