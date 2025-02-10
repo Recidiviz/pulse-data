@@ -155,8 +155,10 @@ def _identify_most_severe_violation(
             most_severe_violation = violation
             continue
 
+        # The check for subtypes at the beginning of this loop ensure that most_severe_type_and_subtype_for_violation()
+        # will return a subtype for each call
         most_severe_subtype = most_severe_violation_subtype(
-            [new_most_severe_subtype, old_most_severe_subtype], violation_delegate
+            [new_most_severe_subtype, old_most_severe_subtype], violation_delegate  # type: ignore[list-item]
         )
         if most_severe_subtype == new_most_severe_subtype:
             most_severe_violation = violation
