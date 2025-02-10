@@ -57,7 +57,7 @@ columns:
       TODO(#33372): Fill in column description
   - name: updt_usr_id
     description: |-
-      TODO(#33372): Fill in column description
+      ID of user who most recently updated this record
     is_pii: True
   - name: updt_dt
     description: |-

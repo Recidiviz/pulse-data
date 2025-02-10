@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: wf_rpt_cmt
+file_description: |-
+  Webform report comment
+data_classification: source
+primary_key_cols:
+  - rpt_cmt_dtl_id
+columns:
+  - name: rpt_cmt_dtl_id
+    description: |-
+      Primary key
+  - name: rpt_id
+    description: |-
+      TODO(#33372): Fill in column description

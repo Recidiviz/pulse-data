@@ -31,6 +31,6 @@ columns:
       - "(null)"
   - name: vld_flg
     description: |-
-      TODO(#33372): Fill in column description
+      Is the entry valid
     null_values:
       - "(null)"

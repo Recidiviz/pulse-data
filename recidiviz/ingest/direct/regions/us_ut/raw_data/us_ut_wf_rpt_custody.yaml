@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: wf_rpt_custody
+file_description: |-
+  Webformn report custody
+data_classification: source
+primary_key_cols:
+  - custody_dtl_id
+columns:
+  - name: custody_dtl_id
+    description: |-
+      Primary key
+  - name: rpt_id
+    description: |-
+      TODO(#33372): Fill in column description

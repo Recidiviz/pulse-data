@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: wf_cmt_typ_cd
+file_description: |-
+  Webform comment type code
+data_classification: source
+primary_key_cols:
+  - cmt_typ_id
+columns:
+  - name: cmt_typ_id
+    description: |-
+      Primary key
+  - name: vld_flg
+    description: |-
+      Is the entry valid
+  - name: cmt_typ_desc
+    description: |-
+      Description of comment type
+is_code_file: True

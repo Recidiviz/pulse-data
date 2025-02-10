@@ -26,7 +26,7 @@ columns:
       TODO(#33372): Fill in column description
   - name: created_by_usr_id
     description: |-
-      TODO(#33372): Fill in column description
+      ID of the user who created the record
     is_pii: True
   - name: created_dt
     description: |-

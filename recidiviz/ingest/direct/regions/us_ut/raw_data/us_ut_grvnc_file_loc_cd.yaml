@@ -15,4 +15,4 @@ columns:
     is_pii: True
   - name: vld_flg
     description: |-
-      TODO(#33372): Fill in column description
+      Is the entry valid

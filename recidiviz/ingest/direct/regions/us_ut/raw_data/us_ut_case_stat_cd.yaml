@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: case_stat_cd
+file_description: |-
+  Case status code
+data_classification: source
+primary_key_cols:
+  - case_stat_cd
+columns:
+  - name: case_stat_cd
+    description: |-
+      Primary key
+  - name: vld_flg
+    description: |-
+      Is the record valid
+  - name: case_stat_desc
+    description: |-
+      Description of case status
+is_code_file: True

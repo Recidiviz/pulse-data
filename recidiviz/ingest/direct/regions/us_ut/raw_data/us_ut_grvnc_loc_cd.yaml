@@ -21,4 +21,4 @@ columns:
           As of 1/14/25, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#35811)
   - name: vld_flg
     description: |-
-      TODO(#33372): Fill in column description
+      Is the entry valid

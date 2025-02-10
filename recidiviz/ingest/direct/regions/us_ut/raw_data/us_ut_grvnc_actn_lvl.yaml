@@ -50,7 +50,7 @@ columns:
     field_type: datetime
   - name: cmt
     description: |-
-      TODO(#33372): Fill in column description
+      Free-text comment
     is_pii: True
   - name: updt_usr_id
     description: |-

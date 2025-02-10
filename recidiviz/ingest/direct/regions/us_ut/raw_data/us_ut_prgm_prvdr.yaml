@@ -40,7 +40,7 @@ columns:
     is_pii: True
   - name: vld_flg
     description: |-
-      TODO(#33372): Fill in column description
+      Is the entry valid
   - name: updt_usr_id
     description: |-
       ID of user who most recently updated this record

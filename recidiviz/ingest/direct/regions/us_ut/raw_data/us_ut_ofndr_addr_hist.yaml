@@ -61,7 +61,7 @@ columns:
     field_type: datetime
   - name: cmt
     description: |-
-      TODO(#33372): Fill in column description
+      Free-text comment
     is_pii: True
   - name: end_cmt
     description: |-
@@ -73,7 +73,7 @@ columns:
     is_pii: True
   - name: create_dt
     description: |-
-      TODO(#33372): Fill in column description
+      Date the record was created
     field_type: datetime
   - name: updt_usr_id
     description: |-

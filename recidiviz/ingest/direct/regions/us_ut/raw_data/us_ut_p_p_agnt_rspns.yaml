@@ -28,11 +28,11 @@ columns:
     is_pii: True
   - name: create_dt
     description: |-
-      TODO(#33372): Fill in column description
+      Date the record was created
     field_type: datetime
   - name: cmt
     description: |-
-      TODO(#33372): Fill in column description
+      Free-text comment
     is_pii: True
   - name: agnt_rspns_deny_dt
     description: |-
