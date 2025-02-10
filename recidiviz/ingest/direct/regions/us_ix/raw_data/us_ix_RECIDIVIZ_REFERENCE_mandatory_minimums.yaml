@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RECIDIVIZ_REFERENCE_mandatory_minimums
+file_description: |-
+  Internally constructed table that contains information about mandatory minimums
+data_classification: source
+primary_key_cols:
+  - OffenseName
+  - SentenceType
+columns:
+  - name: OffenseName
+    description: Name of the offense
+  - name: SentenceType
+    description: The type of sentence
+  - name: MinimumSentenceLength
+    description: The minimum sentence length
+    field_type: integer
+  - name: MaximumSentenceLength
+    description: The maximum sentence length
+    field_type: integer
+    import_blocking_column_validation_exemptions:
+      - validation_type: NONNULL_VALUES
+        exemption_reason: This column might not be populated for a while (2/10/2025)
+  - name: StatuteNumber
+    description: The statute number specifying the mandatory minimum
+  - name: StatuteLink
+    description: The link to the statue text
+update_cadence: IRREGULAR
