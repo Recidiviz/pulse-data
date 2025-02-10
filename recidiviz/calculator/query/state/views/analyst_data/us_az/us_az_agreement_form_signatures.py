@@ -53,7 +53,8 @@ WITH tpr_base AS (
     'TPR' AS program
   FROM
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest` ep
-  LEFT JOIN
+  -- Only including DOC_IDs that appear inside the eligibility table
+  INNER JOIN
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_TRANSITION_PRG_ELIG_latest` elig
   USING
     (DOC_ID)
@@ -81,7 +82,8 @@ dtp_base AS (
     'DTP' AS program
   FROM
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest` ep
-  LEFT JOIN
+  -- Only including DOC_IDs that appear inside the eligibility table
+  INNER JOIN
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_DRUG_TRANSITION_PRG_AGRMNT_latest` agrmt
   USING
     (DOC_ID)
@@ -96,6 +98,7 @@ both_programs AS (
 status_joined_to_sessions AS (
 SELECT 
     sjip.person_id, 
+    'US_AZ' AS state_code,
     base.doc_id,
     cs.session_id,
     base.program,
