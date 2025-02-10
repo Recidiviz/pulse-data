@@ -1,8 +1,7 @@
 # Configuration for which validations to run for region US_UT.
 
 region_code: US_UT
-# TODO(#33488): Enable validations for US_UT.
-dev_mode: True
+dev_mode: False
 exclusions:
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     exclusion_type: DOES_NOT_APPLY
