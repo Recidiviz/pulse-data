@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 # =============================================================================
 """Query for relevant metadata needed to support supervision discharge opportunity in Tennessee
 """
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
@@ -38,9 +39,6 @@ US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_NAME = (
     "us_tn_full_term_supervision_discharge_record"
 )
 
-US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_DESCRIPTION = """
-    Query for relevant metadata needed to support supervision discharge opportunity in Tennessee
-    """
 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
 WITH latest_sentences AS (
   /* We don't want to keep the intersection of sentences in both arrays because by definition, we're surfacing people
@@ -60,7 +58,7 @@ latest_system_session AS ( # get latest system session date to bring in relevant
 ),
 /*
     ContactNoteComment is unique on OffenderID and ContactNoteDateTime while ContactNoteType is unique on OffenderID,
-    ContactNoteDateTime, and ContactType. Which means POs enter one comment but a collection of ContactTypes at any 
+    ContactNoteDateTime, and ContactNoteType. Which means POs enter one comment but a collection of ContactTypes at any 
     given time, and there can be multiple per day. 
     
     The trade-off between joining on Contact Date vs. ContactDateTime is the following:
@@ -344,7 +342,7 @@ US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBu
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
     view_id=US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_NAME,
     view_query_template=US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_QUERY_TEMPLATE,
-    description=US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_DESCRIPTION,
+    description=__doc__,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(

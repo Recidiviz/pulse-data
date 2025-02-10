@@ -1433,7 +1433,11 @@ US_TN:
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_tn_full_term_supervision_discharge_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Used to get county names from county codes; county names are then used in the
+      opportunity form.
+    workflows_views.us_tn_suspension_of_direct_supervision_record: |-
+      Used to get county names from county codes; county names are then used in the
+      opportunity form.
     workflows_views.us_tn_transfer_to_compliant_reporting_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ContactNoteComment:
@@ -1583,6 +1587,8 @@ US_TN:
   Site:
     reference_views.us_tn_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_suspension_of_direct_supervision_record: |-
+      Used to get supervision-office cities for SDS form.
   SupervisionPlan:
     dashboard_views.supervision_to_prison_population_snapshot_by_officer: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
