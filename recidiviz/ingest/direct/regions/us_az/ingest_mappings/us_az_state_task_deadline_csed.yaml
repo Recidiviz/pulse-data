@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  cs_end_date: DATETIME
+  PERSON_ID: STRING
+  DOC_ID: STRING
+  update_datetime: DATETIME
+  FINAL_OFFENSE_ID: STRING
+  SC_EPISODE_ID: STRING
+  task_subtype: STRING
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    task_deadlines:
+      - StateTaskDeadline:
+          due_date: cs_end_date
+          update_datetime: update_datetime
+          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
+          task_subtype: task_subtype
+          task_metadata:
+            $json_dict:
+              DOC_ID: DOC_ID
+              sentence_external_id: FINAL_OFFENSE_ID
+              sentence_group_external_id: SC_EPISODE_ID

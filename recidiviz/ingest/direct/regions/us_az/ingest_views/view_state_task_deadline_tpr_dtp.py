@@ -172,7 +172,7 @@ QUALIFY ROW_NUMBER() OVER (PARTITION BY PERSON_ID, FINAL_OFFENSE_ID, task_subtyp
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_az",
-    ingest_view_name="state_task_deadline",
+    ingest_view_name="state_task_deadline_tpr_dtp",
     view_query_template=VIEW_QUERY_TEMPLATE,
 )
 
