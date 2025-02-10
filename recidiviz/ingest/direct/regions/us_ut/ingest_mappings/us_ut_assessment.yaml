@@ -153,6 +153,9 @@ output:
                   - "COPY OF ASAM CRITERIA"
                   - "COPY OF ASAM ASSESSMENT"
                   - "ASAM ASSESSMENT"
+                  - "R&R SU / MH ASSESSMENT"
+                  - "CMHS - MEN"
+                  - "CMHS - WOMEN"
           assessment_date: tst_dt
           assessment_score: tot_score
           assessment_level:
