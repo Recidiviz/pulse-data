@@ -335,6 +335,8 @@ columns:
         description: TODO(#35462) Document this value.
       - value: REVP
         description: TODO(#35462) Document this value.
+      - value: RIOL
+        description: TODO(#35462) Document this value.
       - value: RLSE
         description: TODO(#35462) Document this value.
       - value: RSNT
