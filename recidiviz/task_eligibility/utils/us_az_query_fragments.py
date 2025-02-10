@@ -188,7 +188,8 @@ def us_az_sentences_preprocessed_query_template() -> str:
 
 
 def home_plan_information_for_side_panel_notes() -> str:
-    return """  SELECT
+    return """
+    SELECT
         peid.external_id,
         "Home Plan Information" AS criteria,
         plan_status AS note_title,
@@ -202,6 +203,62 @@ def home_plan_information_for_side_panel_notes() -> str:
         AND peid.state_code = 'US_AZ'
         AND peid.id_type = 'US_AZ_PERSON_ID'
     WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date AND IFNULL(end_date_exclusive, '9999-12-31')"""
+
+
+def functional_literacy_enrollment_side_panel_notes() -> str:
+    return """
+    SELECT
+        peid.external_id,
+        "Mandatory Literacy Enrollment Information" AS criteria,
+        "Currently Enrolled" AS note_title,
+        " " AS note_body,
+        start_date AS event_date,
+    FROM
+    #TODO(#33858): Ingest into state task deadline or find some way to view this historically
+      `{project_id}.normalized_state.state_program_assignment` spa
+    LEFT JOIN `{project_id}.normalized_state.state_person_external_id` peid
+    ON peid.person_id = spa.person_id
+        AND peid.state_code = 'US_AZ'
+        AND peid.id_type = 'US_AZ_PERSON_ID'
+    WHERE participation_status_raw_text IN ('PARTICIPATING')
+    AND program_id LIKE '%FUNCTIONAL LITERACY%' 
+    AND discharge_date IS NULL
+    #TODO(#33737): Look into multiple span cases for residents participating in MAN-LIT programs
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY peid.external_id ORDER BY start_date ASC) = 1
+    """
+
+
+def agreement_form_status_side_panel_notes(opp_name: str) -> str:
+    if opp_name.upper() not in ("TPR", "DTP"):
+        raise NotImplementedError(
+            f"Unsupported release_type |{opp_name}|, expecting TPR or DTP"
+        )
+    return f"""
+    SELECT
+      DISTINCT ep.PERSON_ID AS external_id,
+      "Agreement Form Signature Status" AS criteria,
+      CASE WHEN (SIG_STATUS = 'SIGNED')
+            THEN 'Signed'
+        WHEN (SIG_STATUS = 'NOT SIGNED, NOT DECLINED')
+            THEN 'Not Signed'
+        WHEN (SIG_STATUS = 'REFUSED TO SIGN')
+            THEN 'Refusal to Sign'
+        WHEN (SIG_STATUS = 'DECLINED TO PARTICIPATE')
+            THEN 'Declined 180+ Days Ago'
+      END AS note_title,
+      "" as note_body,
+      start_date AS event_date
+    FROM
+      `{{project_id}}.analyst_data.us_az_agreement_form_signatures_materialized`
+    JOIN
+      `{{project_id}}.us_az_raw_data_up_to_date_views.DOC_EPISODE_latest` ep
+    USING
+      (DOC_ID)
+    WHERE end_date_exclusive IS NULL 
+        AND program = '{opp_name.upper()}'
+        -- Cutoff value for a resident to reconsider signing the agreement if they are eligible for early release
+        AND DATE_DIFF(CURRENT_DATE('EST'),start_date, DAY) >= 180
+    """
 
 
 def acis_date_not_set_criteria_builder(
@@ -271,7 +328,8 @@ def acis_date_not_set_criteria_builder(
         SELECT 
             sent.person_id,
             sent.state_code,
-            asd.acis_set_date AS start_date,
+            # Add 1 day to the acis_set_date to account for the ingest delay
+            DATE_ADD(asd.acis_set_date, INTERVAL 1 DAY) AS start_date,
             sent.end_date,
             sent.statute,
             sent.description,
@@ -282,7 +340,7 @@ def acis_date_not_set_criteria_builder(
                 AND sent.state_code = asd.state_code
                 and sent.sentence_group_external_id = asd.sentence_group_external_id
         -- We don't pull sentences where their end_date is the same date as the acis_set_date
-        WHERE asd.acis_set_date != {nonnull_end_date_clause('sent.end_date')}
+        WHERE DATE_ADD(asd.acis_set_date, INTERVAL 1 DAY) != {nonnull_end_date_clause('sent.end_date')}
     ),
 
     {create_sub_sessions_with_attributes('sentences_with_an_acis_date')}
@@ -689,8 +747,9 @@ _ADDL_INELIGIBLE_VIOLENT_STATUTES = [
     "13-1304",  # KIDNAPPING
     "13-1408",  # ADULTERY
     "13-1508",  # BURGLARY 1ST DEGREE
-    "13-3107",  # UNLAWFUL DISCHARGE OF FIREARMS
+    "13-1904",  # ARMED ROBBERY
     "13-3102",  # MISCONDUCT INVOLVING WEAPONS
+    "13-3107",  # UNLAWFUL DISCHARGE OF FIREARMS
     "13-3623",  # CHILD/ADULT ABUSE
     "28-661",  # ACCIDENTS INVOLVING DEATH OR PERSONAL INJURY
 ]

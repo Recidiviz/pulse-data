@@ -30,7 +30,9 @@ from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.us_az_query_fragments import (
+    agreement_form_status_side_panel_notes,
     almost_eligible_tab_logic,
+    functional_literacy_enrollment_side_panel_notes,
     home_plan_information_for_side_panel_notes,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -69,6 +71,10 @@ combine_acis_and_recidiviz_dtp_dates AS (
 
 side_panel_notes AS (
     {home_plan_information_for_side_panel_notes()}
+    UNION ALL
+    {functional_literacy_enrollment_side_panel_notes()}
+    UNION ALL
+    {agreement_form_status_side_panel_notes('DTP')}
 ),
 
 array_side_panel_notes_cte AS (

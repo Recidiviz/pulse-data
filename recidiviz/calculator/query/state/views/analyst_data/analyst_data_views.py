@@ -129,6 +129,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ar.us_ar_ovg_timelin
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_agreement_form_signatures import (
+    US_AZ_AGREEMENT_FORM_SIGNATURES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_early_releases_from_incarceration import (
     US_AZ_EARLY_RELEASES_FROM_INCARCERATION_VIEW_BUILDER,
 )
@@ -435,6 +438,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
     US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER,
     US_AZ_PROJECTED_DATES_VIEW_BUILDER,
+    US_AZ_AGREEMENT_FORM_SIGNATURES_VIEW_BUILDER,
     US_TN_CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_PREPROCESSED_VIEW_BUILDER,
     CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_VIEW_BUILDER,
     NUMBER_MONTHS_BETWEEN_CUSTODY_DOWNGRADE_AND_ASSESSMENT_DUE_VIEW_BUILDER,

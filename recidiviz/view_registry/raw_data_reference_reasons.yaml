@@ -62,6 +62,9 @@ US_AZ:
   AZ_CM_INMATE_ASSIGNMENT:
     sessions.us_az_incarceration_staff_assignment_sessions_preprocessed: |-
       Get CM staff assignments to residents.
+  AZ_DOC_DRUG_TRANSITION_PRG_AGRMNT:
+    analyst_data.us_az_agreement_form_signatures: |-
+      Require information on Signature IDs for Drug Program Early Release Agreement Forms
   AZ_DOC_DRUG_TRANSITION_PRG_EVAL:
     task_eligibility_criteria_us_az.meets_functional_literacy_dtp: |-
       Need information on Mandatory Literacy in criteria.
@@ -105,7 +108,12 @@ US_AZ:
   AZ_DOC_SC_OFFENSE:
     task_eligibility_criteria_us_az.at_least_24_months_since_last_csed: |-
       Needed to identify the last CSed date in a criteria.
+  AZ_DOC_TRANSITION_PRG_AGRMNT:
+    analyst_data.us_az_agreement_form_signatures: |-
+      Require information on Signature IDs for Early Release Agreement Forms
   AZ_DOC_TRANSITION_PRG_ELIG:
+    analyst_data.us_az_agreement_form_signatures: |-
+      Require information on Signature Status for Early Release Agreement Forms
     task_eligibility_criteria_us_az.meets_functional_literacy_tpr: |-
       Need information on Mandatory Literacy in criteria.
     task_eligibility_criteria_us_az.no_tpr_denial_in_current_incarceration: |-
@@ -130,6 +138,8 @@ US_AZ:
       |-
       Needed a way to map the different citizen status ids in AZ to one another.
   DOC_EPISODE:
+    analyst_data.us_az_agreement_form_signatures: |-
+      Needed to track information about incarceration stays to map to agreement form signature statuses
     task_eligibility_criteria_us_az.meets_functional_literacy_dtp: |-
       Needed a way to map the different ids in AZ to one another.
     task_eligibility_criteria_us_az.meets_functional_literacy_tpr: |-
@@ -146,6 +156,10 @@ US_AZ:
     task_eligibility_criteria_us_az.no_tpr_removals_from_self_improvement_programs:
       |-
       Needed to identify removals from self-improvement programs in a criteria.
+    workflows_views.us_az_approaching_acis_or_recidiviz_dtp_request_record: |-
+      Needed to track information about incarceration stays, including start and end dates
+    workflows_views.us_az_approaching_acis_or_recidiviz_tpr_request_record: |-
+      Needed to track information about incarceration stays, including start and end dates
   DPP_OFFICE_LOCATION:
     reference_views.us_az_location_metadata: |-
       We pull all supervision locations from this raw data into the location metadata view.
