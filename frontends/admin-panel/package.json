@@ -6,7 +6,7 @@
   "author": "Recidiviz <team@recidiviz.org>",
   "license": "GNU General Public License v3",
   "dependencies": {
-    "@ant-design/icons": "^5.6.0",
+    "@ant-design/icons": "^5.6.1",
     "@recidiviz/design-system": "^5.9.0",
     "antd": "^4.24.16",
     "classnames": "^2.3.1",
