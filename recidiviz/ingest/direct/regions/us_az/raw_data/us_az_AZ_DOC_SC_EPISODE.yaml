@@ -80,6 +80,8 @@ columns:
   - name: SC_CALC_HISTORY_ID
     description: |-
       fk to AZ_DOC_SC_CALC_HISTORY
+    null_values:
+      - "NULL"
   - name: TEMP_RLS_DENIED_NOTE_ID
     description: |-
       ID of note that contains comments about why a Temporary Release deny reason was selected.  The note is associated with the most-recent selection of a Temporary Release deny reason.  FK to AZ_DOC_SC_EPISODE_NOTE

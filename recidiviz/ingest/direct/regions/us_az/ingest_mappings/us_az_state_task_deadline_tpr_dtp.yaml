@@ -20,7 +20,7 @@ output:
       - StateTaskDeadline:
           eligible_date: transition_release_eligibility_date
           update_datetime: update_datetime_elig
-          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
+          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION_MIN)
           task_subtype: task_subtype
           task_metadata:
             $json_dict:

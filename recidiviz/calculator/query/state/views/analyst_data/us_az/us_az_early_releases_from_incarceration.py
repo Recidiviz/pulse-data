@@ -47,7 +47,7 @@ projected_release_date_spans AS (
         state_code = "US_AZ"
         AND eligible_date IS NOT NULL
         AND eligible_date > "1900-01-01"
-        AND task_type = "DISCHARGE_FROM_INCARCERATION"
+        AND task_type = "DISCHARGE_FROM_INCARCERATION_MIN"
         AND task_subtype IN (
             "DRUG TRANSITION RELEASE",
             "STANDARD TRANSITION RELEASE"
