@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,14 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Create helper SQL queries for Tennessee.
-"""
+"""Create helper SQL queries for Tennessee."""
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
+
+# TODO(#38161): Move shared code into here from TN's `shared_ctes` (as needed).
 
 DISCIPLINARY_HISTORY_MONTH_LOOKBACK = "60"
 
@@ -97,8 +98,10 @@ def no_positive_arrest_check_within_time_interval(
         SELECT
             *,
         FROM sub_sessions_with_attributes
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date 
-            ORDER BY latest_positive_arrest_check_date DESC) = 1
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY person_id, state_code, start_date, end_date 
+            ORDER BY latest_positive_arrest_check_date DESC
+        ) = 1
     )
     ,
     sessionized_cte AS 
@@ -111,8 +114,8 @@ def no_positive_arrest_check_within_time_interval(
     (
         {aggregate_adjacent_spans(
             table_name='dedup_cte',
-            attribute=['latest_positive_arrest_check_date','meets_criteria'],
-            end_date_field_name='end_date'
+            attribute=['latest_positive_arrest_check_date', 'meets_criteria'],
+            end_date_field_name='end_date',
         )}
     )
     SELECT 
@@ -186,15 +189,24 @@ def keep_contact_codes(
     keep_last: bool = False,
 ) -> str:
     """
-    Helper function to join on contact codes with comments, filter to specific codes, and either keep all codes of a
-    specific type or the latest one. Useful for TEPE form and side-bar
+    Helper function to join on contact codes with comments, filter to specific codes,
+    and either keep all codes of a specific type or the latest one. Useful for Workflows
+    forms and side-panel information.
 
-    codes_cte: String that contains a CTE with contact notes that can be filtered on ContactNoteType
-    comments_cte: String that contains a CTE with contact comments
-    where_clause_codes_cte: String used to filter to specific contact types
-    output_name: Optional parameter for Struct containing contact date, type, comment
-    keep_last: Optional parameter defaulting to false. If true, only the latest contact date for a given person is kept,
-              otherwise all are
+    Args:
+        codes_cte (str): Name of CTE with contact notes that can be filtered on
+            `ContactNoteType`. Must contain columns `person_id`, `contact_date`, and
+            `contact_type`.
+        comments_cte (str): Name of CTE with contact comments. Must contain columns
+            `person_id`, `contact_date`, and `contact_comment`.
+        where_clause_codes_cte (str): Used to filter to specific contact types.
+        output_name (str, optional): Name for struct containing contact date, type, and
+            comment.
+        keep_last (bool, optional): If True, only the contact with the latest date for a
+            given person is kept; otherwise, all are kept. Defaults to False.
+
+    Returns:
+        str: SQL query as a string.
     """
 
     qualify = ""
@@ -202,35 +214,35 @@ def keep_contact_codes(
         qualify = "QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1"
 
     return f"""
-        SELECT
-            person_id,
-            STRUCT(
-              contact_date,
-              contact_type,
-              contact_comment
-            ) AS {output_name},
+    SELECT
+        person_id,
+        STRUCT(
             contact_date,
             contact_type,
-            contact_comment,
-        FROM (
-            SELECT
-                person_id,
-                contact_date,
-                STRING_AGG(DISTINCT contact_type, ", " ORDER BY contact_type) AS contact_type,
-            FROM {codes_cte}
-            {where_clause_codes_cte}
-            GROUP BY 1,2
-        )
-        LEFT JOIN (
-            SELECT
-                person_id,
-                contact_date,
-                STRING_AGG(DISTINCT contact_comment, ", " ORDER BY contact_comment) AS contact_comment,
-            FROM {comments_cte}
-            GROUP BY 1,2        
-        )
-        USING(person_id, contact_date)
-        {qualify}
+            contact_comment
+        ) AS {output_name},
+        contact_date,
+        contact_type,
+        contact_comment,
+    FROM (
+        SELECT
+            person_id,
+            contact_date,
+            STRING_AGG(DISTINCT contact_type, ", " ORDER BY contact_type) AS contact_type,
+        FROM {codes_cte}
+        {where_clause_codes_cte}
+        GROUP BY 1,2
+    )
+    LEFT JOIN (
+        SELECT
+            person_id,
+            contact_date,
+            STRING_AGG(DISTINCT contact_comment, ", " ORDER BY contact_comment) AS contact_comment,
+        FROM {comments_cte}
+        GROUP BY 1,2        
+    )
+    USING (person_id, contact_date)
+    {qualify}
     """
 
 

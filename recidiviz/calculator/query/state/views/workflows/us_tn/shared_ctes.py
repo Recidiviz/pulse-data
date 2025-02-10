@@ -1,5 +1,5 @@
 #  Recidiviz - a data platform for criminal justice reform
-#  Copyright (C) 2024 Recidiviz, Inc.
+#  Copyright (C) 2025 Recidiviz, Inc.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,13 +14,16 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""CTE Logic that is shared across US_TN Workflows queries."""
+"""CTE logic that is shared across US_TN Workflows queries."""
+
 from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
     client_specific_fines_fees_balance,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     get_sentences_current_span,
 )
+
+# TODO(#38161): Move shared code into here from `us_tn_query_fragments` (as needed).
 
 
 def us_tn_fines_fees_info() -> str:
@@ -43,32 +46,35 @@ def us_tn_fines_fees_info() -> str:
 
 def us_tn_get_offense_information(in_projected_completion_array: bool = True) -> str:
     return f"""
-        SELECT person_id,
-         ARRAY_AGG(DISTINCT off.docket_number IGNORE NULLS ORDER BY off.docket_number) AS docket_numbers,
-         ARRAY_AGG(off.offense IGNORE NULLS ORDER BY off.offense) AS current_offenses,
-         ARRAY_AGG(
-                DISTINCT
+    SELECT
+        person_id,
+        ARRAY_AGG(DISTINCT off.docket_number IGNORE NULLS ORDER BY off.docket_number) AS docket_numbers,
+        ARRAY_AGG(off.offense IGNORE NULLS ORDER BY off.offense) AS current_offenses,
+        ARRAY_AGG(
+            DISTINCT
                 CASE WHEN codes.Decode IS NOT NULL THEN CONCAT(off.conviction_county, ' - ', codes.Decode)
                     ELSE off.conviction_county END
-                IGNORE NULLS
-                ORDER BY
-                    CASE WHEN codes.Decode IS NOT NULL THEN CONCAT(off.conviction_county, ' - ', codes.Decode)
-                        ELSE off.conviction_county END
-                ) AS conviction_counties,
+            IGNORE NULLS
+            ORDER BY
+                CASE WHEN codes.Decode IS NOT NULL THEN CONCAT(off.conviction_county, ' - ', codes.Decode)
+                    ELSE off.conviction_county END
+        ) AS conviction_counties,
         ARRAY_AGG(
             NULLIF(off.judicial_district, "EXTERNAL_UNKNOWN")
             IGNORE NULLS
             ORDER BY NULLIF(off.judicial_district, "EXTERNAL_UNKNOWN")
         ) AS judicial_district,
+        LOGICAL_OR(off.life_sentence) AS serving_life_sentence,
         MIN(off.sentence_start_date) AS sentence_start_date,
         MAX(off.expiration_date) AS expiration_date,
-      FROM 
+    FROM 
         ({get_sentences_current_span(in_projected_completion_array=in_projected_completion_array)}) off
-      LEFT JOIN (
-                SELECT *
-                FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.CodesDescription_latest`
-                WHERE CodesTableID = 'TDPD130'
-            ) codes
-      ON off.conviction_county = codes.Code
-      GROUP BY 1
-      """
+    LEFT JOIN (
+        SELECT *
+        FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.CodesDescription_latest`
+        WHERE CodesTableID = 'TDPD130'
+    ) codes
+        ON off.conviction_county = codes.Code
+    WHERE off.state_code='US_TN'
+    GROUP BY 1
+    """
