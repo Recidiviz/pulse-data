@@ -36,4 +36,4 @@ columns:
       TODO(#33372): Fill in column description
   - name: vld_flg
     description: |-
-      TODO(#33372): Fill in column description
+      Is the entry valid

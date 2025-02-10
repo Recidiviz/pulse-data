@@ -228,10 +228,10 @@ columns:
     is_pii: True
   - name: cmt
     description: |-
-      TODO(#33372): Fill in column description
+      Free-text comment
+    is_pii: True
     null_values:
       - "(null)"
-    is_pii: True
   - name: rim_inel_rsn
     description: |-
       TODO(#33372): Fill in column description

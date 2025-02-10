@@ -17,7 +17,7 @@ columns:
       TODO(#33372): Fill in column description
   - name: allgt_desc
     description: |-
-      TODO(#33372): Fill in column description
+      Description of allegation
     is_pii: True
   - name: accpt_flg
     description: |-

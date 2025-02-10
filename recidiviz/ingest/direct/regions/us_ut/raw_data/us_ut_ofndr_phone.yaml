@@ -29,7 +29,7 @@ columns:
       TODO(#33372): Fill in column description
   - name: cmt
     description: |-
-      TODO(#33372): Fill in column description
+      Free-text comment
     is_pii: True
   - name: strt_dt
     description: |-

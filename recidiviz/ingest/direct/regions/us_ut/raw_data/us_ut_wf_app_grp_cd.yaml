@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: wf_app_grp_cd
+file_description: |-
+  Webform approval group code
+data_classification: source
+primary_key_cols:
+  - app_grp_id
+columns:
+  - name: app_grp_id
+    description: |-
+      Primary key
+  - name: usr_desc
+    description: |-
+      Description of the group reviewing the form
+  - name: vld_flg
+    description: |-
+      Is the entry valid
+is_code_file: True

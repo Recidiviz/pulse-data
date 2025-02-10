@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: wf_app_stat_cd
+file_description: |-
+  Webform approval status code
+data_classification: source
+primary_key_cols:
+  - wf_app_stat_id
+columns:
+  - name: wf_app_stat_id
+    description: |-
+      Primary key
+  - name: stat_desc
+    description: |-
+      Description of approval status
+  - name: usr_desc
+    description: |-
+      The body that made the description (not an individual)
+  - name: vld_flg
+    description: |-
+      Is the entry valid
+is_code_file: True

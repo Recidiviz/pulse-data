@@ -31,7 +31,7 @@ columns:
       Instructions for administering the test.
   - name: vld_flg
     description: |-
-      TODO(#33372): Fill in column description
+      Is the entry valid
   - name: substance_flg
     description: |-
       TODO(#33372): Fill in column description

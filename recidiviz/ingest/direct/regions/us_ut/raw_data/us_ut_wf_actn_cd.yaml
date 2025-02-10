@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: wf_actn_cd
+file_description: |-
+  Webform action code
+data_classification: source
+primary_key_cols:
+  - wf_actn_id
+columns:
+  - name: wf_actn_id
+    description: |-
+      Primary key
+  - name: vld_flg
+    description: |-
+      Is the entry valid
+  - name: actn_desc
+    description: |-
+      Description of the action
+is_code_file: True
