@@ -1883,10 +1883,10 @@
     "@react-spring/shared" "~9.7.5"
     "@react-spring/types" "~9.7.5"
 
-"@recidiviz/design-system@^5.8.0":
-  version "5.8.0"
-  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-5.8.0.tgz#95cc1b5fc02969de36d3fd8939cfe551fd9e2823"
-  integrity sha512-SwE98LL1EPyZ2rinYy8s/XlOJZybr9TDLiN56WTCKM9Bp+pmJ0kep+okYoB65fzi/dsCvLzIiKO+B1PxAcdkEw==
+"@recidiviz/design-system@^5.9.0":
+  version "5.9.0"
+  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-5.9.0.tgz#7034d05e223f47ded7211bf6e5e5a2273166c971"
+  integrity sha512-3/Heu4bAnNOFQXpQYdSpYBnAREKq9wnz8UFQo7qXWioSnZvHh3Lv3PEmn64Cxa9dd1lq229vWDvQGpQ0sZL4iQ==
   dependencies:
     "@fontsource/libre-baskerville" "^4.1.0"
     "@fontsource/public-sans" "^4.5.3"
@@ -1894,12 +1894,10 @@
     body-scroll-lock "^3.1.5"
     polished "^4.1.0"
     prop-types "^15.7.2"
-    react-is "^17.0.2"
     react-modal "^3.12.1"
     react-spring "^9.4.3"
     react-tabs "^3.2.2"
     react-toast-notifications "^2.4.3"
-    styled-components "^5.2.1"
 
 "@recidiviz/eslint-config@^3.0.0":
   version "3.0.0"
@@ -9561,7 +9559,7 @@ react-is@^16.13.1, react-is@^16.6.0, react-is@^16.7.0:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.13.1.tgz#789729a4dc36de2999dc156dd6c1d9c18cea56a4"
   integrity sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==
 
-react-is@^17.0.1, react-is@^17.0.2:
+react-is@^17.0.1:
   version "17.0.2"
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-17.0.2.tgz#e691d4a8e9c789365655539ab372762b0efb54f0"
   integrity sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==
