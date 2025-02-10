@@ -122,6 +122,7 @@ FROM (
   INNER JOIN archived_metrics_types USING(state_code, metric_id, category_type, caseload_type, end_date)
 )
 WHERE date_of_data > earliest_export_date
+  AND ABS(prev_outliers_count - outliers_count) > 3
 QUALIFY RANK() OVER(PARTITION BY region_code, metric_id, category_type, caseload_type, end_date ORDER BY date_of_data DESC) <= 7
 ORDER BY 1,2,3,4,5,6 
 """
