@@ -38,6 +38,7 @@ const sidebarComponentNames = [
   "UsIdPastTwoYearsAlert",
   "UsIdParoleDates",
   "UsAzDates",
+  "UsAzAcisInformation",
 
   // Client-related components
   "Supervision",
