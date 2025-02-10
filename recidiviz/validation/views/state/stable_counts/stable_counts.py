@@ -230,6 +230,11 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         # The fluctuation was only 26% compared to 10/2024, so not that big of a difference.
                         date(2024, 11, 1),
                     ],
+                    StateCode.US_MO: [
+                        # The number of supervision periods in MO increased slightly in 1/25, resulting in the error level very narrowly exceeding the threshold.
+                        # Because it appears to be a normal fluctuation in supervision data, rather than the result of an ingest bug or raw data issues, this month is exempted.
+                        date(2025, 1, 1)
+                    ],
                 },
             ),
             DateCol(
@@ -304,6 +309,11 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_ND: [
                         date(2023, 11, 1),  # Stale data in staging, no issue in prod
                         date(2023, 12, 1),  # Stale data in staging, no issue in prod
+                    ],
+                    StateCode.US_MO: [
+                        # The number of supervision periods in MO increased slightly in 1/25, resulting in the error level very narrowly exceeding the threshold.
+                        # Because it appears to be a normal fluctuation in supervision data, rather than the result of an ingest bug or raw data issues, this month is exempted.
+                        date(2025, 1, 1)
                     ],
                 },
             ),
