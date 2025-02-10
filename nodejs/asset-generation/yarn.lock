@@ -5493,10 +5493,10 @@ file-system-cache@^2.0.0:
     fs-extra "^11.1.0"
     ramda "^0.28.0"
 
-file-type@^20.0.1:
-  version "20.0.1"
-  resolved "https://registry.yarnpkg.com/file-type/-/file-type-20.0.1.tgz#0c048d5f9dbf4d7aabf24176d5bbd5e44f1bbccc"
-  integrity sha512-R80W+NZ+s1M8PsC8L7xn+J0N72vEyxstMH+4vwIyt5B7ojfG80h/nKu2Qw/NYJTIYyGUeaPNLnzfJd78SWnG3A==
+file-type@^20.1.0:
+  version "20.1.0"
+  resolved "https://registry.yarnpkg.com/file-type/-/file-type-20.1.0.tgz#adeeb3c798d343ecc35ac85404bba52989143f68"
+  integrity sha512-XoxU+lETfCf+bYK3SXkxFusAvmtYQl1u/ZC4zw1DBLEsHUvh339uwYucgQnnSMz1mRCWYJrCzsbJJ95hsQbZ8A==
   dependencies:
     "@tokenizer/inflate" "^0.2.6"
     strtok3 "^10.2.0"
