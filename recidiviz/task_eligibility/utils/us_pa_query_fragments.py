@@ -17,6 +17,7 @@
 """Helper fragments to import data for case notes in PA"""
 
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     nonnull_end_date_exclusive_clause,
     sessionize_ledger_data,
 )
@@ -404,7 +405,7 @@ def adm_form_information_helper() -> str:
     # this pulls information used to complete form 402a, the drug addendum for admin supervision
     return """
         SELECT person_id,
-        LOGICAL_OR(offense_type = 'DRUGS' 
+        (offense_type = 'DRUGS' 
             OR(offense_type IS NULL
                 AND (description LIKE '%DRUG%'
                     OR description LIKE '%DRG%'
@@ -425,7 +426,7 @@ def adm_form_information_helper() -> str:
             ) AS form_information_drug_charge_initial,
 
         -- 35 P.S. 780-113 (14) - administration/dispensary/delivery of drugs by practitioner
-        LOGICAL_OR((statute LIKE '%13A14%'
+        ((statute LIKE '%13A14%'
                 OR statute LIKE '%13.A14%')
             OR (description LIKE '%DRUG%' 
                 AND description LIKE '%ADMIN%' 
@@ -434,7 +435,7 @@ def adm_form_information_helper() -> str:
                 AND description LIKE '%PRAC%')) AS form_information_statue_14,
 
         -- 35 P.S. 780-113 (30) - manufacture, sale, delivery, or possession with intent to deliver 
-        LOGICAL_OR((statute LIKE '%13A30%' 
+        ((statute LIKE '%13A30%' 
                 OR statute LIKE '%13.A30%')
             OR (((description LIKE '%POSS%' AND description LIKE '%INT%' AND description LIKE '%DEL%')
                     OR description LIKE '%PWI%'
@@ -449,13 +450,13 @@ def adm_form_information_helper() -> str:
                     AND description NOT LIKE 'ID THEFT%'))) AS form_information_statue_30,  -- doesn't include possession of id with intent to use
 
         -- 35 P.S. 780-113 (37) - possessing excessive amounts of steroids
-        LOGICAL_OR((statute LIKE '%13A37%'
+        ((statute LIKE '%13A37%'
                 OR statute LIKE '%13.A37%')
             OR description LIKE '%POSSESS EXCESSIVE AMOUNTS OF STERIODS%') AS form_information_statue_37, 
-            -- steroids is misspelled in the data
-    FROM `{project_id}.{normalized_state_dataset}.state_charge`
+            -- steroids is misspelled in the data,
+        date_imposed,
+    FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized`
     WHERE state_code = 'US_PA'
-    GROUP BY 1
     """
 
 
@@ -465,15 +466,33 @@ def case_notes_helper() -> str:
         also display previous conditions related to treatment, evaluations, and enhanced supervision IF the client has a 
         condition specifying that all previously imposed conditions apply */
         
-    WITH prev_conditions_apply AS (
-      -- pulls all clients who currently have a special condition that specifies that previous special conditions should apply 
-      SELECT DISTINCT sup.person_id
+    WITH conditions AS (
+      SELECT DISTINCT sup.state_code, 
+        sup.person_id,
+        pei.external_id,
+        sup.start_date,
+        sup.termination_date,
+        condition
       FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sup
-      WHERE sup.state_code = 'US_PA'
-        AND conditions LIKE '%PREVIOUS%'
+      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON sup.person_id = pei.person_id
+        AND sup.state_code = pei.state_code
+        AND id_type = 'US_PA_PBPP',
+      UNNEST(SPLIT(conditions, '##')) condition
+    ), 
+    agg_conditions AS (
+      -- this aggregates spans so that you can see the entire time that a certain condition applies 
+      {aggregate_adjacent_spans(table_name='conditions', index_columns=['state_code', 'person_id', 'external_id'], attribute='condition', end_date_field_name='termination_date')}
+    ),
+    prev_conditions_apply AS (
+      -- pulls all clients who currently have a special condition that specifies that previous special conditions should apply 
+      SELECT DISTINCT person_id
+      FROM agg_conditions
+      WHERE state_code = 'US_PA'
+        AND condition LIKE '%PREVIOUS%'
         AND termination_date IS NULL
     )    
-    SELECT DISTINCT pei.external_id,
+    SELECT DISTINCT external_id,
       'Special Conditions' AS criteria,
       CASE WHEN condition LIKE '%PREVIOUS%' THEN 'PREVIOUS CONDITIONS APPLY'
         WHEN termination_date IS NOT NULL THEN 'PREVIOUS CONDITION'
@@ -481,19 +500,11 @@ def case_notes_helper() -> str:
         WHEN condition LIKE '%ENHANCE%' THEN 'ENHANCED SUPERVISION'
         ELSE 'TREATMENT' END AS note_title,
       condition AS note_body,
-      CAST(NULL AS DATE) AS event_date,
-      CASE WHEN termination_date IS NULL AND condition NOT LIKE '%PREVIOUS%' THEN 0 -- first display current conditions (that aren't "previous conditions apply")
-        WHEN condition LIKE '%PREVIOUS%' THEN 1 -- then display "previous conditions apply"
-        ELSE 2 END AS note_order, -- then display all the previous conditions 
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sup
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-      ON sup.person_id = pei.person_id
-      AND sup.state_code = pei.state_code
-      AND id_type = 'US_PA_PBPP',
-    UNNEST(SPLIT(conditions, '##')) condition
-    WHERE sup.state_code = 'US_PA' 
+      start_date AS event_date,
+    FROM agg_conditions
+    WHERE state_code = 'US_PA' 
       AND (termination_date IS NULL -- either a current special condition 
-        OR sup.person_id IN (SELECT person_id FROM prev_conditions_apply)) -- or a past condition IF the client's current condition specifies that previous conditions apply) 
+        OR person_id IN (SELECT person_id FROM prev_conditions_apply)) -- or a past condition IF the client's current condition specifies that previous conditions apply) 
       AND ((condition LIKE '%TREATMENT%' AND condition LIKE '%SPECIAL CONDITION%')
         OR condition LIKE '%EVALUATION%'
         OR condition LIKE '%ENHANCE%'
@@ -540,7 +551,6 @@ def case_notes_helper() -> str:
             OR participation_status_raw_text IN ('DISCHARGED PRIOR TO COMPLETION') THEN discharge_date
           ELSE referral_date
         END AS event_date,
-        NULL as note_order,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` tre
     LEFT JOIN supervision_starts sup 
       ON sup.person_id = tre.person_id
@@ -567,7 +577,6 @@ def case_notes_helper() -> str:
         ELSE 'EMPLOYED' END AS note_title,
       CASE WHEN employment_status IN ('EMPLOYED_FULL_TIME', 'EMPLOYED_PART_TIME') THEN COALESCE(employer_name, 'Unknown Employer') ELSE '' END AS note_body,
       start_date AS event_date,
-      NULL as note_order,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` emp
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
       ON emp.person_id = pei.person_id
@@ -587,32 +596,53 @@ def adm_case_notes_helper() -> str:
     
     /* pulls all potential barriers to eligibility - these are gray area cases that we want to flag to the agent because
     we don't have all the information we need to determine whether it should change eligibility */
+    
     SELECT DISTINCT pei.external_id,
       'Potential Barriers to Eligibility' AS criteria,
-      CASE WHEN statute LIKE '%3731%' THEN 'DUI' 
-        WHEN statute LIKE '%5903%' THEN 'OBSCENE MATERIALS'
-        ELSE 'DRUG' 
-        END AS note_title,
-      CASE WHEN statute like '%3731%' THEN 'This reentrant has 75 C.S. 3731 relating to DUI on their criminal record. They would be ineligible for admin supervision if this charge resulted in bodily injury. Check criminal history for bodily injury and update eligibility accordingly.' 
-        WHEN (statute LIKE '%5903.A4%' OR statute LIKE '%5903A4%') THEN 'This reentrant has 18 C.S. 5903(4) relating to obscene materials on their criminal record. They would be ineligible for admin supervision if the victim of this charge was a minor. Check criminal history for minor victim and update eligibility accordingly.'
-        WHEN (statute LIKE '%5903.A5%' OR statute LIKE '%5903A5%') THEN 'This reentrant has 18 C.S. 5903(5) relating to obscene performance on their criminal record. They would be ineligible for admin supervision if the victim of this charge was a minor. Check criminal history for minor victim and update eligibility accordingly.'
-        WHEN form_information_statue_14 THEN 'This reentrant has 35 P.S. 780-113(14) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.' 
-        WHEN form_information_statue_30 THEN 'This reentrant has 35 P.S. 780-113(30) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.'
-        WHEN form_information_statue_37 THEN 'This reentrant has 35 P.S. 780-113(37) relating to steroids on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.'
-        END AS note_body,
-      CAST(NULL AS DATE) AS event_date,
-      NULL as note_order,
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_charge` sc
+      'DUI' AS note_title,
+      'This reentrant has 75 C.S. 3731 relating to DUI on their criminal record. They would be ineligible for admin supervision if this charge resulted in bodily injury. Check criminal history for bodily injury and update eligibility accordingly.' AS note_body,
+      sc.date_imposed AS event_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sc
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
       ON sc.person_id = pei.person_id
       AND sc.state_code = pei.state_code
       AND id_type = 'US_PA_PBPP'
-    LEFT JOIN ({adm_form_information_helper()}) form
-      ON sc.person_id = form.person_id
     WHERE sc.state_code = 'US_PA' 
-      AND (sc.statute LIKE '%3731%' 
-        OR (statute LIKE '%5903.A4%' OR statute LIKE '%5903A4%' OR statute LIKE '%5903.A5%' OR statute LIKE '%5903A5%')
-        OR form.form_information_statue_14
+      AND sc.statute LIKE '%3731%'
+    
+    UNION ALL 
+    
+    SELECT DISTINCT pei.external_id,
+      'Potential Barriers to Eligibility' AS criteria,
+      'OBSCENE MATERIALS' AS note_title,
+      CASE WHEN (statute LIKE '%5903.A4%' OR statute LIKE '%5903A4%') THEN 'This reentrant has 18 C.S. 5903(4) relating to obscene materials on their criminal record. They would be ineligible for admin supervision if the victim of this charge was a minor. Check criminal history for minor victim and update eligibility accordingly.'
+        ELSE 'This reentrant has 18 C.S. 5903(5) relating to obscene performance on their criminal record. They would be ineligible for admin supervision if the victim of this charge was a minor. Check criminal history for minor victim and update eligibility accordingly.'
+        END AS note_body,
+      sc.date_imposed AS event_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sc
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+      ON sc.person_id = pei.person_id
+      AND sc.state_code = pei.state_code
+      AND id_type = 'US_PA_PBPP'
+    WHERE sc.state_code = 'US_PA' 
+      AND (statute LIKE '%5903.A4%' OR statute LIKE '%5903A4%' OR statute LIKE '%5903.A5%' OR statute LIKE '%5903A5%')
+      
+    UNION ALL 
+
+    SELECT DISTINCT pei.external_id,
+      'Potential Barriers to Eligibility' AS criteria,
+      'DRUG' AS note_title,
+      CASE WHEN form_information_statue_14 THEN 'This reentrant has 35 P.S. 780-113(14) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.' 
+        WHEN form_information_statue_30 THEN 'This reentrant has 35 P.S. 780-113(30) relating to controlled substances on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.'
+        WHEN form_information_statue_37 THEN 'This reentrant has 35 P.S. 780-113(37) relating to steroids on their criminal record. They could be ineligible for admin supervision if certain sentencing enhancements apply. Click “complete checklist” and scroll down to the drug addendum to determine eligibility.'
+        END AS note_body,
+      date_imposed AS event_date,
+    FROM ({adm_form_information_helper()}) form
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+      ON form.person_id = pei.person_id
+      AND pei.state_code = 'US_PA'
+      AND id_type = 'US_PA_PBPP'
+    WHERE (form.form_information_statue_14
         OR form.form_information_statue_30
         OR form.form_information_statue_37)
     """
@@ -631,9 +661,8 @@ def spc_case_notes_helper() -> str:
       'Potential Barriers to Eligibility' AS criteria,
       'STRANGULATION' AS note_title,
       'This reentrant has 18 C.S. 2718 relating to strangulation on their criminal record. Check criminal history: if this charge was graded as a felony, the reentrant is considered a violent case and must serve 5 years rather than 3 years on supervision before becoming eligible' AS note_body,
-      CAST(NULL AS DATE) AS event_date,
-      NULL as note_order,
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_charge` sc
+      date_imposed AS event_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sc
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
       ON sc.person_id = pei.person_id
       AND sc.state_code = pei.state_code

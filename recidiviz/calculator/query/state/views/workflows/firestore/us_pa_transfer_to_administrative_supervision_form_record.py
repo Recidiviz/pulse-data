@@ -20,7 +20,9 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    array_agg_case_notes_by_external_id,
     join_current_task_eligibility_spans_with_external_id,
 )
 from recidiviz.common.constants.states import StateCode
@@ -58,20 +60,16 @@ WITH
     {adm_case_notes_helper()}
   ),
   array_case_notes_cte AS (
-    /* modified version of array_agg_case_notes_by_external_id with custom sorting */
-    SELECT
-        external_id,
-        TO_JSON(ARRAY_AGG(
-            STRUCT(note_title, note_body, event_date, criteria)
-            ORDER BY note_order, event_date, note_title, note_body, criteria
-        )) AS case_notes,
-    FROM eligible_and_almost_eligible
-    LEFT JOIN case_notes_cte
-        USING(external_id)
-    GROUP BY 1
+    {array_agg_case_notes_by_external_id()}
   ),
   form_information AS (
-    {adm_form_information_helper()}
+    SELECT person_id,
+        LOGICAL_OR(form_information_drug_charge_initial) AS form_information_drug_charge_initial,
+        LOGICAL_OR(form_information_statue_14) AS form_information_statue_14,
+        LOGICAL_OR(form_information_statue_30) AS form_information_statue_30,
+        LOGICAL_OR(form_information_statue_37) AS form_information_statue_37,
+    FROM ({adm_form_information_helper()})
+    GROUP BY 1
   )
   SELECT
     eligible_and_almost_eligible.*,
@@ -98,6 +96,7 @@ US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER = SimpleBi
     us_pa_raw_data_dataset=raw_tables_dataset_for_region(
         state_code=StateCode.US_PA, instance=DirectIngestInstance.PRIMARY
     ),
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 
