@@ -84,14 +84,14 @@ columns:
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
-          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
+          As of 11/6/24, this column is entirely null.
   - name: MisdemeanorFlag
     description: |-
       An indicator for whether a crime was a misdemeanor.
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
-          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
+          As of 11/6/24, this column is entirely null.
   - name: MisdemeanorClass
     description: |-
       Class code assigned to a particular offense statute under 1194. For a particular UCR code there can be only one misdemeanor class.

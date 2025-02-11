@@ -74,7 +74,7 @@ columns:
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
-          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
+          As of 11/6/24, this column is entirely null.
   - name: DecisionPersonID2
     is_pii: True
     description: |-
@@ -85,7 +85,7 @@ columns:
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
-          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
+          As of 11/6/24, this column is entirely null.
   - name: DecisionPersonID3
     is_pii: True
     description: |-
@@ -96,7 +96,7 @@ columns:
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
-          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
+          As of 11/6/24, this column is entirely null.
   - name: DecisionPersonID4
     is_pii: True
     description: |-
@@ -104,14 +104,14 @@ columns:
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
-          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
+          As of 11/6/24, this column is entirely null.
   - name: Decision4
     description: |-
       This indicates if the deciding person is a staff or an inmate.
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
-          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
+          As of 11/6/24, this column is entirely null.
   - name: DecisionPersonID5
     is_pii: True
     description: |-
@@ -119,14 +119,14 @@ columns:
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
-          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
+          As of 11/6/24, this column is entirely null.
   - name: Decision5
     description: |-
       This indicates if the deciding person is a staff or an inmate.
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
-          As of 11/6/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
+          As of 11/6/24, this column is entirely null.
   - name: PostedDateTime
     field_type: datetime
     description: |-

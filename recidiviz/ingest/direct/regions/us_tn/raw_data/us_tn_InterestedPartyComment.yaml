@@ -147,10 +147,10 @@ columns:
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
-          As of 11/8/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
+          As of 11/8/24, this column is entirely null.
   - name: VineOptInDate
     # TODO(#7424) - clarify this definition.
     import_blocking_column_validation_exemptions:
       - validation_type: NONNULL_VALUES
         exemption_reason: |-
-          As of 11/8/24, this column is entirely null. Work to determine if that is intentional tracked in #TODO(#34845)
+          As of 11/8/24, this column is entirely null.
