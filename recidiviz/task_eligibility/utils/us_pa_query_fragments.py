@@ -493,7 +493,7 @@ def case_notes_helper() -> str:
         AND termination_date IS NULL
     )    
     SELECT DISTINCT external_id,
-      'Special Conditions' AS criteria,
+      'Special Conditions rel. to Treatment/Evaluation' AS criteria,
       CASE WHEN condition LIKE '%PREVIOUS%' THEN 'PREVIOUS CONDITIONS APPLY'
         WHEN termination_date IS NOT NULL THEN 'PREVIOUS CONDITION'
         WHEN condition LIKE '%EVALUATION%' THEN 'EVALUATION' 

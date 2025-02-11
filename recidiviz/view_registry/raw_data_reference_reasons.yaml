@@ -1409,6 +1409,8 @@ US_PA:
     task_eligibility_criteria_us_pa.meets_special_circumstances_criteria_for_time_served:
       |-
       Agents use release dates to determine start of supervision. TODO(#37715) to replace with sentence v2
+    task_eligibility_criteria_us_pa.not_on_sex_offense_protocol: |-
+      Agents use release dates to determine start of supervision. TODO(#37715) to replace with sentence v2
     task_eligibility_criteria_us_pa.on_supervision_at_least_one_year: |-
       Agents use release dates to determine start of supervision. TODO(#37715) to replace with sentence v2
     workflows_views.client_record: |-
