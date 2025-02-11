@@ -140,6 +140,8 @@ columns:
     is_pii: True
   - name: Juvenile_Ind
     is_pii: True
+    description: |-
+      Whether the person is a juvenile.
   - name: Last_Name
     description: |-
       This is the last name of a person.
