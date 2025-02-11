@@ -237,6 +237,7 @@ output:
                         - 9JS # ADM: JUDICIAL SUSP SUPVN
                         - 9SD # ADM - SUSP OF DIRECT SUPVN
                         - SDS # SUSPENSION OF DIRECT SUPV
+                        - JSS # JUDICIAL SUSPENSION SUPVN (old code for 9JS)
 
                       StateSupervisionLevel.INTERSTATE_COMPACT:
                         - 9IS # ADM - ISC OUTGOING
@@ -274,7 +275,6 @@ output:
                         - 9RT # ADM - RES. TREATMNT PLCMT
                         - DET # DETAINER STATUS OFFENDER
                         - IOT # INTERACTIVE OFFENDER TRAC
-                        - JSS # JUDICIAL SUSPENSION SUPVN
                         - MSD # MISDEMEANOR OFFENDER
                         - RTP # RESIDENT TREATMT PLACEMNT
                         - WRB # WARRANT ON BOND
