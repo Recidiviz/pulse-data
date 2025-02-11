@@ -21,7 +21,6 @@ Helper SQL queries for Texas
 from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -50,23 +49,23 @@ WITH
 -- Create periods of case type and supervision level information
 person_info AS (
    SELECT 
-      person_id,
+      sp.person_id,
       start_date,
-      end_date,
-      correctional_level_start AS supervision_level,
-      case_type_start AS case_type,
-      "US_TX" as state_code,
-    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` 
-    WHERE state_code = "US_TX"
-        -- Make sure that we have enough info to create span
-        AND correctional_level_start IS NOT NULL 
-        AND case_type_start IS NOT NULL
+      termination_date AS end_date,
+      supervision_level,
+      case_type,
+      case_type_raw_text,
+      sp.state_code,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sp
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_case_type_entry` ct
+      USING(supervision_period_id)
+    WHERE sp.state_code = "US_TX"
 ),
 -- Aggregate above periods by supervision_level and case_type
 person_info_agg AS (
     {aggregate_adjacent_spans(
         table_name='person_info',
-        attribute=['supervision_level','case_type'],
+        attribute=['supervision_level','case_type','case_type_raw_text'],
         session_id_output_name='person_info_agg',
         end_date_field_name='end_date'
     )}
@@ -253,7 +252,6 @@ FROM periods
         description=description,
         state_code=StateCode.US_TX,
         criteria_spans_query_template=criteria_query,
-        sessions_dataset=SESSIONS_DATASET,
         raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_TX, instance=DirectIngestInstance.PRIMARY
         ),
