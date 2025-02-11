@@ -103,19 +103,44 @@ def _build_table_update_results_str(
         new_schema_schema_fields = {f.name for f in new_schema}
 
         if deleted_fields := deployed_schema_fields - new_schema_schema_fields:
-            table_str += f"\n    Deleted fields: {sorted(deleted_fields)}"
+            table_str += "\n    Deleted fields:"
+            for f in sorted(deleted_fields):
+                table_str += f"\n      - {f}"
         if added_fields := new_schema_schema_fields - deployed_schema_fields:
-            table_str += f"\n    Added fields: {sorted(added_fields)}"
+            table_str += "\n    Added fields:"
+            for f in sorted(added_fields):
+                table_str += f"\n      - {f}"
 
-        changed_fields = []
+        changes = []
         for field_name in deployed_schema_fields.intersection(new_schema_schema_fields):
             deployed_field = one(f for f in deployed_schema if f.name == field_name)
             new_field = one(f for f in new_schema if f.name == field_name)
             if deployed_field == new_field:
                 continue
-            changed_fields.append(field_name)
-        if changed_fields:
-            table_str += f"\n    Changed type or mode: {sorted(changed_fields)}"
+            if deployed_field.field_type != new_field.field_type:
+                changes.append(
+                    f"\n      - '{deployed_field.name}' changed TYPE from {deployed_field.field_type} --> {new_field.field_type}"
+                )
+            if deployed_field.mode != new_field.mode:
+                changes.append(
+                    f"\n      - '{deployed_field.name}' changed MODE from {deployed_field.mode} --> {new_field.mode}"
+                )
+            if deployed_field.description != new_field.description:
+                changes.append(
+                    f"\n      - '{deployed_field.name}' updated its DESCRIPTION to {new_field.description}"
+                )
+            if (
+                (deployed_field.field_type == new_field.field_type)
+                and (deployed_field.mode == new_field.mode)
+                and (deployed_field.description == new_field.description)
+            ):
+                changes.append(
+                    f"\n      - '{deployed_field.name}' has a change that is not TYPE, MODE, or DESCRIPTION."
+                )
+        if changes:
+            table_str += "\n    Changed fields:"
+            table_str += "".join(changes)
+
         table_strs.append(table_str)
 
     return "\n" + "\n".join(table_strs) + "\n"

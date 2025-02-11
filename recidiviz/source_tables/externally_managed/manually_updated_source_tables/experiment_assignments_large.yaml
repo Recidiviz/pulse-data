@@ -10,21 +10,27 @@ schema:
   - name: experiment_id
     type: STRING
     mode: NULLABLE
+    description: Unique ID of the experiment
   - name: state_code
     type: STRING
     mode: NULLABLE
+    description: State code (e.g. US_XX)
   - name: unit_id
     type: STRING
     mode: NULLABLE
+    description: This is the "external_id" for the relevant unit_type. For STATE that is state_code, for officer officer_external_id, etc.
   - name: variant_id
     type: STRING
     mode: NULLABLE
+    description: "Trusted Tester Launch: TRUSTED_TESTER Phased Roll-Out: CONTROL, TREATED Full State Roll-Out: OUTLIERS_LAUNCH, WORKFLOWS_LAUNCH"
   - name: unit_type
     type: STRING
     mode: NULLABLE
+    description: Can be any MetricAggregationLevelType enum name
   - name: variant_date
     type: DATE
     mode: NULLABLE
+    description: "Trusted Tester Launch: Date trusted testers received access. Phased Roll-Out: Date the control and treated groups were given access. Full State Roll-Out: Date the last units received access"
   - name: upload_datetime
     type: TIMESTAMP
     mode: NULLABLE

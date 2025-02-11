@@ -49,6 +49,7 @@ class SourceTableUpdateType(enum.StrEnum):
     """
 
     CREATE_TABLE = "create_table"
+    DOCUMENTATION_CHANGE = "documentation_change"
     MISMATCH_CLUSTERING_FIELDS = "mismatch_clustering_fields"
     MISMATCH_PARTITIONING_FIELDS = "mismatch_partitioning_fields"
     NO_CHANGES = "no_changes"
@@ -64,7 +65,10 @@ class SourceTableUpdateType(enum.StrEnum):
         """Returns True if this update type is allowed for a source table with the given
         |update_config|, False otherwise.
         """
-        if self is SourceTableUpdateType.NO_CHANGES:
+        if self in (
+            SourceTableUpdateType.NO_CHANGES,
+            SourceTableUpdateType.DOCUMENTATION_CHANGE,
+        ):
             return True
 
         if update_config == SourceTableCollectionUpdateConfig.regenerable():
@@ -133,15 +137,25 @@ def validate_table_schema_fields(
     desired_schema_fields: dict[str, bigquery.SchemaField],
     field_names: Iterable[str],
 ) -> SourceTableUpdateType | None:
+    changes: set[SourceTableUpdateType] = set()
     for name in field_names:
         old_schema_field = table_schema_fields[name]
         new_schema_field = desired_schema_fields[name]
 
         if old_schema_field.field_type != new_schema_field.field_type:
-            return SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES
+            changes.add(SourceTableUpdateType.UPDATE_SCHEMA_TYPE_CHANGES)
 
         if old_schema_field.mode != new_schema_field.mode:
-            return SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES
+            changes.add(SourceTableUpdateType.UPDATE_SCHEMA_MODE_CHANGES)
+
+        if old_schema_field.description != new_schema_field.description:
+            changes.add(SourceTableUpdateType.DOCUMENTATION_CHANGE)
+
+    if len(changes) == 1:
+        return changes.pop()
+
+    if len(changes) > 1:
+        return SourceTableUpdateType.UPDATE_SCHEMA_WITH_CHANGES
 
     return None
 
@@ -198,8 +212,6 @@ class SourceTableUpdateManager:
             field.name: field for field in source_table_config.schema_fields
         }
         desired_schema_field_names = set(desired_schema_fields.keys())
-        to_add = desired_schema_field_names - table_schema_field_names
-        to_remove = table_schema_field_names - desired_schema_field_names
 
         if (
             source_table_collection.validation_config
@@ -223,6 +235,9 @@ class SourceTableUpdateManager:
                 deployed_table=current_table,
             )
             return source_table_config.address, result
+
+        to_add = desired_schema_field_names - table_schema_field_names
+        to_remove = table_schema_field_names - desired_schema_field_names
 
         if table_schema_field_names == desired_schema_field_names:
             found_update_type = SourceTableUpdateType.NO_CHANGES
