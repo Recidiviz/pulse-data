@@ -40,15 +40,12 @@ class UsCaSftpDownloadDelegate(BaseSftpDownloadDelegate):
     SECOND_LEVEL_DIRS_TO_DOWNLOAD = {"PAROLE", "INCUSTODY", "Delta"}
 
     def _matches(self, path: str) -> bool:
-        """File names must match "/<Month day, Year> Data/{PAROLE,INCUSTODY,Delta}/*.txt"""
+        """File names must match "/<Month day, Year> Data/{PAROLE,INCUSTODY,Delta}/"""
         path_obj = Path(path)
 
-        if path_obj.suffix != ".txt":
-            return False
-
         # Directory names must match "/<Month day, Year> Data/{PAROLE,INCUSTODY,Delta}/*.txt
-        folder = path_obj.parent.name  # e.g., "PAROLE"
-        parent_folder = path_obj.parent.parent.name  # e.g., "August 8, 2024 Data"
+        folder = path_obj.name
+        parent_folder = path_obj.parent.name  # e.g., "August 8, 2024 Data"
 
         # Checks the "<Month day, Year> Data" part
         if parent_folder.endswith(self.POST_FIX):
