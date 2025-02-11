@@ -190,6 +190,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.ORAS_REENTRY,
                 StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY,
                 StateAssessmentType.STRONG_R,
+                StateAssessmentType.STRONG_R2,
             ]:
                 if assessment_level:
                     return assessment_level.value

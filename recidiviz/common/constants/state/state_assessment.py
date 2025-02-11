@@ -106,6 +106,7 @@ class StateAssessmentType(StateEntityEnum):
     STABLE = state_enum_strings.state_assessment_type_stable
     STATIC_99 = state_enum_strings.state_assessment_type_static_99
     STRONG_R = state_enum_strings.state_assessment_type_strong_r
+    STRONG_R2 = state_enum_strings.state_assessment_type_strong_r2
     TCU_DRUG_SCREEN = state_enum_strings.state_assessment_type_tcu_drug_screen
     TX_CST = state_enum_strings.state_assessment_type_tx_cst
     TX_CSST = state_enum_strings.state_assessment_type_tx_csst
@@ -168,6 +169,8 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.STATIC_99: "Sex offense risk assessment (STATIC-99/STATIC-99R)",
     StateAssessmentType.STRONG_R: "Static Risk Offender Needs Guide – Revised "
     "(STRONG-R)",
+    StateAssessmentType.STRONG_R2: "Static Risk Offender Needs Guide – Revised "
+    "(STRONG-R) 2.0 Version",
     StateAssessmentType.TCU_DRUG_SCREEN: "Texas Christian University (TCU) Drug "
     "Screen (TCU)",
     StateAssessmentType.TX_CST: "Community Supervision Tool (CST)",
