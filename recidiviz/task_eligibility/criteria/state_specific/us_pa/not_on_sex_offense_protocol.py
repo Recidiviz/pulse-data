@@ -62,6 +62,7 @@ WITH supervision_super_sessions AS (
             OR condition LIKE '%MEGAN\\'s%')
 ),
 sex_offense_treatment_spans AS (
+    /* pulls treatment spans that have program codes or names that relate to sex offenders or Megan's Law */
     SELECT 
         sp.state_code,
         sp.person_id,
@@ -77,8 +78,14 @@ sex_offense_treatment_spans AS (
             OR sp.start_date BETWEEN ss.release_date AND {nonnull_end_date_exclusive_clause('ss.end_date_exclusive')}
             OR sp.referral_date BETWEEN ss.release_date AND {nonnull_end_date_exclusive_clause('ss.end_date_exclusive')})
     WHERE sp.state_code = 'US_PA'
-        AND JSON_EXTRACT_SCALAR(referral_metadata, "$.PROGRAM_CODE") IN ('MEGS', 'MEGP', 'SSO', 'SEXO') 
-        -- MEGS = megan's law, MEGP = megan's law, sexually violent predator, SSO = sex offender specialized caseload, SEXO = sex offender treatments/evaluations 
+        AND ( -- program code or name references megan's law
+            JSON_EXTRACT_SCALAR(referral_metadata, "$.PROGRAM_CODE") IN ('MEGS', 'MEGP')
+            OR JSON_EXTRACT_SCALAR(referral_metadata, "$.PROGRAM_NAME") LIKE '%MEGAN%'
+            -- program code or name references sex offenders 
+            OR JSON_EXTRACT_SCALAR(referral_metadata, "$.PROGRAM_CODE") IN ('SSO', 'SEXO') -- SSO = sex offender specialized caseload, SEXO = sex offender treatments/evaluations
+            OR JSON_EXTRACT_SCALAR(referral_metadata, "$.PROGRAM_NAME") LIKE '%SEXO%'
+            OR (JSON_EXTRACT_SCALAR(referral_metadata, "$.PROGRAM_NAME") LIKE '%SEX%' AND JSON_EXTRACT_SCALAR(referral_metadata, "$.PROGRAM_NAME") LIKE '%OFF%')
+            OR REGEXP_CONTAINS(JSON_EXTRACT_SCALAR(referral_metadata, "$.PROGRAM_NAME"), '([^A-Z]SO[^A-Z])|(^SO[^A-Z])|([^A-Z]SO$)')) -- contains SO (sex offender) with no following/preceding letters. for example, we want to include "SO TREATMENT" but not "SOCIAL SERVICES"
 ),
 sex_offense_spans AS (
     SELECT * 
