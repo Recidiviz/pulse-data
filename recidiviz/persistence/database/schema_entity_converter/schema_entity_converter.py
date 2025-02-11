@@ -35,7 +35,13 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
     StateSchemaToEntityConverter,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import EntityFieldIndex, EntityFieldType
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.entity_field_index import (
+    EntityFieldIndex,
+    EntityFieldType,
+)
 from recidiviz.persistence.entity.operations import entities as operations_entities
 from recidiviz.persistence.entity.state import entities as state_entities
 
@@ -125,7 +131,8 @@ def _get_field_index_for_db_entity(db_entity: DatabaseEntity) -> EntityFieldInde
             f"Expected {type(db_entity)} to belong to either [{state_schema.__name__}] or "
             f"[{operations_schema.__name__}]"
         )
-    return EntityFieldIndex.for_entities_module(entities_module)
+    entities_module_context = entities_module_context_for_module(entities_module)
+    return entities_module_context.field_index()
 
 
 # TODO(#32430): consider adding more full-featured support here for more complex object

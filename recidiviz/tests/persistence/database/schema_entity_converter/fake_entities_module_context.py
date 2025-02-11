@@ -14,21 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a class hierarchy / SchemaEdgeDirectionChecker for the schema represented in
-fake_entities.py / fake_schema.py
+"""Implementation of EntitiesModuleContext for the schema defined in
+fake_entities.py/fake_schema.py.
 """
-from recidiviz.persistence.entity.schema_edge_direction_checker import (
-    SchemaEdgeDirectionChecker,
-)
+from types import ModuleType
+
+from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.tests.persistence.database.schema_entity_converter import (
     fake_entities as entities,
 )
 
-CLASS_HIERARCHY = [
-    entities.Root.__name__,
-    entities.Parent.__name__,
-    entities.Child.__name__,
-    entities.Toy.__name__,
-]
 
-FAKE_SCHEMA_DIRECTION_CHECKER = SchemaEdgeDirectionChecker(CLASS_HIERARCHY)
+class FakeEntitiesModuleContext(EntitiesModuleContext):
+    @classmethod
+    def entities_module(cls) -> ModuleType:
+        return entities
+
+    @classmethod
+    def class_hierarchy(cls) -> list[str]:
+        return [
+            entities.Root.__name__,
+            entities.Parent.__name__,
+            entities.Child.__name__,
+            entities.Toy.__name__,
+        ]

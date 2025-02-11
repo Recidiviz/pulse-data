@@ -20,7 +20,7 @@ import inspect
 import itertools
 import json
 import re
-from enum import Enum, auto
+from enum import Enum
 from functools import cache
 from io import TextIOWrapper
 from types import ModuleType
@@ -45,7 +45,6 @@ from recidiviz.common.attr_mixins import (
     attr_field_name_storing_referenced_cls_name,
     attr_field_referenced_cls_name_for_field_name,
     attr_field_type_for_field_name,
-    attribute_field_type_reference_for_class,
 )
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -59,19 +58,52 @@ from recidiviz.persistence.entity.base_entity import (
     HasMultipleExternalIdsEntity,
     RootEntity,
 )
-from recidiviz.persistence.entity.entity_deserialize import EntityFactory
-from recidiviz.persistence.entity.schema_edge_direction_checker import (
-    direction_checker_for_module,
+from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
 )
+from recidiviz.persistence.entity.entity_deserialize import EntityFactory
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
-from recidiviz.utils import environment
 from recidiviz.utils.log_helpers import make_log_output_path
 from recidiviz.utils.types import assert_type
+
+
+# TODO(#38281): Move this function to the entities_module_context_factory package once
+#  it is no longer referenced in this file.
+def get_module_for_entity_class(entity_cls: Type[Entity]) -> ModuleType:
+    if entity_cls in get_all_entity_classes_in_module(state_entities):
+        return state_entities
+    if entity_cls in get_all_entity_classes_in_module(normalized_entities):
+        return normalized_entities
+    raise ValueError(f"Unexpected entity_cls [{entity_cls}]")
+
+
+# TODO(#38281): Move this function to the entities_module_context_factory package once
+#  it is no longer referenced in this file.
+def entities_module_context_for_entity_class(
+    entity_cls: Type[Entity],
+) -> EntitiesModuleContext:
+    """Returns an EntityModuleContext that can be used to determine information about
+    structure of any Entity classes in the module associated with the given
+    |entity_cls|.
+    """
+    return entities_module_context_for_module(get_module_for_entity_class(entity_cls))
+
+
+# TODO(#38281): Move this function to the entities_module_context_factory package once
+#  it is no longer referenced in this file.
+def entities_module_context_for_entity(entity: Entity) -> EntitiesModuleContext:
+    """Returns an EntityModuleContext that can be used to determine information about
+    structure of any Entity classes in the module associated with the given
+    |entity|.
+    """
+    return entities_module_context_for_entity_class(type(entity))
 
 
 @cache
@@ -93,14 +125,6 @@ def get_all_entity_classes_in_module(entities_module: ModuleType) -> Set[Type[En
                 expected_classes.add(attribute)
 
     return expected_classes
-
-
-def get_module_for_entity_class(entity_cls: Type[Entity]) -> ModuleType:
-    if entity_cls in get_all_entity_classes_in_module(state_entities):
-        return state_entities
-    if entity_cls in get_all_entity_classes_in_module(normalized_entities):
-        return normalized_entities
-    raise ValueError(f"Unexpected entity_cls [{entity_cls}]")
 
 
 def get_all_enum_classes_in_module(enums_module: ModuleType) -> Set[Type[Enum]]:
@@ -168,141 +192,8 @@ def get_all_entity_class_names_in_module(entities_module: ModuleType) -> Set[str
     return {cls_.__name__ for cls_ in get_all_entity_classes_in_module(entities_module)}
 
 
-class EntityFieldType(Enum):
-    FLAT_FIELD = auto()
-    FORWARD_EDGE = auto()
-    BACK_EDGE = auto()
-    ALL = auto()
-
-
-class _EntityFieldIndexKey:
-    """Private key for the EntityFieldIndex to prevent instantiation outside of
-    this file.
-    """
-
-
-_entity_field_index_by_entities_module: dict[ModuleType, "EntityFieldIndex"] = {}
-
-
-@environment.test_only
-def clear_entity_field_index_cache() -> None:
-    _entity_field_index_by_entities_module.clear()
-
-
-class EntityFieldIndex:
-    """Class that caches the results of certain Entity class introspection
-    functionality.
-    """
-
-    def __init__(
-        self, entities_module: ModuleType, private_key: _EntityFieldIndexKey
-    ) -> None:
-        self.direction_checker = direction_checker_for_module(entities_module)
-        # Cache of fields by field type for Entity classes
-        self.entity_fields_by_field_type: Dict[
-            str, Dict[EntityFieldType, Set[str]]
-        ] = {}
-        if not isinstance(private_key, _EntityFieldIndexKey):
-            raise ValueError(f"Unexpected type for key: {type(private_key)}")
-
-    def get_fields_with_non_empty_values(
-        self, entity: Entity, entity_field_type: EntityFieldType
-    ) -> Set[str]:
-        """Returns a set of field_names that correspond to any non-empty (nonnull or
-        non-empty list) fields on the provided |entity| that match the provided
-        |entity_field_type|.
-        """
-        result = set()
-        for field_name in self.get_all_entity_fields(type(entity), entity_field_type):
-            v = entity.get_field(field_name)
-            if isinstance(v, list):
-                if v:
-                    result.add(field_name)
-            elif v is not None:
-                result.add(field_name)
-        return result
-
-    def get_all_entity_fields(
-        self, entity_cls: Type[Entity], entity_field_type: EntityFieldType
-    ) -> Set[str]:
-        """Returns a set of field_names that correspond to any fields (non-empty or
-        otherwise) on the provided Entity class |entity_cls| that match the provided
-        |entity_field_type|. Fields are included whether or not the values are non-empty
-        on the provided object.
-
-        This function caches the results for subsequent calls.
-        """
-        entity_name = entity_cls.get_entity_name()
-
-        if not issubclass(entity_cls, Entity):
-            raise ValueError(f"Unexpected entity type: {entity_cls}")
-
-        if entity_name not in self.entity_fields_by_field_type:
-            self.entity_fields_by_field_type[
-                entity_name
-            ] = self._get_entity_fields_by_field_type_slow(entity_cls)
-
-        return self.entity_fields_by_field_type[entity_name][entity_field_type]
-
-    def _get_entity_fields_by_field_type_slow(
-        self, entity_cls: Type[Entity]
-    ) -> Dict[EntityFieldType, Set[str]]:
-        """Returns a set of field_names that correspond to any fields (non-empty or
-        otherwise) on the provided Entity type |entity| that match the provided
-        |entity_field_type|.
-
-        This function is relatively slow and the results should be cached across
-        repeated calls.
-        """
-        back_edges = set()
-        forward_edges = set()
-        flat_fields = set()
-        class_reference = attribute_field_type_reference_for_class(entity_cls)
-        for field in class_reference.fields:
-            field_info = class_reference.get_field_info(field)
-            if field_info.referenced_cls_name:
-                if self.direction_checker.is_back_edge(entity_cls, field):
-                    back_edges.add(field)
-                else:
-                    forward_edges.add(field)
-            else:
-                flat_fields.add(field)
-
-        return {
-            EntityFieldType.FLAT_FIELD: flat_fields,
-            EntityFieldType.FORWARD_EDGE: forward_edges,
-            EntityFieldType.BACK_EDGE: back_edges,
-            EntityFieldType.ALL: flat_fields | forward_edges | back_edges,
-        }
-
-    @classmethod
-    def for_entities_module(cls, entities_module: ModuleType) -> "EntityFieldIndex":
-        """Returns an EntityFieldIndex that can be used to determine information about
-        structure of any Entity classes in the given |entities_module|.
-        """
-        if entities_module not in _entity_field_index_by_entities_module:
-            _entity_field_index_by_entities_module[entities_module] = EntityFieldIndex(
-                entities_module, _EntityFieldIndexKey()
-            )
-        return _entity_field_index_by_entities_module[entities_module]
-
-    @classmethod
-    def for_entity_class(cls, entity_cls: Type[Entity]) -> "EntityFieldIndex":
-        """Returns an EntityFieldIndex that can be used to determine information about
-        structure of any Entity classes in the module associated with the given
-        |entity_cls|.
-        """
-        return cls.for_entities_module(get_module_for_entity_class(entity_cls))
-
-    @classmethod
-    def for_entity(cls, entity: Entity) -> "EntityFieldIndex":
-        """Returns an EntityFieldIndex that can be used to determine information about
-        structure of any Entity classes in the module associated with the given
-        |entity|.
-        """
-        return cls.for_entity_class(type(entity))
-
-
+# TODO(#38281): Remove references to state_entities from this function or move this
+#  function out of `entity_utils.py` (it's really specific to root entity merging code).
 def is_reference_only_entity(entity: Entity) -> bool:
     """Returns true if this object does not contain any meaningful information
     describing the entity, but instead only identifies the entity for reference
@@ -328,7 +219,11 @@ def get_explicitly_set_flat_fields(entity: Entity) -> Set[str]:
     non-default values. The "state_code" field is also excluded, as it is set with the
     same value on every entity for a given ingest run.
     """
-    field_index = EntityFieldIndex.for_entity(entity)
+    # TODO(#38281): Add entities_module_context as an arg to this function so we do not
+    #  have to import entities_module_context_factory (references specific schema
+    #  modules) into this file.
+    entities_module_context = entities_module_context_for_entity(entity)
+    field_index = entities_module_context.field_index()
     set_flat_fields = field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.FLAT_FIELD
     )
@@ -373,7 +268,11 @@ def _sort_based_on_flat_fields(db_entities: Sequence[Entity]) -> None:
     db_entities = cast(List, db_entities)
     db_entities.sort(key=_get_entity_sort_key)
     for entity in db_entities:
-        field_index = EntityFieldIndex.for_entity(entity)
+        # TODO(#38281): Add entities_module_context as an arg to this function so we do
+        #  not have to import entities_module_context_factory (references specific
+        #  schema modules) into this file.
+        entities_module_context = entities_module_context_for_entity(entity)
+        field_index = entities_module_context.field_index()
         for field_name in field_index.get_fields_with_non_empty_values(
             entity, EntityFieldType.FORWARD_EDGE
         ):
@@ -382,7 +281,11 @@ def _sort_based_on_flat_fields(db_entities: Sequence[Entity]) -> None:
 
 
 def get_flat_fields_json_str(entity: Entity) -> str:
-    field_index = EntityFieldIndex.for_entity(entity)
+    # TODO(#38281): Add entities_module_context as an arg to this function so we do not
+    #  have to import entities_module_context_factory (references specific schema
+    #  modules) into this file.
+    entities_module_context = entities_module_context_for_entity(entity)
+    field_index = entities_module_context.field_index()
     flat_fields_dict: Dict[str, str] = {}
     for field_name in field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.FLAT_FIELD
@@ -477,7 +380,11 @@ def print_entity_tree(
     Note: this function sorts any list fields in the provided entity IN PLACE (should not matter for any equality checks
     we generally do).
     """
-    field_index = EntityFieldIndex.for_entity(entity)
+    # TODO(#38281): Add entities_module_context as an arg to this function so we do not
+    #  have to import entities_module_context_factory (references specific schema
+    #  modules) into this file.
+    entities_module_context = entities_module_context_for_entity(entity)
+    field_index = entities_module_context.field_index()
     if python_id_to_fake_id is None:
         python_id_to_fake_id = {}
         _sort_based_on_flat_fields([entity])
@@ -561,7 +468,11 @@ def get_all_entities_from_tree(
     """Returns a list of all entities in the tree below the entity,
     including the entity itself. Entities are deduplicated by Python object id.
     """
-    field_index = EntityFieldIndex.for_entity(entity)
+    # TODO(#38281): Add entities_module_context as an arg to this function so we do not
+    #  have to import entities_module_context_factory (references specific schema
+    #  modules) into this file.
+    entities_module_context = entities_module_context_for_entity(entity)
+    field_index = entities_module_context.field_index()
     if result is None:
         result = []
     if seen_ids is None:
@@ -713,8 +624,13 @@ def deep_entity_update(
 def set_backedges(element: Entity | RootEntity) -> Entity | RootEntity:
     """Set the backedges of the root entity tree using DFS traversal of the root
     entity tree."""
-    entities_module = get_module_for_entity_class(type(assert_type(element, Entity)))
-    field_index = EntityFieldIndex.for_entities_module(entities_module)
+    # TODO(#38281): Add entities_module_context as an arg to this function so we do not
+    #  have to import entities_module_context_factory (references specific schema
+    #  modules) into this file.
+    entities_module_context = entities_module_context_for_entity(
+        assert_type(element, Entity)
+    )
+    field_index = entities_module_context.field_index()
     root = cast(Entity, element)
     root_entity_cls = root.__class__
     stack: List[Entity] = [root]
@@ -743,7 +659,7 @@ def set_backedges(element: Entity | RootEntity) -> Entity | RootEntity:
                 )
 
             related_entity_cls = get_entity_class_in_module_with_name(
-                entities_module, related_entity_cls_name
+                entities_module_context.entities_module(), related_entity_cls_name
             )
             reverse_relationship_field = attr_field_name_storing_referenced_cls_name(
                 base_cls=related_entity_cls,
@@ -797,7 +713,11 @@ def get_many_to_many_relationships(entity_cls: Type[Entity]) -> Set[str]:
     """Returns the set of fields on |entity| that connect that entity to a parent where
     there is a potential many-to-many relationship between entity and that parent entity type.
     """
-    field_index = EntityFieldIndex.for_entity_class(entity_cls)
+    # TODO(#38281): Add entities_module_context as an arg to this function so we do not
+    #  have to import entities_module_context_factory (references specific schema
+    #  modules) into this file.
+    entities_module_context = entities_module_context_for_entity_class(entity_cls)
+    field_index = entities_module_context.field_index()
     many_to_many_relationships = set()
     back_edges = field_index.get_all_entity_fields(
         entity_cls, EntityFieldType.BACK_EDGE
@@ -806,7 +726,7 @@ def get_many_to_many_relationships(entity_cls: Type[Entity]) -> Set[str]:
         relationship_field_type = attr_field_type_for_field_name(entity_cls, back_edge)
 
         parent_cls = get_entity_class_in_module_with_name(
-            entities_module=get_module_for_entity_class(entity_cls),
+            entities_module=entities_module_context.entities_module(),
             class_name=attr_field_referenced_cls_name_for_field_name(
                 entity_cls, back_edge
             ),
@@ -977,6 +897,9 @@ def get_association_table_id(parent_cls: Type[Entity], child_cls: Type[Entity]) 
 
     # TODO(#10389): Remove this custom handling for legacy sentence association tables
     #  once we remove these classes from the schema.
+    # TODO(#38281): Move this custom schema-specific logic into the
+    #  EntitiesModuleContext so we don't have to import state_entities or
+    #  normalized_entities
     if {parent_cls, child_cls} == {
         state_entities.StateSupervisionSentence,
         state_entities.StateCharge,
@@ -1010,6 +933,9 @@ def get_entities_by_association_table_id(
     """
     # TODO(#10389): Remove this custom handling for legacy sentence association tables
     #  once we remove these classes from the schema.
+    # TODO(#38281): Move this custom schema-specific logic into the
+    #  EntitiesModuleContext so we don't have to import state_entities or
+    #  normalized_entities
     if association_table_id == "state_charge_supervision_sentence_association":
         if entities_module == state_entities:
             return state_entities.StateCharge, state_entities.StateSupervisionSentence

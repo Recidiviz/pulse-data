@@ -27,6 +27,9 @@ from recidiviz.tests.persistence.database.schema_entity_converter import (
     fake_entities,
     fake_schema,
 )
+from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities_module_context import (
+    FakeEntitiesModuleContext,
+)
 
 
 class TestSchemaToEntityClassMapper(unittest.TestCase):
@@ -34,7 +37,8 @@ class TestSchemaToEntityClassMapper(unittest.TestCase):
 
     def test_schema_cls_for_entity_cls(self) -> None:
         class_mapper = SchemaToEntityClassMapper(
-            schema_module=fake_schema, entities_module=fake_entities
+            schema_module=fake_schema,
+            entities_module_context=FakeEntitiesModuleContext(),
         )
 
         self.assertEqual(
@@ -47,7 +51,8 @@ class TestSchemaToEntityClassMapper(unittest.TestCase):
 
     def test_schema_cls_for_entity_cls_does_not_exist(self) -> None:
         class_mapper = SchemaToEntityClassMapper(
-            schema_module=fake_schema, entities_module=fake_entities
+            schema_module=fake_schema,
+            entities_module_context=FakeEntitiesModuleContext(),
         )
 
         with self.assertRaisesRegex(ValueError, "Invalid entity class: StatePerson"):
@@ -55,7 +60,8 @@ class TestSchemaToEntityClassMapper(unittest.TestCase):
 
     def test_entity_cls_for_schema_cls(self) -> None:
         class_mapper = SchemaToEntityClassMapper(
-            schema_module=fake_schema, entities_module=fake_entities
+            schema_module=fake_schema,
+            entities_module_context=FakeEntitiesModuleContext(),
         )
 
         self.assertEqual(
@@ -68,7 +74,8 @@ class TestSchemaToEntityClassMapper(unittest.TestCase):
 
     def test_entity_cls_for_schema_cls_does_not_exist(self) -> None:
         class_mapper = SchemaToEntityClassMapper(
-            schema_module=fake_schema, entities_module=fake_entities
+            schema_module=fake_schema,
+            entities_module_context=FakeEntitiesModuleContext(),
         )
 
         # StatePerson is not present in fake_schema
@@ -87,8 +94,9 @@ class TestSchemaToEntityClassMapper(unittest.TestCase):
         state_mapper = SchemaToEntityClassMapper.get(
             schema_module=state_schema, entities_module=state_entities
         )
-        fake_mapper = SchemaToEntityClassMapper.get(
-            schema_module=fake_schema, entities_module=fake_entities
+        fake_mapper = SchemaToEntityClassMapper(
+            schema_module=fake_schema,
+            entities_module_context=FakeEntitiesModuleContext(),
         )
         self.assertEqual(
             fake_entities.Root, fake_mapper.entity_cls_for_schema_cls(fake_schema.Root)

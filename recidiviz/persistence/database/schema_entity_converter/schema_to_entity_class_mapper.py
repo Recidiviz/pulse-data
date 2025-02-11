@@ -26,7 +26,14 @@ from recidiviz.persistence.database.schema_utils import (
     get_all_database_entities_in_module,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
+from recidiviz.persistence.entity.schema_edge_direction_checker import (
+    SchemaEdgeDirectionChecker,
+)
 from recidiviz.utils import environment
 
 _mappers: Dict[str, "SchemaToEntityClassMapper"] = {}
@@ -38,13 +45,18 @@ class SchemaToEntityClassMapper:
     """
 
     def __init__(
-        self, *, entities_module: ModuleType, schema_module: ModuleType
+        self,
+        *,
+        entities_module_context: EntitiesModuleContext,
+        schema_module: ModuleType,
     ) -> None:
-        self._entities_module = entities_module
+        self._entities_module_context = entities_module_context
+        self._entities_module = entities_module_context.entities_module()
         self._schema_module = schema_module
 
         entity_classes_by_name = {
-            c.__name__: c for c in get_all_entity_classes_in_module(entities_module)
+            c.__name__: c
+            for c in get_all_entity_classes_in_module(self._entities_module)
         }
         schema_classes_by_name = {
             c.__name__: c for c in get_all_database_entities_in_module(schema_module)
@@ -56,8 +68,8 @@ class SchemaToEntityClassMapper:
         # migration in multiple parts.
         if entity_only := set(entity_classes_by_name) - set(schema_classes_by_name):
             raise ValueError(
-                f"Found entity classes only defined in [{entities_module}] and not in "
-                f"[{schema_module}]: {entity_only}"
+                f"Found entity classes only defined in [{self._entities_module}] and "
+                f"not in [{schema_module}]: {entity_only}"
             )
 
         self._entity_cls_to_schema_cls = {
@@ -73,6 +85,10 @@ class SchemaToEntityClassMapper:
     @property
     def entities_module(self) -> ModuleType:
         return self._entities_module
+
+    @property
+    def direction_checker(self) -> SchemaEdgeDirectionChecker:
+        return self._entities_module_context.direction_checker()
 
     def entity_cls_for_schema_cls(
         self, schema_cls: Type[DatabaseEntity]
@@ -102,11 +118,13 @@ class SchemaToEntityClassMapper:
         resulting mapper is cached and returned on future invocations with the same
         modules.
         """
-        key = f"{entities_module.__name__}#{schema_module.__name__}"
+        entities_module_context = entities_module_context_for_module(entities_module)
+        key = f"{entities_module_context.entities_module().__name__}#{schema_module.__name__}"
 
         if key not in _mappers:
             _mappers[key] = SchemaToEntityClassMapper(
-                entities_module=entities_module, schema_module=schema_module
+                entities_module_context=entities_module_context,
+                schema_module=schema_module,
             )
         return _mappers[key]
 

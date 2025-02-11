@@ -16,13 +16,10 @@
 # =============================================================================
 """Tests for BaseSchemaEntityConverter"""
 from unittest import TestCase
-from unittest.mock import create_autospec, patch
+from unittest.mock import create_autospec
 
 from more_itertools import one
 
-from recidiviz.persistence.database.schema_entity_converter import (
-    base_schema_entity_converter,
-)
 from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
     BaseSchemaEntityConverter,
 )
@@ -43,8 +40,8 @@ from recidiviz.tests.persistence.database.schema_entity_converter.fake_base_sche
 from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities import (
     RootType,
 )
-from recidiviz.tests.persistence.database.schema_entity_converter.fake_schema_direction_checker import (
-    FAKE_SCHEMA_DIRECTION_CHECKER,
+from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities_module_context import (
+    FakeEntitiesModuleContext,
 )
 from recidiviz.tests.utils import fakes
 
@@ -56,8 +53,8 @@ class _TestSchemaEntityConverter(BaseSchemaEntityConverter):
     """
 
     def __init__(self) -> None:
-        class_mapper = SchemaToEntityClassMapper.get(
-            schema_module=schema, entities_module=entities
+        class_mapper = SchemaToEntityClassMapper(
+            schema_module=schema, entities_module_context=FakeEntitiesModuleContext()
         )
         super().__init__(class_mapper)
 
@@ -102,12 +99,6 @@ class TestBaseSchemaEntityConverter(TestCase):
     """Tests for BaseSchemaEntityConverter"""
 
     def setUp(self) -> None:
-        self.direction_checker_patcher = patch(
-            f"{base_schema_entity_converter.__name__}.direction_checker_for_module",
-            return_value=FAKE_SCHEMA_DIRECTION_CHECKER,
-        )
-        self.direction_checker_patcher.start()
-
         self.database_key = create_autospec(SQLAlchemyDatabaseKey)
         self.database_key.declarative_meta = FakeBase
         self.database_key.isolation_level = "SERIALIZABLE"
@@ -123,7 +114,6 @@ class TestBaseSchemaEntityConverter(TestCase):
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
-        self.direction_checker_patcher.stop()
 
     def test_add_behavior(self) -> None:
         with SessionFactory.using_database(

@@ -17,7 +17,6 @@
 """Defines a utility class that can be used determine whether relationships between two
 objects are forward or back edges.
 """
-from types import ModuleType
 from typing import Dict, List, Sequence, Type
 
 import attr
@@ -27,121 +26,7 @@ from recidiviz.common.common_utils import pairwise
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.core_entity import CoreEntity
-from recidiviz.persistence.entity.operations import entities as operations_entities
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.errors import PersistenceError
-
-_STATE_CLASS_HIERARCHY = [
-    # StatePerson hierarchy
-    state_entities.StatePerson.__name__,
-    state_entities.StatePersonExternalId.__name__,
-    state_entities.StatePersonAddressPeriod.__name__,
-    state_entities.StatePersonHousingStatusPeriod.__name__,
-    state_entities.StatePersonAlias.__name__,
-    state_entities.StatePersonRace.__name__,
-    state_entities.StatePersonEthnicity.__name__,
-    state_entities.StateIncarcerationSentence.__name__,
-    state_entities.StateSupervisionSentence.__name__,
-    state_entities.StateCharge.__name__,
-    state_entities.StateIncarcerationPeriod.__name__,
-    state_entities.StateIncarcerationIncident.__name__,
-    state_entities.StateIncarcerationIncidentOutcome.__name__,
-    state_entities.StateSupervisionPeriod.__name__,
-    state_entities.StateSupervisionContact.__name__,
-    state_entities.StateSupervisionCaseTypeEntry.__name__,
-    state_entities.StateSupervisionViolation.__name__,
-    state_entities.StateSupervisionViolatedConditionEntry.__name__,
-    state_entities.StateSupervisionViolationTypeEntry.__name__,
-    state_entities.StateSupervisionViolationResponse.__name__,
-    state_entities.StateSupervisionViolationResponseDecisionEntry.__name__,
-    state_entities.StateAssessment.__name__,
-    state_entities.StateProgramAssignment.__name__,
-    state_entities.StateEarlyDischarge.__name__,
-    state_entities.StateEmploymentPeriod.__name__,
-    state_entities.StateDrugScreen.__name__,
-    state_entities.StateTaskDeadline.__name__,
-    state_entities.StateSentence.__name__,
-    # TODO(#26240): Replace StateCharge with this entity
-    state_entities.StateChargeV2.__name__,
-    state_entities.StateSentenceStatusSnapshot.__name__,
-    state_entities.StateSentenceLength.__name__,
-    state_entities.StateSentenceGroup.__name__,
-    state_entities.StateSentenceGroupLength.__name__,
-    # StateStaff hierarchy
-    state_entities.StateStaff.__name__,
-    state_entities.StateStaffExternalId.__name__,
-    state_entities.StateStaffRolePeriod.__name__,
-    state_entities.StateStaffSupervisorPeriod.__name__,
-    state_entities.StateStaffLocationPeriod.__name__,
-    state_entities.StateStaffCaseloadTypePeriod.__name__,
-]
-
-
-_NORMALIZED_STATE_CLASS_HIERARCHY = [
-    # NormalizedStatePerson hierarchy
-    normalized_entities.NormalizedStatePerson.__name__,
-    normalized_entities.NormalizedStatePersonExternalId.__name__,
-    normalized_entities.NormalizedStatePersonAddressPeriod.__name__,
-    normalized_entities.NormalizedStatePersonHousingStatusPeriod.__name__,
-    normalized_entities.NormalizedStatePersonAlias.__name__,
-    normalized_entities.NormalizedStatePersonRace.__name__,
-    normalized_entities.NormalizedStatePersonEthnicity.__name__,
-    normalized_entities.NormalizedStateIncarcerationSentence.__name__,
-    normalized_entities.NormalizedStateSupervisionSentence.__name__,
-    normalized_entities.NormalizedStateCharge.__name__,
-    normalized_entities.NormalizedStateIncarcerationPeriod.__name__,
-    normalized_entities.NormalizedStateIncarcerationIncident.__name__,
-    normalized_entities.NormalizedStateIncarcerationIncidentOutcome.__name__,
-    normalized_entities.NormalizedStateSupervisionPeriod.__name__,
-    normalized_entities.NormalizedStateSupervisionContact.__name__,
-    normalized_entities.NormalizedStateSupervisionCaseTypeEntry.__name__,
-    normalized_entities.NormalizedStateSupervisionViolation.__name__,
-    normalized_entities.NormalizedStateSupervisionViolatedConditionEntry.__name__,
-    normalized_entities.NormalizedStateSupervisionViolationTypeEntry.__name__,
-    normalized_entities.NormalizedStateSupervisionViolationResponse.__name__,
-    normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry.__name__,
-    normalized_entities.NormalizedStateAssessment.__name__,
-    normalized_entities.NormalizedStateProgramAssignment.__name__,
-    normalized_entities.NormalizedStateEarlyDischarge.__name__,
-    normalized_entities.NormalizedStateEmploymentPeriod.__name__,
-    normalized_entities.NormalizedStateDrugScreen.__name__,
-    normalized_entities.NormalizedStateTaskDeadline.__name__,
-    normalized_entities.NormalizedStateSentence.__name__,
-    # TODO(#26240): Replace NormalizedStateCharge with this entity
-    normalized_entities.NormalizedStateChargeV2.__name__,
-    normalized_entities.NormalizedStateSentenceStatusSnapshot.__name__,
-    normalized_entities.NormalizedStateSentenceLength.__name__,
-    normalized_entities.NormalizedStateSentenceInferredGroup.__name__,
-    normalized_entities.NormalizedStateSentenceImposedGroup.__name__,
-    normalized_entities.NormalizedStateSentenceGroup.__name__,
-    normalized_entities.NormalizedStateSentenceGroupLength.__name__,
-    # StateStaff hierarchy
-    normalized_entities.NormalizedStateStaff.__name__,
-    normalized_entities.NormalizedStateStaffExternalId.__name__,
-    normalized_entities.NormalizedStateStaffRolePeriod.__name__,
-    normalized_entities.NormalizedStateStaffSupervisorPeriod.__name__,
-    normalized_entities.NormalizedStateStaffLocationPeriod.__name__,
-    normalized_entities.NormalizedStateStaffCaseloadTypePeriod.__name__,
-]
-
-_OPERATIONS_CLASS_HIERARCHY = [
-    # RawFileMetadata Hierarchy
-    operations_entities.DirectIngestRawFileImportRun.__name__,
-    operations_entities.DirectIngestRawFileImport.__name__,
-    operations_entities.DirectIngestRawBigQueryFileMetadata.__name__,
-    operations_entities.DirectIngestRawGCSFileMetadata.__name__,
-    # DataflowMetadata Hierarchy
-    operations_entities.DirectIngestDataflowJob.__name__,
-    operations_entities.DirectIngestDataflowRawTableUpperBounds.__name__,
-    # Classes w/o Relationships here to satifsy includes all classes
-    operations_entities.DirectIngestRawFileMetadata.__name__,
-    operations_entities.DirectIngestInstanceStatus.__name__,
-    operations_entities.DirectIngestRawDataResourceLock.__name__,
-    operations_entities.DirectIngestSftpIngestReadyFileMetadata.__name__,
-    operations_entities.DirectIngestSftpRemoteFileMetadata.__name__,
-    operations_entities.DirectIngestRawDataFlashStatus.__name__,
-]
 
 
 def _build_class_hierarchy_map(class_hierarchy: List[str]) -> Dict[str, int]:
@@ -281,29 +166,3 @@ class SchemaEdgeDirectionChecker:
                     f"Unexpected ordering, found {type_1.__name__} before "
                     f"{type_2.__name__}"
                 )
-
-
-SCHEMA_EDGE_DIRECTION_CHECKER_SUPPORTED_MODULES = {
-    state_entities,
-    normalized_entities,
-    operations_entities,
-}
-
-_direction_checkers_by_module: dict[ModuleType, SchemaEdgeDirectionChecker] = {}
-
-
-def direction_checker_for_module(
-    entities_module: ModuleType,
-) -> SchemaEdgeDirectionChecker:
-    if entities_module not in _direction_checkers_by_module:
-        if entities_module is state_entities:
-            checker = SchemaEdgeDirectionChecker(_STATE_CLASS_HIERARCHY)
-        elif entities_module is normalized_entities:
-            checker = SchemaEdgeDirectionChecker(_NORMALIZED_STATE_CLASS_HIERARCHY)
-        elif entities_module is operations_entities:
-            checker = SchemaEdgeDirectionChecker(_OPERATIONS_CLASS_HIERARCHY)
-        else:
-            raise ValueError(f"Unsupported module: [{entities_module}]")
-        _direction_checkers_by_module[entities_module] = checker
-
-    return _direction_checkers_by_module[entities_module]

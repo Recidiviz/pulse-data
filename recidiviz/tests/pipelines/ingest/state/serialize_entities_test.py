@@ -24,6 +24,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.pipelines.ingest.state.serialize_entities import SerializeEntities
@@ -62,7 +65,9 @@ class TestSerializeEntities(BigQueryEmulatorTestCase):
             | beam.ParDo(
                 SerializeEntities(
                     state_code=StateCode.US_DD,
-                    entities_module=state_entities,
+                    entities_module_context=entities_module_context_for_module(
+                        state_entities
+                    ),
                 )
             ).with_outputs(*table_ids)
         )
@@ -90,7 +95,9 @@ class TestSerializeEntities(BigQueryEmulatorTestCase):
             | beam.ParDo(
                 SerializeEntities(
                     state_code=StateCode.US_DD,
-                    entities_module=normalized_entities,
+                    entities_module_context=entities_module_context_for_module(
+                        normalized_entities
+                    ),
                 )
             ).with_outputs(*table_ids)
         )

@@ -18,7 +18,6 @@
 calculations."""
 import abc
 from collections import defaultdict
-from types import ModuleType
 from typing import (
     Any,
     Dict,
@@ -51,9 +50,9 @@ from recidiviz.common.attr_mixins import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
-    EntityFieldIndex,
-    EntityFieldType,
+    entities_module_context_for_entity_class,
     get_association_table_id,
     is_many_to_many_relationship,
     is_many_to_one_relationship,
@@ -180,13 +179,10 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
             required_entity_classes or []
         )
 
-        if issubclass(root_entity_cls, NormalizedStateEntity):
-            entities_module: ModuleType = normalized_entities
-        else:
-            entities_module = state_entities
-
-        self._entities_module = entities_module
-        self._field_index = EntityFieldIndex.for_entities_module(entities_module)
+        self._entities_module_context = entities_module_context_for_entity_class(
+            root_entity_cls
+        )
+        self._field_index = self._entities_module_context.field_index()
 
         if not root_entity_cls:
             raise ValueError("No valid root_entity_cls passed to the pipeline.")
@@ -259,7 +255,8 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
 
                 referenced_entity_class = (
                     entity_utils.get_entity_class_in_module_with_name(
-                        self._entities_module, referenced_class_name
+                        self._entities_module_context.entities_module(),
+                        referenced_class_name,
                     )
                 )
 

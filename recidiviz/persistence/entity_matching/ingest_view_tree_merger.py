@@ -23,9 +23,9 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from recidiviz.persistence.entity.base_entity import EntityT, ExternalIdEntity
 from recidiviz.persistence.entity.entity_deserialize import Entity
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
-    EntityFieldIndex,
-    EntityFieldType,
+    entities_module_context_for_entity,
     get_flat_fields_json_str,
 )
 from recidiviz.persistence.entity_matching.entity_merger_utils import (
@@ -215,7 +215,8 @@ class IngestViewTreeMerger:
 
         children_by_field = defaultdict(list)
         for entity in entity_group:
-            field_index = EntityFieldIndex.for_entity(entity)
+            entities_module_context = entities_module_context_for_entity(entity)
+            field_index = entities_module_context.field_index()
             if non_empty_backedges := field_index.get_fields_with_non_empty_values(
                 entity, EntityFieldType.BACK_EDGE
             ):

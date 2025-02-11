@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A DoFn that serializes entities into JSON-serializable dictionaries for writing to BQ."""
-from types import ModuleType
 from typing import Any, Dict, Generator, cast
 
 import apache_beam as beam
@@ -25,12 +24,12 @@ from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_fiel
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entities_bq_schema import STATE_CODE_COL
+from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entities_from_tree,
     get_association_table_id,
     get_entity_class_in_module_with_name,
     get_many_to_many_relationships,
-    get_module_for_entity_class,
 )
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
 
@@ -46,11 +45,11 @@ class SerializeEntities(beam.DoFn):
     def __init__(
         self,
         state_code: StateCode,
-        entities_module: ModuleType,
+        entities_module_context: EntitiesModuleContext,
     ):
         super().__init__()
         self._state_code = state_code
-        self._entities_module = entities_module
+        self._entities_module_context = entities_module_context
 
     def process(
         self, element: RootEntity
@@ -69,7 +68,8 @@ class SerializeEntities(beam.DoFn):
                         f"Could not find parent entity class name for {entity_cls}.{relationship}"
                     )
                 parent_entity_cls = get_entity_class_in_module_with_name(
-                    get_module_for_entity_class(entity_cls), parent_entity_cls_name
+                    self._entities_module_context.entities_module(),
+                    parent_entity_cls_name,
                 )
                 association_table_id = get_association_table_id(
                     parent_entity_cls, entity_cls
@@ -88,6 +88,7 @@ class SerializeEntities(beam.DoFn):
             yield beam.pvalue.TaggedOutput(
                 entity.get_table_id(),
                 serialize_entity_into_json(
-                    entity, entities_module=self._entities_module
+                    entity,
+                    entities_module=self._entities_module_context.entities_module(),
                 ),
             )

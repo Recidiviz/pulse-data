@@ -22,6 +22,7 @@ from more_itertools import one
 
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import entities_module_context_for_entity
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateStaff
 from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
@@ -124,6 +125,7 @@ class CreatePersonIdToStaffIdMapping(beam.PTransform):
             return None
 
         external_ids = walk_entity_dag(
+            entities_module_context=entities_module_context_for_entity(person),
             dag_root_entity=person,
             node_processing_fn=_get_referenced_staff_external_id,
         )

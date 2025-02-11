@@ -31,7 +31,8 @@ from recidiviz.persistence.entity.base_entity import (
     ExternalIdEntity,
     HasMultipleExternalIdsEntity,
 )
-from recidiviz.persistence.entity.entity_utils import EntityFieldIndex, EntityFieldType
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
+from recidiviz.persistence.entity.entity_utils import entities_module_context_for_entity
 
 
 def root_entity_external_id_keys(root_entity: HasMultipleExternalIdsEntity) -> Set[str]:
@@ -53,7 +54,8 @@ def enum_entity_key(enum_entity: EnumEntity) -> str:
     entity key that are attached to the same parent should be considered duplicates and
     merged into one.
     """
-    field_index = EntityFieldIndex.for_entity(enum_entity)
+    entities_module_context = entities_module_context_for_entity(enum_entity)
+    field_index = entities_module_context.field_index()
     fields = field_index.get_all_entity_fields(
         type(enum_entity), EntityFieldType.FLAT_FIELD
     )

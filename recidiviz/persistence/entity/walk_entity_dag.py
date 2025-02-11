@@ -25,7 +25,8 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import EntityFieldIndex, EntityFieldType
+from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.utils.types import T, assert_type
 
 
@@ -76,6 +77,7 @@ EntityNodeProcessingFn = Callable[[Entity, List[EntityDagEdge]], T]
 
 
 def walk_entity_dag(
+    entities_module_context: EntitiesModuleContext,
     dag_root_entity: Entity,
     node_processing_fn: EntityNodeProcessingFn[T],
     explore_all_paths: bool = False,
@@ -91,6 +93,7 @@ def walk_entity_dag(
     visit that node.
     """
     return _walk_entity_dag_inner(
+        entities_module_context=entities_module_context,
         entity=dag_root_entity,
         node_processing_fn=node_processing_fn,
         ancestor_chain=[],
@@ -100,6 +103,8 @@ def walk_entity_dag(
 
 
 def _walk_entity_dag_inner(
+    *,
+    entities_module_context: EntitiesModuleContext,
     entity: Entity,
     node_processing_fn: EntityNodeProcessingFn,
     ancestor_chain: List[EntityDagEdge],
@@ -109,7 +114,9 @@ def _walk_entity_dag_inner(
     """Private recursive helper for walk_entity_dag()."""
     results = [node_processing_fn(entity, ancestor_chain)]
     visited_entity_ids.add(id(entity))
-    field_index = EntityFieldIndex.for_entity(entity)
+
+    field_index = entities_module_context.field_index()
+
     for field in field_index.get_all_entity_fields(
         type(entity), EntityFieldType.FORWARD_EDGE
     ):
@@ -123,8 +130,9 @@ def _walk_entity_dag_inner(
                 continue
             results.extend(
                 _walk_entity_dag_inner(
-                    child,
-                    node_processing_fn,
+                    entities_module_context=entities_module_context,
+                    entity=child,
+                    node_processing_fn=node_processing_fn,
                     ancestor_chain=ancestor_chain + [parent_info],
                     visited_entity_ids=visited_entity_ids,
                     explore_all_paths=explore_all_paths,

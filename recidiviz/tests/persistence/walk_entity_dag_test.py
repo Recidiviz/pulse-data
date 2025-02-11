@@ -18,9 +18,7 @@
 
 import unittest
 from typing import List, Tuple
-from unittest.mock import patch
 
-from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
 from recidiviz.tests.persistence.database.schema_entity_converter.base_schema_entity_converter_test import (
@@ -31,10 +29,9 @@ from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities 
     Parent,
     Root,
 )
-from recidiviz.tests.persistence.database.schema_entity_converter.fake_schema_direction_checker import (
-    FAKE_SCHEMA_DIRECTION_CHECKER,
+from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities_module_context import (
+    FakeEntitiesModuleContext,
 )
-from recidiviz.tests.persistence.entity import fake_entities
 
 
 def return_entity_fn(entity: Entity, _ancestors: List[EntityDagEdge]) -> Entity:
@@ -65,42 +62,36 @@ class WalkDagTreeTest(unittest.TestCase):
     """Tests for walk_entity_dag.py."""
 
     def setUp(self) -> None:
-        self.module_for_entity_patcher = patch(
-            f"{entity_utils.__name__}.get_module_for_entity_class",
-            return_value=fake_entities,
-        )
-        self.module_for_entity_patcher.start()
-
-        self.direction_checker_for_module_patcher = patch(
-            f"{entity_utils.__name__}.direction_checker_for_module",
-            return_value=FAKE_SCHEMA_DIRECTION_CHECKER,
-        )
-        self.direction_checker_for_module_patcher.start()
-
-    def tearDown(self) -> None:
-        self.module_for_entity_patcher.stop()
-        self.direction_checker_for_module_patcher.stop()
+        self.entities_module_context = FakeEntitiesModuleContext()
 
     def test_walk_entity_dag_no_children(self) -> None:
         family = SimpsonsFamily()
-        entities = walk_entity_dag(family.root, return_entity_fn)
+        entities = walk_entity_dag(
+            self.entities_module_context, family.root, return_entity_fn
+        )
 
         self.assertEqual([family.root], entities)
 
-        ancestors_map = walk_entity_dag(family.root, get_entity_name_and_edges)
+        ancestors_map = walk_entity_dag(
+            self.entities_module_context, family.root, get_entity_name_and_edges
+        )
         self.assertEqual([("Root", [])], ancestors_map)
 
     def test_walk_entity_dag_simple(self) -> None:
         family = SimpsonsFamily()
         family.root.parents = family.parent_entities
-        entities = walk_entity_dag(family.root, return_entity_fn)
+        entities = walk_entity_dag(
+            self.entities_module_context, family.root, return_entity_fn
+        )
 
         self.assertEqual(
             [family.root, family.homer, family.marge],
             entities,
         )
 
-        ancestors_map = walk_entity_dag(family.root, get_entity_name_and_edges)
+        ancestors_map = walk_entity_dag(
+            self.entities_module_context, family.root, get_entity_name_and_edges
+        )
 
         self.assertEqual(
             [
@@ -120,7 +111,9 @@ class WalkDagTreeTest(unittest.TestCase):
         family.lisa.parents = family.parent_entities
         family.maggie.parents = family.parent_entities
 
-        entities = walk_entity_dag(family.root, return_entity_fn)
+        entities = walk_entity_dag(
+            self.entities_module_context, family.root, return_entity_fn
+        )
 
         self.assertEqual(
             [
@@ -134,7 +127,9 @@ class WalkDagTreeTest(unittest.TestCase):
             entities,
         )
 
-        ancestors_map = walk_entity_dag(family.root, get_entity_name_and_edges)
+        ancestors_map = walk_entity_dag(
+            self.entities_module_context, family.root, get_entity_name_and_edges
+        )
 
         self.assertEqual(
             [
@@ -167,7 +162,10 @@ class WalkDagTreeTest(unittest.TestCase):
         family.maggie.parents = family.parent_entities
 
         entities = walk_entity_dag(
-            family.root, return_entity_fn, explore_all_paths=True
+            self.entities_module_context,
+            family.root,
+            return_entity_fn,
+            explore_all_paths=True,
         )
 
         self.assertEqual(
@@ -188,6 +186,7 @@ class WalkDagTreeTest(unittest.TestCase):
         )
 
         ancestors_map = walk_entity_dag(
+            self.entities_module_context,
             family.root,
             get_entity_name_and_edges,
             explore_all_paths=True,
@@ -236,7 +235,9 @@ class WalkDagTreeTest(unittest.TestCase):
         family.lisa.parents = family.parent_entities
         family.maggie.parents = family.parent_entities
 
-        entities = walk_entity_dag(family.homer, return_entity_fn)
+        entities = walk_entity_dag(
+            self.entities_module_context, family.homer, return_entity_fn
+        )
 
         self.assertEqual(
             [
@@ -248,7 +249,9 @@ class WalkDagTreeTest(unittest.TestCase):
             entities,
         )
 
-        ancestors_map = walk_entity_dag(family.homer, get_entity_name_and_edges)
+        ancestors_map = walk_entity_dag(
+            self.entities_module_context, family.homer, get_entity_name_and_edges
+        )
 
         self.assertEqual(
             [

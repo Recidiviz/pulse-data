@@ -41,10 +41,10 @@ from recidiviz.common.constants.state.state_sentence import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.schema_edge_direction_checker import (
-    direction_checker_for_module,
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
 )
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entity_field_validators import (
@@ -83,6 +83,11 @@ class TestNormalizedEntities(unittest.TestCase):
             c.__name__: c for c in self.normalized_entity_classes
         }
 
+        entities_module_context = entities_module_context_for_module(
+            normalized_entities
+        )
+        self.direction_checker = entities_module_context.direction_checker()
+
     def _assert_valid_default(
         self,
         entity_class: Type[Entity],
@@ -117,8 +122,9 @@ class TestNormalizedEntities(unittest.TestCase):
                 )
             return
 
-        direction_checker = direction_checker_for_module(normalized_entities)
-        is_backedge_field = direction_checker.is_back_edge(entity_class, field_name)
+        is_backedge_field = self.direction_checker.is_back_edge(
+            entity_class, field_name
+        )
         # Default fields can be None for backedges or explicit uses of attr.Factory
         if (is_backedge_field and field_default is None) or isinstance(
             field_default, attr.Factory  # type: ignore
@@ -156,8 +162,9 @@ class TestNormalizedEntities(unittest.TestCase):
                 f"which has a validator that allows for optional values.",
             )
 
-        direction_checker = direction_checker_for_module(normalized_entities)
-        is_backedge_field = direction_checker.is_back_edge(entity_class, field_name)
+        is_backedge_field = self.direction_checker.is_back_edge(
+            entity_class, field_name
+        )
 
         if is_backedge_field:
             # Backedges use EntityBackedgeValidator which also validate that the

@@ -27,9 +27,9 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
 )
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
-    EntityFieldIndex,
-    EntityFieldType,
+    entities_module_context_for_entity,
     get_entity_class_in_module_with_name,
     update_reverse_references_on_related_entities,
 )
@@ -106,7 +106,8 @@ def convert_entity_trees_to_normalized_versions(
     # Discover all of the relationships and normalized entities
     while len(stack) > 0:
         (normalized_base_entity_class, base_entity) = stack.popleft()
-        state_field_index = EntityFieldIndex.for_entity(base_entity)
+        entities_module_context = entities_module_context_for_entity(base_entity)
+        state_field_index = entities_module_context.field_index()
 
         normalized_base_entity_class_name = normalized_base_entity_class.__name__
 

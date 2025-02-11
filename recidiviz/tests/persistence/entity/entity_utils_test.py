@@ -16,15 +16,12 @@
 # =============================================================================
 """Tests for entity_utils.py"""
 import datetime
-from functools import cmp_to_key
 from typing import Dict, List, Type
 from unittest import TestCase
-from unittest.mock import call, patch
 
 import attr
 import pytz
 
-from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import (
     StateChargeStatus,
@@ -81,23 +78,20 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import is_association_table
-from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.base_entity import Entity, HasExternalIdEntity
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
-    EntityFieldIndex,
-    EntityFieldType,
-    clear_entity_field_index_cache,
     deep_entity_update,
     entities_have_direct_relationship,
+    entities_module_context_for_entity,
     get_all_entities_from_tree,
     get_all_entity_classes_in_module,
     get_all_many_to_many_relationships_in_module,
     get_association_table_id,
     get_entities_by_association_table_id,
-    get_entity_class_in_module_with_name,
     get_entity_class_in_module_with_table_id,
     get_many_to_many_relationships,
     get_module_for_entity_class,
@@ -107,9 +101,6 @@ from recidiviz.persistence.entity.entity_utils import (
     is_one_to_many_relationship,
     is_reference_only_entity,
     set_backedges,
-)
-from recidiviz.persistence.entity.schema_edge_direction_checker import (
-    direction_checker_for_module,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
@@ -138,207 +129,14 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
-from recidiviz.persistence.entity.state.normalized_state_entity import (
-    NormalizedStateEntity,
-)
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
     generate_full_graph_state_staff,
 )
-from recidiviz.utils.types import assert_subclass
 
-_ID = 1
 _STATE_CODE = "US_XX"
 _EXTERNAL_ID = "EXTERNAL_ID-1"
 _ID_TYPE = "ID_TYPE"
-
-
-class TestEntityFieldIndex(TestCase):
-    """Tests the functionality of EntityFieldIndex."""
-
-    def test_getEntityRelationshipFieldNames_children(self) -> None:
-        field_index = EntityFieldIndex.for_entities_module(state_entities)
-        entity = StateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            external_id="ss1",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    external_id="c1",
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-                )
-            ],
-            person=[StatePerson.new_with_defaults(state_code="US_XX")],
-            supervision_sentence_id=_ID,
-        )
-        self.assertEqual(
-            {"charges"},
-            field_index.get_fields_with_non_empty_values(
-                entity, EntityFieldType.FORWARD_EDGE
-            ),
-        )
-
-    def test_getEntityRelationshipFieldNames_backedges(self) -> None:
-        field_index = EntityFieldIndex.for_entities_module(state_entities)
-
-        entity = state_entities.StateSupervisionSentence(
-            state_code="US_XX",
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    external_id="c1",
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-                )
-            ],
-            person=StatePerson.new_with_defaults(state_code="US_XX"),
-            supervision_sentence_id=_ID,
-        )
-        self.assertEqual(
-            {"person"},
-            field_index.get_fields_with_non_empty_values(
-                entity, EntityFieldType.BACK_EDGE
-            ),
-        )
-
-    def test_getEntityRelationshipFieldNames_flatFields(self) -> None:
-        field_index = EntityFieldIndex.for_entities_module(state_entities)
-
-        entity = state_entities.StateSupervisionSentence(
-            state_code="US_XX",
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    external_id="c1",
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-                )
-            ],
-            person=StatePerson.new_with_defaults(state_code="US_XX"),
-            supervision_sentence_id=_ID,
-        )
-        self.assertEqual(
-            {"state_code", "external_id", "status", "supervision_sentence_id"},
-            field_index.get_fields_with_non_empty_values(
-                entity, EntityFieldType.FLAT_FIELD
-            ),
-        )
-
-    def test_getEntityRelationshipFieldNames_all(self) -> None:
-        field_index = EntityFieldIndex.for_entities_module(state_entities)
-        entity = state_entities.StateSupervisionSentence(
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            state_code="US_XX",
-            charges=[
-                StateCharge.new_with_defaults(
-                    state_code="US_XX",
-                    external_id="c1",
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-                )
-            ],
-            person=StatePerson.new_with_defaults(state_code="US_XX"),
-            supervision_sentence_id=_ID,
-        )
-        self.assertEqual(
-            {
-                "state_code",
-                "charges",
-                "external_id",
-                "person",
-                "status",
-                "supervision_sentence_id",
-            },
-            field_index.get_fields_with_non_empty_values(entity, EntityFieldType.ALL),
-        )
-
-    def test_caching_behavior_entity(self) -> None:
-        clear_entity_field_index_cache()
-        with patch(
-            f"{entity_utils.__name__}.attribute_field_type_reference_for_class"
-        ) as mock_get_field_type_ref:
-            mock_get_field_type_ref.side_effect = (
-                attribute_field_type_reference_for_class
-            )
-
-            field_index_state = EntityFieldIndex.for_entities_module(state_entities)
-            self.assertEqual(
-                set(),
-                field_index_state.get_all_entity_fields(
-                    StatePerson, EntityFieldType.BACK_EDGE
-                ),
-            )
-            # The slow function is called once
-            mock_get_field_type_ref.assert_called_once_with(StatePerson)
-            field_index_state.get_all_entity_fields(
-                StatePerson, EntityFieldType.BACK_EDGE
-            )
-            # The slow function still should only have been called once
-            mock_get_field_type_ref.assert_called_once_with(StatePerson)
-            self.assertEqual(
-                {
-                    "birthdate",
-                    "current_address",
-                    "current_email_address",
-                    "current_phone_number",
-                    "full_name",
-                    "gender",
-                    "gender_raw_text",
-                    "person_id",
-                    "residency_status",
-                    "residency_status_raw_text",
-                    "state_code",
-                },
-                field_index_state.get_all_entity_fields(
-                    StatePerson, EntityFieldType.FLAT_FIELD
-                ),
-            )
-            # Still only once
-            mock_get_field_type_ref.assert_called_once_with(StatePerson)
-
-            field_index_normalized_state = EntityFieldIndex.for_entities_module(
-                normalized_entities
-            )
-            self.assertEqual(
-                {
-                    "birthdate",
-                    "current_address",
-                    "current_email_address",
-                    "current_phone_number",
-                    "full_name",
-                    "gender",
-                    "gender_raw_text",
-                    "person_id",
-                    "residency_status",
-                    "residency_status_raw_text",
-                    "state_code",
-                },
-                field_index_normalized_state.get_all_entity_fields(
-                    NormalizedStatePerson, EntityFieldType.FLAT_FIELD
-                ),
-            )
-
-            # Now a new call
-            mock_get_field_type_ref.assert_has_calls(
-                [call(StatePerson), call(NormalizedStatePerson)]
-            )
-
-            field_index_state_2 = EntityFieldIndex.for_entities_module(state_entities)
-            # These should be the exact same object
-            self.assertEqual(id(field_index_state), id(field_index_state_2))
-
-            # Call a function we've called already
-            field_index_state_2.get_all_entity_fields(
-                StatePerson, EntityFieldType.FLAT_FIELD
-            )
-
-            # Still only two calls
-            mock_get_field_type_ref.assert_has_calls(
-                [call(StatePerson), call(NormalizedStatePerson)]
-            )
 
 
 # Entities in this dict should not contain any meaningful information.
@@ -932,39 +730,6 @@ class TestEntityUtils(TestCase):
             normalized_entities, get_module_for_entity_class(NormalizedStateAssessment)
         )
         self.assertEqual(state_entities, get_module_for_entity_class(StatePerson))
-
-    def test_normalized_and_state_have_same_class_hierarchy(self) -> None:
-        """If this test fails _NORMALIZED_STATE_CLASS_HIERARCHY and
-        _STATE_CLASS_HIERARCHY are not sorted in the same way for equivalent classes.
-        """
-        equivalent_state_classes_list = []
-        normalized_state_direction_checker = direction_checker_for_module(
-            normalized_entities
-        )
-
-        def sort_fn(a: Type[Entity], b: Type[Entity]) -> int:
-            return (
-                -1
-                if not normalized_state_direction_checker.is_higher_ranked(a, b)
-                else 1
-            )
-
-        sorted_normalized_by_rank = sorted(
-            get_all_entity_classes_in_module(normalized_state_direction_checker),
-            key=cmp_to_key(sort_fn),
-        )
-        for normalized_entity_cls in sorted_normalized_by_rank:
-            equivalent_state_class = get_entity_class_in_module_with_name(
-                state_entities,
-                assert_subclass(
-                    normalized_entity_cls, NormalizedStateEntity
-                ).base_class_name(),
-            )
-            if not equivalent_state_class:
-                continue
-            equivalent_state_classes_list.append(equivalent_state_class)
-        state_direction_checker = direction_checker_for_module(state_entities)
-        state_direction_checker.assert_sorted(equivalent_state_classes_list)
 
     def test_is_reference_only_entity(self) -> None:
         for entity_cls in get_all_entity_classes_in_module(state_entities):
@@ -1618,7 +1383,8 @@ class TestBidirectionalUpdates(TestCase):
         _ = set_backedges(person)
         all_entities = get_all_entities_from_tree(person)
         for entity in all_entities:
-            field_index = EntityFieldIndex.for_entity(entity)
+            entities_module_context = entities_module_context_for_entity(entity)
+            field_index = entities_module_context.field_index()
             if isinstance(entity, StatePerson):
                 continue
             related_entities: List[Entity] = []
@@ -1633,7 +1399,8 @@ class TestBidirectionalUpdates(TestCase):
         _ = set_backedges(staff)
         all_entities = get_all_entities_from_tree(staff)
         for entity in all_entities:
-            field_index = EntityFieldIndex.for_entity(entity)
+            entities_module_context = entities_module_context_for_entity(entity)
+            field_index = entities_module_context.field_index()
             if isinstance(entity, StateStaff):
                 continue
             related_entities: List[Entity] = []

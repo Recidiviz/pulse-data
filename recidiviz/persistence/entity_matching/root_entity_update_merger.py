@@ -36,14 +36,14 @@ from recidiviz.persistence.entity.base_entity import (
     HasExternalIdEntityT,
     RootEntity,
 )
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
-    EntityFieldIndex,
-    EntityFieldType,
+    entities_module_context_for_entity,
     get_all_entities_from_tree,
     is_reference_only_entity,
-)
-from recidiviz.persistence.entity.schema_edge_direction_checker import (
-    direction_checker_for_module,
 )
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
 from recidiviz.persistence.entity.state import entities
@@ -135,7 +135,8 @@ class RootEntityUpdateMerger:
         """Checks that root entity trees do not have any fields set that should not
         yet be set by this point in processing.
         """
-        field_index = EntityFieldIndex.for_entity(root_entity)
+        entities_module_context = entities_module_context_for_entity(root_entity)
+        field_index = entities_module_context.field_index()
         for e in get_all_entities_from_tree(root_entity):
             if back_edge_fields := field_index.get_fields_with_non_empty_values(
                 e, EntityFieldType.BACK_EDGE
@@ -159,7 +160,8 @@ class RootEntityUpdateMerger:
         two entity trees, applying updates to already existing entities where
         applicable.
         """
-        field_index = EntityFieldIndex.for_entity(old_entity)
+        entities_module_context = entities_module_context_for_entity(old_entity)
+        field_index = entities_module_context.field_index()
         for child_field in field_index.get_all_entity_fields(
             type(old_entity), EntityFieldType.FORWARD_EDGE
         ):
@@ -290,7 +292,10 @@ class RootEntityUpdateMerger:
         data that should be merged onto the old version of this entity, if there is
         a match.
         """
-        field_index = EntityFieldIndex.for_entity(new_or_updated_entity)
+        entities_module_context = entities_module_context_for_entity(
+            new_or_updated_entity
+        )
+        field_index = entities_module_context.field_index()
         all_fields = field_index.get_all_entity_fields(
             type(new_or_updated_entity), EntityFieldType.FLAT_FIELD
         )
@@ -365,7 +370,9 @@ class RootEntityUpdateMerger:
                 merge_root_entity_trees. This is used to inform the merging order, so
                 newer updates are preserved.
         """
-        direction_checker = direction_checker_for_module(entities)
+
+        entities_module_context = entities_module_context_for_module(entities)
+        direction_checker = entities_module_context.direction_checker()
         # Assert the list of multi-parent entity types is listed in order from closest
         # to the root entity to farthest away, so we merge from root downwards.
         direction_checker.assert_sorted(_MULTI_PARENT_ENTITY_TYPES)
@@ -444,7 +451,9 @@ class RootEntityUpdateMerger:
                 assert_type(entity.get_external_id(), str)
             ].append(direct_parent_edge)
 
+        entities_module_context = entities_module_context_for_module(entities)
         walk_entity_dag(
+            entities_module_context,
             root_entity,
             find_multi_parent_entities,
             explore_all_paths=True,

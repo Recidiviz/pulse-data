@@ -32,9 +32,9 @@ from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 # All entity classes that have Normalized versions
 from recidiviz.persistence.entity.base_entity import CoreEntity, Entity, EntityT
 from recidiviz.persistence.entity.entity_utils import (
+    entities_module_context_for_entity,
     get_all_entity_classes_in_module,
     get_entity_class_in_module_with_name,
-    get_module_for_entity_class,
 )
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
@@ -192,8 +192,9 @@ def _unique_object_id_for_entity(
     """Returns an object id value that is globally unique for all entities of this
     type for this person_id.
     """
+    entities_module_context = entities_module_context_for_entity(entity)
     entity_json = serialize_entity_into_json(
-        entity, entities_module=get_module_for_entity_class(entity.__class__)
+        entity, entities_module=entities_module_context.entities_module()
     )
     extra_json_fields = {}
     # At this point in normalization we may not have set the backedges to person

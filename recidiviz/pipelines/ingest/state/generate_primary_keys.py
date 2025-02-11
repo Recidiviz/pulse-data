@@ -26,7 +26,8 @@ from recidiviz.persistence.entity.base_entity import (
     HasExternalIdEntity,
     RootEntity,
 )
-from recidiviz.persistence.entity.entity_utils import EntityFieldIndex, EntityFieldType
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
+from recidiviz.persistence.entity.entity_utils import entities_module_context_for_entity
 from recidiviz.persistence.entity.generate_primary_key import (
     PrimaryKey,
     generate_primary_key,
@@ -89,8 +90,8 @@ def generate_primary_keys_for_root_entity_tree(
                     state_code,
                 )
             )
-
-        field_index = EntityFieldIndex.for_entity(entity)
+        entities_module_context = entities_module_context_for_entity(entity)
+        field_index = entities_module_context.field_index()
         forward_fields = field_index.get_all_entity_fields(
             entity.__class__, EntityFieldType.FORWARD_EDGE
         )

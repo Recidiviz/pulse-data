@@ -104,9 +104,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
-    EntityFieldIndex,
-    EntityFieldType,
+    entities_module_context_for_entity,
     get_all_entities_from_tree,
     get_all_entity_classes_in_module,
     set_backedges,
@@ -131,7 +131,8 @@ def clear_db_ids(db_entities: Sequence[Entity]) -> None:
     |db_entities| graphs.
     """
     for entity in db_entities:
-        field_index = EntityFieldIndex.for_entity(entity)
+        entities_module_context = entities_module_context_for_entity(entity)
+        field_index = entities_module_context.field_index()
         entity.clear_id()
         for field_name in field_index.get_fields_with_non_empty_values(
             entity, EntityFieldType.FORWARD_EDGE

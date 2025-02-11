@@ -25,6 +25,9 @@ import apache_beam as beam
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import RootEntity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.pipelines.ingest.state.serialize_entities import SerializeEntities
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
@@ -46,13 +49,17 @@ class WriteRootEntitiesToBQ(beam.PTransform):
         self.output_table_ids = list(output_table_ids)
         self.state_code = state_code
         self.entities_module = entities_module
+        self.entities_module_context = entities_module_context_for_module(
+            entities_module
+        )
 
     def expand(self, input_or_inputs: beam.PCollection[RootEntity]) -> None:
         final_entities: beam.PCollection[dict[str, Any]] = input_or_inputs | (
             "Serialize entities to table rows"
             >> beam.ParDo(
                 SerializeEntities(
-                    state_code=self.state_code, entities_module=self.entities_module
+                    state_code=self.state_code,
+                    entities_module_context=self.entities_module_context,
                 )
             ).with_outputs(*self.output_table_ids)
         )

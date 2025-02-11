@@ -27,6 +27,7 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     entities_have_direct_relationship,
+    entities_module_context_for_entity,
     print_entity_trees,
 )
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -124,6 +125,7 @@ class TestStateSchemaEntityConverter(TestCase):
 
         expected_person = generate_full_graph_state_person(set_back_edges=True)
         walk_entity_dag(
+            entities_module_context=entities_module_context_for_entity(expected_person),
             dag_root_entity=expected_person,
             node_processing_fn=_remove_person_backedges,
         )

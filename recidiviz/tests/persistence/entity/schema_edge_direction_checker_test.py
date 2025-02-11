@@ -18,11 +18,11 @@
 
 import unittest
 
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.schema_edge_direction_checker import (
-    SCHEMA_EDGE_DIRECTION_CHECKER_SUPPORTED_MODULES,
-    direction_checker_for_module,
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    ENTITIES_MODULE_CONTEXT_SUPPORTED_MODULES,
+    entities_module_context_for_module,
 )
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
@@ -36,7 +36,8 @@ class TestSchemaEdgeDirectionChecker(unittest.TestCase):
     """Tests for schema_edge_direction_checker.py"""
 
     def test_schemaEdgeDirectionChecker_isHigherRanked_higherRank(self) -> None:
-        direction_checker = direction_checker_for_module(state_entities)
+        entities_module_context = entities_module_context_for_module(state_entities)
+        direction_checker = entities_module_context.direction_checker()
         self.assertTrue(
             direction_checker.is_higher_ranked(StatePerson, StateIncarcerationSentence)
         )
@@ -45,7 +46,8 @@ class TestSchemaEdgeDirectionChecker(unittest.TestCase):
         )
 
     def test_schemaEdgeDirectionChecker_isHigherRanked_lowerRank(self) -> None:
-        direction_checker = direction_checker_for_module(state_entities)
+        entities_module_context = entities_module_context_for_module(state_entities)
+        direction_checker = entities_module_context.direction_checker()
         self.assertFalse(
             direction_checker.is_higher_ranked(StateSupervisionSentence, StatePerson)
         )
@@ -54,7 +56,8 @@ class TestSchemaEdgeDirectionChecker(unittest.TestCase):
         )
 
     def test_schemaEdgeDirectionChecker_isHigherRanked_sameRank(self) -> None:
-        direction_checker = direction_checker_for_module(state_entities)
+        entities_module_context = entities_module_context_for_module(state_entities)
+        direction_checker = entities_module_context.direction_checker()
         self.assertFalse(direction_checker.is_higher_ranked(StatePerson, StatePerson))
         self.assertFalse(
             direction_checker.is_higher_ranked(
@@ -65,9 +68,12 @@ class TestSchemaEdgeDirectionChecker(unittest.TestCase):
     def test_schemaEdgeDirectionChecker_covers_all_entities_for_supported_schemas(
         self,
     ) -> None:
-        for entities_module in SCHEMA_EDGE_DIRECTION_CHECKER_SUPPORTED_MODULES:
+        for entities_module in ENTITIES_MODULE_CONTEXT_SUPPORTED_MODULES:
             entity_classes = get_all_entity_classes_in_module(entities_module)
-            direction_checker = direction_checker_for_module(entities_module)
+            entities_module_context = entities_module_context_for_module(
+                entities_module
+            )
+            direction_checker = entities_module_context.direction_checker()
             for entity_cls_a in entity_classes:
                 for entity_cls_b in entity_classes:
                     if entity_cls_a == entity_cls_b:

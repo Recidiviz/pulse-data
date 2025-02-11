@@ -62,9 +62,11 @@ from recidiviz.common.attr_mixins import attribute_field_type_reference_for_clas
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import is_association_table
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity, RootEntity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
-    EntityFieldIndex,
-    EntityFieldType,
     get_entities_by_association_table_id,
     get_entity_class_in_module_with_name,
     get_entity_class_in_module_with_table_id,
@@ -631,7 +633,10 @@ USING({associated_entity_2_pk})
         in the entity tree, False if it is connected via an intermediate entity /
         intermediate entities.
         """
-        field_index = EntityFieldIndex.for_entities_module(self.entities_module)
+
+        field_index = entities_module_context_for_module(
+            self.entities_module
+        ).field_index()
         back_edge_fields = field_index.get_all_entity_fields(
             entity_cls, EntityFieldType.BACK_EDGE
         )
