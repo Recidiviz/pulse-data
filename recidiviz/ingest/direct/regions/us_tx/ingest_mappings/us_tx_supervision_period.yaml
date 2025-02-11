@@ -6,12 +6,13 @@ input_columns:
   SID_Number: STRING
   Period_ID_Number: STRING
   Supervision_Officer: STRING
-  Supervision_Level: STRING
   Special_Conditions: STRING
   Custodial_Authority: STRING
   Case_Type: STRING
-  Start_Date: DATETIME
-  Max_Termination_Date: STRING
+  start_date: DATETIME
+  end_date: STRING
+  assessment_level: STRING
+  rn: STRING
 unused_columns: []
 output:
   StatePerson:
@@ -21,10 +22,14 @@ output:
           id_type: $literal("US_TX_SID")
     supervision_periods:
       - StateSupervisionPeriod:
-          external_id: Period_ID_Number
-          start_date: Start_Date
+          external_id:
+            $concat:
+              $values:
+                - Period_ID_Number
+                - rn
+          start_date: start_date
           #Todo(#35059 Consider early release when hydrating termination date)
-          termination_date: Max_Termination_Date
+          termination_date: end_date
           supervision_site: Custodial_Authority
           supervising_officer_staff_external_id: Supervision_Officer
           supervising_officer_staff_external_id_type:
@@ -39,31 +44,36 @@ output:
               $raw_text: Custodial_Authority
               $custom_parser: us_tx_custom_enum_parsers.parse_custodial_auth
           supervision_level:
-            $enum_mapping:
-              $raw_text: Supervision_Level
-              $mappings:
-                StateSupervisionLevel.INTERNAL_UNKNOWN:
-                  # Placing low in internal unknown because there is only one registered record
-                  - Low
-                StateSupervisionLevel.UNASSIGNED:
-                  - Unclassified
-                StateSupervisionLevel.UNSUPERVISED:
-                  - Non-Reporting
-                StateSupervisionLevel.LIMITED:
-                  - Quarterly Reporting
-                  - Annual
-                StateSupervisionLevel.MINIMUM:
-                  - Minimum
-                StateSupervisionLevel.MEDIUM:
-                  - Medium
-                StateSupervisionLevel.HIGH:
-                  - High
-                StateSupervisionLevel.MAXIMUM:
-                  - Maximum
-                  - SI-1
-                  - SI-2
-                  - SI-3
-                  - SI-4
+            $conditional:
+              - $if:
+                  $equal:
+                    - Case_Type
+                    - $literal("Annual")
+                $then:
+                  $enum_mapping:
+                    $raw_text: Case_Type
+                    $mappings:
+                      StateSupervisionLevel.LIMITED:
+                        - Annual
+                      StateSupervisionLevel.UNSUPERVISED:
+                        - Non-reporting
+              - $else:
+                  $enum_mapping:
+                    $raw_text: assessment_level
+                    $mappings:
+                      StateSupervisionLevel.MINIMUM:
+                        - L
+                        - Low
+                      StateSupervisionLevel.MEDIUM:
+                        - Low-Moderate
+                        - LM
+                      StateSupervisionLevel.HIGH:
+                        - Moderate
+                        - M
+                      StateSupervisionLevel.MAXIMUM:
+                        - MH
+                        - High
+                        - H
           case_type_entries:
             - StateSupervisionCaseTypeEntry:
                 case_type:
