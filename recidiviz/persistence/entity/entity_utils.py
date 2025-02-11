@@ -47,7 +47,6 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
 )
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
-from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EntityT,
@@ -190,68 +189,6 @@ def get_all_entity_class_names_in_module(entities_module: ModuleType) -> Set[str
     """Returns a set of all names of subclasses of Entity that
     are defined in the given module."""
     return {cls_.__name__ for cls_ in get_all_entity_classes_in_module(entities_module)}
-
-
-# TODO(#38281): Remove references to state_entities from this function or move this
-#  function out of `entity_utils.py` (it's really specific to root entity merging code).
-def is_reference_only_entity(entity: Entity) -> bool:
-    """Returns true if this object does not contain any meaningful information
-    describing the entity, but instead only identifies the entity for reference
-    purposes. Concretely, this means the object has an external_id but no other set
-    fields (aside from default values).
-    """
-    set_flat_fields = get_explicitly_set_flat_fields(entity)
-    if isinstance(entity, state_entities.StatePerson):
-        if set_flat_fields or any([entity.races, entity.aliases, entity.ethnicities]):
-            return False
-        return bool(entity.external_ids)
-
-    if isinstance(entity, state_entities.StateStaff):
-        if set_flat_fields:
-            return False
-        return bool(entity.external_ids)
-
-    return set_flat_fields == {"external_id"}
-
-
-def get_explicitly_set_flat_fields(entity: Entity) -> Set[str]:
-    """Returns the set of field names for fields on the entity that have been set with
-    non-default values. The "state_code" field is also excluded, as it is set with the
-    same value on every entity for a given ingest run.
-    """
-    # TODO(#38281): Add entities_module_context as an arg to this function so we do not
-    #  have to import entities_module_context_factory (references specific schema
-    #  modules) into this file.
-    entities_module_context = entities_module_context_for_entity(entity)
-    field_index = entities_module_context.field_index()
-    set_flat_fields = field_index.get_fields_with_non_empty_values(
-        entity, EntityFieldType.FLAT_FIELD
-    )
-
-    primary_key_name = entity.get_primary_key_column_name()
-    if primary_key_name in set_flat_fields:
-        set_flat_fields.remove(primary_key_name)
-
-    # TODO(#2244): Change this to a general approach so we don't need to check
-    # explicit columns
-    if "state_code" in set_flat_fields:
-        set_flat_fields.remove("state_code")
-
-    default_enum_value_fields = {
-        field_name
-        for field_name in set_flat_fields
-        if entity.is_default_enum(field_name)
-    }
-
-    set_flat_fields -= default_enum_value_fields
-
-    if "incarceration_type" in set_flat_fields:
-        if entity.is_default_enum(
-            "incarceration_type", StateIncarcerationType.STATE_PRISON.value
-        ):
-            set_flat_fields.remove("incarceration_type")
-
-    return set_flat_fields
 
 
 def _sort_based_on_flat_fields(db_entities: Sequence[Entity]) -> None:

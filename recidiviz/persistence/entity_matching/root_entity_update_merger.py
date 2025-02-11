@@ -27,6 +27,7 @@ from recidiviz.common.attr_mixins import (
     BuildableAttrFieldType,
     attr_field_type_for_field_name,
 )
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EntityT,
@@ -43,10 +44,10 @@ from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
     entities_module_context_for_entity,
     get_all_entities_from_tree,
-    is_reference_only_entity,
 )
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
     StatePersonAddressPeriod,
     StatePersonAlias,
@@ -108,6 +109,63 @@ def _to_set_assert_no_dupes(item_list: Iterable[T]) -> Set[T]:
             )
         result.add(item)
     return result
+
+
+def is_reference_only_state_entity(entity: Entity) -> bool:
+    """Returns true if this object does not contain any meaningful information
+    describing the entity, but instead only identifies the entity for reference
+    purposes. Concretely, this means the object has an external_id but no other set
+    fields (aside from default values).
+    """
+    set_flat_fields = _get_explicitly_set_flat_fields(entity)
+    if isinstance(entity, state_entities.StatePerson):
+        if set_flat_fields or any([entity.races, entity.aliases, entity.ethnicities]):
+            return False
+        return bool(entity.external_ids)
+
+    if isinstance(entity, state_entities.StateStaff):
+        if set_flat_fields:
+            return False
+        return bool(entity.external_ids)
+
+    return set_flat_fields == {"external_id"}
+
+
+def _get_explicitly_set_flat_fields(entity: Entity) -> Set[str]:
+    """Returns the set of field names for fields on the entity that have been set with
+    non-default values. The "state_code" field is also excluded, as it is set with the
+    same value on every entity for a given ingest run.
+    """
+    entities_module_context = entities_module_context_for_entity(entity)
+    field_index = entities_module_context.field_index()
+    set_flat_fields = field_index.get_fields_with_non_empty_values(
+        entity, EntityFieldType.FLAT_FIELD
+    )
+
+    primary_key_name = entity.get_primary_key_column_name()
+    if primary_key_name in set_flat_fields:
+        set_flat_fields.remove(primary_key_name)
+
+    # TODO(#2244): Change this to a general approach so we don't need to check
+    # explicit columns
+    if "state_code" in set_flat_fields:
+        set_flat_fields.remove("state_code")
+
+    default_enum_value_fields = {
+        field_name
+        for field_name in set_flat_fields
+        if entity.is_default_enum(field_name)
+    }
+
+    set_flat_fields -= default_enum_value_fields
+
+    if "incarceration_type" in set_flat_fields:
+        if entity.is_default_enum(
+            "incarceration_type", StateIncarcerationType.STATE_PRISON.value
+        ):
+            set_flat_fields.remove("incarceration_type")
+
+    return set_flat_fields
 
 
 class RootEntityUpdateMerger:
@@ -214,7 +272,7 @@ class RootEntityUpdateMerger:
 
             old_entity.set_field(child_field, all_children)
 
-        if is_reference_only_entity(new_or_updated_entity):
+        if is_reference_only_state_entity(new_or_updated_entity):
             # At this point, the external_ids between old_entity and
             # new_or_updated_entity are the same, but new_or_updated_entity only has
             # the external_id field set, so we keep old_entity.
