@@ -8,6 +8,7 @@ input_columns:
   PERSON_ID: STRING
   TOTAL_SCORE: STRING
   FINAL_LEVEL: STRING
+  SMI: STRING
   CONDUCTING_STAFF_EXTERNAL_ID: STRING
 unused_columns: []
 output:
@@ -41,3 +42,6 @@ output:
                   - "Moderate/ High(Maximum)"
                 StateAssessmentLevel.INTENSE:
                   - "High (Intense)"
+          assessment_metadata:
+            $json_dict:
+              SMI: SMI

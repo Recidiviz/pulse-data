@@ -25,12 +25,13 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT
+SELECT DISTINCT
   accat.ACCAT_ID,
   accat.DATE_ASSESSMENT,
   ep.PERSON_ID,
   accat.TOTAL AS TOTAL_SCORE,
-  level.DESCRIPTION AS FINAL_LEVEL,  
+  level.DESCRIPTION AS FINAL_LEVEL,
+  mh.SMI,
   /*
   The external ID '2' is used to denote records "created" during the system migration. 
   These were initially created by a real user, but their ID was overwritten during the migration
@@ -48,6 +49,10 @@ JOIN
   {LOOKUPS} level
 ON
   (LEVEL_ID = LOOKUP_ID)
+LEFT JOIN 
+  {AZ_INT_MENTAL_HEALTH_ACTION} mh
+USING
+  (PERSON_ID)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
