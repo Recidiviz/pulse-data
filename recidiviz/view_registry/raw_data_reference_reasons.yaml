@@ -160,7 +160,14 @@ US_AZ:
       Needed to track information about incarceration stays, including start and end dates
     workflows_views.us_az_approaching_acis_or_recidiviz_tpr_request_record: |-
       Needed to track information about incarceration stays, including start and end dates
+  DPP_INTAKE_ASSIGNMENT:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
   DPP_OFFICE_LOCATION:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
     reference_views.us_az_location_metadata: |-
       We pull all supervision locations from this raw data into the location metadata view.
   LOOKUPS:
@@ -186,6 +193,9 @@ US_AZ:
       This table is used to join officer names available in external data to PERSON_IDs
       used internally in the external comparison validation view.
   PERSON:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
     task_eligibility_criteria_us_az.meets_functional_literacy_dtp: |-
       This table is used to convert ADC_NUMBER identifiers available in external data
       into PERSON_ID identifiers used internally in the external comparison validation view.

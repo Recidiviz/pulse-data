@@ -31,10 +31,12 @@ US_AZ_ACTION_QUEUE_VIEW_DESCRIPTION = """A view that decodes and gathers
 the most relevant pieces of raw data that feed the Action Queue screen in ACIS."""
 
 US_AZ_ACTION_QUEUE_QUERY_TEMPLATE = """
+WITH action_queue AS (
 SELECT
   RECORD_ID, 
   PERSON_ID, 
   DOC_ID, 
+  ADC_NUMBER,
   COALESCE(SAFE.PARSE_DATETIME('%m/%d/%Y', CREATE_DATE), CAST(CREATE_DATE AS DATETIME)) AS CREATE_DATE, 
   COALESCE(SAFE.PARSE_DATETIME('%m/%d/%Y', DUE_DATE), CAST(DUE_DATE AS DATETIME)) AS DUE_DATE, 
   COALESCE(SAFE.PARSE_DATETIME('%m/%d/%Y', CLOSE_DATE), CAST(CLOSE_DATE AS DATETIME)) AS CLOSE_DATE, 
@@ -43,12 +45,40 @@ SELECT
   reasons.description AS reason, 
   due_day_lookup.description as due_day_type, 
   source_table_name
-FROM  `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_AQ_RECORD_latest` rec
-LEFT JOIN  `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_AQ_TEMPLATE_latest` temp USING(TEMPLATE_ID)
-LEFT JOIN  `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_AQ_REASON_latest`  reasons USING(REASON_ID)
-LEFT JOIN  `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_AQ_TYPE_latest` type USING(TYPE_ID)
-LEFT JOIN  `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_AQ_CATEGORY_latest`  cat USING(CATEGORY_ID)
-LEFT JOIN  `{project_id}.{raw_data_up_to_date_views_dataset}.LOOKUPS_latest` due_day_lookup ON (DUE_DAY_TYPE_ID = LOOKUP_ID) 
+FROM `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_AQ_RECORD_latest` rec
+LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_AQ_TEMPLATE_latest` temp USING (TEMPLATE_ID)
+LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_AQ_REASON_latest`  reasons USING (REASON_ID)
+LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_AQ_TYPE_latest` type USING (TYPE_ID)
+LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_AQ_CATEGORY_latest`  cat USING(CATEGORY_ID)
+LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.LOOKUPS_latest` due_day_lookup ON (DUE_DAY_TYPE_ID = LOOKUP_ID)
+LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.PERSON_latest` person USING (PERSON_ID)
+),
+agent AS (
+  SELECT
+    dpp.PERSON_ID,
+    dpp.DOC_ID,
+    dpp.DPP_ID,
+    dpp.office_location_id,
+    loc.location_name,
+    dpp.AGENT_ID,
+    dpp_agent.SURNAME AS AGENT_SURNAME,
+    dpp_agent.FIRST_NAME AS AGENT_FIRSTNAME
+  FROM `{project_id}.{raw_data_up_to_date_views_dataset}.DPP_INTAKE_ASSIGNMENT_latest` dpp
+  LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.PERSON_latest` dpp_agent 
+  ON (dpp_agent.PERSON_ID = dpp.AGENT_ID)
+  LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.DPP_OFFICE_LOCATION_latest` loc
+  ON (dpp.OFFICE_LOCATION_ID = loc.OFFICE_LOCATION_ID)
+  -- only keep the most recently assigned DPP_ID. There is no way to differentiate between
+  -- supervision stints in the Action Queue tables, so we have to limit these results
+  -- to what is current.
+  QUALIFY
+    ROW_NUMBER() OVER (PARTITION BY dpp.PERSON_ID ORDER BY CAST(dpp.CREATE_DTM AS DATETIME) DESC) = 1 
+)
+
+SELECT *
+FROM action_queue
+LEFT JOIN agent
+USING(PERSON_ID, DOC_ID)
 """
 
 US_AZ_ACTION_QUEUE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
