@@ -240,6 +240,7 @@ output:
 
                       StateSupervisionLevel.INTERSTATE_COMPACT:
                         - 9IS # ADM - ISC OUTGOING
+                        - ISC # ISC TRANSFER OUT OF STATE
 
                       StateSupervisionLevel.ABSCONSION:
                         - 9AB # ADM - ABSCONDED OFFENDER
@@ -273,7 +274,6 @@ output:
                         - 9RT # ADM - RES. TREATMNT PLCMT
                         - DET # DETAINER STATUS OFFENDER
                         - IOT # INTERACTIVE OFFENDER TRAC
-                        - ISC # ISC TRANSFER OUT OF STATE
                         - JSS # JUDICIAL SUSPENSION SUPVN
                         - MSD # MISDEMEANOR OFFENDER
                         - RTP # RESIDENT TREATMT PLACEMNT
