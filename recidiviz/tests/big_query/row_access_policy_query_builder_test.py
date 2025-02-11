@@ -35,10 +35,15 @@ class TestRowAccessPolicyQueryBuilder(unittest.TestCase):
                 GRANT TO ("group:s-oz-data@recidiviz.org")
                 FILTER USING (UPPER(state_code) = "US_OZ");""",
             """CREATE OR REPLACE ROW ACCESS POLICY
+                EXPLICIT_ACCESS_TO_US_MI_STATE_CODE
+                ON `test_project.test_dataset.test_table`
+                GRANT TO ("group:s-mi-data@recidiviz.org")
+                FILTER USING (UPPER(state_code) = "US_MI");""",
+            """CREATE OR REPLACE ROW ACCESS POLICY
                 NON_RESTRICTIVE_STATE_DATA_ACCESS_STATE_CODE
                 ON `test_project.test_dataset.test_table`
                 GRANT TO ("group:s-default-state-data@recidiviz.org")
-                FILTER USING (UPPER(state_code) NOT IN ("US_OZ"));""",
+                FILTER USING (UPPER(state_code) NOT IN ("US_OZ", "US_MI"));""",
             """CREATE OR REPLACE ROW ACCESS POLICY
                 ADMIN_ACCESS_TO_ALL_STATE_DATA_STATE_CODE
                 ON `test_project.test_dataset.test_table`
