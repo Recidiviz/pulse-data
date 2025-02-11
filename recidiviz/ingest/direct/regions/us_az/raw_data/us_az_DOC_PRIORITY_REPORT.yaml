@@ -85,11 +85,11 @@ columns:
     description: Community General Risk Level
   - name: CRNT_PRR_OFNS_CTGR_A_NMBR
     description: total number of ARS codes for category “A”
-  - name: CRNT_PRR_OFNS_CTGR_B_NMER
+  - name: CRNT_PRR_OFNS_CTGR_B_NMBR
     description: total number of ARS codes for category “B”
   - name: CRNT_PRR_OFNS_CTGR_C_NMBR
     description: total number of ARS codes for category “C”
-  - name: CRNT_PRR_OFNS_CTGR_D_NMER
+  - name: CRNT_PRR_OFNS_CTGR_D_NMBR
     description: total number of ARS codes for category “D”
   - name: CRNT_PRR_OFNS_CTGR_E_NMBR
     description: total number of ARS codes for category “E”
