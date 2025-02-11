@@ -16,6 +16,9 @@
 # =============================================================================
 """View with Workflows usage event tracked at the client level"""
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events import (
+    USAGE_EVENTS_DICT,
+)
 from recidiviz.observations.event_observation_big_query_view_builder import (
     EventObservationBigQueryViewBuilder,
 )
@@ -32,13 +35,20 @@ SELECT
     a.start_date,
     a.task_type,
     usage_event_type,
-    -- Flag if this is the first tool action by checking if someone went from un-surfaced to surfaced at this datetime,
-    COALESCE(
-        b.surfaced AND NOT LAG(surfaced) OVER (
-            PARTITION BY b.person_id, b.task_type
-            ORDER BY b.start_date
-        )
-    , FALSE) AS is_first_tool_action,
+    -- Flag if this is the first tool action for this person/task within
+    -- the impact funnel session, so that funnel resets are properly incorporated
+    (
+        -- The event must fall on a status session boundary
+        b.start_date IS NOT NULL
+        -- The previous status session must be FALSE for all usage statuses
+        AND NOT {" AND NOT ".join(["prev_status." + usage_event.lower() for usage_event in USAGE_EVENTS_DICT])}
+        -- Only 1 event on the first tool action day can be counted as the first action,
+        -- with surfaced events prioritized against other event types
+        AND ROW_NUMBER() OVER (
+            PARTITION BY a.person_id, a.task_type, a.start_date
+            ORDER BY a.start_date, IF(usage_event_type = "SURFACED", 0, 1), usage_event_type
+        ) = 1
+    ) AS is_first_tool_action,
     DATE_DIFF(a.start_date, c.start_date, DAY) days_eligible,
     d.system_type,
     d.decarceral_impact_type,
@@ -52,6 +62,13 @@ LEFT JOIN
     `{{project_id}}.analyst_data.workflows_person_impact_funnel_status_sessions_materialized` b
 USING
     (person_id, task_type, start_date)
+LEFT JOIN
+    `{{project_id}}.analyst_data.workflows_person_impact_funnel_status_sessions_materialized` prev_status
+ON
+    b.state_code = prev_status.state_code
+    AND b.person_id = prev_status.person_id
+    AND b.start_date = prev_status.end_date
+    AND b.task_type = prev_status.task_type
 LEFT JOIN
     `{{project_id}}.analyst_data.all_task_type_eligibility_spans_materialized` c
 ON

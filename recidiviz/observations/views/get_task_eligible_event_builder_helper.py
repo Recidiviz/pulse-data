@@ -57,10 +57,7 @@ def get_task_eligible_event_observation_view_builder(
         a.task_type,
         COALESCE(c.surfaced, FALSE) AS after_tool_action,
         -- Flag if person was previously almost eligible before becoming fully eligible
-        COALESCE(
-            LAG(a.is_almost_eligible) OVER (PARTITION BY a.person_id, a.task_name ORDER BY a.start_date),
-            FALSE
-        ) AS after_almost_eligible,
+        IFNULL(prev_eligibility_span.is_almost_eligible, FALSE)  AS after_almost_eligible,
         d.system_type,
         d.decarceral_impact_type,
         d.is_jii_decarceral_transition,
@@ -88,6 +85,12 @@ def get_task_eligible_event_observation_view_builder(
     ON
         a.state_code = launches.state_code
         AND d.completion_event_type = launches.completion_event_type
+    LEFT JOIN
+        `{{project_id}}.analyst_data.all_task_eligibility_spans_materialized` prev_eligibility_span
+    ON
+        prev_eligibility_span.person_id = a.person_id
+        AND prev_eligibility_span.task_type = a.task_type
+        AND prev_eligibility_span.end_date = a.start_date
     WHERE
         -- remove any spans that start after the current millennium, e.g.
         -- eligibility following a life sentence

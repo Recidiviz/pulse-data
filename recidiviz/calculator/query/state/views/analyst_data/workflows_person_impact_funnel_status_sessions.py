@@ -20,6 +20,7 @@ from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
+    MAGIC_END_DATE,
     nonnull_end_date_clause,
     revert_nonnull_end_date_clause,
 )
@@ -301,8 +302,12 @@ all_sessions AS (
         state_code,
         person_id,
         task_type,
-        start_date,
-        CASE WHEN end_date_exclusive > CURRENT_DATE("US/Eastern") THEN NULL ELSE end_date_exclusive END AS end_date,
+        -- Cast these span start and end dates from datetimes to dates before creating sub-sessions
+        CAST(start_date AS DATE) AS start_date,
+        CASE WHEN end_date_exclusive > CURRENT_DATE("US/Eastern")
+            THEN NULL
+            ELSE CAST(end_date_exclusive AS DATE)
+        END AS end_date,
         NULL AS is_justice_involved,
         NULL AS is_eligible,
         NULL AS is_almost_eligible,
@@ -311,13 +316,22 @@ all_sessions AS (
         NULL AS task_completed,
         denial_reasons,
     FROM marked_ineligible_sessions
+    WHERE
+        # Drop zero day spans (indicating multiple updates in 1 day) and pick
+        # the status as of the end of day
+        CAST(start_date AS DATE) != CASE WHEN end_date_exclusive > CURRENT_DATE("US/Eastern")
+            THEN DATE("{MAGIC_END_DATE}") ELSE CAST(end_date_exclusive AS DATE) END
     UNION ALL
     SELECT
         state_code,
         person_id,
         task_type,
-        start_date,
-        CASE WHEN end_date_exclusive > CURRENT_DATE("US/Eastern") THEN NULL ELSE end_date_exclusive END AS end_date,
+        -- Cast these span start and end dates from datetimes to dates before creating sub-sessions
+        CAST(start_date AS DATE) AS start_date,
+        CASE WHEN end_date_exclusive > CURRENT_DATE("US/Eastern")
+            THEN NULL
+            ELSE CAST(end_date_exclusive AS DATE)
+        END AS end_date,
         NULL AS is_justice_involved,
         NULL AS is_eligible,
         NULL AS is_almost_eligible,
@@ -326,6 +340,11 @@ all_sessions AS (
         NULL AS task_completed,
         NULL AS denial_reasons,
     FROM marked_submitted_sessions
+    WHERE
+        # Drop zero day spans (indicating multiple updates in 1 day) and pick
+        # the status as of the end of day
+        CAST(start_date AS DATE) != CASE WHEN end_date_exclusive > CURRENT_DATE("US/Eastern")
+            THEN DATE("{MAGIC_END_DATE}") ELSE CAST(end_date_exclusive AS DATE) END
     UNION ALL
     SELECT
         state_code,

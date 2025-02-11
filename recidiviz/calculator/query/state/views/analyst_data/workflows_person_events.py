@@ -117,9 +117,9 @@ WITH usage_events AS (
         -- TODO(#29291): Refactor this view so it queries from observation-specific views
         `{{project_id}}.observations__workflows_primary_user_event.all_workflows_primary_user_events_materialized` a
     INNER JOIN
-        `{{project_id}}.normalized_state.state_person_external_id` b
+        `{{project_id}}.workflows_views.person_id_to_external_id_materialized` b
     ON
-        JSON_EXTRACT_SCALAR(a.event_attributes, "$.person_external_id") = b.external_id
+        JSON_EXTRACT_SCALAR(a.event_attributes, "$.person_external_id") = b.person_external_id
         AND a.state_code = b.state_code
     INNER JOIN
         `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` c
