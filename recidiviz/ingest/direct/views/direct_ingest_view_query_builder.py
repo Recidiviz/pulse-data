@@ -18,7 +18,7 @@
 import datetime
 import re
 import string
-from enum import Enum, auto
+from enum import Enum
 from types import ModuleType
 from typing import List, Optional, Set
 
@@ -40,50 +40,12 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
 from recidiviz.utils import metadata
-from recidiviz.utils.string import StrictStringFormatter
 
 UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
 
 CREATE_TEMP_TABLE_REGEX = re.compile(r"CREATE\s+((TEMP|TEMPORARY)\s+)TABLE")
 
 CURRENT_DATE_REGEX = re.compile(r"CURRENT_DATE\(|current_date\(")
-
-DESTINATION_TABLE_QUERY_FORMAT = """
-DROP TABLE IF EXISTS `{{project_id}}.{dataset_id}.{table_id}`;
-CREATE TABLE `{{project_id}}.{dataset_id}.{table_id}`
-OPTIONS(
-  -- Data in this table will be deleted after 24 hours
-  expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
-) AS (
-
-{select_query_clause}
-
-);
-"""
-
-DESTINATION_TEMP_TABLE_QUERY_FORMAT = """
-CREATE TEMP TABLE {table_id} AS (
-
-{select_query_clause}
-
-);
-"""
-
-
-class DestinationTableType(Enum):
-    # The query will be structured to end with a SELECT statement. This can be used for queries that may be run in the
-    # BigQuery UI.
-    NONE = auto()
-
-    # The query will be structured to write the results of the SELECT statement to a temporary table in the script (via
-    # a CREATE TEMP TABLE statement). Should be used if the results of this view query will be used as part of a larger
-    # script.
-    TEMPORARY = auto()
-
-    # The query will be structured to write the results of the SELECT statement to an output table with a 24 hour
-    # expiration (via a CREATE TABLE statement). Initialization will throw if this is set without nonnull
-    # destination_table_id and destination_dataset_id.
-    PERMANENT_EXPIRING = auto()
 
 
 class RawFileHistoricalRowsFilterType(Enum):
@@ -98,12 +60,12 @@ class RawFileHistoricalRowsFilterType(Enum):
 # TODO(#29997) Make is_code_file a top level property
 @attr.define(kw_only=True)
 class DirectIngestViewRawFileDependency:
-    """Class containing information about a raw table that is a dependency of an ingest
-    view.
+    """
+    Contains information about a raw table that is a dependency of an ingest view.
 
-    For example, for the ingest view text: "SELECT * FROM {myTable};", this class
-    contains information for how to expand {myTable} into a real SELECT clause against
-    BigQuery.
+    For example, an ingest view query with text "SELECT * FROM {myTable};"
+    would have this class contain information for expanding "{myTable}" into a real
+    SQL statement to be queried in BigQuery.
     """
 
     # Regex matching the raw table dependency format args allowed in ingest view
@@ -183,71 +145,11 @@ class DirectIngestViewQueryBuilder:
     class QueryStructureConfig:
         """Configuration for how to structure the expanded view query with hydrated raw table views."""
 
-        # If set, the raw data queries will only return rows received on or before this
-        # datetime.
+        # If set, the raw data queries will only return rows received on or before this datetime.
         raw_data_datetime_upper_bound: Optional[datetime.datetime] = attr.ib()
 
         # The source of the raw data for the query
         raw_data_source_instance: DirectIngestInstance = attr.ib()
-
-        # Specifies whether the query should be structured to write results to a destination table and the type of that
-        # table.
-        destination_table_type: DestinationTableType = attr.ib(
-            default=DestinationTableType.NONE
-        )
-
-        # The destination dataset id for queries with destination_table_type PERMANENT_EXPIRING.
-        destination_dataset_id: Optional[str] = attr.ib(default=None)
-
-        # The destination table id for queries with destination_table_types other than NONE.
-        destination_table_id: Optional[str] = attr.ib(default=None)
-
-        # Prefix to apply to all raw table subquery names (or temp table names if raw table subqueries are
-        # materialized). Can be used when multiple temp tables for the same raw table are created in the same script
-        # (e.g. two that each have different date bounds).
-        raw_table_subquery_name_prefix: Optional[str] = attr.ib(default=None)
-
-        # If set, the ingest view does not load any rows.
-        limit_zero: bool = attr.ib(default=False)
-
-        def __attrs_post_init__(self) -> None:
-            if (
-                self.destination_dataset_id
-                and self.destination_table_type
-                != DestinationTableType.PERMANENT_EXPIRING
-            ):
-                raise ValueError(
-                    f"Found nonnull destination_dataset_id [{self.destination_dataset_id}] with "
-                    f"destination_table_type [{self.destination_table_type.name}]"
-                )
-
-            if (
-                not self.destination_dataset_id
-                and self.destination_table_type
-                == DestinationTableType.PERMANENT_EXPIRING
-            ):
-                raise ValueError(
-                    f"Found null destination_dataset_id [{self.destination_dataset_id}] with "
-                    f"destination_table_type [{self.destination_table_type.name}]"
-                )
-
-            if (
-                self.destination_table_id
-                and self.destination_table_type == DestinationTableType.NONE
-            ):
-                raise ValueError(
-                    f"Found nonnull destination_table_id [{self.destination_table_id}] with "
-                    f"destination_table_type [{self.destination_table_type.name}]"
-                )
-
-            if (
-                not self.destination_table_id
-                and self.destination_table_type != DestinationTableType.NONE
-            ):
-                raise ValueError(
-                    f"Found null destination_table_id [{self.destination_table_id}] with "
-                    f"destination_table_type [{self.destination_table_type.name}]"
-                )
 
     WITH_PREFIX = "WITH"
     SUBQUERY_INDENT = "    "
@@ -364,16 +266,13 @@ class DirectIngestViewQueryBuilder:
     @staticmethod
     def _table_subbquery_name(
         raw_table_dependency_config: DirectIngestViewRawFileDependency,
-        prefix: Optional[str],
     ) -> str:
         """The name for the expanded subquery on this raw table."""
-
-        prefix = prefix or ""
         dependency_name = raw_table_dependency_config.file_tag
         filter_type = raw_table_dependency_config.filter_type
         if filter_type != RawFileHistoricalRowsFilterType.LATEST:
             dependency_name += f"__{filter_type.value}"
-        return f"{prefix}{dependency_name}_generated_view"
+        return f"{dependency_name}_generated_view"
 
     @staticmethod
     def add_limit_zero_suffix(query: str) -> str:
@@ -383,16 +282,14 @@ class DirectIngestViewQueryBuilder:
     def _raw_table_subquery_clause(
         self, config: "DirectIngestViewQueryBuilder.QueryStructureConfig"
     ) -> str:
-        """Returns the portion of the script that generates the raw table view queries, either as a list of
-        `CREATE TEMP TABLE` statements or a list of WITH subqueries.
         """
-        table_subquery_strs = []
-        for raw_table_config in self.raw_table_dependency_configs:
-            table_subquery_strs.append(
-                self._get_table_subquery_str(config, raw_table_config)
-            )
-
-        table_subquery_clause = ",\n".join(table_subquery_strs)
+        Generates the portion of the ingest view query that pulls from
+        raw data table view CTES (WITH raw_table_view AS ...)
+        """
+        table_subquery_clause = ",\n".join(
+            self._get_table_subquery_str(config, raw_table_config)
+            for raw_table_config in self.raw_table_dependency_configs
+        )
         return f"{self.WITH_PREFIX}\n{table_subquery_clause}"
 
     def _get_select_query_clause(
@@ -409,8 +306,6 @@ class DirectIngestViewQueryBuilder:
             raw_table_subquery_clause = raw_table_subquery_clause + ","
 
         select_query_clause = f"{raw_table_subquery_clause}\n{view_query_template}"
-        if config.limit_zero:
-            select_query_clause = self.add_limit_zero_suffix(query=select_query_clause)
         select_query_clause = select_query_clause.rstrip().rstrip(";")
         return select_query_clause
 
@@ -419,26 +314,7 @@ class DirectIngestViewQueryBuilder:
     ) -> str:
         """Returns the full, formatted ingest view query template that can be injected with format args."""
         select_query_clause = self._get_select_query_clause(config=config)
-
-        if config.destination_table_type == DestinationTableType.PERMANENT_EXPIRING:
-            return StrictStringFormatter().format(
-                DESTINATION_TABLE_QUERY_FORMAT,
-                dataset_id=config.destination_dataset_id,
-                table_id=config.destination_table_id,
-                select_query_clause=select_query_clause,
-            )
-        if config.destination_table_type == DestinationTableType.TEMPORARY:
-            return StrictStringFormatter().format(
-                DESTINATION_TEMP_TABLE_QUERY_FORMAT,
-                table_id=config.destination_table_id,
-                select_query_clause=select_query_clause,
-            )
-        if config.destination_table_type == DestinationTableType.NONE:
-            return f"{select_query_clause};"
-
-        raise ValueError(
-            f"Unsupported destination_table_type: [{config.destination_table_type.name}]"
-        )
+        return f"{select_query_clause};"
 
     def _format_expanded_view_query(
         self, config: "DirectIngestViewQueryBuilder.QueryStructureConfig"
@@ -453,9 +329,7 @@ class DirectIngestViewQueryBuilder:
         for raw_table_dependency_config in self.raw_table_dependency_configs:
             format_args[
                 raw_table_dependency_config.raw_table_dependency_arg_name
-            ] = self._table_subbquery_name(
-                raw_table_dependency_config, config.raw_table_subquery_name_prefix
-            )
+            ] = self._table_subbquery_name(raw_table_dependency_config)
 
         query = self._query_builder.build_query(
             project_id=metadata.project_id(),
@@ -496,9 +370,7 @@ class DirectIngestViewQueryBuilder:
         indented_date_bounded_query = indented_date_bounded_query.replace(
             f"\n{self.SUBQUERY_INDENT}\n", "\n\n"
         )
-        table_subquery_name = self._table_subbquery_name(
-            raw_table_dependency_config, config.raw_table_subquery_name_prefix
-        )
+        table_subquery_name = self._table_subbquery_name(raw_table_dependency_config)
         return f"{table_subquery_name} AS (\n{indented_date_bounded_query}\n)"
 
     def _get_raw_table_dependency_configs(

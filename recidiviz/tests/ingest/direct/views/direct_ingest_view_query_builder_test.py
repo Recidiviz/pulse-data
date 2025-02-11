@@ -18,13 +18,11 @@
 import datetime
 import unittest
 
-import attr
 from mock import patch
 
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     UPDATE_DATETIME_PARAM_NAME,
-    DestinationTableType,
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
@@ -411,104 +409,6 @@ USING (col1);"""
             view.raw_data_table_dependency_file_tags,
         )
 
-        expected_view_query = """DROP TABLE IF EXISTS `recidiviz-456.my_destination_dataset.my_destination_table`;
-CREATE TABLE `recidiviz-456.my_destination_dataset.my_destination_table`
-OPTIONS(
-  -- Data in this table will be deleted after 24 hours
-  expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
-) AS (
-
-WITH
-file_tag_first_generated_view AS (
-    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
-),
-file_tag_second_generated_view AS (
-    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_second_latest`
-),
-foo AS (SELECT * FROM bar)
-SELECT * FROM file_tag_first_generated_view
-LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1)
-
-);"""
-
-        latest_config = attr.evolve(
-            self.DEFAULT_LATEST_CONFIG,
-            destination_dataset_id="my_destination_dataset",
-            destination_table_id="my_destination_table",
-            destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
-        )
-        self.assertEqual(
-            expected_view_query,
-            view.build_query(config=latest_config),
-        )
-
-        expected_parameterized_view_query = """DROP TABLE IF EXISTS `recidiviz-456.my_destination_dataset.my_destination_table`;
-CREATE TABLE `recidiviz-456.my_destination_dataset.my_destination_table`
-OPTIONS(
-  -- Data in this table will be deleted after 24 hours
-  expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
-) AS (
-
-WITH
-file_tag_first_generated_view AS (
-    WITH filtered_rows AS (
-        SELECT
-            * EXCEPT (recency_rank)
-        FROM (
-            SELECT
-                *,
-                ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
-                                   ORDER BY update_datetime DESC) AS recency_rank
-            FROM
-                `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
-        ) a
-        WHERE
-            recency_rank = 1
-            AND is_deleted = False
-    )
-    SELECT col_name_1a, col_name_1b
-    FROM filtered_rows
-),
-file_tag_second_generated_view AS (
-    WITH filtered_rows AS (
-        SELECT
-            * EXCEPT (recency_rank)
-        FROM (
-            SELECT
-                *,
-                ROW_NUMBER() OVER (PARTITION BY col_name_2a
-                                   ORDER BY update_datetime DESC) AS recency_rank
-            FROM
-                `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
-        ) a
-        WHERE
-            recency_rank = 1
-            AND is_deleted = False
-    )
-    SELECT col_name_2a
-    FROM filtered_rows
-),
-foo AS (SELECT * FROM bar)
-SELECT * FROM file_tag_first_generated_view
-LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1)
-
-);"""
-
-        parametrized_config = attr.evolve(
-            self.DEFAULT_EXPANDED_CONFIG,
-            destination_dataset_id="my_destination_dataset",
-            destination_table_id="my_destination_table",
-            destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
-        )
-        self.assertEqual(
-            expected_parameterized_view_query,
-            view.build_query(config=parametrized_config),
-        )
-
     def test_direct_ingest_preprocessed_view_with_update_datetime(self) -> None:
         view_query_template = f"""SELECT * FROM {{file_tag_first}}
         WHERE col1 <= @{UPDATE_DATETIME_PARAM_NAME}"""
@@ -580,79 +480,6 @@ SELECT * FROM file_tag_first_generated_view
                     ingest_view_name="ingest_view_tag",
                     view_query_template=view_query_template,
                 )
-
-    def test_query_structure_config_destination_table_type_dataset_id_validations(
-        self,
-    ) -> None:
-        has_destination_dataset_types = {DestinationTableType.PERMANENT_EXPIRING}
-
-        # Must have dataset id
-        for destination_table_type in has_destination_dataset_types:
-            with self.assertRaisesRegex(
-                ValueError,
-                r"^Found null destination_dataset_id \[None\] with destination_table_type "
-                rf"\[{destination_table_type.name}\]$",
-            ):
-                _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    destination_table_type=destination_table_type,
-                    raw_data_datetime_upper_bound=None,
-                    raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                )
-
-        has_no_destination_dataset_types = set(DestinationTableType).difference(
-            has_destination_dataset_types
-        )
-        # Should not have dataset id
-        for destination_table_type in has_no_destination_dataset_types:
-            with self.assertRaisesRegex(
-                ValueError,
-                r"^Found nonnull destination_dataset_id \[some_dataset\] with destination_table_type "
-                rf"\[{destination_table_type.name}\]$",
-            ):
-                _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    destination_dataset_id="some_dataset",
-                    destination_table_type=destination_table_type,
-                    raw_data_datetime_upper_bound=None,
-                    raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                )
-
-    def test_query_structure_config_destination_table_type_table_id_validations(
-        self,
-    ) -> None:
-        # Must have table id
-        with self.assertRaisesRegex(
-            ValueError,
-            r"^Found null destination_table_id \[None\] with destination_table_type \[PERMANENT_EXPIRING\]$",
-        ):
-            _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
-                destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
-                destination_dataset_id="some_dataset",
-                raw_data_datetime_upper_bound=None,
-                raw_data_source_instance=DirectIngestInstance.PRIMARY,
-            )
-
-        # Must have table id
-        with self.assertRaisesRegex(
-            ValueError,
-            r"^Found null destination_table_id \[None\] with destination_table_type \[TEMPORARY\]$",
-        ):
-            _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
-                destination_table_type=DestinationTableType.TEMPORARY,
-                raw_data_datetime_upper_bound=None,
-                raw_data_source_instance=DirectIngestInstance.PRIMARY,
-            )
-
-        # Should not have table id
-        with self.assertRaisesRegex(
-            ValueError,
-            r"^Found nonnull destination_table_id \[some_table\] with destination_table_type \[NONE\]$",
-        ):
-            _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
-                destination_table_id="some_table",
-                destination_table_type=DestinationTableType.NONE,
-                raw_data_datetime_upper_bound=None,
-                raw_data_source_instance=DirectIngestInstance.PRIMARY,
-            )
 
     def test_one_all_rows_dependency(self) -> None:
         view_query_template = """SELECT * FROM {file_tag_first}
