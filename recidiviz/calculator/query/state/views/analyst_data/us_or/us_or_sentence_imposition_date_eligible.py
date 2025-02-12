@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -91,7 +91,10 @@ US_OR_SENTENCE_IMPOSITION_DATE_ELIGIBLE_QUERY_TEMPLATE = f"""
                 on or after 2013-08-01. */
                 WHEN (date_imposed>='2013-08-01') THEN DATE('2013-07-25')
                 /* Any other sentences (which would be those sentences imposed before
-                2013-08-01) have never been eligible. */
+                2013-08-01) have never been eligible. Sentences with null `date_imposed`
+                values, which will be handled by this ELSE statement because they won't
+                meet any of the above conditions, are also treated as never being
+                eligible. */
                 ELSE DATE('9999-12-31')
             END AS critical_date,
         FROM sentences

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Identify individuals' supervision sentences in OR for which they have served at least
-six months of the sentence."""
+six months of the sentence.
+"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -71,12 +72,14 @@ US_OR_SERVED_6_MONTHS_SUPERVISION_QUERY_TEMPLATE = f"""
         /* Get all spans of time when someone has absconded during a supervision
         sentence in OR. Spans are at the person-sentence level (such that each session
         of absconsion is tied to a specific sentence ID). */
-        {create_intersection_spans(table_1_name='sentences',
-                                   table_2_name='absconsion_sessions',
-                                   index_columns=['state_code', 'person_id'],
-                                   table_1_columns=['sentence_id'],
-                                   table_1_start_date_field_name='sentence_start_date',
-                                   table_1_end_date_field_name='sentence_end_date')}
+        {create_intersection_spans(
+            table_1_name='sentences',
+            table_2_name='absconsion_sessions',
+            index_columns=['state_code', 'person_id'],
+            table_1_columns=['sentence_id'],
+            table_1_start_date_field_name='sentence_start_date',
+            table_1_end_date_field_name='sentence_end_date',
+        )}
     ),
     sentence_and_absconsion_spans AS (
         /* Combine all sentence and absconsion spans in one table, in preparation for
@@ -137,9 +140,10 @@ US_OR_SERVED_6_MONTHS_SUPERVISION_QUERY_TEMPLATE = f"""
             preceded by days in absconsion, push out the critical date by the cumulative
             number of days in absconsion, such that days in absconsion don't count
             toward the 6-month minimum. */
-            IF(absconded,
-               '9999-12-31',
-               DATE_ADD(DATE_ADD(sentence_start_date, INTERVAL 6 MONTH), INTERVAL cumulative_days_absconded DAY)
+            IF(
+                absconded,
+                '9999-12-31',
+                DATE_ADD(DATE_ADD(sentence_start_date, INTERVAL 6 MONTH), INTERVAL cumulative_days_absconded DAY)
             ) AS critical_date,
         FROM sub_sessions_with_attributes_condensed_with_cumulative_days
         LEFT JOIN sentences

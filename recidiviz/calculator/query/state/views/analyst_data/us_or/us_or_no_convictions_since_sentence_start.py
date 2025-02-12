@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -102,7 +102,8 @@ US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_QUERY_TEMPLATE = f"""
             sentences are all related to the same offense, and other sentences for the
             same offense should not be considered to be new convictions. */
             AND s1.external_id_truncated!=s2.external_id_truncated
-            -- only want `s2` sentences for offenses on or after start of `s1` sentence
+            /* We only want `s2` sentences for offenses we know occurred on or after the
+            start of the `s1` sentence. */
             AND s1.start_date<=s2.offense_date
             /* Sentences with raw-text supervision types of 'C' (conditional discharge)
             or 'D' (diversion) are for charges for which an individual has not yet been

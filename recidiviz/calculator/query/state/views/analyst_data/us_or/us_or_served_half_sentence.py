@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2024 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -99,9 +99,11 @@ US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
             sentence_id,
             /* Calculate the total number of days for PPS sentences associated with
             commuted incarceration sentences. */
-            DATE_DIFF(end_date,
-                      DATE_SUB(DATE_SUB(DATE_SUB(end_date, INTERVAL pps_sentence_years YEAR), INTERVAL pps_sentence_months MONTH), INTERVAL pps_sentence_days DAY),
-                      DAY) AS pps_sentence_length_days_calculated,
+            DATE_DIFF(
+                end_date,
+                DATE_SUB(DATE_SUB(DATE_SUB(end_date, INTERVAL pps_sentence_years YEAR), INTERVAL pps_sentence_months MONTH), INTERVAL pps_sentence_days DAY),
+                DAY
+            ) AS pps_sentence_length_days_calculated,
             TRUE AS preceded_by_commuted_incarceration_sentence,
         FROM sentences
         INNER JOIN commuted_incarceration_sentences
@@ -115,9 +117,10 @@ US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
         the commuted incarceration sentence. */
         SELECT
             sentences.* EXCEPT (max_sentence_length_days_calculated),
-            IF(sswcis.preceded_by_commuted_incarceration_sentence,
-               sswcis.pps_sentence_length_days_calculated,
-               sentences.max_sentence_length_days_calculated
+            IF(
+                sswcis.preceded_by_commuted_incarceration_sentence,
+                sswcis.pps_sentence_length_days_calculated,
+                sentences.max_sentence_length_days_calculated
             ) AS corrected_sentence_length_days_calculated,
         FROM sentences
         LEFT JOIN supervision_sentences_with_commuted_incarceration_sentences sswcis

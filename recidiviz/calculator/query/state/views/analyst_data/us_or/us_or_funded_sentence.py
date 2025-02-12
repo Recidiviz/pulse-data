@@ -79,7 +79,8 @@ US_OR_FUNDED_SENTENCE_QUERY_TEMPLATE = f"""
             empty or NULL. */
             COALESCE(JSON_VALUE(sentence_metadata, '$.FMISD_FLAG'), 'UNKNOWN')='Y' AS funded_misdemeanor,
             /* The statement below will return FALSE if the "felony is misdemeanor" flag
-            is empty or NULL. */
+            is empty or NULL. We're interested here in whether the flag is 'Y', which
+            indicates that the offense was given up-front misdemeanor treatment. */
             COALESCE(JSON_VALUE(sentence_metadata, '$.FELONY_IS_MISDEMEANOR'), 'UNKNOWN')='Y' AS felony_is_misdemeanor,
         FROM ({sentence_attributes()})
         WHERE state_code='US_OR'
@@ -184,7 +185,7 @@ US_OR_FUNDED_SENTENCE_QUERY_TEMPLATE = f"""
             felonies or designated drug-related or person misdemeanors) have never been
             eligible. */
             ELSE FALSE
-        END AS meets_criteria,
+            END AS meets_criteria,
     FROM sentences
 """
 
