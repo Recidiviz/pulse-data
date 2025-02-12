@@ -7,6 +7,7 @@ separator: †
 custom_line_terminator: ‡
 encoding: WINDOWS-1252
 primary_key_cols: []
+no_valid_primary_keys: True
 columns:
   - name: Offender_Number
     description: >-
@@ -26,15 +27,21 @@ columns:
   - name: Start_Date
     description: STG start date
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR({col_name}, 1, 19))"
   - name: Review_Date
     description: STG review date
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR({col_name}, 1, 19))"
   - name: Entered_By
     description: Staff member who entered the record
     is_pii: True
   - name: Entered_Date
     description: Date assaultive risk assessment record was entered
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR({col_name}, 1, 19))"
 table_relationships:
   - foreign_table: ADH_OFFENDER
     join_logic:
