@@ -69,6 +69,17 @@ filtered_term AS
     OR InitialParoleHearingDate IS DISTINCT FROM prev_InitialParoleHearingDate
 ),
 
+-- get a list of the child SentenceOrderId for each sentence order to determine later on if the child sentence order is an error correction
+next_sentence_order AS (
+    SELECT 
+        ParentSentenceOrderId AS current_SentenceOrderId,
+        SentenceOrderEventTypeId AS next_SentenceOrderEventTypeId,
+        Sequence AS next_Sequence,
+        ChargeId AS next_ChargeId
+    FROM {scl_SentenceOrder}
+    WHERE ParentSentenceOrderId is not null
+),
+
 -- We exclude empty (not having an imposed date) sentences from being created 
 -- so we make sure that we also filter out the terms that are only connected to empty sentences
 non_empty_terms_cte AS (
@@ -79,7 +90,14 @@ non_empty_terms_cte AS (
     LEFT JOIN {scl_SentenceLinkOffense} linkoffense on link.SentenceLinkId = linkoffense.SentenceLinkId
     LEFT JOIN {scl_Offense} off ON linkoffense.OffenseId = off.OffenseId
     LEFT JOIN {scl_SentenceOrder} ord ON off.SentenceOrderId = ord.SentenceOrderId
-    WHERE SentenceDate IS NOT NULL OR CorrectionsCompactStartDate IS NOT NULL
+    LEFT JOIN next_sentence_order next ON ord.SentenceOrderId = next.current_SentenceOrderId
+    WHERE (SentenceDate IS NOT NULL OR CorrectionsCompactStartDate IS NOT NULL)
+    -- we want to keep only if the next child sentence order of this current sentence isn't an error correction
+    -- sentence order with the same ChargeId and Sequence
+    -- i.e. we want to exclude all rows where (next_SentenceOrderEventTypeId = '3' and next_Sequence = Sequence and next_ChargeId = ChargeId)   
+    AND ((next_SentenceOrderEventTypeId <> '3' or next_SentenceOrderEventTypeId is null)
+        OR next_Sequence <> Sequence
+        OR next_ChargeId <> ChargeId)  
 )
 
 -- Final SELECT to get the rows ordered by update_datetime

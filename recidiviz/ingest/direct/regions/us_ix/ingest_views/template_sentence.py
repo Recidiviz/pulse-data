@@ -217,7 +217,7 @@ NEW_SENTENCE_QUERY_TEMPLATE = """
             inState
         FROM SentenceBase sent
         LEFT JOIN next_sentence_order next ON sent.SentenceOrderId = next.current_SentenceOrderId
-        -- we want to only keep only if the next child sentence order of this corrent sentence isn't an error correction
+        -- we want to keep only if the next child sentence order of this current sentence isn't an error correction
         -- sentence order with the same ChargeId and Sequence
         -- i.e. we want to exclude all rows where (next_SentenceOrderEventTypeId = '3' and next_Sequence = Sequence and next_ChargeId = ChargeId)
         WHERE (next_SentenceOrderEventTypeId <> '3' or next_SentenceOrderEventTypeId is null)
