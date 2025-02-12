@@ -102,7 +102,9 @@ import attr
 from google.api_core import exceptions
 from tabulate import tabulate
 
-from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
+from recidiviz.aggregated_metrics.aggregated_metrics_view_builder import (
+    AggregatedMetricsBigQueryViewBuilder,
+)
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_address_formatter import (
@@ -121,10 +123,6 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
 from recidiviz.big_query.view_update_manager import (
     BigQueryViewUpdateSandboxContext,
     create_managed_dataset_and_deploy_views_for_view_builders,
-)
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 from recidiviz.common.attr_converters import optional_json_str_to_dict
 from recidiviz.common.constants.states import StateCode
@@ -895,10 +893,26 @@ def load_views_changed_on_branch_to_sandbox(
     )
 
 
+def _is_expensive_view_to_load(vb: BigQueryViewBuilder) -> bool:
+    """Returns True if this view is expensive to load and the user should be prompted
+    to make sure they want to include it in their sandbox.
+    """
+    if isinstance(vb, UnionAllBigQueryViewBuilder):
+        if vb.parents and isinstance(
+            vb.parents[0], AggregatedMetricsBigQueryViewBuilder
+        ):
+            # These views union together a relatively small set of data and will not
+            # be expensive to load.
+            return False
+
+        return True
+
+    return False
+
+
 def _warn_on_expensive_views(
     collected_builders: List[BigQueryViewBuilder],
     state_code_filter: StateCode | None,
-    input_source_table_overrides: BigQueryAddressOverrides,
 ) -> None:
     """Prompts the user with a warning if any of the views we plan to load are
     especially expensive / pull in a lot of data.
@@ -909,26 +923,8 @@ def _warn_on_expensive_views(
         return
 
     expensive_views = {
-        vb.address
-        for vb in collected_builders
-        if (
-            # TODO(#29291): Don't count UnionAllBigQueryViewBuilder with
-            #  aggregated metrics parents as expensive
-            isinstance(vb, UnionAllBigQueryViewBuilder)
-            # TODO(#35913): Remove warning about views
-            #  in this dataset once we've optimized them and they aren't so expensive.
-            or vb.dataset_id == AGGREGATED_METRICS_DATASET_ID
-        )
+        vb.address for vb in collected_builders if _is_expensive_view_to_load(vb)
     }
-
-    has_dataflow_metrics_override = (
-        DATAFLOW_METRICS_DATASET
-        != input_source_table_overrides.get_dataset(DATAFLOW_METRICS_DATASET)
-    )
-    if not has_dataflow_metrics_override:
-        for vb in collected_builders:
-            if vb.dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET:
-                expensive_views.add(vb.address)
 
     if expensive_views:
         prompt_for_confirmation(
@@ -963,9 +959,7 @@ def load_collected_views_to_sandbox(
     )
 
     _warn_on_expensive_views(
-        collected_builders=collected_builders,
-        state_code_filter=state_code_filter,
-        input_source_table_overrides=input_source_table_overrides,
+        collected_builders=collected_builders, state_code_filter=state_code_filter
     )
 
     logging.info("Updating %s views...", len(collected_builders))

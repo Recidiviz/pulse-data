@@ -58,9 +58,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
-    SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
 )
@@ -413,9 +410,6 @@ class ViewDagInvariantTests(unittest.TestCase):
                 }
             },
             # TODO(#29291): Refactor to query observation-specific views rather than
-            #  the all_person_events view.
-            SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address,
-            # TODO(#29291): Refactor to query observation-specific views rather than
             #  the all_workflows_primary_user_events view.
             WORKFLOWS_PERSON_EVENTS_VIEW_BUILDER.address,
             # These views produce generic analysis based on all TES spans.
@@ -436,6 +430,12 @@ class ViewDagInvariantTests(unittest.TestCase):
             ),
         }
 
+        allowed_union_all_datasets_to_query_from = {
+            # Views in this dataset produce the `normalized_state` dataset which
+            # we do expect downstream views to query from
+            NORMALIZED_STATE_VIEWS_DATASET,
+        }
+
         for exempt_child_address in allowed_union_all_view_children:
             if exempt_child_address not in self.all_deployed_view_builders_by_address:
                 raise ValueError(
@@ -447,11 +447,10 @@ class ViewDagInvariantTests(unittest.TestCase):
             for child_address in node.child_node_addresses:
                 if parent_address not in union_all_view_addresses:
                     continue
-                if parent_address.dataset_id in {
-                    # Views in this dataset produce the `normalized_state` dataset which
-                    # we do expect downstream views to query from
-                    NORMALIZED_STATE_VIEWS_DATASET,
-                }:
+                if (
+                    parent_address.dataset_id
+                    in allowed_union_all_datasets_to_query_from
+                ):
                     continue
 
                 if child_address in union_all_view_addresses:
@@ -481,7 +480,11 @@ class ViewDagInvariantTests(unittest.TestCase):
         for exempt_child_address in allowed_union_all_view_children:
             node = self.dag_walker.nodes_by_address[exempt_child_address]
             if not any(
-                a in union_all_view_addresses for a in node.parent_node_addresses
+                (
+                    a in union_all_view_addresses
+                    and a.dataset_id not in allowed_union_all_datasets_to_query_from
+                )
+                for a in node.parent_node_addresses
             ):
                 raise ValueError(
                     f"Found child address [{exempt_child_address.to_str()}] which does "

@@ -41,6 +41,9 @@ from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
 from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.observations.observation_type_utils import (
+    materialized_view_address_for_observation,
+)
 
 
 def get_custom_aggregated_metrics(
@@ -161,8 +164,10 @@ def get_person_events(
                 raise ValueError("Must be an AggregatedMetric.")
             print(metric.name)
 
-            # TODO(#29291): Update this query to use the observation-specific table for
-            #  the metric.
+            observations_address = materialized_view_address_for_observation(
+                observation_type=metric.observation_type
+            )
+
             query = f"""
                     SELECT
                         e.state_code,
@@ -174,7 +179,7 @@ def get_person_events(
                         s.officer_id,
                         s.assignment_date,
                         s.end_date_exclusive,
-                    FROM `observations__person_event.all_person_events_materialized` e
+                    FROM `{observations_address.to_str()}` e
                     INNER JOIN `aggregated_metrics.supervision_officer_{"or_previous_if_transitional_" if use_transitional_officer_logic else ""}metrics_person_assignment_sessions_materialized` s
                         ON e.person_id = s.person_id
                         AND (e.event_date between s.assignment_date and COALESCE(s.end_date,'9999-01-01'))
@@ -182,7 +187,7 @@ def get_person_events(
                     LEFT JOIN `normalized_state.state_person_external_id` pei
                         ON e.person_id = pei.person_id
                         AND e.state_code = pei.state_code
-                    WHERE ({metric.get_observation_conditions_string(filter_by_observation_type=True, read_observation_attributes_from_json=True)})
+                    WHERE ({metric.get_observation_conditions_string(filter_by_observation_type=False, read_observation_attributes_from_json=False)})
                     {officer_ids_filter}
                     AND e.event_date BETWEEN {min_date_str} AND {max_date_str}
 
