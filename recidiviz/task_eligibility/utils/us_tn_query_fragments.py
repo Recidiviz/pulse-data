@@ -16,6 +16,8 @@
 # =============================================================================
 """Create helper SQL queries for Tennessee."""
 
+from typing import List, Union
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
@@ -726,3 +728,31 @@ def us_tn_classification_forms(
         ON pei.external_id = prea.OffenderID
     {where_clause}
     """
+
+
+def compliant_reporting_offense_type_condition(
+    offense_flags: Union[str, List[str]]
+) -> str:
+    """
+    Function that generates the syntax to query charge description for 4 TN-specific offense flag used in compliant
+    reporting.
+
+    Params:
+    ------
+    offense_flags : Union[str, List[str]]
+    Name (or list of name) of offense flags. Must be one of "is_violent_domestic", "is_dui", "is_victim_under_18",
+    "is_homicide"
+    """
+    if not isinstance(offense_flags, List):
+        offense_flags = [offense_flags]
+
+    lk = {
+        "is_violent_domestic": "description LIKE '%DOMESTIC%'",
+        "is_dui": "REGEXP_CONTAINS(description, 'DUI|INFLUENCE|DWI')",
+        "is_victim_under_18": "((description LIKE '%13%' AND description LIKE '%VICT%') OR description LIKE '%CHILD%')",
+        "is_homicide": "REGEXP_CONTAINS(description, 'HOMICIDE|MURD')",
+    }
+    if len([x for x in offense_flags if x not in lk]) > 0:
+        raise ValueError(f"Offense flag must be one of {list(lk)}")
+
+    return " OR ".join([lk[offense_flag] for offense_flag in offense_flags])

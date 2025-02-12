@@ -17,7 +17,6 @@
 """Describes the spans of time when a TN client is serving sentences in counties that do not allow compliant reporting"""
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -44,14 +43,14 @@ _QUERY_TEMPLATE = """
         span.start_date,
         span.end_date_exclusive AS end_date,
         sent.judicial_district,
-        sent.sentence_sub_type,
-    FROM `{project_id}.{sessions_dataset}.sentence_spans_materialized` span,
-    UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-    JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sent
-        USING (state_code, person_id, sentences_preprocessed_id)
+        sent.sentence_type,
+    FROM `{project_id}.sentence_sessions.overlapping_sentence_serving_periods_materialized` span,
+    UNNEST (sentence_id_array) AS sentence_id
+    JOIN `{project_id}.sentence_sessions.sentences_and_charges_materialized` sent
+        USING (state_code, person_id, sentence_id)
       WHERE span.state_code = 'US_TN'
         AND sent.judicial_district = '17'
-        AND sent.sentence_sub_type IN ('PROBATION','DIVERSION')
+        AND sent.sentence_type IN ('PROBATION','DIVERSION')
     )
     SELECT 
         state_code,
@@ -61,10 +60,10 @@ _QUERY_TEMPLATE = """
         FALSE meets_criteria,
         TO_JSON(STRUCT(
             judicial_district AS judicial_district,
-            sentence_sub_type AS sentence_type
+            sentence_type
         )) AS reason,
         judicial_district,
-        sentence_sub_type AS sentence_type,
+        sentence_type,
     FROM cte
 """
 
@@ -74,7 +73,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
         reasons_fields=[
             ReasonsField(

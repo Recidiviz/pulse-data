@@ -84,16 +84,16 @@ qualifying statutes and sex offenses for determining priority */
     span.state_code,
     span.person_id,
     span.start_date,
-    span.end_date,
+    span.end_date_exclusive AS end_date,
     -- since both statutes ("750.520B" "750.520C") are considered sex offenses, there will never be a case where
     -- qualifying_statute is TRUE and is_sex_offense is not true. However, is_sex_offense might be true and
     -- qualifying statute my be false. 
     LOGICAL_OR(statute LIKE '750.520B%' OR statute LIKE '750.520C%') AS qualifying_statute,
     LOGICAL_OR(is_sex_offense) AS is_sex_offense,
-  FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-  UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-  INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
-    USING (state_code, person_id, sentences_preprocessed_id)
+  FROM `{{project_id}}.sentence_sessions.overlapping_sentence_serving_periods_materialized` span,
+  UNNEST (sentence_id_array) AS sentence_id
+  INNER JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sent
+    USING (state_code, person_id, sentence_id)
   WHERE state_code = "US_MI"
   GROUP BY 1,2,3,4
 ),

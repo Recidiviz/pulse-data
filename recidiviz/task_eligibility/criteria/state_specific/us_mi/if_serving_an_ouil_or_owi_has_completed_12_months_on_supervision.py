@@ -49,11 +49,11 @@ SELECT DISTINCT
     span.state_code,
     span.person_id,
     span.start_date,
-    span.end_date,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-    UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-    INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
-      USING (state_code, person_id, sentences_preprocessed_id)
+    span.end_date_exclusive AS end_date,
+    FROM `{{project_id}}.sentence_sessions.overlapping_sentence_serving_periods_materialized` span,
+    UNNEST (sentence_id_array) AS sentence_id
+    INNER JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sent
+      USING (state_code, person_id, sentence_id)
     INNER JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`e
         ON e.statute_code = sent.statute
     WHERE span.state_code = "US_MI"

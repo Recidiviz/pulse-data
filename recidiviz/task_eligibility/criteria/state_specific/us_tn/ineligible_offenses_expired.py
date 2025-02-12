@@ -22,11 +22,13 @@ from google.cloud import bigquery
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
+    compliant_reporting_offense_type_condition,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -38,23 +40,30 @@ ineligible offenses that are less than 10 years expired.
 """
 
 _QUERY_TEMPLATE = f"""
+    -- TODO(#38294) Update this to use sentence serving periods
     WITH cte AS 
     (
-    SELECT 
+    SELECT DISTINCT
         state_code,
         person_id,
-        projected_completion_date_max AS start_date,
+        sentence_projected_full_term_release_date_max AS start_date,
         --If the year of the date is greater than 9000, set it to NULL to avoid date overflow errors for dates within
         --10 years of the max date in bigquery ('9999-12-31')
         --TODO(#21472): Investigate placeholder expiration dates far in the future
-        DATE_ADD(IF(projected_completion_date_max>='3000-01-01', NULL, projected_completion_date_max),
+        DATE_ADD(IF(sentence_projected_full_term_release_date_max>='3000-01-01', NULL, sentence_projected_full_term_release_date_max),
             INTERVAL 10 YEAR) AS end_date,
-        projected_completion_date_max AS expiration_date,
+        sentence_projected_full_term_release_date_max AS expiration_date,
         description,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
+    FROM `{{project_id}}.sentence_sessions.person_projected_date_sessions_materialized` span,
+    UNNEST(sentence_array)
+    JOIN `{{project_id}}.sentence_sessions.sentences_and_charges_materialized` sent
+      USING(person_id, state_code, sentence_id)
+    JOIN `{{project_id}}.sentence_sessions.sentence_serving_period_materialized` sp
+        USING(person_id, state_code, sentence_id)
     WHERE state_code = 'US_TN'
-        AND (is_violent_domestic OR is_sex_offense OR is_dui OR is_violent OR is_victim_under_18)
-        AND completion_date IS NOT NULL
+        AND ({compliant_reporting_offense_type_condition(['is_violent_domestic','is_dui','is_victim_under_18'])}
+        OR is_sex_offense OR is_violent)
+        AND sp.end_date_exclusive IS NOT NULL
     )
     ,
     /*
@@ -87,7 +96,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
         reasons_fields=[
             ReasonsField(

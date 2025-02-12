@@ -25,10 +25,7 @@ from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_claus
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.reasons_field import ReasonsField
@@ -50,6 +47,7 @@ have missing sentence data issues.
 """
 
 _QUERY_TEMPLATE = f"""
+    -- TODO(#38294) Update this to use sentence serving periods
     WITH critical_date_spans AS (
         /* This CTE uses sentence spans to get date imposed for each unique sentence being served during each span,
         and brings in zero tolerance codes that occurred after each date imposed. This allows us to create spans
@@ -57,23 +55,24 @@ _QUERY_TEMPLATE = f"""
         SELECT
             sentences.person_id,
             sentences.state_code,
-            sentences.date_imposed AS start_datetime,
+            sentences.start_date AS start_datetime,
             /* Setting latest sentence span end date to NULL so that if the zero tolerance code occurred after the
                 latest sentence start, we're still flagging that as critical date has passed since it signals
                 potentially missing sentencing data */
             IF(
-                MAX({nonnull_end_date_exclusive_clause('sentences.projected_completion_date_max')}) 
-                    OVER(PARTITION BY sentences.person_id) = {nonnull_end_date_exclusive_clause('sentences.projected_completion_date_max')},
+                MAX({nonnull_end_date_exclusive_clause('sentence_projected_full_term_release_date_max')}) 
+                    OVER(PARTITION BY sentences.person_id) = {nonnull_end_date_exclusive_clause('sentence_projected_full_term_release_date_max')},
                 NULL,
-                sentences.projected_completion_date_max
+                sentence_projected_full_term_release_date_max
             ) end_datetime,
             contact_date AS critical_date,
-        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sentences
+        FROM `{{project_id}}.sentence_sessions.person_projected_date_sessions_materialized` sentences,
+        UNNEST(sentence_array)
         LEFT JOIN `{{project_id}}.{{analyst_dataset}}.us_tn_zero_tolerance_codes_materialized` contact
           ON sentences.person_id = contact.person_id
-          AND contact_date > sentences.date_imposed
+          AND contact_date > sentences.start_date
         WHERE sentences.state_code = 'US_TN'
-          AND {nonnull_end_date_exclusive_clause('projected_completion_date_max')} > date_imposed
+          AND {nonnull_end_date_exclusive_clause('sentence_projected_full_term_release_date_max')} > start_date
     ),
     /* The critical_date_has_passed_spans_cte() method creates spans of time when the critical date
     (zero tolerance contact code date) has passed. The output has overlapping and non-collapsed adjacent spans.
@@ -178,7 +177,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         reasons_fields=[

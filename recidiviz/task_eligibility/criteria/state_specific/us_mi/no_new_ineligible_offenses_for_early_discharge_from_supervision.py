@@ -64,18 +64,15 @@ WITH supervision_starts AS (
 sentences_and_violations AS (
 /* This CTE groups by person and date imposed where ineligible offenses were sentenced */
   SELECT
-      span.state_code,
-      span.person_id,
-      sent.date_imposed AS critical_date, 
-  FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-  UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-  INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
-    USING (state_code, person_id, sentences_preprocessed_id)
+      state_code,
+      person_id,
+      imposed_date AS critical_date, 
+  FROM `{{project_id}}.sentence_sessions.sentences_and_charges_materialized`
   WHERE state_code = "US_MI"
-  AND (sent.statute IN (SELECT statute_code FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
+  AND (statute IN (SELECT statute_code FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
             WHERE (CAST(requires_so_registration AS BOOL)
             OR CAST(is_assaultive_misdemeanor AS BOOL)))
-    OR sent.classification_type = "FELONY")
+    OR classification_type = "FELONY")
   GROUP BY 1, 2, 3
   UNION ALL 
   SELECT

@@ -62,11 +62,8 @@ WITH ped_spans AS (
         span.person_id,
         span.start_date,
         span.end_date_exclusive AS end_date,
-        MAX(sent.parole_eligibility_date) AS parole_eligibility_date,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-    UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-    INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
-    USING (state_code, person_id, sentences_preprocessed_id)
+        span.group_parole_eligibility_date AS parole_eligibility_date,
+    FROM `{{project_id}}.sentence_sessions.person_projected_date_sessions_materialized` span
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
         ON span.state_code = sess.state_code
         AND span.person_id = sess.person_id
@@ -76,7 +73,6 @@ WITH ped_spans AS (
         AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
         AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
     WHERE span.state_code = 'US_IX'
-    GROUP BY 1, 2, 3, 4
 ),
 ped_tpd_phd_spans AS (
     -- Periods of time that fall within 18 months of the PED.
@@ -86,7 +82,7 @@ ped_tpd_phd_spans AS (
         person_id,
         GREATEST(start_date,
                 DATE_SUB(parole_eligibility_date, INTERVAL 18 MONTH)) AS start_date,
-        LEAST(end_date, parole_eligibility_date) AS end_date,
+        LEAST({nonnull_end_date_clause('end_date')}, parole_eligibility_date) AS end_date,
         parole_eligibility_date,
         NULL AS tentative_parole_date,
         NULL AS parole_hearing_date,
@@ -102,7 +98,7 @@ ped_tpd_phd_spans AS (
         ped.person_id,
         GREATEST(ped.start_date,
                 DATE_SUB(pds.tentative_parole_date, INTERVAL 18 MONTH)) AS start_date,
-        LEAST(ped.end_date, pds.tentative_parole_date) AS end_date,
+        LEAST({nonnull_end_date_clause('ped.end_date')}, pds.tentative_parole_date) AS end_date,
         NULL AS parole_eligibility_date,
         pds.tentative_parole_date,
         NULL AS parole_hearing_date,
@@ -121,7 +117,7 @@ ped_tpd_phd_spans AS (
         ped.person_id,
         GREATEST(ped.start_date,
                 DATE_SUB(pds.initial_parole_hearing_date, INTERVAL 18 MONTH)) AS start_date,
-        LEAST(ped.end_date, pds.initial_parole_hearing_date) AS end_date,
+        LEAST({nonnull_end_date_clause('ped.end_date')}, pds.initial_parole_hearing_date) AS end_date,
         NULL AS parole_eligibility_date,
         NULL AS tentative_parole_date,
         pds.initial_parole_hearing_date AS parole_hearing_date,
@@ -140,7 +136,7 @@ ped_tpd_phd_spans AS (
         ped.person_id,
         GREATEST(ped.start_date,
                 DATE_SUB(pds.next_parole_hearing_date, INTERVAL 18 MONTH)) AS start_date,
-        LEAST(ped.end_date, pds.next_parole_hearing_date) AS end_date,
+        LEAST({nonnull_end_date_clause('ped.end_date')}, pds.next_parole_hearing_date) AS end_date,
         NULL AS parole_eligibility_date,
         NULL AS tentative_parole_date,
         pds.next_parole_hearing_date AS parole_hearing_date,

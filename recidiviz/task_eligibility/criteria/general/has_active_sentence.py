@@ -38,6 +38,7 @@ and can be surfaced as a separate "data quality" issue rather than eligible for 
 """
 
 _QUERY_TEMPLATE = f"""
+    -- TODO(#38294) Update this to use sentence serving periods
     WITH sessions_and_sentence_spans AS (
        SELECT
             DISTINCT
@@ -45,17 +46,18 @@ _QUERY_TEMPLATE = f"""
             sess.person_id,
             sess.start_date,
             sess.end_date_exclusive,
-        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+        FROM `{{project_id}}.sentence_sessions.person_projected_date_sessions_materialized` sent,
+        UNNEST(sentence_array)
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
             ON sent.state_code = sess.state_code
             AND sent.person_id = sess.person_id
             -- Restrict to spans that overlap with supervision sessions
             AND sess.compartment_level_1 = "SUPERVISION"
             -- Use strictly less than for exclusive end_dates
-            AND sent.date_imposed < {nonnull_end_date_clause('sess.end_date_exclusive')}
+            AND sent.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
             -- If both dates are NULL, the span would be excluded. Since missing projected_completion_date_max should only happen for
             -- life sentences, other NULLs likely reflect missing data 
-            AND sess.start_date < COALESCE(sent.completion_date, sent.projected_completion_date_max)
+            AND sess.start_date < COALESCE(sent.end_date_exclusive, sentence_projected_full_term_release_date_max)
     )
     SELECT 
         state_code,

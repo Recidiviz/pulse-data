@@ -48,7 +48,7 @@ WITH parole_starts AS (
     person_id,
     start_date,
     end_date,
-  FROM `{{project_id}}.{{sessions_dataset}}.compartment_{{sessions_dataset}}_materialized`
+  FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
   WHERE state_code = "US_MI"
     AND compartment_level_2 IN ("PAROLE", "DUAL")
     --ignore transitions from PAROLE to DUAL as parole starts
@@ -57,18 +57,15 @@ WITH parole_starts AS (
 sentences AS (
 /* This CTE groups by person and date imposed to identify dates where OWI charges were imposed */
   SELECT
-      span.state_code,
-      span.person_id,
-      sent.date_imposed,
+      state_code,
+      person_id,
+      imposed_date,
       --exclude all subsections of 257.625 except for (2) and (10), and exclude all codes like 257.625M or 257.625B
       --which are separate mcl codes and not subsections of 257.625
       LOGICAL_OR(REGEXP_CONTAINS(REGEXP_REPLACE(statute, r'257.625', ''), r'^[13456789][a-zA-Z]*([^0a-zA-Z]|$)|^$')) AS is_owi,
-  FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-  UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
-  INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
-    USING (state_code, person_id, sentences_preprocessed_id)
+  FROM `{{project_id}}.sentence_sessions.sentences_and_charges_materialized`
   WHERE state_code = "US_MI"
-  AND sent.statute LIKE '257.625%'
+  AND statute LIKE '257.625%'
   GROUP BY 1, 2, 3
 ),
 critical_date_spans AS (
@@ -77,14 +74,14 @@ critical_date_spans AS (
     p.person_id,
     p.start_date AS start_datetime,
     p.end_date AS end_datetime,
-    s.date_imposed AS critical_date,
+    s.imposed_date AS critical_date,
   FROM parole_starts p
   INNER JOIN sentences s
     ON p.state_code = s.state_code
     AND p.person_id = s.person_id
     --only join parole spans that have a OWI date imposed during a parole session
-    AND s.date_imposed > p.start_date 
-    AND s.date_imposed <= {nonnull_end_date_clause('p.end_date')}
+    AND s.imposed_date > p.start_date 
+    AND s.imposed_date <= {nonnull_end_date_clause('p.end_date')}
     AND s.is_owi
 ),
 {critical_date_has_passed_spans_cte()},

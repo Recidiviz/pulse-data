@@ -20,14 +20,14 @@ from google.cloud import bigquery
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
+    compliant_reporting_offense_type_condition,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -59,9 +59,9 @@ _QUERY_TEMPLATE = f"""
         CAST(NULL AS DATE) AS end_date,
         offense_date AS latest_homicide_offense_date,
         FALSE AS meets_criteria,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
+    FROM `{{project_id}}.sentence_sessions.sentences_and_charges_materialized`
     WHERE state_code = 'US_TN' 
-      AND is_homicide
+      AND {compliant_reporting_offense_type_condition('is_homicide')}
     )
     ,
     /*
@@ -100,7 +100,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
         analyst_data_dataset=ANALYST_VIEWS_DATASET,
         meets_criteria_default=True,
         reasons_fields=[
