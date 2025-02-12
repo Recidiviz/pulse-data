@@ -26,7 +26,10 @@ from apache_beam.testing.util import matches_all
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
@@ -64,6 +67,12 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
         apache_beam_pipeline_options = PipelineOptions()
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.entities_module_context = entities_module_context_for_module(
+            state_entities
+        )
+
+    def _set_backedges(self, element: Entity | RootEntity) -> Entity | RootEntity:
+        return set_backedges(element, self.entities_module_context)
 
     @classmethod
     def state_code(cls) -> StateCode:
@@ -71,7 +80,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
 
     def test_validate_single_staff_entity(self) -> None:
         entities = [
-            set_backedges(
+            self._set_backedges(
                 StateStaff(
                     state_code="US_DD",
                     staff_id=1234,
@@ -102,7 +111,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
 
     def test_validate_single_person_entity(self) -> None:
         entities = [
-            set_backedges(
+            self._set_backedges(
                 StatePerson(
                     state_code="US_DD",
                     person_id=1234,
@@ -195,7 +204,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -264,7 +273,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -283,7 +292,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
 
     def test_missing_external_ids_staff_entity(self) -> None:
         entities = [
-            set_backedges(
+            self._set_backedges(
                 StateStaff(state_code="US_DD", staff_id=1234, external_ids=[])
             )
         ]
@@ -305,7 +314,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
 
     def test_missing_external_ids_person_entity(self) -> None:
         entities = [
-            set_backedges(
+            self._set_backedges(
                 StatePerson(state_code="US_DD", person_id=1234, external_ids=[])
             )
         ]
@@ -388,7 +397,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -478,7 +487,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -597,7 +606,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -725,7 +734,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -856,7 +865,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -1011,7 +1020,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -1070,7 +1079,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 person=person2,
             )
         )
-        entities = [set_backedges(e) for e in [person1, person2]]
+        entities = [self._set_backedges(e) for e in [person1, person2]]
 
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
@@ -1214,7 +1223,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
                 person=person2,
             ),
         )
-        entities = [set_backedges(e) for e in [person1, staff1, person2]]
+        entities = [self._set_backedges(e) for e in [person1, staff1, person2]]
 
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
@@ -1293,7 +1302,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
             )
         )
 
-        entities = [set_backedges(e) for e in [person]]
+        entities = [self._set_backedges(e) for e in [person]]
 
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
@@ -1323,7 +1332,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
 
     def test_validate_non_zero_entities(self) -> None:
         entities = [
-            set_backedges(
+            self._set_backedges(
                 StateStaff(
                     state_code="US_DD",
                     staff_id=1234,
@@ -1359,7 +1368,7 @@ class TestRunValidationsPreNormalizationEntities(BigQueryEmulatorTestCase):
 
     def test_validate_only_expected_entities(self) -> None:
         entities = [
-            set_backedges(
+            self._set_backedges(
                 StateStaff(
                     state_code="US_DD",
                     staff_id=1234,
@@ -1402,14 +1411,20 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
         apache_beam_pipeline_options = PipelineOptions()
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.entities_module_context = entities_module_context_for_module(
+            normalized_entities
+        )
 
     @classmethod
     def state_code(cls) -> StateCode:
         return StateCode.US_DD
 
+    def _set_backedges(self, element: Entity | RootEntity) -> Entity | RootEntity:
+        return set_backedges(element, self.entities_module_context)
+
     def test_validate_single_staff_entity(self) -> None:
         entities = [
-            set_backedges(
+            self._set_backedges(
                 NormalizedStateStaff(
                     state_code="US_DD",
                     staff_id=1234,
@@ -1440,7 +1455,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
 
     def test_validate_single_person_entity(self) -> None:
         entities = [
-            set_backedges(
+            self._set_backedges(
                 NormalizedStatePerson(
                     state_code="US_DD",
                     person_id=1234,
@@ -1533,7 +1548,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -1602,7 +1617,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -1621,7 +1636,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
 
     def test_missing_external_ids_staff_entity(self) -> None:
         entities = [
-            set_backedges(
+            self._set_backedges(
                 NormalizedStateStaff(state_code="US_DD", staff_id=1234, external_ids=[])
             )
         ]
@@ -1643,7 +1658,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
 
     def test_missing_external_ids_person_entity(self) -> None:
         entities = [
-            set_backedges(
+            self._set_backedges(
                 NormalizedStatePerson(
                     state_code="US_DD", person_id=1234, external_ids=[]
                 )
@@ -1728,7 +1743,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -1818,7 +1833,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -1937,7 +1952,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -2065,7 +2080,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -2196,7 +2211,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -2351,7 +2366,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 ],
             ),
         ]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -2410,7 +2425,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
                 person=person2,
             )
         )
-        entities = [set_backedges(e) for e in [person1, person2]]
+        entities = [self._set_backedges(e) for e in [person1, person2]]
 
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
@@ -2555,7 +2570,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             ),
         )
         entities_without_backedges: list[Entity] = [person1, staff1, person2]
-        entities = [set_backedges(e) for e in entities_without_backedges]
+        entities = [self._set_backedges(e) for e in entities_without_backedges]
 
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
@@ -2634,7 +2649,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
             )
         )
 
-        entities = [set_backedges(e) for e in [person]]
+        entities = [self._set_backedges(e) for e in [person]]
 
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
@@ -2664,7 +2679,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
 
     def test_validate_non_zero_entities(self) -> None:
         entities = [
-            set_backedges(
+            self._set_backedges(
                 NormalizedStateStaff(
                     state_code="US_DD",
                     staff_id=1234,
@@ -2701,7 +2716,7 @@ class TestRunValidationsNormalizedEntities(BigQueryEmulatorTestCase):
 
     def test_validate_only_expected_entities(self) -> None:
         entities = [
-            set_backedges(
+            self._set_backedges(
                 NormalizedStateStaff(
                     state_code="US_DD",
                     staff_id=1234,

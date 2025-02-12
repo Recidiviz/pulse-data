@@ -30,6 +30,7 @@ from recidiviz.common.constants.state.state_sentence import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import (
+    entities_module_context_for_entity,
     get_all_entity_classes_in_module,
     set_backedges,
 )
@@ -174,7 +175,7 @@ def test_sentencing_normalization() -> None:
 
     person.sentences = [SENTENCE_01, SENTENCE_02]
     person.sentence_groups = [SG_1, SG_2]
-    set_backedges(person)
+    set_backedges(person, entities_module_context_for_entity(person))
     person_pk = generate_primary_key(
         string_representation(
             {

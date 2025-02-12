@@ -104,6 +104,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
     entities_module_context_for_entity,
@@ -111,7 +114,9 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     set_backedges,
 )
-from recidiviz.persistence.entity.state import entities, normalized_entities
+from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entities import (
     StateProgramAssignment,
     StateSupervisionViolationResponse,
@@ -381,6 +386,8 @@ def generate_full_graph_state_person(
     Returns:
         A test instance of a StatePerson.
     """
+
+    entities_module_context = entities_module_context_for_module(state_entities)
     person = entities.StatePerson.new_with_defaults(state_code="US_XX")
 
     person.external_ids = [
@@ -869,7 +876,7 @@ def generate_full_graph_state_person(
     person.housing_status_periods = [housing_status_period]
 
     if set_back_edges:
-        set_backedges(person)
+        set_backedges(person, entities_module_context)
 
     all_entities = get_all_entities_from_tree(person)
 
@@ -910,6 +917,7 @@ def generate_full_graph_state_staff(
 
     Returns:
         A test instance of a StateStaff."""
+    entities_module_context = entities_module_context_for_module(state_entities)
     staff = entities.StateStaff.new_with_defaults(
         state_code="US_XX", full_name="Staff Name", email="staff@staff.com"
     )
@@ -964,7 +972,7 @@ def generate_full_graph_state_staff(
     ]
 
     if set_back_edges:
-        set_backedges(staff)
+        set_backedges(staff, entities_module_context)
 
     if set_ids:
         for entity in get_all_entities_from_tree(staff):
@@ -985,6 +993,7 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
     each possible Entity type, with all possible edge types defined between
     objects.
     """
+    entities_module_context = entities_module_context_for_module(normalized_entities)
     assessment1 = normalized_entities.NormalizedStateAssessment(
         assessment_id=1,
         external_id="a1",
@@ -1546,7 +1555,7 @@ def generate_full_graph_normalized_state_person() -> normalized_entities.Normali
         housing_status_periods=[housing_status_period],
     )
 
-    set_backedges(person)
+    set_backedges(person, entities_module_context)
 
     return person
 
@@ -1556,6 +1565,7 @@ def generate_full_graph_normalized_state_staff() -> normalized_entities.Normaliz
     each possible Entity type, with all possible edge types defined between
     objects.
     """
+    entities_module_context = entities_module_context_for_module(normalized_entities)
     staff = normalized_entities.NormalizedStateStaff(
         staff_id=1,
         state_code="US_XX",
@@ -1616,7 +1626,7 @@ def generate_full_graph_normalized_state_staff() -> normalized_entities.Normaliz
         ],
     )
 
-    set_backedges(staff)
+    set_backedges(staff, entities_module_context)
 
     return staff
 

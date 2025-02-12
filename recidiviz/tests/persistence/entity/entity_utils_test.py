@@ -30,6 +30,9 @@ from recidiviz.persistence.entity.base_entity import Entity, HasExternalIdEntity
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
     deep_entity_update,
@@ -744,7 +747,8 @@ class TestBidirectionalUpdates(TestCase):
         person = generate_full_graph_state_person(
             set_back_edges=False, include_person_back_edges=False, set_ids=False
         )
-        _ = set_backedges(person)
+        entities_module_context = entities_module_context_for_module(state_entities)
+        _ = set_backedges(person, entities_module_context)
         all_entities = get_all_entities_from_tree(person)
         for entity in all_entities:
             entities_module_context = entities_module_context_for_entity(entity)
@@ -760,7 +764,8 @@ class TestBidirectionalUpdates(TestCase):
 
     def test_set_backedges_staff(self) -> None:
         staff = generate_full_graph_state_staff(set_back_edges=False, set_ids=True)
-        _ = set_backedges(staff)
+        entities_module_context = entities_module_context_for_module(state_entities)
+        _ = set_backedges(staff, entities_module_context)
         all_entities = get_all_entities_from_tree(staff)
         for entity in all_entities:
             entities_module_context = entities_module_context_for_entity(entity)

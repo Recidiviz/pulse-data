@@ -28,7 +28,10 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
-from recidiviz.persistence.entity.entity_utils import set_backedges
+from recidiviz.persistence.entity.entity_utils import (
+    entities_module_context_for_entity,
+    set_backedges,
+)
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entities import (
@@ -122,7 +125,10 @@ class TestWriteRootEntitiesToBQ(BigQueryEmulatorTestCase):
                 )
             ],
         )
-        person = assert_type(set_backedges(person), StatePerson)
+        person = assert_type(
+            set_backedges(person, entities_module_context_for_entity(person)),
+            StatePerson,
+        )
 
         _ = (
             self.test_pipeline

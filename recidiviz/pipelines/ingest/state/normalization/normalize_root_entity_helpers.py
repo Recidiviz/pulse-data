@@ -22,6 +22,9 @@ from recidiviz.common.attr_mixins import (
     attribute_field_type_reference_for_class,
 )
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_name,
     set_backedges,
@@ -102,5 +105,6 @@ def build_normalized_root_entity(
     normalized_entity = normalized_root_entity_cls(
         **normalized_root_entity_kwargs,  # type: ignore[arg-type]
     )
-    set_backedges(normalized_entity)
+    entities_module_context = entities_module_context_for_module(normalized_entities)
+    set_backedges(normalized_entity, entities_module_context)
     return normalized_entity

@@ -38,7 +38,11 @@ from recidiviz.common.constants.state.state_sentence import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ncic import get_description
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import set_backedges
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entities import (
     StateChargeV2,
     StateSentence,
@@ -299,8 +303,9 @@ def get_normalized_sentences(
         normalize_sentence(sentence, charge_id_to_normalized_charge_cache, delegate)
         for sentence in sentences
     ]
+    entities_module_context = entities_module_context_for_module(normalized_entities)
     for sentence in normalized_sentences:
-        set_backedges(sentence)
+        set_backedges(sentence, entities_module_context)
     return normalized_sentences
 
 
@@ -347,6 +352,7 @@ def normalize_group_lengths(
 def get_normalized_sentence_groups(
     sentence_groups: List[StateSentenceGroup],
 ) -> List[NormalizedStateSentenceGroup]:
+    entities_module_context = entities_module_context_for_module(normalized_entities)
     return [
         assert_type(
             set_backedges(
@@ -358,7 +364,8 @@ def get_normalized_sentence_groups(
                         group.sentence_group_lengths
                     ),
                     sentence_inferred_group_id=None,
-                )
+                ),
+                entities_module_context,
             ),
             NormalizedStateSentenceGroup,
         )

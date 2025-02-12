@@ -32,6 +32,7 @@ from recidiviz.ingest.views.dataset_config import (
     STATE_BASE_DATASET,
 )
 from recidiviz.persistence.entity.entity_utils import (
+    entities_module_context_for_entity_class,
     get_module_for_entity_class,
     set_backedges,
 )
@@ -80,12 +81,17 @@ def write_root_entities_to_emulator(
     ):
         apache_beam_pipeline_options = PipelineOptions()
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
+        entities_module_context = entities_module_context_for_entity_class(
+            root_entity_type
+        )
         pipeline = TestPipeline(options=apache_beam_pipeline_options)
         _ = (
             pipeline
             | beam.Create(
                 [
-                    assert_type(set_backedges(person), root_entity_type)
+                    assert_type(
+                        set_backedges(person, entities_module_context), root_entity_type
+                    )
                     for person in people
                 ]
             )

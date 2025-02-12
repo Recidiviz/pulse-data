@@ -30,7 +30,11 @@ from recidiviz.common.constants.state.state_sentence import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import as_datetime
-from recidiviz.persistence.entity.entity_utils import assert_type, set_backedges
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
+from recidiviz.persistence.entity.entity_utils import set_backedges
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateChargeV2,
     NormalizedStateSentence,
@@ -47,10 +51,16 @@ from recidiviz.pipelines.ingest.state.normalization.infer_sentence_groups import
 from recidiviz.pipelines.ingest.state.normalization.normalization_managers.sentence_normalization_manager import (
     StateSpecificSentenceNormalizationDelegate,
 )
+from recidiviz.utils.types import assert_type
 
 
 def _set_backedges(sentence: NormalizedStateSentence) -> NormalizedStateSentence:
-    return assert_type(set_backedges(sentence), NormalizedStateSentence)
+    return assert_type(
+        set_backedges(
+            sentence, entities_module_context_for_module(normalized_entities)
+        ),
+        NormalizedStateSentence,
+    )
 
 
 class TestInferredSentenceGroups(unittest.TestCase):

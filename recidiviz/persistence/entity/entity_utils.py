@@ -70,7 +70,6 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
 )
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 from recidiviz.utils.log_helpers import make_log_output_path
-from recidiviz.utils.types import assert_type
 
 
 # TODO(#38281): Move this function to the entities_module_context_factory package once
@@ -558,15 +557,11 @@ def deep_entity_update(
     return updated_entity
 
 
-def set_backedges(element: Entity | RootEntity) -> Entity | RootEntity:
+def set_backedges(
+    element: Entity | RootEntity, entities_module_context: EntitiesModuleContext
+) -> Entity | RootEntity:
     """Set the backedges of the root entity tree using DFS traversal of the root
     entity tree."""
-    # TODO(#38281): Add entities_module_context as an arg to this function so we do not
-    #  have to import entities_module_context_factory (references specific schema
-    #  modules) into this file.
-    entities_module_context = entities_module_context_for_entity(
-        assert_type(element, Entity)
-    )
     field_index = entities_module_context.field_index()
     root = cast(Entity, element)
     root_entity_cls = root.__class__

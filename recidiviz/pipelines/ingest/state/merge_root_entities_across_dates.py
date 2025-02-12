@@ -21,8 +21,12 @@ import apache_beam as beam
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import RootEntity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.generate_primary_key import PrimaryKey
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.root_entity_update_merger import (
     RootEntityUpdateMerger,
 )
@@ -39,6 +43,9 @@ class MergeRootEntitiesAcrossDates(beam.PTransform):
     def __init__(self, state_code: StateCode) -> None:
         super().__init__()
         self.state_code = state_code
+        self.entities_module_context = entities_module_context_for_module(
+            state_entities
+        )
 
     def expand(
         self,
@@ -57,7 +64,7 @@ class MergeRootEntitiesAcrossDates(beam.PTransform):
             >> beam.MapTuple(
                 lambda primary_key, root_entity: (
                     primary_key,
-                    set_backedges(root_entity),
+                    set_backedges(root_entity, self.entities_module_context),
                 )
             )
             | "Set primary keys for all entities in root entity tree"

@@ -34,9 +34,12 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentencingAuthority,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entity_table,
+)
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -128,6 +131,12 @@ CLEANED_OFFENSE_DATA = [
         "offense_conspired_uniform": None,
     },
 ]
+
+
+def _set_backedges(entity: Entity | RootEntity) -> Entity | RootEntity:
+    return set_backedges(
+        entity, entities_module_context_for_module(normalized_state_module)
+    )
 
 
 class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
@@ -234,7 +243,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
     ) -> NormalizedStatePerson:
         """Pass in sentencing entities for a person and receive a hydrated person with an imposed group."""
         sentences = [
-            assert_type(set_backedges(s), NormalizedStateSentence) for s in sentences
+            assert_type(_set_backedges(s), NormalizedStateSentence) for s in sentences
         ]
         imposed_group = build_imposed_group_from_sentences(
             self.state_code, self.delegate, sentences
@@ -247,7 +256,7 @@ class InferredProjectedDatesTest(SimpleBigQueryViewBuilderTestCase):
             sentences=sentences,
             sentence_imposed_groups=[imposed_group],
         )
-        return assert_type(set_backedges(person), NormalizedStatePerson)
+        return assert_type(_set_backedges(person), NormalizedStatePerson)
 
     def run_test(
         self, people: list[NormalizedStatePerson], expected_result: list[TableRow]

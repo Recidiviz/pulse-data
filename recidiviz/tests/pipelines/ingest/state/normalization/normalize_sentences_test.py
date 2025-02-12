@@ -29,7 +29,11 @@ from recidiviz.common.constants.state.state_sentence import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import as_datetime
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import set_backedges
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
     StateChargeV2,
     StateSentence,
@@ -83,7 +87,11 @@ class TestSentenceV2Normalization(unittest.TestCase):
         sentences: list[StateSentence],
         delegate: StateSpecificSentenceNormalizationDelegate,
     ) -> list[NormalizedStateSentence]:
-        sentences = [assert_type(set_backedges(s), StateSentence) for s in sentences]
+        entities_module_context = entities_module_context_for_module(state_entities)
+        sentences = [
+            assert_type(set_backedges(s, entities_module_context), StateSentence)
+            for s in sentences
+        ]
         return get_normalized_sentences(sentences, delegate)
 
     def _new_charge(self, id_num: int) -> StateChargeV2:

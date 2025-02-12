@@ -31,7 +31,9 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentencingAuthority,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
+    entities_module_context_for_entity,
     get_all_entity_classes_in_module,
     set_backedges,
 )
@@ -54,6 +56,10 @@ from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_normalization_de
 from recidiviz.utils.types import assert_type
 
 MO_DELEGATE = UsMoSentenceNormalizationDelegate()
+
+
+def _set_backedges(entity: Entity) -> Entity | RootEntity:
+    return set_backedges(entity, entities_module_context_for_entity(entity))
 
 
 def test_person_001_sentencing_normalization() -> None:
@@ -325,7 +331,7 @@ def test_person_001_sentencing_normalization() -> None:
         ]
     )
 
-    set_backedges(person_001)
+    _set_backedges(person_001)
     person_001_pk = generate_primary_key(
         string_representation(
             {
@@ -657,7 +663,7 @@ def test_person_001_sentencing_normalization() -> None:
         MO_DELEGATE,
         [
             assert_type(
-                set_backedges(NORMALIZED_SENTENCE_001_19900117_1),
+                _set_backedges(NORMALIZED_SENTENCE_001_19900117_1),
                 normalized_entities.NormalizedStateSentence,
             )
         ],
@@ -682,7 +688,7 @@ def test_person_001_sentencing_normalization() -> None:
         MO_DELEGATE,
         [
             assert_type(
-                set_backedges(NORMALIZED_SENTENCE_001_20040224_1),
+                _set_backedges(NORMALIZED_SENTENCE_001_20040224_1),
                 normalized_entities.NormalizedStateSentence,
             )
         ],
@@ -692,7 +698,7 @@ def test_person_001_sentencing_normalization() -> None:
         MO_DELEGATE,
         [
             assert_type(
-                set_backedges(NORMALIZED_SENTENCE_001_20040224_2),
+                _set_backedges(NORMALIZED_SENTENCE_001_20040224_2),
                 normalized_entities.NormalizedStateSentence,
             )
         ],
@@ -711,9 +717,9 @@ def test_person_001_sentencing_normalization() -> None:
     )
 
     expected_normalized_sentences = [
-        set_backedges(NORMALIZED_SENTENCE_001_19900117_1),
-        set_backedges(NORMALIZED_SENTENCE_001_20040224_1),
-        set_backedges(NORMALIZED_SENTENCE_001_20040224_2),
+        _set_backedges(NORMALIZED_SENTENCE_001_19900117_1),
+        _set_backedges(NORMALIZED_SENTENCE_001_20040224_1),
+        _set_backedges(NORMALIZED_SENTENCE_001_20040224_2),
     ]
 
     NORMALIZED_SG_001_19900117 = normalized_entities.NormalizedStateSentenceGroup(
@@ -729,22 +735,22 @@ def test_person_001_sentencing_normalization() -> None:
         sentence_inferred_group_id=INFERRED_GROUP_FROM_20040224.sentence_inferred_group_id,
     )
     expected_normalized_sentence_groups = [
-        set_backedges(NORMALIZED_SG_001_19900117),
-        set_backedges(NORMALIZED_SG_001_20040224),
+        _set_backedges(NORMALIZED_SG_001_19900117),
+        _set_backedges(NORMALIZED_SG_001_20040224),
     ]
 
     expected_inferred_groups = sorted(
         [
-            set_backedges(INFERRED_GROUP_FROM_19900117),
-            set_backedges(INFERRED_GROUP_FROM_20040224),
+            _set_backedges(INFERRED_GROUP_FROM_19900117),
+            _set_backedges(INFERRED_GROUP_FROM_20040224),
         ],
         key=lambda g: g.external_id,  # type: ignore
     )
     expected_imposed_groups = sorted(
         [
-            set_backedges(IMPOSED_GROUP_FROM_19900117),
-            set_backedges(IMPOSED_GROUP_FROM_20040224_1),
-            set_backedges(IMPOSED_GROUP_FROM_20040224_2),
+            _set_backedges(IMPOSED_GROUP_FROM_19900117),
+            _set_backedges(IMPOSED_GROUP_FROM_20040224_1),
+            _set_backedges(IMPOSED_GROUP_FROM_20040224_2),
         ],
         key=lambda g: g.external_id,  # type: ignore
     )
