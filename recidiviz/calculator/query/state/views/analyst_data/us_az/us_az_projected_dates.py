@@ -41,6 +41,7 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
             person_id,
             CAST(FORMAT_DATETIME('%Y-%m-%d', group_update_datetime) AS DATE) AS start_date,
             CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(group_update_datetime) OVER (PARTITION BY state_code, person_id, sentence_group_id ORDER BY group_update_datetime)) AS DATE) AS end_date,
+            CAST(NULL AS DATE) AS csed_date,
             parole_eligibility_date_external AS csbd_date,
             projected_full_term_release_date_min_external AS ercd_date,
             CAST(NULL AS DATE) AS acis_tpr_date,
@@ -51,12 +52,31 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
           WHERE
             state_code = 'US_AZ'
           ),
+      csed_dates AS (
+          SELECT
+            state_code,
+            person_id,
+            DATE_ADD(CAST(FORMAT_DATETIME('%Y-%m-%d', update_datetime) AS DATE), INTERVAL 1 DAY) AS start_date,
+            DATE_ADD(CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(update_datetime) OVER (PARTITION BY state_code, person_id, JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') ORDER BY update_datetime)) AS DATE), INTERVAL 1 DAY) AS end_date,
+            due_date AS csed_date,
+            CAST(NULL AS DATE) AS csbd_date,
+            CAST(NULL AS DATE) AS ercd_date,
+            CAST(NULL AS DATE) AS acis_tpr_date,
+            CAST(NULL AS DATE) AS acis_dtp_date,
+            update_datetime AS update_datetime
+          FROM
+            `{{project_id}}.{{normalized_state_dataset}}.state_task_deadline`
+          WHERE
+            state_code = 'US_AZ'
+            AND task_subtype = 'COMMUNITY SUPERVISION END DATE' 
+      ),
       acis_tpr_dates AS (
           SELECT
             state_code,
             person_id,
             DATE_ADD(CAST(FORMAT_DATETIME('%Y-%m-%d', update_datetime) AS DATE), INTERVAL 1 DAY) AS start_date,
             DATE_ADD(CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(update_datetime) OVER (PARTITION BY state_code, person_id, JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') ORDER BY update_datetime)) AS DATE), INTERVAL 1 DAY) AS end_date,
+            CAST(NULL AS DATE) AS csed_date,
             CAST(NULL AS DATE) AS csbd_date,
             CAST(NULL AS DATE) AS ercd_date,
             CASE WHEN JSON_EXTRACT(task_metadata, '$.status') != '"DENIED"'
@@ -77,6 +97,7 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
             person_id,
             DATE_ADD(CAST(FORMAT_DATETIME('%Y-%m-%d', update_datetime) AS DATE), INTERVAL 1 DAY) AS start_date,
             DATE_ADD(CAST(FORMAT_DATETIME('%Y-%m-%d', LEAD(update_datetime) OVER (PARTITION BY state_code, person_id, JSON_EXTRACT_SCALAR(task_metadata, '$.sentence_group_external_id') ORDER BY update_datetime)) AS DATE), INTERVAL 1 DAY) AS end_date,
+            CAST(NULL AS DATE) AS csed_date,
             CAST(NULL AS DATE) AS csbd_date,
             CAST(NULL AS DATE) AS ercd_date,
             CAST(NULL AS DATE) AS acis_tpr_date,
@@ -100,6 +121,11 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
           SELECT
             *
           FROM
+            csed_dates
+          UNION ALL
+          SELECT
+            *
+          FROM
             acis_tpr_dates
           UNION ALL
           SELECT
@@ -116,7 +142,7 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
           WHERE start_date != {nonnull_end_date_clause('end_date')}
             -- These ensure that the latest update_datetime is used for the given dates, as dates can be updated multiple times within a day
           QUALIFY
-            ROW_NUMBER() OVER (PARTITION BY person_id, state_code, start_date, end_date, csbd_date, ercd_date, acis_tpr_date, acis_dtp_date 
+            ROW_NUMBER() OVER (PARTITION BY person_id, state_code, start_date, end_date, csed_date, csbd_date, ercd_date, acis_tpr_date, acis_dtp_date 
                 ORDER BY update_datetime DESC) = 1
           ),
       combine_cte AS (
@@ -125,6 +151,7 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
             person_id,
             start_date,
             end_date,
+            MAX(csed_date) AS csed_date,
             MAX(csbd_date) AS csbd_date,
             MAX(ercd_date) AS ercd_date,
             MAX(acis_tpr_date) AS acis_tpr_date,
@@ -139,6 +166,7 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
       person_id,
       start_date,
       end_date,
+      csed_date,
       csbd_date,
       -- Formula used: ERCD - 77 Days = CSBD
       DATE_SUB(ercd_date, INTERVAL 77 DAY) AS projected_csbd_date,
@@ -150,7 +178,8 @@ US_AZ_PROJECTED_DATES_QUERY_TEMPLATE = f"""
       -- Formula used: CSBD - 90 Days = ERCD - 77 Days = DTP Date
       COALESCE(DATE_SUB(csbd_date, INTERVAL 90 DAY),DATE_SUB(ercd_date, INTERVAL 90 + 77 DAY)) AS projected_dtp_date,
     FROM ({aggregate_adjacent_spans(table_name='combine_cte',
-          attribute=['csbd_date',
+          attribute=['csed_date', 
+          'csbd_date',
           'ercd_date',
           'acis_tpr_date',
           'acis_dtp_date'])}
