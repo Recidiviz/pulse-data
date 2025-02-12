@@ -19,8 +19,12 @@ import unittest
 from typing import Set
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
@@ -88,13 +92,14 @@ class TestGeneratePrimaryKey(unittest.TestCase):
         )
 
     def test_generate_primary_keys_for_root_entity_tree_person(self) -> None:
+        entities_module_context = entities_module_context_for_module(state_entities)
         person = generate_full_graph_state_person(
             set_back_edges=True,
             include_person_back_edges=True,
             set_ids=False,
         )
         state_code = StateCode(person.state_code)
-        all_entities = get_all_entities_from_tree(person)
+        all_entities = get_all_entities_from_tree(person, entities_module_context)
         person_primary_key = generate_primary_key(
             string_representation(
                 {
@@ -118,9 +123,10 @@ class TestGeneratePrimaryKey(unittest.TestCase):
             )
 
     def test_generate_primary_keys_for_root_entity_tree_staff(self) -> None:
+        entities_module_context = entities_module_context_for_module(state_entities)
         staff = generate_full_graph_state_staff(set_back_edges=True, set_ids=False)
         state_code = StateCode(staff.state_code)
-        all_entities = get_all_entities_from_tree(staff)
+        all_entities = get_all_entities_from_tree(staff, entities_module_context)
         staff_primary_key = generate_primary_key(
             string_representation(
                 {

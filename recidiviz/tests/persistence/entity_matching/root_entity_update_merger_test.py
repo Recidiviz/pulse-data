@@ -86,6 +86,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_entity,
+)
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.root_entity_update_merger import (
@@ -109,6 +112,7 @@ from recidiviz.tests.persistence.entity_matching.us_xx_entity_builders import (
 )
 from recidiviz.tests.test_debug_helpers import launch_entity_tree_html_diff_comparison
 from recidiviz.utils.environment import in_ci
+from recidiviz.utils.types import assert_type
 
 _FULL_NAME_1 = '{"given_names": "FIRST1", "middle_names": "", "name_suffix": "", "surname": "LAST1"}'
 
@@ -722,9 +726,13 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
         if debug:
             if in_ci():
                 self.fail("The |debug| flag should only be used for local debugging.")
-
+            entities_module_context = entities_module_context_for_entity(
+                assert_type(expected_result, Entity)
+            )
             launch_entity_tree_html_diff_comparison(
-                found_root_entities=[result], expected_root_entities=[expected_result]
+                found_root_entities=[result],
+                expected_root_entities=[expected_result],
+                entities_module_context=entities_module_context,
             )
 
         self.assertEqual(expected_result, result)

@@ -28,10 +28,10 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
-from recidiviz.persistence.entity.entity_utils import (
+from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
-    set_backedges,
 )
+from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.entities import (

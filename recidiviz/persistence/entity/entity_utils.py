@@ -58,9 +58,6 @@ from recidiviz.persistence.entity.base_entity import (
     RootEntity,
 )
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
-from recidiviz.persistence.entity.entities_module_context_factory import (
-    entities_module_context_for_module,
-)
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.state import entities as state_entities
@@ -70,38 +67,6 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
 )
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 from recidiviz.utils.log_helpers import make_log_output_path
-
-
-# TODO(#38281): Move this function to the entities_module_context_factory package once
-#  it is no longer referenced in this file.
-def get_module_for_entity_class(entity_cls: Type[Entity]) -> ModuleType:
-    if entity_cls in get_all_entity_classes_in_module(state_entities):
-        return state_entities
-    if entity_cls in get_all_entity_classes_in_module(normalized_entities):
-        return normalized_entities
-    raise ValueError(f"Unexpected entity_cls [{entity_cls}]")
-
-
-# TODO(#38281): Move this function to the entities_module_context_factory package once
-#  it is no longer referenced in this file.
-def entities_module_context_for_entity_class(
-    entity_cls: Type[Entity],
-) -> EntitiesModuleContext:
-    """Returns an EntityModuleContext that can be used to determine information about
-    structure of any Entity classes in the module associated with the given
-    |entity_cls|.
-    """
-    return entities_module_context_for_module(get_module_for_entity_class(entity_cls))
-
-
-# TODO(#38281): Move this function to the entities_module_context_factory package once
-#  it is no longer referenced in this file.
-def entities_module_context_for_entity(entity: Entity) -> EntitiesModuleContext:
-    """Returns an EntityModuleContext that can be used to determine information about
-    structure of any Entity classes in the module associated with the given
-    |entity|.
-    """
-    return entities_module_context_for_entity_class(type(entity))
 
 
 @cache
@@ -190,7 +155,9 @@ def get_all_entity_class_names_in_module(entities_module: ModuleType) -> Set[str
     return {cls_.__name__ for cls_ in get_all_entity_classes_in_module(entities_module)}
 
 
-def _sort_based_on_flat_fields(db_entities: Sequence[Entity]) -> None:
+def _sort_based_on_flat_fields(
+    db_entities: Sequence[Entity], entities_module_context: EntitiesModuleContext
+) -> None:
     """Helper function that sorts all entities in |db_entities| in place as
     well as all children of |db_entities|. Sorting is done by first by an
     external_id if that field exists, then present flat fields.
@@ -199,28 +166,22 @@ def _sort_based_on_flat_fields(db_entities: Sequence[Entity]) -> None:
     def _get_entity_sort_key(e: Entity) -> str:
         """Generates a sort key for the given entity based on the flat field values
         in this entity."""
-        return f"{e.get_external_id()}#{get_flat_fields_json_str(e)}"
+        return f"{e.get_external_id()}#{get_flat_fields_json_str(e, entities_module_context)}"
 
     db_entities = cast(List, db_entities)
     db_entities.sort(key=_get_entity_sort_key)
     for entity in db_entities:
-        # TODO(#38281): Add entities_module_context as an arg to this function so we do
-        #  not have to import entities_module_context_factory (references specific
-        #  schema modules) into this file.
-        entities_module_context = entities_module_context_for_entity(entity)
         field_index = entities_module_context.field_index()
         for field_name in field_index.get_fields_with_non_empty_values(
             entity, EntityFieldType.FORWARD_EDGE
         ):
             field = entity.get_field_as_list(field_name)
-            _sort_based_on_flat_fields(field)
+            _sort_based_on_flat_fields(field, entities_module_context)
 
 
-def get_flat_fields_json_str(entity: Entity) -> str:
-    # TODO(#38281): Add entities_module_context as an arg to this function so we do not
-    #  have to import entities_module_context_factory (references specific schema
-    #  modules) into this file.
-    entities_module_context = entities_module_context_for_entity(entity)
+def get_flat_fields_json_str(
+    entity: Entity, entities_module_context: EntitiesModuleContext
+) -> str:
     field_index = entities_module_context.field_index()
     flat_fields_dict: Dict[str, str] = {}
     for field_name in field_index.get_fields_with_non_empty_values(
@@ -251,6 +212,7 @@ def write_entity_tree_to_file(
     operation_for_filename: str,
     print_tree_structure_only: bool,
     root_entities: Sequence[Any],
+    entities_module_context: EntitiesModuleContext,
 ) -> str:
     filepath = make_log_output_path(
         operation_for_filename,
@@ -259,6 +221,7 @@ def write_entity_tree_to_file(
     with open(filepath, "w", encoding="utf-8") as actual_output_file:
         print_entity_trees(
             root_entities,
+            entities_module_context=entities_module_context,
             print_tree_structure_only=print_tree_structure_only,
             file=actual_output_file,
         )
@@ -268,6 +231,8 @@ def write_entity_tree_to_file(
 
 def print_entity_trees(
     entities_list: Sequence[Entity],
+    entities_module_context: EntitiesModuleContext,
+    *,
     print_tree_structure_only: bool = False,
     python_id_to_fake_id: Optional[Dict[int, int]] = None,
     file: Optional[TextIOWrapper] = None,
@@ -289,11 +254,12 @@ def print_entity_trees(
 
     if python_id_to_fake_id is None:
         python_id_to_fake_id = {}
-        _sort_based_on_flat_fields(entities_list)
+        _sort_based_on_flat_fields(entities_list, entities_module_context)
 
     for entity in entities_list:
         print_entity_tree(
             entity,
+            entities_module_context=entities_module_context,
             print_tree_structure_only=print_tree_structure_only,
             python_id_to_fake_id=python_id_to_fake_id,
             file=file,
@@ -302,6 +268,8 @@ def print_entity_trees(
 
 def print_entity_tree(
     entity: Entity,
+    entities_module_context: EntitiesModuleContext,
+    *,
     print_tree_structure_only: bool = False,
     indent: int = 0,
     python_id_to_fake_id: Optional[Dict[int, int]] = None,
@@ -316,14 +284,10 @@ def print_entity_tree(
     Note: this function sorts any list fields in the provided entity IN PLACE (should not matter for any equality checks
     we generally do).
     """
-    # TODO(#38281): Add entities_module_context as an arg to this function so we do not
-    #  have to import entities_module_context_factory (references specific schema
-    #  modules) into this file.
-    entities_module_context = entities_module_context_for_entity(entity)
     field_index = entities_module_context.field_index()
     if python_id_to_fake_id is None:
         python_id_to_fake_id = {}
-        _sort_based_on_flat_fields([entity])
+        _sort_based_on_flat_fields([entity], entities_module_context)
 
     _print_indented(_obj_id_str(entity, python_id_to_fake_id), indent, file)
 
@@ -349,9 +313,10 @@ def print_entity_tree(
                     for c in child:
                         print_entity_tree(
                             c,
-                            print_tree_structure_only,
-                            indent + 2,
-                            python_id_to_fake_id,
+                            entities_module_context,
+                            print_tree_structure_only=print_tree_structure_only,
+                            indent=indent + 2,
+                            python_id_to_fake_id=python_id_to_fake_id,
                             file=file,
                         )
                     _print_indented("]", indent, file)
@@ -360,9 +325,10 @@ def print_entity_tree(
                 _print_indented(f"{child_field}:", indent, file)
                 print_entity_tree(
                     child,
-                    print_tree_structure_only,
-                    indent + 2,
-                    python_id_to_fake_id,
+                    entities_module_context,
+                    print_tree_structure_only=print_tree_structure_only,
+                    indent=indent + 2,
+                    python_id_to_fake_id=python_id_to_fake_id,
                     file=file,
                 )
         else:
@@ -398,16 +364,13 @@ def print_entity_tree(
 
 def get_all_entities_from_tree(
     entity: Entity,
+    entities_module_context: EntitiesModuleContext,
     result: Optional[List[Entity]] = None,
     seen_ids: Optional[Set[int]] = None,
 ) -> List[Entity]:
     """Returns a list of all entities in the tree below the entity,
     including the entity itself. Entities are deduplicated by Python object id.
     """
-    # TODO(#38281): Add entities_module_context as an arg to this function so we do not
-    #  have to import entities_module_context_factory (references specific schema
-    #  modules) into this file.
-    entities_module_context = entities_module_context_for_entity(entity)
     field_index = entities_module_context.field_index()
     if result is None:
         result = []
@@ -432,9 +395,9 @@ def get_all_entities_from_tree(
 
         if isinstance(child, list):
             for c in child:
-                get_all_entities_from_tree(c, result, seen_ids)
+                get_all_entities_from_tree(c, entities_module_context, result, seen_ids)
         else:
-            get_all_entities_from_tree(child, result, seen_ids)
+            get_all_entities_from_tree(child, entities_module_context, result, seen_ids)
 
     return result
 
@@ -641,14 +604,12 @@ def set_backedges(
     return element
 
 
-def get_many_to_many_relationships(entity_cls: Type[Entity]) -> Set[str]:
+def get_many_to_many_relationships(
+    entity_cls: Type[Entity], entities_module_context: EntitiesModuleContext
+) -> Set[str]:
     """Returns the set of fields on |entity| that connect that entity to a parent where
     there is a potential many-to-many relationship between entity and that parent entity type.
     """
-    # TODO(#38281): Add entities_module_context as an arg to this function so we do not
-    #  have to import entities_module_context_factory (references specific schema
-    #  modules) into this file.
-    entities_module_context = entities_module_context_for_entity_class(entity_cls)
     field_index = entities_module_context.field_index()
     many_to_many_relationships = set()
     back_edges = field_index.get_all_entity_fields(

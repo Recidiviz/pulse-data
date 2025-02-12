@@ -29,8 +29,10 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentencingAuthority,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.entity_utils import (
+from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
+)
+from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     set_backedges,
 )

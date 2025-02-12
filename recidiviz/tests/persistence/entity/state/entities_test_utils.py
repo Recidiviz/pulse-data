@@ -105,11 +105,11 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_entity,
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
-    entities_module_context_for_entity,
     get_all_entities_from_tree,
     get_all_entity_classes_in_module,
     set_backedges,
@@ -878,7 +878,7 @@ def generate_full_graph_state_person(
     if set_back_edges:
         set_backedges(person, entities_module_context)
 
-    all_entities = get_all_entities_from_tree(person)
+    all_entities = get_all_entities_from_tree(person, entities_module_context)
 
     if not include_person_back_edges and set_back_edges:
         for entity in all_entities:
@@ -975,7 +975,7 @@ def generate_full_graph_state_staff(
         set_backedges(staff, entities_module_context)
 
     if set_ids:
-        for entity in get_all_entities_from_tree(staff):
+        for entity in get_all_entities_from_tree(staff, entities_module_context):
             if entity.get_id():
                 raise ValueError(
                     f"Found entity [{entity}] with already set id field."
@@ -1639,6 +1639,7 @@ class TestFullEntityGraph(unittest.TestCase):
         generate_full_graph_state_staff() functions cover all entities in the
         state/entities.py module
         """
+        entities_module_context = entities_module_context_for_module(state_entities)
         expected_entity_classes = get_all_entity_classes_in_module(entities)
 
         found_entity_classes = {
@@ -1649,7 +1650,9 @@ class TestFullEntityGraph(unittest.TestCase):
                 ),
                 generate_full_graph_state_staff(set_back_edges=True, set_ids=True),
             ]
-            for e in get_all_entities_from_tree(assert_type(re, Entity))
+            for e in get_all_entities_from_tree(
+                assert_type(re, Entity), entities_module_context
+            )
         }
         missing_in_entity_graph = expected_entity_classes - found_entity_classes
         if missing_in_entity_graph:
@@ -1664,6 +1667,9 @@ class TestFullEntityGraph(unittest.TestCase):
         generate_full_graph_normalized_state_staff() functions cover all entities in the
         state/normalized_entities.py module
         """
+        entities_module_context = entities_module_context_for_module(
+            normalized_entities
+        )
         expected_entity_classes = get_all_entity_classes_in_module(normalized_entities)
 
         found_entity_classes = {
@@ -1672,7 +1678,9 @@ class TestFullEntityGraph(unittest.TestCase):
                 generate_full_graph_normalized_state_person(),
                 generate_full_graph_normalized_state_staff(),
             ]
-            for e in get_all_entities_from_tree(assert_type(re, Entity))
+            for e in get_all_entities_from_tree(
+                assert_type(re, Entity), entities_module_context
+            )
         }
         missing_in_entity_graph = expected_entity_classes - found_entity_classes
         if missing_in_entity_graph:

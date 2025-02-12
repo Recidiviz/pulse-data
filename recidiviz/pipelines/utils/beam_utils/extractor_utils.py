@@ -50,9 +50,11 @@ from recidiviz.common.attr_mixins import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_entity_class,
+)
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
-    entities_module_context_for_entity_class,
     get_association_table_id,
     is_many_to_many_relationship,
     is_many_to_one_relationship,

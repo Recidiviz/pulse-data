@@ -36,6 +36,9 @@ from recidiviz.common.date import (
     date_ranges_overlap,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_entity,
+)
 from recidiviz.persistence.entity.entity_utils import get_all_entities_from_tree
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
@@ -416,13 +419,14 @@ def validate_root_entity(
     checks. This function returns a list of errors, where each error corresponds to
     each check that is failed.
     """
+    entities_module_context = entities_module_context_for_entity(root_entity)
     error_messages: List[Error] = []
 
     # Yields errors if incorrect number of external IDs
     error_messages.extend(_external_id_checks(root_entity))
 
     entities_by_cls: Dict[Type[Entity], List[Entity]] = defaultdict(list)
-    for child in get_all_entities_from_tree(root_entity):
+    for child in get_all_entities_from_tree(root_entity, entities_module_context):
         entities_by_cls[type(child)].append(child)
 
     # Yields errors if global_unique_constraints fail

@@ -31,11 +31,10 @@ from recidiviz.ingest.views.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
 )
-from recidiviz.persistence.entity.entity_utils import (
+from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity_class,
-    get_module_for_entity_class,
-    set_backedges,
 )
+from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.persistence_utils import NormalizedRootEntityT, RootEntityT
 from recidiviz.pipelines.ingest.state import write_root_entities_to_bq
 from recidiviz.pipelines.ingest.state.write_root_entities_to_bq import (
@@ -99,7 +98,7 @@ def write_root_entities_to_emulator(
                 state_code=state_code,
                 output_dataset=dataset,
                 output_table_ids=[addr.table_id for addr in schema_mapping],
-                entities_module=get_module_for_entity_class(root_entity_type),
+                entities_module=entities_module_context.entities_module(),
             )
         )
         pipeline.run()

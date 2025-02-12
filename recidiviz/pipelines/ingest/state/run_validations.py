@@ -28,6 +28,9 @@ from recidiviz.persistence.entity.base_entity import (
     RootEntity,
     UniqueConstraint,
 )
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_entity,
+)
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entities_from_tree,
     get_all_entity_classes_in_module,
@@ -76,8 +79,9 @@ class GetEntityCriticalFields(beam.DoFn):
         """Outputs "critical fields" dictionaries for every entity in the input
         root entity tree.
         """
-
-        for e in get_all_entities_from_tree(cast(Entity, element)):
+        entity = cast(Entity, element)
+        entities_module_context = entities_module_context_for_entity(entity)
+        for e in get_all_entities_from_tree(entity, entities_module_context):
             entity_name = e.get_entity_name()
 
             if entity_name not in self.constraints_by_entity_type:

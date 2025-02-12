@@ -56,9 +56,14 @@ class SerializeEntities(beam.DoFn):
     ) -> Generator[beam.pvalue.TaggedOutput, None, None]:
         """Generates appropriate dictionaries for all elements and association tables."""
 
-        for entity in get_all_entities_from_tree(entity=cast(Entity, element)):
+        for entity in get_all_entities_from_tree(
+            entity=cast(Entity, element),
+            entities_module_context=self._entities_module_context,
+        ):
             entity_cls = entity.__class__
-            many_to_many_relationships = get_many_to_many_relationships(entity_cls)
+            many_to_many_relationships = get_many_to_many_relationships(
+                entity_cls, self._entities_module_context
+            )
             for relationship in many_to_many_relationships:
                 parent_entity_cls_name = attr_field_referenced_cls_name_for_field_name(
                     entity_cls, relationship

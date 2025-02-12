@@ -61,7 +61,11 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import print_entity_tree
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.pipelines.ingest.state.generate_entities import to_string_value_converter
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -128,6 +132,7 @@ def parse_results(
     write_results: bool,
 ) -> None:
     """Parses the ingest view results, collecting any errors and writing them to a file."""
+    entities_module_context = entities_module_context_for_module(state_entities)
     manifest_compiler = IngestViewManifestCompiler(
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region)
     )
@@ -162,7 +167,7 @@ def parse_results(
                     file=logfile,
                 )
             elif isinstance(result, Entity) and write_results:
-                print_entity_tree(result, file=results_file)
+                print_entity_tree(result, entities_module_context, file=results_file)
             progress.update()
 
         manifest_compiler.compile_manifest(

@@ -25,11 +25,15 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
     StateSchemaToEntityConverter,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_entity,
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import (
     entities_have_direct_relationship,
-    entities_module_context_for_entity,
     print_entity_trees,
 )
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
@@ -83,12 +87,13 @@ class TestStateSchemaEntityConverter(TestCase):
         result = StateSchemaToEntityConverter().convert_all(
             schema_objects_to_convert, populate_back_edges=populate_back_edges
         )
+        entities_module_context = entities_module_context_for_module(state_entities)
         self.assertEqual(len(result), len(expected_entities))
         if debug:
             print("============== EXPECTED WITH BACKEDGES ==============")
-            print_entity_trees(expected_entities)
+            print_entity_trees(expected_entities, entities_module_context)
             print("============== CONVERTED MATCHED ==============")
-            print_entity_trees(result)
+            print_entity_trees(result, entities_module_context)
 
         self.assertCountEqual(result, expected_entities)
 

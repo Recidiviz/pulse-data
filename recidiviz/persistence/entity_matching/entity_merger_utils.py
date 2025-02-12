@@ -31,8 +31,10 @@ from recidiviz.persistence.entity.base_entity import (
     ExternalIdEntity,
     HasMultipleExternalIdsEntity,
 )
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_entity,
+)
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
-from recidiviz.persistence.entity.entity_utils import entities_module_context_for_entity
 
 
 def root_entity_external_id_keys(root_entity: HasMultipleExternalIdsEntity) -> Set[str]:

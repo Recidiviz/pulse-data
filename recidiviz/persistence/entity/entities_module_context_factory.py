@@ -16,8 +16,11 @@
 # =============================================================================
 """Provides module-specific implementations of EntitiesModuleContext"""
 from types import ModuleType
+from typing import Type
 
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.operations import entities as operations_entities
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
@@ -35,6 +38,22 @@ _module_context_by_module: dict[ModuleType, EntitiesModuleContext] = {}
 @environment.test_only
 def clear_entities_module_context_cache() -> None:
     _module_context_by_module.clear()
+
+
+_module_by_entity_class: dict[type[Entity], ModuleType] = {}
+
+
+def _get_module_for_entity_class(entity_cls: type[Entity]) -> ModuleType:
+    if entity_cls not in _module_by_entity_class:
+        for module in ENTITIES_MODULE_CONTEXT_SUPPORTED_MODULES:
+            classes_in_module = get_all_entity_classes_in_module(module)
+            if entity_cls in classes_in_module:
+                # Register all classes in this module for future calls
+                for cls in classes_in_module:
+                    _module_by_entity_class[cls] = module
+                return module
+        raise ValueError(f"Unexpected entity_cls [{entity_cls}]")
+    return _module_by_entity_class[entity_cls]
 
 
 class _StateEntitiesModuleContext(EntitiesModuleContext):
@@ -200,3 +219,21 @@ def entities_module_context_for_module(
         _module_context_by_module[context.entities_module()] = context
 
     return _module_context_by_module[entities_module]
+
+
+def entities_module_context_for_entity(entity: Entity) -> EntitiesModuleContext:
+    """Returns an EntityModuleContext that can be used to determine information about
+    structure of any Entity classes in the module associated with the given
+    |entity|.
+    """
+    return entities_module_context_for_entity_class(type(entity))
+
+
+def entities_module_context_for_entity_class(
+    entity_cls: Type[Entity],
+) -> EntitiesModuleContext:
+    """Returns an EntityModuleContext that can be used to determine information about
+    structure of any Entity classes in the module associated with the given
+    |entity_cls|.
+    """
+    return entities_module_context_for_module(_get_module_for_entity_class(entity_cls))

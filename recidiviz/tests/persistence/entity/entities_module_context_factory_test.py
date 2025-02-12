@@ -20,14 +20,24 @@ from functools import cmp_to_key
 
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_entity_class,
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_entity_class_in_module_with_name,
 )
+from recidiviz.persistence.entity.operations import entities as operations_entities
+from recidiviz.persistence.entity.operations.entities import (
+    DirectIngestDataflowRawTableUpperBounds,
+)
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
+from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateAssessment,
+    NormalizedStateSentence,
+)
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
@@ -72,3 +82,28 @@ class EntitiesModuleContextFactoryTest(unittest.TestCase):
             state_entities
         ).direction_checker()
         state_direction_checker.assert_sorted(equivalent_state_classes_list)
+
+    def test_entities_module_context_for_entity_class(self) -> None:
+        self.assertEqual(
+            normalized_entities,
+            entities_module_context_for_entity_class(
+                NormalizedStateSentence
+            ).entities_module(),
+        )
+        self.assertEqual(
+            normalized_entities,
+            entities_module_context_for_entity_class(
+                NormalizedStateAssessment
+            ).entities_module(),
+        )
+        self.assertEqual(
+            state_entities,
+            entities_module_context_for_entity_class(StatePerson).entities_module(),
+        )
+
+        self.assertEqual(
+            operations_entities,
+            entities_module_context_for_entity_class(
+                DirectIngestDataflowRawTableUpperBounds
+            ).entities_module(),
+        )

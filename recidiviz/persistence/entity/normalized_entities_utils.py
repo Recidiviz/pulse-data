@@ -31,8 +31,10 @@ from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 
 # All entity classes that have Normalized versions
 from recidiviz.persistence.entity.base_entity import CoreEntity, Entity, EntityT
-from recidiviz.persistence.entity.entity_utils import (
+from recidiviz.persistence.entity.entities_module_context_factory import (
     entities_module_context_for_entity,
+)
+from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_entity_class_in_module_with_name,
 )

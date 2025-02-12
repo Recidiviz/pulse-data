@@ -27,9 +27,11 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
 )
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_entity,
+)
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
-    entities_module_context_for_entity,
     get_entity_class_in_module_with_name,
     update_reverse_references_on_related_entities,
 )

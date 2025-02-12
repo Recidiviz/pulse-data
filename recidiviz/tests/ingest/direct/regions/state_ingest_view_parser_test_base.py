@@ -49,7 +49,11 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     ingest_view_manifest_dir,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestTestFixturePath,
     enum_parsing_fixture_path,
@@ -166,13 +170,15 @@ class StateIngestViewParserTestBase:
                     "The |debug| flag should only be used for local debugging."
                 )
 
+            entities_module_context = entities_module_context_for_module(state_entities)
             print("============== EXPECTED ==============")
-            print_entity_trees(expected_output)
+            print_entity_trees(expected_output, entities_module_context)
             print("============== ACTUAL ==============")
-            print_entity_trees(parsed_output)
+            print_entity_trees(parsed_output, entities_module_context)
             launch_entity_tree_html_diff_comparison(
                 found_root_entities=parsed_output,
                 expected_root_entities=expected_output,
+                entities_module_context=entities_module_context,
                 region_code=self.region_code(),
                 print_tree_structure_only=False,
             )

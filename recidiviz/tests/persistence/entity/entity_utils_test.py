@@ -31,13 +31,13 @@ from recidiviz.persistence.entity.entities_bq_schema import (
     get_bq_schema_for_entities_module,
 )
 from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_entity,
     entities_module_context_for_module,
 )
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
 from recidiviz.persistence.entity.entity_utils import (
     deep_entity_update,
     entities_have_direct_relationship,
-    entities_module_context_for_entity,
     get_all_entities_from_tree,
     get_all_entity_classes_in_module,
     get_all_many_to_many_relationships_in_module,
@@ -45,7 +45,6 @@ from recidiviz.persistence.entity.entity_utils import (
     get_entities_by_association_table_id,
     get_entity_class_in_module_with_table_id,
     get_many_to_many_relationships,
-    get_module_for_entity_class,
     group_has_external_id_entities_by_function,
     is_many_to_many_relationship,
     is_many_to_one_relationship,
@@ -107,15 +106,6 @@ class TestEntityUtils(TestCase):
                 normalized_entities, "state_assessment"
             ),
         )
-
-    def test_get_module_for_entity_cls(self) -> None:
-        self.assertEqual(
-            normalized_entities, get_module_for_entity_class(NormalizedStateSentence)
-        )
-        self.assertEqual(
-            normalized_entities, get_module_for_entity_class(NormalizedStateAssessment)
-        )
-        self.assertEqual(state_entities, get_module_for_entity_class(StatePerson))
 
     def test_is_many_to_many_relationship(self) -> None:
         self.assertTrue(is_many_to_many_relationship(StateSentence, StateChargeV2))
@@ -749,7 +739,7 @@ class TestBidirectionalUpdates(TestCase):
         )
         entities_module_context = entities_module_context_for_module(state_entities)
         _ = set_backedges(person, entities_module_context)
-        all_entities = get_all_entities_from_tree(person)
+        all_entities = get_all_entities_from_tree(person, entities_module_context)
         for entity in all_entities:
             entities_module_context = entities_module_context_for_entity(entity)
             field_index = entities_module_context.field_index()
@@ -766,7 +756,7 @@ class TestBidirectionalUpdates(TestCase):
         staff = generate_full_graph_state_staff(set_back_edges=False, set_ids=True)
         entities_module_context = entities_module_context_for_module(state_entities)
         _ = set_backedges(staff, entities_module_context)
-        all_entities = get_all_entities_from_tree(staff)
+        all_entities = get_all_entities_from_tree(staff, entities_module_context)
         for entity in all_entities:
             entities_module_context = entities_module_context_for_entity(entity)
             field_index = entities_module_context.field_index()
@@ -780,13 +770,14 @@ class TestBidirectionalUpdates(TestCase):
             self.assertGreater(len(related_entities), 0)
 
     def test_get_many_to_many_relationships_person(self) -> None:
+        entities_module_context = entities_module_context_for_module(state_entities)
         person = generate_full_graph_state_person(
             set_back_edges=True, include_person_back_edges=True, set_ids=True
         )
-        all_entities = get_all_entities_from_tree(person)
+        all_entities = get_all_entities_from_tree(person, entities_module_context)
         for entity in all_entities:
             many_to_many_relationships = get_many_to_many_relationships(
-                entity.__class__
+                entity.__class__, entities_module_context
             )
             if isinstance(entity, StateCharge):
                 self.assertSetEqual(
@@ -802,11 +793,12 @@ class TestBidirectionalUpdates(TestCase):
                 self.assertEqual(len(many_to_many_relationships), 0)
 
     def test_get_many_to_many_relationships_staff(self) -> None:
+        entities_module_context = entities_module_context_for_module(state_entities)
         staff = generate_full_graph_state_staff(set_back_edges=True, set_ids=True)
-        all_entities = get_all_entities_from_tree(staff)
+        all_entities = get_all_entities_from_tree(staff, entities_module_context)
         for entity in all_entities:
             many_to_many_relationships = get_many_to_many_relationships(
-                entity.__class__
+                entity.__class__, entities_module_context
             )
             self.assertEqual(len(many_to_many_relationships), 0)
 
