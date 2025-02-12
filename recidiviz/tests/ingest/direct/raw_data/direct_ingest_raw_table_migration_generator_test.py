@@ -89,6 +89,28 @@ WHERE STRUCT(COL1, update_datetime) IN (
         ]
         self.assertEqual(expected_project_2_queries, project_2_queries)
 
+    def test_delete_migration_escape_quotes(self) -> None:
+        migration = DeleteFromRawTableMigration(
+            migrations_file=self._migration_file_path_for_tag("tagC"),
+            update_datetime_filters=[_DATE_1],
+            filters=[("COL1", "ABC'DE\"F")],
+        )
+
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
+        with local_project_id_override("recidiviz-456"):
+            queries = RawTableMigrationGenerator.migration_queries(
+                [migration], test_raw_table, data_update_datetime=None
+            )
+
+        expected_queries = [
+            """DELETE FROM `recidiviz-456.us_xx_raw_data.tagC`
+WHERE STRUCT(COL1, update_datetime) IN (
+    STRUCT("ABC'DE\\"F", "2020-04-14T00:31:00")
+);"""
+        ]
+        self.assertEqual(expected_queries, queries)
+
     def test_delete_migration_secondary(self) -> None:
         migration = DeleteFromRawTableMigration(
             migrations_file=self._migration_file_path_for_tag("tagC"),
@@ -227,6 +249,33 @@ FROM (SELECT * FROM UNNEST([
 WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update_datetime;"""
         ]
         self.assertEqual(expected_project_2_queries, project_2_queries)
+
+    def test_update_migration_escape_quotes(self) -> None:
+        migration = UpdateRawTableMigration(
+            migrations_file=self._migration_file_path_for_tag("tagC"),
+            update_datetime_filters=[
+                _DATE_2,
+            ],
+            filters=[("COL1", "ABC'DEF")],
+            updates=[("COL1", "123'456")],
+        )
+
+        test_raw_table = BigQueryAddress(dataset_id="us_xx_raw_data", table_id="tagC")
+
+        with local_project_id_override("recidiviz-456"):
+            queries = RawTableMigrationGenerator.migration_queries(
+                [migration], test_raw_table, data_update_datetime=None
+            )
+
+        expected_queries = [
+            """UPDATE `recidiviz-456.us_xx_raw_data.tagC` original
+SET COL1 = updates.new__COL1
+FROM (SELECT * FROM UNNEST([
+    STRUCT('ABC\\'DEF' AS COL1, CAST('2020-08-16T01:02:03' AS DATETIME) AS update_datetime, '123\\'456' AS new__COL1)
+])) updates
+WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update_datetime;"""
+        ]
+        self.assertEqual(expected_queries, queries)
 
     def test_update_migration_multiples(self) -> None:
         migration = UpdateRawTableMigration(

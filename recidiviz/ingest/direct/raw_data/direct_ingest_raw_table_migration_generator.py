@@ -248,8 +248,12 @@ class RawTableMigrationGenerator:
         filter_structs = []
         for m in migrations:
             for filter_values in m.ordered_filter_values:
+                escaped_filter_values = [
+                    filter_value.replace('"', '\\"') for filter_value in filter_values
+                ]
+
                 filter_values_str = ", ".join(
-                    [f'"{filter_value}"' for filter_value in filter_values]
+                    [f'"{filter_value}"' for filter_value in escaped_filter_values]
                 )
                 filter_structs.append(f"STRUCT({filter_values_str})")
         filter_structs_str = ",\n    ".join(filter_structs)
@@ -327,14 +331,19 @@ class RawTableMigrationGenerator:
                             f"CAST('{filter_value}' AS DATETIME) AS {filter_key}"
                         )
                     else:
+                        # Escape single quotes
+                        filter_value = filter_value.replace("'", "\\'")
                         struct_values.append(f"'{filter_value}' AS {filter_key}")
 
                 for update_key in migration.ordered_update_keys:
-                    struct_values.append(
-                        f"'{migration.updates[update_key]}' AS new__{update_key}"
-                        if migration.updates[update_key]
-                        else f"CAST(NULL AS STRING) AS new__{update_key}"
-                    )
+                    new_value = migration.updates[update_key]
+                    if new_value:
+                        new_value = new_value.replace("'", "\\'")
+                        struct_values.append(f"'{new_value}' AS new__{update_key}")
+                    else:
+                        struct_values.append(
+                            f"CAST(NULL AS STRING) AS new__{update_key}"
+                        )
                 struct_values_str = ", ".join(struct_values)
                 migration_update_structs.append(f"STRUCT({struct_values_str})")
 
