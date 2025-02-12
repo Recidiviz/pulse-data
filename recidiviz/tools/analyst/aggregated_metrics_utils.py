@@ -102,6 +102,7 @@ def get_person_events(
     output_file_path: str = "",
     supervisor_id: str = "",
     officer_ids: Optional[list[str]] = None,
+    use_transitional_officer_logic: bool = True,
     print_query: bool = False,
 ) -> pd.DataFrame:
     """
@@ -118,6 +119,9 @@ def get_person_events(
     supervisor_id: If the events are being pulled for a set of officers associated with a supervisor, the ID can be
         included in the output name
     officer_ids: If the events are being pulled for a set of officers, provide their external ids
+    use_transitional_officer_logic: Whether we should use tables with "transitional officer logic", which counts
+        clients under a transitional officer as being under the supervision officer they were previously. For
+        outcomes metrics this should generally be true; otherwise this should generally be false.
 
     Args:
         officer_ids (object):
@@ -171,7 +175,7 @@ def get_person_events(
                         s.assignment_date,
                         s.end_date_exclusive,
                     FROM `observations__person_event.all_person_events_materialized` e
-                    INNER JOIN `aggregated_metrics.supervision_officer_or_previous_if_transitional_metrics_person_assignment_sessions_materialized` s
+                    INNER JOIN `aggregated_metrics.supervision_officer_{"or_previous_if_transitional_" if use_transitional_officer_logic else ""}metrics_person_assignment_sessions_materialized` s
                         ON e.person_id = s.person_id
                         AND (e.event_date between s.assignment_date and COALESCE(s.end_date,'9999-01-01'))
                         AND e.state_code = '{state_code}' 

@@ -19,6 +19,9 @@ from collections import defaultdict
 
 from more_itertools import one
 
+from recidiviz.aggregated_metrics.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
+)
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states_for_bigquery,
@@ -34,31 +37,19 @@ from recidiviz.outliers.types import MetricOutcome, OutliersMetricConfig
 from recidiviz.utils.types import assert_type
 
 
-def format_state_specific_officer_aggregated_metric_filters() -> str:
-    state_specific_ctes = []
-
-    for state_code in get_outliers_enabled_states_for_bigquery():
-        config = get_outliers_backend_config(state_code)
-        state_specific_ctes.append(
-            f"""
+def officer_aggregated_metrics_plus_inclusion(
+    unit_of_analysis_type: MetricUnitOfAnalysisType,
+) -> str:
+    return f"""
     SELECT 
         m.*,
         -- flag to demarcate which officer metrics should be included in benchmark
         -- and outlier calculations
-        include_in_outcomes {config.supervision_officer_metric_exclusions if config.supervision_officer_metric_exclusions else ""} 
-        as include_in_outcomes
-    FROM `{{project_id}}.aggregated_metrics.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized` m
-    -- Join on staff product view to ensure staff exclusions are applied
-    INNER JOIN `{{project_id}}.outliers_views.supervision_officers_materialized` o
-        ON m.state_code = o.state_code AND m.officer_id = o.external_id
-    WHERE 
-        m.state_code = '{state_code}'
-        -- currently, the Outliers product only references metrics for 12-month periods
-        AND m.period = 'YEAR'
+        include_in_outcomes
+    FROM `{{project_id}}.aggregated_metrics.supervision_{unit_of_analysis_type.short_name}_aggregated_metrics_materialized` m
+    INNER JOIN include_in_outcomes_cte
+    USING (state_code, officer_id, end_date, period)
 """
-        )
-
-    return "\n      UNION ALL\n".join(state_specific_ctes)
 
 
 def format_state_specific_person_events_filters(years_lookback: int = 2) -> str:

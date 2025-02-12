@@ -124,7 +124,7 @@ WORKFLOWS_ASSIGNMENT_NAMES_TO_TYPES = {
     ),
     "SUPERVISION_OFFICER": (
         MetricPopulationType.SUPERVISION,
-        MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
     ),
     "ALL_INCARCERATION_STATES": (
         MetricPopulationType.INCARCERATION,

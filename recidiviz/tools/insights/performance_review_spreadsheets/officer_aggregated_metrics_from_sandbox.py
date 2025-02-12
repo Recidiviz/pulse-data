@@ -45,7 +45,7 @@ SELECT
     1 - SAFE_DIVIDE(avg_population_contact_overdue, avg_population_contact_required) AS timely_contact,
     1 - SAFE_DIVIDE(avg_population_task_eligible_supervision_level_downgrade, avg_daily_population) AS timely_downgrade,
     IF(caseload_category_proportion=0, NULL, STRING_AGG(metric, ", ")) AS caseload_type
-FROM `recidiviz-123.{sandbox_prefix}_aggregated_metrics.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized`
+FROM `recidiviz-123.{sandbox_prefix}_aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
 UNPIVOT (caseload_category_proportion FOR metric IN ({caseload_category_metrics}))
 WHERE
     {where_clause}

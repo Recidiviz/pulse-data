@@ -69,7 +69,7 @@ def build_vitals_aggregated_metrics_collection_config() -> AggregatedMetricsColl
                 output_dataset_id=VITALS_REPORT_DATASET,
                 population_type=MetricPopulationType.SUPERVISION,
                 units_of_analysis={
-                    MetricUnitOfAnalysisType.SUPERVISION_OFFICER_OR_PREVIOUS_IF_TRANSITIONAL,
+                    MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
                     MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
                     MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
                     MetricUnitOfAnalysisType.STATE_CODE,

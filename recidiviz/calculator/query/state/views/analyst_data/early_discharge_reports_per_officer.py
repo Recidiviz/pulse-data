@@ -51,7 +51,7 @@ WITH early_discharges_last_1_month_agg_metrics AS (
     ROUND(avg_population_task_eligible_early_discharge, 1) AS avg_population_task_eligible_early_discharge,
     task_completions_early_discharge
   FROM 
-    `{{project_id}}.aggregated_metrics.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized`
+    `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
   WHERE period IN ('MONTH')
     AND avg_critical_caseload_size > 0
     -- Only keep metrics where end_date is the current_month
@@ -69,7 +69,7 @@ early_discharges_last_6_months_agg_metrics AS (
   FROM (
       SELECT *
       FROM 
-        `{{project_id}}.aggregated_metrics.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized`
+        `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized`
       WHERE period IN ('QUARTER')
         AND avg_critical_caseload_size IS NOT NULL
         AND avg_critical_caseload_size != 0

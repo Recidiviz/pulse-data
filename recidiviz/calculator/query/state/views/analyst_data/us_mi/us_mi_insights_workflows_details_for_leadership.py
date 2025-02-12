@@ -214,28 +214,28 @@ SELECT
     AS `Meets Criteria for Insights`,
   COALESCE(UPPER(CAST(flag.outlier_on_most_recent_period AS STRING)), 'N/A') 
     AS `Agent is Outlier on at Least One Insights Metric`,
-  IF(flag.officer_id IS NOT NULL, ROUND(agg.avg_daily_population, 0), NULL) 
+  IF(flag.officer_id IS NOT NULL, ROUND(transitional_officer_agg.avg_daily_population, 0), NULL) 
     AS `Average Daily Caseload`,
   IF(flag.officer_id IS NOT NULL, ROUND(ab_rates.metric_rate, 2), NULL)  
     AS `Absconder Warrants Rate if Outlier on Metric`,
-  IF(flag.officer_id IS NOT NULL, agg.absconsions_bench_warrants, NULL)  
+  IF(flag.officer_id IS NOT NULL, transitional_officer_agg.absconsions_bench_warrants, NULL)  
     AS `Count of Absconder Warrants`,
   IF(flag.officer_id IS NOT NULL, ROUND(inc_rates.metric_rate, 2), NULL)  
     AS `Incarceration Rate if Outlier on Metric`,
-  IF(flag.officer_id IS NOT NULL, agg.incarceration_starts_AND_inferred, NULL) `Count of Incarcerations`,
+  IF(flag.officer_id IS NOT NULL, transitional_officer_agg.incarceration_starts_AND_inferred, NULL) `Count of Incarcerations`,
   COALESCE(logins.total_logins, 0) 
     AS `Total Logins in Last Year Since Tool Launch`,
   ROUND(COALESCE(logins.pct_months_login_past_year, 0),2) 
     AS `Pct of Months with at Least One Login in Last Year Since Tool Launch`,
-  agg.task_completions_early_discharge 
+  officer_agg.task_completions_early_discharge 
     AS `# of Clients Granted Early Discharge in Last Year`,
-  agg.task_completions_supervision_level_downgrade_before_initial_classification_review_date 
+  officer_agg.task_completions_supervision_level_downgrade_before_initial_classification_review_date 
     AS `# of Clients Granted Supervision Level Mismatch in Last Year`,
-  agg.task_completions_supervision_level_downgrade_after_initial_classification_review_date 
+  officer_agg.task_completions_supervision_level_downgrade_after_initial_classification_review_date 
     AS `# of Clients Granted Supervision Level Downgrade in Last Year`,
-  agg.task_completions_while_eligible_full_term_discharge 
+  officer_agg.task_completions_while_eligible_full_term_discharge 
     AS `# of Clients Granted Overdue for Discharge in Last Year`,
-  agg.task_completions_transfer_to_limited_supervision 
+  officer_agg.task_completions_transfer_to_limited_supervision 
     AS `# of Clients Granted Minimum Telephone Reporting in Last Year`,
   COALESCE(elig.num_eligible_EARLY_DISCHARGE, 0) 
     AS `# of Clients Currently Eligible for Early Discharge`,
@@ -264,7 +264,9 @@ LEFT JOIN logins
   USING(officer_id, state_code)
 LEFT JOIN outlier_status_flag flag
   USING(officer_id, state_code, period, end_date)
-INNER JOIN `{project_id}.aggregated_metrics.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized` agg
+INNER JOIN `{project_id}.aggregated_metrics.supervision_officer_or_previous_if_transitional_aggregated_metrics_materialized` transitional_officer_agg
+  USING(state_code, officer_id, period, end_date)
+INNER JOIN `{project_id}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized` officer_agg
   USING(state_code, officer_id, period, end_date)
 LEFT JOIN (SELECT * FROM outlier_rates WHERE metric_id = 'absconsions_bench_warrants') ab_rates
   USING(state_code, officer_id, period, end_date)
