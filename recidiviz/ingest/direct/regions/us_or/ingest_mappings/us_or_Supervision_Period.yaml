@@ -218,6 +218,7 @@ output:
                   - RVCM # TODO(#28038): Find correct mapping for this value
                   - OC # Out Count
                   - PVPD # TODO(#33927): Remap once we know what this means
+                  - RIOL # TODO(#38315): Remap once we know what this means
                 StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN:
                   - AUTO # unknown
                   - ADMB # unknown - old code (only 39 instances)
