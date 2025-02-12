@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: IA_DOC_ProbationROV
+file_description: |-
+  This table contains probation violation report information
+data_classification: source
+primary_key_cols:
+  - ProbationReportOfViolationId
+columns:
+  - name: ProbationReportOfViolationId
+    description: ICON generated record ID for this probation violation report record
+  - name: OffenderCd
+    description: Offender code
+    is_pii: True
+  - name: WorkUnitRegionId
+    description: Reference code for work unit region
+  - name: WorkUnitId
+    description: Reference code for work unit
+  - name: ReportDt
+    description: Report date
+    field_type: datetime
+  - name: Addendum
+    description: Addendum
+    is_pii: True
+  - name: RecommendationToCourt
+    description: RecommendationToCourt
+    is_pii: True
+  - name: ReportSSN
+    description: Flag for whether SSN was reported?
+  - name: ReportBirthDt
+    description: Flag for whether birth date was reported?
+  - name: ReportAddress
+    description: Flag for whether address was reported?
+  - name: ReportGroupBy
+    description: Report group by
+  - name: CaseManagerStaffId
+    description: Case manager staff id
+    is_pii: True
+  - name: CaseManagerStaffWorkUnitRegionId
+    description: Case manager work region id
+    null_values:
+      - "NULL"
+  - name: CaseManagerStaffWorkUnitId
+    description: Case manager work unit id
+    null_values:
+      - "NULL"
+  - name: SupervisorStaffId
+    description: Supervision staff id
+    is_pii: True
+  - name: InformationalPurposesOnly
+    description: Flag for informational purpose only
+    null_values:
+      - "NULL"
+  - name: WarrantRequested
+    description: Flag for warrant requested
+  - name: SubmittedDt
+    description: Report submitted date
+    field_type: datetime
+    null_values:
+      - "NULL"
+  - name: Comments
+    description: Comments
+    is_pii: True
+  - name: Active
+    description: Active flag
+  - name: EnteredDt
+    description: Entered date
+    field_type: datetime
