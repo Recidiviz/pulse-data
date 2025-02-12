@@ -550,13 +550,9 @@ class SupervisionOfficerSupervisorEntity:
     external_id: str = attr.ib()
     # The officer's pseudonymized id
     pseudonymized_id: str = attr.ib()
-    # The district the supervisor's in
-    supervision_district: Optional[str] = attr.ib()
     email: str = attr.ib()
     # Whether the supervisor has outliers in the latest period
     has_outliers: bool = attr.ib()
-    # The unit the supervisor's in
-    supervision_unit: Optional[str] = attr.ib()
     # Supervision location to show on the supervisor list page
     supervision_location_for_list_page: Optional[str] = attr.ib()
     # Supervision location to show on the individual supervisor page

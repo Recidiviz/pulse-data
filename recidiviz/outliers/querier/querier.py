@@ -136,7 +136,10 @@ class OutliersQuerier:
                     and_(
                         SupervisionOfficerSupervisor.state_code
                         == SupervisionDistrictManager.state_code,
-                        SupervisionOfficerSupervisor.supervision_district
+                        # for the supervisor, it doesn't matter which location we choose because
+                        # we only send emails for PA which has the same value for both location
+                        # fields
+                        SupervisionOfficerSupervisor.supervision_location_for_list_page
                         == SupervisionDistrictManager.supervision_district,
                     ),
                     # Ensure to use a LEFT OUTER JOIN
@@ -453,8 +456,6 @@ class OutliersQuerier:
                 .group_by(
                     SupervisionOfficerSupervisor.external_id,
                     SupervisionOfficerSupervisor.full_name,
-                    SupervisionOfficerSupervisor.supervision_district,
-                    SupervisionOfficerSupervisor.supervision_unit,
                     SupervisionOfficerSupervisor.supervision_location_for_list_page,
                     SupervisionOfficerSupervisor.supervision_location_for_supervisor_page,
                     SupervisionOfficerSupervisor.pseudonymized_id,
@@ -463,8 +464,6 @@ class OutliersQuerier:
                 .with_entities(
                     SupervisionOfficerSupervisor.external_id,
                     SupervisionOfficerSupervisor.full_name,
-                    SupervisionOfficerSupervisor.supervision_district,
-                    SupervisionOfficerSupervisor.supervision_unit,
                     SupervisionOfficerSupervisor.supervision_location_for_list_page,
                     SupervisionOfficerSupervisor.supervision_location_for_supervisor_page,
                     SupervisionOfficerSupervisor.pseudonymized_id,
@@ -499,8 +498,6 @@ class OutliersQuerier:
                     full_name=PersonName(**record.full_name),
                     external_id=record.external_id,
                     pseudonymized_id=record.pseudonymized_id,
-                    supervision_district=record.supervision_district,
-                    supervision_unit=record.supervision_unit,
                     supervision_location_for_list_page=record.supervision_location_for_list_page,
                     supervision_location_for_supervisor_page=record.supervision_location_for_supervisor_page,
                     email=record.email,
