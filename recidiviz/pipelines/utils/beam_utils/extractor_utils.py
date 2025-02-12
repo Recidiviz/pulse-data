@@ -201,7 +201,9 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         """
         if is_many_to_many_relationship(parent_cls=parent_cls, child_cls=child_cls):
             association_table = get_association_table_id(
-                parent_cls=parent_cls, child_cls=child_cls
+                parent_cls=parent_cls,
+                child_cls=child_cls,
+                entities_module_context=self._entities_module_context,
             )
             association_table_entity_id_field = child_cls.get_class_id_name()
         elif is_one_to_many_relationship(parent_cls=parent_cls, child_cls=child_cls):

@@ -22,6 +22,9 @@ from typing import Tuple, Type
 import attr
 
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import (
     get_entities_by_association_table_id,
     get_entity_class_in_module_with_table_id,
@@ -85,8 +88,10 @@ class AssociationTableMetadataHelper:
         cls, entities_module: ModuleType, table_id: str
     ) -> "AssociationTableMetadataHelper":
         """Returns an instance of AssociationTableMetadataHelper for the given table id."""
+        entities_module_context = entities_module_context_for_module(entities_module)
         entity_cls_a, entity_cls_b = get_entities_by_association_table_id(
-            entities_module=entities_module, association_table_id=table_id
+            entities_module_context=entities_module_context,
+            association_table_id=table_id,
         )
         return cls(entity_cls_a=entity_cls_a, entity_cls_b=entity_cls_b)
 

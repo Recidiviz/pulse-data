@@ -110,6 +110,21 @@ class _StateEntitiesModuleContext(EntitiesModuleContext):
             state_entities.StateStaffCaseloadTypePeriod.__name__,
         ]
 
+    # TODO(#10389): Remove this custom handling for legacy sentence association tables
+    #  once we remove these classes from the schema.
+    @classmethod
+    def custom_association_tables(cls) -> dict[str, tuple[type[Entity], type[Entity]]]:
+        return {
+            "state_charge_supervision_sentence_association": (
+                state_entities.StateCharge,
+                state_entities.StateSupervisionSentence,
+            ),
+            "state_charge_incarceration_sentence_association": (
+                state_entities.StateCharge,
+                state_entities.StateIncarcerationSentence,
+            ),
+        }
+
 
 class _NormalizedStateEntitiesModuleContext(EntitiesModuleContext):
     """EntitiesModuleContext for the normalized state entities module defined at
@@ -168,6 +183,21 @@ class _NormalizedStateEntitiesModuleContext(EntitiesModuleContext):
             normalized_entities.NormalizedStateStaffLocationPeriod.__name__,
             normalized_entities.NormalizedStateStaffCaseloadTypePeriod.__name__,
         ]
+
+    # TODO(#10389): Remove this custom handling for legacy sentence association tables
+    #  once we remove these classes from the schema.
+    @classmethod
+    def custom_association_tables(cls) -> dict[str, tuple[type[Entity], type[Entity]]]:
+        return {
+            "state_charge_supervision_sentence_association": (
+                normalized_entities.NormalizedStateCharge,
+                normalized_entities.NormalizedStateSupervisionSentence,
+            ),
+            "state_charge_incarceration_sentence_association": (
+                normalized_entities.NormalizedStateCharge,
+                normalized_entities.NormalizedStateIncarcerationSentence,
+            ),
+        }
 
 
 class _OperationsEntitiesModuleContext(EntitiesModuleContext):

@@ -27,6 +27,9 @@ from google.cloud.bigquery import SchemaField
 from recidiviz.big_query.big_query_utils import schema_field_for_attribute
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_module,
+)
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_all_many_to_many_relationships_in_module,
@@ -128,9 +131,12 @@ def _get_association_table_to_schema_map(
     """
     association_table_to_schema = {}
 
+    entities_module_context = entities_module_context_for_module(entities_module)
     associated_entites = get_all_many_to_many_relationships_in_module(entities_module)
     for entity_class_a, entity_class_b in associated_entites:
-        association_table_id = get_association_table_id(entity_class_a, entity_class_b)
+        association_table_id = get_association_table_id(
+            entity_class_a, entity_class_b, entities_module_context
+        )
         schema = [
             SchemaField(
                 STATE_CODE_COL,

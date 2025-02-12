@@ -60,8 +60,6 @@ from recidiviz.persistence.entity.base_entity import (
 from recidiviz.persistence.entity.entities_module_context import EntitiesModuleContext
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory
 from recidiviz.persistence.entity.entity_field_index import EntityFieldType
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
@@ -777,7 +775,11 @@ def entities_have_direct_relationship(
     return reference_field is not None and reverse_reference_field is not None
 
 
-def get_association_table_id(parent_cls: Type[Entity], child_cls: Type[Entity]) -> str:
+def get_association_table_id(
+    parent_cls: Type[Entity],
+    child_cls: Type[Entity],
+    entities_module_context: EntitiesModuleContext,
+) -> str:
     """For two classes that have a many to many relationship between them,
     returns the name of the association table that can be used to hydrate
     relationships between the classes.
@@ -788,28 +790,15 @@ def get_association_table_id(parent_cls: Type[Entity], child_cls: Type[Entity]) 
             f"many-to-many relationship - cannot get an association table."
         )
 
-    # TODO(#10389): Remove this custom handling for legacy sentence association tables
-    #  once we remove these classes from the schema.
-    # TODO(#38281): Move this custom schema-specific logic into the
-    #  EntitiesModuleContext so we don't have to import state_entities or
-    #  normalized_entities
-    if {parent_cls, child_cls} == {
-        state_entities.StateSupervisionSentence,
-        state_entities.StateCharge,
-    } or {parent_cls, child_cls} == {
-        normalized_entities.NormalizedStateSupervisionSentence,
-        normalized_entities.NormalizedStateCharge,
-    }:
-        return "state_charge_supervision_sentence_association"
+    parent_child_tuple_to_custom_association_table = {
+        parent_child_tuple: table_id
+        for table_id, parent_child_tuple in entities_module_context.custom_association_tables().items()
+    }
 
-    if {parent_cls, child_cls} == {
-        state_entities.StateIncarcerationSentence,
-        state_entities.StateCharge,
-    } or {parent_cls, child_cls} == {
-        normalized_entities.NormalizedStateIncarcerationSentence,
-        normalized_entities.NormalizedStateCharge,
-    }:
-        return "state_charge_incarceration_sentence_association"
+    if (parent_cls, child_cls) in parent_child_tuple_to_custom_association_table:
+        return parent_child_tuple_to_custom_association_table[(parent_cls, child_cls)]
+    if (child_cls, parent_cls) in parent_child_tuple_to_custom_association_table:
+        return parent_child_tuple_to_custom_association_table[(child_cls, parent_cls)]
 
     parts = [
         *sorted([parent_cls.get_table_id(), child_cls.get_table_id()]),
@@ -819,34 +808,14 @@ def get_association_table_id(parent_cls: Type[Entity], child_cls: Type[Entity]) 
 
 
 def get_entities_by_association_table_id(
-    entities_module: ModuleType, association_table_id: str
+    entities_module_context: EntitiesModuleContext,
+    association_table_id: str,
 ) -> Tuple[Type[Entity], Type[Entity]]:
     """For the given association table id, returns the classes for the two entities that
     this table associates.
     """
-    # TODO(#10389): Remove this custom handling for legacy sentence association tables
-    #  once we remove these classes from the schema.
-    # TODO(#38281): Move this custom schema-specific logic into the
-    #  EntitiesModuleContext so we don't have to import state_entities or
-    #  normalized_entities
-    if association_table_id == "state_charge_supervision_sentence_association":
-        if entities_module == state_entities:
-            return state_entities.StateCharge, state_entities.StateSupervisionSentence
-        if entities_module == normalized_entities:
-            return (
-                normalized_entities.NormalizedStateCharge,
-                normalized_entities.NormalizedStateSupervisionSentence,
-            )
-        raise ValueError(f"Unexpected module {entities_module}")
-    if association_table_id == "state_charge_incarceration_sentence_association":
-        if entities_module == state_entities:
-            return state_entities.StateCharge, state_entities.StateIncarcerationSentence
-        if entities_module == normalized_entities:
-            return (
-                normalized_entities.NormalizedStateCharge,
-                normalized_entities.NormalizedStateIncarcerationSentence,
-            )
-        raise ValueError(f"Unexpected module {entities_module}")
+    if association_table_id in entities_module_context.custom_association_tables():
+        return entities_module_context.custom_association_tables()[association_table_id]
 
     if not (
         match := re.match(
@@ -859,9 +828,9 @@ def get_entities_by_association_table_id(
         )
 
     return get_entity_class_in_module_with_table_id(
-        entities_module, match.group("table_id_1")
+        entities_module_context.entities_module(), match.group("table_id_1")
     ), get_entity_class_in_module_with_table_id(
-        entities_module, match.group("table_id_2")
+        entities_module_context.entities_module(), match.group("table_id_2")
     )
 
 

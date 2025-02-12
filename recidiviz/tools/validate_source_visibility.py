@@ -272,8 +272,6 @@ def main() -> int:
         "recidiviz.big_query.big_query_job_labels",
         "recidiviz.big_query.address_overrides",
         "recidiviz.big_query.big_query_address",
-        "recidiviz.big_query.big_query_utils",
-        "recidiviz.big_query.constants",
         "recidiviz.common",
         "recidiviz.cloud_resources",
         "recidiviz.cloud_storage.gcsfs_path",

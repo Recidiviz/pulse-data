@@ -21,6 +21,9 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
     IngestViewManifestCollector,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entities_module_context_factory import (
+    entities_module_context_for_entity_class,
+)
 from recidiviz.persistence.entity.entity_utils import (
     entities_have_direct_relationship,
     get_association_table_id,
@@ -111,6 +114,9 @@ def get_pipeline_output_tables(
     )
 
     for i, entity_class_a in enumerate(sorted_entity_classes):
+        entities_module_context = entities_module_context_for_entity_class(
+            entity_class_a
+        )
         for entity_class_b in sorted_entity_classes[i + 1 :]:
             if not entities_have_direct_relationship(entity_class_a, entity_class_b):
                 continue
@@ -119,6 +125,8 @@ def get_pipeline_output_tables(
                 continue
 
             expected_output_tables.add(
-                get_association_table_id(entity_class_a, entity_class_b)
+                get_association_table_id(
+                    entity_class_a, entity_class_b, entities_module_context
+                )
             )
     return expected_output_tables

@@ -21,6 +21,7 @@ import abc
 from functools import cache
 from types import ModuleType
 
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_field_index import EntityFieldIndex
 from recidiviz.persistence.entity.schema_edge_direction_checker import (
     SchemaEdgeDirectionChecker,
@@ -53,3 +54,9 @@ class EntitiesModuleContext:
     @classmethod
     def field_index(cls) -> EntityFieldIndex:
         return EntityFieldIndex.get(cls.entities_module(), cls.direction_checker())
+
+    # TODO(#10389): Remove this custom association tables function once remove legacy
+    #  sentences from the schema.
+    @classmethod
+    def custom_association_tables(cls) -> dict[str, tuple[type[Entity], type[Entity]]]:
+        return {}

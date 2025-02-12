@@ -236,6 +236,10 @@ class StateDatasetValidator:
         )
         self.bq_client = BigQueryClientImpl(project_id=self.output_project_id)
         self.entities_module = entities_module
+        self.entities_module_context = entities_module_context_for_module(
+            entities_module
+        )
+        self.field_index = self.entities_module_context.field_index()
 
         with local_project_id_override(reference_state_project_id):
             self.source_table_collection = self.get_source_table_collection(
@@ -537,7 +541,7 @@ FROM ({filtered_with_new_cols})"""
             associated_entity_1_cls,
             associated_entity_2_cls,
         ) = get_entities_by_association_table_id(
-            self.entities_module, association_table_id
+            self.entities_module_context, association_table_id
         )
 
         associated_entity_1_pk = associated_entity_1_cls.get_primary_key_column_name()
@@ -633,11 +637,7 @@ USING({associated_entity_2_pk})
         in the entity tree, False if it is connected via an intermediate entity /
         intermediate entities.
         """
-
-        field_index = entities_module_context_for_module(
-            self.entities_module
-        ).field_index()
-        back_edge_fields = field_index.get_all_entity_fields(
+        back_edge_fields = self.field_index.get_all_entity_fields(
             entity_cls, EntityFieldType.BACK_EDGE
         )
 

@@ -22,6 +22,9 @@ from recidiviz.persistence.entity.entity_metadata_helper import (
     AssociationTableMetadataHelper,
     EntityMetadataHelper,
 )
+from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities_module_context import (
+    FakeEntitiesModuleContext,
+)
 from recidiviz.tests.persistence.entity import fake_entities
 
 
@@ -45,6 +48,16 @@ class TestEntityMetadataHelper(unittest.TestCase):
 
 class TestAssociationTableMetadataHelper(unittest.TestCase):
     """Tests for AssociationTableMetadataHelper."""
+
+    def setUp(self) -> None:
+        self.module_context_patcher = patch(
+            "recidiviz.persistence.entity.entity_metadata_helper.entities_module_context_for_module",
+            return_value=FakeEntitiesModuleContext(),
+        )
+        self.module_context_patcher.start()
+
+    def tearDown(self) -> None:
+        self.module_context_patcher.stop()
 
     @patch(
         "recidiviz.persistence.entity.entity_metadata_helper.get_entities_by_association_table_id",

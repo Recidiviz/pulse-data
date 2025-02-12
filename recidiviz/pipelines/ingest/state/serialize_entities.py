@@ -77,7 +77,7 @@ class SerializeEntities(beam.DoFn):
                     parent_entity_cls_name,
                 )
                 association_table_id = get_association_table_id(
-                    parent_entity_cls, entity_cls
+                    parent_entity_cls, entity_cls, self._entities_module_context
                 )
                 parent_entities = entity.get_field_as_list(relationship)
                 for parent_entity in parent_entities:

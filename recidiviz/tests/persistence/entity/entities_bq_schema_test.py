@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for entities_bq_schema.py"""
 import unittest
+from unittest.mock import MagicMock, patch
 
 from google.cloud.bigquery import SchemaField
 from more_itertools import one
@@ -32,6 +33,9 @@ from recidiviz.persistence.entity.state import (
 from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
     build_normalized_state_output_source_table_collection,
     build_state_output_source_table_collection,
+)
+from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities_module_context import (
+    FakeEntitiesModuleContext,
 )
 from recidiviz.tests.persistence.entity import fake_entities
 
@@ -86,7 +90,13 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
                     f"[{field.name}] on table [{table}]",
                 )
 
-    def test_bq_schema_for_entities_module(self) -> None:
+    @patch(
+        "recidiviz.persistence.entity.entities_bq_schema.entities_module_context_for_module",
+        return_value=FakeEntitiesModuleContext(),
+    )
+    def test_bq_schema_for_entities_module(
+        self, _entities_module_mock: MagicMock
+    ) -> None:
         expected_schema = {
             "fake_another_entity": [
                 SchemaField("state_code", "STRING", "NULLABLE"),
@@ -124,7 +134,13 @@ class TestGetBqSchemaForEntitiesModule(unittest.TestCase):
         schema = get_bq_schema_for_entities_module(fake_entities)
         self.assertEqual(expected_schema, schema)
 
-    def test_get_bq_schema_for_entity_table(self) -> None:
+    @patch(
+        "recidiviz.persistence.entity.entities_bq_schema.entities_module_context_for_module",
+        return_value=FakeEntitiesModuleContext(),
+    )
+    def test_get_bq_schema_for_entity_table(
+        self, _entities_module_mock: MagicMock
+    ) -> None:
         self.assertEqual(
             [
                 SchemaField("state_code", "STRING", "NULLABLE"),

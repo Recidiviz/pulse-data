@@ -35,6 +35,9 @@ from recidiviz.looker.lookml_view_field_parameter import (
     FieldParameterValueFormat,
 )
 from recidiviz.looker.lookml_view_source_table import SqlTableAddress
+from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities_module_context import (
+    FakeEntitiesModuleContext,
+)
 from recidiviz.tests.persistence.entity import fake_entities
 from recidiviz.tools.looker.state.state_dataset_view_generator import (
     generate_state_views,
@@ -45,6 +48,24 @@ from recidiviz.tools.looker.state.state_dataset_view_generator import (
 
 class StateViewGenerator(unittest.TestCase):
     """Tests LookML view generation functions for states"""
+
+    def setUp(self) -> None:
+        self.module_context_patchers = [
+            patch(
+                "recidiviz.persistence.entity.entities_bq_schema.entities_module_context_for_module",
+                return_value=FakeEntitiesModuleContext(),
+            ),
+            patch(
+                "recidiviz.persistence.entity.entity_metadata_helper.entities_module_context_for_module",
+                return_value=FakeEntitiesModuleContext(),
+            ),
+        ]
+        for patcher in self.module_context_patchers:
+            patcher.start()
+
+    def tearDown(self) -> None:
+        for patcher in self.module_context_patchers:
+            patcher.stop()
 
     @patch(
         "recidiviz.tools.looker.state.state_dataset_view_generator.ENTITIES_MODULE",

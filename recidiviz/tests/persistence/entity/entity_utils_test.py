@@ -344,46 +344,71 @@ class TestEntityUtils(TestCase):
         )
 
     def test_get_association_table_id(self) -> None:
+        entities_module_context = entities_module_context_for_module(state_entities)
         self.assertEqual(
             "state_charge_v2_state_sentence_association",
-            get_association_table_id(StateSentence, StateChargeV2),
-        )
-        self.assertEqual(
-            "state_charge_v2_state_sentence_association",
-            get_association_table_id(StateChargeV2, StateSentence),
-        )
-        self.assertEqual(
-            "state_charge_supervision_sentence_association",
-            get_association_table_id(StateSupervisionSentence, StateCharge),
-        )
-        self.assertEqual(
-            "state_charge_incarceration_sentence_association",
-            get_association_table_id(StateCharge, StateIncarcerationSentence),
-        )
-
-    def test_get_association_table_id_normalized(self) -> None:
-        self.assertEqual(
-            "state_charge_v2_state_sentence_association",
-            get_association_table_id(NormalizedStateSentence, NormalizedStateChargeV2),
+            get_association_table_id(
+                StateSentence, StateChargeV2, entities_module_context
+            ),
         )
         self.assertEqual(
             "state_charge_v2_state_sentence_association",
-            get_association_table_id(NormalizedStateChargeV2, NormalizedStateSentence),
+            get_association_table_id(
+                StateChargeV2, StateSentence, entities_module_context
+            ),
         )
         self.assertEqual(
             "state_charge_supervision_sentence_association",
             get_association_table_id(
-                NormalizedStateSupervisionSentence, NormalizedStateCharge
+                StateSupervisionSentence, StateCharge, entities_module_context
             ),
         )
         self.assertEqual(
             "state_charge_incarceration_sentence_association",
             get_association_table_id(
-                NormalizedStateCharge, NormalizedStateIncarcerationSentence
+                StateCharge, StateIncarcerationSentence, entities_module_context
+            ),
+        )
+
+    def test_get_association_table_id_normalized(self) -> None:
+        entities_module_context = entities_module_context_for_module(
+            normalized_entities
+        )
+        self.assertEqual(
+            "state_charge_v2_state_sentence_association",
+            get_association_table_id(
+                NormalizedStateSentence,
+                NormalizedStateChargeV2,
+                entities_module_context,
+            ),
+        )
+        self.assertEqual(
+            "state_charge_v2_state_sentence_association",
+            get_association_table_id(
+                NormalizedStateChargeV2,
+                NormalizedStateSentence,
+                entities_module_context,
+            ),
+        )
+        self.assertEqual(
+            "state_charge_supervision_sentence_association",
+            get_association_table_id(
+                NormalizedStateSupervisionSentence,
+                NormalizedStateCharge,
+                entities_module_context,
+            ),
+        )
+        self.assertEqual(
+            "state_charge_incarceration_sentence_association",
+            get_association_table_id(
+                NormalizedStateCharge,
+                NormalizedStateIncarcerationSentence,
+                entities_module_context,
             ),
         )
 
     def test_get_association_table_id_agrees_with_is_association_table(self) -> None:
+        entities_module_context = entities_module_context_for_module(state_entities)
         state_table_names = list(
             get_bq_schema_for_entities_module(state_entities).keys()
         )
@@ -403,7 +428,9 @@ class TestEntityUtils(TestCase):
                 if not is_many_to_many_relationship(entity_cls_a, entity_cls_b):
                     continue
                 association_tables.add(
-                    get_association_table_id(entity_cls_a, entity_cls_b)
+                    get_association_table_id(
+                        entity_cls_a, entity_cls_b, entities_module_context
+                    )
                 )
 
         # Check that the set of association tables defined in state_entities.py matches the set
@@ -413,6 +440,9 @@ class TestEntityUtils(TestCase):
     def test_get_association_table_id_agrees_with_is_association_table__normalized(
         self,
     ) -> None:
+        entities_module_context = entities_module_context_for_module(
+            normalized_entities
+        )
         state_table_names = list(
             get_bq_schema_for_entities_module(normalized_entities).keys()
         )
@@ -432,7 +462,9 @@ class TestEntityUtils(TestCase):
                 if not is_many_to_many_relationship(entity_cls_a, entity_cls_b):
                     continue
                 association_tables.add(
-                    get_association_table_id(entity_cls_a, entity_cls_b)
+                    get_association_table_id(
+                        entity_cls_a, entity_cls_b, entities_module_context
+                    )
                 )
 
         # Check that the set of association tables defined in state_entities.py matches the set
@@ -440,45 +472,50 @@ class TestEntityUtils(TestCase):
         self.assertEqual(schema_association_tables, association_tables)
 
     def test_get_entities_by_association_table_id(self) -> None:
+        entities_module_context = entities_module_context_for_module(state_entities)
         self.assertEqual(
             (StateChargeV2, StateSentence),
             get_entities_by_association_table_id(
-                state_entities, "state_charge_v2_state_sentence_association"
+                entities_module_context, "state_charge_v2_state_sentence_association"
             ),
         )
         self.assertEqual(
             (StateCharge, StateSupervisionSentence),
             get_entities_by_association_table_id(
-                state_entities, "state_charge_supervision_sentence_association"
+                entities_module_context, "state_charge_supervision_sentence_association"
             ),
         )
 
         self.assertEqual(
             (StateCharge, StateIncarcerationSentence),
             get_entities_by_association_table_id(
-                state_entities, "state_charge_incarceration_sentence_association"
+                entities_module_context,
+                "state_charge_incarceration_sentence_association",
             ),
         )
 
     def test_get_entities_by_association_table_id_normalized(self) -> None:
-
+        entities_module_context = entities_module_context_for_module(
+            normalized_entities
+        )
         self.assertEqual(
             (NormalizedStateChargeV2, NormalizedStateSentence),
             get_entities_by_association_table_id(
-                normalized_entities, "state_charge_v2_state_sentence_association"
+                entities_module_context, "state_charge_v2_state_sentence_association"
             ),
         )
         self.assertEqual(
             (NormalizedStateCharge, NormalizedStateSupervisionSentence),
             get_entities_by_association_table_id(
-                normalized_entities, "state_charge_supervision_sentence_association"
+                entities_module_context, "state_charge_supervision_sentence_association"
             ),
         )
 
         self.assertEqual(
             (NormalizedStateCharge, NormalizedStateIncarcerationSentence),
             get_entities_by_association_table_id(
-                normalized_entities, "state_charge_incarceration_sentence_association"
+                entities_module_context,
+                "state_charge_incarceration_sentence_association",
             ),
         )
 
@@ -493,8 +530,12 @@ class TestEntityUtils(TestCase):
 
         for table_id in schema_association_tables:
             # These shouldn't crash
-            _ = get_entities_by_association_table_id(state_entities, table_id)
-            _ = get_entities_by_association_table_id(normalized_entities, table_id)
+            _ = get_entities_by_association_table_id(
+                entities_module_context_for_module(state_entities), table_id
+            )
+            _ = get_entities_by_association_table_id(
+                entities_module_context_for_module(normalized_entities), table_id
+            )
 
 
 class TestBidirectionalUpdates(TestCase):
