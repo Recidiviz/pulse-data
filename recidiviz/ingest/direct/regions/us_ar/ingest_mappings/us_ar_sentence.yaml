@@ -13,7 +13,6 @@ input_columns:
   SENTENCETYPE3: STRING
   SENTENCETYPE4: STRING
   TIMECOMPFLAG: STRING
-  COMPSTATUSCODE: STRING
   OFFENSEDATE: DATETIME
   STATUTE1: STRING
   STATUTE2: STRING
@@ -155,16 +154,7 @@ output:
                 charges:
                   - StateChargeV2:
                       external_id: $variable(sentence_external_id)
-                      status:
-                        $conditional:
-                          - $if:
-                              $in:
-                                $value: COMPSTATUSCODE
-                                $options:
-                                  - $literal("7") # Expunged
-                                  - $literal("9") # Vacated
-                            $then: $literal_enum(StateChargeV2Status.DROPPED)
-                          - $else: $literal_enum(StateChargeV2Status.CONVICTED)
+                      status: $literal_enum(StateChargeV2Status.CONVICTED)
                       offense_date: OFFENSEDATE
                       county_code: COUNTYOFCONVICTION
                       statute:

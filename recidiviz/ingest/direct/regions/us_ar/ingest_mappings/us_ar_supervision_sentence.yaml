@@ -168,7 +168,7 @@ output:
                       - STATUTE3
                       - STATUTE4
                     $include_nulls: False
-                status: $literal_enum(StateChargeStatus.PRESENT_WITHOUT_INFO)
+                status: $literal_enum(StateChargeStatus.CONVICTED)
                 offense_date: OFFENSEDATE
                 classification_type:
                   $enum_mapping:

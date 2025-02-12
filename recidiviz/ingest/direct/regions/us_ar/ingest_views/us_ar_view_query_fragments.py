@@ -200,7 +200,6 @@ ALL_SENTENCES_FRAGMENT = f"""
             component.SENTENCETYPE3,
             component.SENTENCETYPE4,
             component.TIMECOMPFLAG,
-            component.COMPSTATUSCODE,
             IF(component.OFFENSEDATE = '1000-01-01 00:00:00', NULL, component.OFFENSEDATE) AS OFFENSEDATE,
             component.STATUTE1,
             component.STATUTE2,

@@ -162,16 +162,7 @@ output:
           charges:
             - StateCharge:
                 external_id: $variable(sentence_external_id)
-                status:
-                  $conditional:
-                    - $if:
-                        $in:
-                          $value: SENTENCESTATUSFLAG
-                          $options:
-                            - $literal("7")
-                            - $literal("9")
-                      $then: $literal_enum(StateChargeStatus.DROPPED)
-                    - $else: $literal_enum(StateChargeStatus.CONVICTED)
+                status: $literal_enum(StateChargeStatus.CONVICTED)
                 offense_date: OFFENSEDATE
                 county_code: COUNTYOFCONVICTION
                 statute:
