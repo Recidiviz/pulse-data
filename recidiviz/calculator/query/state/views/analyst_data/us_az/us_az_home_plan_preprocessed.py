@@ -63,28 +63,36 @@ SELECT DISTINCT
         ELSE COALESCE(det.UPDT_DTM, det.CREATE_DTM) 
     END AS UPDATE_DATE
 FROM 
+-- All DOC_IDs
+    `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.DOC_EPISODE_latest` ep
+LEFT JOIN 
 -- Base home plan table
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_HOME_PLAN_latest` hp
-LEFT JOIN 
+USING
+    (DOC_ID)
+LEFT JOIN
 -- There will be a new row in this table each time an individual home plan is resubmitted
 -- for consideration after correction. 
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_HOME_PLAN_DETAIL_latest` det
 ON
-    (hp.HOME_PLAN_ID = det.HOME_PLAN_ID 
-    AND hp.ACTIVE_FLAG = 'Y' 
+    (hp.HOME_PLAN_ID = det.HOME_PLAN_ID
+    AND hp.ACTIVE_FLAG = 'Y'
     AND (det.ACTIVE_FLAG = 'Y' OR det.ACTIVE_FLAG IS NULL))
-LEFT JOIN 
+LEFT JOIN
 -- Rows in this table are relevant if and only if a plan is approved. 
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.AZ_DOC_HOME_PLAN_APPROVAL_latest` app
 ON
     (det.HOME_PLAN_DETAIL_ID = app.HOME_PLAN_DETAIL_ID
     AND (app.ACTIVE_FLAG = 'Y' OR app.ACTIVE_FLAG IS NULL)
     AND (det.ACTIVE_FLAG = 'Y' OR det.ACTIVE_FLAG IS NULL))
-LEFT JOIN 
+LEFT JOIN
     `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LOOKUPS_latest` status
 ON
     (det.APPROVAL_STATUS_ID = status.LOOKUP_ID)
-QUALIFY 
+-- Filters out rows in DOC_EPISODE that are incorrect results of the system migration.
+-- Brings number of rows in results down to <1 million instead of >6 million.
+WHERE CAST(ep.ADMISSION_DATE AS DATETIME) > '1900-01-01' 
+QUALIFY
 -- This is the most recent set of details for this person's home plan
    (CAST(det.HOME_PLAN_DETAIL_ID AS INT64) = MAX(CAST(det.HOME_PLAN_DETAIL_ID AS INT64)) OVER (PARTITION BY DOC_ID) OR det.HOME_PLAN_DETAIL_ID IS NULL)
 -- Limits to the most recent set of dates associated with a plan's approval, where applicable.
@@ -99,7 +107,9 @@ SELECT
     cs.session_id,
     base.is_homeless_request,
     base.plan_status,
-    base.update_date,
+    -- If this row does not have a home plan, create an update_date with the current date.
+    -- Otherwise, it will not have one.
+    IFNULL(base.update_date,CONCAT(CAST(CURRENT_DATE('US/Eastern') AS STRING), ' 00:00:00')) AS update_date,
     cs.start_date, 
     cs.end_date_exclusive
 FROM 

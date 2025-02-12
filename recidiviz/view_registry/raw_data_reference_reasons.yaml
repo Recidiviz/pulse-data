@@ -140,6 +140,9 @@ US_AZ:
   DOC_EPISODE:
     analyst_data.us_az_agreement_form_signatures: |-
       Needed to track information about incarceration stays to map to agreement form signature statuses
+    analyst_data.us_az_home_plan_preprocessed: |-
+      There is no place to store "Home Plan" reentry planning information in our schema,
+      and this info is relevant to a reentry analysis in AZ.
     task_eligibility_criteria_us_az.meets_functional_literacy_dtp: |-
       Needed a way to map the different ids in AZ to one another.
     task_eligibility_criteria_us_az.meets_functional_literacy_tpr: |-
