@@ -124,7 +124,15 @@ US_OR_SERVED_6_MONTHS_SUPERVISION_QUERY_TEMPLATE = f"""
             *,
             /* Calculate the running cumulative total number of days in absconsion for a
             given person-sentence. */
-            SUM(days_absconded) OVER(PARTITION BY state_code, person_id, sentence_id ORDER BY start_date) AS cumulative_days_absconded,
+            SUM(days_absconded) OVER (
+                PARTITION BY state_code, person_id, sentence_id
+                ORDER BY start_date
+                /* This window frame clause doesn't necessarily have to be included (as
+                it's the default clause that gets used if there's an ORDER BY statement
+                but no clause specified), but it's included here for readability / to be
+                explicit about what's happening here. */
+                RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+            ) AS cumulative_days_absconded,
         FROM sub_sessions_with_attributes_condensed
     ),
     critical_date_spans AS (
