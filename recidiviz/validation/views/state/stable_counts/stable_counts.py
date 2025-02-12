@@ -65,7 +65,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_UT: [
                         # TODO(#37991) Remove this once UT sends data for after
                         # 2024-09-01.
-                        date(2024, 9, 1)
+                        date(2024, 9, 1),
+                        date(2024, 10, 1),
+                        date(2024, 11, 1),
                     ],
                 },
             )
@@ -355,7 +357,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_UT: [
                         # TODO(#37991) Remove this once UT sends data for after
                         # 2024-09-01.
-                        date(2024, 9, 1)
+                        date(2024, 9, 1),
+                        date(2024, 10, 1),
+                        date(2024, 11, 1),
                     ],
                 },
             )

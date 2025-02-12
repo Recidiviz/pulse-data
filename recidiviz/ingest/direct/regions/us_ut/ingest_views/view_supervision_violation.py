@@ -68,8 +68,10 @@ WHERE
     AND rvr.rim_violation_rove_id IS NOT NULL
 
 -- Each rim_ofndr_violation_event_id maps to multiple violations
--- (rim_violation_rove_id), but they are sanctioned as a group. We retain all violation
--- codes, but select only the most recent status.
+-- (rim_violation_rove_id), but all violations associated with the same
+-- rim_ofndr_violation_event_id are sanctioned as a group. Below, we get the most recent
+-- status for each violation. However, because they are sanctioned as a gorup, we should
+-- expect that the statuses each violation within a group will be the same.
 QUALIFY ROW_NUMBER() OVER (PARTITION BY rim_violation_rove_id ORDER BY sh.created_dt DESC) = 1
 """
 
