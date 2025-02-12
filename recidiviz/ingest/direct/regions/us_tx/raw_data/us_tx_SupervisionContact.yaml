@@ -12,6 +12,8 @@ columns:
     is_pii: True
     external_id_type: US_TX_SID
     field_type: person_external_id
+    null_values:
+      - "NULL"
   - name: Contact_ID
     description: |-
       This is the PK. The ID assigned to a specific contact.
@@ -36,6 +38,8 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%Y-%m-%d', {col_name})"
+    null_values:
+      - "NULL"
   - name: Face_to_Face_Flag
     description: |-
       Flag indicating whether contact was done face to face.

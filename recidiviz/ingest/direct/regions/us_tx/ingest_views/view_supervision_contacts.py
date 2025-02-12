@@ -39,7 +39,7 @@ LEFT JOIN {ContactReasonDescription}
     USING(Contact_Reason)
 LEFT JOIN {ContactLocationDescription}
     USING(Contact_Location)
-WHERE Deleted_Flag = "Active"
+WHERE UPPER(Deleted_Flag) = "ACTIVE"
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

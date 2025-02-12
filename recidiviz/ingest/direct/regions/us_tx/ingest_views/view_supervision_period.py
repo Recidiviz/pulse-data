@@ -33,7 +33,7 @@ clean_cte AS (
         ROW_NUMBER() OVER (PARTITION BY Period_ID_Number,update_datetime ORDER BY Supervision_Officer, Supervision_Level, Special_Conditions, Custodial_Authority, Case_Type, Start_Date, Max_Termination_Date asc) AS rn
     FROM `{{SupervisionPeriod@ALL}}`
     -- Confusing column naming but this means that the record is not deleted.
-    WHERE Deleted_Flag = "Active"
+    WHERE UPPER(Deleted_Flag) = "ACTIVE"
 ),
 -- The lag_cte grabs the traits of the previous period record to filter to only records 
 -- that contain a change.

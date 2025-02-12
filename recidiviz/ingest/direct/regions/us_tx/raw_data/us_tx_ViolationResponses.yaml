@@ -20,6 +20,8 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%E*S',{col_name})"
+    null_values:
+      - "NULL"
   - name: VIOLATION_ID
     description: |-
       Unique identifier for violation.
