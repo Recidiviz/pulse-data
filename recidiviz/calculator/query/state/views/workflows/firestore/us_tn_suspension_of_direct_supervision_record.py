@@ -41,8 +41,9 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_VIEW_NAME = (
     "us_tn_suspension_of_direct_supervision_record"
 )
 
-# TODO(#33644): Finish adding necessary information to opportunity record.
-# TODO(#33644): Use ingested data for `form_information_supervision_office_location`
+# TODO(#38270): Finish adding necessary information to opportunity record in accordance
+# with feedback from TTs.
+# TODO(#38270): Use ingested data for `form_information_supervision_office_location`
 # (from `location_metadata`, ideally).
 US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
     WITH base AS (

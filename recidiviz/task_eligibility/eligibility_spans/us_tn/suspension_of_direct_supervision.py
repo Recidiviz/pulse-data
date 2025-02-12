@@ -44,7 +44,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     no_warrant_within_2_years,
     not_interstate_compact_incoming,
     not_on_community_supervision_for_life,
-    special_conditions_are_current,
 )
 from recidiviz.task_eligibility.criteria_condition import NotEligibleCriteriaCondition
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -90,13 +89,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_warrant_within_2_years.VIEW_BUILDER,
         not_interstate_compact_incoming.VIEW_BUILDER,
         not_on_community_supervision_for_life.VIEW_BUILDER,
-        # TODO(#33635): Double-check that this existing state-specific criterion is
-        # correct for the specific SDS requirement that individuals must have completed
-        # and/or complied with all special conditions.
-        special_conditions_are_current.VIEW_BUILDER,
         FINES_FEES_CRITERIA_GROUP,
     ],
-    # TODO(#33636): Refine this almost-eligible condition, likely by setting an upper
+    # TODO(#38270): Refine this almost-eligible condition, likely by setting an upper
     # limit on the balance a client can have to be considered almost eligible.
     almost_eligible_condition=NotEligibleCriteriaCondition(
         criteria=FINES_FEES_CRITERIA_GROUP,
