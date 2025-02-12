@@ -17,7 +17,7 @@
 """Creates LookMLViewFieldParameter object and associated functions"""
 import abc
 from enum import Enum
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import attr
 
@@ -42,6 +42,9 @@ class LookMLFieldType(Enum):
     TIME = "time"
     UNQUOTED = "unquoted"
     YESNO = "yesno"
+    AVERAGE = "average"
+    SUM = "sum"
+    LIST = "list"
 
 
 class LookMLFieldDatatype(Enum):
@@ -166,6 +169,14 @@ class LookMLFieldParameter:
     @classmethod
     def value_format(cls, value: str) -> "LookMLFieldParameter":
         return FieldParameterValueFormat(value)
+
+    @classmethod
+    def filters(cls, filters: List[Tuple[str, str]]) -> "LookMLFieldParameter":
+        return FieldParameterFilters(filters)
+
+    @classmethod
+    def list_field(cls, list_field: str) -> "LookMLFieldParameter":
+        return FieldParameterListField(list_field)
 
 
 # DISPLAY PARAMETERS
@@ -542,6 +553,9 @@ class FieldParameterType(LookMLFieldParameter):
                 LookMLFieldType.DATE,
                 LookMLFieldType.NUMBER,
                 LookMLFieldType.STRING,
+                LookMLFieldType.AVERAGE,
+                LookMLFieldType.SUM,
+                LookMLFieldType.LIST,
             )
         if field_category == LookMLFieldCategory.PARAMETER:
             return self.field_type in (
@@ -621,3 +635,47 @@ class FieldParameterDrillFields(LookMLFieldParameter):
             LookMLFieldCategory.DIMENSION,
             LookMLFieldCategory.MEASURE,
         )
+
+
+@attr.define
+class FieldParameterFilters(LookMLFieldParameter):
+    """Generates a `filters` field parameter,
+    https://cloud.google.com/looker/docs/reference/param-field-filters
+    """
+
+    dimension_and_filter_tuples: List[Tuple[str, str]]
+
+    @property
+    def key(self) -> str:
+        return "filters"
+
+    @property
+    def value_text(self) -> str:
+        return (
+            "["
+            + ", ".join(f'{f[0]}: "{f[1]}"' for f in self.dimension_and_filter_tuples)
+            + "]"
+        )
+
+    def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
+        return field_category == LookMLFieldCategory.MEASURE
+
+
+@attr.define
+class FieldParameterListField(LookMLFieldParameter):
+    """Generates a `list` field parameter,
+    https://cloud.google.com/looker/docs/reference/param-measure-types#list
+    """
+
+    list_field_name: str
+
+    @property
+    def key(self) -> str:
+        return "list_field"
+
+    @property
+    def value_text(self) -> str:
+        return self.list_field_name
+
+    def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
+        return field_category == LookMLFieldCategory.MEASURE
