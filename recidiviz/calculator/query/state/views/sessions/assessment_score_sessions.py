@@ -68,7 +68,7 @@ WITH state_assessment AS (
             OR (
                 state_code != "US_MI"
                 AND (
-                    assessment_type IN ("LSIR", "STRONG_R", "CAF", "CSRA", "ACCAT", "TX_CSST", "TX_CST", "TX_RT", "TX_SRT")
+                    assessment_type IN ("LSIR", "STRONG_R", "CAF", "CSRA", "ACCAT", "TX_CSST", "TX_CST", "TX_RT", "TX_SRT", "LS_RNR")
                     OR assessment_type LIKE "ORAS%"
                 )
             )
@@ -78,13 +78,6 @@ WITH state_assessment AS (
                 AND assessment_type = 'INTERNAL_UNKNOWN' 
                 AND assessment_class = 'MENTAL_HEALTH'
                 )
-            -- TODO(#37900) Once LS/RNR is added to our StateAssessmentType, we will not need this chunk anymore
-            OR (
-                state_code = 'US_UT'
-                AND assessment_type_raw_text = 'LS/RNR RISK-NEED-RESPONSIVITY'
-                AND assessment_type = 'INTERNAL_UNKNOWN' 
-                AND assessment_class = 'RISK'
-            )
             
         )
         AND assessment_date IS NOT NULL
