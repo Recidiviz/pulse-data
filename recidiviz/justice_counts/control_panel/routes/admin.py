@@ -596,14 +596,12 @@ def get_admin_blueprint(
         )
 
         # Query for agencies that can report metrics for the selected agency:
-        # 1. Central State Government (CSG)
-        # 2. Vendors
-        # 3. Super agency (if applicable)
+        # 1. Vendors
+        # 2. Super agency (if applicable)
         reporting_agencies = (
             current_session.query(schema.Source)
             .filter(
                 or_(
-                    schema.Source.type == "csg",
                     schema.Source.type == "vendor",
                     schema.Source.id == agency.super_agency_id,
                 )
@@ -612,7 +610,7 @@ def get_admin_blueprint(
             .all()
         )
 
-        # Build a list of reporting agency options, categorized by type (CSG, vendor, super agency).
+        # Build a list of reporting agency options, categorized by type (vendor or super agency).
         # This will be used to populate a dropdown or selection field in the UI.
         reporting_agency_options_json = [
             {
@@ -721,10 +719,10 @@ def get_admin_blueprint(
     @auth_decorator
     def get_vendors() -> Response:
         """
-        Fetch all vendors and CSG with their respective homepage URLs.
+        Fetch all vendors with their respective homepage URLs.
 
         Returns:
-            A list of dictionaries with id, name, and URL for vendors and CSG.
+            A list of dictionaries with id, name, and URL for vendors.
         """
 
         vendors = AgencyInterface.get_vendors(session=current_session)

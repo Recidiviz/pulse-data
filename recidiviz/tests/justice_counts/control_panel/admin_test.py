@@ -1043,13 +1043,11 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         # Set up test agencies and commit to obtain their IDs
         super_agency = self.test_schema_objects.test_prison_super_agency
         vendor_A = self.test_schema_objects.vendor_A
-        csg = self.test_schema_objects.csg
 
-        self.session.add_all([super_agency, vendor_A, csg])
+        self.session.add_all([super_agency, vendor_A])
         self.session.commit()
         self.session.refresh(super_agency)
         self.session.refresh(vendor_A)
-        self.session.refresh(csg)
 
         # Configure child agency and assign the super agency
         child_agency_A = self.test_schema_objects.test_prison_child_agency_A
@@ -1072,14 +1070,6 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             agency=child_agency_A,
             agency_metric_updates=MetricInterface(
                 key=prisons.expenses.key, reporting_agency_id=super_agency.id
-            ),
-        )
-
-        MetricSettingInterface.add_or_update_agency_metric_setting(
-            session=self.session,
-            agency=child_agency_A,
-            agency_metric_updates=MetricInterface(
-                key=prisons.staff.key, reporting_agency_id=csg.id
             ),
         )
 
@@ -1129,9 +1119,6 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             elif key == prisons.expenses.key:
                 self.assertEqual(metric["reporting_agency_id"], super_agency.id)
                 self.assertEqual(metric["reporting_agency_name"], super_agency.name)
-            elif key == prisons.staff.key:
-                self.assertEqual(metric["reporting_agency_id"], csg.id)
-                self.assertEqual(metric["reporting_agency_name"], csg.name)
             elif key == prisons.readmissions.key:
                 self.assertEqual(metric["reporting_agency_id"], vendor_A.id)
                 self.assertEqual(metric["reporting_agency_name"], vendor_A.name)
@@ -1142,7 +1129,6 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         # Validate reporting agency options in the response
         reporting_agency_options_json = response_json["reporting_agency_options"]
         expected_options = {
-            (csg.id, "CSG"),
             (vendor_A.id, "VENDOR"),
             (super_agency.id, "AGENCY"),
         }
@@ -1242,14 +1228,14 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(staff_metric.reporting_agency_id, None)
         self.assertTrue(staff_metric.is_self_reported)
 
-    def test_get_vendors_with_csg(self) -> None:
-        """Test fetching vendor id, name, and URL for all vendors and CSG."""
+    def test_get_vendors(self) -> None:
+        """Test fetching vendor id, name, and URL for all vendors."""
         self.load_users_and_agencies()
 
         vendor_A = self.test_schema_objects.vendor_A
         vendor_B = self.test_schema_objects.vendor_B
 
-        # Add vendors and CSG to the session and commit
+        # Add vendors to the session and commit
         self.session.add_all([vendor_A, vendor_B])
         self.session.commit()
         self.session.refresh(vendor_A)
@@ -1257,7 +1243,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         vendor_A_id = vendor_A.id
         vendor_B_id = vendor_B.id
 
-        # Add homepage URLs for vendors and CSG as agency settings
+        # Add homepage URLs for vendors as agency settings
         AgencySettingInterface.create_or_update_agency_setting(
             session=self.session,
             agency_id=vendor_A_id,

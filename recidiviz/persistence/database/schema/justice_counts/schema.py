@@ -517,14 +517,6 @@ class Vendor(Source):
     }
 
 
-class CSG(Source):
-    """A Council of State Governments entity that uploads data for some agencies."""
-
-    __mapper_args__ = {
-        "polymorphic_identity": "csg",
-    }
-
-
 class UserAccount(JusticeCountsBase):
     """A user (belonging to one or multiple Agencies) who publishes reports via the Publisher.
     This table should only be used when necessary as a cache for certain features."""

@@ -485,8 +485,6 @@ class MetricInterface:
                     reporting_agency_category = (
                         ReportingAgencyCategory.SUPER_AGENCY.value
                     )
-                elif reporting_agency.type == ReportingAgencyCategory.CSG.value:
-                    reporting_agency_category = ReportingAgencyCategory.CSG.value
                 else:
                     reporting_agency_category = ReportingAgencyCategory.VENDOR.value
 

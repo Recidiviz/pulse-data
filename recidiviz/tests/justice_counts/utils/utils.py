@@ -208,9 +208,6 @@ class JusticeCountsSchemaTestObjects:
         self.vendor_A = schema.Source(name="Vendor Alpha", type="vendor")
         self.vendor_B = schema.Source(name="Vendor Beta", type="vendor")
 
-        # CSG
-        self.csg = schema.Source(name="Council of State Governmets", type="csg")
-
         # Auth0 Users
         self.test_auth0_user: Auth0User = {
             "email": "userA@fake.com",

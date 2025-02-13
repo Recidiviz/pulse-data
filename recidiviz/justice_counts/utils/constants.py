@@ -53,7 +53,6 @@ class UploadMethod(enum.Enum):
 
 class ReportingAgencyCategory(enum.Enum):
     SUPER_AGENCY = "SUPER_AGENCY"
-    CSG = "COUNCIL_OF_STATE_GOVERNMENTS"
     VENDOR = "VENDOR"
 
 
