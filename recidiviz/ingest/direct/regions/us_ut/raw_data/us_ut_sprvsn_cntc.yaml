@@ -69,3 +69,24 @@ columns:
     description: |-
       Timestamp of when this record was most recently updated
     field_type: datetime
+  - name: create_usr_id
+    description: |-
+      ID of user who created this record
+    is_pii: True
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2025-02-13T00:00:00Z
+  - name: create_dt
+    description: |-
+      Timestamp of when this record was most recently updated
+    field_type: datetime
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2025-02-13T00:00:00Z
+  - name: cntc_cmt
+    description: |-
+      Free-text comment
+    is_pii: True
+    update_history:
+      - update_type: ADDITION
+        update_datetime: 2025-02-13T00:00:00Z

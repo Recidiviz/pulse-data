@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: addr_attr_cd
+file_description: |-
+  Address attribute code
+data_classification: source
+primary_key_cols:
+  - addr_attr_id
+columns:
+  - name: addr_attr_id
+    description: |-
+      Primary key
+  - name: title
+    description: |-
+      General category of address.
+    known_values:
+      - value: RECEIVE MAIL
+      - value: AGENT VERIFIED
+      - value: OVERRIDE
+      - value: PO BOX / RURAL ROUTE
+      - value: TEMPORARY
+      - value: RESIDENTIAL TREATMENT
+      - value: LAT / LONG COORDINATES
+      - value: SOBER / TRANSITIONAL LIVING
+      - value: HOMELESS / TRANSIENT
+      - value: STATEMENT MAILING ADDRESS
+  - name: abbrv
+    description: |-
+      Abbreviation of title
+  - name: help_txt
+    description: |-
+      Description of address category
+  - name: usr_mdfy_flg
+    description: |-
+      Unknown True / False value
+  - name: fclty_vld_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: addr_vld_flg
+    description: |-
+      TODO(#33372): Fill in column description
+  - name: sort_seq
+    description: |-
+      Sorts all rows in the table. Possibly a method for prioritizing address types when 
+      a person has multiple.
+is_code_file: True
