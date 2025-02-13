@@ -114,7 +114,6 @@ class DirectIngestRawDataFixtureLoader:
         self,
         ingest_views: List[DirectIngestViewQueryBuilder],
         ingest_test_identifier: str,
-        file_update_dt: datetime.datetime | None,
     ) -> None:
         """
         Loads raw data tables to the emulator for the given ingest views.
@@ -134,7 +133,7 @@ class DirectIngestRawDataFixtureLoader:
             create_table_futures = [
                 executor.submit(self._load_fixture_to_emulator, fixture=fixture)
                 for fixture in self._generate_raw_data_fixtures(
-                    ingest_views, ingest_test_identifier, file_update_dt
+                    ingest_views, ingest_test_identifier
                 )
             ]
         for future in futures.as_completed(create_table_futures):
@@ -150,7 +149,6 @@ class DirectIngestRawDataFixtureLoader:
         self,
         ingest_views: List[DirectIngestViewQueryBuilder],
         ingest_test_identifier: str,
-        file_update_dt: datetime.datetime | None,
     ) -> Iterable[RawDataFixture]:
         """
         Generates the unique set of RawDataFixture objects for the given
@@ -162,7 +160,6 @@ class DirectIngestRawDataFixtureLoader:
                 fixture_df = self._read_raw_data_fixture(
                     config,
                     ingest_test_identifier,
-                    file_update_dt,
                 )
             except Exception as e:
                 raise ValueError(
@@ -226,23 +223,16 @@ class DirectIngestRawDataFixtureLoader:
     ) -> List[str]:
         """Checks that the raw data fixture columns are valid given it's config."""
         fixture_columns = csv.get_csv_columns(fixture_file)
-
         metadata_columns = {
             IS_DELETED_COL_NAME,
             UPDATE_DATETIME_COL_NAME,
             FILE_ID_COL_NAME,
         }
         found_metadata = set(fixture_columns).intersection(metadata_columns)
-        # @ALL fixtures (ex: {myTable@ALL}) have both "is_deleted" and "update_datetime"
-        # we add a file_id column based on the update_datetime later.
-        if not raw_file_dependency_config.filter_to_latest:
-            required_metadata_columns = metadata_columns - {FILE_ID_COL_NAME}
-            missing_required = required_metadata_columns - found_metadata
-            if missing_required:
-                raise ValueError(
-                    f"Did NOT find metadata columns [{missing_required}] for @ALL "
-                    f"fixture {fixture_file}"
-                )
+        if missing_required := metadata_columns - found_metadata:
+            raise ValueError(
+                f"Did NOT find metadata columns [{missing_required}] for fixture {fixture_file}"
+            )
         columns_to_check = [
             col for col in fixture_columns if col not in metadata_columns
         ]
@@ -252,18 +242,13 @@ class DirectIngestRawDataFixtureLoader:
         )
         return fixture_columns
 
+    # TODO(#38355) Read all raw data fixtures from "raw data" version, not "latest".
     def _read_raw_data_fixture(
         self,
         raw_file_dependency_config: DirectIngestViewRawFileDependency,
         csv_fixture_file_name: str,
-        file_update_dt: datetime.datetime | None,
     ) -> pd.DataFrame:
-        """
-        Reads the raw data fixture file for the provided dependency into a Dataframe.
-        If the fixture is the @ALL version, we add a file_id based on the fixture update_datetime.
-        If the fixture is instead LATEST, we add a dummy file_id and use file_update_dt
-        as the update_datetime.
-        """
+        """Reads the raw data fixture file for the provided dependency into a Dataframe."""
         raw_fixture_path = DirectIngestTestFixturePath.for_raw_file_fixture(
             region_code=self.state_code.value,
             raw_file_dependency_config=raw_file_dependency_config,
@@ -273,45 +258,15 @@ class DirectIngestRawDataFixtureLoader:
             f"Loading fixture data for raw file [{raw_file_dependency_config.file_tag}] "
             f"from file path [{raw_fixture_path}]."
         )
-
         fixture_columns = self._check_valid_fixture_columns(
             raw_file_dependency_config, raw_fixture_path
         )
-
-        raw_data_df = load_dataframe_from_path(raw_fixture_path, fixture_columns)
-
-        if UPDATE_DATETIME_COL_NAME not in fixture_columns:
-            if not file_update_dt:
-                raise ValueError(
-                    f"file_update_datetime must be set for files with no "
-                    f"{UPDATE_DATETIME_COL_NAME} column. Found file with no "
-                    f"{UPDATE_DATETIME_COL_NAME}: {raw_fixture_path}"
-                )
-            # The update_datetime column in BQ is not timezone-aware, so we strip the timezone
-            # info from the timestamp here.
-            if file_update_dt.tzinfo is None or file_update_dt.tzinfo != pytz.UTC:
-                raise ValueError(
-                    "Expected utc_upload_datetime.tzinfo value to be pytz.UTC. "
-                    f"Got: {file_update_dt.tzinfo}"
-                )
-            raw_data_df[UPDATE_DATETIME_COL_NAME] = file_update_dt.replace(tzinfo=None)
-
-        if FILE_ID_COL_NAME not in fixture_columns:
-            # The fixture files for @ALL files have update_datetime, but not file_id.
-            # We derive a file_id from the update_datetime, assuming that all data with
-            # the same update_datetime came from the same file.
-            raw_data_df[FILE_ID_COL_NAME] = (
-                raw_data_df[UPDATE_DATETIME_COL_NAME]
-                .rank(
-                    # The "dense" method assigns the same value where update_datetime
-                    # values are the same.
-                    method="dense"
-                )
-                .astype(int)
+        df = load_dataframe_from_path(raw_fixture_path, fixture_columns)
+        file_ids_per_update_dt = set(
+            df.groupby("update_datetime").file_id.nunique().values
+        )
+        if file_ids_per_update_dt and file_ids_per_update_dt != {1}:
+            raise ValueError(
+                f"{raw_fixture_path} has multiple file_id values per update_datetime"
             )
-        if IS_DELETED_COL_NAME not in fixture_columns:
-            # TODO(##18944): For now, default the value of `is_deleted` is False. Once raw data pruning is launched and the
-            # value of `is_deleted` is conditionally set, delete this default value.
-            raw_data_df[IS_DELETED_COL_NAME] = False
-
-        return raw_data_df
+        return df

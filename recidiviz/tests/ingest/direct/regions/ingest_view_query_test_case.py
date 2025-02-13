@@ -130,8 +130,6 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
 
     def setUp(self) -> None:
         super().setUp()
-        # Is replaced in some downstream tests
-        self.file_update_dt = DEFAULT_FILE_UPDATE_DATETIME
         self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
         self.raw_fixture_delegate = DirectIngestRawDataFixtureLoader(
             self.state_code(), emulator_test=self
@@ -165,7 +163,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase, IngestRegionTest
                 f"[{fixtures_files_name}]. Found [{self._testMethodName}]"
             )
         self.raw_fixture_delegate.load_raw_fixtures_to_emulator(
-            [self.ingest_view()], fixtures_files_name, self.file_update_dt
+            [self.ingest_view()], fixtures_files_name
         )
 
         expected_output_fixture_path = (

@@ -84,7 +84,6 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
         self.raw_fixture_loader.load_raw_fixtures_to_emulator(
             [ingest_view_builder],
             ingest_test_identifier=f"{test_name}.csv",
-            file_update_dt=None,
         )
 
     @staticmethod

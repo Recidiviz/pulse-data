@@ -17,12 +17,14 @@
 #
 
 """Class to generate or regenerate raw data fixtures for ingest view tests."""
+import datetime
 import os
 import string
 from functools import partial
 from typing import Dict, List, Optional
 
 import numpy
+import pytz
 from faker import Faker
 from more_itertools import first
 from pandas import DataFrame
@@ -36,6 +38,11 @@ from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_regi
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
+)
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    FILE_ID_COL_NAME,
+    IS_DELETED_COL_NAME,
+    UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -167,9 +174,32 @@ class RawDataFixturesGenerator:
     def write_results_to_csv(
         self, query_results: DataFrame, output_fixture_path: str
     ) -> None:
+        """Writes the query results to the given fixture path. Adds metadata columns if needed."""
         os.makedirs(os.path.dirname(output_fixture_path), exist_ok=True)
         include_headers = self.overwrite or not os.path.exists(output_fixture_path)
         write_disposition = "w" if self.overwrite else "a"
+
+        if IS_DELETED_COL_NAME not in query_results.columns:
+            query_results[IS_DELETED_COL_NAME] = False
+
+        if UPDATE_DATETIME_COL_NAME not in query_results.columns:
+            # file_update_dt must have a pytz.UTC timezone
+            query_results[UPDATE_DATETIME_COL_NAME] = datetime.datetime.now(
+                tz=pytz.UTC
+            ) - datetime.timedelta(days=1)
+
+        if FILE_ID_COL_NAME not in query_results.columns:
+            # We derive a file_id from the update_datetime, assuming that all data with
+            # the same update_datetime came from the same file.
+            query_results[FILE_ID_COL_NAME] = (
+                query_results[UPDATE_DATETIME_COL_NAME]
+                .rank(
+                    # The "dense" method assigns the same value where update_datetime
+                    # values are the same.
+                    method="dense"
+                )
+                .astype(int)
+            )
 
         query_results.sort_values(by=list(query_results.columns))
         query_results.to_csv(
