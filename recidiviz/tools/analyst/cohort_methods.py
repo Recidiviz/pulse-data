@@ -18,7 +18,7 @@
 
 import datetime
 import warnings
-from typing import Iterable, List, Optional, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 import matplotlib.patches as mpatches
 import matplotlib.ticker as mtick
@@ -26,6 +26,8 @@ import numpy as np
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from scipy.stats import norm
 
@@ -877,7 +879,7 @@ def plot_event_curves(
     x_text: str = "",
     y_text: str = "",
     yline: Optional[int] = None,
-) -> None:
+) -> Tuple[Figure, Axes]:
     """
     Function that takes a dataframe with the pre-aggregated cumulative event rate of a
     binary outcome over time intervals, and generates a line plot with optional
@@ -988,7 +990,7 @@ def plot_event_curves(
     bin_labels_2 = df["group_2"].unique()
     marker_list = ["-", "--", "-.", ":", ".", "o", "v", "*", "+", ","]
 
-    _, ax = plt.subplots()
+    fig, ax = plt.subplots()
     # for each group in style group
     for ii, _ in enumerate(sorted(bin_labels_2)):
         # for each group in color group
@@ -1082,4 +1084,4 @@ def plot_event_curves(
     plt.ylabel(y_text)
     plt.xticks(sorted(df[x_var].unique()))
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(1, decimals=0))
-    plt.show()
+    return fig, ax
