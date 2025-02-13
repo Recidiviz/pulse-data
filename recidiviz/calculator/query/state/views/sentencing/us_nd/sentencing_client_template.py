@@ -48,9 +48,9 @@ SELECT
         "UNKNOWN" AS surname)) ) AS full_name,
   p.birthdate AS birth_date,
   p.gender AS gender,
-  -- If someone does not live in ND, their "County of Residence" will be "OUT OF STATE".
+  -- If someone does not live in ND, their "County of Residence" will be null.
   CASE
-    WHEN JSON_EXTRACT_SCALAR(a.address_metadata, '$.state_residence') != 'ND' THEN 'OUT OF STATE'
+    WHEN JSON_EXTRACT_SCALAR(a.address_metadata, '$.state_residence') != 'ND' THEN null
   -- Counties are stored in the format "US_ND_COUNTY_NAME". This cleans that so the output is only "COUNTY NAME".
     ELSE REGEXP_REPLACE(REGEXP_REPLACE(a.address_county, r'US_ND_', ''), '_', ' ')
 END
