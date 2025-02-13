@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2025 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,12 +21,14 @@ from recidiviz.calculator.query.bq_utils import (
     today_between_start_date_and_nullable_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
+    keep_contact_codes,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.us_tn_query_fragments import keep_contact_codes
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

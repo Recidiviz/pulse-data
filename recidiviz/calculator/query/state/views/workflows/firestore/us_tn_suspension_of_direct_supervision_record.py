@@ -24,6 +24,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_reco
     join_current_task_eligibility_spans_with_external_id,
 )
 from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
+    keep_contact_codes,
     us_tn_get_offense_information,
 )
 from recidiviz.common.constants.states import StateCode
@@ -33,7 +34,6 @@ from recidiviz.ingest.views.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.us_tn_query_fragments import keep_contact_codes
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
