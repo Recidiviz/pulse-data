@@ -212,5 +212,6 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             time_partitioning=None,
             sandbox_context=sandbox_context,
             should_deploy_predicate=None,
+            materialized_table_schema=None,
             **query_format_args,
         )

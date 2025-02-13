@@ -48,6 +48,7 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
         # Address this table will be materialized to, if this is a view that is
         # materialized.
         materialized_address: Optional[BigQueryAddress] = None,
+        materialized_table_schema: Optional[list[bigquery.SchemaField]] = None,
         sandbox_context: BigQueryViewSandboxContext | None = None,
         clustering_fields: Optional[List[str]] = None,
         time_partitioning: bigquery.TimePartitioning | None = None,
@@ -66,6 +67,11 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
             dataset_id = sandbox_view_address.dataset_id
             view_id = sandbox_view_address.table_id
             materialized_address = sandbox_materialized_address
+
+        if materialized_table_schema is not None and materialized_address is None:
+            raise ValueError(
+                "Cannot set materialized_table_schema if materialized_address is not set."
+            )
 
         if project_id is None:
             project_id = metadata.project_id()
@@ -118,6 +124,7 @@ class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
 
         # Cached result of self._should_deploy_predicate
         self._should_deploy: Optional[bool] = None
+        self.materialized_table_schema = materialized_table_schema
 
     def should_deploy(self) -> bool:
         """Returns whether it is safe to deploy this view. This may be an expensive
@@ -361,12 +368,18 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         should_materialize: bool = False,
         projects_to_deploy: Optional[Set[str]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,
+        materialized_table_schema: Optional[list[bigquery.SchemaField]] = None,
         should_deploy_predicate: Optional[Callable[[], bool]] = None,
         clustering_fields: Optional[List[str]] = None,
         time_partitioning: bigquery.TimePartitioning | None = None,
         # All query format kwargs args must have string values
         **query_format_kwargs: str,
     ):
+        if materialized_table_schema is not None and not should_materialize:
+            raise ValueError(
+                "Cannot set materialized_table_schema if should_materialize is False."
+            )
+
         self.dataset_id = dataset_id
         self.view_id = view_id
         self.projects_to_deploy = projects_to_deploy
@@ -376,6 +389,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         self.should_deploy_predicate = should_deploy_predicate
         self.clustering_fields = clustering_fields
         self.time_partitioning = time_partitioning
+        self.materialized_table_schema = materialized_table_schema
         self.query_format_kwargs = query_format_kwargs
         self.materialized_address = self._build_materialized_address(
             dataset_id=dataset_id,
@@ -398,5 +412,6 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             time_partitioning=self.time_partitioning,
             sandbox_context=sandbox_context,
             should_deploy_predicate=self.should_deploy_predicate,
+            materialized_table_schema=self.materialized_table_schema,
             **self.query_format_kwargs,
         )

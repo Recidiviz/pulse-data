@@ -127,6 +127,7 @@ class ViewManagerTest(unittest.TestCase):
                 clustering_fields=None,
                 time_partitioning=None,
                 should_deploy_predicate=None,
+                materialized_table_schema=None,
                 **view,
             )
             for view in sample_views
@@ -493,6 +494,7 @@ class ViewManagerTest(unittest.TestCase):
                 clustering_fields=None,
                 time_partitioning=None,
                 should_deploy_predicate=None,
+                materialized_table_schema=None,
                 **view,
             )
             for view in sample_views

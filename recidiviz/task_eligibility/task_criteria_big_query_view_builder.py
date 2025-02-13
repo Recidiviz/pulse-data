@@ -130,6 +130,7 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             should_deploy_predicate=None,
             clustering_fields=None,
             time_partitioning=None,
+            materialized_table_schema=None,
             **query_format_kwargs,
         )
         self.state_code = state_code
@@ -170,6 +171,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             should_deploy_predicate=None,
             clustering_fields=None,
             time_partitioning=None,
+            materialized_table_schema=None,
             **query_format_kwargs,
         )
         self.criteria_name = criteria_name

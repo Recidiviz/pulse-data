@@ -352,6 +352,7 @@ class StateSpecificTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuil
             should_deploy_predicate=None,
             clustering_fields=None,
             time_partitioning=None,
+            materialized_table_schema=None,
             **query_format_kwargs,
         )
         self.completion_event_type = completion_event_type
@@ -406,6 +407,7 @@ class StateAgnosticTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuil
             should_deploy_predicate=None,
             clustering_fields=None,
             time_partitioning=None,
+            materialized_table_schema=None,
             **query_format_kwargs,
         )
         self.completion_event_type = completion_event_type

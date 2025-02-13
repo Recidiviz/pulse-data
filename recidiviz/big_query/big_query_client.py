@@ -61,7 +61,10 @@ from more_itertools import one, peekable
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_job_labels import BigQueryDatasetIdJobLabel
-from recidiviz.big_query.big_query_utils import get_file_destinations_for_bq_export
+from recidiviz.big_query.big_query_utils import (
+    are_bq_schemas_same,
+    get_file_destinations_for_bq_export,
+)
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.constants import BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
@@ -571,6 +574,7 @@ class BigQueryClient:
         clustering_fields: Optional[List[str]] = None,
         time_partitioning: bigquery.TimePartitioning | None = None,
         job_labels: Optional[list[ResourceLabel]] = None,
+        output_schema: Optional[list[bigquery.SchemaField]] = None,
     ) -> bigquery.QueryJob:
         """Creates a table at the given address with the output from the given query.
         If overwrite is False, a 'duplicate' error is returned in the job result if the
@@ -588,6 +592,7 @@ class BigQueryClient:
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
             job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
+            output_schema: The schema for the materialized table if there are any overrides you would like to make.
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -605,6 +610,7 @@ class BigQueryClient:
         clustering_fields: Optional[List[str]] = None,
         time_partitioning: bigquery.TimePartitioning | None = None,
         job_labels: Optional[list[ResourceLabel]] = None,
+        output_schema: Optional[list[bigquery.SchemaField]] = None,
     ) -> bigquery.table.RowIterator:
         """Creates a table at the given address with the output from the given query.
         If overwrite is False, a 'duplicate' error is returned in the job result if the
@@ -623,6 +629,7 @@ class BigQueryClient:
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
             job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
+            output_schema: The schema for the materialized table if there are any overrides you would like to make.
 
         Returns:
             The result of the QueryJob."""
@@ -1663,6 +1670,7 @@ class BigQueryClientImpl(BigQueryClient):
         time_partitioning: bigquery.TimePartitioning | None = None,
         use_query_cache: bool,
         job_labels: Optional[list[ResourceLabel]] = None,
+        output_schema: Optional[list[bigquery.SchemaField]] = None,
     ) -> bigquery.QueryJob:
         # If overwrite is False, errors if the table already exists and contains data. Else, overwrites the table if
         # it already exists.
@@ -1681,6 +1689,7 @@ class BigQueryClientImpl(BigQueryClient):
             time_partitioning=time_partitioning,
             use_query_cache=use_query_cache,
             job_labels=job_labels,
+            output_schema=output_schema,
         )
 
     def create_table_from_query(
@@ -1694,6 +1703,7 @@ class BigQueryClientImpl(BigQueryClient):
         time_partitioning: bigquery.TimePartitioning | None = None,
         use_query_cache: bool,
         job_labels: Optional[list[ResourceLabel]] = None,
+        output_schema: Optional[list[bigquery.SchemaField]] = None,
     ) -> bigquery.table.RowIterator:
         query_job = self.create_table_from_query_async(
             address=address,
@@ -1704,6 +1714,7 @@ class BigQueryClientImpl(BigQueryClient):
             time_partitioning=time_partitioning,
             use_query_cache=use_query_cache,
             job_labels=job_labels,
+            output_schema=output_schema,
         )
         try:
             result = query_job.result()
@@ -1843,6 +1854,7 @@ class BigQueryClientImpl(BigQueryClient):
         time_partitioning: bigquery.TimePartitioning | None = None,
         use_query_cache: bool,
         job_labels: Optional[list[ResourceLabel]] = None,
+        output_schema: Optional[list[bigquery.SchemaField]] = None,
     ) -> bigquery.QueryJob:
         """Inserts the results of the given query into the table at the given address.
         Creates a table if one does not yet exist. If |allow_field_additions| is set to
@@ -1867,6 +1879,7 @@ class BigQueryClientImpl(BigQueryClient):
             use_query_cache: Whether to look for the result in the query cache. See:
                 https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
             job_labels: Metadata labels to attach to the BigQuery QueryJob, recorded in the JOBS view.
+            output_schema: The schema for the output table
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -1885,21 +1898,40 @@ class BigQueryClientImpl(BigQueryClient):
         query_job_config.write_disposition = write_disposition
         query_job_config.query_parameters = query_parameters or []
 
-        if clustering_fields or time_partitioning:
+        if clustering_fields or time_partitioning or output_schema:
             query_job_config.clustering_fields = clustering_fields
             query_job_config.time_partitioning = time_partitioning
 
-            # if new clustering fields are different, delete existing table
-            # only if the write_disposition is WRITE_TRUNCATE
-            try:
-                existing_table = self.get_table(destination_address)
-
-                if write_disposition != bigquery.WriteDisposition.WRITE_TRUNCATE:
+            # If we are truncating, go ahead and delete the table (if it exists)
+            if write_disposition == bigquery.WriteDisposition.WRITE_TRUNCATE:
+                self.delete_table(destination_address, not_found_ok=True)
+                # pre-create the table with the new schema if there is an output_schema
+                # specified (you can't specify the schema as part of the query job)
+                if output_schema:
+                    self.create_table_with_schema(
+                        address=destination_address,
+                        schema_fields=output_schema,
+                        clustering_fields=clustering_fields,
+                        time_partitioning=time_partitioning,
+                    )
+                    # Make sure to change the job config to APPEND so that the schema
+                    # changes are not lost
+                    query_job_config.write_disposition = (
+                        bigquery.WriteDisposition.WRITE_APPEND
+                    )
+            # If we are not truncating, check if the existing table is in the same
+            # state as the new table would be
+            else:
+                try:
+                    existing_table = self.get_table(destination_address)
                     if existing_table.clustering_fields != clustering_fields:
                         raise ValueError(
-                            "Trying to materialize into a table using different "
-                            "clustering fields than what currently exists requires "
-                            "'WRITE_TRUNCATE' write_disposition."
+                            f"Trying to materialize into a table using different "
+                            f"clustering fields than what currently exists requires "
+                            f"'WRITE_TRUNCATE' write_disposition."
+                            f""
+                            f"Current clustering fields: {existing_table.clustering_fields}"
+                            f"New clustering fields: {clustering_fields}"
                         )
 
                     if existing_table.time_partitioning != time_partitioning:
@@ -1908,14 +1940,25 @@ class BigQueryClientImpl(BigQueryClient):
                             f"destination table [{destination_address.to_str()}]. "
                             f"Cannot write to the table with write_disposition "
                             f"[{write_disposition}]."
+                            f""
+                            f"Current time_partitioning: {existing_table.time_partitioning}"
+                            f"New time_partitioning: {time_partitioning}"
                         )
-                else:
-                    # Delete destination table so that it will be recreated with the
-                    # correct partitioning (ok to delete because we're just going to
-                    # TRUNCATE the data anyway).
-                    self.delete_table(destination_address)
-            except exceptions.NotFound:
-                pass
+
+                    if output_schema is not None and not are_bq_schemas_same(
+                        existing_table.schema, output_schema
+                    ):
+                        raise ValueError(
+                            f"Found updated table schema for "
+                            f"destination table [{destination_address.to_str()}]. "
+                            f"Cannot write to the table with write_disposition "
+                            f"[{write_disposition}]."
+                            f""
+                            f"Current schema: {existing_table.schema}"
+                            f"New schema: {output_schema}"
+                        )
+                except exceptions.NotFound:
+                    pass
 
         if allow_field_additions:
             query_job_config.schema_update_options = [
@@ -2125,6 +2168,7 @@ class BigQueryClientImpl(BigQueryClient):
             time_partitioning=view.time_partitioning,
             use_query_cache=use_query_cache,
             job_labels=job_labels,
+            output_schema=view.materialized_table_schema,
         )
         create_job.result()
 

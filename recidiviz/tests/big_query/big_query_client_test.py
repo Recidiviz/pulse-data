@@ -839,6 +839,103 @@ class BigQueryClientImplTest(unittest.TestCase):
         # verify that job_config contains the correct clustering fields
         self.assertEqual(inputs["job_config"].clustering_fields, fake_cluster_fields)
 
+    def test_create_table_from_query_async_with_output_schema_no_overwrite_mismatched_schemas_should_fail(
+        self,
+    ) -> None:
+        """
+        Tests that create_table_from_query_async() will throw an error if the provided output schema does not match the existing schema when overwrite is False.
+        """
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.clustering_fields = None
+        mock_table.time_partitioning = None
+        # Set the existing schema to be different from the provided schema
+        mock_table.schema = [
+            bigquery.SchemaField(
+                name="fake_column",
+                field_type="STRING",
+                mode="REQUIRED",
+            ),
+            bigquery.SchemaField(
+                name="fake_column_2",
+                field_type="STRING",
+                mode="REQUIRED",
+            ),
+        ]
+        self.mock_client.get_table.return_value = mock_table
+
+        fake_query = "SELECT NULL LIMIT 0"
+
+        with self.assertRaisesRegex(
+            ValueError, "Found updated table schema for destination table"
+        ):
+            self.bq_client.create_table_from_query_async(
+                address=BigQueryAddress(
+                    dataset_id=self.mock_dataset_id,
+                    table_id="fake_table_temp",
+                ),
+                query=fake_query,
+                use_query_cache=False,
+                overwrite=False,
+                output_schema=[
+                    bigquery.SchemaField(
+                        name="fake_column",
+                        field_type="STRING",
+                        mode="NULLABLE",
+                    )
+                ],
+            )
+
+    def test_create_table_from_query_async_with_output_schema_no_overwrite_matching_schemas(
+        self,
+    ) -> None:
+        """
+        Tests that create_table_from_query_async() works if the provided output schema does match the existing schema when overwrite is False.
+        """
+        mock_table = create_autospec(bigquery.Table)
+        mock_table.clustering_fields = None
+        mock_table.time_partitioning = None
+        # Set the existing schema to be the same as the provided schema
+        mock_table.schema = [
+            bigquery.SchemaField(
+                name="fake_column",
+                field_type="STRING",
+                mode="REQUIRED",
+            ),
+            bigquery.SchemaField(
+                name="fake_column_2",
+                field_type="STRING",
+                mode="REQUIRED",
+            ),
+        ]
+        self.mock_client.get_table.return_value = mock_table
+
+        fake_query = "SELECT NULL LIMIT 0"
+
+        self.bq_client.create_table_from_query_async(
+            address=BigQueryAddress(
+                dataset_id=self.mock_dataset_id,
+                table_id="fake_table_temp",
+            ),
+            query=fake_query,
+            use_query_cache=False,
+            overwrite=False,
+            output_schema=[
+                # Put these out of order to test that the order doesn't matter
+                bigquery.SchemaField(
+                    name="fake_column_2",
+                    field_type="STRING",
+                    mode="REQUIRED",
+                ),
+                bigquery.SchemaField(
+                    name="fake_column",
+                    field_type="STRING",
+                    mode="REQUIRED",
+                ),
+            ],
+        )
+
+        self.mock_client.query.assert_called_once()
+
     def test_insert_into_table_with_clustering_fails_without_write_truncate(
         self,
     ) -> None:
@@ -1355,6 +1452,54 @@ class BigQueryClientImplTest(unittest.TestCase):
                 view=invalid_view, use_query_cache=False
             )
         self.mock_client.query.assert_not_called()
+
+    def test_materialize_view_to_table_with_materialized_table_schema(
+        self,
+    ) -> None:
+        """
+        Tests that materialize_view_to_table() handles BigQueryViews that
+        include output_schema in the config passed to client.query().
+        """
+        mock_table = create_autospec(bigquery.Table)
+        fake_schema = [
+            bigquery.SchemaField(name="field1", field_type="STRING", mode="REQUIRED"),
+            bigquery.SchemaField(name="field2", field_type="STRING", mode="REQUIRED"),
+        ]
+
+        self.mock_view = SimpleBigQueryViewBuilder(
+            dataset_id=self.mock_dataset_id,
+            view_id="test_view",
+            description="test_view description",
+            view_query_template="SELECT NULL LIMIT 0",
+            should_materialize=True,
+            materialized_table_schema=fake_schema,
+        ).build()
+
+        # Pretend like the table doesn't exist so create_table_with_schema doesn't error
+        self.mock_client.get_table.side_effect = exceptions.NotFound("Not found")
+
+        # Once it's created, make it so it does exist
+        def create_side_effect(*args: Any, **kwargs: Any) -> None:
+            self.mock_client.get_table.side_effect = mock_table
+            return mock_table
+
+        self.mock_client.create_table.side_effect = create_side_effect
+
+        self.bq_client.materialize_view_to_table(
+            view=self.mock_view, use_query_cache=False
+        )
+
+        # Should have deleted the table, recreated it, and then run the query with WRITE_APPEND
+        self.mock_client.delete_table.assert_called_once()
+        self.mock_client.create_table.assert_called_once()
+
+        # get inputs passed to client.query()
+        _, inputs = self.mock_client.query.call_args
+        # verify that job_config contains the correct write_disposition
+        self.assertEqual(
+            inputs["job_config"].write_disposition,
+            bigquery.WriteDisposition.WRITE_APPEND,
+        )
 
     def test_create_table_with_schema(self) -> None:
         """Tests that the create_table_with_schema function calls the create_table function on the client."""

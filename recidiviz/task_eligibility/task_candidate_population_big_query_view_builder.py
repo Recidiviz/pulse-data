@@ -61,6 +61,7 @@ class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
             should_deploy_predicate=None,
             clustering_fields=None,
             time_partitioning=None,
+            materialized_table_schema=None,
             **query_format_kwargs,
         )
         self.state_code = state_code
@@ -97,6 +98,7 @@ class StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
             should_deploy_predicate=None,
             clustering_fields=None,
             time_partitioning=None,
+            materialized_table_schema=None,
             **query_format_kwargs,
         )
         self.population_name = population_name

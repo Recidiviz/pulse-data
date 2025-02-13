@@ -54,6 +54,7 @@ class MetricBigQueryView(BigQueryView):
             clustering_fields=clustering_fields,
             time_partitioning=None,
             should_deploy_predicate=None,
+            materialized_table_schema=None,
             **query_format_kwargs,
         )
         self.dimensions = dimensions

@@ -342,3 +342,26 @@ def get_file_destinations_for_bq_export(
 
 def table_has_field(table: bigquery.Table, field: str) -> bool:
     return any(f.name == field for f in table.schema)
+
+
+def are_bq_schemas_same(
+    schema1: List[bigquery.SchemaField], schema2: List[bigquery.SchemaField]
+) -> bool:
+    """Compares two lists of BigQuery SchemaField objects to check if they are the same,
+    ignoring the order of elements."""
+    if len(schema1) != len(schema2):
+        return False
+
+    schema1_sorted = sorted(schema1, key=lambda field: field.name)
+    schema2_sorted = sorted(schema2, key=lambda field: field.name)
+
+    for field1, field2 in zip(schema1_sorted, schema2_sorted):
+        if (
+            field1.name != field2.name
+            or field1.field_type != field2.field_type
+            or field1.mode != field2.mode
+            or field1.description != field2.description
+        ):
+            return False
+
+    return True

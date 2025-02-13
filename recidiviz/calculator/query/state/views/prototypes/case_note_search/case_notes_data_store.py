@@ -16,6 +16,8 @@
 # =============================================================================
 """View of all US_ME case notes to be imported to cloud storage."""
 
+from google.cloud import bigquery
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import CASE_NOTES_PROTOTYPE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -45,6 +47,10 @@ CASE_NOTES_DATA_STORE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     case_notes_prototype_dataset=CASE_NOTES_PROTOTYPE_DATASET,
     should_materialize=True,
     clustering_fields=["id"],
+    materialized_table_schema=[
+        bigquery.SchemaField(name="id", field_type="STRING", mode="REQUIRED"),
+        bigquery.SchemaField(name="jsonData", field_type="STRING", mode="REQUIRED"),
+    ],
 )
 
 if __name__ == "__main__":
