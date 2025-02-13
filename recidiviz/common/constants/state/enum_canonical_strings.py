@@ -406,6 +406,7 @@ state_supervision_period_status_terminated = "TERMINATED"
 state_supervision_period_status_under_supervision = "UNDER_SUPERVISION"
 
 state_supervision_period_supervision_level_minimum = "MINIMUM"
+state_supervision_period_supervision_level_low_medium = "LOW_MEDIUM"
 state_supervision_period_supervision_level_medium = "MEDIUM"
 state_supervision_period_supervision_level_high = "HIGH"
 state_supervision_period_supervision_level_maximum = "MAXIMUM"

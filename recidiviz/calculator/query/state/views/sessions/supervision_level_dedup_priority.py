@@ -53,6 +53,7 @@ SUPERVISION_LEVEL_ORDERED_PRIORITY = [
     StateSupervisionLevel.MAXIMUM,
     StateSupervisionLevel.HIGH,
     StateSupervisionLevel.MEDIUM,
+    StateSupervisionLevel.LOW_MEDIUM,
     StateSupervisionLevel.MINIMUM,
     StateSupervisionLevel.LIMITED,
     StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,

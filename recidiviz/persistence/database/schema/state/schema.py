@@ -420,6 +420,7 @@ state_supervision_period_admission_reason = Enum(
 
 state_supervision_level = Enum(
     state_enum_strings.state_supervision_period_supervision_level_minimum,
+    state_enum_strings.state_supervision_period_supervision_level_low_medium,
     state_enum_strings.state_supervision_period_supervision_level_medium,
     state_enum_strings.state_supervision_period_supervision_level_high,
     state_enum_strings.state_supervision_period_supervision_level_maximum,

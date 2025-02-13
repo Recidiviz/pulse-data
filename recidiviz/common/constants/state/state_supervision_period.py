@@ -225,6 +225,9 @@ class StateSupervisionLevel(StateEntityEnum):
     )
     LIMITED = state_enum_strings.state_supervision_period_supervision_level_limited
     MINIMUM = state_enum_strings.state_supervision_period_supervision_level_minimum
+    LOW_MEDIUM = (
+        state_enum_strings.state_supervision_period_supervision_level_low_medium
+    )
     MEDIUM = state_enum_strings.state_supervision_period_supervision_level_medium
     HIGH = state_enum_strings.state_supervision_period_supervision_level_high
     MAXIMUM = state_enum_strings.state_supervision_period_supervision_level_maximum
@@ -278,9 +281,10 @@ class StateSupervisionLevel(StateEntityEnum):
         return {
             StateSupervisionLevel.LIMITED: 0,
             StateSupervisionLevel.MINIMUM: 1,
-            StateSupervisionLevel.MEDIUM: 2,
-            StateSupervisionLevel.HIGH: 3,
-            StateSupervisionLevel.MAXIMUM: 4,
+            StateSupervisionLevel.LOW_MEDIUM: 2,
+            StateSupervisionLevel.MEDIUM: 3,
+            StateSupervisionLevel.HIGH: 4,
+            StateSupervisionLevel.MAXIMUM: 5,
         }
 
     @classmethod
@@ -327,6 +331,11 @@ _STATE_SUPERVISION_LEVEL_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "“administrative supervision” in some states.",
     StateSupervisionLevel.MAXIMUM: "Used when a person is on the maximum level "
     "of supervision, as defined by the state.",
+    StateSupervisionLevel.LOW_MEDIUM: "Used when a person is being supervised at a "
+    "level between low/minimum and medium, as defined by the state. Should only be "
+    "used when the state defines an additional level of supervision distinct from "
+    "low or medium. In some states (e.g. TN, NE) this level may be called something "
+    "like 'Low Moderate'.",
     StateSupervisionLevel.MEDIUM: "Used when a person is on a medium level of "
     "supervision, as defined by the state.",
     StateSupervisionLevel.MINIMUM: "Used when a person is on a low level of "
