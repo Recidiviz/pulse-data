@@ -35,6 +35,10 @@ from recidiviz.tools.looker.entity.entity_field_builders import (
     EntityLookMLFieldBuilder,
     LookMLFieldBuilder,
 )
+from recidiviz.tools.looker.state.state_dataset_custom_view_fields import (
+    BigQuerySchemaValidator,
+    StateEntityLookMLCustomFieldProvider,
+)
 
 ENTITIES_MODULE = state_entities
 
@@ -45,6 +49,9 @@ def generate_state_views() -> List[LookMLView]:
     # TODO(#23292): Add `actions` dimension to state_person view
     # TODO(#23292): Custom formatting for open (null end date) supervision / incarceration periods
     schema_map = get_bq_schema_for_entities_module(ENTITIES_MODULE)
+    field_provider = StateEntityLookMLCustomFieldProvider(
+        field_validator=BigQuerySchemaValidator(schema_map)
+    )
 
     def build_lookml_view(
         table_id: str, schema_fields: List[bigquery.SchemaField]
@@ -55,6 +62,8 @@ def generate_state_views() -> List[LookMLView]:
                 metadata=AssociationTableMetadataHelper.for_table_id(
                     entities_module=ENTITIES_MODULE, table_id=table_id
                 ),
+                custom_field_provider=field_provider,
+                table_id=table_id,
                 schema_fields=schema_fields,
             )
         else:
@@ -62,6 +71,8 @@ def generate_state_views() -> List[LookMLView]:
                 metadata=EntityMetadataHelper.for_table_id(
                     entities_module=ENTITIES_MODULE, table_id=table_id
                 ),
+                custom_field_provider=field_provider,
+                table_id=table_id,
                 schema_fields=schema_fields,
             )
 

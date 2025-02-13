@@ -24,6 +24,7 @@ from google.cloud import bigquery
 from recidiviz.common import attr_validators
 from recidiviz.looker.lookml_bq_utils import lookml_view_field_for_schema_field
 from recidiviz.looker.lookml_view_field import (
+    DimensionGroupLookMLViewField,
     DimensionLookMLViewField,
     LookMLFieldParameter,
     LookMLViewField,
@@ -34,14 +35,18 @@ from recidiviz.persistence.entity.entity_metadata_helper import (
     AssociationTableMetadataHelper,
     EntityMetadataHelper,
 )
-
-count_field = MeasureLookMLViewField(
-    field_name="count",
-    parameters=[
-        LookMLFieldParameter.type(LookMLFieldType.COUNT),
-        LookMLFieldParameter.drill_fields([]),
-    ],
+from recidiviz.tools.looker.state.state_dataset_custom_view_fields import (
+    StateEntityLookMLCustomFieldProvider,
 )
+
+
+def _rank_for_field_type(f: LookMLViewField) -> int:
+    """Returns a rank for a field type to sort dimensions before measures."""
+    if isinstance(f, (DimensionLookMLViewField, DimensionGroupLookMLViewField)):
+        return 0
+    if isinstance(f, MeasureLookMLViewField):
+        return 1
+    raise NotImplementedError(f"Unsupported field type: {type(f)}")
 
 
 @attr.define
@@ -64,6 +69,11 @@ class EntityLookMLFieldBuilder(LookMLFieldBuilder):
     metadata: EntityMetadataHelper = attr.ib(
         validator=attr.validators.instance_of(EntityMetadataHelper)
     )
+    # TODO(#23292): Allow support for different types of custom field providers (eg normalized state)
+    custom_field_provider: StateEntityLookMLCustomFieldProvider = attr.ib(
+        validator=attr.validators.instance_of(StateEntityLookMLCustomFieldProvider)
+    )
+    table_id: str = attr.ib(validator=attr_validators.is_str)
     schema_fields: List[bigquery.SchemaField] = attr.ib(
         validator=attr_validators.is_list
     )
@@ -85,18 +95,26 @@ class EntityLookMLFieldBuilder(LookMLFieldBuilder):
 
     def build_view_fields(self) -> List[LookMLViewField]:
         """
-        Constructs LookML fields based on entity attributes and relationships.
-        TODO(#23292) Add support for per-entity custom fields
+        Constructs LookML fields based on entity attributes and relationships, as well as any
+        custom fields defined for that table. If a custom field and a schema field have the same name,
+        the custom field will take precedence.
+        Returns a list of LookML view fields sorted alphabetically with dimensions first, then measures.
         """
-        dimension_fields: List[LookMLViewField] = [
+        custom_fields = self.custom_field_provider.get(self.table_id)
+        custom_field_names = {field.field_name for field in custom_fields}
+
+        dimension_fields = [
             lookml_view_field_for_schema_field(
                 schema_field, self._get_custom_field_params(schema_field.name)
             )
             for schema_field in self.schema_fields
+            if schema_field.name not in custom_field_names
         ]
-        measure_fields: List[LookMLViewField] = [count_field]
 
-        return sorted(dimension_fields, key=lambda x: x.field_name) + measure_fields
+        return sorted(
+            dimension_fields + custom_fields,
+            key=lambda f: (_rank_for_field_type(f), f.field_name),
+        )
 
 
 PRIMARY_KEY_COL = "primary_key"
@@ -109,6 +127,11 @@ class AssociationTableLookMLFieldBuilder(LookMLFieldBuilder):
     metadata: AssociationTableMetadataHelper = attr.ib(
         validator=attr.validators.instance_of(AssociationTableMetadataHelper)
     )
+    # TODO(#23292): Allow support for different types of custom field providers (eg normalized state)
+    custom_field_provider: StateEntityLookMLCustomFieldProvider = attr.ib(
+        validator=attr.validators.instance_of(StateEntityLookMLCustomFieldProvider)
+    )
+    table_id: str = attr.ib(validator=attr_validators.is_str)
     schema_fields: List[bigquery.SchemaField] = attr.ib(
         validator=attr_validators.is_list
     )
@@ -134,14 +157,21 @@ class AssociationTableLookMLFieldBuilder(LookMLFieldBuilder):
         )
 
     def build_view_fields(self) -> List[LookMLViewField]:
-        """Build LookML fields for an association table.
-        TODO(#23292) Add support for per-entity custom fields
+        """Build LookML fields for an association table, as well as any
+        custom fields defined for that table. If a custom field and a schema field have the same name,
+        the custom field will take precedence.
+        Returns a list of LookML view fields sorted alphabetically with dimensions first, then measures.
         """
+        custom_fields = self.custom_field_provider.get(self.table_id)
+        custom_field_names = {field.field_name for field in custom_fields}
 
         dimension_fields: List[LookMLViewField] = [
             lookml_view_field_for_schema_field(schema_field)
             for schema_field in self.schema_fields
+            if schema_field.name not in custom_field_names
         ] + [self._build_primary_key_field()]
-        measure_fields: List[LookMLViewField] = [count_field]
 
-        return sorted(dimension_fields, key=lambda x: x.field_name) + measure_fields
+        return sorted(
+            dimension_fields + custom_fields,
+            key=lambda f: (_rank_for_field_type(f), f.field_name),
+        )
