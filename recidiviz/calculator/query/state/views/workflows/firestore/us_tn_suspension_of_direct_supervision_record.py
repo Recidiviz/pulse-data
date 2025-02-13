@@ -85,6 +85,16 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
             contact_comment,
         FROM `{{project_id}}.{{analyst_views_dataset}}.us_tn_contact_comments_preprocessed_materialized`
     ),
+    contact_latest_negative_arrest_check AS (
+        -- latest negative arrest check
+        {keep_contact_codes(
+            codes_cte="relevant_codes",
+            comments_cte="comments_clean",
+            where_clause_codes_cte="WHERE contact_type='ARRN'",
+            output_name="latest_negative_arrest_check",
+            keep_last=True,
+        )}
+    ),
     contact_latest_ncic AS (
         -- latest NCIC check
         {keep_contact_codes(
@@ -184,6 +194,8 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
         base.ineligible_criteria,
         base.is_eligible,
         base.is_almost_eligible,
+        -- metadata
+        contact_latest_negative_arrest_check.latest_negative_arrest_check AS metadata_latest_negative_arrest_check,
         -- case notes
         cna.case_notes,
         -- form information
@@ -206,6 +218,8 @@ US_TN_SUSPENSION_OF_DIRECT_SUPERVISION_RECORD_QUERY_TEMPLATE = f"""
         site.AddressCity AS form_information_supervision_office_location,
         contact_latest_ncic.latest_ncic AS form_information_latest_ncic,
     FROM base
+    LEFT JOIN contact_latest_negative_arrest_check
+        ON base.person_id=contact_latest_negative_arrest_check.person_id
     LEFT JOIN case_notes_aggregated cna
         ON base.external_id=cna.external_id
     LEFT JOIN current_sentences

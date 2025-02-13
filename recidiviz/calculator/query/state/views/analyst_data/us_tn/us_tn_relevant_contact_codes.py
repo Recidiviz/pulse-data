@@ -65,7 +65,7 @@ US_TN_RELEVANT_CONTACT_CODES_QUERY_TEMPLATE = """
             OR ContactNoteType = 'TEPE'
             OR ContactNoteType IN ('NCAC','NCAF')
             OR ContactNoteType IN ('BBNN', 'BBNP')
-            OR ContactNoteType = 'ARRP'
+            OR ContactNoteType IN ('ARRN', 'ARRP')
         )
 """
 
