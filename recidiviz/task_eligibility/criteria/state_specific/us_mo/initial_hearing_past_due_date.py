@@ -90,7 +90,9 @@ _QUERY_TEMPLATE = f"""
             -- Review date is after the start of the RH assignment
             AND c.start_date <= itsc.next_review_date
             -- Review was scheduled before the end of the RH assignment
-            AND {nonnull_end_date_clause('c.end_date')} >= itsc.hearing_scheduled_date
+            -- Exclude zero-day ITSC spans (ITSC entry is on last day of assignment) with
+            -- strict inequality
+            AND {nonnull_end_date_clause('c.end_date')} > itsc.hearing_scheduled_date
             -- TODO(#21788): Use ingested enums once MO housing_unit_type is ingested
             AND c.confinement_type IN ("SOLITARY_CONFINEMENT")
         -- Choose the earliest RH assignment that could correspond with the ITSC entry
@@ -137,8 +139,9 @@ _QUERY_TEMPLATE = f"""
             scheduled_next_review_date AS next_review_date,
             FALSE AS due_date_inferred,
         FROM rh_assignments
-        -- Exclude assignments with no scheduled review date (no ITSC entry)
-        WHERE scheduled_date IS NOT NULL
+        WHERE 
+            -- Exclude assignments with no scheduled review date (no ITSC entry)
+            scheduled_date IS NOT NULL
     )
     ,
     -- Conversion table between business days and calendar days
@@ -159,7 +162,7 @@ _QUERY_TEMPLATE = f"""
             person_id,
             start_date,
             -- Clip the end of the span to the end of the RH assignment
-            LEAST(end_date, {nonnull_end_date_clause('scheduled_date')}) AS end_date,
+            LEAST({nonnull_end_date_clause('end_date')}, {nonnull_end_date_clause('scheduled_date')}) AS end_date,
             DATE_ADD(start_date, INTERVAL business_days.calendar_days DAY) AS next_review_date,
             TRUE AS due_date_inferred,
         FROM rh_assignments
