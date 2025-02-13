@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: IncarcerationParole
 file_description: |-
-  Information on the incarceration periods for people who are currently on parole in California
+  Information on the incarceration periods for people who are currently on parole in
+  California. This table includes past periods of incarceration.
 data_classification: source
 primary_key_cols:
   - OffenderId
@@ -338,3 +339,7 @@ columns:
       - value: TO DIS
       - value: W&I 7301
       - value: With New Term
+table_relationships:
+  - foreign_table: PersonParole
+    join_logic:
+      - PersonParole.OffenderId = IncarcerationParole.OffenderId

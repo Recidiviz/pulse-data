@@ -47,3 +47,7 @@ columns:
     description: Whether or not this was the principal offense.
   - name: SentencingFactor
   - name: SentencingChainType
+table_relationships:
+  - foreign_table: PersonParole
+    join_logic:
+      - PersonParole.OffenderId = ChargeParole.OffenderId
