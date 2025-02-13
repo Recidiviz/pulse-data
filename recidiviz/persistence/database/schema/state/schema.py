@@ -175,6 +175,8 @@ state_sentence_status = Enum(
     state_enum_strings.state_sentence_status_amended,
     state_enum_strings.state_sentence_status_commuted,
     state_enum_strings.state_sentence_status_completed,
+    state_enum_strings.state_sentence_status_death,
+    state_enum_strings.state_sentence_status_execution,
     state_enum_strings.state_sentence_status_pardoned,
     state_enum_strings.state_sentence_status_pending,
     state_enum_strings.state_sentence_status_sanctioned,

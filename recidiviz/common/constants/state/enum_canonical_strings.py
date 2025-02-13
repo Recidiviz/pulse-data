@@ -327,6 +327,8 @@ state_sentence_status_sanctioned = "SANCTIONED"
 state_sentence_status_serving = "SERVING"
 state_sentence_status_suspended = "SUSPENDED"
 state_sentence_status_vacated = "VACATED"
+state_sentence_status_death = "DEATH"
+state_sentence_status_execution = "EXECUTION"
 
 state_sentence_type_county_jail = "COUNTY_JAIL"
 state_sentence_type_federal_prison = "FEDERAL_PRISON"

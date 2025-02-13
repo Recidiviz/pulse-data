@@ -32,6 +32,8 @@ class StateSentenceStatus(StateEntityEnum):
     COMPLETED = state_enum_strings.state_sentence_status_completed
     PARDONED = state_enum_strings.state_sentence_status_pardoned
     PENDING = state_enum_strings.state_sentence_status_pending
+    DEATH = state_enum_strings.state_sentence_status_death
+    EXECUTION = state_enum_strings.state_sentence_status_execution
     # Only use REVOKED when a person is re-sentenced because of revocation,
     # otherwise use SERVING.
     REVOKED = state_enum_strings.state_sentence_status_revoked
@@ -98,6 +100,10 @@ _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "vacated, there is immediate release from any active form of incarceration or "
     "supervision related to the vacated conviction. This is distinct from `PARDONED`, "
     "because the sentence was cleared as a result of it being deemed legally void.",
+    StateSentenceStatus.DEATH: "Describes a sentence that has ended because the person"
+    "serving has died.",
+    StateSentenceStatus.EXECUTION: "Describes a sentence has ended because the person "
+    "serving has been executed.",
 }
 
 # We enumerate every enum option here to ensure all are accounted for and tested.
@@ -106,6 +112,8 @@ _STATE_SENTENCE_STATUS_VALUE_TERMINATES: Dict[StateEntityEnum, bool] = {
     StateSentenceStatus.PARDONED: True,
     StateSentenceStatus.REVOKED: True,
     StateSentenceStatus.VACATED: True,
+    StateSentenceStatus.DEATH: True,
+    StateSentenceStatus.EXECUTION: True,
     # These are not terminating statuses
     StateSentenceStatus.AMENDED: False,
     StateSentenceStatus.COMMUTED: False,
@@ -128,6 +136,8 @@ _STATE_SENTENCE_STATUS_VALUE_DESIGNATES_SERVING: Dict[StateEntityEnum, bool] = {
     # of these statuses
     StateSentenceStatus.COMPLETED: False,
     StateSentenceStatus.PARDONED: False,
+    StateSentenceStatus.DEATH: False,
+    StateSentenceStatus.EXECUTION: False,
     StateSentenceStatus.REVOKED: False,
     StateSentenceStatus.VACATED: False,
     StateSentenceStatus.SUSPENDED: False,
