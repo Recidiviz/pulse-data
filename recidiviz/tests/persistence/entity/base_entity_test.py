@@ -18,8 +18,11 @@
 # pylint: disable=unused-import,wrong-import-order
 
 """Tests for base_entity.py"""
+import datetime
 import unittest
 from typing import no_type_check
+
+import attr
 
 from recidiviz.persistence.entity import base_entity
 from recidiviz.persistence.entity.base_entity import (
@@ -108,3 +111,133 @@ class TestUniqueConstraint(unittest.TestCase):
         }
 
         self.assertEqual(constraints_1, constraints_2)
+
+
+class TestEntityAssertDatetimeLessThan(unittest.TestCase):
+    """Tests for the assert_datetime_less_than()"""
+
+    def test_assert_datetime_less_than_or_equal(self) -> None:
+        @attr.s(eq=False, kw_only=True)
+        class ExampleEntity(Entity):
+            start: datetime.datetime = attr.ib()
+            end: datetime.datetime = attr.ib()
+
+            def __attrs_post_init__(self) -> None:
+                self.assert_datetime_less_than_or_equal(
+                    self.start,
+                    self.end,
+                    before_description="start",
+                    after_description="end",
+                )
+
+        _ = ExampleEntity(
+            start=datetime.datetime(2022, 1, 1),
+            end=datetime.datetime(2022, 1, 3),
+        )
+
+        # Exactly equal dates allowed
+        _ = ExampleEntity(
+            start=datetime.datetime(2022, 1, 1),
+            end=datetime.datetime(2022, 1, 1),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found ExampleEntity\(\) with start datetime "
+            r"2022-01-01 00:00:00 after end datetime 2001-01-01 00:00:00.",
+        ):
+            _ = ExampleEntity(
+                start=datetime.datetime(2022, 1, 1),
+                end=datetime.datetime(2001, 1, 1),
+            )
+
+    def test_assert_datetime_less_than(self) -> None:
+        @attr.s(eq=False, kw_only=True)
+        class ExampleEntity(Entity):
+            start: datetime.datetime = attr.ib()
+            end: datetime.datetime = attr.ib()
+
+            def __attrs_post_init__(self) -> None:
+                self.assert_datetime_less_than(
+                    self.start,
+                    self.end,
+                    before_description="start",
+                    after_description="end",
+                )
+
+        _ = ExampleEntity(
+            start=datetime.datetime(2022, 1, 1),
+            end=datetime.datetime(2022, 1, 3),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found ExampleEntity\(\) with start datetime "
+            r"2001-01-01 00:00:00 equal to end datetime 2001-01-01 00:00:00.",
+        ):
+            _ = ExampleEntity(
+                start=datetime.datetime(2001, 1, 1),
+                end=datetime.datetime(2001, 1, 1),
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found ExampleEntity\(\) with start datetime "
+            r"2022-01-01 00:00:00 after end datetime 2001-01-01 00:00:00.",
+        ):
+            _ = ExampleEntity(
+                start=datetime.datetime(2022, 1, 1),
+                end=datetime.datetime(2001, 1, 1),
+            )
+
+    def test_assert_datetime_less_than_multiple_dates(self) -> None:
+        @attr.s(eq=False, kw_only=True)
+        class ExampleEntity(Entity):
+            START: datetime.datetime = attr.ib()
+            END_1: datetime.datetime = attr.ib()
+            END_2: datetime.datetime = attr.ib()
+
+            def __attrs_post_init__(self) -> None:
+                """An entity may have one or more datetime fields that are
+                strictly after the 'start' datetime field.
+                """
+                self.assert_datetime_less_than_or_equal(
+                    self.START,
+                    self.END_1,
+                    before_description="START",
+                    after_description="END_1",
+                )
+                self.assert_datetime_less_than_or_equal(
+                    self.START,
+                    self.END_2,
+                    before_description="START",
+                    after_description="END_2",
+                )
+
+        _ = ExampleEntity(
+            START=datetime.datetime(2022, 1, 1),
+            END_1=datetime.datetime(2022, 1, 3),
+            END_2=datetime.datetime(2022, 1, 6),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found ExampleEntity\(\) with START datetime 2022-01-01 00:00:00 after "
+            r"END_1 datetime 2001-01-01 00:00:00.",
+        ):
+            _ = ExampleEntity(
+                START=datetime.datetime(2022, 1, 1),
+                END_1=datetime.datetime(2001, 1, 1),
+                END_2=datetime.datetime(2022, 1, 6),
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found ExampleEntity\(\) with START datetime 2022-01-01 00:00:00 after "
+            r"END_2 datetime 1999-01-01 00:00:00.",
+        ):
+            _ = ExampleEntity(
+                START=datetime.datetime(2022, 1, 1),
+                END_1=datetime.datetime(2022, 1, 3),
+                END_2=datetime.datetime(1999, 1, 1),
+            )

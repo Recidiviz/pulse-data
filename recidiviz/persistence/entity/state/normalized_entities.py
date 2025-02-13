@@ -737,13 +737,13 @@ class NormalizedStateSentenceLength(NormalizedStateEntity, LedgerEntityMixin, En
     def __attrs_post_init__(self) -> None:
         """Ensures that parole eligibility is before potential completions and
         that projected completion dates are in the right order."""
-        self.assert_datetime_less_than(
+        self.assert_datetime_less_than_or_equal(
             self.projected_parole_release_date_external,
             self.projected_completion_date_min_external,
             before_description="projected parole release",
             after_description="projected minimum completion",
         )
-        self.assert_datetime_less_than(
+        self.assert_datetime_less_than_or_equal(
             self.projected_parole_release_date_external,
             self.projected_completion_date_max_external,
             before_description="projected parole release",
@@ -798,13 +798,13 @@ class NormalizedStateSentenceGroupLength(
     def __attrs_post_init__(self) -> None:
         """Ensures that parole eligibility is before potential completions and
         that projected completion dates are in the right order."""
-        self.assert_datetime_less_than(
+        self.assert_datetime_less_than_or_equal(
             self.projected_parole_release_date_external,
             self.projected_full_term_release_date_min_external,
             before_description="projected parole release",
             after_description="projected minimum full term release",
         )
-        self.assert_datetime_less_than(
+        self.assert_datetime_less_than_or_equal(
             self.projected_parole_release_date_external,
             self.projected_full_term_release_date_max_external,
             before_description="projected parole release",
@@ -2666,7 +2666,12 @@ class NormalizedStateTaskDeadline(NormalizedStateEntity, LedgerEntityMixin, Enti
 
     def __attrs_post_init__(self) -> None:
         """StateTaskDeadlines have an eligible date before a due date."""
-        self.assert_datetime_less_than(self.eligible_date, self.due_date)
+        self.assert_datetime_less_than_or_equal(
+            self.eligible_date,
+            self.due_date,
+            before_description="eligible_date",
+            after_description="due_date",
+        )
 
 
 @attr.s(eq=False, kw_only=True)

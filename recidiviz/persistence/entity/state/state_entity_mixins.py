@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Mixin classes for entities in the state dataset."""
-from typing import List, Optional, TypeVar
+from typing import List, TypeVar
 
 import attr
 
 from recidiviz.common import attr_validators
-from recidiviz.common.date import DateOrDateTime, assert_datetime_less_than
+from recidiviz.common.date import DateOrDateTime
 
 
 @attr.s(eq=False)
@@ -76,26 +76,6 @@ class LedgerEntityMixin(SequencedEntityMixin):
             str(getattr(self, field)) for field in self.ledger_partition_columns
         )
         return f"{self.ledger_datetime_field.isoformat()}-{self.sequence_num}-{partition_string}"
-
-    def assert_datetime_less_than(
-        self,
-        before: Optional[DateOrDateTime],
-        after: Optional[DateOrDateTime],
-        before_description: str = "",
-        after_description: str = "",
-    ) -> None:
-        """Raises a ValueError if the given "before" date/datetime is after the "after" one.
-        Both field names must be datetime.datetime or datetime.date fields.
-        """
-        try:
-            assert_datetime_less_than(before, after)
-        # The class name is helpful in ingest, so catching and re-raising with that info.
-        except ValueError as exc:
-            _pii = self.limited_pii_repr() if hasattr(self, "limited_pii_repr") else ""
-            raise ValueError(
-                f"Found {self.__class__.__name__} {_pii} with "
-                f"{before_description} datetime {before} after {after_description} datetime {after}."
-            ) from exc
 
 
 LedgerEntityMixinT = TypeVar("LedgerEntityMixinT", bound=LedgerEntityMixin)

@@ -394,7 +394,7 @@ class StateSentenceLengthTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"Found StateSentenceLength StateSentenceLength\(sentence_length_id=None\) with projected parole release datetime 2022-01-01 after projected minimum completion datetime 1999-01-01.",
+            r"Found StateSentenceLength\(sentence_length_id=None\) with projected parole release datetime 2022-01-01 after projected minimum completion datetime 1999-01-01.",
         ):
             _ = entities.StateSentenceLength(
                 projected_parole_release_date_external=self.after,
@@ -413,7 +413,7 @@ class StateSentenceLengthTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"Found StateSentenceLength StateSentenceLength\(sentence_length_id=None\) with projected parole release datetime 2022-01-01 after projected maximum completion datetime 1999-01-01.",
+            r"Found StateSentenceLength\(sentence_length_id=None\) with projected parole release datetime 2022-01-01 after projected maximum completion datetime 1999-01-01.",
         ):
             _ = entities.StateSentenceLength(
                 projected_parole_release_date_external=self.after,
@@ -487,7 +487,7 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"Found StateSentenceGroupLength StateSentenceGroupLength\(sentence_group_length_id=None\) with projected parole release datetime 2022-01-01 after projected minimum full term release datetime 1999-01-01.",
+            r"Found StateSentenceGroupLength\(sentence_group_length_id=None\) with projected parole release datetime 2022-01-01 after projected minimum full term release datetime 1999-01-01.",
         ):
             _ = entities.StateSentenceGroupLength(
                 projected_parole_release_date_external=self.after,
@@ -506,7 +506,7 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"Found StateSentenceGroupLength StateSentenceGroupLength\(sentence_group_length_id=None\) with projected parole release datetime 2022-01-01 after projected maximum full term release datetime 1999-01-01.",
+            r"Found StateSentenceGroupLength\(sentence_group_length_id=None\) with projected parole release datetime 2022-01-01 after projected maximum full term release datetime 1999-01-01.",
         ):
             _ = entities.StateSentenceGroupLength(
                 projected_parole_release_date_external=self.after,

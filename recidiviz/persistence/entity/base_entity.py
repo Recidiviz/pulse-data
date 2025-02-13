@@ -24,6 +24,7 @@ from more_itertools import one
 # TODO(#1885): Enforce all ForwardRef attributes on an Entity are optional
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
+from recidiviz.common.date import DateOrDateTime
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.utils import environment
 
@@ -65,6 +66,57 @@ class Entity(CoreEntity):
         """Unique constraints applied only on a per root entity level
         (comparing for uniqueness only among a root entity and it's child entities)."""
         return []
+
+    def assert_datetime_less_than_or_equal(
+        self,
+        before: DateOrDateTime | None,
+        after: DateOrDateTime | None,
+        before_description: str,
+        after_description: str,
+    ) -> None:
+        """Raises a ValueError if the given "before" date/datetime is after the "after"
+        one. Both field names must be datetime.datetime or datetime.date fields.
+
+        Does not raise any error if the two values are equal or either value is null.
+        """
+        if before is None or after is None:
+            return
+
+        if before > after:
+            raise ValueError(
+                f"Found {self.limited_pii_repr()} with {before_description} datetime "
+                f"{before} after {after_description} datetime {after}."
+            )
+
+    def assert_datetime_less_than(
+        self,
+        before: DateOrDateTime,
+        after: DateOrDateTime | None,
+        before_description: str,
+        after_description: str,
+    ) -> None:
+        """Raises a ValueError if the given "before" date/datetime is equal to or after
+        the "after" one. Both field names must be datetime.datetime or datetime.date
+        fields.
+
+        Does not raise any error if the "after" value is null.
+        """
+        if after is None:
+            return
+
+        if before == after:
+            raise ValueError(
+                f"Found {self.limited_pii_repr()} with {before_description} datetime "
+                f"{before} equal to {after_description} datetime {after}. The "
+                f"{before_description} date must come strictly before the "
+                f"{after_description} date."
+            )
+
+        if before > after:
+            raise ValueError(
+                f"Found {self.limited_pii_repr()} with {before_description} datetime "
+                f"{before} after {after_description} datetime {after}."
+            )
 
 
 EntityT = TypeVar("EntityT", bound=Entity)

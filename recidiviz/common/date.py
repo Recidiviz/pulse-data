@@ -43,17 +43,6 @@ def as_datetime(value: DateOrDateTime) -> datetime.datetime:
     return datetime.datetime(value.year, value.month, value.day)
 
 
-def assert_datetime_less_than(
-    before: Optional[DateOrDateTime],
-    after: Optional[DateOrDateTime],
-) -> None:
-    """Raises a ValueError if the given "before" date/datetime is after the given "after" one.
-    Both field names must be datetime.datetime or datetime.date fields.
-    """
-    if (before and after) and as_datetime(before) > as_datetime(after):
-        raise ValueError(f"Found datetime {before} after datetime {after}.")
-
-
 def snake_case_datetime(dt: datetime.datetime) -> str:
     """Converts a datetime to snake case format, e.g '2020_05_17_10_31_08_693498'. Friendly for BQ table names or cloud
     task ids."""
