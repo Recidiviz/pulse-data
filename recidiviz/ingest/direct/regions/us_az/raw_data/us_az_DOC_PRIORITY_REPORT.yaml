@@ -22,6 +22,9 @@ columns:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
       - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+    null_values:
+      - "NULL"
   - name: PRIORITY_PRIORITY_RANK
     description: priority_priority_rank of the priority report
   - name: PHASE
@@ -51,6 +54,9 @@ columns:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
       - "SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%Y-%m-%d', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+    null_values:
+      - "NULL"
   - name: REASON_REMOVAL_ID
     description: Reason removal from programs references LOOKUPS Table
   - name: ACTIVE_FLAG
