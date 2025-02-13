@@ -165,6 +165,35 @@ is_opt_str = is_opt(str)
 is_int = attr.validators.instance_of(int)
 is_opt_int = is_opt(int)
 
+
+def is_positive_int(instance: Any, attribute: attr.Attribute, value: int) -> None:
+    """Validator that ensures the field value is a positive integer."""
+    # First validate that it's an integer
+    is_int(instance, attribute, value)
+
+    if value < 1:
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be a "
+            f"positive integer. Found value [{value}]"
+        )
+
+
+def is_opt_positive_int(
+    instance: Any, attribute: attr.Attribute, value: int | None
+) -> None:
+    """Validator that ensures the field value is a positive integer or None."""
+    # First validate that it's an optional integer
+    is_opt_int(instance, attribute, value)
+    if value is None:
+        return
+
+    if value < 1:
+        raise ValueError(
+            f"Field [{attribute.name}] on [{type(instance).__name__}] must be a "
+            f"positive integer. Found value [{value}]"
+        )
+
+
 # Date field validators
 is_date = attr.validators.instance_of(datetime.date)
 is_opt_date = is_opt(datetime.date)

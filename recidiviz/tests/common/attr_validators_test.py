@@ -315,6 +315,60 @@ class AttrValidatorsTest(unittest.TestCase):
             my_required_utc_aware_datetime=utc_tz, my_optional_utc_aware_datetime=utc_tz
         )
 
+    def test_is_positive_integer_validators(self) -> None:
+        @attr.s
+        class _TestClass:
+            my_required_int: int = attr.ib(validator=attr_validators.is_positive_int)
+            my_optional_int: Optional[int] = attr.ib(
+                validator=attr_validators.is_opt_positive_int, default=None
+            )
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"'my_required_int' must be <class 'int'> "
+            r"\(got None that is a <class 'NoneType'>\).",
+        ):
+            _ = _TestClass(my_required_int=None)  # type: ignore[arg-type]
+
+        with self.assertRaisesRegex(
+            TypeError,
+            r"'my_optional_int' must be <class 'int'> "
+            r"\(got 'True' that is a <class 'str'>\).",
+        ):
+            _ = _TestClass(my_required_int=19, my_optional_int="True")  # type: ignore[arg-type]
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[my_required_int\] on \[_TestClass\] must be a positive integer. "
+            r"Found value \[-1\]",
+        ):
+            _ = _TestClass(my_required_int=-1)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[my_required_int\] on \[_TestClass\] must be a positive integer. "
+            r"Found value \[0\]",
+        ):
+            _ = _TestClass(my_required_int=0)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[my_optional_int\] on \[_TestClass\] must be a positive integer. "
+            r"Found value \[-1\]",
+        ):
+            _ = _TestClass(my_required_int=1, my_optional_int=-1)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Field \[my_optional_int\] on \[_TestClass\] must be a positive integer. "
+            r"Found value \[0\]",
+        ):
+            _ = _TestClass(my_required_int=1, my_optional_int=0)
+
+        # These don't crash
+        _ = _TestClass(my_required_int=1, my_optional_int=None)
+        _ = _TestClass(my_required_int=1000, my_optional_int=3000)
+
 
 @attr.s(frozen=True)
 class _TestEmailClass:
