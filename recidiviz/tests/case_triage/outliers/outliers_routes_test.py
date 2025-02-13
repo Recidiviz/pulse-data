@@ -362,6 +362,101 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
 
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_all_supervision_officers_required_info_only"
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.supervisor_exists_with_external_id"
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states"
+    )
+    def test_get_all_officers_success(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_supervisor: MagicMock,
+        mock_get_officers: MagicMock,
+    ) -> None:
+
+        TEST_CASES = [
+            ("can access all supervisors", True, "bad_id", False),
+            ("external_id is RECIDIVIZ", False, "RECIDIVIZ", False),
+            ("is a valid supervisor with external_id 102", False, "102", True),
+        ]
+
+        for (
+            test_message,
+            can_access_all_supervisors,
+            external_id,
+            mock_supervisor_check_return,
+        ) in TEST_CASES:
+
+            mock_enabled_states.return_value = ["US_PA"]
+
+            self.mock_authorization_handler.side_effect = self.auth_side_effect(
+                state_code="us_pa",
+                external_id=external_id,
+                can_access_all_supervisors=can_access_all_supervisors,
+            )
+
+            mock_get_supervisor.return_value = mock_supervisor_check_return
+
+            officers = [
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "HARRY", "surname": "POTTER"}
+                    ),
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
+                    district="Hogwarts",
+                    include_in_outcomes=True,
+                ),
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "RON", "surname": "WEASLEY"}
+                    ),
+                    external_id="456",
+                    pseudonymized_id="hashhashhash",
+                    supervisor_external_id="102",
+                    supervisor_external_ids=["103"],
+                    district="Hogwarts",
+                    include_in_outcomes=True,
+                ),
+            ]
+
+            mock_get_officers.return_value = officers
+
+            response = self.test_client.get(
+                "/outliers/US_PA/officers",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            with self.subTest(test_message):
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+                self.snapshot.assert_match(response.json, name="test_get_all_officers_success")  # type: ignore[attr-defined]  # type: ignore[index]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_all_officers_unauthorized(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        mock_enabled_states.return_value = ["US_PA"]
+
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="some_id", can_access_all_supervisors=False
+        )
+
+        response = self.test_client.get(
+            "/outliers/US_PA/officers",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
     )
     @patch(

@@ -42,6 +42,7 @@ from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import (
     ActionStrategySurfacedEvent,
     PersonName,
+    SupervisionOfficerEntity,
     VitalsMetric,
 )
 from recidiviz.utils.flask_exception import FlaskException
@@ -605,6 +606,35 @@ def create_outliers_api_blueprint() -> Blueprint:
             for event in events
         ]
         return jsonify({"events": results})
+
+    @api.get("/<state>/officers")
+    def officers(state: str) -> Response:
+
+        state_code = StateCode(state.upper())
+        querier = OutliersQuerier(state_code)
+
+        user_context: UserContext = g.user_context
+        user_external_id: str = user_context.user_external_id
+
+        if (
+            user_external_id != "RECIDIVIZ"
+            and not user_context.can_access_all_supervisors
+            and not querier.supervisor_exists_with_external_id(user_external_id)
+        ):
+            return jsonify_response(
+                "User cannot access all officers",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        officers: List[
+            SupervisionOfficerEntity
+        ] = querier.get_all_supervision_officers_required_info_only()
+
+        return jsonify(
+            {
+                "officers": [officer.to_json() for officer in officers],
+            }
+        )
 
     @api.get("/<state>/officer/<pseudonymized_officer_id>")
     def officer(state: str, pseudonymized_officer_id: str) -> Response:

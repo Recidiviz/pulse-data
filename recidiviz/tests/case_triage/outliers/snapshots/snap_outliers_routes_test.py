@@ -130,6 +130,45 @@ snapshots[
     "supervisorHash": "ACTION_STRATEGY_60_PERC_OUTLIERS",
 }
 
+snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_all_officers_success"] = {
+    "officers": [
+        {
+            "avg_daily_population": None,
+            "district": "Hogwarts",
+            "earliest_person_assignment_date": None,
+            "external_id": "123",
+            "full_name": {
+                "given_names": "Harry",
+                "middle_names": None,
+                "name_suffix": None,
+                "surname": "Potter",
+            },
+            "include_in_outcomes": True,
+            "pseudonymized_id": "hashhash",
+            "supervisor_external_id": "102",
+            "supervisor_external_ids": ["102"],
+            "zero_grant_opportunities": None,
+        },
+        {
+            "avg_daily_population": None,
+            "district": "Hogwarts",
+            "earliest_person_assignment_date": None,
+            "external_id": "456",
+            "full_name": {
+                "given_names": "Ron",
+                "middle_names": None,
+                "name_suffix": None,
+                "surname": "Weasley",
+            },
+            "include_in_outcomes": True,
+            "pseudonymized_id": "hashhashhash",
+            "supervisor_external_id": "102",
+            "supervisor_external_ids": ["103"],
+            "zero_grant_opportunities": None,
+        },
+    ]
+}
+
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_benchmarks"] = {
     "metrics": [
         {

@@ -932,6 +932,42 @@ class OutliersQuerier:
 
             return id_to_entities[officer_external_id]
 
+    def get_all_supervision_officers_required_info_only(
+        self,
+    ) -> List[SupervisionOfficerEntity]:
+        """
+        Retrieves all supervision officers and returns them as SupervisionOfficerEntity instances.
+        This only populates the minimum needed information for each officer.
+
+        Returns:
+            List[SupervisionOfficerEntity]: A list of SupervisionOfficerEntity instances.
+        """
+        with self.insights_database_session() as session:
+            officers = (
+                session.query(
+                    SupervisionOfficer.external_id,
+                    SupervisionOfficer.full_name,
+                    SupervisionOfficer.pseudonymized_id,
+                    SupervisionOfficer.supervisor_external_id,
+                    SupervisionOfficer.supervisor_external_ids,
+                    SupervisionOfficer.supervision_district,
+                    SupervisionOfficer.include_in_outcomes,
+                )
+            ).all()
+
+            return [
+                SupervisionOfficerEntity(
+                    external_id=officer.external_id,
+                    full_name=officer.full_name,
+                    pseudonymized_id=officer.pseudonymized_id,
+                    supervisor_external_id=officer.supervisor_external_id,
+                    supervisor_external_ids=officer.supervisor_external_ids,
+                    district=officer.supervision_district,
+                    include_in_outcomes=officer.include_in_outcomes,
+                )
+                for officer in officers
+            ]
+
     def get_excluded_supervision_officer_entity(
         self,
         pseudonymized_officer_id: str,

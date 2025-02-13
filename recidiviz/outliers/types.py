@@ -459,10 +459,10 @@ class SupervisionOfficerEntity(SupervisionOfficerEntityBase):
     """Represents an officer we have included in our benchmarks and outlier status
     calculations. These officers may or may not be outliers themselves."""
 
-    # The officer's avg caseload size in the latest period
-    avg_daily_population: Optional[float] = attr.ib()
     # Whether this officer is included in outcomes calculations
     include_in_outcomes: bool = attr.ib()
+    # The officer's avg caseload size in the latest period
+    avg_daily_population: Optional[float] = attr.ib(default=None)
     # earliest date that this officer was assigned a caseload
     earliest_person_assignment_date: Optional[date] = attr.ib(default=None)
     # A list of zero grant opportunity types for this officer.

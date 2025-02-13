@@ -1206,6 +1206,15 @@ class TestOutliersQuerier(InsightsDbTestCase):
         ).get_supervision_officer_from_pseudonymized_id(pseudonymized_id="doesnotexist")
         self.assertIsNone(actual)
 
+    def test_get_all_supervision_officers_required_info_only(self) -> None:
+        state_code = StateCode.US_PA
+        querier = OutliersQuerier(state_code)
+        result = querier.get_all_supervision_officers_required_info_only()
+
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            result, name="get_all_supervision_officers_required_info_only"
+        )
+
     @freezegun.freeze_time(datetime(2024, 12, 4, 0, 0, 0, 0))
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
