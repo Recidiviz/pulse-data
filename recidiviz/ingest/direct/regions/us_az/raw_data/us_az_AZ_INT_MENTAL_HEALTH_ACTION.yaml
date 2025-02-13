@@ -21,6 +21,8 @@ columns:
   - name: SMI
     is_pii: True
     description: Y/N does the person have a designation of being Severely Mentally Ill.
+    null_values:
+      - "NULL"
   - name: SMI_C
     is_pii: True
   - name: MED
@@ -34,15 +36,15 @@ columns:
       Date When Record Created
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name},
-        r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%c', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: UPDT_DTM
     description: |-
       Date When Record Last Updated
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name},
-        r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%c', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: UPDT_USERID
     description: |-
       User Id Who updated the record references MEA_USERS Table
@@ -59,8 +61,8 @@ columns:
       Date When Record Created
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name},
-        r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_DATETIME('%c', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: MH_STATUS_ID
     description: |-
       The mental health score of this person. Foreign key to LOOKUPS.

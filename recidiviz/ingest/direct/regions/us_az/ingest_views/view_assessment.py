@@ -25,13 +25,26 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH 
+-- Get the most recent SMI designation for each person.
+smi_status AS (
+SELECT 
+  PERSON_ID,
+  SMI
+FROM 
+  {AZ_INT_MENTAL_HEALTH_ACTION} mh
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY PERSON_ID 
+  ORDER BY CAST(CREATE_DTM AS TIMESTAMP) DESC, CAST(UPDT_DTM AS TIMESTAMP) DESC
+  ) = 1
+)
 SELECT DISTINCT
   accat.ACCAT_ID,
   accat.DATE_ASSESSMENT,
   ep.PERSON_ID,
   accat.TOTAL AS TOTAL_SCORE,
   level.DESCRIPTION AS FINAL_LEVEL,
-  mh.SMI,
+  smi_status.SMI,
   /*
   The external ID '2' is used to denote records "created" during the system migration. 
   These were initially created by a real user, but their ID was overwritten during the migration
@@ -50,8 +63,8 @@ JOIN
 ON
   (LEVEL_ID = LOOKUP_ID)
 LEFT JOIN 
-  {AZ_INT_MENTAL_HEALTH_ACTION} mh
-USING
+  smi_status 
+USING 
   (PERSON_ID)
 """
 
