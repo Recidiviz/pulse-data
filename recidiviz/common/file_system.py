@@ -56,8 +56,10 @@ def is_non_empty_code_directory(dir_path: str) -> bool:
     possible to get into that situation when switching from a git branch that contains
     a directory from one that doesn't, since __pycache__ directories are ignored by git.
     """
-    return os.path.isdir(dir_path) and any(
-        is_valid_code_path(path) for path in os.listdir(dir_path)
+    return (
+        os.path.isdir(dir_path)
+        and is_valid_code_path(dir_path)
+        and any(is_valid_code_path(path) for path in os.listdir(dir_path))
     )
 
 
