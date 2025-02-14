@@ -592,7 +592,9 @@ columns:
       - value: "2037"
         description: Department of Health & Human Services
       - value: "2044"
-        description: TODO(#35219) Document this field.
+        description: Macomb Parole Violation Unit
+      - value: "1385"
+        description: Allegan County
   - name: hearing_officer_cmis_code
     description: |-
       TODO(#17944)
