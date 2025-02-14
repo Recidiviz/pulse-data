@@ -21,9 +21,8 @@ from typing import List, Optional
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.normalized_entities_utils import (
-    update_normalized_entity_with_globally_unique_id,
+    update_entity_with_globally_unique_id,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -109,10 +108,8 @@ class UsMiViolationResponseNormalizationDelegate(
                             )
 
                             # Add a unique id value to the new violation type entry
-                            update_normalized_entity_with_globally_unique_id(
-                                person_id,
-                                technical_entry,
-                                state_code=StateCode(response.state_code),
+                            update_entity_with_globally_unique_id(
+                                root_entity_id=person_id, entity=technical_entry
                             )
 
                             return [technical_entry]
@@ -125,10 +122,8 @@ class UsMiViolationResponseNormalizationDelegate(
                         )
 
                         # Add a unique id value to the new violation type entry
-                        update_normalized_entity_with_globally_unique_id(
-                            person_id,
-                            law_entry,
-                            state_code=StateCode(response.state_code),
+                        update_entity_with_globally_unique_id(
+                            root_entity_id=person_id, entity=law_entry
                         )
 
                         return [law_entry]

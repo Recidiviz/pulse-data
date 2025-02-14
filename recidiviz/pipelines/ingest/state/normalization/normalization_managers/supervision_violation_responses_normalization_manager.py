@@ -25,7 +25,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Type
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -33,7 +32,7 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     copy_entities_and_add_unique_ids,
     get_shared_additional_attributes_map_for_entities,
     merge_additional_attributes_maps,
-    update_normalized_entity_with_globally_unique_id,
+    update_entity_with_globally_unique_id,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolatedConditionEntry,
@@ -274,15 +273,11 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
             )
 
             new_violation_type_entries = copy_entities_and_add_unique_ids(
-                person_id=self.person_id,
-                entities=deduped_violation_type_entries,
-                state_code=StateCode(base_violation.state_code),
+                person_id=self.person_id, entities=deduped_violation_type_entries
             )
 
-            update_normalized_entity_with_globally_unique_id(
-                person_id=self.person_id,
-                entity=base_violation,
-                state_code=StateCode(base_violation.state_code),
+            update_entity_with_globally_unique_id(
+                root_entity_id=self.person_id, entity=base_violation
             )
 
             updated_response = deep_entity_update(

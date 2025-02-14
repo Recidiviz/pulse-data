@@ -43,7 +43,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_custom_enum_parsers import (
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.normalized_entities_utils import (
     copy_entities_and_add_unique_ids,
-    update_normalized_entity_with_globally_unique_id,
+    update_entity_with_globally_unique_id,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateSentence,
@@ -307,8 +307,8 @@ class UsMoSupervisionNormalizationDelegate(
             )
 
             # Add a unique id to the new SP
-            update_normalized_entity_with_globally_unique_id(
-                person_id, new_supervision_period, state_code=StateCode.US_MO
+            update_entity_with_globally_unique_id(
+                root_entity_id=person_id, entity=new_supervision_period
             )
 
             if relevant_period:
@@ -319,9 +319,7 @@ class UsMoSupervisionNormalizationDelegate(
                     )
                     case_type_entries.append(case_type_entry)
                 case_type_entries = copy_entities_and_add_unique_ids(
-                    person_id=person_id,
-                    entities=case_type_entries,
-                    state_code=StateCode.US_MO,
+                    person_id=person_id, entities=case_type_entries
                 )
 
             new_supervision_period = deep_entity_update(

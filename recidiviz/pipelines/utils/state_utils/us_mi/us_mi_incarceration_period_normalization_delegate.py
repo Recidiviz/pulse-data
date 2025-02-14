@@ -35,7 +35,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import CriticalRangesBuilder
 from recidiviz.persistence.entity.normalized_entities_utils import (
-    update_normalized_entity_with_globally_unique_id,
+    update_entity_with_globally_unique_id,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -248,10 +248,8 @@ class UsMiIncarcerationNormalizationDelegate(
             )
 
             # Add a unique id to the new IP
-            update_normalized_entity_with_globally_unique_id(
-                person_id=person_id,
-                entity=new_incarceration_period,
-                state_code=StateCode.US_MI,
+            update_entity_with_globally_unique_id(
+                root_entity_id=person_id, entity=new_incarceration_period
             )
 
             new_incarceration_periods.append(new_incarceration_period)
@@ -420,10 +418,8 @@ class UsMiIncarcerationNormalizationDelegate(
                 )
 
                 # Add a unique id to the new IP
-                update_normalized_entity_with_globally_unique_id(
-                    person_id=person_id,
-                    entity=new_ip,
-                    state_code=StateCode.US_MI,
+                update_entity_with_globally_unique_id(
+                    root_entity_id=person_id, entity=new_ip
                 )
 
                 # increment inferred_period_index by 1
@@ -560,10 +556,8 @@ class UsMiIncarcerationNormalizationDelegate(
             )
 
             # Add a unique id to the new IP
-            update_normalized_entity_with_globally_unique_id(
-                person_id=person_id,
-                entity=new_ip,
-                state_code=StateCode.US_MI,
+            update_entity_with_globally_unique_id(
+                root_entity_id=person_id, entity=new_ip
             )
 
             inferred_incarceration_periods.append(new_ip)

@@ -32,7 +32,7 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     copy_entities_and_add_unique_ids,
     get_shared_additional_attributes_map_for_entities,
     merge_additional_attributes_maps,
-    update_normalized_entity_with_globally_unique_id,
+    update_entity_with_globally_unique_id,
 )
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
@@ -213,9 +213,9 @@ class TestGetSharedAdditionalAttributesMapForEntities(unittest.TestCase):
 
 
 class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
-    """Tests the update_normalized_entity_with_globally_unique_id function."""
+    """Tests the update_entity_with_globally_unique_id function."""
 
-    def test_update_normalized_entity_with_globally_unique_id(self) -> None:
+    def test_update_entity_with_globally_unique_id(self) -> None:
         state_code = StateCode.US_XX
         person_id = 9000000000000012345
 
@@ -226,15 +226,13 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
             violation_type_raw_text="TECHNICAL",
         )
 
-        update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity, state_code=StateCode.US_XX
-        )
+        update_entity_with_globally_unique_id(root_entity_id=person_id, entity=entity)
 
         expected_id_value = 9025479639710676476
 
         self.assertEqual(expected_id_value, entity.get_id())
 
-    def test_update_normalized_entity_with_globally_unique_id_multiple(self) -> None:
+    def test_update_entity_with_globally_unique_id_multiple(self) -> None:
         """Tests that the entity_id_index is working to ensure unique entity ids
         within the same entity type."""
         state_code = StateCode.US_XX
@@ -247,9 +245,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
             violation_type_raw_text="TECHNICAL",
         )
 
-        update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity, state_code=StateCode.US_XX
-        )
+        update_entity_with_globally_unique_id(root_entity_id=person_id, entity=entity)
 
         expected_id_value = 9025479639710676476
         self.assertEqual(expected_id_value, entity.get_id())
@@ -262,8 +258,9 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
             violation_type_raw_text="TECHNICAL",
         )
 
-        update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity_2, state_code=StateCode.US_XX
+        update_entity_with_globally_unique_id(
+            root_entity_id=person_id,
+            entity=entity_2,
         )
 
         expected_id_value_2 = 9043888946852247817
@@ -277,9 +274,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
             start_date=datetime.date(2020, 1, 1),
         )
 
-        update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity_3, state_code=StateCode.US_XX
-        )
+        update_entity_with_globally_unique_id(root_entity_id=person_id, entity=entity_3)
 
         expected_id_value_3 = 9001590055191408448
         self.assertEqual(expected_id_value_3, entity_3.get_id())
@@ -307,7 +302,7 @@ class TestCopyEntitiesAndAddUniqueIds(unittest.TestCase):
         )
 
         updated_entities = copy_entities_and_add_unique_ids(
-            person_id=person_id, entities=[entity_1, entity_2], state_code=state_code
+            person_id=person_id, entities=[entity_1, entity_2]
         )
 
         expected_entities = [
@@ -326,6 +321,4 @@ class TestCopyEntitiesAndAddUniqueIds(unittest.TestCase):
         person_id = 990000012345
 
         # Assert no error
-        _ = copy_entities_and_add_unique_ids(
-            person_id=person_id, entities=[], state_code=StateCode.US_XX
-        )
+        _ = copy_entities_and_add_unique_ids(person_id=person_id, entities=[])

@@ -33,7 +33,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import CriticalRangesBuilder, DateRangeDiff
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.normalized_entities_utils import (
-    update_normalized_entity_with_globally_unique_id,
+    update_entity_with_globally_unique_id,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -316,10 +316,8 @@ def infer_incarceration_periods_from_in_custody_sps(
         inferred_period_count += 1
 
         # Add a unique id to the new IP
-        update_normalized_entity_with_globally_unique_id(
-            person_id=person_id,
-            entity=new_incarceration_period,
-            state_code=state_code,
+        update_entity_with_globally_unique_id(
+            root_entity_id=person_id, entity=new_incarceration_period
         )
         inferred_incarceration_periods.append(new_incarceration_period)
 

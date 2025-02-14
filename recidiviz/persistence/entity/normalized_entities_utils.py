@@ -39,6 +39,9 @@ from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_name,
 )
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
+from recidiviz.persistence.entity.root_entity_utils import (
+    get_root_entity_class_for_entity,
+)
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
@@ -48,8 +51,9 @@ from recidiviz.persistence.entity.state.normalized_state_entity import (
 from recidiviz.persistence.entity.state.state_entity_mixins import (
     SequencedEntityMixin,
     SequencedEntityMixinT,
+    StateEntityMixin,
 )
-from recidiviz.utils.types import assert_subclass
+from recidiviz.utils.types import assert_subclass, assert_type
 
 NormalizedStateEntityT = TypeVar("NormalizedStateEntityT", bound=NormalizedStateEntity)
 AdditionalAttributesMap = Dict[
@@ -189,32 +193,37 @@ def get_shared_additional_attributes_map_for_entities(
 
 
 def _unique_object_id_for_entity(
-    person_id: int, entity: Entity, state_code: StateCode
+    root_entity_id: int, state_entity: StateEntityMixin
 ) -> int:
     """Returns an object id value that is globally unique for all entities of this
     type for this person_id.
     """
+    entity = assert_type(state_entity, Entity)
+    root_entity_id_field_name = assert_subclass(
+        get_root_entity_class_for_entity(type(entity)), Entity
+    ).get_class_id_name()
+
     entities_module_context = entities_module_context_for_entity(entity)
     entity_json = serialize_entity_into_json(
         entity, entities_module=entities_module_context.entities_module()
     )
     extra_json_fields = {}
-    # At this point in normalization we may not have set the backedges to person
-    # on this entity - if we have not, add a field with person_id so the generated
-    # primary key is unique across all people.
-    if entity_json["person_id"] is None:
-        extra_json_fields = {"person_id": person_id}
+    # At this point in normalization we may not have set the backedges to the root
+    # entity on this entity - if we have not, include the root entity primary key value
+    # as an input to this entity primary key so that it is unique across all people.
+    if entity_json[root_entity_id_field_name] is None:
+        extra_json_fields = {root_entity_id_field_name: root_entity_id}
     entity_json_for_primary_key = {**entity_json, **extra_json_fields}
     entity_object_id = generate_primary_key(
         json.dumps(entity_json_for_primary_key, sort_keys=True),
-        state_code,
+        StateCode(state_entity.state_code),
     )
 
     return entity_object_id
 
 
-def update_normalized_entity_with_globally_unique_id(
-    person_id: int, entity: Entity, state_code: StateCode
+def update_entity_with_globally_unique_id(
+    *, root_entity_id: int, entity: Entity
 ) -> None:
     """Updates the entity's primary key field with a primary key values that will be
     unique across all entities of this type, across all states.
@@ -222,7 +231,8 @@ def update_normalized_entity_with_globally_unique_id(
     # Get a shortened version of the python id that is globally unique for all
     # entities of this type for this person_id
     new_entity_id = _unique_object_id_for_entity(
-        person_id=person_id, entity=entity, state_code=state_code
+        root_entity_id=root_entity_id,
+        state_entity=assert_type(entity, StateEntityMixin),
     )
 
     if new_entity_id > MAX_BQ_INT:
@@ -241,15 +251,15 @@ def update_normalized_entity_with_globally_unique_id(
 
 
 def copy_entities_and_add_unique_ids(
-    person_id: int, entities: List[EntityT], state_code: StateCode
+    person_id: int, entities: List[EntityT]
 ) -> List[EntityT]:
     """Creates new copies of each of the provided |entities| and adds unique id
     values to the new copies."""
     new_entities: List[EntityT] = []
     for entity in entities:
         entity_copy = copy(entity)
-        update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity_copy, state_code=state_code
+        update_entity_with_globally_unique_id(
+            root_entity_id=person_id, entity=entity_copy
         )
 
         new_entities.append(entity_copy)
