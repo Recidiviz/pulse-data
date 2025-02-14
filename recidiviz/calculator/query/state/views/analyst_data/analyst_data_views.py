@@ -318,6 +318,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_zero_tolerance_codes import (
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ut.us_ut_early_discharge_sessions_preprocessing import (
+    US_UT_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.workflows_live_completion_event_types_by_state import (
     WORKFLOWS_LIVE_COMPLETION_EVENT_TYPES_BY_STATE_VIEW_BUILDER,
 )
@@ -407,6 +410,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_MO_RESTRICTIVE_HOUSING_RECORD_VIEW_BUILDER,
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER,
     US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
+    US_UT_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_TN_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
     US_TN_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
     US_TN_INVOICES_PREPROCESSED_VIEW_BUILDER,
