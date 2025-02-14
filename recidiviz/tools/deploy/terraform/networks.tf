@@ -101,6 +101,14 @@ module "nat_us_east1" {
   region      = "us-east1"
 }
 
+module "nat_us_east4" {
+  source = "./modules/nat"
+
+  nat_name    = "${local.nat_prefix}-dataflow-nat-us-east4"
+  router_name = "${local.nat_prefix}-dataflow-nat-router-us-east4"
+  region      = "us-east4"
+}
+
 module "nat_us_west2" {
   source = "./modules/nat"
 

@@ -92,11 +92,11 @@ metric_pipelines:
   - pipeline: violation_metrics
     state_code: US_IX
     metric_types: VIOLATION
-    region: us-west3
+    region: us-east4
   - pipeline: program_metrics
     state_code: US_IX
     metric_types: PROGRAM_PARTICIPATION
-    region: us-west3
+    region: us-east4
 
   # Full US_PA calculations with no time limit
   - pipeline: population_span_metrics
@@ -142,15 +142,15 @@ metric_pipelines:
   - pipeline: incarceration_metrics
     state_code: US_ME
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
-    region: us-west3
+    region: us-east4
   - pipeline: supervision_metrics
     state_code: US_ME
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
-    region: us-west3
+    region: us-east4
   - pipeline: violation_metrics
     state_code: US_ME
     metric_types: VIOLATION
-    region: us-west3
+    region: us-east4
 
   # Full US_MI calculations with no time limit
   - pipeline: population_span_metrics
@@ -164,11 +164,11 @@ metric_pipelines:
   - pipeline: supervision_metrics
     state_code: US_MI
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
-    region: us-west3
+    region: us-east4
   - pipeline: violation_metrics
     state_code: US_MI
     metric_types: VIOLATION
-    region: us-west3
+    region: us-east4
 
     # Full US_NE calculations with no time limit
   - pipeline: population_span_metrics
@@ -178,11 +178,11 @@ metric_pipelines:
   - pipeline: supervision_metrics
     state_code: US_NE
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
-    region: us-west3
+    region: us-east4
   - pipeline: violation_metrics
     state_code: US_NE
     metric_types: VIOLATION
-    region: us-west3
+    region: us-east4
 
   # Full US_CA calculations with no time limit
   - pipeline: population_span_metrics
@@ -199,7 +199,7 @@ metric_pipelines:
     state_code: US_MO
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION
-    region: us-west3
+    region: us-east4
 
   # Daily US_PA calculations -- Lantern v1
   - pipeline: supervision_metrics
@@ -212,21 +212,21 @@ metric_pipelines:
   - pipeline: population_span_metrics
     state_code: US_OR
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
-    region: us-west3
+    region: us-east4
   - pipeline: incarceration_metrics
     state_code: US_OR
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
-    region: us-west3
+    region: us-east4
   - pipeline: supervision_metrics
     state_code: US_OR
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
-    region: us-west3
+    region: us-east4
 
   # Full US_OZ calculations with no time limit
   - pipeline: population_span_metrics
     state_code: US_OZ
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
-    region: us-west3
+    region: us-east4
     staging_only: True
 
   # Full US_AZ calculations with no time limit
@@ -291,4 +291,4 @@ supplemental_dataset_pipelines:
     state_code: US_IX
     region: us-central1
     # TODO(#18319): Remove this once we group by entity.
-    machine_type: n1-standard-8
+    machine_type: c4a-highcpu-8

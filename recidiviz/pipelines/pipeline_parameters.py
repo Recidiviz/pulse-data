@@ -155,7 +155,7 @@ class PipelineParameters:
     # Args used for job configuration
     region: str = attr.ib(validator=attr_validators.is_str)
     machine_type: str = attr.ib(
-        default="n1-standard-32", validator=attr_validators.is_str
+        default="c4a-highcpu-32", validator=attr_validators.is_str
     )
     disk_gb_size: int = attr.ib(
         default=200, validator=attr_validators.is_int, converter=int
@@ -405,7 +405,7 @@ class PipelineParameters:
             "--region",
             type=str,
             help="The Google Cloud region to run the job on (e.g. us-west1).",
-            default="us-west1",
+            default="us-east1",
         )
 
         parser.add_argument(

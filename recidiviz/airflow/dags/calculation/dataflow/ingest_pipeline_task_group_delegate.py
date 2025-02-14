@@ -62,6 +62,8 @@ class IngestDataflowPipelineTaskGroupDelegate(
             raw_data_upper_bound_dates_json=json.dumps({}),
             pipeline=INGEST_PIPELINE_NAME,
             state_code=self._state_code.value,
+            # Ingest pipelines require additional memory; use standard family instead of highcpu
+            machine_type="c4a-standard-32",
             region=DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[self._state_code],
         )
 
